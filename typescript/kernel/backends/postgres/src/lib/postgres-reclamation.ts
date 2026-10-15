@@ -25,10 +25,8 @@ import { reclaimBackendState as reclaimSharedBackendState } from "@tuvren/backen
 import type { EpochMs } from "@tuvren/core";
 import type { ReclamationSummary } from "@tuvren/kernel-protocol";
 
-import {
-  type BackendState,
-  decodeHashStringArray,
-} from "./postgres-records.js";
+import { decodeHashStringArray } from "./postgres-records.js";
+import type { BackendState } from "./postgres-records.js";
 import {
   decodeRunCreatedTurnNodeHashes,
   decodeTurnNodeConsumedStagedResultObjectHashes,

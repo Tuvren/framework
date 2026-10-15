@@ -97,7 +97,7 @@ export const {
  * length-prefixed (see {@link keyObserveAnnotation}), so any field content,
  * including the separator itself, keys distinctly.
  */
-export const OBSERVE_ANNOTATION_KEY_SEPARATOR = "\u001f";
+export const OBSERVE_ANNOTATION_KEY_SEPARATOR = "\u001F";
 
 /**
  * Derives an observe annotation's identity key from its logical fields
@@ -140,7 +140,7 @@ export async function nextObserveAnnotationRecordKey(
   // identity never regresses and re-issuing an existing key is impossible. A
   // future path deleting a *subset* of a run's annotations would break that
   // and must switch this derivation to MAX(existing suffix) + 1.
-  const rows = await sql.unsafe<Array<{ count: number | string | bigint }>>(
+  const rows = await sql.unsafe<{ count: number | string | bigint }[]>(
     `
         SELECT COUNT(*)::int AS count
         FROM ${table}

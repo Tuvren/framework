@@ -1,0 +1,87 @@
+{
+  "milestone": "M3",
+  "ticket": "KRT-BR001",
+  "cohort": [
+    "typescript/kernel/backends/postgres/src",
+    "typescript/kernel/backends/postgres/bench"
+  ],
+  "baseline_commit": "62168f9e6e842f86ae2f2780eac0ed29bae7cf51",
+  "tool": {
+    "name": "oxlint",
+    "version": "1.86.0",
+    "safe_fix_command": "bunx --bun oxlint --fix typescript/kernel/backends/postgres/src typescript/kernel/backends/postgres/bench"
+  },
+  "diagnostics": {
+    "before": 563,
+    "after": 460,
+    "reduction": 103,
+    "by_selection": {
+      "src": {
+        "before": 510,
+        "after": 412
+      },
+      "bench": {
+        "before": 53,
+        "after": 48
+      }
+    }
+  },
+  "changed_files": [
+    "typescript/kernel/backends/postgres/bench/postgres-cross-scope-throughput.bench.ts",
+    "typescript/kernel/backends/postgres/bench/postgres-write-latency.bench.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-backend-persistence.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-blob-migration.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-db-lineage.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-legacy-snapshot-decode.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-lookups.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-reclamation-validation.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-reclamation.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-records.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-repositories-core.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-repositories-support.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-schema-init.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-schema.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-sql.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-state-utils.ts",
+    "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts"
+  ],
+  "verification": [
+    {
+      "command": "bun run nx run backend-postgres:typecheck",
+      "result": "pass"
+    },
+    {
+      "command": "flock /tmp/tuvren-wave-1-verification.lock ... bun run nx run backend-postgres:test",
+      "result": "pass",
+      "tests": 103,
+      "assertions": 361
+    },
+    {
+      "command": "bun run nx run backend-postgres:lint",
+      "result": "pass",
+      "retained_biome_files": 55
+    },
+    {
+      "command": "bun run typecheck",
+      "result": "pass",
+      "projects": 33,
+      "prerequisites": 1
+    },
+    {
+      "command": "bunx --bun oxfmt --check typescript/kernel/backends/postgres/src typescript/kernel/backends/postgres/bench",
+      "result": "pass"
+    },
+    {
+      "command": "bun run changeset:check --base=master",
+      "result": "pass"
+    }
+  ],
+  "notes": [
+    "Only Oxlint safe fixes were used; suggestion and dangerous fix modes were not used.",
+    "The retained Biome target and its existing directives remain active and clean.",
+    "The PostgreSQL notice callback remains an intentional no-op; a comment replaces the removed undefined expression.",
+    "Canonical UTF-8, URL, escape, array-type, import, and key-order spellings do not change runtime behavior.",
+    "No test file, public signature, collection semantics, runtime authority, lint target, dependency, contract shape, repository pattern, or convention changed."
+  ]
+}

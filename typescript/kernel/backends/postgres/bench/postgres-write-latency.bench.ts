@@ -32,18 +32,14 @@ import {
   createStoredSchemaRecord,
   formatNs,
   formatPhaseTable,
-  type PhaseStats,
   percentile,
   readSampleCountFromEnv,
   summarizePhases,
-  type TimingStats,
 } from "@tuvren/kernel-testkit";
+import type { PhaseStats, TimingStats } from "@tuvren/kernel-testkit";
 
-import {
-  createPostgresBackend,
-  destroyPostgresBackend,
-  type PostgresBackendOptions,
-} from "../src/index.js";
+import { createPostgresBackend, destroyPostgresBackend } from "../src/index.js";
+import type { PostgresBackendOptions } from "../src/index.js";
 
 // Default sample count for the decisive large tiers (1k, 10k): the KRT-BK007
 // spike ran n=5, where p95 collapses onto max; override via BENCH_SAMPLE_COUNT

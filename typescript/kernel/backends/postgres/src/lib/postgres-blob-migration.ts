@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  NOOP_PHASE_OBSERVER,
-  type PhaseObserver,
-} from "@tuvren/backend-shared";
+import { NOOP_PHASE_OBSERVER } from "@tuvren/backend-shared";
+import type { PhaseObserver } from "@tuvren/backend-shared";
 import { assertScope, TuvrenPersistenceError } from "@tuvren/core";
 import type { TransactionSql } from "postgres";
 
@@ -120,8 +118,8 @@ export async function explodeLegacyBlobSnapshots(
           "postgres backend failed to decode a legacy blob snapshot during migration",
           "postgres_backend_blob_migration_decode_failed",
           {
-            scope: row.scope,
             schemaVersion: row.schema_version,
+            scope: row.scope,
           },
           error
         );

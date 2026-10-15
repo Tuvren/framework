@@ -66,6 +66,36 @@
       "sha256": "8cbf074b1a9a2ebbb0e0aaa7e9893a6ca5a0710308aa91672bf69b6c7ef122e9",
       "bytes": 149,
       "role": "measurement"
+    },
+    {
+      "path": "M3-summary.json",
+      "sha256": "7f807681b9f7d40be67d4125af005857c4ef523fe08c8239df27c45706e554bc",
+      "bytes": 3504,
+      "role": "measurement"
+    },
+    {
+      "path": "M3-postgres-src-bench-before-syntactic.json.gz",
+      "sha256": "ddba7c35dfe3f57ea31131de0ce6cecb106726993e8fa1d4e9d7cbf175fb8e76",
+      "bytes": 14811,
+      "role": "baseline"
+    },
+    {
+      "path": "M3-postgres-src-bench-after-syntactic.json.gz",
+      "sha256": "4d7def27a61d50f8de51afbc7b070325ea084e7e649e55e261da05752eccb66a",
+      "bytes": 11121,
+      "role": "measurement"
+    },
+    {
+      "path": "M3-postgres-src-bench-before-command-stderr.log.gz",
+      "sha256": "f55b428ae9454a8987f1ef8bfd787a0c5865bd631b2bb864c6fea8dee0052246",
+      "bytes": 149,
+      "role": "baseline"
+    },
+    {
+      "path": "M3-postgres-src-bench-after-command-stderr.log.gz",
+      "sha256": "66fb91c27c592b7b136aab4a39929d82b0b8dfc901db9cf8d26cf67973b8e760",
+      "bytes": 149,
+      "role": "measurement"
     }
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."

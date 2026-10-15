@@ -16,7 +16,8 @@
 
 import type { PhaseObserver } from "@tuvren/backend-shared";
 import type { EpochMs, Scope } from "@tuvren/core";
-import postgres, { type Sql } from "postgres";
+import postgres from "postgres";
+import type { Sql } from "postgres";
 
 import { persistenceError } from "./postgres-errors.js";
 
@@ -137,7 +138,9 @@ export function createPostgresClient(
     host: options.host,
     idle_timeout: 5,
     max: 1,
-    onnotice: () => undefined,
+    onnotice: () => {
+      // PostgreSQL notices are intentionally ignored by this backend client.
+    },
     password: options.password,
     port: options.port,
     prepare: false,
@@ -199,7 +202,7 @@ export function normalizeSchemaName(schemaName: string | undefined): string {
   // The pattern is ASCII-only, so byte length already equals character
   // length here — but the byte-length check is kept explicit rather than
   // assumed, since it is the actual PostgreSQL-enforced limit.
-  const byteLength = Buffer.byteLength(normalized, "utf8");
+  const byteLength = Buffer.byteLength(normalized, "utf-8");
   if (byteLength > MAX_SCHEMA_NAME_BYTES) {
     throw persistenceError(
       `postgres backend schema "${normalized}" is ${byteLength} bytes, ` +

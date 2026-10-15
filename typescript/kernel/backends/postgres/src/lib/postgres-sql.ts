@@ -149,7 +149,7 @@ export function assertPostgresStorableText(value: string, label: string): void {
  */
 export function assertPostgresIndexedText(value: string, label: string): void {
   assertPostgresStorableText(value, label);
-  const byteLength = Buffer.byteLength(value, "utf8");
+  const byteLength = Buffer.byteLength(value, "utf-8");
   if (byteLength > MAX_STORABLE_TEXT_BYTES) {
     throw persistenceError(
       `postgres backend cannot store ${label}: value is ${byteLength} UTF-8 bytes, ` +

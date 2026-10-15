@@ -26,10 +26,8 @@
 // injected into the shared factory.
 import { createBackendInvariantReclamationValidation } from "@tuvren/backend-shared";
 
-import {
-  type BackendState,
-  decodeHashStringArray,
-} from "./postgres-records.js";
+import { decodeHashStringArray } from "./postgres-records.js";
+import type { BackendState } from "./postgres-records.js";
 import {
   decodeRunCreatedTurnNodeHashes,
   decodeTurnNodeConsumedStagedResultObjectHashes,

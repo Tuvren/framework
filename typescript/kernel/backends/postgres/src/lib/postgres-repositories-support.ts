@@ -21,20 +21,23 @@ import {
   assertStoredSchema,
   assertStoredStagedResult,
   assertStoredThread,
-  type RuntimeBackendTx as KrakenBackendTx,
-  type ListThreadsCursorPayload,
-  type StoredObject,
-  type StoredObserveAnnotation,
-  type StoredOrderedPathChunk,
-  type StoredRun,
-  type StoredSchema,
-  type StoredStagedResult,
-  type StoredThread,
-  type StoredTurnNode,
+} from "@tuvren/kernel-protocol";
+import type {
+  RuntimeBackendTx as KrakenBackendTx,
+  ListThreadsCursorPayload,
+  StoredObject,
+  StoredObserveAnnotation,
+  StoredOrderedPathChunk,
+  StoredRun,
+  StoredSchema,
+  StoredStagedResult,
+  StoredThread,
+  StoredTurnNode,
 } from "@tuvren/kernel-protocol";
 
 import { persistenceError } from "./postgres-errors.js";
-import { decodeThreadRow, type PostgresThreadRow } from "./postgres-records.js";
+import { decodeThreadRow } from "./postgres-records.js";
+import type { PostgresThreadRow } from "./postgres-records.js";
 import type { DbSql } from "./postgres-sql.js";
 import {
   assertPostgresIndexedText,
@@ -218,6 +221,65 @@ export function createSupportRepositories(
     context;
 
   return {
+    objects: {
+      async get(hash) {
+        assertTransactionActive();
+        assertPostgresWellFormedText(hash, "hash");
+        const record = await helpers.selectObject(sql, schemaName, scope, hash);
+        return record === null ? null : helpers.cloneStoredObject(record);
+      },
+      async has(hash) {
+        assertTransactionActive();
+        assertPostgresWellFormedText(hash, "hash");
+        return (
+          (await helpers.selectObject(sql, schemaName, scope, hash)) !== null
+        );
+      },
+      async put(record) {
+        assertTransactionActive();
+        assertStoredObject(record, "record");
+        assertPostgresStorableText(record.mediaType, "record.mediaType");
+        await helpers.assertStoredObjectIdentity(record, "record");
+        const existing = await helpers.selectObject(
+          sql,
+          schemaName,
+          scope,
+          record.hash
+        );
+
+        if (existing !== null) {
+          helpers.ensureImmutableRecordMatch(
+            existing,
+            record,
+            helpers.areStoredObjectsEqual,
+            "stored object"
+          );
+          return;
+        }
+
+        const table = qualifyIdentifier(schemaName, "objects");
+        await sql.unsafe(
+          `
+            INSERT INTO ${table} (
+              scope,
+              hash,
+              media_type,
+              bytes,
+              byte_length,
+              created_at_ms
+            ) VALUES ($1, $2, $3, $4, $5, $6)
+          `,
+          [
+            scope,
+            record.hash,
+            record.mediaType,
+            record.bytes,
+            record.byteLength,
+            record.createdAtMs,
+          ]
+        );
+      },
+    },
     observeAnnotations: {
       async listByRun(runId) {
         assertTransactionActive();
@@ -279,65 +341,6 @@ export function createSupportRepositories(
             record.annotationHash,
             record.turnNodeHash,
             record.annotationCbor,
-            record.createdAtMs,
-          ]
-        );
-      },
-    },
-    objects: {
-      async get(hash) {
-        assertTransactionActive();
-        assertPostgresWellFormedText(hash, "hash");
-        const record = await helpers.selectObject(sql, schemaName, scope, hash);
-        return record === null ? null : helpers.cloneStoredObject(record);
-      },
-      async has(hash) {
-        assertTransactionActive();
-        assertPostgresWellFormedText(hash, "hash");
-        return (
-          (await helpers.selectObject(sql, schemaName, scope, hash)) !== null
-        );
-      },
-      async put(record) {
-        assertTransactionActive();
-        assertStoredObject(record, "record");
-        assertPostgresStorableText(record.mediaType, "record.mediaType");
-        await helpers.assertStoredObjectIdentity(record, "record");
-        const existing = await helpers.selectObject(
-          sql,
-          schemaName,
-          scope,
-          record.hash
-        );
-
-        if (existing !== null) {
-          helpers.ensureImmutableRecordMatch(
-            existing,
-            record,
-            helpers.areStoredObjectsEqual,
-            "stored object"
-          );
-          return;
-        }
-
-        const table = qualifyIdentifier(schemaName, "objects");
-        await sql.unsafe(
-          `
-            INSERT INTO ${table} (
-              scope,
-              hash,
-              media_type,
-              bytes,
-              byte_length,
-              created_at_ms
-            ) VALUES ($1, $2, $3, $4, $5, $6)
-          `,
-          [
-            scope,
-            record.hash,
-            record.mediaType,
-            record.bytes,
-            record.byteLength,
             record.createdAtMs,
           ]
         );
@@ -526,63 +529,6 @@ export function createSupportRepositories(
         );
         return record === null ? null : helpers.cloneStoredThread(record);
       },
-      async put(record) {
-        assertTransactionActive();
-        assertStoredThread(record, "record");
-        assertPostgresIndexedText(record.threadId, "record.threadId");
-        assertPostgresIndexedText(record.schemaId, "record.schemaId");
-        await helpers.ensureSchemaExistsInDatabase(
-          sql,
-          schemaName,
-          scope,
-          record.schemaId,
-          "record.schemaId"
-        );
-        await helpers.ensureTurnNodeExistsInDatabase(
-          sql,
-          schemaName,
-          scope,
-          record.rootTurnNodeHash,
-          "record.rootTurnNodeHash"
-        );
-        const existing = await helpers.selectThread(
-          sql,
-          schemaName,
-          scope,
-          record.threadId
-        );
-
-        if (existing !== null) {
-          helpers.ensureImmutableRecordMatch(
-            existing,
-            record,
-            helpers.areStoredThreadsEqual,
-            "stored thread"
-          );
-          return;
-        }
-
-        const table = qualifyIdentifier(schemaName, "threads");
-        await sql.unsafe(
-          `
-            INSERT INTO ${table} (
-              scope,
-              thread_id,
-              schema_id,
-              root_turn_node_hash,
-              created_at_ms
-            ) VALUES ($1, $2, $3, $4, $5)
-          `,
-          [
-            scope,
-            record.threadId,
-            record.schemaId,
-            record.rootTurnNodeHash,
-            record.createdAtMs,
-          ]
-        );
-        writeTracker.recordThreadPut(record);
-      },
       async list(options) {
         assertTransactionActive();
         const params: (string | number)[] = [scope];
@@ -650,6 +596,63 @@ export function createSupportRepositories(
         }
 
         return { threads, nextCursor };
+      },
+      async put(record) {
+        assertTransactionActive();
+        assertStoredThread(record, "record");
+        assertPostgresIndexedText(record.threadId, "record.threadId");
+        assertPostgresIndexedText(record.schemaId, "record.schemaId");
+        await helpers.ensureSchemaExistsInDatabase(
+          sql,
+          schemaName,
+          scope,
+          record.schemaId,
+          "record.schemaId"
+        );
+        await helpers.ensureTurnNodeExistsInDatabase(
+          sql,
+          schemaName,
+          scope,
+          record.rootTurnNodeHash,
+          "record.rootTurnNodeHash"
+        );
+        const existing = await helpers.selectThread(
+          sql,
+          schemaName,
+          scope,
+          record.threadId
+        );
+
+        if (existing !== null) {
+          helpers.ensureImmutableRecordMatch(
+            existing,
+            record,
+            helpers.areStoredThreadsEqual,
+            "stored thread"
+          );
+          return;
+        }
+
+        const table = qualifyIdentifier(schemaName, "threads");
+        await sql.unsafe(
+          `
+            INSERT INTO ${table} (
+              scope,
+              thread_id,
+              schema_id,
+              root_turn_node_hash,
+              created_at_ms
+            ) VALUES ($1, $2, $3, $4, $5)
+          `,
+          [
+            scope,
+            record.threadId,
+            record.schemaId,
+            record.rootTurnNodeHash,
+            record.createdAtMs,
+          ]
+        );
+        writeTracker.recordThreadPut(record);
       },
     },
   };
