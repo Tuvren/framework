@@ -21,7 +21,12 @@ import type {
   RuntimeKernelRunLiveness,
 } from "@tuvren/kernel-protocol";
 
+import type { PayloadCodecBinding } from "./payload-codec-seam.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
+import {
+  createInterruptedIterationUnreadableError,
+  deriveInterruptedIterationRecoveryPlan,
+} from "./runtime-core-recovery-plan.js";
 import {
   classifyRecoveredExecutionMode,
   classifyRecoveredTurnSignalState,
@@ -55,6 +60,7 @@ export interface RuntimeCoreExpiredRecoveryOptions {
  */
 export interface RuntimeCoreExpiredRecoveryHost {
   getNow(): EpochMs;
+  getPayloadCodecBinding(): PayloadCodecBinding;
   getRunLivenessOptions(): RuntimeCoreExpiredRecoveryOptions | undefined;
   getRuntimeKernel():
     | (RuntimeKernel & RuntimeKernelRunLiveness)
@@ -139,8 +145,29 @@ export async function recoverExpiredExecutionBranchIfNeeded(
     return raceResolution;
   }
 
-  const recoveredHeadState = await host.loadHeadState(branchId);
   const recoveredMode = classifyRecoveredExecutionMode(recoveryState);
+  const recoveredStepId = recoveryState.stepSequence[0]?.id;
+  let recoveredHeadState: HeadState;
+
+  try {
+    recoveredHeadState = await host.loadHeadState(branchId);
+  } catch (error: unknown) {
+    const interruptedMessage = [
+      ...recoveryState.consumedStagedResults,
+      ...recoveryState.uncommittedStagedResults,
+    ].find((stagedResult) => stagedResult.objectType === "message");
+
+    if (recoveredStepId === "iterate" && interruptedMessage !== undefined) {
+      throw createInterruptedIterationUnreadableError(
+        expiredRun.turnId,
+        expiredRun.runId,
+        error,
+        interruptedMessage
+      );
+    }
+
+    throw error;
+  }
 
   if (recoveredMode === "reuse_turn") {
     switch (
@@ -179,6 +206,18 @@ export async function recoverExpiredExecutionBranchIfNeeded(
     };
   }
 
+  const interruptedIterationPlan =
+    recoveredStepId === "iterate"
+      ? await deriveInterruptedIterationRecoveryPlan({
+          kernel,
+          payloadCodecBinding: host.getPayloadCodecBinding(),
+          recoveredHeadState,
+          recoveryState,
+          staleRunId: expiredRun.runId,
+          turnId: expiredRun.turnId,
+        })
+      : undefined;
+
   return {
     activeAgentName: await host.readRecoveredActiveAgentName(
       recoveredHeadState.turnNode.turnTreeHash
@@ -188,6 +227,9 @@ export async function recoverExpiredExecutionBranchIfNeeded(
       expiredRun.turnId,
       recoveredHeadState
     ),
+    ...(interruptedIterationPlan === undefined
+      ? {}
+      : { interruptedIterationPlan }),
     mode: recoveredMode,
     preempted: true,
     runtimeStatus: await host.readRecoveredRuntimeStatus(

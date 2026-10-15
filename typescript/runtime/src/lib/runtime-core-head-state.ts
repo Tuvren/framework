@@ -328,7 +328,7 @@ async function readMessages(
   return messages;
 }
 
-async function readMessage(
+export async function readMessage(
   kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
   hash: HashString
