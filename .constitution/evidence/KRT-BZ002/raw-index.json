@@ -1,0 +1,584 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BZ002",
+  "base_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+  "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+  "files": [
+    {
+      "path": "raw/biome-01-scratch-suppressed.json",
+      "sha256": "c9ec78f49ea5f1d90e85586101b0488ce245769723b9e3726effb9c25ae787d4",
+      "bytes": 776,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-01-scratch-unsuppressed.json",
+      "sha256": "ba6e561f19e8f81467ca8e55dc173e1a7b8ece8ffb47d658c7f28fead1aad641",
+      "bytes": 1525,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-01-virtual-stdin-unsuppressed.json",
+      "sha256": "ce30c345cac86fb531809e32742a82ead666a0167a07c876fb4f1b00187db11d",
+      "bytes": 2517,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-02-scratch-suppressed.json",
+      "sha256": "c06addb66697306e62777843bea199767bb6959acdb16e89673f41d58f46f9b2",
+      "bytes": 826,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-02-scratch-unsuppressed.json",
+      "sha256": "18ca58439aafafd2751aaaa8df7e691526093a451fa62a5ec83a39061c65d4a4",
+      "bytes": 5582,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-02-virtual-stdin-unsuppressed.json",
+      "sha256": "dba5bf9c3d022283755011dc5433ab90a2920876c29fe0ac5a27304c4f57f673",
+      "bytes": 22737,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-03-scratch-suppressed.json",
+      "sha256": "186de30bf93579063a7d74fcac12b58d65c05ae66b1a32d062fba81b77a1b5f4",
+      "bytes": 816,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-03-scratch-unsuppressed.json",
+      "sha256": "5a77a1b89f5cd6f18d30eb767aaec09a3b562c505b43227eb4506cd844f87cb2",
+      "bytes": 5481,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-03-virtual-stdin-unsuppressed.json",
+      "sha256": "dd496fc24d3502f339acd11dd2532c72a1a537015f15497ec64561a33d6dc7dc",
+      "bytes": 23370,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-04-scratch-suppressed.json",
+      "sha256": "72b1833337707c627892c5bf22b354dd682dbb5453e3070fab32ea14ec75f2d0",
+      "bytes": 816,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-04-scratch-unsuppressed.json",
+      "sha256": "609464ff08d26d6f65a1fbd7fa3e5be7cf05a0064ed884caa857dfcc00b7a0e6",
+      "bytes": 7086,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-04-virtual-stdin-unsuppressed.json",
+      "sha256": "acaf78fdbaf22ade17a3a30b648c2abdabe2f46f52165d2b16a201234d58215d",
+      "bytes": 16049,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-05-scratch-suppressed.json",
+      "sha256": "38f91670e02d0cf41abec685793f19696e81bce0d308b56c7789441d07cccbf1",
+      "bytes": 810,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-05-scratch-unsuppressed.json",
+      "sha256": "5ed8842a24b61933b3b0d7e1826630d80f8c19aac05ac49b854641a1ec164b7a",
+      "bytes": 2223,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-05-virtual-stdin-unsuppressed.json",
+      "sha256": "add54cf75532ae7ca2b16955af6ad87b09a6db940fd982d975d9c26f928a5368",
+      "bytes": 15174,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-06-scratch-suppressed.json",
+      "sha256": "2ef1e2b4cbed10131958c3af10fe7b69b5396ab4132fe4fc9a7ad056178d12a3",
+      "bytes": 775,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-06-scratch-unsuppressed.json",
+      "sha256": "8379e8069d27c706a71bb0da93a706eb0ecd3e6efae3a8d62500d25bfe1d4fb5",
+      "bytes": 1521,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-06-virtual-stdin-unsuppressed.json",
+      "sha256": "9dbb84c022a1a178b6192f6a122693bcdf3214353f1cd832749b393c800ac5b2",
+      "bytes": 2897,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-07-scratch-suppressed.json",
+      "sha256": "57bd8b30ad8fbd5b13e7e9ee18f9c6b9f5216c3eb08661e07d90b3cbf9fdc9be",
+      "bytes": 770,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-07-scratch-unsuppressed.json",
+      "sha256": "ce3a04ccec20869678d73f82fd930c6bc1e6c12eeea7eb6329e4b9ca6feac4c6",
+      "bytes": 1512,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-07-virtual-stdin-unsuppressed.json",
+      "sha256": "2356ba6f044a552aa2c989dfb53f51df8ac68307c8ed4adabeb83562ad0bdc84",
+      "bytes": 2986,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-08-scratch-suppressed.json",
+      "sha256": "9cf7ec3e2cf0da8c946957522a8b3544d8487a5a39d8cc5f1a319fe0b82dbdb7",
+      "bytes": 767,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-08-scratch-unsuppressed.json",
+      "sha256": "c50593fe674ee8cf88e9257e63dda81b75faef27e71e36d7a9e3fbc74a076de0",
+      "bytes": 1503,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-08-virtual-stdin-unsuppressed.json",
+      "sha256": "7cc3f4b0d9d06f2e6df5b4cae6888b9adcf2d46b7a7586061308fa61c1d3d395",
+      "bytes": 2738,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-09-scratch-suppressed.json",
+      "sha256": "20591d25c9f7a94076d3672546ff4f1e2a4313314c8f7a566f5643dc316c07c3",
+      "bytes": 812,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-09-scratch-unsuppressed.json",
+      "sha256": "631af454098370972b123bd89c50706b44b4f4532128fd9028fdb0e1eff70dad",
+      "bytes": 1695,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-09-virtual-stdin-unsuppressed.json",
+      "sha256": "1a35d04c8418e230f82689f3c976b6d8f45d4c5a8ebdcdb1ff2102c437e5768e",
+      "bytes": 13451,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-10-scratch-suppressed.json",
+      "sha256": "a880ed6bb1defa945c010949e4f84d8c9761d00727aa5c5aef367933a7833149",
+      "bytes": 807,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-10-scratch-unsuppressed.json",
+      "sha256": "361e13b8ad15b19d9577748dfbc0a650829b32502e70a6ccb4bb36e3d1900fc9",
+      "bytes": 1685,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-10-virtual-stdin-unsuppressed.json",
+      "sha256": "6cf052772c302431d1875978bad96a355af23f8b0e77dd82ad4a4f2bb6833c26",
+      "bytes": 8907,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-11-scratch-suppressed.json",
+      "sha256": "35ab0c5282dc8474aa3b2f8eee83be3111c885e0a482c43ad818f3207095146e",
+      "bytes": 806,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-11-scratch-unsuppressed.json",
+      "sha256": "de2c051d6bc23e85bb9c086b34edc1d75dfd4d8a7d09b560b4d7d642e5afb273",
+      "bytes": 1681,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-11-virtual-stdin-unsuppressed.json",
+      "sha256": "551ee485613ef7b035d55bfb0b8ad5c577219df452b9ebe10d4e769196c43f21",
+      "bytes": 7880,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-12-scratch-suppressed.json",
+      "sha256": "0d61d8bf2aa191121083c58915ece749d896ba8fc765d7f0cdfbac1283da840c",
+      "bytes": 804,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-12-scratch-unsuppressed.json",
+      "sha256": "8335586476afb5599ac4ed4370dc519790885c7e576263997a6778f6c4165f41",
+      "bytes": 7475,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-12-virtual-stdin-unsuppressed.json",
+      "sha256": "4f9552d83875ceddd6e4aab2845f71350fb810576a85a8cf11d5c51e4e0b1c81",
+      "bytes": 16811,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-13-scratch-suppressed.json",
+      "sha256": "c5ffc48070beeff3cae6d93b153ddd0ac751673c56263e2967073b986d60f670",
+      "bytes": 793,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-13-scratch-unsuppressed.json",
+      "sha256": "8d4b330d419fdf0722a2e1ccfd1ec987479f3745952f27afee4e32c7e2bee674",
+      "bytes": 8343,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-13-virtual-stdin-unsuppressed.json",
+      "sha256": "2551fe7f99b99c2d979adbd3489b42ec0263fd04f37fa49de714ab4f5d67813a",
+      "bytes": 22385,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-14-scratch-suppressed.json",
+      "sha256": "b0f8a530cb6dd3ac76449862a5cf4fdd1d34d987550758db08349e6fc70c466f",
+      "bytes": 795,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-14-scratch-unsuppressed.json",
+      "sha256": "c129fe5fc9aae98018ebf0577ecaae41ac6f225e131c2b39fe42405db5dc7358",
+      "bytes": 8904,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-14-virtual-stdin-unsuppressed.json",
+      "sha256": "99992e53a7cd2b2c96b41f16a17c0427b7cd32f7a76ef13662e1433e04da20c2",
+      "bytes": 18509,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-15-scratch-suppressed.json",
+      "sha256": "14e40e3fa1f3b1874b211630e143e39bd89722167c4691c2949ca89dd39c838d",
+      "bytes": 795,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-15-scratch-unsuppressed.json",
+      "sha256": "40848c63122950357e9bec54458f80b22a16c73ccdb32891e548e6d283ea3afc",
+      "bytes": 10961,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-15-virtual-stdin-unsuppressed.json",
+      "sha256": "15587ad52606bd0dfcc5d3f26d1f9af0a4ce6ab1a3dcdba682ea4330ded81889",
+      "bytes": 22365,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-16-scratch-suppressed.json",
+      "sha256": "7a4af73222450f6a6eaadb40efb5f7ca1c35f7dc2dbc871e2249dd2a34b5e909",
+      "bytes": 806,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-16-scratch-unsuppressed.json",
+      "sha256": "9dc71f093696819b8b2bffb23485b24bebd1b23ff1b732e396be90da161454ee",
+      "bytes": 6439,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-16-virtual-stdin-unsuppressed.json",
+      "sha256": "0f8bd4a0e809ad2c5b2ca40c5c0b0145bf32d8e2d1d3b5361f4a9b094facafd1",
+      "bytes": 14561,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-17-scratch-suppressed.json",
+      "sha256": "9a1174d7e2dc8e35f39304984ef670cc8c6aa24bdc2355bfef86a8c44bf6737c",
+      "bytes": 797,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-17-scratch-unsuppressed.json",
+      "sha256": "cc34d0e5c6b44485e6262c1a40431f89218aff6dfbfb1e338420c57f84654eeb",
+      "bytes": 4263,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-17-virtual-stdin-unsuppressed.json",
+      "sha256": "6e340db7bd537ed56a85b618fa3781329aeea7e9e387329bcb5a28d5fb788362",
+      "bytes": 12887,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-18-scratch-suppressed.json",
+      "sha256": "43ab37c435276eea48c6bce0d1e55c524c2fc08fbfc22f6977333421b5299e71",
+      "bytes": 793,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-18-scratch-unsuppressed.json",
+      "sha256": "857ecff2e3ea4cbce2a65194a2d6e15b7780a615717c170636cf5be97c60dd49",
+      "bytes": 7308,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-18-virtual-stdin-unsuppressed.json",
+      "sha256": "ac6029275fa609cd586e65cc1d71478f4febf061728717424153199dd54a46bf",
+      "bytes": 27166,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-19-scratch-suppressed.json",
+      "sha256": "27f5349e15b3b863b3f69d2d2e5649b7e070a90cc85e0a366c433369fe9018fd",
+      "bytes": 780,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-19-scratch-unsuppressed.json",
+      "sha256": "461a100ee7bd9a86cd7b96503735a0bdf389571e21253af30a0c939b3a46e94d",
+      "bytes": 9154,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-19-virtual-stdin-unsuppressed.json",
+      "sha256": "90a53de78b4eedab8b043e595479c8b23e82861b1e5d746257483ee11640cb7b",
+      "bytes": 26213,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-typescript-providers-bridge-ai-sdk-suppressed.json",
+      "sha256": "e0b638972253f76173a7c260d19e961e896b8823e4caad7ba8e95f9a463e7fb6",
+      "bytes": 607,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-typescript-providers-certification-suppressed.json",
+      "sha256": "3dd6df00e35343e0a4940b6be6173a475249b954bd96044791953921812db3b1",
+      "bytes": 604,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-typescript-providers-provider-api-suppressed.json",
+      "sha256": "a1153e6e447bad58931aea50db2ebc5590056ad001665c65ef4700c068610a6b",
+      "bytes": 605,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-typescript-providers-testkit-suppressed.json",
+      "sha256": "095377b2a33eb63b2baca46ef9eaf30be4f1fd594e6141463cd9747e600266d5",
+      "bytes": 601,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/biome-typescript-runners-react-suppressed.json",
+      "sha256": "8cae4d622d1c17c418fb0a3d212223353a1dcefe199e03df23bb4d25914e1bcd",
+      "bytes": 597,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/changeset-direct-proof.json",
+      "sha256": "8ff3d01a2a96c4ea2e254544ba025cb45c72c9df0aca91303c4048b1a6732b21",
+      "bytes": 398,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/inventory.json",
+      "sha256": "22638e7874d0bd73e5ca3f67ab84a17aa7f77d5c74776726e066b1db74e09441",
+      "bytes": 20990,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/native-summary.json",
+      "sha256": "4a8e9811f8daee99d0bbde1275e9adf9cc63c8f11612e2dab64c7c232e4a3de3",
+      "bytes": 7285,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-effective-config.json",
+      "sha256": "718876738cbf58c9f7b57de0a1f79ee3d8a20a5e272cfd4f74735783778a5e5b",
+      "bytes": 28581,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-rules.json",
+      "sha256": "0c2358fd6865f70a5091fec32f8e2697902424dd4d9ff37a9d3d516adfec0f5c",
+      "bytes": 258531,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-providers-bridge-ai-sdk-selection.json",
+      "sha256": "d58f84d2ff504090f892043c96d622ef99d6c3ec25eb78cb7b605a28ae538bcc",
+      "bytes": 1579,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-providers-bridge-ai-sdk-syntactic.json",
+      "sha256": "2267728fdc6f79b5a0624ade6646e2b873830f96b90fe70e7a0c7c3eb2ec3e1d",
+      "bytes": 184366,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-providers-bridge-ai-sdk-type-aware.json",
+      "sha256": "9f97373844618cdbad344f2c44a36067efc8f7de5ba8dc8b7fe2eabf2946a9ca",
+      "bytes": 247408,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-providers-certification-selection.json",
+      "sha256": "b14a90b4bfbdfc74318be729c0fb28413382b9215c20e17ab1ac05c208124088",
+      "bytes": 280,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-providers-certification-syntactic.json",
+      "sha256": "e362984ba9a39934cca77694e7f08f4c66c163582624a1d3f65969e0cda811d7",
+      "bytes": 14618,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-providers-certification-type-aware.json",
+      "sha256": "71ddb917a08eb828e055580a1dac87ee7c5fe7bee292e47624d922f22083b5dc",
+      "bytes": 15285,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-providers-provider-api-selection.json",
+      "sha256": "9e0d99fd4d2c47ff6a652dc9b967c9a97a1d2eb252e83da844f86a1a84e005f5",
+      "bytes": 416,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-providers-provider-api-syntactic.json",
+      "sha256": "1aae4e5a1b50c3ab759c51245c9254595ee1d9ca19bcfb773beb786d5362e516",
+      "bytes": 16715,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-providers-provider-api-type-aware.json",
+      "sha256": "7972af445cc73fc3ad28fc27dc1b2203580940318eaa6c83487c3ec8c1c12dd0",
+      "bytes": 29640,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-providers-testkit-selection.json",
+      "sha256": "03ad36dfddb98a8e984156a57cdcd25f76a050753ad88e6850658769273d9068",
+      "bytes": 760,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-providers-testkit-syntactic.json",
+      "sha256": "b2505bccd91cd086601d91023b326266dbf634bbd6c3232cd3cd128436cda068",
+      "bytes": 59208,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-providers-testkit-type-aware.json",
+      "sha256": "a89f1bfb30392b2841212e9dde1ff3ff37a9ad81b858baa0866aedf9b8500fdc",
+      "bytes": 66774,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-runners-react-selection.json",
+      "sha256": "16f9de752493bac330c29c476a94abf5e347b5e03ca920a940845422c1b94e7f",
+      "bytes": 1459,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-runners-react-syntactic.json",
+      "sha256": "7a7a99c1bd3ed4c7ebb2d09d408ac3f44d026cc6c6f507692b275bc2df680722",
+      "bytes": 272539,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/oxlint-typescript-runners-react-type-aware.json",
+      "sha256": "4a62069a3b2b473a236cb4d7e09e38d41dd602ff9343de9e46e6f43bd05750c7",
+      "bytes": 310181,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/source-config-digests.json",
+      "sha256": "6bd3905e3288f848074e93b1906604867f521f4789116d3b7c6f1f424ffb68fe",
+      "bytes": 3903,
+      "role": "measurement"
+    },
+    {
+      "path": "raw/verify-provider-api-test.json",
+      "sha256": "d1d04aac11080b30b2a6bcc82f64f1b2b8e98dfd3011897734ea5a4aa027249e",
+      "bytes": 728,
+      "role": "verification"
+    },
+    {
+      "path": "raw/verify-provider-api-typecheck.json",
+      "sha256": "e405ac2d7f399f04bdcb044520d14b2ddd6a6643f0b7851bcb3fee33608213c6",
+      "bytes": 553,
+      "role": "verification"
+    },
+    {
+      "path": "raw/verify-providers-bridge-ai-sdk-test.json",
+      "sha256": "9948f624e3ec2d26334a0a117d3260ff94b1ecc8467128076b73252dfacb27f4",
+      "bytes": 749,
+      "role": "verification"
+    },
+    {
+      "path": "raw/verify-providers-bridge-ai-sdk-typecheck.json",
+      "sha256": "7c56f78fabdca088cbf3bfef359b58d15fa6a9be69261784e3fd9df49215fab8",
+      "bytes": 598,
+      "role": "verification"
+    },
+    {
+      "path": "raw/verify-providers-testkit-test.json",
+      "sha256": "f325bcf7b423acde6b0c7c7f028bc5edcbeb77a37062d12b73ee5014eb5531d0",
+      "bytes": 785,
+      "role": "verification"
+    },
+    {
+      "path": "raw/verify-providers-testkit-typecheck.json",
+      "sha256": "4a1eaac3355f340c46561ac93eafddffa51b1061b517af77a373b82ac8984da6",
+      "bytes": 568,
+      "role": "verification"
+    },
+    {
+      "path": "raw/verify-providers-typescript-certification-test.json",
+      "sha256": "9dad63cd8516ee7d548e1dc220701771c66e2fc2bcc88fe3fe692a1f469bd7b4",
+      "bytes": 842,
+      "role": "verification"
+    },
+    {
+      "path": "raw/verify-providers-typescript-certification-typecheck.json",
+      "sha256": "fd5bf37970df7c449c7da6496115d2e6929dd4d2586f4cc3bc3a44049f54596e",
+      "bytes": 642,
+      "role": "verification"
+    },
+    {
+      "path": "raw/verify-runner-react-test.json",
+      "sha256": "6fa5146f385bd781e72d3faea26e0349a4caa3bf8f174f5d3b4276666a5aa9ac",
+      "bytes": 737,
+      "role": "verification"
+    },
+    {
+      "path": "raw/verify-runner-react-typecheck.json",
+      "sha256": "f580874d0b96dee28c3a7c72699265836c1802efea2a8e17e7e0b8463bb5a958",
+      "bytes": 544,
+      "role": "verification"
+    },
+    {
+      "path": "raw/verify-workspace-lint.json",
+      "sha256": "3fe7ca3b45da09d1eeb066c75231831009ad31eecb456e95a371fb40e086e15c",
+      "bytes": 7108,
+      "role": "verification"
+    },
+    {
+      "path": "raw/verify-workspace-typecheck.json",
+      "sha256": "e7e2f6aa9034aacb856be76591259a00dc8513a58f2f38bb190f08366f00ee98",
+      "bytes": 7004,
+      "role": "verification"
+    },
+    {
+      "path": "raw/versions.json",
+      "sha256": "adff4691cbfb07d88bd22cfcd382f2be4080099440497c5eceabb4ba09bb877f",
+      "bytes": 581,
+      "role": "measurement"
+    }
+  ]
+}
