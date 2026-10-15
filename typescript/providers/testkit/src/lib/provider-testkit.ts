@@ -97,9 +97,9 @@ export const providerTestkitFixtures: ProviderTestkitFixtureSet =
  *
  * @throws Error (from the assertion helper) when the response is malformed.
  */
-export async function verifyProviderGenerate(
+export const verifyProviderGenerate = async (
   verification: ProviderGenerateVerification
-): Promise<TuvrenModelResponse> {
+): Promise<TuvrenModelResponse> => {
   const response = await verification.provider.generate(verification.prompt);
   assertTuvrenModelResponse(
     response,
@@ -107,22 +107,86 @@ export async function verifyProviderGenerate(
   );
   await verification.check?.(response);
   return response;
-}
+};
+
+/** Structurally clones and re-validates a `ProviderStreamChunk` so callers cannot mutate the shared canned value. */
+const cloneProviderStreamChunk = (
+  chunk: ProviderStreamChunk
+): ProviderStreamChunk => {
+  const cloned = structuredClone(chunk);
+  assertProviderStreamChunk(cloned, "cloned provider stream chunk");
+  return cloned;
+};
+
+/**
+ * Drains an async chunk stream into an array, asserting each chunk is a
+ * well-formed `ProviderStreamChunk` (§3.2) as it arrives and defensively
+ * cloning it.
+ *
+ * @throws Error (from the assertion helper) when a chunk is malformed.
+ */
+export const collectProviderStream = async (
+  stream: AsyncIterable<ProviderStreamChunk>,
+  label = "provider stream"
+): Promise<ProviderStreamChunk[]> => {
+  const chunks: ProviderStreamChunk[] = [];
+  let index = 0;
+
+  for await (const chunk of stream) {
+    assertProviderStreamChunk(chunk, `${label} chunk ${index}`);
+    chunks.push(cloneProviderStreamChunk(chunk));
+    index += 1;
+  }
+
+  return chunks;
+};
 
 /**
  * Calls `provider.stream(prompt)`, collects and validates every chunk via
  * {@link collectProviderStream}, then runs the optional `check` callback.
  */
-export async function verifyProviderStream(
+export const verifyProviderStream = async (
   verification: ProviderStreamVerification
-): Promise<ProviderStreamChunk[]> {
+): Promise<ProviderStreamChunk[]> => {
   const chunks = await collectProviderStream(
     verification.provider.stream(verification.prompt),
     verification.label ?? verification.provider.id
   );
   await verification.check?.(chunks);
   return chunks;
-}
+};
+
+/**
+ * Asserts a message includes a substring (string `expectedMessage`) or
+ * matches a pattern (`RegExp`).
+ *
+ * @throws Error when the message does not satisfy `expectedMessage`.
+ */
+const assertMessageMatches = (
+  actualMessage: string,
+  expectedMessage: RegExp | string,
+  label: string
+): void => {
+  if (typeof expectedMessage === "string") {
+    if (!actualMessage.includes(expectedMessage)) {
+      throw new Error(
+        `${label} error message ${JSON.stringify(
+          actualMessage
+        )} did not include ${JSON.stringify(expectedMessage)}`
+      );
+    }
+
+    return;
+  }
+
+  if (!expectedMessage.test(actualMessage)) {
+    throw new Error(
+      `${label} error message ${JSON.stringify(
+        actualMessage
+      )} did not match ${String(expectedMessage)}`
+    );
+  }
+};
 
 /**
  * Runs `verification.run()` and asserts it rejects, optionally checking the
@@ -131,9 +195,9 @@ export async function verifyProviderStream(
  * @throws Error when `run()` resolves instead of rejecting, or when the
  *   rejection message does not match `expectedMessage`.
  */
-export async function verifyProviderRejects(
+export const verifyProviderRejects = async (
   verification: ProviderRejectionVerification
-): Promise<Error> {
+): Promise<Error> => {
   try {
     await verification.run();
   } catch (error: unknown) {
@@ -152,30 +216,19 @@ export async function verifyProviderRejects(
   }
 
   throw new Error(`${verification.label ?? "provider operation"} did not fail`);
-}
+};
 
-/**
- * Drains an async chunk stream into an array, asserting each chunk is a
- * well-formed `ProviderStreamChunk` (§3.2) as it arrives and defensively
- * cloning it.
- *
- * @throws Error (from the assertion helper) when a chunk is malformed.
- */
-export async function collectProviderStream(
-  stream: AsyncIterable<ProviderStreamChunk>,
-  label = "provider stream"
-): Promise<ProviderStreamChunk[]> {
-  const chunks: ProviderStreamChunk[] = [];
-  let index = 0;
-
-  for await (const chunk of stream) {
-    assertProviderStreamChunk(chunk, `${label} chunk ${index}`);
-    chunks.push(cloneProviderStreamChunk(chunk));
-    index += 1;
+/** True when two string arrays have the same length and elements in the same order. */
+const arraysAreEqual = (
+  left: readonly string[],
+  right: readonly string[]
+): boolean => {
+  if (left.length !== right.length) {
+    return false;
   }
 
-  return chunks;
-}
+  return left.every((value, index) => value === right[index]);
+};
 
 /**
  * Asserts a chunk list's `type` sequence exactly matches `expectedTypes`, in
@@ -183,11 +236,11 @@ export async function collectProviderStream(
  *
  * @throws Error when the sequences differ.
  */
-export function assertProviderChunkTypes(
+export const assertProviderChunkTypes = (
   chunks: readonly ProviderStreamChunk[],
   expectedTypes: readonly ProviderStreamChunk["type"][],
   label = "provider stream"
-): void {
+): void => {
   const actualTypes = chunks.map((chunk) => chunk.type);
 
   if (!arraysAreEqual(actualTypes, expectedTypes)) {
@@ -197,7 +250,7 @@ export function assertProviderChunkTypes(
       )}; expected ${JSON.stringify(expectedTypes)}`
     );
   }
-}
+};
 
 /**
  * Finds the stream's `finish` chunk and asserts its `finishReason` matches
@@ -205,11 +258,11 @@ export function assertProviderChunkTypes(
  *
  * @throws Error when no `finish` chunk was emitted, or its reason differs.
  */
-export function assertProviderFinishChunk(
+export const assertProviderFinishChunk = (
   chunks: readonly ProviderStreamChunk[],
   expected: Extract<ProviderStreamChunk, { type: "finish" }>["finishReason"],
   label = "provider stream"
-): Extract<ProviderStreamChunk, { type: "finish" }> {
+): Extract<ProviderStreamChunk, { type: "finish" }> => {
   const finishChunk = chunks.find(
     (chunk): chunk is Extract<ProviderStreamChunk, { type: "finish" }> =>
       chunk.type === "finish"
@@ -226,7 +279,7 @@ export function assertProviderFinishChunk(
   }
 
   return finishChunk;
-}
+};
 
 /**
  * Finds the stream's `structured_done` chunk and asserts its `name` matches
@@ -234,11 +287,11 @@ export function assertProviderFinishChunk(
  *
  * @throws Error when no `structured_done` chunk was emitted, or its name differs.
  */
-export function assertProviderStructuredDoneChunk(
+export const assertProviderStructuredDoneChunk = (
   chunks: readonly ProviderStreamChunk[],
   expectedName: string,
   label = "provider stream"
-): Extract<ProviderStreamChunk, { type: "structured_done" }> {
+): Extract<ProviderStreamChunk, { type: "structured_done" }> => {
   const structuredDoneChunk = chunks.find(
     (
       chunk
@@ -259,7 +312,43 @@ export function assertProviderStructuredDoneChunk(
   }
 
   return structuredDoneChunk;
-}
+};
+
+/** Builds a one-shot async iterable that replays cloned `streamChunks`, or rejects `streamError` immediately if set. */
+const createStaticProviderStream = (
+  streamChunks: readonly ProviderStreamChunk[],
+  streamError: Error | undefined
+): AsyncIterable<ProviderStreamChunk> => ({
+  [Symbol.asyncIterator]() {
+    let nextIndex = 0;
+
+    return {
+      next() {
+        if (streamError !== undefined) {
+          return Promise.reject(streamError);
+        }
+
+        if (nextIndex >= streamChunks.length) {
+          return Promise.resolve({ done: true, value: undefined });
+        }
+
+        const value = cloneProviderStreamChunk(streamChunks[nextIndex]);
+        nextIndex += 1;
+
+        return Promise.resolve({ done: false, value });
+      },
+    };
+  },
+});
+
+/** Structurally clones and re-validates a `TuvrenModelResponse` so callers cannot mutate the shared fixture/canned value. */
+const cloneModelResponse = (
+  response: TuvrenModelResponse
+): TuvrenModelResponse => {
+  const cloned = structuredClone(response);
+  assertTuvrenModelResponse(cloned, "cloned provider response");
+  return cloned;
+};
 
 /**
  * Builds a minimal in-memory `TuvrenProvider` for tests: `generate()`
@@ -267,9 +356,9 @@ export function assertProviderStructuredDoneChunk(
  * `stream()` replays a cloned canned chunk sequence (or rejects
  * `streamError` on its first pull).
  */
-export function createStaticTuvrenProvider(
+export const createStaticTuvrenProvider = (
   options: StaticProviderOptions = {}
-): TuvrenProvider {
+): TuvrenProvider => {
   const response = options.response ?? providerTestkitFixtures.response;
   const streamChunks = options.streamChunks ?? [
     { text: "ready", type: "text_delta" },
@@ -296,95 +385,4 @@ export function createStaticTuvrenProvider(
       return createStaticProviderStream(streamChunks, options.streamError);
     },
   };
-}
-
-/** Builds a one-shot async iterable that replays cloned `streamChunks`, or rejects `streamError` immediately if set. */
-function createStaticProviderStream(
-  streamChunks: readonly ProviderStreamChunk[],
-  streamError: Error | undefined
-): AsyncIterable<ProviderStreamChunk> {
-  return {
-    [Symbol.asyncIterator]() {
-      let nextIndex = 0;
-
-      return {
-        next() {
-          if (streamError !== undefined) {
-            return Promise.reject(streamError);
-          }
-
-          if (nextIndex >= streamChunks.length) {
-            return Promise.resolve({ done: true, value: undefined });
-          }
-
-          const value = cloneProviderStreamChunk(streamChunks[nextIndex]);
-          nextIndex += 1;
-
-          return Promise.resolve({ done: false, value });
-        },
-      };
-    },
-  };
-}
-
-/**
- * Asserts a message includes a substring (string `expectedMessage`) or
- * matches a pattern (`RegExp`).
- *
- * @throws Error when the message does not satisfy `expectedMessage`.
- */
-function assertMessageMatches(
-  actualMessage: string,
-  expectedMessage: RegExp | string,
-  label: string
-): void {
-  if (typeof expectedMessage === "string") {
-    if (!actualMessage.includes(expectedMessage)) {
-      throw new Error(
-        `${label} error message ${JSON.stringify(
-          actualMessage
-        )} did not include ${JSON.stringify(expectedMessage)}`
-      );
-    }
-
-    return;
-  }
-
-  if (!expectedMessage.test(actualMessage)) {
-    throw new Error(
-      `${label} error message ${JSON.stringify(
-        actualMessage
-      )} did not match ${String(expectedMessage)}`
-    );
-  }
-}
-
-/** True when two string arrays have the same length and elements in the same order. */
-function arraysAreEqual(
-  left: readonly string[],
-  right: readonly string[]
-): boolean {
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  return left.every((value, index) => value === right[index]);
-}
-
-/** Structurally clones and re-validates a `TuvrenModelResponse` so callers cannot mutate the shared fixture/canned value. */
-function cloneModelResponse(
-  response: TuvrenModelResponse
-): TuvrenModelResponse {
-  const cloned = structuredClone(response);
-  assertTuvrenModelResponse(cloned, "cloned provider response");
-  return cloned;
-}
-
-/** Structurally clones and re-validates a `ProviderStreamChunk` so callers cannot mutate the shared canned value. */
-function cloneProviderStreamChunk(
-  chunk: ProviderStreamChunk
-): ProviderStreamChunk {
-  const cloned = structuredClone(chunk);
-  assertProviderStreamChunk(cloned, "cloned provider stream chunk");
-  return cloned;
-}
+};
