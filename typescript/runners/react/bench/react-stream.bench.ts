@@ -160,7 +160,7 @@ function createRuntimePort(): RunnerRuntimePort {
 
 function createStreamingProvider(chunkCount: number): TuvrenProvider {
   return {
-    async generate() {
+    generate() {
       return Promise.reject(
         new Error("generate should not be called by stream benchmark")
       );
@@ -213,7 +213,7 @@ function createGenerateProvider(): TuvrenProvider {
   };
 
   return {
-    async generate() {
+    generate() {
       return Promise.resolve(response);
     },
     id: "bench-provider",
