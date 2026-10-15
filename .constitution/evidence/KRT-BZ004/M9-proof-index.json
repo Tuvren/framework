@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BZ003",
+  "milestone": "M9",
+  "baseline_commit": "c3e1fd538aa838d7eccb62757fb976d285fa177b",
+  "cohort": [
+    "typescript/providers/testkit"
+  ],
+  "changed_files": [
+    "typescript/providers/testkit/src/lib/mock-mcp-server.ts",
+    "typescript/providers/testkit/src/lib/provider-conformance-fixtures.ts",
+    "typescript/providers/testkit/src/lib/provider-testkit.ts",
+    "typescript/providers/testkit/test/mock-mcp-server.test.ts"
+  ],
+  "diff": {
+    "files": 4,
+    "added": 452,
+    "removed": 450
+  },
+  "diagnostics": {
+    "before": {
+      "total": 128,
+      "func_style": 37,
+      "no_use_before_define": 41,
+      "unrelated": 50
+    },
+    "after": {
+      "total": 50,
+      "func_style": 0,
+      "no_use_before_define": 0,
+      "unrelated": 50
+    },
+    "expected_oxlint_exit": 1
+  },
+  "structural_proof": {
+    "converted_functions": 37,
+    "exported_converted_functions": 13,
+    "bodies_parameters_defaults_returns_exports_and_async_equal": true,
+    "single_return_block_to_concise_arrow_normalizations": 5
+  },
+  "initialization_proof": {
+    "fresh_process_imports": 2,
+    "exports_fixture_prompt_and_provider_response_equal": true,
+    "exported_bindings": 14
+  },
+  "verification_exit_codes": {
+    "providers_testkit_typecheck_before": 0,
+    "providers_testkit_test_before": 0,
+    "fresh_process_before": 0,
+    "ordering_rule_proof_after": 0,
+    "oxfmt_check_after": 0,
+    "structural_proof_after": 0,
+    "fresh_process_after": 0,
+    "fresh_process_comparison": 0,
+    "providers_testkit_typecheck_after": 0,
+    "providers_testkit_test_after": 0,
+    "workspace_typecheck_after": 0,
+    "workspace_conformance_after": 0,
+    "providers_testkit_conformance_after": 0,
+    "providers_certification_conformance_after": 0,
+    "changeset_check_after": 0,
+    "diff_check_after": 0
+  },
+  "source_hashes": {
+    "typescript/providers/testkit/src/lib/provider-testkit.ts": {
+      "before": "e602d2cd27b1f64c2943533b877f240ae035d5c934d85c49b7ade754280cd64d",
+      "after": "f86e76a0e2c76e9f235dc230ce3d3bcff361c8d01e9a9322c18038253546e687"
+    },
+    "typescript/providers/testkit/src/lib/provider-conformance-fixtures.ts": {
+      "before": "eecf0e14ecc98d50bdad90567a492230301b9bb4e76baaa63ab8366771dfa0c8",
+      "after": "56ad13383517679f917a46ea00f8ccdceb66842edcd93b52ce9946ffca4637c1"
+    },
+    "typescript/providers/testkit/src/lib/mock-mcp-server.ts": {
+      "before": "20514cf2785113f219b323cb70ebb2b87580cfaba999561e3f6e918ba114ff33",
+      "after": "3943c175e4ec7d568fd3a5bfe87fcd56254e5329433ab10946d0fbca5280ec58"
+    },
+    "typescript/providers/testkit/test/mock-mcp-server.test.ts": {
+      "before": "242e2b436509b672b4cfb69d0a1709b951c1bf93773e8ef945e769097e508f77",
+      "after": "0f430e70562a79086f90b9c03374506d513bc0dea139b9a6b8e4e660f2fb31e9"
+    }
+  },
+  "introduced": {
+    "dependencies": [],
+    "patterns": [],
+    "conventions": [],
+    "contract_shapes": []
+  },
+  "changeset": ".changeset/toolchain-bz-provider-runner-lint.md",
+  "changeset_note": "The scoped package is private; the existing BZ changeset directly covers all affected public packages.",
+  "checksum_manifest": "proof-sha256.txt"
+}
