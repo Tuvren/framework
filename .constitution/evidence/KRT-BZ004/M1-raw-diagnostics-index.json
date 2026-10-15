@@ -1,0 +1,44 @@
+{
+  "milestone": "M1",
+  "ticket": "KRT-BZ001",
+  "producedAtCommit": "ab19b25ff522919a2510100d19a2e62d99f90f77",
+  "command": "bunx --bun oxlint --type-aware --format=json <project-root>",
+  "captures": [
+    {
+      "archivePath": "epic-bz-m1-provider-api-before.json",
+      "project": "provider-api",
+      "phase": "before",
+      "diagnostics": 39,
+      "rules": 419,
+      "bytes": 20229,
+      "sha256": "e2e3fe7c1161e7a103c31353057e392b01b2ef1b67bd89cd556a3eb8f131f732"
+    },
+    {
+      "archivePath": "epic-bz-m1-provider-api-after.json",
+      "project": "provider-api",
+      "phase": "after",
+      "diagnostics": 29,
+      "rules": 419,
+      "bytes": 15131,
+      "sha256": "ce8bca46793c73541f8ce14dd1f39ed1bad443d7f0640ce7c9693ecfb434acdb"
+    },
+    {
+      "archivePath": "epic-bz-m1-certification-before.json",
+      "project": "providers-typescript-certification",
+      "phase": "before",
+      "diagnostics": 27,
+      "rules": 419,
+      "bytes": 14586,
+      "sha256": "72d7da345449e2e4a72c7bc66859b04b3ecdef788c7b6086d91507b5e869f3ba"
+    },
+    {
+      "archivePath": "epic-bz-m1-certification-after.json",
+      "project": "providers-typescript-certification",
+      "phase": "after",
+      "diagnostics": 24,
+      "rules": 419,
+      "bytes": 13233,
+      "sha256": "3e05f0904b9914b2bbfc0ec85f98df7df9a6ecd9fe592df5a4c9698900c1536e"
+    }
+  ]
+}
