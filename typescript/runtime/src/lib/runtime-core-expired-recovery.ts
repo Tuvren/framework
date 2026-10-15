@@ -217,16 +217,22 @@ export async function recoverExpiredExecutionBranchIfNeeded(
           turnId: expiredRun.turnId,
         })
       : undefined;
+  const estimatedIterationCount = await estimateRecoveredIterationCount(
+    kernel,
+    expiredRun.turnId,
+    recoveredHeadState
+  );
+  const iterationCount =
+    interruptedIterationPlan !== undefined &&
+    interruptedIterationPlan.disposition !== "re_infer"
+      ? Math.max(0, estimatedIterationCount - 1)
+      : estimatedIterationCount;
 
   return {
     activeAgentName: await host.readRecoveredActiveAgentName(
       recoveredHeadState.turnNode.turnTreeHash
     ),
-    iterationCount: await estimateRecoveredIterationCount(
-      kernel,
-      expiredRun.turnId,
-      recoveredHeadState
-    ),
+    iterationCount,
     ...(interruptedIterationPlan === undefined
       ? {}
       : { interruptedIterationPlan }),

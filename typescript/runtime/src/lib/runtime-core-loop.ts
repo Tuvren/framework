@@ -39,6 +39,7 @@ import type {
   ExecutedIterationResult,
   IterationPhaseResult,
 } from "./runtime-core-iteration.js";
+import type { InterruptedIterationRecoveryPlan } from "./runtime-core-recovery-plan.js";
 import {
   createCancelledLoopOutcome,
   isContextEngineeringPlan,
@@ -92,6 +93,8 @@ export interface LoopState {
   clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary;
   /** True once the turn has entered at least one loop iteration. */
   enteredIterationLoop: boolean;
+  /** One-shot durable batch plan consumed before the first recovered model call. */
+  interruptedIterationPlan?: InterruptedIterationRecoveryPlan;
   /** Cached rate limiter for the active agent's server execution class. (AX003) */
   serverExecutionRateLimiter?: import("./server-rate-limiter.js").ServerRateLimiter;
 }
