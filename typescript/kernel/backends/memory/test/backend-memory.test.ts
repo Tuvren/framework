@@ -21,15 +21,17 @@ import { TuvrenPersistenceError } from "@tuvren/core";
 import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
-  type RuntimeBackendTx as KrakenBackendTx,
-  type StoredBranch,
-  type StoredObserveAnnotation,
-  type StoredRun,
-  type StoredStagedResult,
-  type StoredThread,
-  type StoredTurn,
-  type StoredTurnTreePath,
-  type TurnTreeManifest,
+} from "@tuvren/kernel-protocol";
+import type {
+  RuntimeBackendTx as KrakenBackendTx,
+  StoredBranch,
+  StoredObserveAnnotation,
+  StoredRun,
+  StoredStagedResult,
+  StoredThread,
+  StoredTurn,
+  StoredTurnTreePath,
+  TurnTreeManifest,
 } from "@tuvren/kernel-protocol";
 import {
   createHashFromIndex,
@@ -116,7 +118,7 @@ describe("@tuvren/backend-memory", () => {
         throw new Error("expected stored object");
       }
 
-      expect(Array.from(secondRead.bytes)).toEqual([1, 2, 3]);
+      expect([...secondRead.bytes]).toEqual([1, 2, 3]);
     });
   });
 
@@ -130,8 +132,7 @@ describe("@tuvren/backend-memory", () => {
       order.push("first:end");
     });
     const secondTransaction = backend.transact(() => {
-      order.push("second:start");
-      order.push("second:end");
+      order.push("second:start", "second:end");
       return Promise.resolve();
     });
 
@@ -145,7 +146,7 @@ describe("@tuvren/backend-memory", () => {
 
     await expect(
       backend.transact(async () => {
-        await backend.transact(async () => undefined);
+        await backend.transact(() => Promise.resolve());
       })
     ).rejects.toThrow("must not be nested");
   });
@@ -226,7 +227,7 @@ describe("@tuvren/backend-memory", () => {
         messagesPath.orderedChunkListCbor
       );
       if (!Array.isArray(chunkHashes)) {
-        throw new Error("expected chunk hash list");
+        throw new TypeError("expected chunk hash list");
       }
 
       expect(chunkHashes).toHaveLength(2);
@@ -472,14 +473,14 @@ describe("@tuvren/backend-memory", () => {
       await tx.runs.set(stagedRun);
       await tx.runs.set({
         ...orderedRunB,
-        status: "running",
         currentStepIndex: 0,
+        status: "running",
       });
       await tx.runs.set(orderedRunB);
       await tx.runs.set({
         ...orderedRunA,
-        status: "running",
         currentStepIndex: 0,
+        status: "running",
       });
       await tx.runs.set(orderedRunA);
       await tx.objects.put(objectA);

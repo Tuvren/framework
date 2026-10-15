@@ -23,23 +23,23 @@
 import { describe, expect, test } from "bun:test";
 
 import { createMemoryBackend } from "@tuvren/backend-memory";
-import {
-  encodeDeterministicKernelRecord,
-  type RuntimeBackendTx as KrakenBackendTx,
-  type StoredBranch,
-  type StoredObject,
-  type StoredObserveAnnotation,
-  type StoredOrderedPathChunk,
-  type StoredRun,
-  type StoredSchema,
-  type StoredStagedResult,
-  type StoredThread,
-  type StoredTurn,
-  type StoredTurnNode,
-  type StoredTurnTree,
-  type StoredTurnTreePath,
-  type TurnTreeManifest,
-  type TurnTreeSchema,
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type {
+  RuntimeBackendTx as KrakenBackendTx,
+  StoredBranch,
+  StoredObject,
+  StoredObserveAnnotation,
+  StoredOrderedPathChunk,
+  StoredRun,
+  StoredSchema,
+  StoredStagedResult,
+  StoredThread,
+  StoredTurn,
+  StoredTurnNode,
+  StoredTurnTree,
+  StoredTurnTreePath,
+  TurnTreeManifest,
+  TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import {
   createHashFromIndex,
@@ -261,11 +261,11 @@ function expectByteFieldsUnmutated(
       ownKeys: Reflect.ownKeys(probe.buffer),
     }).toEqual({ label: probe.label, ownKeys: probe.ownKeys });
     expect({
-      label: probe.label,
       content: Array.from(probe.buffer),
-    }).toEqual({
       label: probe.label,
+    }).toEqual({
       content: Array.from(originals.get(probe.label) ?? probe.buffer),
+      label: probe.label,
     });
   }
 }
@@ -336,23 +336,21 @@ describe("@tuvren/backend-memory buffer ownership", () => {
       tx.schemas.get(records.schemaRecord.schemaId)
     );
 
-    expect(Array.from(stored?.stepSequenceCbor ?? [])).toEqual(
-      Array.from(originals.get("records.run.stepSequenceCbor") ?? [])
-    );
-    expect(Array.from(stored?.createdTurnNodesCbor ?? [])).toEqual(
-      Array.from(originals.get("records.run.createdTurnNodesCbor") ?? [])
-    );
-    expect(Array.from(storedNode?.consumedStagedResultsCbor ?? [])).toEqual(
-      Array.from(
-        originals.get("records.turnNode.consumedStagedResultsCbor") ?? []
-      )
-    );
-    expect(Array.from(storedTree?.manifestCbor ?? [])).toEqual(
-      Array.from(originals.get("records.turnTree.manifestCbor") ?? [])
-    );
-    expect(Array.from(storedSchema?.schemaCbor ?? [])).toEqual(
-      Array.from(originals.get("records.schemaRecord.schemaCbor") ?? [])
-    );
+    expect([...(stored?.stepSequenceCbor ?? [])]).toEqual([
+      ...(originals.get("records.run.stepSequenceCbor") ?? []),
+    ]);
+    expect([...(stored?.createdTurnNodesCbor ?? [])]).toEqual([
+      ...(originals.get("records.run.createdTurnNodesCbor") ?? []),
+    ]);
+    expect([...(storedNode?.consumedStagedResultsCbor ?? [])]).toEqual([
+      ...(originals.get("records.turnNode.consumedStagedResultsCbor") ?? []),
+    ]);
+    expect([...(storedTree?.manifestCbor ?? [])]).toEqual([
+      ...(originals.get("records.turnTree.manifestCbor") ?? []),
+    ]);
+    expect([...(storedSchema?.schemaCbor ?? [])]).toEqual([
+      ...(originals.get("records.schemaRecord.schemaCbor") ?? []),
+    ]);
   });
 
   test("keeps bytes returned by a read detached from stored state", async () => {
@@ -381,9 +379,9 @@ describe("@tuvren/backend-memory buffer ownership", () => {
       tx.runs.get(records.run.runId)
     );
 
-    expect(Array.from(second?.stepSequenceCbor ?? [])).toEqual(
-      Array.from(originals.get("records.run.stepSequenceCbor") ?? [])
-    );
+    expect([...(second?.stepSequenceCbor ?? [])]).toEqual([
+      ...(originals.get("records.run.stepSequenceCbor") ?? []),
+    ]);
     expect(second?.stepSequenceCbor).not.toBe(firstStepSequence);
     expectByteFieldsUnmutated(probes, originals);
   });
@@ -456,9 +454,9 @@ describe("@tuvren/backend-memory buffer ownership", () => {
 
     expect(stored?.status).toBe("running");
     expect(stored?.updatedAtMs).toBe(records.run.updatedAtMs);
-    expect(Array.from(stored?.stepSequenceCbor ?? [])).toEqual(
-      Array.from(originals.get("records.run.stepSequenceCbor") ?? [])
-    );
+    expect([...(stored?.stepSequenceCbor ?? [])]).toEqual([
+      ...(originals.get("records.run.stepSequenceCbor") ?? []),
+    ]);
     expect(stagedResults.map((result) => result.taskId)).toEqual([
       records.interruptedResult.taskId,
     ]);

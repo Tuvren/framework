@@ -17,8 +17,8 @@
 import {
   createBackendInvariantTurnNodeLineage,
   createTurnNodeLineageIndex,
-  type TurnNodeLineageIndex,
 } from "@tuvren/backend-shared";
+import type { TurnNodeLineageIndex } from "@tuvren/backend-shared";
 import type {
   StoredBranch,
   StoredRun,
