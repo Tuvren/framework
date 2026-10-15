@@ -2,8 +2,8 @@ owner: KRT-BZ004
 mode: contract_test
 produced:
   date: '2026-10-15'
-  commit: 6517e6bf0e561792304af2e84fdaa5f41b2a209b
-  command: 'KRT-BZ001 captures plus KRT-BZ003 M8-M11 frozen-candidate equivalence, initialization, structural, diagnostic, test, typecheck, and conformance proof'
+  commit: 0271e60aa70440d16872190e7b10f147e356a6ce
+  command: 'KRT-BZ001 captures plus KRT-BZ003 M8-M12 frozen-candidate equivalence, initialization, structural, diagnostic, build, test, typecheck, and conformance proof'
 files:
   - path: M1-raw-diagnostics.tar.gz
     sha256: 0c6905b1398eafb2f298810df123198d5df7af6cbc2996936556c8a6d2e8bae6
@@ -85,4 +85,12 @@ files:
     sha256: e64295dfcb91ba858a324741dc9b257f344676db65c2f71fed0a819e76a08faf
     bytes: 10474
     role: measurement
-pass_criteria: 'KRT-BZ001 captures remain parseable. M8-M10 preserve initialization and remove their target diagnostics. M11 is byte-equal to the frozen bridge stage-2 candidate, preserves 18 helper definitions and focused behavior, reduces bridge target diagnostics from 55 to eight remaining target diagnostics across five M12 declarations with non-target diagnostics stable, and passes bridge, workspace, and provider gates on the known shared PostgreSQL socket.'
+  - path: M12-proof.tar.gz
+    sha256: f06cb05e1182e5e0a19258e1915ea77c46d9c06b99d73941324e094ed799e877
+    bytes: 79145
+    role: measurement
+  - path: M12-proof-index.json
+    sha256: 0d220a53c63afdbfae1c9db70e6b82b39959d685f5b88aa52a94137e2622385a
+    bytes: 10124
+    role: measurement
+pass_criteria: 'KRT-BZ001 captures remain parseable. M8-M11 preserve initialization and remove their cohort target diagnostics. M12 is byte-equal to the frozen final bridge candidate, preserves all five public-factory/call-option definitions and focused behavior, clears the final eight bridge target diagnostics with non-target diagnostics stable, and passes bridge build/tests/typecheck plus workspace and provider gates on the known shared PostgreSQL socket.'
