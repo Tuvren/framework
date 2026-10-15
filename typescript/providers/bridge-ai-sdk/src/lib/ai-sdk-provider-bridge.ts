@@ -4,6 +4,8 @@ import type {
   LanguageModelV3GenerateResult,
   ProviderV3,
   SharedV3ProviderOptions,
+  LanguageModelV3FunctionTool,
+  LanguageModelV3ProviderTool,
 } from "@ai-sdk/provider";
 import type {
   ProviderStreamChunk,
@@ -1082,11 +1084,6 @@ function readSchemaDialect(
 // Provider-native / provider-mediated tool helpers (AY002, AY004, AY005)
 // ---------------------------------------------------------------------------
 
-import type {
-  LanguageModelV3FunctionTool,
-  LanguageModelV3ProviderTool,
-} from "@ai-sdk/provider";
-
 /**
  * Assembles the AI SDK `tools` array from the prompt's three tool families:
  * client function tools (`prompt.tools`), provider-native declarations
@@ -1094,7 +1091,7 @@ import type {
  */
 function buildAllTools(
   prompt: TuvrenPrompt
-): Array<LanguageModelV3FunctionTool | LanguageModelV3ProviderTool> {
+): (LanguageModelV3FunctionTool | LanguageModelV3ProviderTool)[] {
   const functionTools =
     prompt.tools !== undefined && prompt.tools.length > 0
       ? prompt.tools.map(mapToolDefinition)

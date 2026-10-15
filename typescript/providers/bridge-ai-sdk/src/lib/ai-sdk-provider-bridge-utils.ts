@@ -157,13 +157,14 @@ export function mapAssistantReplayProviderOptions(
   }
 
   switch (part.type) {
-    case "text":
+    case "text": {
       return cloneProviderOptionsOrUndefined(
         collectAssistantReplayProviderOptions(
           sanitized,
           ASSISTANT_TEXT_REPLAY_PROVIDER_KEYS
         )
       );
+    }
     case "reasoning": {
       const normalized = collectAssistantReplayProviderOptions(
         sanitized,
@@ -180,15 +181,17 @@ export function mapAssistantReplayProviderOptions(
 
       return cloneProviderOptionsOrUndefined(normalized);
     }
-    case "tool_call":
+    case "tool_call": {
       return cloneProviderOptionsOrUndefined(
         collectAssistantReplayProviderOptions(
           sanitized,
           ASSISTANT_TEXT_REPLAY_PROVIDER_KEYS
         )
       );
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 

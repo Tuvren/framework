@@ -124,7 +124,7 @@ export function mapProviderMediatedToolConfigs(
         server_url: config.endpoint,
         ...(config.providerOptions === undefined ? {} : config.providerOptions),
       },
-      id: "openai.mcp" as `${string}.${string}`,
+      id: "openai.mcp",
       name: config.name,
       type: "provider",
     };
@@ -187,27 +187,31 @@ function mapPromptMessage(
   message: TuvrenMessage
 ): LanguageModelV3Message {
   switch (message.role) {
-    case "system":
+    case "system": {
       return {
         content: message.content,
         role: "system",
       };
-    case "user":
+    }
+    case "user": {
       return {
         content: message.parts.map((part) => mapUserPart(part)),
         role: "user",
       };
-    case "assistant":
+    }
+    case "assistant": {
       return {
         content: mapAssistantParts(activeProvider, message.parts),
         role: "assistant",
       };
-    case "tool":
+    }
+    case "tool": {
       return {
         content: message.parts.map((part) => mapToolResultPart(part)),
         role: "tool",
       };
-    default:
+    }
+    default: {
       throw bridgeError(
         "unsupported Tuvren message role in AI SDK prompt mapping",
         "unsupported_ai_sdk_prompt_part",
@@ -215,6 +219,7 @@ function mapPromptMessage(
           role: (message as { role?: unknown }).role,
         }
       );
+    }
   }
 }
 
@@ -391,7 +396,7 @@ function mapUserPart(part: TuvrenPromptPart) {
         { type: "text" }
       >;
     }
-    default:
+    default: {
       throw bridgeError(
         "user messages only support text, file, and structured parts in the AI SDK bridge baseline",
         "unsupported_ai_sdk_prompt_part",
@@ -400,6 +405,7 @@ function mapUserPart(part: TuvrenPromptPart) {
           role: "user",
         }
       );
+    }
   }
 }
 
@@ -500,8 +506,9 @@ function mapAssistantPart(activeProvider: string, part: TuvrenPromptPart) {
         { type: "tool-call" }
       >;
     }
-    case "tool_result":
+    case "tool_result": {
       return mapToolResultPart(part);
+    }
     case "structured": {
       const providerOptions = mapAssistantReplayProviderOptions(
         activeProvider,
@@ -521,7 +528,7 @@ function mapAssistantPart(activeProvider: string, part: TuvrenPromptPart) {
         { type: "text" }
       >;
     }
-    default:
+    default: {
       throw bridgeError(
         "assistant messages contain a part that the AI SDK bridge baseline does not support",
         "unsupported_ai_sdk_prompt_part",
@@ -529,6 +536,7 @@ function mapAssistantPart(activeProvider: string, part: TuvrenPromptPart) {
           role: "assistant",
         }
       );
+    }
   }
 }
 

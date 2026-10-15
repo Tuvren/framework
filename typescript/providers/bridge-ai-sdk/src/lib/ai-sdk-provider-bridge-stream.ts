@@ -37,12 +37,12 @@ import {
   providerOwnedToolExecutionUnsupportedError,
   readReasoningStreamSignature,
   requireToolState,
-  type StreamToolState,
   sanitizeMetadataValue,
   sanitizeRecord,
   sanitizeResponseMetadata,
   unsupportedStreamPartError,
 } from "./ai-sdk-provider-bridge-utils.js";
+import type { StreamToolState } from "./ai-sdk-provider-bridge-utils.js";
 
 /** Resolved result of `LanguageModelV3.doStream` (stream plus request/response metadata). */
 type AiSdkStreamResult = Awaited<ReturnType<LanguageModelV3["doStream"]>>;
@@ -208,20 +208,25 @@ function handleMetadataStreamPart(
   state: StreamMappingState
 ): ProviderStreamChunk[] | undefined {
   switch (part.type) {
-    case "stream-start":
+    case "stream-start": {
       state.streamWarnings.push(...part.warnings.map(sanitizeMetadataValue));
       return [];
-    case "response-metadata":
+    }
+    case "response-metadata": {
       state.responseMetadata = sanitizeResponseMetadata(part);
       return [];
-    case "source":
+    }
+    case "source": {
       state.streamSources.push(sanitizeMetadataValue(part));
       return [];
-    case "raw":
+    }
+    case "raw": {
       state.streamRawParts.push(sanitizeMetadataValue(part.rawValue));
       return [];
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 
@@ -237,18 +242,21 @@ function handleTextStreamPart(
   helpers: StreamMappingHelpers
 ): ProviderStreamChunk[] | undefined {
   switch (part.type) {
-    case "text-start":
+    case "text-start": {
       assertStructuredStreamStillOpen(state, part.type);
       return [];
-    case "text-delta":
+    }
+    case "text-delta": {
       return createTextDeltaChunks(part, state);
+    }
     case "text-end": {
       const structuredChunk = createStructuredStreamDoneChunk(state, helpers);
 
       return structuredChunk === undefined ? [] : [structuredChunk];
     }
-    default:
+    default: {
       return undefined;
+    }
   }
 }
 
@@ -290,18 +298,22 @@ function handleReasoningStreamPart(
   part: LanguageModelV3StreamPart
 ): ProviderStreamChunk[] | undefined {
   switch (part.type) {
-    case "reasoning-start":
+    case "reasoning-start": {
       return createReasoningStartChunks(part);
-    case "reasoning-delta":
+    }
+    case "reasoning-delta": {
       return [createReasoningDeltaChunk(part)];
-    case "reasoning-end":
+    }
+    case "reasoning-end": {
       return [
         {
           type: "reasoning_done",
         },
       ];
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 
@@ -356,14 +368,18 @@ function handleToolStreamPart(
   state: StreamMappingState
 ): ProviderStreamChunk[] | undefined {
   switch (part.type) {
-    case "tool-input-start":
+    case "tool-input-start": {
       return handleToolInputStartPart(part, state);
-    case "tool-input-delta":
+    }
+    case "tool-input-delta": {
       return handleToolInputDeltaPart(part, state);
-    case "tool-input-end":
+    }
+    case "tool-input-end": {
       return handleToolInputEndPart(part, state);
-    case "tool-call":
+    }
+    case "tool-call": {
       return handleToolCallStreamPart(part, state);
+    }
     case "tool-result": {
       // Accept for declared provider-native/mediated tools; reject undeclared (baseline protection).
       if (state.providerToolClassLookup !== undefined) {
@@ -375,10 +391,12 @@ function handleToolStreamPart(
       throw unsupportedStreamPartError(part.type, state.model);
     }
     case "file":
-    case "tool-approval-request":
+    case "tool-approval-request": {
       throw unsupportedStreamPartError(part.type, state.model);
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 
@@ -398,7 +416,7 @@ function mapProviderToolResultStreamPart(
       name: part.toolName,
       providerCallId: part.toolCallId,
       providerMetadata: {
-        ...(providerMetadata ?? {}),
+        ...providerMetadata,
         executionClass,
         owner: "provider",
       },
@@ -775,17 +793,20 @@ function handleTerminalStreamPart(
   helpers: StreamMappingHelpers
 ): ProviderStreamChunk[] | undefined {
   switch (part.type) {
-    case "finish":
+    case "finish": {
       return createFinishStreamChunks(part, state, helpers);
-    case "error":
+    }
+    case "error": {
       return [
         {
           error: part.error,
           type: "error",
         },
       ];
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 
