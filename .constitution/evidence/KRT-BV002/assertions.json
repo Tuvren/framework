@@ -1,0 +1,33 @@
+{
+  "status": "pass",
+  "measurement_commit": "99457fbb4fd517f1f867ae9267920bed59d887d5",
+  "baseline_directives": 2,
+  "current_directives": 2,
+  "ledger_entries": 2,
+  "full_identity_set_equality": true,
+  "original_reasons_preserved": true,
+  "no_added_biome_directives": true,
+  "needed_original_directives_retained": true,
+  "original_retained_biome_exit_code": 0,
+  "byte_equivalent_original_fixture_exit_code": 0,
+  "comments_only_migrated_fixture_exit_code": 1,
+  "comments_only_migrated_fixture_diagnostics": 2,
+  "comments_only_migrated_fixture_noBitwiseOperators_diagnostics": 2,
+  "oxlint_syntactic_equivalent_diagnostics": 2,
+  "oxlint_type_aware_equivalent_diagnostics": 2,
+  "exact_native_rule_code": "eslint(no-bitwise)",
+  "effective_native_severity": "deny",
+  "effective_native_explicit_options": null,
+  "native_candidate_comments_proven_used": true,
+  "source_bytes_unchanged": true,
+  "flag_membership_operations_unchanged": true,
+  "worktree_unchanged": true,
+  "early_deletions": [],
+  "native_suppressions_added_to_repository": [],
+  "verification_exit_codes": {
+    "scoped-tests": 0,
+    "format-check": 0,
+    "lint": 0,
+    "typecheck": 0
+  }
+}

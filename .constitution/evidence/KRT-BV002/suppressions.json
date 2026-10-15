@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BV002",
+  "milestone": "M3",
+  "baseline_commit": "99457fbb4fd517f1f867ae9267920bed59d887d5",
+  "measurement_commit": "99457fbb4fd517f1f867ae9267920bed59d887d5",
+  "owned_paths": [
+    "tools/scripts/api-freeze-gate.test.ts",
+    "tools/scripts/generator-oxfmt.test.ts",
+    "tools/scripts/generated-prerequisites.test.ts",
+    "tools/scripts/json-check.test.ts",
+    "tools/scripts/json-check.ts",
+    "tools/scripts/json-source-check.ts",
+    "tools/scripts/json-source-integrity.test.ts",
+    "tools/scripts/oxc-project-discovery.test.ts",
+    "tools/scripts/telemetry-codegen.test.ts",
+    "tools/scripts/typecheck-source-aliases.test.ts",
+    "tools/scripts/kernel-interop-governance.ts",
+    "tools/scripts/compile-with-migrations.ts",
+    "tools/scripts/docs-authority-freeze-gate.ts",
+    "tools/scripts/changeset-check.test.ts",
+    "tools/scripts/portability-check.ts",
+    "tools/scripts/host-boundary-gate.ts",
+    "tools/scripts/changeset-check.ts",
+    "tools/scripts/compatibility-report.ts",
+    "tools/scripts/codegen.ts",
+    "tools/scripts/telemetry-codegen.ts",
+    "tools/scripts/verify-kernel.ts",
+    "tools/scripts/portability-gate.ts",
+    "tools/scripts/validate-workspace-test-coverage.ts",
+    "tools/scripts/repl-host-interop-smoke.ts",
+    "tools/scripts/epic-af-conformance-gap-plan.ts",
+    "tools/scripts/release-lane.ts",
+    "tools/scripts/publish-registry.ts",
+    "tools/scripts/check.ts",
+    "tools/scripts/conformance.ts",
+    "tools/scripts/verify.ts",
+    "tools/scripts/typecheck-project.ts",
+    "tools/scripts/release-check.ts",
+    "tools/scripts/api-freeze-gate.ts",
+    "tools/scripts/kraken-surface-gate.ts",
+    "tools/scripts/authority-guardrails",
+    "tools/scripts/authority-packet"
+  ],
+  "identity_convention": "repository-relative path::Biome rule::one-based occurrence within that path/rule; line is informational",
+  "drift": {
+    "added": [],
+    "removed": [],
+    "changed_reasons": []
+  },
+  "entries": [
+    {
+      "identity": "tools/scripts/api-freeze-gate.ts::lint/suspicious/noBitwiseOperators::1",
+      "path": "tools/scripts/api-freeze-gate.ts",
+      "rule": "lint/suspicious/noBitwiseOperators",
+      "directive": "  // biome-ignore lint/suspicious/noBitwiseOperators: ts.SymbolFlags is a bitflag enum; masking is the API's membership test.",
+      "original_reason": "ts.SymbolFlags is a bitflag enum; masking is the API's membership test.",
+      "baseline_line": 140,
+      "current_line": 140,
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "equivalent_native_rule": "eslint/no-bitwise",
+      "native_candidate_rule": "eslint/no-bitwise",
+      "native_candidate_directive": "  // oxlint-disable-next-line no-bitwise -- ts.SymbolFlags is a bitflag enum; masking is the API's membership test.",
+      "native_candidate_options": {
+        "effective_config_key": "no-bitwise",
+        "effective_severity": "deny",
+        "emitted_severity": "error",
+        "explicit_options": null,
+        "documented_default_options": {
+          "allow": [],
+          "int32Hint": false
+        }
+      },
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-tools-scripts",
+      "native_admission_disposition": "planned-replace-original-at-CB-whole-tools-admission-with-measured-oxlint-counterpart",
+      "early_deletion": null,
+      "source_digests": {
+        "baseline_sha256": "9aef24a561071ef30855966337491a9054d26dc3bc2225a2140872f00bfedc01",
+        "current_before_sha256": "9aef24a561071ef30855966337491a9054d26dc3bc2225a2140872f00bfedc01",
+        "current_after_sha256": "9aef24a561071ef30855966337491a9054d26dc3bc2225a2140872f00bfedc01"
+      },
+      "config_digests": {
+        "biome_config_sha256": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint_config_sha256": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05",
+        "package_manifest_sha256": "c3e50c3f8286567f4ff71395996252294e9096b5405448f24579c0fc29350391",
+        "bun_lock_sha256": "89b2ec122f29acff66b368039dfd65c91e773bd655df506c47eaaf6cddde267d"
+      },
+      "retained_proof": {
+        "actual_source_report": "biome-original.json",
+        "actual_source_exit_code": 0,
+        "original_fixture_report": "biome-fixture-original.json",
+        "original_fixture_exit_code": 0,
+        "migrated_fixture_report": "biome-fixture-migrated.json",
+        "migrated_fixture_exit_code": 1,
+        "expected_category": "lint/suspicious/noBitwiseOperators",
+        "matching_diagnostics_total": 2,
+        "matching_diagnostic_ordinal": 1,
+        "migrated_fixture_sha256": "e03c6b3afb3867b6c8bea71bbed57a55065f407b4b33022fe37abd4d807f029d"
+      },
+      "native_proof": {
+        "syntactic_report": "oxlint-actual-syntactic.json",
+        "type_aware_report": "oxlint-actual-type-aware.json",
+        "candidate_fixture_report": "oxlint-fixture-migrated.json",
+        "registry_report": "oxlint-rules.json",
+        "effective_config_report": "oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "flavor": "syntactic",
+            "diagnostic": {
+              "code": "eslint(no-bitwise)",
+              "severity": "error",
+              "message": "Unexpected use of `\"&\"`.",
+              "filename": "tools/scripts/api-freeze-gate.ts",
+              "line": 141
+            }
+          },
+          {
+            "flavor": "type-aware",
+            "diagnostic": {
+              "code": "eslint(no-bitwise)",
+              "severity": "error",
+              "message": "Unexpected use of `\"&\"`.",
+              "filename": "tools/scripts/api-freeze-gate.ts",
+              "line": 141
+            }
+          }
+        ],
+        "candidate_comment_suppresses_same_operation": true
+      },
+      "operation_proof": {
+        "operand": "symbol",
+        "text": "return (symbol.flags & flag) !== 0;",
+        "line": 141
+      },
+      "producing_commit": "99457fbb4fd517f1f867ae9267920bed59d887d5"
+    },
+    {
+      "identity": "tools/scripts/api-freeze-gate.ts::lint/suspicious/noBitwiseOperators::2",
+      "path": "tools/scripts/api-freeze-gate.ts",
+      "rule": "lint/suspicious/noBitwiseOperators",
+      "directive": "  // biome-ignore lint/suspicious/noBitwiseOperators: ts.TypeFlags is a bitflag enum; masking is the API's membership test.",
+      "original_reason": "ts.TypeFlags is a bitflag enum; masking is the API's membership test.",
+      "baseline_line": 584,
+      "current_line": 584,
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "equivalent_native_rule": "eslint/no-bitwise",
+      "native_candidate_rule": "eslint/no-bitwise",
+      "native_candidate_directive": "  // oxlint-disable-next-line no-bitwise -- ts.TypeFlags is a bitflag enum; masking is the API's membership test.",
+      "native_candidate_options": {
+        "effective_config_key": "no-bitwise",
+        "effective_severity": "deny",
+        "emitted_severity": "error",
+        "explicit_options": null,
+        "documented_default_options": {
+          "allow": [],
+          "int32Hint": false
+        }
+      },
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-tools-scripts",
+      "native_admission_disposition": "planned-replace-original-at-CB-whole-tools-admission-with-measured-oxlint-counterpart",
+      "early_deletion": null,
+      "source_digests": {
+        "baseline_sha256": "9aef24a561071ef30855966337491a9054d26dc3bc2225a2140872f00bfedc01",
+        "current_before_sha256": "9aef24a561071ef30855966337491a9054d26dc3bc2225a2140872f00bfedc01",
+        "current_after_sha256": "9aef24a561071ef30855966337491a9054d26dc3bc2225a2140872f00bfedc01"
+      },
+      "config_digests": {
+        "biome_config_sha256": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint_config_sha256": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05",
+        "package_manifest_sha256": "c3e50c3f8286567f4ff71395996252294e9096b5405448f24579c0fc29350391",
+        "bun_lock_sha256": "89b2ec122f29acff66b368039dfd65c91e773bd655df506c47eaaf6cddde267d"
+      },
+      "retained_proof": {
+        "actual_source_report": "biome-original.json",
+        "actual_source_exit_code": 0,
+        "original_fixture_report": "biome-fixture-original.json",
+        "original_fixture_exit_code": 0,
+        "migrated_fixture_report": "biome-fixture-migrated.json",
+        "migrated_fixture_exit_code": 1,
+        "expected_category": "lint/suspicious/noBitwiseOperators",
+        "matching_diagnostics_total": 2,
+        "matching_diagnostic_ordinal": 2,
+        "migrated_fixture_sha256": "e03c6b3afb3867b6c8bea71bbed57a55065f407b4b33022fe37abd4d807f029d"
+      },
+      "native_proof": {
+        "syntactic_report": "oxlint-actual-syntactic.json",
+        "type_aware_report": "oxlint-actual-type-aware.json",
+        "candidate_fixture_report": "oxlint-fixture-migrated.json",
+        "registry_report": "oxlint-rules.json",
+        "effective_config_report": "oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "flavor": "syntactic",
+            "diagnostic": {
+              "code": "eslint(no-bitwise)",
+              "severity": "error",
+              "message": "Unexpected use of `\"&\"`.",
+              "filename": "tools/scripts/api-freeze-gate.ts",
+              "line": 585
+            }
+          },
+          {
+            "flavor": "type-aware",
+            "diagnostic": {
+              "code": "eslint(no-bitwise)",
+              "severity": "error",
+              "message": "Unexpected use of `\"&\"`.",
+              "filename": "tools/scripts/api-freeze-gate.ts",
+              "line": 585
+            }
+          }
+        ],
+        "candidate_comment_suppresses_same_operation": true
+      },
+      "operation_proof": {
+        "operand": "type",
+        "text": "return (type.flags & flag) !== 0;",
+        "line": 585
+      },
+      "producing_commit": "99457fbb4fd517f1f867ae9267920bed59d887d5"
+    }
+  ]
+}

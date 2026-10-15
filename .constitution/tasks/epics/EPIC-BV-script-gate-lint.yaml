@@ -100,7 +100,7 @@ tickets:
       evidence: "Assert each scoped project typechecks after each safe-fix batch, existing runtime assertions pass, and no signature or collection semantics change. Record changed files and the before/after diagnostic count per project."
     flows: []
     certainty: settled
-    status: planned
+    status: done
   - id: KRT-BV002
     title: Migrate live suppressions and delete dead ones
     type: Chore
@@ -155,7 +155,7 @@ tickets:
       evidence: Assert every baseline directive identity in the owned paths, plus any measured drift, has a ledger entry backed by live retained-Biome and Oxlint diagnostics. Each entry records the original reason, retained-checker disposition, and native-admission disposition. While Biome owns the path, prove each needed original directive remains and the full lint gate passes. Prove any early deletion follows a behavior-preserving code fix and a fresh retained-Biome run where the diagnostic no longer fires. Prove each planned native counterpart matches an actually firing equivalent rule and preserves the original reason. For tools/scripts/api-freeze-gate.ts, retain the two original noBitwiseOperators directives and their reasons, preserve the TypeScript flag-membership operations, and record the fixture's original exit 0 and migrated exit 1 with two retained-Biome diagnostics. Add no Biome directive, manufacture no suppression to meet a historical count, and emit the ledger CB will aggregate.
     flows: []
     certainty: settled
-    status: planned
+    status: done
   - id: KRT-BV003
     title: Reorder definitions without initialization regressions
     type: Chore
