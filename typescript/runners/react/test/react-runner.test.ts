@@ -698,7 +698,7 @@ describe("runner-react", () => {
     ]);
 
     if (typeof result === "string") {
-      throw new Error("runner did not stop waiting after abort");
+      throw new TypeError("runner did not stop waiting after abort");
     }
 
     expect(result.resolution.type).toBe("fail");
@@ -737,10 +737,10 @@ describe("runner-react", () => {
     ];
 
     const provider: TuvrenProvider = {
-      id: "mock",
       generate() {
         throw new Error("should not call generate in stream mode");
       },
+      id: "mock",
       async *stream() {
         for (const chunk of chunks) {
           yield chunk;
@@ -803,10 +803,10 @@ describe("runner-react", () => {
     ];
 
     const provider: TuvrenProvider = {
-      id: "mock",
       generate() {
         throw new Error("should not call generate");
       },
+      id: "mock",
       async *stream() {
         for (const chunk of chunks) {
           yield chunk;

@@ -56,12 +56,12 @@ describe("runner-react integration", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -86,7 +86,7 @@ describe("runner-react integration", () => {
     ]);
 
     if (typeof remainingEvents === "string") {
-      throw new Error("runtime did not stop waiting after cancellation");
+      throw new TypeError("runtime did not stop waiting after cancellation");
     }
 
     const events = [...firstEvents, ...remainingEvents];
@@ -128,8 +128,8 @@ describe("runner-react integration", () => {
       id: "provider",
       async *stream() {
         const startChunk = {
-          providerCallId: "native-call-1",
           name: "search",
+          providerCallId: "native-call-1",
           type: "tool_call_start",
         } satisfies ProviderStreamChunk;
 
@@ -139,12 +139,12 @@ describe("runner-react integration", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -169,7 +169,7 @@ describe("runner-react integration", () => {
     ]);
 
     if (typeof remainingEvents === "string") {
-      throw new Error("runtime did not stop waiting after cancellation");
+      throw new TypeError("runtime did not stop waiting after cancellation");
     }
 
     const events = [...firstEvents, ...remainingEvents];
@@ -215,12 +215,12 @@ describe("runner-react integration", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -280,12 +280,12 @@ describe("runner-react integration", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -382,12 +382,12 @@ describe("runner-react integration", () => {
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const provider = {
       async generate() {
@@ -433,12 +433,12 @@ describe("runner-react integration", () => {
     const fileData = new Uint8Array([1, 2, 3]);
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const provider = {
       async generate() {
@@ -501,7 +501,6 @@ describe("runner-react integration", () => {
           {
             afterIteration(context) {
               capturedResponse = context.response;
-              return undefined;
             },
             name: "capture",
           },
@@ -677,13 +676,13 @@ describe("runner-react integration", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
           toolExecutionMode: "sequential",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -757,12 +756,12 @@ describe("runner-react integration", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -830,12 +829,12 @@ describe("runner-react integration", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
