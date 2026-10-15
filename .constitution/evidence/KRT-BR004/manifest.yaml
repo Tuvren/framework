@@ -156,6 +156,36 @@
       "sha256": "446d104261b89270e60b82bc56d589303fe6889fd9ab506fea1360fe45e9ed5a",
       "bytes": 149,
       "role": "measurement"
+    },
+    {
+      "path": "M6-summary.json",
+      "sha256": "dae8b8ea92f0afe7360ed2a79a3601ec8739b76bea1efe69ab1cd23986613ad9",
+      "bytes": 2324,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-sqlite-test-before-syntactic.json.gz",
+      "sha256": "4be58ff07d12cb4527a6c07886d9590f8dc1ed8fd5f083a28b65fc121d6f3a5e",
+      "bytes": 4382,
+      "role": "baseline"
+    },
+    {
+      "path": "M6-sqlite-test-after-syntactic.json.gz",
+      "sha256": "89780a922975a8226e8184613561fe9e5e57e5c9ba31ffbfac9ae72406fec7de",
+      "bytes": 2938,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-sqlite-test-before-command-stderr.log.gz",
+      "sha256": "f0dd0d7f4062dcf002b554b960907877e620e6f6a2f1708cf22e58837e30a731",
+      "bytes": 149,
+      "role": "baseline"
+    },
+    {
+      "path": "M6-sqlite-test-after-command-stderr.log.gz",
+      "sha256": "4f556f400fb777dbf542c7615fe2a25a9dc242a1e5b47cfda5b2be714f51cc06",
+      "bytes": 148,
+      "role": "measurement"
     }
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."

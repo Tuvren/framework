@@ -65,7 +65,7 @@ describe("@tuvren/backend-sqlite startup", () => {
     }) as string;
     const migrationRows = probe
       .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
-      .all() as Array<{ name: string }>;
+      .all() as { name: string }[];
     const objectsTable = probe
       .prepare(
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'objects'"
@@ -88,7 +88,7 @@ describe("@tuvren/backend-sqlite startup", () => {
     const secondProbe = new Database(databasePath, { readonly: true });
     const reappliedRows = secondProbe
       .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
-      .all() as Array<{ name: string }>;
+      .all() as { name: string }[];
     secondProbe.close();
 
     deepStrictEqual(reappliedRows, migrationRows);
@@ -158,7 +158,7 @@ describe("@tuvren/backend-sqlite startup", () => {
       writeFileSync(
         join(tempCwd, "migrations", "0001_wrong.sql"),
         "THIS IS NOT SQL;\n",
-        "utf8"
+        "utf-8"
       );
 
       try {
@@ -171,7 +171,7 @@ describe("@tuvren/backend-sqlite startup", () => {
       const probe = new Database(databasePath, { readonly: true });
       const migrationRows = probe
         .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
-        .all() as Array<{ name: string }>;
+        .all() as { name: string }[];
       probe.close();
 
       deepStrictEqual(migrationRows, [
@@ -309,7 +309,7 @@ describe("@tuvren/backend-sqlite startup", () => {
     writeFileSync(
       join(fakeMigrationsDirectory, "0006_add_objects_extra.sql"),
       "ALTER TABLE objects ADD COLUMN extra TEXT;\n",
-      "utf8"
+      "utf-8"
     );
 
     const runtimeModule = (await import(pathToFileURL(runtimePath).href)) as {
@@ -340,7 +340,7 @@ describe("@tuvren/backend-sqlite startup", () => {
         "CREATE INDEX idx_runs_branch_id_status ON runs(branch_id, status, updated_at_ms);",
         "",
       ].join("\n"),
-      "utf8"
+      "utf-8"
     );
 
     const runtimeModule = (await import(pathToFileURL(runtimePath).href)) as {

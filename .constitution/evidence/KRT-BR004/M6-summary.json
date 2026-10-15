@@ -1,0 +1,64 @@
+{
+  "milestone": "M6",
+  "ticket": "KRT-BR001",
+  "cohort": "typescript/kernel/backends/sqlite/test",
+  "baseline_commit": "1bd2f15bf5af69e92795563b0af57b02799bcb7e",
+  "tool": {
+    "name": "oxlint",
+    "version": "1.86.0",
+    "safe_fix_command": "bunx --bun oxlint --fix typescript/kernel/backends/sqlite/test"
+  },
+  "diagnostics": {
+    "before": 116,
+    "after": 75,
+    "reduction": 41
+  },
+  "changed_files": [
+    "typescript/kernel/backends/sqlite/test/backend-sqlite-test-helpers.ts",
+    "typescript/kernel/backends/sqlite/test/backend-sqlite.invariants.test.ts",
+    "typescript/kernel/backends/sqlite/test/backend-sqlite.scope-isolation.test.ts",
+    "typescript/kernel/backends/sqlite/test/backend-sqlite.startup.test.ts",
+    "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts",
+    "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts",
+    "typescript/kernel/backends/sqlite/test/backend-sqlite.wal-locking.test.ts",
+    "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts"
+  ],
+  "verification": [
+    {
+      "command": "bun run nx run backend-sqlite:typecheck",
+      "result": "pass"
+    },
+    {
+      "command": "bun run nx run backend-sqlite:test",
+      "result": "pass",
+      "tests": 115,
+      "suites": 20
+    },
+    {
+      "command": "bun run nx run backend-sqlite:lint",
+      "result": "pass",
+      "retained_biome_files": 48
+    },
+    {
+      "command": "bun run typecheck",
+      "result": "pass",
+      "projects": 33,
+      "prerequisites": 1
+    },
+    {
+      "command": "bunx --bun oxfmt --check typescript/kernel/backends/sqlite/test",
+      "result": "pass"
+    },
+    {
+      "command": "bun run changeset:check --base=master",
+      "result": "pass"
+    }
+  ],
+  "notes": [
+    "Only Oxlint safe fixes were used; suggestion and dangerous fix modes were not used.",
+    "Four generated empty no-op bodies carry explanatory comments and preserve fulfilled-undefined behavior.",
+    "The retained Biome target remains active and clean.",
+    "No production source, public signature, collection semantics, runtime authority, lint target, dependency, contract shape, repository pattern, or convention changed.",
+    "M1 through M6 complete all planned KRT-BR001 cohorts."
+  ]
+}

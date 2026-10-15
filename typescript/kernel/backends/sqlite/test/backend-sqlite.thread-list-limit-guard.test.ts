@@ -91,7 +91,7 @@ describe("@tuvren/backend-sqlite threads.list LIMIT guard (KRT-BK006)", () => {
     const backend = createSqliteBackend({ databasePath });
 
     await backend.transact((tx) => {
-      const list = tx.threads.list;
+      const { list } = tx.threads;
       ok(list);
       throws(() => {
         list({ limit: -1 });
@@ -107,7 +107,7 @@ describe("@tuvren/backend-sqlite threads.list LIMIT guard (KRT-BK006)", () => {
     const backend = createSqliteBackend({ databasePath });
 
     await backend.transact((tx) => {
-      const list = tx.threads.list;
+      const { list } = tx.threads;
       ok(list);
       throws(() => {
         list({ limit: 1.5 });
@@ -123,7 +123,7 @@ describe("@tuvren/backend-sqlite threads.list LIMIT guard (KRT-BK006)", () => {
     const backend = createSqliteBackend({ databasePath });
 
     await backend.transact((tx) => {
-      const list = tx.threads.list;
+      const { list } = tx.threads;
       ok(list);
       throws(() => {
         list({ limit: Number.MAX_SAFE_INTEGER + 1 });
@@ -139,7 +139,7 @@ describe("@tuvren/backend-sqlite threads.list LIMIT guard (KRT-BK006)", () => {
     const backend = createSqliteBackend({ databasePath });
 
     await backend.transact((tx) => {
-      const list = tx.threads.list;
+      const { list } = tx.threads;
       ok(list);
       try {
         list({ limit: -5 });
@@ -160,7 +160,7 @@ describe("@tuvren/backend-sqlite threads.list LIMIT guard (KRT-BK006)", () => {
     await seedThread(backend, "thread_zero_limit", 1, 100);
 
     await backend.transact(async (tx) => {
-      const list = tx.threads.list;
+      const { list } = tx.threads;
       ok(list);
       const listed = await list({ limit: 0 });
       deepStrictEqual(listed.threads, []);
@@ -178,7 +178,7 @@ describe("@tuvren/backend-sqlite threads.list LIMIT guard (KRT-BK006)", () => {
     await seedThread(backend, "thread_c", 3, 300);
 
     await backend.transact(async (tx) => {
-      const list = tx.threads.list;
+      const { list } = tx.threads;
       ok(list);
 
       const firstPage = await list({ limit: 2 });
@@ -189,8 +189,8 @@ describe("@tuvren/backend-sqlite threads.list LIMIT guard (KRT-BK006)", () => {
       ok(firstPage.nextCursor);
 
       const secondPage = await list({
-        limit: 2,
         cursor: firstPage.nextCursor,
+        limit: 2,
       });
       deepStrictEqual(
         secondPage.threads.map((thread) => thread.threadId),

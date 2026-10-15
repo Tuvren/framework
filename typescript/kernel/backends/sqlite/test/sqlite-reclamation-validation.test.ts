@@ -27,15 +27,15 @@ import { doesNotThrow, throws } from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { TuvrenPersistenceError } from "@tuvren/core";
-import {
-  encodeDeterministicKernelRecord,
-  type RunStatus,
-  type StoredBranch,
-  type StoredRun,
-  type StoredStagedResult,
-  type StoredThread,
-  type StoredTurn,
-  type StoredTurnTreePath,
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type {
+  RunStatus,
+  StoredBranch,
+  StoredRun,
+  StoredStagedResult,
+  StoredThread,
+  StoredTurn,
+  StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 import {
   createCanonicalKernelTestSchema,
@@ -46,10 +46,8 @@ import {
 } from "@tuvren/kernel-testkit";
 
 import { assertReclamationSurvivorInvariants } from "../src/lib/sqlite-reclamation-validation.js";
-import {
-  type BackendState,
-  createEmptyState,
-} from "../src/lib/sqlite-records.js";
+import { createEmptyState } from "../src/lib/sqlite-records.js";
+import type { BackendState } from "../src/lib/sqlite-records.js";
 
 const SCHEMA_ID = "schema_reclaim_survivor";
 

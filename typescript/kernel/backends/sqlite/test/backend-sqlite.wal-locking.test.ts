@@ -73,11 +73,15 @@ describe("@tuvren/backend-sqlite WAL locking (KRT-BK011)", () => {
     );
     setupConnection.close();
 
-    let markWorkStarted: () => void = () => undefined;
+    let markWorkStarted: () => void = () => {
+      // Replaced by the promise resolver below.
+    };
     const workStarted = new Promise<void>((resolve) => {
       markWorkStarted = resolve;
     });
-    let releaseWork: () => void = () => undefined;
+    let releaseWork: () => void = () => {
+      // Replaced by the promise resolver below.
+    };
     const workHeld = new Promise<void>((resolve) => {
       releaseWork = resolve;
     });

@@ -23,11 +23,11 @@ import {
 import { describe, test } from "node:test";
 
 import { TuvrenPersistenceError } from "@tuvren/core";
-import {
-  encodeDeterministicKernelRecord,
-  type RuntimeBackendTx as KrakenBackendTx,
-  type StoredBranch,
-  type StoredThread,
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type {
+  RuntimeBackendTx as KrakenBackendTx,
+  StoredBranch,
+  StoredThread,
 } from "@tuvren/kernel-protocol";
 import {
   createCanonicalKernelTestSchema,
@@ -88,8 +88,8 @@ const VALIDATION_HELPERS = {
   assertActiveRunHeadAlignment,
   assertBackwardBranchMoveIsArchived,
   assertChunkedTurnTreePathChunkLayout,
-  assertRunCreatedTurnNodesAreCanonical,
   assertRunCreatedTurnNodeWithinTurnSpan,
+  assertRunCreatedTurnNodesAreCanonical,
   assertRunStartTurnNodeWithinTurnSpan,
   assertTurnParentLink,
   classifyTurnNodeRelationship,
@@ -241,7 +241,7 @@ describe("@tuvren/backend-sqlite invariants", () => {
     let callbackRan = false;
     await backend.transact(() => {
       callbackRan = true;
-      return Promise.resolve(undefined);
+      return Promise.resolve();
     });
     strictEqual(callbackRan, true);
   });
@@ -527,7 +527,7 @@ describe("@tuvren/backend-sqlite invariants", () => {
     let callbackRan = false;
     await backend.transact(() => {
       callbackRan = true;
-      return Promise.resolve(undefined);
+      return Promise.resolve();
     });
     strictEqual(callbackRan, true);
 
@@ -553,7 +553,9 @@ describe("@tuvren/backend-sqlite invariants", () => {
     probe.exec("DROP TABLE objects");
     probe.close();
 
-    await backend.transact(async () => undefined);
+    await backend.transact(async () => {
+      // Intentionally resolves to undefined.
+    });
 
     const health = await backend.health();
     deepStrictEqual(health.ok, false);
@@ -637,8 +639,7 @@ describe("@tuvren/backend-sqlite invariants", () => {
       order.push("first:end");
     });
     const secondTransaction = backend.transact(() => {
-      order.push("second:start");
-      order.push("second:end");
+      order.push("second:start", "second:end");
       return Promise.resolve();
     });
 
@@ -652,7 +653,9 @@ describe("@tuvren/backend-sqlite invariants", () => {
 
     await rejects(
       backend.transact(async () => {
-        await backend.transact(async () => undefined);
+        await backend.transact(async () => {
+          // Intentionally resolves to undefined.
+        });
       }),
       NESTED_TRANSACTION_ERROR_PATTERN
     );
