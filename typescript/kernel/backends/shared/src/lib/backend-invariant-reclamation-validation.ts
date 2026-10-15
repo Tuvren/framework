@@ -171,9 +171,9 @@ export interface BackendInvariantReclamationValidation {
  * error-code prefix (delegated to the record-utils factory built from the
  * same config) and the injected CBOR decoders/path resolver.
  */
-export function createBackendInvariantReclamationValidation(
+export const createBackendInvariantReclamationValidation = (
   config: BackendInvariantReclamationValidationConfig
-): BackendInvariantReclamationValidation {
+): BackendInvariantReclamationValidation => {
   const {
     ensureBranchExists,
     ensureObjectExists,
@@ -186,22 +186,12 @@ export function createBackendInvariantReclamationValidation(
     persistenceError,
   } = createBackendInvariantRecordUtils(config);
 
-  function code(suffix: string): string {
+  const code = (suffix: string): string => {
     return `${config.errorPrefix}_backend_${suffix}`;
-  }
-
-  function assertReclamationSurvivorInvariants(state: BackendState): void {
-    assertSurvivingRootReferences(state);
-    assertSurvivingTurnNodeLineage(state);
-    assertSurvivingTurnReferences(state);
-    assertSurvivingRunReferences(state);
-    assertSurvivingStagedResultReferences(state);
-    assertSurvivingObserveAnnotationReferences(state);
-    assertSurvivingTurnTreePathReferences(state);
-  }
+  };
 
   /** Branch heads and thread roots must still resolve to surviving turn nodes. */
-  function assertSurvivingRootReferences(state: BackendState): void {
+  const assertSurvivingRootReferences = (state: BackendState): void => {
     for (const branch of state.branches.values()) {
       ensureTurnNodeExists(
         state,
@@ -218,7 +208,7 @@ export function createBackendInvariantReclamationValidation(
         "thread.rootTurnNodeHash"
       );
     }
-  }
+  };
 
   /**
    * Every surviving turn node's `previousTurnNodeHash` chain must resolve
@@ -227,7 +217,7 @@ export function createBackendInvariantReclamationValidation(
    * amortizes the ancestor walk to O(survivors) total, the same memoization
    * `validateCommittedState`/`validateTurnNodeLineageRootIndex` use.
    */
-  function assertSurvivingTurnNodeLineage(state: BackendState): void {
+  const assertSurvivingTurnNodeLineage = (state: BackendState): void => {
     const lineageIndex = createTurnNodeLineageIndex();
 
     for (const turnNode of state.turnNodes.values()) {
@@ -261,7 +251,7 @@ export function createBackendInvariantReclamationValidation(
         );
       }
     }
-  }
+  };
 
   /**
    * Surviving turns must reference surviving branches, threads, and turn
@@ -270,7 +260,7 @@ export function createBackendInvariantReclamationValidation(
    * for the same friendlier-error reasoning documented on each backend's
    * shim).
    */
-  function assertSurvivingTurnReferences(state: BackendState): void {
+  const assertSurvivingTurnReferences = (state: BackendState): void => {
     for (const turn of state.turns.values()) {
       ensureBranchExists(state, turn.branchId, "turn.branchId");
       ensureThreadExists(state, turn.threadId, "turn.threadId");
@@ -285,14 +275,14 @@ export function createBackendInvariantReclamationValidation(
         "turn.headTurnNodeHash"
       );
     }
-  }
+  };
 
   /**
    * Surviving runs must reference surviving branches, turns, and turn
    * nodes — including the opaque `createdTurnNodesCbor` lineage no foreign
    * key covers.
    */
-  function assertSurvivingRunReferences(state: BackendState): void {
+  const assertSurvivingRunReferences = (state: BackendState): void => {
     for (const run of state.runs.values()) {
       ensureBranchExists(state, run.branchId, "run.branchId");
       ensureTurnExists(state, run.turnId, "run.turnId");
@@ -306,14 +296,14 @@ export function createBackendInvariantReclamationValidation(
         ensureTurnNodeExists(state, turnNodeHash, "run.createdTurnNodesCbor");
       }
     }
-  }
+  };
 
   /**
    * Surviving staged results must reference surviving runs and objects
    * (structurally guaranteed for `runId` by the sweep's own logic, but
    * checked directly anyway).
    */
-  function assertSurvivingStagedResultReferences(state: BackendState): void {
+  const assertSurvivingStagedResultReferences = (state: BackendState): void => {
     for (const stagedResultsByRun of state.stagedResults.values()) {
       for (const stagedResult of stagedResultsByRun.values()) {
         ensureRunExists(state, stagedResult.runId, "stagedResult.runId");
@@ -324,12 +314,12 @@ export function createBackendInvariantReclamationValidation(
         );
       }
     }
-  }
+  };
 
   /** Surviving annotations must retain both their owning run and linked node. */
-  function assertSurvivingObserveAnnotationReferences(
+  const assertSurvivingObserveAnnotationReferences = (
     state: BackendState
-  ): void {
+  ): void => {
     for (const annotations of state.observeAnnotations.values()) {
       for (const annotation of annotations) {
         ensureRunExists(state, annotation.runId, "observeAnnotation.runId");
@@ -342,33 +332,12 @@ export function createBackendInvariantReclamationValidation(
         }
       }
     }
-  }
+  };
 
-  /**
-   * Surviving turn-tree paths must resolve only to surviving objects/chunks —
-   * the opaque `single_hash`/`ordered_inline_cbor`/`ordered_chunk_list_cbor`
-   * references no foreign key covers, exactly what the sweep's own
-   * `keepPathObjects` closure step promises to retain.
-   */
-  function assertSurvivingTurnTreePathReferences(state: BackendState): void {
-    for (const [turnTreeHash, storedPaths] of state.turnTreePaths.entries()) {
-      // Belt-and-suspenders, same as the staged-result/run check above: a
-      // surviving path collection can only exist alongside its owning turn
-      // tree (`sweepTurnTrees` deletes `state.turnTreePaths` in the same
-      // iteration it deletes `state.turnTrees`), so this is structurally
-      // guaranteed rather than a real gap, but it is free to re-check.
-      ensureTurnTreeExists(state, turnTreeHash, "turnTreePath.turnTreeHash");
-
-      for (const storedPath of storedPaths.values()) {
-        assertTurnTreePathSurvivorReferences(state, storedPath);
-      }
-    }
-  }
-
-  function assertTurnTreePathSurvivorReferences(
+  const assertTurnTreePathSurvivorReferences = (
     state: BackendState,
     storedPath: StoredTurnTreePath
-  ): void {
+  ): void => {
     const resolved = config.resolveStoredTurnTreePathValue(state, storedPath);
 
     if (typeof resolved === "string") {
@@ -402,9 +371,40 @@ export function createBackendInvariantReclamationValidation(
         );
       }
     }
-  }
+  };
+
+  /**
+   * Surviving turn-tree paths must resolve only to surviving objects/chunks —
+   * the opaque `single_hash`/`ordered_inline_cbor`/`ordered_chunk_list_cbor`
+   * references no foreign key covers, exactly what the sweep's own
+   * `keepPathObjects` closure step promises to retain.
+   */
+  const assertSurvivingTurnTreePathReferences = (state: BackendState): void => {
+    for (const [turnTreeHash, storedPaths] of state.turnTreePaths.entries()) {
+      // Belt-and-suspenders, same as the staged-result/run check above: a
+      // surviving path collection can only exist alongside its owning turn
+      // tree (`sweepTurnTrees` deletes `state.turnTreePaths` in the same
+      // iteration it deletes `state.turnTrees`), so this is structurally
+      // guaranteed rather than a real gap, but it is free to re-check.
+      ensureTurnTreeExists(state, turnTreeHash, "turnTreePath.turnTreeHash");
+
+      for (const storedPath of storedPaths.values()) {
+        assertTurnTreePathSurvivorReferences(state, storedPath);
+      }
+    }
+  };
+
+  const assertReclamationSurvivorInvariants = (state: BackendState): void => {
+    assertSurvivingRootReferences(state);
+    assertSurvivingTurnNodeLineage(state);
+    assertSurvivingTurnReferences(state);
+    assertSurvivingRunReferences(state);
+    assertSurvivingStagedResultReferences(state);
+    assertSurvivingObserveAnnotationReferences(state);
+    assertSurvivingTurnTreePathReferences(state);
+  };
 
   return {
     assertReclamationSurvivorInvariants,
   };
-}
+};
