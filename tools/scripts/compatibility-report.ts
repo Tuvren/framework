@@ -518,6 +518,181 @@ const assertConformanceRunnerParity = async (): Promise<void> => {
   }
 };
 
+const assertCompatibilityReportStatus: (
+  value: string
+) => asserts value is CompatibilityReportStatus = (value) => {
+  if (
+    value !== "full_pass" &&
+    value !== "capability_subset_pass" &&
+    value !== "unsupported" &&
+    value !== "not_applicable" &&
+    value !== "expected_fail" &&
+    value !== "unexpected_fail"
+  ) {
+    throw new Error(`unknown compatibility report status: ${value}`);
+  }
+};
+
+const assertCompatibilityCheckSummary = (
+  value: CompatibilityCheckSummary
+): void => {
+  const applicableChecks =
+    value.applicableChecks ?? value.failedChecks + value.passedChecks;
+  const nonApplicableChecks = value.nonApplicableChecks ?? 0;
+
+  if (
+    !(
+      Number.isSafeInteger(applicableChecks) &&
+      Number.isSafeInteger(value.failedChecks) &&
+      Number.isSafeInteger(value.passedChecks) &&
+      Number.isSafeInteger(value.totalChecks) &&
+      Number.isSafeInteger(nonApplicableChecks)
+    ) ||
+    applicableChecks < 0 ||
+    value.failedChecks < 0 ||
+    value.passedChecks < 0 ||
+    nonApplicableChecks < 0 ||
+    value.totalChecks <= 0 ||
+    applicableChecks !== value.failedChecks + value.passedChecks ||
+    applicableChecks + nonApplicableChecks !== value.totalChecks
+  ) {
+    throw new Error(
+      `compatibility matrix check summaries must be internally consistent: ${JSON.stringify(value)}`
+    );
+  }
+};
+
+const assertCompatibilityResultCheckIds = (
+  checkIds: readonly string[],
+  summary: CompatibilityCheckSummary,
+  label: string
+): void => {
+  if (checkIds.length > 0) {
+    return;
+  }
+
+  if (
+    summary.totalChecks === (summary.nonApplicableChecks ?? 0) &&
+    (summary.applicableChecks ?? 0) === 0
+  ) {
+    return;
+  }
+
+  throw new Error(`${label} must contain check ids for applicable checks`);
+};
+
+const assertCompatibilityMatrix: (
+  value: CompatibilityMatrix
+) => asserts value is CompatibilityMatrix = (value) => {
+  if (
+    !Number.isSafeInteger(value.generatedAtMs) ||
+    value.generatedAtMs < 0 ||
+    value.sourceRevision.length === 0
+  ) {
+    throw new Error(
+      "compatibility matrix must contain a generatedAtMs timestamp and sourceRevision"
+    );
+  }
+
+  for (const suite of value.suites) {
+    if (
+      suite.boundary.length === 0 ||
+      suite.suiteId.length === 0 ||
+      suite.suiteVersion.length === 0
+    ) {
+      throw new Error(
+        "compatibility matrix suites must contain non-empty fields"
+      );
+    }
+  }
+
+  for (const implementation of value.implementations) {
+    if (
+      implementation.implementationId.length === 0 ||
+      implementation.language.length === 0 ||
+      implementation.version.length === 0
+    ) {
+      throw new Error(
+        "compatibility matrix implementations must contain non-empty fields"
+      );
+    }
+
+    for (const result of implementation.results) {
+      if (
+        result.evidencePath.length === 0 ||
+        result.reportLabel.length === 0 ||
+        result.suiteId.length === 0 ||
+        result.suiteVersion.length === 0
+      ) {
+        throw new Error(
+          "compatibility matrix implementation results must contain non-empty fields"
+        );
+      }
+
+      assertCompatibilityReportStatus(result.reportStatus);
+      assertCompatibilityCheckSummary(result.checkSummary);
+      assertCompatibilityResultCheckIds(
+        result.checkIds,
+        result.checkSummary,
+        "compatibility matrix implementation results"
+      );
+    }
+  }
+
+  for (const interopResult of value.interop) {
+    if (
+      interopResult.evidencePath.length === 0 ||
+      interopResult.pairId.length === 0 ||
+      interopResult.reportLabel.length === 0 ||
+      interopResult.suiteId.length === 0 ||
+      interopResult.suiteVersion.length === 0
+    ) {
+      throw new Error(
+        "compatibility matrix interop results must contain non-empty fields"
+      );
+    }
+
+    assertCompatibilityReportStatus(interopResult.reportStatus);
+    assertCompatibilityCheckSummary(interopResult.checkSummary);
+    assertCompatibilityResultCheckIds(
+      interopResult.checkIds,
+      interopResult.checkSummary,
+      "compatibility matrix interop results"
+    );
+  }
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
+};
+
+const readJsonSchema = (value: unknown): AnySchema => {
+  if (typeof value === "boolean" || isRecord(value)) {
+    return value;
+  }
+
+  throw new Error("compatibility matrix schema must be an object or boolean");
+};
+
+const assertCompatibilityMatrixSchema = async (
+  value: CompatibilityMatrix
+): Promise<void> => {
+  const schemaText = await readFile(COMPATIBILITY_SCHEMA_PATH, "utf-8");
+  const parsedSchema = readJsonSchema(JSON.parse(schemaText));
+  const validate = ajv.compile(parsedSchema);
+
+  // The checked-in schema is the machine contract for compatibility evidence,
+  // so codegen validates against it directly instead of relying only on the
+  // narrower TypeScript assertions above.
+  if (validate(value)) {
+    return;
+  }
+
+  throw new Error(
+    `compatibility matrix failed JSON Schema validation: ${ajv.errorsText(validate.errors)}`
+  );
+};
+
 const readAdapterManifest = async (
   adapterManifestPath: string
 ): Promise<Record<string, unknown>> => {
@@ -1398,6 +1573,126 @@ const computeExpectedCapabilitiesFromTopology = async (
   return capabilities;
 };
 
+const createFallbackCheckResults = (
+  suiteManifest: ConformanceSuiteManifest,
+  applicabilityKey: "implementations" | "interopPairs",
+  applicabilityId: string,
+  message: string
+): ConformanceCheckResult[] => {
+  return suiteManifest.checks
+    .filter((check) => check[applicabilityKey]?.includes(applicabilityId))
+    .map((check) =>
+      createCheckResult(
+        check.checkId,
+        check.assertions.map((assertionId) =>
+          createAssertionResult(assertionId, false, message)
+        ),
+        {
+          expectedEvidence: check.expectedEvidence,
+        }
+      )
+    );
+};
+
+const extractTrailingJsonObject = (stdout: string): string => {
+  const prefixedJsonLines = stdout
+    .split("\n")
+    .filter((line) => PREFIXED_OUTPUT_PATTERN.test(line))
+    .map((line) => line.replace(PREFIXED_OUTPUT_PATTERN, ""));
+
+  if (prefixedJsonLines.length > 0) {
+    const jsonStart = prefixedJsonLines.findIndex((line) =>
+      line.trimStart().startsWith("{")
+    );
+
+    if (jsonStart !== -1) {
+      return prefixedJsonLines.slice(jsonStart).join("\n").trim();
+    }
+  }
+
+  // Locate the last top-level JSON object in the stdout by scanning lines for
+  // a column-zero `{` followed by a column-zero `}` after a balanced run of
+  // nested braces. This avoids treating an inner brace as the top-level start
+  // and avoids returning trailing Nx framing (e.g. " NX  Successfully ran...")
+  // that would otherwise break JSON.parse on otherwise-clean runner output.
+  const lines = stdout.split("\n");
+  let openIndex = -1;
+
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index];
+
+    if (line?.startsWith("}")) {
+      // Walk backward looking for the matching column-zero `{` that opened
+      // this trailing object. Use indentation as a proxy for nesting depth
+      // since the runners emit pretty-printed JSON.
+      for (let inner = index - 1; inner >= 0; inner -= 1) {
+        const innerLine = lines[inner];
+
+        if (innerLine?.startsWith("{")) {
+          openIndex = inner;
+          break;
+        }
+      }
+
+      if (openIndex !== -1) {
+        return lines
+          .slice(openIndex, index + 1)
+          .join("\n")
+          .trim();
+      }
+
+      break;
+    }
+  }
+
+  const trimmed = stdout.trim();
+  const objectStart = trimmed.lastIndexOf("\n{");
+
+  if (objectStart === -1) {
+    return trimmed;
+  }
+
+  return trimmed.slice(objectStart + 1);
+};
+
+const readConformanceEvidence = (
+  stdout: string
+): ConformanceEvidence | undefined => {
+  const trimmed = stdout.trim();
+
+  if (trimmed.length === 0) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(extractTrailingJsonObject(stdout));
+    assertConformanceEvidence(parsed, "runner evidence");
+    return parsed;
+  } catch {
+    return undefined;
+  }
+};
+
+const createFallbackEvidence = (
+  suiteManifest: ConformanceSuiteManifest,
+  implementationId: string,
+  language: string,
+  checkResults: readonly ConformanceCheckResult[]
+): ConformanceEvidence => {
+  const summary = createConformanceEvidenceSummary(checkResults);
+
+  return {
+    boundary: suiteManifest.boundary,
+    checkResults: [...checkResults],
+    implementationId,
+    language,
+    status: summary.failedChecks === 0 ? "pass" : "fail",
+    suiteId: suiteManifest.suiteId,
+    suiteVersion: suiteManifest.suiteVersion,
+    summary,
+  };
+};
+
 const computeCompatibilityResultStatus = (
   commandExitCode: number,
   evidence: ConformanceEvidence
@@ -1626,6 +1921,138 @@ const upsertCompatibilityImplementation = (
   existingImplementation.results.push(result);
 };
 
+const advanceJsonStringState = (input: {
+  character: string;
+  escaped: boolean;
+  inString: boolean;
+}): { escaped: boolean; handled: boolean; inString: boolean } => {
+  if (input.escaped) {
+    return {
+      escaped: false,
+      handled: true,
+      inString: input.inString,
+    };
+  }
+
+  if (input.character === "\\") {
+    return {
+      escaped: true,
+      handled: true,
+      inString: input.inString,
+    };
+  }
+
+  if (input.character === '"') {
+    return {
+      escaped: false,
+      handled: true,
+      inString: !input.inString,
+    };
+  }
+
+  if (input.inString) {
+    return {
+      escaped: false,
+      handled: true,
+      inString: true,
+    };
+  }
+
+  return {
+    escaped: false,
+    handled: false,
+    inString: false,
+  };
+};
+
+const advanceJsonBraceState = (input: {
+  candidates: string[];
+  character: string;
+  depth: number;
+  index: number;
+  startIndex: number;
+  stdout: string;
+}): { depth: number; startIndex: number } => {
+  if (input.character === "{") {
+    if (input.depth === 0) {
+      return {
+        depth: 1,
+        startIndex: input.index,
+      };
+    }
+
+    return {
+      depth: input.depth + 1,
+      startIndex: input.startIndex,
+    };
+  }
+
+  if (input.character !== "}" || input.depth === 0) {
+    return {
+      depth: input.depth,
+      startIndex: input.startIndex,
+    };
+  }
+
+  const nextDepth = input.depth - 1;
+
+  if (nextDepth === 0 && input.startIndex !== -1) {
+    input.candidates.push(
+      input.stdout.slice(input.startIndex, input.index + 1)
+    );
+    return {
+      depth: 0,
+      startIndex: -1,
+    };
+  }
+
+  return {
+    depth: nextDepth,
+    startIndex: input.startIndex,
+  };
+};
+
+const extractJsonObjectCandidates = (stdout: string): string[] => {
+  const candidates: string[] = [];
+  let depth = 0;
+  let startIndex = -1;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = 0; index < stdout.length; index += 1) {
+    const character = stdout[index];
+
+    if (character === undefined) {
+      continue;
+    }
+
+    const stringState = advanceJsonStringState({
+      character,
+      escaped,
+      inString,
+    });
+    escaped = stringState.escaped;
+    inString = stringState.inString;
+
+    if (stringState.handled) {
+      continue;
+    }
+
+    const braceState = advanceJsonBraceState({
+      candidates,
+      character,
+      depth,
+      index,
+      startIndex,
+      stdout,
+    });
+    depth = braceState.depth;
+    startIndex = braceState.startIndex;
+  }
+
+  return candidates;
+};
+
 const readExpectedInteropScenarios = (value: unknown[]): string[] => {
   return value.filter((entry): entry is string => typeof entry === "string");
 };
@@ -1668,6 +2095,50 @@ const readInteropScenarioEntry = (
   };
 };
 
+const parseInteropScenarioReportCandidate = (
+  candidate: string
+): InteropScenarioReport | undefined => {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(candidate);
+  } catch {
+    return undefined;
+  }
+
+  if (
+    !(
+      isRecord(parsed) &&
+      Array.isArray(parsed.reports) &&
+      Array.isArray(parsed.scenarios)
+    )
+  ) {
+    return undefined;
+  }
+
+  const scenarios = readExpectedInteropScenarios(parsed.scenarios);
+
+  if (scenarios.length === 0) {
+    return undefined;
+  }
+
+  const reports = parsed.reports
+    .map((report) => readInteropScenarioEntry(report))
+    .filter(
+      (report): report is InteropScenarioReport["reports"][number] =>
+        report !== undefined
+    );
+
+  if (reports.length !== scenarios.length) {
+    return undefined;
+  }
+
+  return {
+    reports,
+    scenarios,
+  };
+};
+
 const readInteropScenarioReport = (
   stdout: string
 ): InteropScenarioReport | undefined => {
@@ -1680,6 +2151,68 @@ const readInteropScenarioReport = (
   }
 
   return undefined;
+};
+
+const readInteropTelemetryScenarioReport = (
+  report: unknown,
+  expectedScenarioSet: Set<string>,
+  seenScenarios: Set<string>,
+  currentSchemaUrl: string | undefined
+):
+  | {
+      observedKeys: string[];
+      scenario: InteropTelemetrySummary["scenarios"][number];
+      schemaUrl: string;
+    }
+  | undefined => {
+  if (
+    !isRecord(report) ||
+    typeof report.scenario !== "string" ||
+    !expectedScenarioSet.has(report.scenario) ||
+    seenScenarios.has(report.scenario)
+  ) {
+    return undefined;
+  }
+
+  const { telemetry } = report;
+
+  if (
+    !isRecord(telemetry) ||
+    typeof telemetry.schemaUrl !== "string" ||
+    !Array.isArray(telemetry.observedKeys) ||
+    !isRecord(telemetry.attributes)
+  ) {
+    return undefined;
+  }
+
+  if (
+    currentSchemaUrl !== undefined &&
+    currentSchemaUrl !== telemetry.schemaUrl
+  ) {
+    // Mixed schema URLs would make the checked-in evidence internally
+    // inconsistent, so reject the whole summary instead of weakening it.
+    return undefined;
+  }
+
+  const observedKeys = telemetry.observedKeys.filter(
+    (value): value is string => typeof value === "string"
+  );
+  const scenario = {
+    // Interop telemetry values include run ids, branch ids, and checkpoint
+    // hashes that are intentionally different on every smoke execution. The
+    // checked-in compatibility evidence keeps only the stable key coverage and
+    // schema identity so reruns stay reviewable instead of churning on known
+    // per-run entropy.
+    observedKeys,
+    scenario: report.scenario,
+  };
+
+  seenScenarios.add(report.scenario);
+  return {
+    observedKeys,
+    scenario,
+    schemaUrl: telemetry.schemaUrl,
+  };
 };
 
 const readInteropTelemetrySummary = (
@@ -1740,6 +2273,71 @@ const readInteropTelemetrySummary = (
     scenarios,
     schemaUrl,
   };
+};
+
+const createInteropCheckResults = (
+  suiteManifest: ConformanceSuiteManifest,
+  pairId: string,
+  report: InteropScenarioReport
+): ConformanceCheckResult[] => {
+  const reportByScenario = new Map(
+    report.reports.map((entry) => [entry.scenario, entry] as const)
+  );
+
+  return suiteManifest.checks
+    .filter((check) => check.interopPairs?.includes(pairId))
+    .map((check) => {
+      // One named interop check may intentionally aggregate more than one
+      // scenario report. We keep that fan-in explicit here so the checked-in
+      // evidence matches the boundary-owned check catalog rather than the
+      // playground script's current scenario granularity.
+      const expectedScenarioIds = check.scenarioIds ?? [];
+      const scenarioReports = expectedScenarioIds
+        .map((scenarioId) => reportByScenario.get(scenarioId))
+        .filter(
+          (
+            scenarioReport
+          ): scenarioReport is InteropScenarioReport["reports"][number] =>
+            scenarioReport !== undefined
+        );
+      const missingScenarioIds = expectedScenarioIds.filter(
+        (scenarioId) => !reportByScenario.has(scenarioId)
+      );
+      const assertionResults = check.assertions.map((assertionId) => {
+        const passed =
+          missingScenarioIds.length === 0 &&
+          scenarioReports.every(
+            (scenarioReport) => scenarioReport.checks[assertionId]
+          );
+        let message: string | undefined;
+
+        if (missingScenarioIds.length > 0) {
+          message = `interop scenario report is missing required scenarios: ${missingScenarioIds.join(", ")}`;
+        } else if (
+          // Missing manifest-declared scenarios must fail the whole check.
+          // Otherwise `every()` on an empty subset would let a vanished
+          // smoke lane produce a false green compatibility artifact.
+          !scenarioReports.some(
+            (scenarioReport) => scenarioReport.checks[assertionId]
+          )
+        ) {
+          message =
+            "interop scenario report did not mark this assertion as passing";
+        }
+
+        return createAssertionResult(assertionId, passed, message);
+      });
+
+      return createCheckResult(check.checkId, assertionResults, {
+        missingScenarioIds,
+        scenario: check.scenarioIds ?? [],
+        telemetry: scenarioReports.map((scenarioReport) => ({
+          observedKeys: scenarioReport.telemetry.observedKeys,
+          scenario: scenarioReport.scenario,
+          schemaUrl: scenarioReport.telemetry.schemaUrl,
+        })),
+      });
+    });
 };
 
 const runInteropTarget = async (
@@ -1987,6 +2585,31 @@ const swapEvidenceDirectoryIntoPlace = async (
   }
 };
 
+const formatGeneratedOutputs = async (): Promise<void> => {
+  const result = await runCommand(
+    [
+      "bunx",
+      "--bun",
+      "oxfmt",
+      "--write",
+      COMPATIBILITY_MATRIX_PATH,
+      EVIDENCE_DIRECTORY,
+    ],
+    {
+      captureOutput: true,
+      cwd: REPO_ROOT,
+    }
+  );
+
+  if (result.code !== 0) {
+    throw new Error(
+      result.stderr ||
+        result.stdout ||
+        "formatting generated compatibility outputs failed"
+    );
+  }
+};
+
 const main = async (): Promise<void> => {
   await assertConformanceRunnerParity();
   const allowFailingEvidence = process.argv.includes(
@@ -2069,629 +2692,6 @@ const main = async (): Promise<void> => {
     throw new Error("one or more conformance targets failed");
   }
 };
-
-function readInteropTelemetryScenarioReport(
-  report: unknown,
-  expectedScenarioSet: Set<string>,
-  seenScenarios: Set<string>,
-  currentSchemaUrl: string | undefined
-):
-  | {
-      observedKeys: string[];
-      scenario: InteropTelemetrySummary["scenarios"][number];
-      schemaUrl: string;
-    }
-  | undefined {
-  if (
-    !isRecord(report) ||
-    typeof report.scenario !== "string" ||
-    !expectedScenarioSet.has(report.scenario) ||
-    seenScenarios.has(report.scenario)
-  ) {
-    return undefined;
-  }
-
-  const { telemetry } = report;
-
-  if (
-    !isRecord(telemetry) ||
-    typeof telemetry.schemaUrl !== "string" ||
-    !Array.isArray(telemetry.observedKeys) ||
-    !isRecord(telemetry.attributes)
-  ) {
-    return undefined;
-  }
-
-  if (
-    currentSchemaUrl !== undefined &&
-    currentSchemaUrl !== telemetry.schemaUrl
-  ) {
-    // Mixed schema URLs would make the checked-in evidence internally
-    // inconsistent, so reject the whole summary instead of weakening it.
-    return undefined;
-  }
-
-  const observedKeys = telemetry.observedKeys.filter(
-    (value): value is string => typeof value === "string"
-  );
-  const scenario = {
-    // Interop telemetry values include run ids, branch ids, and checkpoint
-    // hashes that are intentionally different on every smoke execution. The
-    // checked-in compatibility evidence keeps only the stable key coverage and
-    // schema identity so reruns stay reviewable instead of churning on known
-    // per-run entropy.
-    observedKeys,
-    scenario: report.scenario,
-  };
-
-  seenScenarios.add(report.scenario);
-  return {
-    observedKeys,
-    scenario,
-    schemaUrl: telemetry.schemaUrl,
-  };
-}
-
-function extractTrailingJsonObject(stdout: string): string {
-  const prefixedJsonLines = stdout
-    .split("\n")
-    .filter((line) => PREFIXED_OUTPUT_PATTERN.test(line))
-    .map((line) => line.replace(PREFIXED_OUTPUT_PATTERN, ""));
-
-  if (prefixedJsonLines.length > 0) {
-    const jsonStart = prefixedJsonLines.findIndex((line) =>
-      line.trimStart().startsWith("{")
-    );
-
-    if (jsonStart !== -1) {
-      return prefixedJsonLines.slice(jsonStart).join("\n").trim();
-    }
-  }
-
-  // Locate the last top-level JSON object in the stdout by scanning lines for
-  // a column-zero `{` followed by a column-zero `}` after a balanced run of
-  // nested braces. This avoids treating an inner brace as the top-level start
-  // and avoids returning trailing Nx framing (e.g. " NX  Successfully ran...")
-  // that would otherwise break JSON.parse on otherwise-clean runner output.
-  const lines = stdout.split("\n");
-  let openIndex = -1;
-
-  for (let index = lines.length - 1; index >= 0; index -= 1) {
-    const line = lines[index];
-
-    if (line?.startsWith("}")) {
-      // Walk backward looking for the matching column-zero `{` that opened
-      // this trailing object. Use indentation as a proxy for nesting depth
-      // since the runners emit pretty-printed JSON.
-      for (let inner = index - 1; inner >= 0; inner -= 1) {
-        const innerLine = lines[inner];
-
-        if (innerLine?.startsWith("{")) {
-          openIndex = inner;
-          break;
-        }
-      }
-
-      if (openIndex !== -1) {
-        return lines
-          .slice(openIndex, index + 1)
-          .join("\n")
-          .trim();
-      }
-
-      break;
-    }
-  }
-
-  const trimmed = stdout.trim();
-  const objectStart = trimmed.lastIndexOf("\n{");
-
-  if (objectStart === -1) {
-    return trimmed;
-  }
-
-  return trimmed.slice(objectStart + 1);
-}
-
-function extractJsonObjectCandidates(stdout: string): string[] {
-  const candidates: string[] = [];
-  let depth = 0;
-  let startIndex = -1;
-  let inString = false;
-  let escaped = false;
-
-  for (let index = 0; index < stdout.length; index += 1) {
-    const character = stdout[index];
-
-    if (character === undefined) {
-      continue;
-    }
-
-    const stringState = advanceJsonStringState({
-      character,
-      escaped,
-      inString,
-    });
-    escaped = stringState.escaped;
-    inString = stringState.inString;
-
-    if (stringState.handled) {
-      continue;
-    }
-
-    const braceState = advanceJsonBraceState({
-      candidates,
-      character,
-      depth,
-      index,
-      startIndex,
-      stdout,
-    });
-    depth = braceState.depth;
-    startIndex = braceState.startIndex;
-  }
-
-  return candidates;
-}
-
-function advanceJsonStringState(input: {
-  character: string;
-  escaped: boolean;
-  inString: boolean;
-}): { escaped: boolean; handled: boolean; inString: boolean } {
-  if (input.escaped) {
-    return {
-      escaped: false,
-      handled: true,
-      inString: input.inString,
-    };
-  }
-
-  if (input.character === "\\") {
-    return {
-      escaped: true,
-      handled: true,
-      inString: input.inString,
-    };
-  }
-
-  if (input.character === '"') {
-    return {
-      escaped: false,
-      handled: true,
-      inString: !input.inString,
-    };
-  }
-
-  if (input.inString) {
-    return {
-      escaped: false,
-      handled: true,
-      inString: true,
-    };
-  }
-
-  return {
-    escaped: false,
-    handled: false,
-    inString: false,
-  };
-}
-
-function advanceJsonBraceState(input: {
-  candidates: string[];
-  character: string;
-  depth: number;
-  index: number;
-  startIndex: number;
-  stdout: string;
-}): { depth: number; startIndex: number } {
-  if (input.character === "{") {
-    if (input.depth === 0) {
-      return {
-        depth: 1,
-        startIndex: input.index,
-      };
-    }
-
-    return {
-      depth: input.depth + 1,
-      startIndex: input.startIndex,
-    };
-  }
-
-  if (input.character !== "}" || input.depth === 0) {
-    return {
-      depth: input.depth,
-      startIndex: input.startIndex,
-    };
-  }
-
-  const nextDepth = input.depth - 1;
-
-  if (nextDepth === 0 && input.startIndex !== -1) {
-    input.candidates.push(
-      input.stdout.slice(input.startIndex, input.index + 1)
-    );
-    return {
-      depth: 0,
-      startIndex: -1,
-    };
-  }
-
-  return {
-    depth: nextDepth,
-    startIndex: input.startIndex,
-  };
-}
-
-function parseInteropScenarioReportCandidate(
-  candidate: string
-): InteropScenarioReport | undefined {
-  let parsed: unknown;
-
-  try {
-    parsed = JSON.parse(candidate);
-  } catch {
-    return undefined;
-  }
-
-  if (
-    !(
-      isRecord(parsed) &&
-      Array.isArray(parsed.reports) &&
-      Array.isArray(parsed.scenarios)
-    )
-  ) {
-    return undefined;
-  }
-
-  const scenarios = readExpectedInteropScenarios(parsed.scenarios);
-
-  if (scenarios.length === 0) {
-    return undefined;
-  }
-
-  const reports = parsed.reports
-    .map((report) => readInteropScenarioEntry(report))
-    .filter(
-      (report): report is InteropScenarioReport["reports"][number] =>
-        report !== undefined
-    );
-
-  if (reports.length !== scenarios.length) {
-    return undefined;
-  }
-
-  return {
-    reports,
-    scenarios,
-  };
-}
-
-function readConformanceEvidence(
-  stdout: string
-): ConformanceEvidence | undefined {
-  const trimmed = stdout.trim();
-
-  if (trimmed.length === 0) {
-    return undefined;
-  }
-
-  try {
-    const parsed = JSON.parse(extractTrailingJsonObject(stdout));
-    assertConformanceEvidence(parsed, "runner evidence");
-    return parsed;
-  } catch {
-    return undefined;
-  }
-}
-
-function createFallbackEvidence(
-  suiteManifest: ConformanceSuiteManifest,
-  implementationId: string,
-  language: string,
-  checkResults: readonly ConformanceCheckResult[]
-): ConformanceEvidence {
-  const summary = createConformanceEvidenceSummary(checkResults);
-
-  return {
-    boundary: suiteManifest.boundary,
-    checkResults: [...checkResults],
-    implementationId,
-    language,
-    status: summary.failedChecks === 0 ? "pass" : "fail",
-    suiteId: suiteManifest.suiteId,
-    suiteVersion: suiteManifest.suiteVersion,
-    summary,
-  };
-}
-
-function createFallbackCheckResults(
-  suiteManifest: ConformanceSuiteManifest,
-  applicabilityKey: "implementations" | "interopPairs",
-  applicabilityId: string,
-  message: string
-): ConformanceCheckResult[] {
-  return suiteManifest.checks
-    .filter((check) => check[applicabilityKey]?.includes(applicabilityId))
-    .map((check) =>
-      createCheckResult(
-        check.checkId,
-        check.assertions.map((assertionId) =>
-          createAssertionResult(assertionId, false, message)
-        ),
-        {
-          expectedEvidence: check.expectedEvidence,
-        }
-      )
-    );
-}
-
-function createInteropCheckResults(
-  suiteManifest: ConformanceSuiteManifest,
-  pairId: string,
-  report: InteropScenarioReport
-): ConformanceCheckResult[] {
-  const reportByScenario = new Map(
-    report.reports.map((entry) => [entry.scenario, entry] as const)
-  );
-
-  return suiteManifest.checks
-    .filter((check) => check.interopPairs?.includes(pairId))
-    .map((check) => {
-      // One named interop check may intentionally aggregate more than one
-      // scenario report. We keep that fan-in explicit here so the checked-in
-      // evidence matches the boundary-owned check catalog rather than the
-      // playground script's current scenario granularity.
-      const expectedScenarioIds = check.scenarioIds ?? [];
-      const scenarioReports = expectedScenarioIds
-        .map((scenarioId) => reportByScenario.get(scenarioId))
-        .filter(
-          (
-            scenarioReport
-          ): scenarioReport is InteropScenarioReport["reports"][number] =>
-            scenarioReport !== undefined
-        );
-      const missingScenarioIds = expectedScenarioIds.filter(
-        (scenarioId) => !reportByScenario.has(scenarioId)
-      );
-      const assertionResults = check.assertions.map((assertionId) => {
-        const passed =
-          missingScenarioIds.length === 0 &&
-          scenarioReports.every(
-            (scenarioReport) => scenarioReport.checks[assertionId]
-          );
-        let message: string | undefined;
-
-        if (missingScenarioIds.length > 0) {
-          message = `interop scenario report is missing required scenarios: ${missingScenarioIds.join(", ")}`;
-        } else if (
-          // Missing manifest-declared scenarios must fail the whole check.
-          // Otherwise `every()` on an empty subset would let a vanished
-          // smoke lane produce a false green compatibility artifact.
-          !scenarioReports.some(
-            (scenarioReport) => scenarioReport.checks[assertionId]
-          )
-        ) {
-          message =
-            "interop scenario report did not mark this assertion as passing";
-        }
-
-        return createAssertionResult(assertionId, passed, message);
-      });
-
-      return createCheckResult(check.checkId, assertionResults, {
-        missingScenarioIds,
-        scenario: check.scenarioIds ?? [],
-        telemetry: scenarioReports.map((scenarioReport) => ({
-          observedKeys: scenarioReport.telemetry.observedKeys,
-          scenario: scenarioReport.scenario,
-          schemaUrl: scenarioReport.telemetry.schemaUrl,
-        })),
-      });
-    });
-}
-
-async function formatGeneratedOutputs(): Promise<void> {
-  const result = await runCommand(
-    [
-      "bunx",
-      "--bun",
-      "oxfmt",
-      "--write",
-      COMPATIBILITY_MATRIX_PATH,
-      EVIDENCE_DIRECTORY,
-    ],
-    {
-      captureOutput: true,
-      cwd: REPO_ROOT,
-    }
-  );
-
-  if (result.code !== 0) {
-    throw new Error(
-      result.stderr ||
-        result.stdout ||
-        "formatting generated compatibility outputs failed"
-    );
-  }
-}
-
-async function assertCompatibilityMatrixSchema(
-  value: CompatibilityMatrix
-): Promise<void> {
-  const schemaText = await readFile(COMPATIBILITY_SCHEMA_PATH, "utf-8");
-  const parsedSchema = readJsonSchema(JSON.parse(schemaText));
-  const validate = ajv.compile(parsedSchema);
-
-  // The checked-in schema is the machine contract for compatibility evidence,
-  // so codegen validates against it directly instead of relying only on the
-  // narrower TypeScript assertions above.
-  if (validate(value)) {
-    return;
-  }
-
-  throw new Error(
-    `compatibility matrix failed JSON Schema validation: ${ajv.errorsText(validate.errors)}`
-  );
-}
-
-function readJsonSchema(value: unknown): AnySchema {
-  if (typeof value === "boolean" || isRecord(value)) {
-    return value;
-  }
-
-  throw new Error("compatibility matrix schema must be an object or boolean");
-}
-
-function assertCompatibilityMatrix(
-  value: CompatibilityMatrix
-): asserts value is CompatibilityMatrix {
-  if (
-    !Number.isSafeInteger(value.generatedAtMs) ||
-    value.generatedAtMs < 0 ||
-    value.sourceRevision.length === 0
-  ) {
-    throw new Error(
-      "compatibility matrix must contain a generatedAtMs timestamp and sourceRevision"
-    );
-  }
-
-  for (const suite of value.suites) {
-    if (
-      suite.boundary.length === 0 ||
-      suite.suiteId.length === 0 ||
-      suite.suiteVersion.length === 0
-    ) {
-      throw new Error(
-        "compatibility matrix suites must contain non-empty fields"
-      );
-    }
-  }
-
-  for (const implementation of value.implementations) {
-    if (
-      implementation.implementationId.length === 0 ||
-      implementation.language.length === 0 ||
-      implementation.version.length === 0
-    ) {
-      throw new Error(
-        "compatibility matrix implementations must contain non-empty fields"
-      );
-    }
-
-    for (const result of implementation.results) {
-      if (
-        result.evidencePath.length === 0 ||
-        result.reportLabel.length === 0 ||
-        result.suiteId.length === 0 ||
-        result.suiteVersion.length === 0
-      ) {
-        throw new Error(
-          "compatibility matrix implementation results must contain non-empty fields"
-        );
-      }
-
-      assertCompatibilityReportStatus(result.reportStatus);
-      assertCompatibilityCheckSummary(result.checkSummary);
-      assertCompatibilityResultCheckIds(
-        result.checkIds,
-        result.checkSummary,
-        "compatibility matrix implementation results"
-      );
-    }
-  }
-
-  for (const interopResult of value.interop) {
-    if (
-      interopResult.evidencePath.length === 0 ||
-      interopResult.pairId.length === 0 ||
-      interopResult.reportLabel.length === 0 ||
-      interopResult.suiteId.length === 0 ||
-      interopResult.suiteVersion.length === 0
-    ) {
-      throw new Error(
-        "compatibility matrix interop results must contain non-empty fields"
-      );
-    }
-
-    assertCompatibilityReportStatus(interopResult.reportStatus);
-    assertCompatibilityCheckSummary(interopResult.checkSummary);
-    assertCompatibilityResultCheckIds(
-      interopResult.checkIds,
-      interopResult.checkSummary,
-      "compatibility matrix interop results"
-    );
-  }
-}
-
-function assertCompatibilityResultCheckIds(
-  checkIds: readonly string[],
-  summary: CompatibilityCheckSummary,
-  label: string
-): void {
-  if (checkIds.length > 0) {
-    return;
-  }
-
-  if (
-    summary.totalChecks === (summary.nonApplicableChecks ?? 0) &&
-    (summary.applicableChecks ?? 0) === 0
-  ) {
-    return;
-  }
-
-  throw new Error(`${label} must contain check ids for applicable checks`);
-}
-
-function assertCompatibilityCheckSummary(
-  value: CompatibilityCheckSummary
-): void {
-  const applicableChecks =
-    value.applicableChecks ?? value.failedChecks + value.passedChecks;
-  const nonApplicableChecks = value.nonApplicableChecks ?? 0;
-
-  if (
-    !(
-      Number.isSafeInteger(applicableChecks) &&
-      Number.isSafeInteger(value.failedChecks) &&
-      Number.isSafeInteger(value.passedChecks) &&
-      Number.isSafeInteger(value.totalChecks) &&
-      Number.isSafeInteger(nonApplicableChecks)
-    ) ||
-    applicableChecks < 0 ||
-    value.failedChecks < 0 ||
-    value.passedChecks < 0 ||
-    nonApplicableChecks < 0 ||
-    value.totalChecks <= 0 ||
-    applicableChecks !== value.failedChecks + value.passedChecks ||
-    applicableChecks + nonApplicableChecks !== value.totalChecks
-  ) {
-    throw new Error(
-      `compatibility matrix check summaries must be internally consistent: ${JSON.stringify(value)}`
-    );
-  }
-}
-
-function assertCompatibilityReportStatus(
-  value: string
-): asserts value is CompatibilityReportStatus {
-  if (
-    value !== "full_pass" &&
-    value !== "capability_subset_pass" &&
-    value !== "unsupported" &&
-    value !== "not_applicable" &&
-    value !== "expected_fail" &&
-    value !== "unexpected_fail"
-  ) {
-    throw new Error(`unknown compatibility report status: ${value}`);
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
 
 await main();
 
