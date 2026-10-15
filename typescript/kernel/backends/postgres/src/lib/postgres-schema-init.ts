@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  NOOP_PHASE_OBSERVER,
-  type PhaseObserver,
-} from "@tuvren/backend-shared";
+import { NOOP_PHASE_OBSERVER } from "@tuvren/backend-shared";
+import type { PhaseObserver } from "@tuvren/backend-shared";
 import type { EpochMs } from "@tuvren/core";
 import type { Sql, TransactionSql } from "postgres";
 
@@ -39,11 +37,11 @@ import {
   resolveMigrationDirectory,
 } from "./postgres-schema.js";
 import {
-  type DbSql,
   deriveAdvisoryLockKey,
   qualifyIdentifier,
   quoteIdentifier,
 } from "./postgres-sql.js";
+import type { DbSql } from "./postgres-sql.js";
 
 type Tx = TransactionSql<Record<string, never>>;
 
@@ -275,7 +273,7 @@ export async function validateRelationalSchemaPosture(
     );
   }
 
-  const presentTables = await sql.unsafe<Array<{ table_name: string }>>(
+  const presentTables = await sql.unsafe<{ table_name: string }[]>(
     `SELECT table_name
        FROM information_schema.tables
       WHERE table_schema = $1
@@ -328,7 +326,7 @@ export async function validateRelationalSchemaPosture(
     );
   }
 
-  const presentIndexes = await sql.unsafe<Array<{ indexname: string }>>(
+  const presentIndexes = await sql.unsafe<{ indexname: string }[]>(
     `SELECT indexname
        FROM pg_indexes
       WHERE schemaname = $1
@@ -349,7 +347,7 @@ export async function validateRelationalSchemaPosture(
   }
 
   const misCollatedColumns = await sql.unsafe<
-    Array<{ column_name: string; table_name: string }>
+    { column_name: string; table_name: string }[]
   >(
     `SELECT table_name, column_name
        FROM information_schema.columns
@@ -509,7 +507,7 @@ async function loadAppliedMigrations(
   sql: DbSql,
   migrationsTable: string
 ): Promise<Set<string>> {
-  const rows = await sql.unsafe<Array<{ name: string }>>(
+  const rows = await sql.unsafe<{ name: string }[]>(
     `SELECT name FROM ${migrationsTable} ORDER BY name`
   );
   return new Set(rows.map((row) => row.name));
@@ -520,7 +518,7 @@ async function tableExists(
   schemaName: string,
   tableName: string
 ): Promise<boolean> {
-  const rows = await tx.unsafe<Array<{ exists: boolean }>>(
+  const rows = await tx.unsafe<{ exists: boolean }[]>(
     `SELECT EXISTS (
        SELECT 1
          FROM information_schema.tables
@@ -545,7 +543,7 @@ async function schemaExistsInDatabase(
   tx: Tx,
   schemaName: string
 ): Promise<boolean> {
-  const rows = await tx.unsafe<Array<{ exists: boolean }>>(
+  const rows = await tx.unsafe<{ exists: boolean }[]>(
     `SELECT EXISTS (
        SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
      ) AS exists`,
@@ -572,7 +570,7 @@ async function assertNoLegacyBlobSnapshotsTableElsewhere(
   tx: Tx,
   configuredSchemaName: string
 ): Promise<void> {
-  const rows = await tx.unsafe<Array<{ table_schema: string }>>(
+  const rows = await tx.unsafe<{ table_schema: string }[]>(
     `SELECT n.nspname AS table_schema
        FROM pg_catalog.pg_class c
        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace

@@ -45,17 +45,16 @@ import {
   assertStoredTurnTree,
   assertStoredTurnTreePath,
   decodeDeterministicKernelRecord,
-  type StoredStagedResult,
-  type StoredTurnTree,
-  type StoredTurnTreePath,
+} from "@tuvren/kernel-protocol";
+import type {
+  StoredStagedResult,
+  StoredTurnTree,
+  StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 
 import { persistenceError } from "./postgres-errors.js";
-import {
-  type BackendState,
-  createEmptyState,
-  decodeTurnTreeSchema,
-} from "./postgres-records.js";
+import { createEmptyState, decodeTurnTreeSchema } from "./postgres-records.js";
+import type { BackendState } from "./postgres-records.js";
 import {
   cloneStoredBranch,
   cloneStoredObject,

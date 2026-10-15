@@ -16,35 +16,36 @@
 
 import { AsyncLocalStorage } from "node:async_hooks";
 
-import {
-  NOOP_PHASE_OBSERVER,
-  type PhaseObserver,
-} from "@tuvren/backend-shared";
-import { assertScope, DEFAULT_SCOPE, type Scope } from "@tuvren/core";
+import { NOOP_PHASE_OBSERVER } from "@tuvren/backend-shared";
+import type { PhaseObserver } from "@tuvren/backend-shared";
+import { assertScope, DEFAULT_SCOPE } from "@tuvren/core";
+import type { Scope } from "@tuvren/core";
 import {
   assertStoredObjectIdentity,
   assertStoredOrderedPathChunkIdentity,
   assertStoredTurnNodeIdentity,
   assertStoredTurnTreeIdentity,
-  type BackendCapability,
   encodeDeterministicKernelRecord,
   hashKernelRecord,
-  type RuntimeBackend as KrakenBackend,
-  type RuntimeBackendTx as KrakenBackendTx,
-  type ReclamationOptions,
-  type ReclamationSummary,
-  type StoredOrderedPathChunk,
-  type StoredTurnTreePath,
+} from "@tuvren/kernel-protocol";
+import type {
+  BackendCapability,
+  RuntimeBackend as KrakenBackend,
+  RuntimeBackendTx as KrakenBackendTx,
+  ReclamationOptions,
+  ReclamationSummary,
+  StoredOrderedPathChunk,
+  StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 import type { Sql } from "postgres";
 
 import {
   createPostgresClient,
   normalizeSchemaName,
-  type PostgresBackendPersistenceOptions,
   SCOPE_LOCK_TIMEOUT_MS,
   wasSchemaNameDefaulted,
 } from "./postgres-backend-persistence.js";
+import type { PostgresBackendPersistenceOptions } from "./postgres-backend-persistence.js";
 import {
   assertBranchHeadMoveIsLinearInDatabase,
   insertTurnNodeLineageMetadata,
@@ -92,11 +93,8 @@ import {
 } from "./postgres-lookups.js";
 import { assertReclamationSurvivorInvariants } from "./postgres-reclamation-validation.js";
 import { reclaimBackendState } from "./postgres-reclamation.js";
-import {
-  type BackendState,
-  decodeHashStringArray,
-  loadState,
-} from "./postgres-records.js";
+import { decodeHashStringArray, loadState } from "./postgres-records.js";
+import type { BackendState } from "./postgres-records.js";
 import { createCoreRepositories } from "./postgres-repositories-core.js";
 import { createSupportRepositories } from "./postgres-repositories-support.js";
 import {
@@ -117,10 +115,8 @@ import {
   ensurePostgresRelationalSchemaInitialized,
   validateRelationalSchemaPosture,
 } from "./postgres-schema-init.js";
-import {
-  RELATIONAL_REQUIRED_TABLES,
-  type RelationalTableName,
-} from "./postgres-schema.js";
+import { RELATIONAL_REQUIRED_TABLES } from "./postgres-schema.js";
+import type { RelationalTableName } from "./postgres-schema.js";
 import type { DbSql } from "./postgres-sql.js";
 import {
   assertPostgresIndexedText,
@@ -989,8 +985,8 @@ function createRepositories(
       },
       {
         areStoredTurnNodesEqual,
-        areStoredTurnTreesEqual,
         areStoredTurnTreePathsEqual,
+        areStoredTurnTreesEqual,
         assertBranchHeadMoveIsLinearInDatabase,
         assertImmutableField,
         assertImmutableOptionalField,
@@ -1122,8 +1118,8 @@ function captureReclamationKeys(state: BackendState): ReclamationSurvivorKeys {
     orderedPathChunks: new Set(state.orderedPathChunks.keys()),
     runs: new Set(state.runs.keys()),
     turnNodes: new Set(state.turnNodes.keys()),
-    turns: new Set(state.turns.keys()),
     turnTrees: new Set(state.turnTrees.keys()),
+    turns: new Set(state.turns.keys()),
   };
 }
 
@@ -1462,7 +1458,7 @@ function encodeHashStringArray(hashes: string[]): Uint8Array {
  * rendezvous clock.
  */
 async function readBackendClockMs(reserved: Sql): Promise<number> {
-  const rows = await reserved.unsafe<Array<{ now_ms: string }>>(
+  const rows = await reserved.unsafe<{ now_ms: string }[]>(
     "SELECT (extract(epoch from clock_timestamp()) * 1000)::bigint AS now_ms"
   );
   const rawNowMs = rows[0]?.now_ms;

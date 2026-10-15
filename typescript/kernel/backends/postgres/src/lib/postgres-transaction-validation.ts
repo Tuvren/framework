@@ -328,7 +328,7 @@ async function validateThreadInDatabase(
   }
 
   const threadsTable = qualifyIdentifier(schemaName, "threads");
-  const duplicateRootThreads = await sql.unsafe<Array<{ thread_id: string }>>(
+  const duplicateRootThreads = await sql.unsafe<{ thread_id: string }[]>(
     `
       SELECT thread_id
       FROM ${threadsTable}
@@ -496,8 +496,8 @@ async function validateArchiveBranchInDatabase(
       "new archive branches must preserve the pre-rollback source branch head",
       "postgres_backend_branch_archive_head_mismatch",
       {
-        archivedFromBranchId: branch.archivedFromBranchId,
         archiveHeadTurnNodeHash: branch.headTurnNodeHash,
+        archivedFromBranchId: branch.archivedFromBranchId,
         sourceHeadTurnNodeHash: sourceBranchBeforeTransaction.headTurnNodeHash,
       }
     );

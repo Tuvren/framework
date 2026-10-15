@@ -29,17 +29,17 @@ import {
   ensureTurnNodeLineageMetadataInDatabase,
   selectBranchesByThread,
 } from "./postgres-lookups.js";
-import {
-  decodeUnknownTurnRow,
-  type PostgresTurnNodeLineageProofRow,
-  type PostgresTurnRow,
-  type TurnNodeLineageMetadata,
+import { decodeUnknownTurnRow } from "./postgres-records.js";
+import type {
+  PostgresTurnNodeLineageProofRow,
+  PostgresTurnRow,
+  TurnNodeLineageMetadata,
 } from "./postgres-records.js";
 import {
   decodeRunCreatedTurnNodeHashes,
   getRunActiveTurnNodeHash,
-  type TurnNodeRelationship,
 } from "./postgres-run-invariants.js";
+import type { TurnNodeRelationship } from "./postgres-run-invariants.js";
 import type { DbSql } from "./postgres-sql.js";
 import { qualifyIdentifier } from "./postgres-sql.js";
 import type { TransactionWriteTracker } from "./postgres-write-tracker.js";
@@ -933,7 +933,7 @@ async function isTurnNodeDescendantOfInDatabase(
   }
 
   const table = qualifyIdentifier(schemaName, "turn_nodes");
-  const rows = await sql.unsafe<Array<{ found: number }>>(
+  const rows = await sql.unsafe<{ found: number }[]>(
     `
       WITH RECURSIVE lineage(hash, previous_turn_node_hash, remaining_depth) AS (
         SELECT hash, previous_turn_node_hash, $3::int AS remaining_depth

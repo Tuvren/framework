@@ -32,14 +32,11 @@ import {
   formatNs,
   percentile,
   readSampleCountFromEnv,
-  type TimingStats,
 } from "@tuvren/kernel-testkit";
+import type { TimingStats } from "@tuvren/kernel-testkit";
 
-import {
-  createPostgresBackend,
-  destroyPostgresBackend,
-  type PostgresBackendOptions,
-} from "../src/index.js";
+import { createPostgresBackend, destroyPostgresBackend } from "../src/index.js";
+import type { PostgresBackendOptions } from "../src/index.js";
 
 async function closeBackend(
   backend: ReturnType<typeof createPostgresBackend>

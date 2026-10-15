@@ -21,14 +21,16 @@ import {
   assertStoredTurnNode,
   assertStoredTurnTree,
   assertStoredTurnTreePath,
-  type RuntimeBackendTx as KrakenBackendTx,
-  type StoredBranch,
-  type StoredRun,
-  type StoredTurn,
-  type StoredTurnNode,
-  type StoredTurnTree,
-  type StoredTurnTreePath,
-  type TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
+import type {
+  RuntimeBackendTx as KrakenBackendTx,
+  StoredBranch,
+  StoredRun,
+  StoredTurn,
+  StoredTurnNode,
+  StoredTurnTree,
+  StoredTurnTreePath,
+  TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 
 import { persistenceError } from "./postgres-errors.js";

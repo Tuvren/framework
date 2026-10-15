@@ -271,8 +271,8 @@ export function resolveMigrationDirectory(
   persistenceError: PostgresPersistenceErrorFactory
 ): string {
   const candidates = [
-    fileURLToPath(new URL("./postgres-migrations", import.meta.url)),
-    fileURLToPath(new URL("./migrations", import.meta.url)),
+    fileURLToPath(new URL("postgres-migrations", import.meta.url)),
+    fileURLToPath(new URL("migrations", import.meta.url)),
     fileURLToPath(new URL("../../migrations", import.meta.url)),
     fileURLToPath(new URL("../migrations", import.meta.url)),
   ];
@@ -300,5 +300,5 @@ export function readMigrationSql(
   migrationDirectory: string,
   migrationName: string
 ): string {
-  return readFileSync(`${migrationDirectory}/${migrationName}`, "utf8");
+  return readFileSync(`${migrationDirectory}/${migrationName}`, "utf-8");
 }
