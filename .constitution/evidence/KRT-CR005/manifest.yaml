@@ -2,7 +2,7 @@ owner: KRT-CR005
 mode: contract_test
 produced:
   date: 2026-10-15
-  commit: 4e013b4
+  commit: f9b49f2
   command: LC_ALL=C flock /tmp/tuvren-wave-1-verification.lock direnv exec . env PGHOST=/run/user/1000/devenv-3ea1e50/postgres PGPORT=5432 bun run conformance; LC_ALL=C flock /tmp/tuvren-wave-1-verification.lock direnv exec . env PGHOST=/run/user/1000/devenv-3ea1e50/postgres PGPORT=5432 bun run nx run framework-typescript-certification:conformance; LC_ALL=C flock /tmp/tuvren-wave-1-verification.lock direnv exec . env PGHOST=/run/user/1000/devenv-3ea1e50/postgres PGPORT=5432 NX_PARALLEL=1 bun run compatibility:evidence; LC_ALL=C flock /tmp/tuvren-wave-1-verification.lock direnv exec . env PGHOST=/run/user/1000/devenv-3ea1e50/postgres PGPORT=5432 bun run compatibility:check; LC_ALL=C flock /tmp/tuvren-wave-1-verification.lock direnv exec . env PGHOST=/run/user/1000/devenv-3ea1e50/postgres PGPORT=5432 bun run docs:authority-freeze; LC_ALL=C flock /tmp/tuvren-wave-1-verification.lock direnv exec . env PGHOST=/run/user/1000/devenv-3ea1e50/postgres PGPORT=5432 bun run docs:authority-freeze:check; LC_ALL=C flock /tmp/tuvren-wave-1-verification.lock direnv exec . env PGHOST=/run/user/1000/devenv-3ea1e50/postgres PGPORT=5432 bun run changeset:check --base=master
 files:
   - path: m5-conformance-summary.md
@@ -10,7 +10,7 @@ files:
     bytes: 1905
     role: measurement
   - path: m6-docs-summary.md
-    sha256: be44fef0a927c0ea222ae0e2ff61f980b3210e22af0ee22d80358d2831b37c77
-    bytes: 1024
+    sha256: abb868e4cc2f441ccb889482624d13d2804c8bb3a42588612435878df93480c0
+    bytes: 1577
     role: measurement
 pass_criteria: The shared plan and core packet agree at 0.3.0; the three stale-recovery checks grade runner suppression, the exact missing-call set including nonRetryable, and original idempotency keys from implementation observations; all required evidence is present; conformance and compatibility gates exit 0.
