@@ -2,8 +2,8 @@ owner: KRT-BZ004
 mode: contract_test
 produced:
   date: '2026-10-15'
-  commit: 446fded43e78ca94746a2b131ead270e38fc3cb5
-  command: 'KRT-BZ001 captures plus KRT-BZ003 M8-M9 scoped initialization, structural equivalence, typecheck, test, and conformance proof'
+  commit: b1f58cd1edb1d0fbe2793629d1ac93156b12599c
+  command: 'KRT-BZ001 captures plus KRT-BZ003 M8-M10 frozen-candidate equivalence, initialization, structural, diagnostic, test, typecheck, and conformance proof'
 files:
   - path: M1-raw-diagnostics.tar.gz
     sha256: 0c6905b1398eafb2f298810df123198d5df7af6cbc2996936556c8a6d2e8bae6
@@ -69,4 +69,12 @@ files:
     sha256: 60c133d8991bac5fd974ee5b4446f9a771ff2fc91cd72e79dd576044213f3ba5
     bytes: 3213
     role: measurement
-pass_criteria: 'KRT-BZ001 captures remain parseable. M8 preserves provider export/error identity and removes 12/32 target diagnostics. M9 preserves all 37 testkit definitions and fresh-process payloads, removes 37/41 target diagnostics with unrelated debt unchanged, and passes scoped tests/typechecks, workspace typecheck, and provider conformance.'
+  - path: M10-proof.tar.gz
+    sha256: c4b852e2083b5410af1a8d5066cacfc30b986099819272258a8319ebfe461789
+    bytes: 95691
+    role: measurement
+  - path: M10-proof-index.json
+    sha256: 15e6f235f74074646782b010aeabb509d191240402d943d51d419251eea5f2fd
+    bytes: 5929
+    role: measurement
+pass_criteria: 'KRT-BZ001 captures remain parseable. M8-M9 preserve provider/testkit initialization and remove their target diagnostics. M10 is byte-equal to the frozen generate/prompt candidates, removes all 46 cohort target diagnostics with unrelated diagnostics exact-equal, preserves focused initialization/error/event ordering, and passes bridge tests/typecheck plus workspace and provider conformance.'

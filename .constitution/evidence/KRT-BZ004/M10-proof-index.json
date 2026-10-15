@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "ticket": "KRT-BZ003",
+  "milestone": "M10-resolved",
+  "baselineCommit": "46c18b54f9bf686184edc132c335bc31886d7f6f",
+  "cohort": [
+    "typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-generate.ts",
+    "typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-prompt.ts"
+  ],
+  "changedFiles": [
+    "typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-generate.ts",
+    "typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-prompt.ts"
+  ],
+  "diff": {
+    "files": 2,
+    "added": 570,
+    "removed": 582,
+    "changed": 1152,
+    "perFile": {
+      "ai-sdk-provider-bridge-generate.ts": {
+        "added": 233,
+        "removed": 240,
+        "changed": 473
+      },
+      "ai-sdk-provider-bridge-prompt.ts": {
+        "added": 337,
+        "removed": 342,
+        "changed": 679
+      }
+    }
+  },
+  "sourceHashes": {
+    "typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-generate.ts": {
+      "before": "7f95d198896b7bda9a98f637ea09cd979030481a03b7dad5412312cf274caa51",
+      "candidate": "1542cdbfad583e507ebbb4e5e04b085758a50e8c6e47af4ffebe425ce55673d0",
+      "after": "1542cdbfad583e507ebbb4e5e04b085758a50e8c6e47af4ffebe425ce55673d0"
+    },
+    "typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-prompt.ts": {
+      "before": "ae23b224bdb4a68125491c4cec84149016722e6a5f6a932ad79fe560398b8472",
+      "candidate": "ef5e0f830b52538e6b072f1a2edf0e107b5143b724737e642dcc1470b93c04dc",
+      "after": "ef5e0f830b52538e6b072f1a2edf0e107b5143b724737e642dcc1470b93c04dc"
+    }
+  },
+  "frozenCandidateEquivalence": {
+    "generateByteEqual": true,
+    "promptByteEqual": true,
+    "independentReview": "/tmp/bz-m10-independent-review.json",
+    "reviewSummary": "/tmp/bz-m10-review-summary.ts",
+    "functionBodiesSignaturesExportsAsyncAndNonFunctionAstEqual": true
+  },
+  "conversion": {
+    "declarationsToConstArrows": 26,
+    "generateFunctions": 12,
+    "promptFunctions": 14,
+    "dependencyCycles": 0,
+    "lexicalHazards": 0,
+    "bodyChanges": 0,
+    "signatureChanges": 0,
+    "exportOrAsyncChanges": 0
+  },
+  "diagnostics": {
+    "syntactic": {
+      "before": {
+        "total": 333,
+        "targetRuleTotal": 255,
+        "cohortTotal": 56,
+        "cohortTarget": 46,
+        "cohortOther": 10,
+        "otherFiles": 277
+      },
+      "after": {
+        "total": 287,
+        "targetRuleTotal": 209,
+        "cohortTotal": 10,
+        "cohortTarget": 0,
+        "cohortOther": 10,
+        "otherFiles": 277
+      }
+    },
+    "typeAware": {
+      "before": {
+        "total": 426,
+        "targetRuleTotal": 255,
+        "cohortTotal": 63,
+        "cohortTarget": 46,
+        "cohortOther": 17,
+        "otherFiles": 363
+      },
+      "after": {
+        "total": 380,
+        "targetRuleTotal": 209,
+        "cohortTotal": 17,
+        "cohortTarget": 0,
+        "cohortOther": 17,
+        "otherFiles": 363
+      }
+    },
+    "proofs": {
+      "cohortTargetCleared": true,
+      "cohortOtherRuleMultisetEqual": true,
+      "otherFileDiagnosticsExactEqual": true
+    },
+    "expectedNativeExit": 1
+  },
+  "behaviorProof": {
+    "bridgeTypecheckBeforeAndAfter": true,
+    "bridgeTestsBeforeAndAfter": {
+      "passed": 66,
+      "failed": 0
+    },
+    "freshProcessImportBeforeAndAfterEqual": true,
+    "focusedInitializationErrorEventOrderingBeforeAndAfter": {
+      "passed": 25,
+      "failed": 0,
+      "suites": [
+        "runtime",
+        "rejections",
+        "tool-call normalization"
+      ]
+    },
+    "workspaceTypecheckProjects": 33,
+    "workspaceConformance": "pass",
+    "providerTestkitConformance": {
+      "passed": 1,
+      "failed": 0
+    },
+    "providerCertificationConformance": {
+      "passedChecks": 60,
+      "failedChecks": 0
+    }
+  },
+  "preserved": {
+    "bridgeModuleBlobEqualToHead": true,
+    "hoistedCreateCallOptionsAndLoadStreamResultRetained": true,
+    "retainedBiomeRoutingPasses": true,
+    "directivesChanged": false,
+    "testsChanged": false,
+    "dependenciesChanged": false,
+    "contractsChanged": false,
+    "constitutionChanged": false
+  },
+  "verificationExitCodes": {
+    "bridge-retained-biome-after": 0,
+    "bridge-test-after": 0,
+    "bridge-test-before": 0,
+    "bridge-typecheck-after": 0,
+    "bridge-typecheck-before": 0,
+    "bridge-untouched": 0,
+    "changeset-check-after": 0,
+    "cohort-nontarget-syntactic-comparison": 0,
+    "cohort-nontarget-type-aware-comparison": 0,
+    "diff-check-after": 0,
+    "fresh-process-after": 0,
+    "fresh-process-before": 0,
+    "fresh-process-comparison": 0,
+    "generate-candidate-equivalence": 0,
+    "ordering-rule-proof-after": 0,
+    "ordering-tests-after": 0,
+    "ordering-tests-before": 0,
+    "oxfmt-check-after": 0,
+    "oxlint-after": 1,
+    "oxlint-before": 1,
+    "oxlint-type-aware-after": 1,
+    "oxlint-type-aware-before": 1,
+    "prompt-candidate-equivalence": 0,
+    "providers-certification-conformance-after": 0,
+    "providers-testkit-conformance-after": 0,
+    "unrelated-syntactic-comparison": 0,
+    "unrelated-type-aware-comparison": 0,
+    "workspace-conformance-after": 0,
+    "workspace-typecheck-after": 0
+  },
+  "expectedNonzero": {
+    "oxlint-before": 1,
+    "oxlint-after": 1,
+    "oxlint-type-aware-before": 1,
+    "oxlint-type-aware-after": 1,
+    "reason": "Unrelated bridge project debt remains outside the named cohort; cohort ordering rules are zero after."
+  },
+  "changeset": ".changeset/toolchain-bz-provider-runner-lint.md",
+  "notes": [
+    "Applied the two frozen resolved candidates byte-for-byte; no candidate regeneration or formatter write was performed.",
+    "Topological reordering places dependency callables before callers and converts declarations to const arrows without changing bodies or callable contracts.",
+    "The excluded bridge, utils, stream, and test files remain unchanged; clone repair/regression stays deferred to M13."
+  ]
+}
