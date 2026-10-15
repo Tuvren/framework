@@ -491,6 +491,26 @@
           "equalsPath": "$.result.recovery.originalAttemptDispatches",
           "field": "$.recovery.resumedDispatches",
           "kind": "resultField"
+        },
+        {
+          "field": "$.recovery.originalAttemptDispatches.0.idempotencyKey",
+          "kind": "resultField",
+          "matches": "^.+$"
+        },
+        {
+          "field": "$.recovery.originalAttemptDispatches.1.idempotencyKey",
+          "kind": "resultField",
+          "matches": "^.+$"
+        },
+        {
+          "field": "$.recovery.resumedDispatches.0.idempotencyKey",
+          "kind": "resultField",
+          "matches": "^.+$"
+        },
+        {
+          "field": "$.recovery.resumedDispatches.1.idempotencyKey",
+          "kind": "resultField",
+          "matches": "^.+$"
         }
       ],
       "capabilities": ["framework.run-liveness"],

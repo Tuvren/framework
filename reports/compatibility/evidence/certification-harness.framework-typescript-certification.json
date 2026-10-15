@@ -9708,11 +9708,43 @@
           "status": "pass"
         },
         {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys.5.resultField",
+          "status": "pass"
+        },
+        {
           "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys.requiredEvidence.result.recovery.originalAttemptDispatches",
           "status": "pass"
         },
         {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys.requiredEvidence.result.recovery.originalAttemptDispatches.0.idempotencyKey",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys.requiredEvidence.result.recovery.originalAttemptDispatches.1.idempotencyKey",
+          "status": "pass"
+        },
+        {
           "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys.requiredEvidence.result.recovery.resumedDispatches",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys.requiredEvidence.result.recovery.resumedDispatches.0.idempotencyKey",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys.requiredEvidence.result.recovery.resumedDispatches.1.idempotencyKey",
           "status": "pass"
         }
       ],
