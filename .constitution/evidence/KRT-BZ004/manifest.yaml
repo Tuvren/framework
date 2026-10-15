@@ -62,8 +62,8 @@ files:
     bytes: 728
     role: measurement
   - path: M9-proof.tar.gz
-    sha256: e9d88f570081ee088c15e8ea2bf03ce542cbd086d18f5da549480dc725521a7f
-    bytes: 19654
+    sha256: 6aca29c916448c7f17e08a145515f8fcda4c01d1ce85915029dd398128f886bf
+    bytes: 19597
     role: measurement
   - path: M9-proof-index.json
     sha256: 60c133d8991bac5fd974ee5b4446f9a771ff2fc91cd72e79dd576044213f3ba5
