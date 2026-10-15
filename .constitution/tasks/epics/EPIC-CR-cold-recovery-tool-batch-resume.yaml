@@ -112,6 +112,11 @@ tickets:
     flows: [flow-crash-mid-checkpoint-recovery, flow-preemption-idempotent-side-effect]
     certainty: assumed
     status: done
+    deviations:
+      - files:
+          - .constitution/reports/epic-af-conformance-gap-plan.json
+          - .constitution/reports/epic-af-conformance-gap-plan.md
+        justification: "The wave lead's validated M7 amendment authorized the owner generator to refresh exactly these two derived reports after the approved ADR patch made the mandatory AF freshness gate stale. No report or generator source was edited manually."
   - id: KRT-CR005
     title: Certify interrupted-batch recovery and amend the recovery protocol
     type: Feature
@@ -166,3 +171,69 @@ tickets:
     flows: [flow-tool-approval-pause-resume]
     certainty: assumed
     status: done
+closeout:
+  tickets_completed: [KRT-CR001, KRT-CR002, KRT-CR003, KRT-CR005, KRT-CR006]
+  tickets_deferred: []
+  points_completed: 28
+  spec_patches:
+    - path: .constitution/tech-spec/adrs/ADR-0065-idempotency-identity-is-call-identity-not-authority-epoch.md
+      summary: "Close the cold-recovery call-identity and approval-resume Turn-threading obligations with KRT-CR003, KRT-CR005, and KRT-CR006 evidence while preserving the external-system deduplication boundary."
+      commit: cc9e605
+    - path: .constitution/tech-spec/adrs/ADR-0052-side-effect-once-under-preemption-idempotency-envelope.md
+      summary: "Clarify that a fenced live owner must not retry in-flight nonRetryable work, while a cold replacement owner redispatches every call without a durable result using the original logical-call key."
+      commit: cc9e605
+  changelog_entries:
+    - directory: tech-spec
+      type: changed
+      text: "Epic CR closes ADR-0065's cold-recovery and approval-resume identity obligations and clarifies ADR-0052's live-owner fencing rule versus replacement-owner missing-call recovery."
+    - directory: tasks
+      type: changed
+      text: "Epic CR completes five tickets (28 points): measured crash-head characterization, durable recovery-plan derivation, resume-only-missing execution with original identity, shared conformance and framework authority promotion, and real approval-resume identity proof."
+  candidate_terms: []
+  routed_upstream:
+    - stage: prd
+      item: "Align the Idempotency Envelope glossary definition, which still narrates the retired run/call/fencing tuple, with the ruled `(turnId, callId)` identity."
+    - stage: architecture
+      item: "Align the resilience model and flow-preemption-idempotent-side-effect cold-crash wording with the implemented reactive-checkpoint and resume-only-missing behavior."
+    - stage: tech-spec
+      item: "Route the stale `(runId, callId, fencingToken)` narrative in spec/kernel/authority-packet.json to its authority owner; framework authority and ADR-0065 use `(turnId, callId)`."
+  follow_ups:
+    - "Keep CPU-heavy wave verification serialized through the global lock with `VERIFY_SERIAL=1 NX_PARALLEL=1`; the measured schedule resolved unchanged host-repl five-second subprocess timeouts without changing tests or cache policy."
+    - "Preserve the M7 generator-only scope exception when reviewing history: the two Epic AF reports are derived freshness artifacts, not manually authored TechSpec content."
+  code_decisions:
+    - summary: "Represent an interrupted iteration as an internal `InterruptedIterationRecoveryPlan` with re-infer, resume-tool-batch, and completed-tool-batch dispositions derived only from decoded durable messages and their object hashes."
+      kind: contract_shape
+      paths:
+        - typescript/runtime/src/lib/runtime-core-recovery-plan.ts
+        - typescript/runtime/src/lib/runtime-core-recovery.ts
+        - typescript/runtime/src/lib/runtime-core-expired-recovery.ts
+      commit: 7a5790e
+    - summary: "Consume a recovered tool-batch plan once before model invocation, rebuild manifest counters from recovered history, and incorporate only recovered object hashes absent from the committed head before normal policy, approval, checkpoint, and loop continuation."
+      kind: pattern
+      paths:
+        - typescript/runtime/src/lib/runtime-core-startup.ts
+        - typescript/runtime/src/lib/runtime-core-loop.ts
+        - typescript/runtime/src/lib/runtime-core-iteration.ts
+      commit: 7a5790e
+    - summary: "Expose recovery conformance as observation-only adapter data: original and resumed dispatch contexts, runner timing, runtime events, and durable messages are graded exclusively by the shared plan."
+      kind: contract_shape
+      paths:
+        - typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts
+        - spec/conformance/engine/plans/runtime-api-lifecycle-extended.json
+        - spec/conformance/engine/scenarios/runtime-api-scenarios.json
+      commit: 4dc97b0
+  settled:
+    - record: tech-spec/adrs/ADR-0065-idempotency-identity-is-call-identity-not-authority-epoch.md
+      evidence:
+        kind: measurement
+        ref: evidence/KRT-CR005
+        version: cc9e605
+        date: 2026-10-15
+        note: "Runtime recovery, approval resume, promoted conformance, and the reviewed ADR patch close both named implementation obligations without claiming external deduplication."
+    - record: tech-spec/adrs/ADR-0052-side-effect-once-under-preemption-idempotency-envelope.md
+      evidence:
+        kind: measurement
+        ref: evidence/KRT-CR003
+        version: cc9e605
+        date: 2026-10-15
+        note: "Cold recovery tests and shared conformance distinguish replacement-owner missing-call redispatch from the live fenced owner's no-retry rule."
