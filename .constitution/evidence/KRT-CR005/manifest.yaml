@@ -10,7 +10,7 @@ files:
     bytes: 1905
     role: measurement
   - path: m6-docs-summary.md
-    sha256: abb868e4cc2f441ccb889482624d13d2804c8bb3a42588612435878df93480c0
-    bytes: 1577
+    sha256: 4bda30f425a74d0d70127d3b397f348b8d910ce4af467651ba6e0bcee5020cf6
+    bytes: 1578
     role: measurement
 pass_criteria: The shared plan and core packet agree at 0.3.0; the three stale-recovery checks grade runner suppression, the exact missing-call set including nonRetryable, and original idempotency keys from implementation observations; all required evidence is present; conformance and compatibility gates exit 0.
