@@ -1,0 +1,24 @@
+{
+  "owner": "KRT-BV003",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-15",
+    "commit": "6963a49",
+    "command": "flock /tmp/tuvren-wave-1-verification.lock devenv -q shell -- bunx --bun oxfmt tools/scripts/compatibility-report.ts; locked verification from the EPIC-BV M8 plan"
+  },
+  "files": [
+    {
+      "path": "M8-formatting-equivalence.tar.gz",
+      "sha256": "df4a1b7f1a17f64db76a02d5ca583683f66495c3abb010f0cbd6c9fbe6088dc1",
+      "bytes": 56707,
+      "role": "measurement"
+    },
+    {
+      "path": "M8-formatting-summary.json",
+      "sha256": "fe8afffe75ca7b3e87e9aa8e25568eaad8dd81de4e74d2d3a66f101af12beb63",
+      "bytes": 1828,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "Pinned Oxfmt 0.71.0 changes only formatter trivia from the exact assessed compatibility-report candidate; all 63 callable signatures, normalized bodies, parameters, types, modifiers, literals and comments, nonfunction runtime order, unconditional await main entry and following interfaces remain equivalent; compatibility artifacts remain byte-identical; original locked M8 verification passes."
+}

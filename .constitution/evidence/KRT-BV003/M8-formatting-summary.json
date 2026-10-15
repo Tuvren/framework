@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BV003",
+  "milestone": "M8",
+  "status": "pass",
+  "input": {
+    "sha256": "ce7ae6b0156779461633bd3785ed03548fe4ac3f437e506cfc08245d6073c371",
+    "bytes": 77984,
+    "role": "independently assessed pre-format candidate"
+  },
+  "output": {
+    "path": "tools/scripts/compatibility-report.ts",
+    "sha256": "eb9fc6e66c15246a7318802f25b245dbf35a99cc156ba2669b9a30c3e66e152f",
+    "bytes": 77992,
+    "diff": { "added": 623, "deleted": 623 }
+  },
+  "tools": {
+    "typescript": "6.0.2",
+    "oxfmt": "0.71.0"
+  },
+  "equivalence": {
+    "callables": 63,
+    "signatures": true,
+    "normalized_bodies": true,
+    "parameters": true,
+    "types": true,
+    "modifiers": true,
+    "literals": true,
+    "comments": true,
+    "nonfunction_runtime_order": true,
+    "input_parse_diagnostics": 0,
+    "output_parse_diagnostics": 0,
+    "unconditional_await_main_after_initialization": true,
+    "following_interfaces": ["RunnerResults", "LiveConformanceRunner", "LiveInteropRunner"]
+  },
+  "compatibility_artifacts": {
+    "tracked_files_compared": 15,
+    "byte_identical_to_parent": true
+  },
+  "diagnostics": {
+    "before": 110,
+    "after": 54,
+    "func_style_before": 18,
+    "func_style_after": 0,
+    "no_use_before_define_before": 40,
+    "no_use_before_define_after": 0
+  },
+  "raw_equivalence_sha256": "991390810fa3d65840225b6c7b473a89ca771707a8848bba667b2d0171b5c496",
+  "verification": {
+    "scoped_tests": "98 passed, 0 failed",
+    "format_check": "pass",
+    "lint": "pass",
+    "typecheck": "pass",
+    "conformance": "pass",
+    "docs_authority_freeze": "pass",
+    "compatibility_check": "pass",
+    "codegen": "pass",
+    "api_freeze": "pass",
+    "portability": "pass",
+    "host_boundary": "pass",
+    "af_gap_plan": "pass",
+    "tools_source_typecheck": "pass"
+  }
+}
