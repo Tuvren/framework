@@ -1,0 +1,36 @@
+{
+  "owner": "KRT-BR002",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-15",
+    "commit": "2a4dc4876c41fa707251313c492a02efceed7059",
+    "command": "globally locked retained-Biome virtual-unsuppressed and Oxlint syntactic/type-aware suppression measurement"
+  },
+  "files": [
+    {
+      "path": "summary.json",
+      "sha256": "a9ba03f3d3ae80bec5f2b0164169adf0531b4b420f672ef5251bc69eea0c3ee4",
+      "bytes": 2199,
+      "role": "measurement"
+    },
+    {
+      "path": "suppressions.json",
+      "sha256": "e42dbdb295a8cd0edfc38362626649b8bc6fff7e3c4d63033af19311d0cdc348",
+      "bytes": 17710,
+      "role": "measurement"
+    },
+    {
+      "path": "reports-index.json",
+      "sha256": "bc6eb1168bd9fc80d9083adc7d60a0f68e4a25255b071f67de9cc9e787db6795",
+      "bytes": 26685,
+      "role": "measurement"
+    },
+    {
+      "path": "reports.tar.gz",
+      "sha256": "574a4cc044d88379e07e1fc1663a72dfdefcb1f69a1c9c40e1c8cbe37366d740",
+      "bytes": 171165,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "Every baseline and live backend directive has an identity-stable, reason-preserving ledger entry backed by exact retained-Biome and native diagnostic captures; needed directives remain while Biome owns the paths, native counterparts are recorded only when they freshly fire, all backend typecheck/test lanes and full lint pass, and direct changeset coverage names every affected public package."
+}

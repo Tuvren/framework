@@ -1,0 +1,816 @@
+[
+  {
+    "bytes": 771,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BR/biome.jsonc",
+      "--vcs-enabled=false",
+      "/tmp/krt-br002-m7-2a4dc48/scratch/typescript/kernel/backends/memory/src/index.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 0,
+    "exit_code": 0,
+    "index": 1,
+    "name": "biome-1-suppressed-mirror.json",
+    "sha256": "28c66e6e764b4d11d3d8821c49c0ab6f01233f78b9cde7beaf8466a7b19a5869",
+    "stderr_sha256": "0913004effb614bc48cd4a3dbeeb8ff43aca0acce8fa7b57a4681b43cfbfca1e",
+    "stdout_sha256": "6cd9245df75a517ac2014d3ecacbc9cbf0b2db8ef64d8ece95b4a9f9e3a0f958"
+  },
+  {
+    "bytes": 1512,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BR/biome.jsonc",
+      "--vcs-enabled=false",
+      "/tmp/krt-br002-m7-2a4dc48/scratch/typescript/kernel/backends/memory/src/index.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 1,
+    "exit_code": 1,
+    "index": 2,
+    "name": "biome-1-unsuppressed-mirror.json",
+    "sha256": "3934b2ada03c2b4d6af08f54018169365af9bbb32e8a473e7b290d08cd84465e",
+    "stderr_sha256": "01c360b7e5d10ae35577e7b7f412a337498d3d16ac885519372d257edb1daf06",
+    "stdout_sha256": "676e349be274c77f95ee60061de2a8df7cff1e26acc132094e3ba3cffbeead5c"
+  },
+  {
+    "bytes": 2445,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--stdin-file-path=typescript/kernel/backends/memory/src/index.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": null,
+    "exit_code": 1,
+    "index": 3,
+    "name": "biome-1-virtual-stdin.json",
+    "sha256": "d5255e7fa7f4ff9556c6a0854baf45924c44d715bea0e8adca4f0f7459c87179",
+    "stderr_sha256": "cdf3fde42046c65223c34b3ce65f1548e4ce344c5d751e0c2d6fc3c0348b0624",
+    "stdout_sha256": "534e5c1375a24c5ac9687b045a52bc9098b680d67e5c25083ad0e1d786aa0490"
+  },
+  {
+    "bytes": 773,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BR/biome.jsonc",
+      "--vcs-enabled=false",
+      "/tmp/krt-br002-m7-2a4dc48/scratch/typescript/kernel/backends/postgres/src/index.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 0,
+    "exit_code": 0,
+    "index": 4,
+    "name": "biome-2-suppressed-mirror.json",
+    "sha256": "6a5f3e73f7a1c355225094343b71fb8eb9f9c0df24575f9c9a3cd4cb8bccfaa1",
+    "stderr_sha256": "0913004effb614bc48cd4a3dbeeb8ff43aca0acce8fa7b57a4681b43cfbfca1e",
+    "stdout_sha256": "d5eb0b9e71ce778d6a28011f6a21a02032da6cddf510bfa03e354807c99479b3"
+  },
+  {
+    "bytes": 1515,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BR/biome.jsonc",
+      "--vcs-enabled=false",
+      "/tmp/krt-br002-m7-2a4dc48/scratch/typescript/kernel/backends/postgres/src/index.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 1,
+    "exit_code": 1,
+    "index": 5,
+    "name": "biome-2-unsuppressed-mirror.json",
+    "sha256": "f0e810aa2945e2e1355fa41e0efef543102b860eb704da001fc5c269da9a5e09",
+    "stderr_sha256": "01c360b7e5d10ae35577e7b7f412a337498d3d16ac885519372d257edb1daf06",
+    "stdout_sha256": "9cfbea2258df1a09e119723cbe7fc832e3d2450d270e1019af5843aa2fc9ffc1"
+  },
+  {
+    "bytes": 2436,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--stdin-file-path=typescript/kernel/backends/postgres/src/index.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": null,
+    "exit_code": 1,
+    "index": 6,
+    "name": "biome-2-virtual-stdin.json",
+    "sha256": "f6928289a612d14203a02c5593b206a7a28ea3d9462b932d827c7897a756dfcf",
+    "stderr_sha256": "cdf3fde42046c65223c34b3ce65f1548e4ce344c5d751e0c2d6fc3c0348b0624",
+    "stdout_sha256": "14dfd9335d2d4026b342e1e86499781a77bfd3d896ddb8e5cf29ccfef8d6bb37"
+  },
+  {
+    "bytes": 797,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BR/biome.jsonc",
+      "--vcs-enabled=false",
+      "/tmp/krt-br002-m7-2a4dc48/scratch/typescript/kernel/backends/postgres/src/lib/postgres-repositories-core.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 0,
+    "exit_code": 0,
+    "index": 7,
+    "name": "biome-3-suppressed-mirror.json",
+    "sha256": "4aae8221838627cd5c65749a213ec082622ea84f1d958fb5fb0ee85c628afc69",
+    "stderr_sha256": "0913004effb614bc48cd4a3dbeeb8ff43aca0acce8fa7b57a4681b43cfbfca1e",
+    "stdout_sha256": "a76230a679337f5b329c12c2768cc8aa54d1a4313989e5d3bb94627695e4a2d4"
+  },
+  {
+    "bytes": 1527,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BR/biome.jsonc",
+      "--vcs-enabled=false",
+      "/tmp/krt-br002-m7-2a4dc48/scratch/typescript/kernel/backends/postgres/src/lib/postgres-repositories-core.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 1,
+    "exit_code": 1,
+    "index": 8,
+    "name": "biome-3-unsuppressed-mirror.json",
+    "sha256": "d1bcb9fcbb1fb49ff8e89a4a3aaae521432fa8202257e638fe9726715690a9e1",
+    "stderr_sha256": "01c360b7e5d10ae35577e7b7f412a337498d3d16ac885519372d257edb1daf06",
+    "stdout_sha256": "a3efc147fd6a810763ff0c78ff1faa4a3e3639128e9569d2138e48eb3db77ff2"
+  },
+  {
+    "bytes": 34500,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--stdin-file-path=typescript/kernel/backends/postgres/src/lib/postgres-repositories-core.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": null,
+    "exit_code": 1,
+    "index": 9,
+    "name": "biome-3-virtual-stdin.json",
+    "sha256": "8c5d1ca338001c209f219cba169d23d4f9b2f3e1bc11ad4ec883d1874d34da0f",
+    "stderr_sha256": "cdf3fde42046c65223c34b3ce65f1548e4ce344c5d751e0c2d6fc3c0348b0624",
+    "stdout_sha256": "a61c2311211c09a6c61893cc9f3a1fc6d414e9082082e9814de321e4f4dd4cdb"
+  },
+  {
+    "bytes": 770,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BR/biome.jsonc",
+      "--vcs-enabled=false",
+      "/tmp/krt-br002-m7-2a4dc48/scratch/typescript/kernel/backends/shared/src/index.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 0,
+    "exit_code": 0,
+    "index": 10,
+    "name": "biome-4-suppressed-mirror.json",
+    "sha256": "f31ce14bb5d1e440db70687d39b2ff23fad1443c9db627e651a8bdfaf9cfa370",
+    "stderr_sha256": "0913004effb614bc48cd4a3dbeeb8ff43aca0acce8fa7b57a4681b43cfbfca1e",
+    "stdout_sha256": "c8187d65ea0fbb31916d5ede669eb3d79f18e2ef7e8add09882782f82f0e860d"
+  },
+  {
+    "bytes": 1512,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BR/biome.jsonc",
+      "--vcs-enabled=false",
+      "/tmp/krt-br002-m7-2a4dc48/scratch/typescript/kernel/backends/shared/src/index.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 1,
+    "exit_code": 1,
+    "index": 11,
+    "name": "biome-4-unsuppressed-mirror.json",
+    "sha256": "184d602a88ed56dfd690a31f4928a3e0a2051611a7007f22ef63822c5fb199c6",
+    "stderr_sha256": "01c360b7e5d10ae35577e7b7f412a337498d3d16ac885519372d257edb1daf06",
+    "stdout_sha256": "bded2738dbb940d2568ee1c8e26bf66e3fdbf84fe436d65390780a8c092a3ea2"
+  },
+  {
+    "bytes": 5172,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--stdin-file-path=typescript/kernel/backends/shared/src/index.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": null,
+    "exit_code": 1,
+    "index": 12,
+    "name": "biome-4-virtual-stdin.json",
+    "sha256": "83c45d5929302fbdf3e7403975de1ea376f31aef756cf3b0669b97eb4ea97cb5",
+    "stderr_sha256": "cdf3fde42046c65223c34b3ce65f1548e4ce344c5d751e0c2d6fc3c0348b0624",
+    "stdout_sha256": "1061f5e6f42668a7207ede3a550e7a645546ac31aaa4f51052c441b776937718"
+  },
+  {
+    "bytes": 770,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BR/biome.jsonc",
+      "--vcs-enabled=false",
+      "/tmp/krt-br002-m7-2a4dc48/scratch/typescript/kernel/backends/sqlite/src/index.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 0,
+    "exit_code": 0,
+    "index": 13,
+    "name": "biome-5-suppressed-mirror.json",
+    "sha256": "c05ac062e9639c31225645974bb3d48b1939b7d318c9391f8bd631388735496a",
+    "stderr_sha256": "0913004effb614bc48cd4a3dbeeb8ff43aca0acce8fa7b57a4681b43cfbfca1e",
+    "stdout_sha256": "f36d9b9534a3b50147f397701191e13d9d67af2788202e1b5d624edd704394a8"
+  },
+  {
+    "bytes": 1513,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BR/biome.jsonc",
+      "--vcs-enabled=false",
+      "/tmp/krt-br002-m7-2a4dc48/scratch/typescript/kernel/backends/sqlite/src/index.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 1,
+    "exit_code": 1,
+    "index": 14,
+    "name": "biome-5-unsuppressed-mirror.json",
+    "sha256": "d670a82594940a0fc33f263798193d43f51416ff28c8eaf9d1147518b1ccff93",
+    "stderr_sha256": "01c360b7e5d10ae35577e7b7f412a337498d3d16ac885519372d257edb1daf06",
+    "stdout_sha256": "cc191f00e6fa73fc80d22593e3befcd2434eb39dd6a6a7cfa802811dd8826d7a"
+  },
+  {
+    "bytes": 2103,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--stdin-file-path=typescript/kernel/backends/sqlite/src/index.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": null,
+    "exit_code": 1,
+    "index": 15,
+    "name": "biome-5-virtual-stdin.json",
+    "sha256": "6087b6c3020f0f873c6234a66c7d68192b9f7171bb0b398f0670d1d1e9812f51",
+    "stderr_sha256": "cdf3fde42046c65223c34b3ce65f1548e4ce344c5d751e0c2d6fc3c0348b0624",
+    "stdout_sha256": "360d455acb7971b277f390c3d23782ad15987d430e4ac7478edcefac369344b7"
+  },
+  {
+    "bytes": 784,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BR/biome.jsonc",
+      "--vcs-enabled=false",
+      "/tmp/krt-br002-m7-2a4dc48/scratch/typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 0,
+    "exit_code": 0,
+    "index": 16,
+    "name": "biome-6-suppressed-mirror.json",
+    "sha256": "fb3d046ce8ac27b79447d5ad57085fc2d01c51644abceb8879f5f2adf6648514",
+    "stderr_sha256": "0913004effb614bc48cd4a3dbeeb8ff43aca0acce8fa7b57a4681b43cfbfca1e",
+    "stdout_sha256": "d38b011a87ea12a44732f5c161df3cdcef062965d406e353d38bc68378f7e014"
+  },
+  {
+    "bytes": 1639,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BR/biome.jsonc",
+      "--vcs-enabled=false",
+      "/tmp/krt-br002-m7-2a4dc48/scratch/typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 1,
+    "exit_code": 1,
+    "index": 17,
+    "name": "biome-6-unsuppressed-mirror.json",
+    "sha256": "0552372acfd5f1cc031df81eced24f30c94952ff9b22430815b7f90e6fd2fbdf",
+    "stderr_sha256": "01c360b7e5d10ae35577e7b7f412a337498d3d16ac885519372d257edb1daf06",
+    "stdout_sha256": "b25a99bb6f6d54e28050eb175e680391536c85d4fb0c22a4adccd4f95b38c6cf"
+  },
+  {
+    "bytes": 52526,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--stdin-file-path=typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": null,
+    "exit_code": 1,
+    "index": 18,
+    "name": "biome-6-virtual-stdin.json",
+    "sha256": "e7f5cb0f947dc0b922678ab1bcb52152ec2fecef3ac10df75e266f13c8c3e3bc",
+    "stderr_sha256": "cdf3fde42046c65223c34b3ce65f1548e4ce344c5d751e0c2d6fc3c0348b0624",
+    "stdout_sha256": "4ad8e44751345459beab50b3e61930131043a7e5fc22aa668e0a0689d29a7f53"
+  },
+  {
+    "bytes": 793,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BR/biome.jsonc",
+      "--vcs-enabled=false",
+      "/tmp/krt-br002-m7-2a4dc48/scratch/typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 0,
+    "exit_code": 0,
+    "index": 19,
+    "name": "biome-7-suppressed-mirror.json",
+    "sha256": "ce9db76cdfdc2e3ae656b79e094990db02f6dbf5f07a6373a396f38076b96838",
+    "stderr_sha256": "0913004effb614bc48cd4a3dbeeb8ff43aca0acce8fa7b57a4681b43cfbfca1e",
+    "stdout_sha256": "868593d5d937bd6a2475910234ae957e015d9a4c466aa7baec1dc49e69ba1e99"
+  },
+  {
+    "bytes": 1518,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BR/biome.jsonc",
+      "--vcs-enabled=false",
+      "/tmp/krt-br002-m7-2a4dc48/scratch/typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 1,
+    "exit_code": 1,
+    "index": 20,
+    "name": "biome-7-unsuppressed-mirror.json",
+    "sha256": "d4e769ee7ea16cf32cb8ce703ba75dae3fb656f9a27ba9514f181546ea4495c4",
+    "stderr_sha256": "01c360b7e5d10ae35577e7b7f412a337498d3d16ac885519372d257edb1daf06",
+    "stdout_sha256": "30452503603d6ad80db844194e8335d6606a86fdcb6a036800448cd6777656c2"
+  },
+  {
+    "bytes": 27310,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--stdin-file-path=typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": null,
+    "exit_code": 1,
+    "index": 21,
+    "name": "biome-7-virtual-stdin.json",
+    "sha256": "46e2768f74cf70a6364acbb813e9cd93a20e68fe7258978bd3986dc32d875084",
+    "stderr_sha256": "cdf3fde42046c65223c34b3ce65f1548e4ce344c5d751e0c2d6fc3c0348b0624",
+    "stdout_sha256": "96cd535452ca18dfc830da5b4df5d7905db75f01e47d493c851c19721ed739a3"
+  },
+  {
+    "bytes": 8264,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "lint",
+      "--help"
+    ],
+    "diagnostics": null,
+    "exit_code": 0,
+    "index": 22,
+    "name": "biome-lint-help.json",
+    "sha256": "47b2a8d54698269fc19c4a9f995c75fcd7a2899c71bf0acb49c8fa31129fd3dd",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "2a96ca5113e7ef3ac86f1339100d5bc3bc0a6337fc03ee2f6f02d6f353d90b59"
+  },
+  {
+    "bytes": 605,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "typescript/kernel/backends/memory",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 0,
+    "exit_code": 0,
+    "index": 23,
+    "name": "biome-memory-suppressed.json",
+    "sha256": "eaa5c2c0f0d9fd73545a4b4026db390b8a57f4dcb6c8bbef63463d5a9b69b333",
+    "stderr_sha256": "0913004effb614bc48cd4a3dbeeb8ff43aca0acce8fa7b57a4681b43cfbfca1e",
+    "stdout_sha256": "f7887fa18f93130a7d10cba7f84dfc31f2cc64f1e4b3827f8bed89d353c62400"
+  },
+  {
+    "bytes": 608,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "typescript/kernel/backends/postgres",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 0,
+    "exit_code": 0,
+    "index": 24,
+    "name": "biome-postgres-suppressed.json",
+    "sha256": "8b394f61aa8c668aa04300acc16ec8b2036690051b9f5f09c229c341429e64de",
+    "stderr_sha256": "0913004effb614bc48cd4a3dbeeb8ff43aca0acce8fa7b57a4681b43cfbfca1e",
+    "stdout_sha256": "a838688b2b3c1a6c55e3d64431fe8549cb7fd0d77a12babe8473c5865141ecbd"
+  },
+  {
+    "bytes": 606,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "typescript/kernel/backends/shared",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 0,
+    "exit_code": 0,
+    "index": 25,
+    "name": "biome-shared-suppressed.json",
+    "sha256": "0c55a32c32bc716e2747a6daa3ba316b466c38b305fffdb934dfec2f8910ac43",
+    "stderr_sha256": "0913004effb614bc48cd4a3dbeeb8ff43aca0acce8fa7b57a4681b43cfbfca1e",
+    "stdout_sha256": "23320065259746cc994a7c0453f8a20d795d6aee328ccac9ea1e46d5639f7aeb"
+  },
+  {
+    "bytes": 605,
+    "command": [
+      "bunx",
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "typescript/kernel/backends/sqlite",
+      "--reporter=json",
+      "--max-diagnostics=none"
+    ],
+    "diagnostics": 0,
+    "exit_code": 0,
+    "index": 26,
+    "name": "biome-sqlite-suppressed.json",
+    "sha256": "368d1892a950b8823d1c0db68f308e8d7d5eb1529e6cb0667b8a8e1a9653675c",
+    "stderr_sha256": "0913004effb614bc48cd4a3dbeeb8ff43aca0acce8fa7b57a4681b43cfbfca1e",
+    "stdout_sha256": "ab0ded2c2e23428fc6815a255b0c86efd851fa4b6fdd502b784b62cdfdf5984d"
+  },
+  {
+    "bytes": 8225,
+    "command": null,
+    "diagnostics": null,
+    "exit_code": null,
+    "index": 27,
+    "name": "native-summary.json",
+    "sha256": "f21a8834460a7fcabdb6c29118cd3820164447f4acfe4247df89f60df89dfc8e",
+    "stderr_sha256": null,
+    "stdout_sha256": null
+  },
+  {
+    "bytes": 28581,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--print-config"
+    ],
+    "diagnostics": null,
+    "exit_code": 0,
+    "index": 28,
+    "name": "oxlint-effective-config.json",
+    "sha256": "65ac4719fb5825c6204002b6ec5cc788d2bf785aa19be0c10a35ebb61e2d3149",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "095532173f32960707fa888aa8865907b7e9e0e886617c3f6dd826ab06be3554"
+  },
+  {
+    "bytes": 6939,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--help"
+    ],
+    "diagnostics": null,
+    "exit_code": 0,
+    "index": 29,
+    "name": "oxlint-help.json",
+    "sha256": "bf7425d411ac3acce89d3f438105375567a383595e6c1309adf4956aabd6cd33",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "50590be5c8ca506289447ca33ecb75aed23554e69bb4b29209f5d5babcc4988e"
+  },
+  {
+    "bytes": 1835,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--type-aware",
+      "typescript/kernel/backends/memory",
+      "--debug=files"
+    ],
+    "diagnostics": null,
+    "exit_code": 0,
+    "index": 30,
+    "name": "oxlint-memory-selection.json",
+    "sha256": "f9218f738bdcb2e17dea3583373c9e4918c977f000b3b9a28d1caa3232e5e21a",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "438bfbe445e4cf4a1c6a70a63414e69e718e73148cc20a43dea3a56666573c28"
+  },
+  {
+    "bytes": 73811,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--format=json",
+      "typescript/kernel/backends/memory"
+    ],
+    "diagnostics": 143,
+    "exit_code": 1,
+    "index": 31,
+    "name": "oxlint-memory-syntactic.json",
+    "sha256": "d327615219ae0431be5dbd6c208809bc2b9ee78e54dfc9b91e47842a412a51d8",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "3f1c48f9dad88c025aedce895c8eec441d64184b8fe45d893b5d360134df3d28"
+  },
+  {
+    "bytes": 176479,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--type-aware",
+      "--format=json",
+      "typescript/kernel/backends/memory"
+    ],
+    "diagnostics": 337,
+    "exit_code": 1,
+    "index": 32,
+    "name": "oxlint-memory-type-aware.json",
+    "sha256": "2e906a7361a57c25d8bf1b81fbb879cf439902eaec971a2933b270bd73da0486",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "864e29f226771ceeb6ff90216df5adb9a29c299e8e84c3c03cd339751d6a9fb6"
+  },
+  {
+    "bytes": 3860,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--type-aware",
+      "typescript/kernel/backends/postgres",
+      "--debug=files"
+    ],
+    "diagnostics": null,
+    "exit_code": 0,
+    "index": 33,
+    "name": "oxlint-postgres-selection.json",
+    "sha256": "56335c607a2e49a6b1dbb24b695334679eacb2e8a9214b41ecc5a6dd8b42052b",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "8db2d3eeae4e793fd8f27da0c187a194e1abebc1cb50b5ff72d2402bf5fa7fce"
+  },
+  {
+    "bytes": 354425,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--format=json",
+      "typescript/kernel/backends/postgres"
+    ],
+    "diagnostics": 656,
+    "exit_code": 1,
+    "index": 34,
+    "name": "oxlint-postgres-syntactic.json",
+    "sha256": "fd97bf63f30be0ce21256b0eec19302a8cee39afeb3cb11b41fd5de7e9a45b52",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "394b0db66f1a767e60bba55268ad7e68e56dd8ceec05e9733c5d7ed23319d7ba"
+  },
+  {
+    "bytes": 439079,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--type-aware",
+      "--format=json",
+      "typescript/kernel/backends/postgres"
+    ],
+    "diagnostics": 799,
+    "exit_code": 1,
+    "index": 35,
+    "name": "oxlint-postgres-type-aware.json",
+    "sha256": "7257b1625a141c2c65e13d3e510effde06538249cb885215b1c636bacd87418d",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "9b34288d0cdd6a3374387b599ba05c557144a9a11755cd60262c02823def6053"
+  },
+  {
+    "bytes": 258531,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--rules",
+      "--format=json"
+    ],
+    "diagnostics": null,
+    "exit_code": 0,
+    "index": 36,
+    "name": "oxlint-rules.json",
+    "sha256": "85e9da902041b9d325d55b622fbafb34e547839b21caac56217b2e8bb651c237",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "2a8ddfda57f9baa5f855f45f8a1f9c319cd357abab0a94c64641bc9cef6cb98d"
+  },
+  {
+    "bytes": 1265,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--type-aware",
+      "typescript/kernel/backends/shared",
+      "--debug=files"
+    ],
+    "diagnostics": null,
+    "exit_code": 0,
+    "index": 37,
+    "name": "oxlint-shared-selection.json",
+    "sha256": "548c18d18a47458e778f22f5735cbc51116cf2bd2aa918c8ffdffd696c08bd69",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "47b4e9347051ea2eaaffbbc12c44e0c6255aa9ae0381c399fdcd58e2e393f4de"
+  },
+  {
+    "bytes": 206270,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--format=json",
+      "typescript/kernel/backends/shared"
+    ],
+    "diagnostics": 378,
+    "exit_code": 1,
+    "index": 38,
+    "name": "oxlint-shared-syntactic.json",
+    "sha256": "d5afa20d31cb7126ecfbf5339fbff419c6c5a75c57320ca72847dfcb792268fa",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "b044a447b400a05b89fc81b41a7b489dfc478229ecb7b85490ddc39896d50b10"
+  },
+  {
+    "bytes": 230795,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--type-aware",
+      "--format=json",
+      "typescript/kernel/backends/shared"
+    ],
+    "diagnostics": 420,
+    "exit_code": 1,
+    "index": 39,
+    "name": "oxlint-shared-type-aware.json",
+    "sha256": "22bf11424075b4ad60eb08b838c1a83b60eb30436df946c412eb512b106d0104",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "c4258c4d5e890e209a54582953c0ea2416a57f40b1be2b94343c0bbf79d68b82"
+  },
+  {
+    "bytes": 3019,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--type-aware",
+      "typescript/kernel/backends/sqlite",
+      "--debug=files"
+    ],
+    "diagnostics": null,
+    "exit_code": 0,
+    "index": 40,
+    "name": "oxlint-sqlite-selection.json",
+    "sha256": "fd18ccd4689f22ad8024f521c60a7db260cca20a40e24495e949749fc7388167",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "44949ee50748fdfe05be3f24e718bfa90906c9e7b7d40a84b1f7add73e83182e"
+  },
+  {
+    "bytes": 314112,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--format=json",
+      "typescript/kernel/backends/sqlite"
+    ],
+    "diagnostics": 575,
+    "exit_code": 1,
+    "index": 41,
+    "name": "oxlint-sqlite-syntactic.json",
+    "sha256": "44dc559b04b0cea3aa0ed7d20b3f7addb03c5f10db1a66378d63aaa27ba2dec2",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "9a012dc2cb49806be5e2ead49eb86b481cfd780cc5de71778e4f0e7934ef61e9"
+  },
+  {
+    "bytes": 527264,
+    "command": [
+      "bunx",
+      "--bun",
+      "oxlint",
+      "--type-aware",
+      "--format=json",
+      "typescript/kernel/backends/sqlite"
+    ],
+    "diagnostics": 908,
+    "exit_code": 1,
+    "index": 42,
+    "name": "oxlint-sqlite-type-aware.json",
+    "sha256": "658db400b7a3fd6d0780de8c6858fab751127baa87e82eaca6ff020e03644f09",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "14d2c4378acf37e2f501b3bed86cd26a60b514ee60de13137281681fab9cb2fc"
+  },
+  {
+    "bytes": 17710,
+    "command": null,
+    "diagnostics": null,
+    "exit_code": null,
+    "index": 43,
+    "name": "suppressions.json",
+    "sha256": "e42dbdb295a8cd0edfc38362626649b8bc6fff7e3c4d63033af19311d0cdc348",
+    "stderr_sha256": null,
+    "stdout_sha256": null
+  },
+  {
+    "bytes": 555,
+    "command": null,
+    "diagnostics": null,
+    "exit_code": null,
+    "index": 44,
+    "name": "versions.json",
+    "sha256": "2e01b80ac0b79ce0a833b73f7dd57dbb73de8fd9b1454ccc8ec5885a239f395b",
+    "stderr_sha256": null,
+    "stdout_sha256": null
+  }
+]

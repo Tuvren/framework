@@ -1,0 +1,336 @@
+{
+  "baseline_commit": "16834aab351659788c56435de70f8969cabdfe7f",
+  "config_sha256": {
+    "biome_jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+    "bun_lock": "89b2ec122f29acff66b368039dfd65c91e773bd655df506c47eaaf6cddde267d",
+    "oxlint_config_ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05",
+    "package_json": "c3e50c3f8286567f4ff71395996252294e9096b5405448f24579c0fc29350391"
+  },
+  "drift": {
+    "added": [],
+    "changed_reasons": [],
+    "removed": []
+  },
+  "entries": [
+    {
+      "baseline_line": 36,
+      "baseline_source_sha256": "b7da480b939905fdc59b97508d413a0c398a45ca1e22a233cc3fee52722d16e2",
+      "candidate_effective_config": "deny",
+      "currently_retained": true,
+      "directive": "// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.",
+      "early_deletion": null,
+      "equivalent_native_rule": null,
+      "identity": "typescript/kernel/backends/memory/src/index.ts::lint/performance/noBarrelFile::1",
+      "live_line": 36,
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-firing-native-counterpart",
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "native_proof": {
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "candidate_firing_diagnostics": [],
+        "candidate_relation": "equivalent-rule-semantics-subject-to-fresh-firing-proof",
+        "equivalent_firing_diagnostics": [],
+        "selection_report": "oxlint-memory-selection.json",
+        "syntactic_report": "oxlint-memory-syntactic.json",
+        "type_aware_report": "oxlint-memory-type-aware.json"
+      },
+      "original_reason": "This package entrypoint is the intentional public contract surface.",
+      "original_reason_preserved": true,
+      "path": "typescript/kernel/backends/memory/src/index.ts",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "retained_proof": {
+        "matching_diagnostics": 1,
+        "suppressed_mirror_report": "biome-1-suppressed-mirror.json",
+        "unsuppressed_mirror_report": "biome-1-unsuppressed-mirror.json",
+        "virtual_stdin_report": "biome-1-virtual-stdin.json"
+      },
+      "rule": "lint/performance/noBarrelFile",
+      "source_sha256": "b7da480b939905fdc59b97508d413a0c398a45ca1e22a233cc3fee52722d16e2",
+      "virtual_unsuppressed_sha256": "534e5c1375a24c5ac9687b045a52bc9098b680d67e5c25083ad0e1d786aa0490"
+    },
+    {
+      "baseline_line": 38,
+      "baseline_source_sha256": "56df68a4861b849d0333f042d6ec5f575278d01d9b6df75a343269839f94f2ef",
+      "candidate_effective_config": "deny",
+      "currently_retained": true,
+      "directive": "// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.",
+      "early_deletion": null,
+      "equivalent_native_rule": null,
+      "identity": "typescript/kernel/backends/postgres/src/index.ts::lint/performance/noBarrelFile::1",
+      "live_line": 38,
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-firing-native-counterpart",
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "native_proof": {
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "candidate_firing_diagnostics": [],
+        "candidate_relation": "equivalent-rule-semantics-subject-to-fresh-firing-proof",
+        "equivalent_firing_diagnostics": [],
+        "selection_report": "oxlint-postgres-selection.json",
+        "syntactic_report": "oxlint-postgres-syntactic.json",
+        "type_aware_report": "oxlint-postgres-type-aware.json"
+      },
+      "original_reason": "This package entrypoint is the intentional public contract surface.",
+      "original_reason_preserved": true,
+      "path": "typescript/kernel/backends/postgres/src/index.ts",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "retained_proof": {
+        "matching_diagnostics": 1,
+        "suppressed_mirror_report": "biome-2-suppressed-mirror.json",
+        "unsuppressed_mirror_report": "biome-2-unsuppressed-mirror.json",
+        "virtual_stdin_report": "biome-2-virtual-stdin.json"
+      },
+      "rule": "lint/performance/noBarrelFile",
+      "source_sha256": "56df68a4861b849d0333f042d6ec5f575278d01d9b6df75a343269839f94f2ef",
+      "virtual_unsuppressed_sha256": "14dfd9335d2d4026b342e1e86499781a77bfd3d896ddb8e5cf29ccfef8d6bb37"
+    },
+    {
+      "baseline_line": 715,
+      "baseline_source_sha256": "85c312c8b620747fa095b8824369d620f0c84a7f37a9b1ad9e69b99718d1fec0",
+      "candidate_effective_config": "deny",
+      "currently_retained": true,
+      "directive": "      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Batch persistence intentionally validates duplicate keys, schema compatibility, normalization, immutability, and insert encoding in one transaction-local path.",
+      "early_deletion": null,
+      "equivalent_native_rule": null,
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-repositories-core.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
+      "live_line": 717,
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-firing-native-counterpart",
+      "native_candidate_rule": "eslint/complexity",
+      "native_proof": {
+        "actual_file_diagnostic_codes": [
+          "eslint(func-style)",
+          "eslint(no-await-in-loop)",
+          "typescript(prefer-nullish-coalescing)"
+        ],
+        "candidate_firing_diagnostics": [],
+        "candidate_relation": "non-equivalent-nearest-native-rule-uses-cyclomatic-not-cognitive-complexity",
+        "equivalent_firing_diagnostics": [],
+        "selection_report": "oxlint-postgres-selection.json",
+        "syntactic_report": "oxlint-postgres-syntactic.json",
+        "type_aware_report": "oxlint-postgres-type-aware.json"
+      },
+      "original_reason": "Batch persistence intentionally validates duplicate keys, schema compatibility, normalization, immutability, and insert encoding in one transaction-local path.",
+      "original_reason_preserved": true,
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-repositories-core.ts",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "retained_proof": {
+        "matching_diagnostics": 1,
+        "suppressed_mirror_report": "biome-3-suppressed-mirror.json",
+        "unsuppressed_mirror_report": "biome-3-unsuppressed-mirror.json",
+        "virtual_stdin_report": "biome-3-virtual-stdin.json"
+      },
+      "rule": "lint/complexity/noExcessiveCognitiveComplexity",
+      "source_sha256": "68ed9205ceef2b7e0d93bed24c72e0352304b1826db7c9d85fe5350466331e55",
+      "virtual_unsuppressed_sha256": "a61c2311211c09a6c61893cc9f3a1fc6d414e9082082e9814de321e4f4dd4cdb"
+    },
+    {
+      "baseline_line": 44,
+      "baseline_source_sha256": "4a44045c4e9f0c5aea4a3c902d409977a880be28917d5ef6f18bacd5c858eba1",
+      "candidate_effective_config": "deny",
+      "currently_retained": true,
+      "directive": "// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.",
+      "early_deletion": null,
+      "equivalent_native_rule": null,
+      "identity": "typescript/kernel/backends/shared/src/index.ts::lint/performance/noBarrelFile::1",
+      "live_line": 44,
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-firing-native-counterpart",
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "native_proof": {
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "candidate_firing_diagnostics": [],
+        "candidate_relation": "equivalent-rule-semantics-subject-to-fresh-firing-proof",
+        "equivalent_firing_diagnostics": [],
+        "selection_report": "oxlint-shared-selection.json",
+        "syntactic_report": "oxlint-shared-syntactic.json",
+        "type_aware_report": "oxlint-shared-type-aware.json"
+      },
+      "original_reason": "This package entrypoint is the intentional public contract surface.",
+      "original_reason_preserved": true,
+      "path": "typescript/kernel/backends/shared/src/index.ts",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "retained_proof": {
+        "matching_diagnostics": 1,
+        "suppressed_mirror_report": "biome-4-suppressed-mirror.json",
+        "unsuppressed_mirror_report": "biome-4-unsuppressed-mirror.json",
+        "virtual_stdin_report": "biome-4-virtual-stdin.json"
+      },
+      "rule": "lint/performance/noBarrelFile",
+      "source_sha256": "4a44045c4e9f0c5aea4a3c902d409977a880be28917d5ef6f18bacd5c858eba1",
+      "virtual_unsuppressed_sha256": "1061f5e6f42668a7207ede3a550e7a645546ac31aaa4f51052c441b776937718"
+    },
+    {
+      "baseline_line": 32,
+      "baseline_source_sha256": "6db20f51bd2f93e3ce22ba28d901337be66f32328e48a7100a8e490b4053fad2",
+      "candidate_effective_config": "deny",
+      "currently_retained": true,
+      "directive": "// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.",
+      "early_deletion": null,
+      "equivalent_native_rule": null,
+      "identity": "typescript/kernel/backends/sqlite/src/index.ts::lint/performance/noBarrelFile::1",
+      "live_line": 32,
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-firing-native-counterpart",
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "native_proof": {
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "candidate_firing_diagnostics": [],
+        "candidate_relation": "equivalent-rule-semantics-subject-to-fresh-firing-proof",
+        "equivalent_firing_diagnostics": [],
+        "selection_report": "oxlint-sqlite-selection.json",
+        "syntactic_report": "oxlint-sqlite-syntactic.json",
+        "type_aware_report": "oxlint-sqlite-type-aware.json"
+      },
+      "original_reason": "This package entrypoint is the intentional public contract surface.",
+      "original_reason_preserved": true,
+      "path": "typescript/kernel/backends/sqlite/src/index.ts",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "retained_proof": {
+        "matching_diagnostics": 1,
+        "suppressed_mirror_report": "biome-5-suppressed-mirror.json",
+        "unsuppressed_mirror_report": "biome-5-unsuppressed-mirror.json",
+        "virtual_stdin_report": "biome-5-virtual-stdin.json"
+      },
+      "rule": "lint/performance/noBarrelFile",
+      "source_sha256": "6db20f51bd2f93e3ce22ba28d901337be66f32328e48a7100a8e490b4053fad2",
+      "virtual_unsuppressed_sha256": "360d455acb7971b277f390c3d23782ad15987d430e4ac7478edcefac369344b7"
+    },
+    {
+      "baseline_line": 389,
+      "baseline_source_sha256": "a4b24ce887846a50d9450d9f54d22502ef9d2ce9004c680c6b4390a257065d8b",
+      "candidate_effective_config": "deny",
+      "currently_retained": true,
+      "directive": "      // biome-ignore lint/suspicious/useAwait: queueConnectionWork requires a Promise-returning callback; every read below is synchronous better-sqlite3 work, so there is nothing to await.",
+      "early_deletion": null,
+      "equivalent_native_rule": "eslint/require-await",
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts::lint/suspicious/useAwait::1",
+      "live_line": 382,
+      "native_admission_disposition": "planned-preserve-original-reason-in-measured-native-counterpart-or-fix-before-admission",
+      "native_candidate_rule": "eslint/require-await",
+      "native_proof": {
+        "actual_file_diagnostic_codes": [
+          "eslint(class-methods-use-this)",
+          "eslint(func-style)",
+          "eslint(no-await-in-loop)",
+          "eslint(no-use-before-define)",
+          "eslint(require-await)",
+          "jsdoc(require-throws-type)",
+          "promise(avoid-new)",
+          "typescript(method-signature-style)",
+          "typescript(promise-function-async)",
+          "unicorn(import-style)"
+        ],
+        "candidate_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 14397,
+                  "length": 526,
+                  "line": 383,
+                  "column": 7
+                }
+              }
+            ]
+          }
+        ],
+        "candidate_relation": "equivalent-rule-semantics-subject-to-fresh-firing-proof",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 14397,
+                  "length": 526,
+                  "line": 383,
+                  "column": 7
+                }
+              }
+            ]
+          }
+        ],
+        "selection_report": "oxlint-sqlite-selection.json",
+        "syntactic_report": "oxlint-sqlite-syntactic.json",
+        "type_aware_report": "oxlint-sqlite-type-aware.json"
+      },
+      "original_reason": "queueConnectionWork requires a Promise-returning callback; every read below is synchronous better-sqlite3 work, so there is nothing to await.",
+      "original_reason_preserved": true,
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "retained_proof": {
+        "matching_diagnostics": 1,
+        "suppressed_mirror_report": "biome-6-suppressed-mirror.json",
+        "unsuppressed_mirror_report": "biome-6-unsuppressed-mirror.json",
+        "virtual_stdin_report": "biome-6-virtual-stdin.json"
+      },
+      "rule": "lint/suspicious/useAwait",
+      "source_sha256": "98843ab4e8151799fe4c9c4b78c334a240d3204a18eebb50cd4a45a4913f9916",
+      "virtual_unsuppressed_sha256": "4ad8e44751345459beab50b3e61930131043a7e5fc22aa668e0a0689d29a7f53"
+    },
+    {
+      "baseline_line": 531,
+      "baseline_source_sha256": "8de9f4eca13b54ec7ec6c2a5e9e8cfcb9e2d9fce6f179625e7acc06d6ccd40d6",
+      "candidate_effective_config": "deny",
+      "currently_retained": true,
+      "directive": "      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Batch persistence intentionally validates duplicate keys, schema compatibility, normalization, immutability, and insert encoding in one transaction-local path.",
+      "early_deletion": null,
+      "equivalent_native_rule": null,
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
+      "live_line": 533,
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-firing-native-counterpart",
+      "native_candidate_rule": "eslint/complexity",
+      "native_proof": {
+        "actual_file_diagnostic_codes": [
+          "eslint(func-style)",
+          "eslint(no-await-in-loop)",
+          "typescript(promise-function-async)"
+        ],
+        "candidate_firing_diagnostics": [],
+        "candidate_relation": "non-equivalent-nearest-native-rule-uses-cyclomatic-not-cognitive-complexity",
+        "equivalent_firing_diagnostics": [],
+        "selection_report": "oxlint-sqlite-selection.json",
+        "syntactic_report": "oxlint-sqlite-syntactic.json",
+        "type_aware_report": "oxlint-sqlite-type-aware.json"
+      },
+      "original_reason": "Batch persistence intentionally validates duplicate keys, schema compatibility, normalization, immutability, and insert encoding in one transaction-local path.",
+      "original_reason_preserved": true,
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "retained_proof": {
+        "matching_diagnostics": 1,
+        "suppressed_mirror_report": "biome-7-suppressed-mirror.json",
+        "unsuppressed_mirror_report": "biome-7-unsuppressed-mirror.json",
+        "virtual_stdin_report": "biome-7-virtual-stdin.json"
+      },
+      "rule": "lint/complexity/noExcessiveCognitiveComplexity",
+      "source_sha256": "e116977d88125c2ab61cb52839301c2cf51a69994df414a1b96547fd31febf57",
+      "virtual_unsuppressed_sha256": "96cd535452ca18dfc830da5b4df5d7905db75f01e47d493c851c19721ed739a3"
+    }
+  ],
+  "identity_convention": "repository-relative path::Biome rule::one-based occurrence within that path/rule; line is informational",
+  "measurement_commit": "2a4dc4876c41fa707251313c492a02efceed7059",
+  "owned_paths": [
+    "typescript/kernel/backends/memory",
+    "typescript/kernel/backends/postgres",
+    "typescript/kernel/backends/shared",
+    "typescript/kernel/backends/sqlite"
+  ],
+  "schema_version": 1,
+  "ticket": "KRT-BR002"
+}
