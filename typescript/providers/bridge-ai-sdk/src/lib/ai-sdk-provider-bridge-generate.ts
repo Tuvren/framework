@@ -166,15 +166,18 @@ function appendGenerateContentPart(
   providerToolClassLookup?: ProviderToolClassLookup
 ): void {
   switch (contentPart.type) {
-    case "text":
+    case "text": {
       appendGenerateTextPart(contentPart, state);
       return;
-    case "reasoning":
+    }
+    case "reasoning": {
       state.parts.push(mapGeneratedReasoningPart(contentPart));
       return;
-    case "file":
+    }
+    case "file": {
       state.parts.push(mapGeneratedFilePart(contentPart));
       return;
+    }
     case "tool-call": {
       const toolCallPart = mapGeneratedToolCallPart(
         contentPart,
@@ -206,7 +209,7 @@ function appendGenerateContentPart(
         }
       );
     }
-    case "tool-approval-request":
+    case "tool-approval-request": {
       throw bridgeError(
         "provider-executed tool approvals are out of scope for the baseline AI SDK bridge",
         "unsupported_ai_sdk_content",
@@ -215,14 +218,17 @@ function appendGenerateContentPart(
           reason: "provider_owned_tool_approval_unsupported",
         }
       );
-    case "source":
+    }
+    case "source": {
       state.sources.push(sanitizeMetadataValue(contentPart));
       return;
-    default:
+    }
+    default: {
       throw bridgeError(
         "unsupported AI SDK content surfaced in generate result mapping",
         "unsupported_ai_sdk_content"
       );
+    }
   }
 }
 
