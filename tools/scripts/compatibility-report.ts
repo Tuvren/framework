@@ -561,6 +561,12 @@ const createSuiteKey = (
   return `${boundary}:${suiteId}@${suiteVersion}`;
 };
 
+const readSuiteManifest = async (
+  manifestPath: string
+): Promise<ConformanceSuiteManifest> => {
+  return await readConformanceSuiteManifest(resolve(REPO_ROOT, manifestPath));
+};
+
 const readLiveCompatibilitySuites = async (): Promise<CompatibilitySuite[]> => {
   const suitesByKey = new Map<string, CompatibilitySuite>();
 
@@ -636,6 +642,14 @@ const checkLiveSuiteTopology = async (
       );
     }
   }
+};
+
+const readStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((entry): entry is string => typeof entry === "string");
 };
 
 const hasRequiredCapabilities = (
@@ -733,6 +747,20 @@ const readLiveConformanceRunner = async (
   };
 };
 
+const compareEvidenceField = (
+  evidencePath: string,
+  fieldName: string,
+  actual: unknown,
+  expected: string,
+  failures: string[]
+): void => {
+  if (actual !== expected) {
+    failures.push(
+      `${evidencePath} ${fieldName} is ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`
+    );
+  }
+};
+
 const hasSameStringSet = (
   actualValues: readonly string[],
   expectedValues: readonly string[]
@@ -770,6 +798,84 @@ const compareLiveConformanceResult = (
   if (!hasSameStringSet(result.checkIds, liveRunner.applicableCheckIds)) {
     failures.push(
       `compatibility matrix ${implementationId} checkIds do not match live conformance plan topology`
+    );
+  }
+};
+
+const compareCheckIds = (
+  evidencePath: string,
+  checkResults: unknown,
+  expectedCheckIds: readonly string[],
+  failures: string[]
+): void => {
+  if (!Array.isArray(checkResults)) {
+    failures.push(`${evidencePath} checkResults must be an array`);
+    return;
+  }
+
+  const actualCheckIds = checkResults.map((checkResult) =>
+    isRecord(checkResult) ? checkResult.checkId : undefined
+  );
+
+  if (JSON.stringify(actualCheckIds) !== JSON.stringify(expectedCheckIds)) {
+    failures.push(`${evidencePath} checkResults do not match matrix checkIds`);
+  }
+};
+
+const compareCheckSummary = (
+  evidencePath: string,
+  summary: unknown,
+  expectedSummary: CompatibilityCheckSummary,
+  failures: string[]
+): void => {
+  if (!isRecord(summary)) {
+    failures.push(`${evidencePath} summary must be an object`);
+    return;
+  }
+
+  for (const fieldName of [
+    "applicableChecks",
+    "failedChecks",
+    "nonApplicableChecks",
+    "passedChecks",
+    "totalChecks",
+  ] as const) {
+    if (summary[fieldName] !== expectedSummary[fieldName]) {
+      failures.push(
+        `${evidencePath} summary.${fieldName} is ${JSON.stringify(summary[fieldName])}, expected ${JSON.stringify(expectedSummary[fieldName])}`
+      );
+    }
+  }
+};
+
+const compareNonApplicableCheckIds = (
+  evidencePath: string,
+  actualValue: unknown,
+  expectedCheckIds: readonly string[],
+  failures: string[]
+): void => {
+  const actualCheckIds =
+    actualValue === undefined ? [] : readStringArray(actualValue);
+
+  if (!hasSameStringSet(actualCheckIds, expectedCheckIds)) {
+    failures.push(
+      `${evidencePath} nonApplicableCheckIds do not match live conformance plan topology`
+    );
+  }
+};
+
+const compareStringSet = (
+  evidencePath: string,
+  fieldName: string,
+  actualValue: unknown,
+  expectedValues: readonly string[],
+  failures: string[]
+): void => {
+  const actualValues = readStringArray(actualValue);
+
+  if (!hasSameStringSet(actualValues, expectedValues)) {
+    failures.push(
+      `${evidencePath} ${fieldName} does not match expected values`
     );
   }
 };
@@ -1213,8 +1319,284 @@ const checkCompatibilityEvidence = async (): Promise<void> => {
   console.log("compatibility evidence check passed");
 };
 
+const resetHermeticBuildBoundary = async (): Promise<void> => {
+  await Promise.all(
+    HERMETIC_BUILD_OUTPUT_DIRECTORIES.map(
+      async (directoryPath) =>
+        await rm(resolve(REPO_ROOT, directoryPath), {
+          force: true,
+          recursive: true,
+        })
+    )
+  );
+};
+
 const createConformanceRunnerKey = (runner: ConformanceRunner): string => {
   return `${runner.project}:${runner.implementationId}`;
+};
+
+const collectPlanCapabilities = (planJson: string, sink: Set<string>): void => {
+  const plan = JSON.parse(planJson) as {
+    applicability?: { capabilities?: unknown };
+    checks?: { capabilities?: unknown }[];
+  };
+
+  for (const capability of readStringArray(plan.applicability?.capabilities)) {
+    sink.add(capability);
+  }
+
+  for (const check of plan.checks ?? []) {
+    for (const capability of readStringArray(check.capabilities)) {
+      sink.add(capability);
+    }
+  }
+};
+
+const computeExpectedCapabilitiesFromTopology = async (
+  adapterManifestPathRelative: string
+): Promise<ReadonlySet<string>> => {
+  const adapterManifestPath = resolve(REPO_ROOT, adapterManifestPathRelative);
+  const adapterManifest = JSON.parse(
+    await readFile(adapterManifestPath, "utf-8")
+  ) as { authorityPackets?: unknown };
+
+  const packetPaths = readStringArray(adapterManifest.authorityPackets);
+  const capabilities = new Set<string>();
+
+  // The expected set is derived exclusively from the discovered plan
+  // topology — any capability that is not exercised by at least one plan
+  // check is NOT part of the lane's "full coverage" surface. Wave 5
+  // experimented with also unioning adapter-advertised capabilities here so
+  // adapter-only surfaces (like an unmeasured `trace.lifecycle` claim)
+  // would still count toward `full_pass`; wave 6 reverted that because it
+  // weakened the meaning of `full_pass` — a lane could be reported as
+  // fully covered while a chunk of its claimed surface had zero asserting
+  // checks. Adapter-advertised capabilities without plan coverage are now
+  // caught structurally by `portability-gate.ts`'s
+  // `adapter-capability-covered-by-plan` rule, which forces either the
+  // capability to be removed from the adapter manifest or a plan check to
+  // exercise it.
+  for (const packetPath of packetPaths) {
+    const packetManifest = JSON.parse(
+      await readFile(resolve(REPO_ROOT, packetPath), "utf-8")
+    ) as {
+      conformancePlans?: { path?: unknown }[];
+    };
+
+    for (const plan of packetManifest.conformancePlans ?? []) {
+      if (typeof plan.path !== "string") {
+        continue;
+      }
+
+      collectPlanCapabilities(
+        await readFile(resolve(REPO_ROOT, plan.path), "utf-8"),
+        capabilities
+      );
+    }
+  }
+
+  return capabilities;
+};
+
+const computeCompatibilityResultStatus = (
+  commandExitCode: number,
+  evidence: ConformanceEvidence
+): CompatibilityResultStatus => {
+  if (commandExitCode !== 0 || evidence.status !== "pass") {
+    return "fail";
+  }
+
+  const applicableChecks =
+    evidence.summary.applicableChecks ??
+    evidence.summary.failedChecks + evidence.summary.passedChecks;
+  const nonApplicableChecks = evidence.summary.nonApplicableChecks ?? 0;
+
+  if (applicableChecks === 0) {
+    return nonApplicableChecks > 0 ? "unsupported" : "not_applicable";
+  }
+
+  return "pass";
+};
+
+const classifyConformanceReportStatus = (
+  runner: ConformanceRunner,
+  evidence: ConformanceEvidence,
+  rawStatus: CompatibilityResultStatus,
+  expectedCapabilities: ReadonlySet<string>
+): CompatibilityReportStatus => {
+  if (rawStatus === "fail") {
+    return runner.expectedFailure === true
+      ? "expected_fail"
+      : "unexpected_fail";
+  }
+
+  if (rawStatus === "unsupported" || rawStatus === "not_applicable") {
+    return rawStatus;
+  }
+
+  const applicableChecks =
+    evidence.summary.applicableChecks ??
+    evidence.summary.failedChecks + evidence.summary.passedChecks;
+  const nonApplicableChecks = evidence.summary.nonApplicableChecks ?? 0;
+
+  if (applicableChecks === 0) {
+    return nonApplicableChecks > 0 ? "unsupported" : "not_applicable";
+  }
+
+  // The expected set is derived from the topology rooted at this lane's
+  // adapter manifest, so adding or removing a plan/capability anywhere
+  // under that topology automatically reshapes what `full_pass` means
+  // without a parallel manual list in this file. See
+  // `computeExpectedCapabilitiesFromTopology` for the derivation.
+  const declaredCapabilities = new Set(evidence.capabilities ?? []);
+  const hasFullCapabilitySet = [...expectedCapabilities].every((capability) =>
+    declaredCapabilities.has(capability)
+  );
+
+  return hasFullCapabilitySet ? "full_pass" : "capability_subset_pass";
+};
+
+const sanitizeEvidenceCommand = (command: readonly string[]): string[] => {
+  return command.map((part, index) =>
+    index > 0 && command[index - 1] === "--adapter"
+      ? "[adapter-manifest]"
+      : part
+  );
+};
+
+const runConformanceTarget = async (
+  runner: ConformanceRunner,
+  suiteManifest: ConformanceSuiteManifest | undefined,
+  expectedCapabilities: ReadonlySet<string>
+): Promise<{
+  matrixResult: CompatibilityImplementationResult;
+  suite: CompatibilitySuite;
+}> => {
+  // The compatibility matrix is meant to be measured evidence, not replayed
+  // cached console output, so each conformance lane is forced to execute.
+  for (const prerequisiteCommand of runner.prerequisiteCommands ?? []) {
+    const prerequisiteResult = await runCommand(prerequisiteCommand, {
+      captureOutput: true,
+      cwd: REPO_ROOT,
+    });
+
+    if (prerequisiteResult.code !== 0) {
+      throw new Error(
+        `compatibility prerequisite failed for ${runner.implementationId}: ${prerequisiteCommand.join(" ")}`
+      );
+    }
+  }
+
+  const command = [
+    ...(runner.command ?? [
+      "bun",
+      "run",
+      "nx",
+      "run",
+      `${runner.project}:conformance`,
+      "--skipNxCache",
+    ]),
+  ];
+  const commandResult = await runCommand(command, {
+    captureOutput: true,
+    cwd: REPO_ROOT,
+  });
+  const evidenceFileName = `certification-harness.${runner.project}.json`;
+  // Physically written under evidenceWriteDirectory (a scratch directory
+  // during regeneration, EVIDENCE_DIRECTORY otherwise), but the recorded
+  // path always reflects the final EVIDENCE_DIRECTORY location so the
+  // compatibility matrix references where the file will live once
+  // swapEvidenceDirectoryIntoPlace runs.
+  const evidenceFilePath = resolve(evidenceWriteDirectory, evidenceFileName);
+  const relativeEvidencePath = relative(
+    REPO_ROOT,
+    resolve(EVIDENCE_DIRECTORY, evidenceFileName)
+  );
+  const fallbackCheckResults =
+    suiteManifest === undefined
+      ? []
+      : createFallbackCheckResults(
+          suiteManifest,
+          "implementations",
+          runner.implementationId,
+          "runner exited without structured conformance evidence"
+        );
+  const parsedEvidence =
+    readConformanceEvidence(commandResult.stdout) ??
+    readConformanceEvidence(commandResult.stderr) ??
+    readConformanceEvidence(
+      `${commandResult.stdout}\n${commandResult.stderr}`.trim()
+    ) ??
+    readConformanceEvidence(
+      `${commandResult.stderr}\n${commandResult.stdout}`.trim()
+    );
+  const evidencePayload =
+    parsedEvidence === undefined
+      ? createFallbackEvidence(
+          suiteManifest ?? {
+            boundary: "unknown",
+            checks: [],
+            suiteId: runner.project,
+            suiteVersion: "0.0.0",
+          },
+          runner.implementationId,
+          runner.language,
+          fallbackCheckResults
+        )
+      : parsedEvidence;
+  const status: CompatibilityResultStatus = computeCompatibilityResultStatus(
+    commandResult.code,
+    evidencePayload
+  );
+  const reportStatus = classifyConformanceReportStatus(
+    runner,
+    evidencePayload,
+    status,
+    expectedCapabilities
+  );
+  const evidence: CompatibilityConformanceEvidence = {
+    adapterId: evidencePayload.adapterId,
+    boundary: evidencePayload.boundary,
+    capabilities: evidencePayload.capabilities,
+    checkResults: evidencePayload.checkResults,
+    command: sanitizeEvidenceCommand(command),
+    exitCode: commandResult.code,
+    implementationId: runner.implementationId,
+    nonApplicableCheckIds: evidencePayload.nonApplicableCheckIds,
+    project: runner.project,
+    reportLabel: runner.reportLabel,
+    reportStatus,
+    status,
+    suiteId: evidencePayload.suiteId,
+    suiteVersion: evidencePayload.suiteVersion,
+    summary: evidencePayload.summary,
+  };
+
+  if (status === "fail" && parsedEvidence === undefined) {
+    evidence.stderr = commandResult.stderr;
+    evidence.stdout = commandResult.stdout;
+  }
+
+  await writeFile(evidenceFilePath, formatEvidenceJson(evidence));
+
+  return {
+    matrixResult: {
+      checkIds: evidencePayload.checkResults.map((result) => result.checkId),
+      checkSummary: evidencePayload.summary,
+      declaredCapabilities: evidencePayload.capabilities,
+      evidencePath: relativeEvidencePath,
+      reportLabel: runner.reportLabel,
+      reportStatus,
+      status,
+      suiteId: evidencePayload.suiteId,
+      suiteVersion: evidencePayload.suiteVersion,
+    },
+    suite: {
+      boundary: evidencePayload.boundary,
+      suiteId: evidencePayload.suiteId,
+      suiteVersion: evidencePayload.suiteVersion,
+    },
+  };
 };
 
 const upsertCompatibilityImplementation = (
@@ -1242,6 +1624,248 @@ const upsertCompatibilityImplementation = (
   }
 
   existingImplementation.results.push(result);
+};
+
+const readExpectedInteropScenarios = (value: unknown[]): string[] => {
+  return value.filter((entry): entry is string => typeof entry === "string");
+};
+
+const readInteropScenarioEntry = (
+  value: unknown
+): InteropScenarioReport["reports"][number] | undefined => {
+  if (
+    !isRecord(value) ||
+    typeof value.scenario !== "string" ||
+    !isRecord(value.checks) ||
+    !isRecord(value.telemetry) ||
+    !Array.isArray(value.telemetry.observedKeys) ||
+    !isRecord(value.telemetry.attributes) ||
+    typeof value.telemetry.schemaUrl !== "string"
+  ) {
+    return undefined;
+  }
+
+  const checks = Object.fromEntries(
+    Object.entries(value.checks).filter(
+      (entry): entry is [string, boolean] => typeof entry[1] === "boolean"
+    )
+  );
+
+  return {
+    checks,
+    scenario: value.scenario,
+    telemetry: {
+      attributes: value.telemetry.attributes as Record<
+        string,
+        string | string[] | null
+      >,
+      observedKeys: value.telemetry.observedKeys.filter(
+        (entry): entry is string => typeof entry === "string"
+      ),
+      scenario: value.scenario,
+      schemaUrl: value.telemetry.schemaUrl,
+    },
+  };
+};
+
+const readInteropScenarioReport = (
+  stdout: string
+): InteropScenarioReport | undefined => {
+  for (const candidate of extractJsonObjectCandidates(stdout).reverse()) {
+    const report = parseInteropScenarioReportCandidate(candidate);
+
+    if (report !== undefined) {
+      return report;
+    }
+  }
+
+  return undefined;
+};
+
+const readInteropTelemetrySummary = (
+  stdout: string
+): InteropTelemetrySummary | undefined => {
+  // Nx target wrappers may prepend human-readable logs before the final JSON
+  // matrix payload, so the evidence parser intentionally reads the trailing
+  // object instead of assuming stdout is pure JSON from byte zero.
+  const parsed = readInteropScenarioReport(stdout);
+
+  if (parsed === undefined) {
+    return undefined;
+  }
+
+  const expectedScenarios = readExpectedInteropScenarios(parsed.scenarios);
+
+  if (expectedScenarios.length === 0) {
+    return undefined;
+  }
+
+  const expectedScenarioSet = new Set(expectedScenarios);
+  const seenScenarios = new Set<string>();
+  const scenarios: InteropTelemetrySummary["scenarios"] = [];
+  const observedKeys = new Set<string>();
+  let schemaUrl: string | undefined;
+
+  for (const report of parsed.reports) {
+    const scenarioReport = readInteropTelemetryScenarioReport(
+      report,
+      expectedScenarioSet,
+      seenScenarios,
+      schemaUrl
+    );
+
+    if (scenarioReport === undefined) {
+      return undefined;
+    }
+
+    schemaUrl = scenarioReport.schemaUrl;
+
+    for (const key of scenarioReport.observedKeys) {
+      observedKeys.add(key);
+    }
+
+    scenarios.push(scenarioReport.scenario);
+  }
+
+  if (
+    schemaUrl === undefined ||
+    scenarios.length !== expectedScenarios.length ||
+    seenScenarios.size !== expectedScenarios.length
+  ) {
+    return undefined;
+  }
+
+  return {
+    observedKeys: [...observedKeys].sort(),
+    scenarios,
+    schemaUrl,
+  };
+};
+
+const runInteropTarget = async (
+  runner: InteropRunner,
+  suiteManifest: ConformanceSuiteManifest
+): Promise<{
+  matrixResult: CompatibilityInteropResult;
+}> => {
+  // Interop evidence must measure the authoritative smoke implementation
+  // directly. Using a mutable Nx wrapper here would let unrelated task-graph
+  // fan-out change the compatibility result without any Rust-kernel regression.
+  const command = runner.command ?? [
+    "bun",
+    "run",
+    "nx",
+    "run",
+    runner.project,
+    "--skipNxCache",
+  ];
+  const commandResult = await runCommand(command, {
+    captureOutput: true,
+    cwd: REPO_ROOT,
+  });
+  const evidenceFileName = `${suiteManifest.suiteId}.${runner.pairId}.json`;
+  // See runConformanceTarget's evidenceFilePath comment: written under the
+  // scratch write directory, recorded against the final EVIDENCE_DIRECTORY.
+  const evidenceFilePath = resolve(evidenceWriteDirectory, evidenceFileName);
+  const relativeEvidencePath = relative(
+    REPO_ROOT,
+    resolve(EVIDENCE_DIRECTORY, evidenceFileName)
+  );
+  const fallbackCheckResults = createFallbackCheckResults(
+    suiteManifest,
+    "interopPairs",
+    runner.pairId,
+    "interop runner exited without a parseable scenario report"
+  );
+  let status: "fail" | "pass" = commandResult.code === 0 ? "pass" : "fail";
+  let reportStatus: CompatibilityReportStatus =
+    status === "pass" ? "full_pass" : "unexpected_fail";
+  const evidence: {
+    boundary: string;
+    checkResults: ConformanceCheckResult[];
+    command: string[];
+    exitCode: number;
+    pairId: string;
+    project: string;
+    reportLabel: string;
+    reportStatus: CompatibilityReportStatus;
+    status: "fail" | "pass";
+    summary: CompatibilityCheckSummary;
+    stderr?: string;
+    stdout?: string;
+    telemetry?: InteropTelemetrySummary;
+    suiteId: string;
+    suiteVersion: string;
+  } = {
+    boundary: suiteManifest.boundary,
+    checkResults: fallbackCheckResults,
+    command,
+    exitCode: commandResult.code,
+    pairId: runner.pairId,
+    project: runner.project,
+    reportLabel: runner.reportLabel,
+    reportStatus,
+    status,
+    suiteId: suiteManifest.suiteId,
+    suiteVersion: suiteManifest.suiteVersion,
+    summary: createConformanceEvidenceSummary(fallbackCheckResults),
+  };
+
+  if (status === "fail") {
+    evidence.stderr = commandResult.stderr;
+    evidence.stdout = commandResult.stdout;
+  } else {
+    const telemetry = readInteropTelemetrySummary(commandResult.stdout);
+    const report = readInteropScenarioReport(commandResult.stdout);
+
+    if (telemetry === undefined || report === undefined) {
+      // Epic V treats telemetry as part of the measured interop evidence, so a
+      // smoke target that exits 0 but stops emitting the report payload must
+      // fail here instead of silently downgrading the checked-in artifact.
+      evidence.stderr =
+        "interop smoke completed without a parseable scenario report";
+      evidence.stdout = commandResult.stdout;
+      status = "fail";
+      reportStatus = "unexpected_fail";
+      evidence.status = status;
+      evidence.reportStatus = reportStatus;
+    } else {
+      evidence.checkResults = createInteropCheckResults(
+        suiteManifest,
+        runner.pairId,
+        report
+      );
+      evidence.summary = createConformanceEvidenceSummary(
+        evidence.checkResults
+      );
+      evidence.telemetry = telemetry;
+      if (evidence.summary.failedChecks > 0) {
+        status = "fail";
+        reportStatus = "unexpected_fail";
+        evidence.status = status;
+        evidence.reportStatus = reportStatus;
+      } else {
+        reportStatus = "full_pass";
+        evidence.reportStatus = reportStatus;
+      }
+    }
+  }
+
+  await writeFile(evidenceFilePath, formatEvidenceJson(evidence));
+
+  return {
+    matrixResult: {
+      checkIds: evidence.checkResults.map((result) => result.checkId),
+      checkSummary: evidence.summary,
+      evidencePath: relativeEvidencePath,
+      pairId: runner.pairId,
+      reportLabel: runner.reportLabel,
+      reportStatus,
+      status,
+      suiteId: suiteManifest.suiteId,
+      suiteVersion: suiteManifest.suiteVersion,
+    },
+  };
 };
 
 const runAllRunners = async (
@@ -1445,630 +2069,6 @@ const main = async (): Promise<void> => {
     throw new Error("one or more conformance targets failed");
   }
 };
-
-function compareEvidenceField(
-  evidencePath: string,
-  fieldName: string,
-  actual: unknown,
-  expected: string,
-  failures: string[]
-): void {
-  if (actual !== expected) {
-    failures.push(
-      `${evidencePath} ${fieldName} is ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`
-    );
-  }
-}
-
-function compareCheckIds(
-  evidencePath: string,
-  checkResults: unknown,
-  expectedCheckIds: readonly string[],
-  failures: string[]
-): void {
-  if (!Array.isArray(checkResults)) {
-    failures.push(`${evidencePath} checkResults must be an array`);
-    return;
-  }
-
-  const actualCheckIds = checkResults.map((checkResult) =>
-    isRecord(checkResult) ? checkResult.checkId : undefined
-  );
-
-  if (JSON.stringify(actualCheckIds) !== JSON.stringify(expectedCheckIds)) {
-    failures.push(`${evidencePath} checkResults do not match matrix checkIds`);
-  }
-}
-
-function compareCheckSummary(
-  evidencePath: string,
-  summary: unknown,
-  expectedSummary: CompatibilityCheckSummary,
-  failures: string[]
-): void {
-  if (!isRecord(summary)) {
-    failures.push(`${evidencePath} summary must be an object`);
-    return;
-  }
-
-  for (const fieldName of [
-    "applicableChecks",
-    "failedChecks",
-    "nonApplicableChecks",
-    "passedChecks",
-    "totalChecks",
-  ] as const) {
-    if (summary[fieldName] !== expectedSummary[fieldName]) {
-      failures.push(
-        `${evidencePath} summary.${fieldName} is ${JSON.stringify(summary[fieldName])}, expected ${JSON.stringify(expectedSummary[fieldName])}`
-      );
-    }
-  }
-}
-
-function compareNonApplicableCheckIds(
-  evidencePath: string,
-  actualValue: unknown,
-  expectedCheckIds: readonly string[],
-  failures: string[]
-): void {
-  const actualCheckIds =
-    actualValue === undefined ? [] : readStringArray(actualValue);
-
-  if (!hasSameStringSet(actualCheckIds, expectedCheckIds)) {
-    failures.push(
-      `${evidencePath} nonApplicableCheckIds do not match live conformance plan topology`
-    );
-  }
-}
-
-function compareStringSet(
-  evidencePath: string,
-  fieldName: string,
-  actualValue: unknown,
-  expectedValues: readonly string[],
-  failures: string[]
-): void {
-  const actualValues = readStringArray(actualValue);
-
-  if (!hasSameStringSet(actualValues, expectedValues)) {
-    failures.push(
-      `${evidencePath} ${fieldName} does not match expected values`
-    );
-  }
-}
-
-async function resetHermeticBuildBoundary(): Promise<void> {
-  await Promise.all(
-    HERMETIC_BUILD_OUTPUT_DIRECTORIES.map(
-      async (directoryPath) =>
-        await rm(resolve(REPO_ROOT, directoryPath), {
-          force: true,
-          recursive: true,
-        })
-    )
-  );
-}
-
-async function readSuiteManifest(
-  manifestPath: string
-): Promise<ConformanceSuiteManifest> {
-  return await readConformanceSuiteManifest(resolve(REPO_ROOT, manifestPath));
-}
-
-async function runConformanceTarget(
-  runner: ConformanceRunner,
-  suiteManifest: ConformanceSuiteManifest | undefined,
-  expectedCapabilities: ReadonlySet<string>
-): Promise<{
-  matrixResult: CompatibilityImplementationResult;
-  suite: CompatibilitySuite;
-}> {
-  // The compatibility matrix is meant to be measured evidence, not replayed
-  // cached console output, so each conformance lane is forced to execute.
-  for (const prerequisiteCommand of runner.prerequisiteCommands ?? []) {
-    const prerequisiteResult = await runCommand(prerequisiteCommand, {
-      captureOutput: true,
-      cwd: REPO_ROOT,
-    });
-
-    if (prerequisiteResult.code !== 0) {
-      throw new Error(
-        `compatibility prerequisite failed for ${runner.implementationId}: ${prerequisiteCommand.join(" ")}`
-      );
-    }
-  }
-
-  const command = [
-    ...(runner.command ?? [
-      "bun",
-      "run",
-      "nx",
-      "run",
-      `${runner.project}:conformance`,
-      "--skipNxCache",
-    ]),
-  ];
-  const commandResult = await runCommand(command, {
-    captureOutput: true,
-    cwd: REPO_ROOT,
-  });
-  const evidenceFileName = `certification-harness.${runner.project}.json`;
-  // Physically written under evidenceWriteDirectory (a scratch directory
-  // during regeneration, EVIDENCE_DIRECTORY otherwise), but the recorded
-  // path always reflects the final EVIDENCE_DIRECTORY location so the
-  // compatibility matrix references where the file will live once
-  // swapEvidenceDirectoryIntoPlace runs.
-  const evidenceFilePath = resolve(evidenceWriteDirectory, evidenceFileName);
-  const relativeEvidencePath = relative(
-    REPO_ROOT,
-    resolve(EVIDENCE_DIRECTORY, evidenceFileName)
-  );
-  const fallbackCheckResults =
-    suiteManifest === undefined
-      ? []
-      : createFallbackCheckResults(
-          suiteManifest,
-          "implementations",
-          runner.implementationId,
-          "runner exited without structured conformance evidence"
-        );
-  const parsedEvidence =
-    readConformanceEvidence(commandResult.stdout) ??
-    readConformanceEvidence(commandResult.stderr) ??
-    readConformanceEvidence(
-      `${commandResult.stdout}\n${commandResult.stderr}`.trim()
-    ) ??
-    readConformanceEvidence(
-      `${commandResult.stderr}\n${commandResult.stdout}`.trim()
-    );
-  const evidencePayload =
-    parsedEvidence === undefined
-      ? createFallbackEvidence(
-          suiteManifest ?? {
-            boundary: "unknown",
-            checks: [],
-            suiteId: runner.project,
-            suiteVersion: "0.0.0",
-          },
-          runner.implementationId,
-          runner.language,
-          fallbackCheckResults
-        )
-      : parsedEvidence;
-  const status: CompatibilityResultStatus = computeCompatibilityResultStatus(
-    commandResult.code,
-    evidencePayload
-  );
-  const reportStatus = classifyConformanceReportStatus(
-    runner,
-    evidencePayload,
-    status,
-    expectedCapabilities
-  );
-  const evidence: CompatibilityConformanceEvidence = {
-    adapterId: evidencePayload.adapterId,
-    boundary: evidencePayload.boundary,
-    capabilities: evidencePayload.capabilities,
-    checkResults: evidencePayload.checkResults,
-    command: sanitizeEvidenceCommand(command),
-    exitCode: commandResult.code,
-    implementationId: runner.implementationId,
-    nonApplicableCheckIds: evidencePayload.nonApplicableCheckIds,
-    project: runner.project,
-    reportLabel: runner.reportLabel,
-    reportStatus,
-    status,
-    suiteId: evidencePayload.suiteId,
-    suiteVersion: evidencePayload.suiteVersion,
-    summary: evidencePayload.summary,
-  };
-
-  if (status === "fail" && parsedEvidence === undefined) {
-    evidence.stderr = commandResult.stderr;
-    evidence.stdout = commandResult.stdout;
-  }
-
-  await writeFile(evidenceFilePath, formatEvidenceJson(evidence));
-
-  return {
-    matrixResult: {
-      checkIds: evidencePayload.checkResults.map((result) => result.checkId),
-      checkSummary: evidencePayload.summary,
-      declaredCapabilities: evidencePayload.capabilities,
-      evidencePath: relativeEvidencePath,
-      reportLabel: runner.reportLabel,
-      reportStatus,
-      status,
-      suiteId: evidencePayload.suiteId,
-      suiteVersion: evidencePayload.suiteVersion,
-    },
-    suite: {
-      boundary: evidencePayload.boundary,
-      suiteId: evidencePayload.suiteId,
-      suiteVersion: evidencePayload.suiteVersion,
-    },
-  };
-}
-
-function sanitizeEvidenceCommand(command: readonly string[]): string[] {
-  return command.map((part, index) =>
-    index > 0 && command[index - 1] === "--adapter"
-      ? "[adapter-manifest]"
-      : part
-  );
-}
-
-function classifyConformanceReportStatus(
-  runner: ConformanceRunner,
-  evidence: ConformanceEvidence,
-  rawStatus: CompatibilityResultStatus,
-  expectedCapabilities: ReadonlySet<string>
-): CompatibilityReportStatus {
-  if (rawStatus === "fail") {
-    return runner.expectedFailure === true
-      ? "expected_fail"
-      : "unexpected_fail";
-  }
-
-  if (rawStatus === "unsupported" || rawStatus === "not_applicable") {
-    return rawStatus;
-  }
-
-  const applicableChecks =
-    evidence.summary.applicableChecks ??
-    evidence.summary.failedChecks + evidence.summary.passedChecks;
-  const nonApplicableChecks = evidence.summary.nonApplicableChecks ?? 0;
-
-  if (applicableChecks === 0) {
-    return nonApplicableChecks > 0 ? "unsupported" : "not_applicable";
-  }
-
-  // The expected set is derived from the topology rooted at this lane's
-  // adapter manifest, so adding or removing a plan/capability anywhere
-  // under that topology automatically reshapes what `full_pass` means
-  // without a parallel manual list in this file. See
-  // `computeExpectedCapabilitiesFromTopology` for the derivation.
-  const declaredCapabilities = new Set(evidence.capabilities ?? []);
-  const hasFullCapabilitySet = [...expectedCapabilities].every((capability) =>
-    declaredCapabilities.has(capability)
-  );
-
-  return hasFullCapabilitySet ? "full_pass" : "capability_subset_pass";
-}
-
-async function computeExpectedCapabilitiesFromTopology(
-  adapterManifestPathRelative: string
-): Promise<ReadonlySet<string>> {
-  const adapterManifestPath = resolve(REPO_ROOT, adapterManifestPathRelative);
-  const adapterManifest = JSON.parse(
-    await readFile(adapterManifestPath, "utf-8")
-  ) as { authorityPackets?: unknown };
-
-  const packetPaths = readStringArray(adapterManifest.authorityPackets);
-  const capabilities = new Set<string>();
-
-  // The expected set is derived exclusively from the discovered plan
-  // topology — any capability that is not exercised by at least one plan
-  // check is NOT part of the lane's "full coverage" surface. Wave 5
-  // experimented with also unioning adapter-advertised capabilities here so
-  // adapter-only surfaces (like an unmeasured `trace.lifecycle` claim)
-  // would still count toward `full_pass`; wave 6 reverted that because it
-  // weakened the meaning of `full_pass` — a lane could be reported as
-  // fully covered while a chunk of its claimed surface had zero asserting
-  // checks. Adapter-advertised capabilities without plan coverage are now
-  // caught structurally by `portability-gate.ts`'s
-  // `adapter-capability-covered-by-plan` rule, which forces either the
-  // capability to be removed from the adapter manifest or a plan check to
-  // exercise it.
-  for (const packetPath of packetPaths) {
-    const packetManifest = JSON.parse(
-      await readFile(resolve(REPO_ROOT, packetPath), "utf-8")
-    ) as {
-      conformancePlans?: { path?: unknown }[];
-    };
-
-    for (const plan of packetManifest.conformancePlans ?? []) {
-      if (typeof plan.path !== "string") {
-        continue;
-      }
-
-      collectPlanCapabilities(
-        await readFile(resolve(REPO_ROOT, plan.path), "utf-8"),
-        capabilities
-      );
-    }
-  }
-
-  return capabilities;
-}
-
-function collectPlanCapabilities(planJson: string, sink: Set<string>): void {
-  const plan = JSON.parse(planJson) as {
-    applicability?: { capabilities?: unknown };
-    checks?: { capabilities?: unknown }[];
-  };
-
-  for (const capability of readStringArray(plan.applicability?.capabilities)) {
-    sink.add(capability);
-  }
-
-  for (const check of plan.checks ?? []) {
-    for (const capability of readStringArray(check.capabilities)) {
-      sink.add(capability);
-    }
-  }
-}
-
-function readStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.filter((entry): entry is string => typeof entry === "string");
-}
-
-function computeCompatibilityResultStatus(
-  commandExitCode: number,
-  evidence: ConformanceEvidence
-): CompatibilityResultStatus {
-  if (commandExitCode !== 0 || evidence.status !== "pass") {
-    return "fail";
-  }
-
-  const applicableChecks =
-    evidence.summary.applicableChecks ??
-    evidence.summary.failedChecks + evidence.summary.passedChecks;
-  const nonApplicableChecks = evidence.summary.nonApplicableChecks ?? 0;
-
-  if (applicableChecks === 0) {
-    return nonApplicableChecks > 0 ? "unsupported" : "not_applicable";
-  }
-
-  return "pass";
-}
-
-async function runInteropTarget(
-  runner: InteropRunner,
-  suiteManifest: ConformanceSuiteManifest
-): Promise<{
-  matrixResult: CompatibilityInteropResult;
-}> {
-  // Interop evidence must measure the authoritative smoke implementation
-  // directly. Using a mutable Nx wrapper here would let unrelated task-graph
-  // fan-out change the compatibility result without any Rust-kernel regression.
-  const command = runner.command ?? [
-    "bun",
-    "run",
-    "nx",
-    "run",
-    runner.project,
-    "--skipNxCache",
-  ];
-  const commandResult = await runCommand(command, {
-    captureOutput: true,
-    cwd: REPO_ROOT,
-  });
-  const evidenceFileName = `${suiteManifest.suiteId}.${runner.pairId}.json`;
-  // See runConformanceTarget's evidenceFilePath comment: written under the
-  // scratch write directory, recorded against the final EVIDENCE_DIRECTORY.
-  const evidenceFilePath = resolve(evidenceWriteDirectory, evidenceFileName);
-  const relativeEvidencePath = relative(
-    REPO_ROOT,
-    resolve(EVIDENCE_DIRECTORY, evidenceFileName)
-  );
-  const fallbackCheckResults = createFallbackCheckResults(
-    suiteManifest,
-    "interopPairs",
-    runner.pairId,
-    "interop runner exited without a parseable scenario report"
-  );
-  let status: "fail" | "pass" = commandResult.code === 0 ? "pass" : "fail";
-  let reportStatus: CompatibilityReportStatus =
-    status === "pass" ? "full_pass" : "unexpected_fail";
-  const evidence: {
-    boundary: string;
-    checkResults: ConformanceCheckResult[];
-    command: string[];
-    exitCode: number;
-    pairId: string;
-    project: string;
-    reportLabel: string;
-    reportStatus: CompatibilityReportStatus;
-    status: "fail" | "pass";
-    summary: CompatibilityCheckSummary;
-    stderr?: string;
-    stdout?: string;
-    telemetry?: InteropTelemetrySummary;
-    suiteId: string;
-    suiteVersion: string;
-  } = {
-    boundary: suiteManifest.boundary,
-    checkResults: fallbackCheckResults,
-    command,
-    exitCode: commandResult.code,
-    pairId: runner.pairId,
-    project: runner.project,
-    reportLabel: runner.reportLabel,
-    reportStatus,
-    status,
-    suiteId: suiteManifest.suiteId,
-    suiteVersion: suiteManifest.suiteVersion,
-    summary: createConformanceEvidenceSummary(fallbackCheckResults),
-  };
-
-  if (status === "fail") {
-    evidence.stderr = commandResult.stderr;
-    evidence.stdout = commandResult.stdout;
-  } else {
-    const telemetry = readInteropTelemetrySummary(commandResult.stdout);
-    const report = readInteropScenarioReport(commandResult.stdout);
-
-    if (telemetry === undefined || report === undefined) {
-      // Epic V treats telemetry as part of the measured interop evidence, so a
-      // smoke target that exits 0 but stops emitting the report payload must
-      // fail here instead of silently downgrading the checked-in artifact.
-      evidence.stderr =
-        "interop smoke completed without a parseable scenario report";
-      evidence.stdout = commandResult.stdout;
-      status = "fail";
-      reportStatus = "unexpected_fail";
-      evidence.status = status;
-      evidence.reportStatus = reportStatus;
-    } else {
-      evidence.checkResults = createInteropCheckResults(
-        suiteManifest,
-        runner.pairId,
-        report
-      );
-      evidence.summary = createConformanceEvidenceSummary(
-        evidence.checkResults
-      );
-      evidence.telemetry = telemetry;
-      if (evidence.summary.failedChecks > 0) {
-        status = "fail";
-        reportStatus = "unexpected_fail";
-        evidence.status = status;
-        evidence.reportStatus = reportStatus;
-      } else {
-        reportStatus = "full_pass";
-        evidence.reportStatus = reportStatus;
-      }
-    }
-  }
-
-  await writeFile(evidenceFilePath, formatEvidenceJson(evidence));
-
-  return {
-    matrixResult: {
-      checkIds: evidence.checkResults.map((result) => result.checkId),
-      checkSummary: evidence.summary,
-      evidencePath: relativeEvidencePath,
-      pairId: runner.pairId,
-      reportLabel: runner.reportLabel,
-      reportStatus,
-      status,
-      suiteId: suiteManifest.suiteId,
-      suiteVersion: suiteManifest.suiteVersion,
-    },
-  };
-}
-
-function readInteropTelemetrySummary(
-  stdout: string
-): InteropTelemetrySummary | undefined {
-  // Nx target wrappers may prepend human-readable logs before the final JSON
-  // matrix payload, so the evidence parser intentionally reads the trailing
-  // object instead of assuming stdout is pure JSON from byte zero.
-  const parsed = readInteropScenarioReport(stdout);
-
-  if (parsed === undefined) {
-    return undefined;
-  }
-
-  const expectedScenarios = readExpectedInteropScenarios(parsed.scenarios);
-
-  if (expectedScenarios.length === 0) {
-    return undefined;
-  }
-
-  const expectedScenarioSet = new Set(expectedScenarios);
-  const seenScenarios = new Set<string>();
-  const scenarios: InteropTelemetrySummary["scenarios"] = [];
-  const observedKeys = new Set<string>();
-  let schemaUrl: string | undefined;
-
-  for (const report of parsed.reports) {
-    const scenarioReport = readInteropTelemetryScenarioReport(
-      report,
-      expectedScenarioSet,
-      seenScenarios,
-      schemaUrl
-    );
-
-    if (scenarioReport === undefined) {
-      return undefined;
-    }
-
-    schemaUrl = scenarioReport.schemaUrl;
-
-    for (const key of scenarioReport.observedKeys) {
-      observedKeys.add(key);
-    }
-
-    scenarios.push(scenarioReport.scenario);
-  }
-
-  if (
-    schemaUrl === undefined ||
-    scenarios.length !== expectedScenarios.length ||
-    seenScenarios.size !== expectedScenarios.length
-  ) {
-    return undefined;
-  }
-
-  return {
-    observedKeys: [...observedKeys].sort(),
-    scenarios,
-    schemaUrl,
-  };
-}
-
-function readInteropScenarioReport(
-  stdout: string
-): InteropScenarioReport | undefined {
-  for (const candidate of extractJsonObjectCandidates(stdout).reverse()) {
-    const report = parseInteropScenarioReportCandidate(candidate);
-
-    if (report !== undefined) {
-      return report;
-    }
-  }
-
-  return undefined;
-}
-
-function readExpectedInteropScenarios(value: unknown[]): string[] {
-  return value.filter((entry): entry is string => typeof entry === "string");
-}
-
-function readInteropScenarioEntry(
-  value: unknown
-): InteropScenarioReport["reports"][number] | undefined {
-  if (
-    !isRecord(value) ||
-    typeof value.scenario !== "string" ||
-    !isRecord(value.checks) ||
-    !isRecord(value.telemetry) ||
-    !Array.isArray(value.telemetry.observedKeys) ||
-    !isRecord(value.telemetry.attributes) ||
-    typeof value.telemetry.schemaUrl !== "string"
-  ) {
-    return undefined;
-  }
-
-  const checks = Object.fromEntries(
-    Object.entries(value.checks).filter(
-      (entry): entry is [string, boolean] => typeof entry[1] === "boolean"
-    )
-  );
-
-  return {
-    checks,
-    scenario: value.scenario,
-    telemetry: {
-      attributes: value.telemetry.attributes as Record<
-        string,
-        string | string[] | null
-      >,
-      observedKeys: value.telemetry.observedKeys.filter(
-        (entry): entry is string => typeof entry === "string"
-      ),
-      scenario: value.scenario,
-      schemaUrl: value.telemetry.schemaUrl,
-    },
-  };
-}
 
 function readInteropTelemetryScenarioReport(
   report: unknown,
