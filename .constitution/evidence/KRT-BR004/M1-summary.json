@@ -1,0 +1,61 @@
+{
+  "milestone": "M1",
+  "ticket": "KRT-BR001",
+  "cohort": "typescript/kernel/backends/shared",
+  "baseline_commit": "16834aab351659788c56435de70f8969cabdfe7f",
+  "tool": {
+    "name": "oxlint",
+    "version": "1.86.0",
+    "safe_fix_command": "bunx --bun oxlint --fix typescript/kernel/backends/shared"
+  },
+  "diagnostics": {
+    "before": 408,
+    "after": 378,
+    "reduction": 30
+  },
+  "changed_files": [
+    ".changeset/toolchain-br-kernel-backend-lint.md",
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-integrity-assertions.ts",
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-reclamation-validation.ts",
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-record-utils.ts",
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-run-logic.ts",
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-run-span.ts",
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-turn-node-lineage.ts",
+    "typescript/kernel/backends/shared/test/backend-invariant-reclamation.leaseless-expiry.test.ts",
+    "typescript/kernel/backends/shared/tsup.config.ts"
+  ],
+  "verification": [
+    {
+      "command": "bun run nx run backend-shared:typecheck",
+      "result": "pass"
+    },
+    {
+      "command": "bun run nx run backend-shared:test",
+      "result": "pass",
+      "tests": 14,
+      "assertions": 30
+    },
+    {
+      "command": "bun run typecheck",
+      "result": "pass",
+      "projects": 33,
+      "prerequisites": 1
+    },
+    {
+      "command": "bunx --bun oxfmt --check typescript/kernel/backends/shared .changeset/toolchain-br-kernel-backend-lint.md",
+      "result": "pass"
+    },
+    {
+      "command": "bun run changeset:check --base=master",
+      "result": "pass"
+    }
+  ],
+  "notes": [
+    "Only Oxlint safe fixes were used; suggestion and dangerous fix modes were not used.",
+    "The retained Biome target remains active and clean for this cohort.",
+    "Oxfmt normalized the safe-fix output before verification.",
+    "The lead reran Nx verification outside the sandbox after the sandbox denied writes to Nx workspace-data.",
+    "No signature, collection, runtime-authority, lint-target, dependency, contract-shape, pattern, or convention change was introduced."
+  ]
+}

@@ -16,10 +16,8 @@
 
 import type { StoredRun } from "@tuvren/kernel-protocol";
 
-import {
-  type BackendInvariantRecordUtilsConfig,
-  createBackendInvariantRecordUtils,
-} from "./backend-invariant-record-utils.js";
+import { createBackendInvariantRecordUtils } from "./backend-invariant-record-utils.js";
+import type { BackendInvariantRecordUtilsConfig } from "./backend-invariant-record-utils.js";
 
 /**
  * Configuration for {@link createBackendInvariantRunLogic}: the record-utils

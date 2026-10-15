@@ -28,28 +28,34 @@ import {
   assertStoredTurnTreeIdentity,
   assertStoredTurnTreePath,
   decodeDeterministicKernelRecord,
-  type StoredBranch,
-  type StoredOrderedPathChunk,
-  type StoredRun,
-  type StoredTurn,
-  type StoredTurnNode,
-  type StoredTurnTree,
-  type StoredTurnTreePath,
-  type TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
+import type {
+  StoredBranch,
+  StoredOrderedPathChunk,
+  StoredRun,
+  StoredTurn,
+  StoredTurnNode,
+  StoredTurnTree,
+  StoredTurnTreePath,
+  TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 
 import {
-  type BackendInvariantRecordUtils,
-  type BackendInvariantRecordUtilsConfig,
   compareStoredTurn,
   createBackendInvariantRecordUtils,
 } from "./backend-invariant-record-utils.js";
+import type {
+  BackendInvariantRecordUtils,
+  BackendInvariantRecordUtilsConfig,
+} from "./backend-invariant-record-utils.js";
 import type { BackendState } from "./backend-invariant-state.js";
 import {
-  type BackendInvariantTurnNodeLineage,
   createBackendInvariantTurnNodeLineage,
   createTurnNodeLineageIndex,
-  type TurnNodeLineageIndex,
+} from "./backend-invariant-turn-node-lineage.js";
+import type {
+  BackendInvariantTurnNodeLineage,
+  TurnNodeLineageIndex,
 } from "./backend-invariant-turn-node-lineage.js";
 
 // Shared committed-state invariant suite for the database-backed backends
@@ -400,8 +406,8 @@ function validateBranchInvariantsCore(
         "new archive branches must preserve the pre-rollback source branch head",
         errorCode(errorPrefix, "branch_archive_head_mismatch"),
         {
-          archivedFromBranchId: branch.archivedFromBranchId,
           archiveHeadTurnNodeHash: branch.headTurnNodeHash,
+          archivedFromBranchId: branch.archivedFromBranchId,
           sourceHeadTurnNodeHash:
             sourceBranchBeforeTransaction.headTurnNodeHash,
         }

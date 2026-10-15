@@ -16,10 +16,8 @@
 
 import type { StoredThread, StoredTurnNode } from "@tuvren/kernel-protocol";
 
-import {
-  type BackendInvariantRecordUtilsConfig,
-  createBackendInvariantRecordUtils,
-} from "./backend-invariant-record-utils.js";
+import { createBackendInvariantRecordUtils } from "./backend-invariant-record-utils.js";
+import type { BackendInvariantRecordUtilsConfig } from "./backend-invariant-record-utils.js";
 import type { BackendState } from "./backend-invariant-state.js";
 
 // Issue #108 M2: a turn node's thread membership and turn-node lineage

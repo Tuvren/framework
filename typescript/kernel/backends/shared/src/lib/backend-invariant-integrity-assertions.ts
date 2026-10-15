@@ -22,10 +22,12 @@ import type {
 } from "@tuvren/kernel-protocol";
 
 import {
-  type BackendInvariantRecordUtils,
-  type BackendInvariantRecordUtilsConfig,
   compareStoredTurn,
   createBackendInvariantRecordUtils,
+} from "./backend-invariant-record-utils.js";
+import type {
+  BackendInvariantRecordUtils,
+  BackendInvariantRecordUtilsConfig,
 } from "./backend-invariant-record-utils.js";
 import type { BackendState } from "./backend-invariant-state.js";
 
@@ -361,12 +363,12 @@ export function createBackendInvariantIntegrityAssertions(
   }
 
   return {
+    ORDERED_PATH_CHUNK_SIZE,
     assertBackwardBranchMoveIsArchived,
     assertChunkedTurnTreePathChunkLayout,
     assertTurnParentLink,
     ensureImmutableRecordMatch,
     listTurnsByThread,
-    ORDERED_PATH_CHUNK_SIZE,
   };
 }
 

@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-import {
-  decodeDeterministicKernelRecord,
-  type StoredBranch,
-  type StoredRun,
-  type StoredTurn,
-  type StoredTurnNode,
+import { decodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type {
+  StoredBranch,
+  StoredRun,
+  StoredTurn,
+  StoredTurnNode,
 } from "@tuvren/kernel-protocol";
 
-import {
-  type BackendInvariantRecordUtilsConfig,
-  createBackendInvariantRecordUtils,
-} from "./backend-invariant-record-utils.js";
+import { createBackendInvariantRecordUtils } from "./backend-invariant-record-utils.js";
+import type { BackendInvariantRecordUtilsConfig } from "./backend-invariant-record-utils.js";
 import type { BackendState } from "./backend-invariant-state.js";
 
 /**
@@ -461,8 +459,8 @@ export function createBackendInvariantRunSpan(
 
   return {
     assertActiveRunHeadAlignment,
-    assertRunCreatedTurnNodesAreCanonical,
     assertRunCreatedTurnNodeWithinTurnSpan,
+    assertRunCreatedTurnNodesAreCanonical,
     assertRunStartTurnNodeWithinTurnSpan,
     classifyTurnNodeRelationship,
     decodeTurnNodeConsumedStagedResultObjectHashes,
