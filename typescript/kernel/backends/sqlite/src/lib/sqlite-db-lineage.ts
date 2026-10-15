@@ -30,16 +30,16 @@ import {
   ensureTurnNodeLineageMetadataInDatabase,
   selectBranchesByThread,
 } from "./sqlite-lookups.js";
-import {
-  decodeUnknownTurnRow,
-  type SqliteTurnNodeLineageProofRow,
-  type TurnNodeLineageMetadata,
+import { decodeUnknownTurnRow } from "./sqlite-records.js";
+import type {
+  SqliteTurnNodeLineageProofRow,
+  TurnNodeLineageMetadata,
 } from "./sqlite-records.js";
 import {
   decodeRunCreatedTurnNodeHashes,
   getRunActiveTurnNodeHash,
-  type TurnNodeRelationship,
 } from "./sqlite-run-invariants.js";
+import type { TurnNodeRelationship } from "./sqlite-run-invariants.js";
 import type { TransactionWriteTracker } from "./sqlite-write-tracker.js";
 
 // Database-backed counterpart to memory-backend-lineage.ts: the same lineage

@@ -1,0 +1,83 @@
+{
+  "milestone": "M5",
+  "ticket": "KRT-BR001",
+  "cohort": [
+    "typescript/kernel/backends/sqlite/src",
+    "typescript/kernel/backends/sqlite/bench"
+  ],
+  "baseline_commit": "8ef9ef02a20ecb643f6a9da41738a75d78310a0e",
+  "tool": {
+    "name": "oxlint",
+    "version": "1.86.0",
+    "safe_fix_command": "bunx --bun oxlint --fix typescript/kernel/backends/sqlite/src typescript/kernel/backends/sqlite/bench"
+  },
+  "diagnostics": {
+    "before": 598,
+    "after": 499,
+    "reduction": 99,
+    "by_selection": {
+      "src": {
+        "before": 449,
+        "after": 371
+      },
+      "bench": {
+        "before": 149,
+        "after": 128
+      }
+    }
+  },
+  "changed_files": [
+    "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts",
+    "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts",
+    "typescript/kernel/backends/sqlite/bench/sqlite-retention-dry-run.ts",
+    "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts",
+    "typescript/kernel/backends/sqlite/src/lib/sqlite-db-lineage.ts",
+    "typescript/kernel/backends/sqlite/src/lib/sqlite-lookups.ts",
+    "typescript/kernel/backends/sqlite/src/lib/sqlite-reclamation-validation.ts",
+    "typescript/kernel/backends/sqlite/src/lib/sqlite-reclamation.ts",
+    "typescript/kernel/backends/sqlite/src/lib/sqlite-records.ts",
+    "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts",
+    "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-support.ts",
+    "typescript/kernel/backends/sqlite/src/lib/sqlite-schema.ts",
+    "typescript/kernel/backends/sqlite/src/lib/sqlite-transaction-validation.ts",
+    "typescript/kernel/backends/sqlite/src/lib/sqlite-validation.ts"
+  ],
+  "verification": [
+    {
+      "command": "bun run nx run backend-sqlite:typecheck",
+      "result": "pass"
+    },
+    {
+      "command": "bun run nx run backend-sqlite:test",
+      "result": "pass",
+      "tests": 115,
+      "suites": 20
+    },
+    {
+      "command": "bun run nx run backend-sqlite:lint",
+      "result": "pass",
+      "retained_biome_files": 48
+    },
+    {
+      "command": "bun run typecheck",
+      "result": "pass",
+      "projects": 33,
+      "prerequisites": 1
+    },
+    {
+      "command": "bunx --bun oxfmt --check typescript/kernel/backends/sqlite/src typescript/kernel/backends/sqlite/bench",
+      "result": "pass"
+    },
+    {
+      "command": "bun run changeset:check --base=master",
+      "result": "pass"
+    }
+  ],
+  "notes": [
+    "Only Oxlint safe fixes were used; suggestion and dangerous fix modes were not used.",
+    "The empty async benchmark callback uses Promise.resolve() to preserve fulfilled-undefined behavior.",
+    "The retained Biome target and all three existing directives remain active and clean.",
+    "Canonical UTF-8, URL, array-type, import, key-order, and validation-error spellings preserve backend behavior.",
+    "No test file, public signature, collection semantics, runtime authority, lint target, dependency, contract shape, repository pattern, or convention changed."
+  ]
+}

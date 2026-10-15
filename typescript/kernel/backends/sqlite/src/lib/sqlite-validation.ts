@@ -17,10 +17,6 @@
 import type Database from "better-sqlite3";
 
 import {
-  type ExpectedSqliteColumnSchema,
-  type ExpectedSqliteForeignKeySchema,
-  type ExpectedSqliteIndexSchema,
-  type ExpectedSqliteTableSchema,
   INITIAL_SCHEMA_INDEX_DEFINITIONS,
   INITIAL_SCHEMA_MIGRATION_NAME,
   INITIAL_SCHEMA_REQUIRED_INDEXES,
@@ -40,12 +36,18 @@ import {
   RUN_LIVENESS_REQUIRED_INDEXES,
   RUN_LIVENESS_RUN_COLUMN_NAMES,
   resolveMigrationDirectory,
-  type SqlitePersistenceErrorFactory,
   TARGETED_VALIDATION_INDEX_DEFINITIONS,
   TARGETED_VALIDATION_MIGRATION_NAME,
   TARGETED_VALIDATION_REQUIRED_INDEXES,
   TARGETED_VALIDATION_REQUIRED_TABLES,
   TARGETED_VALIDATION_TABLE_DEFINITIONS,
+} from "./sqlite-schema.js";
+import type {
+  ExpectedSqliteColumnSchema,
+  ExpectedSqliteForeignKeySchema,
+  ExpectedSqliteIndexSchema,
+  ExpectedSqliteTableSchema,
+  SqlitePersistenceErrorFactory,
 } from "./sqlite-schema.js";
 
 interface SqliteMigrationRow {
@@ -519,7 +521,7 @@ function loadSqliteMasterNames(
         .prepare(
           `SELECT name FROM sqlite_master WHERE type = '${type}' ORDER BY name`
         )
-        .all() as Array<{ name: string }>
+        .all() as { name: string }[]
     ).map((row) => row.name)
   );
 }
@@ -629,15 +631,15 @@ function validateSqliteIndexSchema(
     )
       .sort((left, right) => left.seqno - right.seqno)
       .map((column) => column.name),
-    partial: indexEntry.partial === 1,
     origin: indexEntry.origin,
+    partial: indexEntry.partial === 1,
     tableName: expectedSchema.tableName,
     unique: indexEntry.unique === 1,
   };
   const expectedIndex = {
     columns: [...expectedSchema.columns],
-    partial: false,
     origin: "c",
+    partial: false,
     tableName: expectedSchema.tableName,
     unique: expectedSchema.unique,
   };

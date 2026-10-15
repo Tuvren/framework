@@ -26,7 +26,8 @@
 // injected into the shared factory.
 import { createBackendInvariantReclamationValidation } from "@tuvren/backend-shared";
 
-import { type BackendState, decodeHashStringArray } from "./sqlite-records.js";
+import { decodeHashStringArray } from "./sqlite-records.js";
+import type { BackendState } from "./sqlite-records.js";
 import {
   decodeRunCreatedTurnNodeHashes,
   decodeTurnNodeConsumedStagedResultObjectHashes,

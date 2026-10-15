@@ -126,6 +126,36 @@
       "sha256": "eaf542e242a0ce0467031334c3c40f73b2089a59d3b682197f92df580a26f27d",
       "bytes": 148,
       "role": "measurement"
+    },
+    {
+      "path": "M5-summary.json",
+      "sha256": "7f88ea29b0f3a7619fbad3987750ff60a924d8b1ba6ac3f961f1a8710049673a",
+      "bytes": 3047,
+      "role": "measurement"
+    },
+    {
+      "path": "M5-sqlite-src-bench-before-syntactic.json.gz",
+      "sha256": "f598fb0e2d28ae751b6da9134a924788e22f9161386daaaf950f77ef00dcb365",
+      "bytes": 16058,
+      "role": "baseline"
+    },
+    {
+      "path": "M5-sqlite-src-bench-after-syntactic.json.gz",
+      "sha256": "cadc6fe19508125ac70603e4c1b3b542983d8b81c514b41b05780686953cfdd4",
+      "bytes": 12633,
+      "role": "measurement"
+    },
+    {
+      "path": "M5-sqlite-src-bench-before-command-stderr.log.gz",
+      "sha256": "b2b49c14b1aee8711c4c0e4d8f59f5695d52b248a7fe45ca5be1e5606619e669",
+      "bytes": 148,
+      "role": "baseline"
+    },
+    {
+      "path": "M5-sqlite-src-bench-after-command-stderr.log.gz",
+      "sha256": "446d104261b89270e60b82bc56d589303fe6889fd9ab506fea1360fe45e9ed5a",
+      "bytes": 149,
+      "role": "measurement"
     }
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."

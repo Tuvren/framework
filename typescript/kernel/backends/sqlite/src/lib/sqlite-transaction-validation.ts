@@ -441,8 +441,8 @@ function validateArchiveBranchInDatabase(
       "new archive branches must preserve the pre-rollback source branch head",
       "sqlite_backend_branch_archive_head_mismatch",
       {
-        archivedFromBranchId: branch.archivedFromBranchId,
         archiveHeadTurnNodeHash: branch.headTurnNodeHash,
+        archivedFromBranchId: branch.archivedFromBranchId,
         sourceHeadTurnNodeHash: sourceBranchBeforeTransaction.headTurnNodeHash,
       }
     );

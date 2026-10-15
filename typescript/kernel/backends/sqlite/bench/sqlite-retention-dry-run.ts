@@ -21,13 +21,15 @@ import { join } from "node:path";
 import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
-  type RuntimeBackend,
-  type StagedResult,
-  type StoredBranch,
-  type StoredRun,
-  type StoredStagedResult,
-  type StoredThread,
-  type StoredTurn,
+} from "@tuvren/kernel-protocol";
+import type {
+  RuntimeBackend,
+  StagedResult,
+  StoredBranch,
+  StoredRun,
+  StoredStagedResult,
+  StoredThread,
+  StoredTurn,
 } from "@tuvren/kernel-protocol";
 import {
   createCanonicalKernelTestSchema,
@@ -544,7 +546,7 @@ function loadRetainedTurnNodeHashes(db: Database.Database): Set<string> {
         ORDER BY hash
       `
     )
-    .all() as Array<{ hash: string }>;
+    .all() as { hash: string }[];
   return new Set(rows.map((row) => row.hash));
 }
 
@@ -622,7 +624,7 @@ function decodeConsumedStagedResultObjectHashes(bytes: Uint8Array): string[] {
   const decodedValue = decodeDeterministicKernelRecord(bytes);
 
   if (!Array.isArray(decodedValue)) {
-    throw new Error(
+    throw new TypeError(
       "turn node consumed staged results must decode to an array"
     );
   }
@@ -648,13 +650,13 @@ function decodeHashStringArray(bytes: Uint8Array, label: string): string[] {
   const decodedValue = decodeDeterministicKernelRecord(bytes);
 
   if (!Array.isArray(decodedValue)) {
-    throw new Error(`${label} must decode to an array`);
+    throw new TypeError(`${label} must decode to an array`);
   }
 
   const hashes: string[] = [];
   for (const item of decodedValue) {
     if (typeof item !== "string") {
-      throw new Error(`${label} entries must be strings`);
+      throw new TypeError(`${label} entries must be strings`);
     }
 
     hashes.push(item);

@@ -33,10 +33,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
 
-import {
-  createRecordingPhaseObserver,
-  type RecordingPhaseObserver,
-} from "@tuvren/backend-shared";
+import { createRecordingPhaseObserver } from "@tuvren/backend-shared";
+import type { RecordingPhaseObserver } from "@tuvren/backend-shared";
 import type {
   RuntimeBackend,
   StoredBranch,
@@ -52,12 +50,11 @@ import {
   createStoredTurnTreeRecord,
   formatNs,
   formatPhaseTable,
-  type PhaseStats,
   percentile,
   readSampleCountFromEnv,
   summarizePhases,
-  type TimingStats,
 } from "@tuvren/kernel-testkit";
+import type { PhaseStats, TimingStats } from "@tuvren/kernel-testkit";
 
 import { createSqliteBackend } from "../src/index.js";
 
