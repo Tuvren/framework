@@ -17,7 +17,8 @@
 import { deepStrictEqual, strictEqual } from "node:assert/strict";
 import { after, describe, test } from "node:test";
 
-import { hashKernelRecord, type TurnTreeSchema } from "@tuvren/kernel-protocol";
+import { hashKernelRecord } from "@tuvren/kernel-protocol";
+import type { TurnTreeSchema } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
 import { createSqliteBackend } from "../src/index.js";

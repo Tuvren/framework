@@ -170,7 +170,7 @@ describe("@tuvren/backend-sqlite scope isolation (KRT-BE004)", () => {
     await scopeA.transact(async (tx) => {
       strictEqual(await tx.objects.has(record.hash), true);
       const stored = await tx.objects.get(record.hash);
-      deepStrictEqual(Array.from(stored?.bytes ?? []), [1, 2, 3]);
+      deepStrictEqual([...(stored?.bytes ?? [])], [1, 2, 3]);
     });
 
     await scopeA.close();
@@ -185,7 +185,7 @@ describe("@tuvren/backend-sqlite scope isolation (KRT-BE004)", () => {
     const threadId = await seedThread(scopeA, "thread_a", 100);
 
     await scopeB.transact(async (tx) => {
-      const list = tx.threads.list;
+      const { list } = tx.threads;
       ok(list);
       const listed = await list?.({});
       deepStrictEqual(listed?.threads ?? [], []);
@@ -193,7 +193,7 @@ describe("@tuvren/backend-sqlite scope isolation (KRT-BE004)", () => {
     });
 
     await scopeA.transact(async (tx) => {
-      const list = tx.threads.list;
+      const { list } = tx.threads;
       ok(list);
       const listed = await list?.({});
       deepStrictEqual(

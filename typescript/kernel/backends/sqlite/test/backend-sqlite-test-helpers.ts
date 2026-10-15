@@ -177,14 +177,14 @@ export function copyCompiledSqliteRuntimeBundle(
 export function getBaselineMigrationSql(): string {
   return readFileSync(
     join(process.cwd(), "migrations", "0001_initial_schema.sql"),
-    "utf8"
+    "utf-8"
   );
 }
 
 export function getTargetedValidationMigrationSql(): string {
   return readFileSync(
     join(process.cwd(), "migrations", "0002_targeted_validation_indexes.sql"),
-    "utf8"
+    "utf-8"
   );
 }
 
@@ -195,7 +195,7 @@ export function getPendingSignalsAndAnnotationsMigrationSql(): string {
       "migrations",
       "0003_pending_signals_and_annotations.sql"
     ),
-    "utf8"
+    "utf-8"
   );
 }
 

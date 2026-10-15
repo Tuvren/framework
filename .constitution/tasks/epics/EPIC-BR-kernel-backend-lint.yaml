@@ -32,7 +32,7 @@ tickets:
       evidence: "Assert each scoped project typechecks after each safe-fix batch, existing runtime assertions pass, and no signature or collection semantics change. Record changed files and the before/after diagnostic count per project. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: planned
+    status: done
   - id: KRT-BR002
     title: Migrate live suppressions and delete dead ones
     type: Chore
