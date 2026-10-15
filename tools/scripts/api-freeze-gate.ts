@@ -62,13 +62,15 @@ import { isDeepStrictEqual } from "node:util";
 import ts from "typescript";
 
 import {
-  type ApiSurface,
   classifySurfaceDiff,
-  type DiffFinding,
-  type EntrypointSurface,
-  type ExportRecord,
   runDiffTableSelfTest,
-  type SurfaceDiff,
+} from "./lib/api-freeze-model.js";
+import type {
+  ApiSurface,
+  DiffFinding,
+  EntrypointSurface,
+  ExportRecord,
+  SurfaceDiff,
 } from "./lib/api-freeze-model.js";
 import { walkPackageManifests } from "./lib/walk-package-manifests.js";
 
@@ -144,10 +146,10 @@ if (import.meta.main) {
 }
 
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
-  const checkMode = args.includes("--check");
-  const updateMode = args.includes("--update");
-  const declaredMajor = args.includes("--major");
+  const args = new Set(process.argv.slice(2));
+  const checkMode = args.has("--check");
+  const updateMode = args.has("--update");
+  const declaredMajor = args.has("--major");
 
   if (checkMode === updateMode) {
     console.error(
@@ -282,7 +284,7 @@ async function recordDrift(
 }
 
 async function assertAuthorityDeclaration(): Promise<void> {
-  const packet = await readFile(CORE_AUTHORITY_PACKET, "utf8");
+  const packet = await readFile(CORE_AUTHORITY_PACKET, "utf-8");
 
   if (!packet.includes(AUTHORITY_DECLARATION_MARKER)) {
     console.error(
@@ -304,7 +306,7 @@ async function resolveEntrypointTargets(): Promise<EntrypointTarget[]> {
   const coreManifest = JSON.parse(
     await readFile(
       path.join(REPO_ROOT, CORE_PACKAGE_DIR, "package.json"),
-      "utf8"
+      "utf-8"
     )
   ) as { exports?: Record<string, unknown>; name: string };
 
@@ -351,7 +353,7 @@ async function buildWorkspaceSourcePaths(): Promise<Record<string, string[]>> {
   )) {
     const manifestPath = path.relative(REPO_ROOT, absoluteManifestPath);
     const manifest = JSON.parse(
-      await readFile(absoluteManifestPath, "utf8")
+      await readFile(absoluteManifestPath, "utf-8")
     ) as { exports?: Record<string, { types?: string }>; name?: string };
 
     if (
@@ -572,7 +574,7 @@ function typeIsDeclaredInRepo(type: ts.Type): boolean {
   const symbol = type.getSymbol() ?? type.aliasSymbol;
 
   return (symbol?.getDeclarations() ?? []).some((declaration) => {
-    const fileName = declaration.getSourceFile().fileName;
+    const { fileName } = declaration.getSourceFile();
 
     return fileName.startsWith(REPO_ROOT) && !fileName.includes("node_modules");
   });
@@ -621,7 +623,7 @@ export async function readSnapshot(
   snapshotPath: string
 ): Promise<SnapshotFile | undefined> {
   try {
-    const parsed: unknown = JSON.parse(await readFile(snapshotPath, "utf8"));
+    const parsed: unknown = JSON.parse(await readFile(snapshotPath, "utf-8"));
 
     if (!isSnapshotFile(parsed)) {
       throw new Error(

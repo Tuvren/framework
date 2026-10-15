@@ -23,9 +23,8 @@ import {
   rm,
   writeFile,
 } from "node:fs/promises";
-import { dirname, relative, resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
 
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
@@ -33,12 +32,14 @@ import Ajv2020 from "ajv/dist/2020.js";
 import { runCommand } from "./lib/command-runner.js";
 import {
   assertConformanceEvidence,
-  type ConformanceCheckResult,
-  type ConformanceEvidence,
-  type ConformanceSuiteManifest,
   createAssertionResult,
   createCheckResult,
   createConformanceEvidenceSummary,
+} from "./lib/conformance-contract.js";
+import type {
+  ConformanceCheckResult,
+  ConformanceEvidence,
+  ConformanceSuiteManifest,
 } from "./lib/conformance-contract.js";
 import { readConformanceSuiteManifest } from "./lib/conformance-suite-manifest.js";
 
@@ -125,10 +126,10 @@ interface CompatibilityConformanceEvidence {
 
 interface InteropTelemetrySummary {
   observedKeys: string[];
-  scenarios: Array<{
+  scenarios: {
     observedKeys: string[];
     scenario: string;
-  }>;
+  }[];
   schemaUrl: string;
 }
 
@@ -140,11 +141,11 @@ interface RawInteropTelemetry {
 }
 
 interface InteropScenarioReport {
-  reports: Array<{
+  reports: {
     checks: Record<string, boolean>;
     scenario: string;
     telemetry: RawInteropTelemetry;
-  }>;
+  }[];
   scenarios: string[];
 }
 
@@ -180,7 +181,7 @@ interface InteropRunner {
   reportLabel: string;
 }
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const COMPATIBILITY_MATRIX_PATH = resolve(
   REPO_ROOT,
   "reports/compatibility/compatibility-matrix.json"
@@ -449,6 +450,27 @@ const INTEROP_RUNNERS: readonly InteropRunner[] = [
   },
 ] as const;
 
+const formatEvidenceJson = (evidence: object): string => {
+  const entries = Object.entries(evidence);
+  const summaryIndex = entries.findIndex(([key]) => key === "summary");
+  const suiteIdIndex = entries.findIndex(([key]) => key === "suiteId");
+
+  if (summaryIndex === -1 || suiteIdIndex === -1) {
+    throw new TypeError("compatibility evidence is missing summary or suiteId");
+  }
+
+  const [summaryEntry] = entries.splice(summaryIndex, 1);
+
+  if (summaryEntry === undefined) {
+    throw new TypeError("compatibility evidence summary entry is missing");
+  }
+
+  const insertionIndex = entries.findIndex(([key]) => key === "suiteId");
+  entries.splice(insertionIndex, 0, summaryEntry);
+
+  return `${JSON.stringify(Object.fromEntries(entries), null, 2)}\n`;
+};
+
 await main();
 
 /**
@@ -467,7 +489,7 @@ async function assertConformanceRunnerParity(): Promise<void> {
     "tools/conformance/certification/certified-projects.json"
   );
   const manifest: { projects: string[] } = JSON.parse(
-    await readFile(manifestPath, "utf8")
+    await readFile(manifestPath, "utf-8")
   );
   const manifestProjects = new Set(manifest.projects);
   const runnerProjects = new Set(
@@ -736,7 +758,7 @@ function upsertCompatibilityImplementation(
 
 async function checkCompatibilityEvidence(): Promise<void> {
   const matrix = JSON.parse(
-    await readFile(COMPATIBILITY_MATRIX_PATH, "utf8")
+    await readFile(COMPATIBILITY_MATRIX_PATH, "utf-8")
   ) as CompatibilityMatrix;
   assertCompatibilityMatrix(matrix);
   await assertCompatibilityMatrixSchema(matrix);
@@ -975,7 +997,7 @@ async function checkImplementationEvidenceFile(
   failures: string[]
 ): Promise<void> {
   const absolutePath = resolve(REPO_ROOT, evidencePath);
-  const evidence = JSON.parse(await readFile(absolutePath, "utf8"));
+  const evidence = JSON.parse(await readFile(absolutePath, "utf-8"));
 
   if (!isRecord(evidence)) {
     failures.push(`${evidencePath} must contain a JSON object`);
@@ -1115,9 +1137,9 @@ async function readLiveConformanceRunner(
 
   for (const packetPath of packetPaths) {
     const packetManifest = JSON.parse(
-      await readFile(resolve(REPO_ROOT, packetPath), "utf8")
+      await readFile(resolve(REPO_ROOT, packetPath), "utf-8")
     ) as {
-      conformancePlans?: Array<{ path?: unknown }>;
+      conformancePlans?: { path?: unknown }[];
     };
 
     for (const plan of packetManifest.conformancePlans ?? []) {
@@ -1133,7 +1155,7 @@ async function readLiveConformanceRunner(
 
       seenPlanPaths.add(planPath);
 
-      const planJson = await readFile(planPath, "utf8");
+      const planJson = await readFile(planPath, "utf-8");
       const planChecks = readLivePlanChecks(planJson, capabilities);
       applicableCheckIds.push(...planChecks.applicableCheckIds);
       allCheckIds.push(...planChecks.allCheckIds);
@@ -1158,7 +1180,7 @@ interface LiveInteropRunner {
 }
 
 async function readLiveInteropRunners(): Promise<
-  Array<{ liveRunner: LiveInteropRunner; runner: InteropRunner }>
+  { liveRunner: LiveInteropRunner; runner: InteropRunner }[]
 > {
   return await Promise.all(
     INTEROP_RUNNERS.map(async (runner) => ({
@@ -1189,7 +1211,7 @@ async function readAdapterManifest(
   adapterManifestPath: string
 ): Promise<Record<string, unknown>> {
   const manifest = JSON.parse(
-    await readFile(resolve(REPO_ROOT, adapterManifestPath), "utf8")
+    await readFile(resolve(REPO_ROOT, adapterManifestPath), "utf-8")
   );
 
   if (!isRecord(manifest)) {
@@ -1208,7 +1230,7 @@ function readAdapterSuite(
     typeof manifest.suiteId !== "string" ||
     typeof manifest.suiteVersion !== "string"
   ) {
-    throw new Error(
+    throw new TypeError(
       `${adapterManifestPath} must declare boundary, suiteId, and suiteVersion`
     );
   }
@@ -1226,7 +1248,7 @@ function readLivePlanChecks(
 ): { allCheckIds: string[]; applicableCheckIds: string[] } {
   const plan = JSON.parse(planJson) as {
     applicability?: { capabilities?: unknown };
-    checks?: Array<{ capabilities?: unknown; checkId?: unknown }>;
+    checks?: { capabilities?: unknown; checkId?: unknown }[];
   };
   const allCheckIds = (plan.checks ?? [])
     .map((check) => check.checkId)
@@ -1360,7 +1382,7 @@ async function checkInteropEvidenceFile(
   failures: string[]
 ): Promise<void> {
   const absolutePath = resolve(REPO_ROOT, evidencePath);
-  const evidence = JSON.parse(await readFile(absolutePath, "utf8"));
+  const evidence = JSON.parse(await readFile(absolutePath, "utf-8"));
 
   if (!isRecord(evidence)) {
     failures.push(`${evidencePath} must contain a JSON object`);
@@ -1539,11 +1561,12 @@ function compareStringSet(
 
 async function resetHermeticBuildBoundary(): Promise<void> {
   await Promise.all(
-    HERMETIC_BUILD_OUTPUT_DIRECTORIES.map(async (directoryPath) =>
-      rm(resolve(REPO_ROOT, directoryPath), {
-        force: true,
-        recursive: true,
-      })
+    HERMETIC_BUILD_OUTPUT_DIRECTORIES.map(
+      async (directoryPath) =>
+        await rm(resolve(REPO_ROOT, directoryPath), {
+          force: true,
+          recursive: true,
+        })
     )
   );
 }
@@ -1657,9 +1680,9 @@ async function runConformanceTarget(
     reportLabel: runner.reportLabel,
     reportStatus,
     status,
-    summary: evidencePayload.summary,
     suiteId: evidencePayload.suiteId,
     suiteVersion: evidencePayload.suiteVersion,
+    summary: evidencePayload.summary,
   };
 
   if (status === "fail" && parsedEvidence === undefined) {
@@ -1667,7 +1690,7 @@ async function runConformanceTarget(
     evidence.stdout = commandResult.stdout;
   }
 
-  await writeFile(evidenceFilePath, `${JSON.stringify(evidence, null, 2)}\n`);
+  await writeFile(evidenceFilePath, formatEvidenceJson(evidence));
 
   return {
     matrixResult: {
@@ -1740,7 +1763,7 @@ async function computeExpectedCapabilitiesFromTopology(
 ): Promise<ReadonlySet<string>> {
   const adapterManifestPath = resolve(REPO_ROOT, adapterManifestPathRelative);
   const adapterManifest = JSON.parse(
-    await readFile(adapterManifestPath, "utf8")
+    await readFile(adapterManifestPath, "utf-8")
   ) as { authorityPackets?: unknown };
 
   const packetPaths = readStringArray(adapterManifest.authorityPackets);
@@ -1761,9 +1784,9 @@ async function computeExpectedCapabilitiesFromTopology(
   // exercise it.
   for (const packetPath of packetPaths) {
     const packetManifest = JSON.parse(
-      await readFile(resolve(REPO_ROOT, packetPath), "utf8")
+      await readFile(resolve(REPO_ROOT, packetPath), "utf-8")
     ) as {
-      conformancePlans?: Array<{ path?: unknown }>;
+      conformancePlans?: { path?: unknown }[];
     };
 
     for (const plan of packetManifest.conformancePlans ?? []) {
@@ -1772,7 +1795,7 @@ async function computeExpectedCapabilitiesFromTopology(
       }
 
       collectPlanCapabilities(
-        await readFile(resolve(REPO_ROOT, plan.path), "utf8"),
+        await readFile(resolve(REPO_ROOT, plan.path), "utf-8"),
         capabilities
       );
     }
@@ -1784,7 +1807,7 @@ async function computeExpectedCapabilitiesFromTopology(
 function collectPlanCapabilities(planJson: string, sink: Set<string>): void {
   const plan = JSON.parse(planJson) as {
     applicability?: { capabilities?: unknown };
-    checks?: Array<{ capabilities?: unknown }>;
+    checks?: { capabilities?: unknown }[];
   };
 
   for (const capability of readStringArray(plan.applicability?.capabilities)) {
@@ -1890,9 +1913,9 @@ async function runInteropTarget(
     reportLabel: runner.reportLabel,
     reportStatus,
     status,
-    summary: createConformanceEvidenceSummary(fallbackCheckResults),
     suiteId: suiteManifest.suiteId,
     suiteVersion: suiteManifest.suiteVersion,
+    summary: createConformanceEvidenceSummary(fallbackCheckResults),
   };
 
   if (status === "fail") {
@@ -1935,7 +1958,7 @@ async function runInteropTarget(
     }
   }
 
-  await writeFile(evidenceFilePath, `${JSON.stringify(evidence, null, 2)}\n`);
+  await writeFile(evidenceFilePath, formatEvidenceJson(evidence));
 
   return {
     matrixResult: {
@@ -2089,7 +2112,7 @@ function readInteropTelemetryScenarioReport(
     return undefined;
   }
 
-  const telemetry = report.telemetry;
+  const { telemetry } = report;
 
   if (
     !isRecord(telemetry) ||
@@ -2458,7 +2481,7 @@ function createInteropCheckResults(
         const passed =
           missingScenarioIds.length === 0 &&
           scenarioReports.every(
-            (scenarioReport) => scenarioReport.checks[assertionId] === true
+            (scenarioReport) => scenarioReport.checks[assertionId]
           );
         let message: string | undefined;
 
@@ -2469,7 +2492,7 @@ function createInteropCheckResults(
           // Otherwise `every()` on an empty subset would let a vanished
           // smoke lane produce a false green compatibility artifact.
           !scenarioReports.some(
-            (scenarioReport) => scenarioReport.checks[assertionId] === true
+            (scenarioReport) => scenarioReport.checks[assertionId]
           )
         ) {
           message =
@@ -2519,7 +2542,7 @@ async function formatGeneratedOutputs(): Promise<void> {
 async function assertCompatibilityMatrixSchema(
   value: CompatibilityMatrix
 ): Promise<void> {
-  const schemaText = await readFile(COMPATIBILITY_SCHEMA_PATH, "utf8");
+  const schemaText = await readFile(COMPATIBILITY_SCHEMA_PATH, "utf-8");
   const parsedSchema = readJsonSchema(JSON.parse(schemaText));
   const validate = ajv.compile(parsedSchema);
 

@@ -455,6 +455,7 @@ async function main(): Promise<void> {
   await validateCoverageMatrixEvidence(matrixEntries);
 
   const inventory = {
+    claims: inventoryClaims,
     duplicateNormativeClaims: duplicateClaimCount(claimsWithDuplicates),
     generatedBy: "bun tools/scripts/docs-authority-freeze-gate.ts",
     normativePattern: NORMATIVE_PATTERN.source,
@@ -462,32 +463,45 @@ async function main(): Promise<void> {
     sources: DOC_SOURCES.map((source) => source.path),
     totalIndependentClaims: independentClaimCount(claimsWithDuplicates),
     totalNormativeClaims: claimsWithDuplicates.length,
-    claims: inventoryClaims,
   } satisfies ClaimInventory;
   const matrix = {
     duplicateClaims: duplicateClaimCount(matrixEntries),
+    entries: matrixEntries,
     generatedBy: "bun tools/scripts/docs-authority-freeze-gate.ts",
     primaryClassificationRule:
       "Each normative claim receives exactly one primary classification derived from its source section and explicit text markers.",
     totalClaims: matrixEntries.length,
     totalIndependentClaims: independentClaimCount(matrixEntries),
     unclassifiedClaims: unclassifiedEntries.length,
-    entries: matrixEntries,
   } satisfies CoverageMatrix;
+  const { claims: serializedClaims, ...inventoryMetadata } = inventory;
+  const { entries: serializedEntries, ...matrixMetadata } = matrix;
+  const claimsWithStableKeyOrder = serializedClaims.map(
+    ({ affectedBoundary, ...claim }) => ({ affectedBoundary, ...claim })
+  );
   const artifacts: readonly OutputArtifact[] = [
-    { path: INVENTORY_PATH, content: formatJson(inventory) },
-    { path: MATRIX_PATH, content: formatJson(matrix) },
-    { path: SUMMARY_PATH, content: renderSummary(matrixEntries) },
     {
-      path: FRAMEWORK_DECISIONS_PATH,
+      content: formatJson({
+        ...inventoryMetadata,
+        claims: claimsWithStableKeyOrder,
+      }),
+      path: INVENTORY_PATH,
+    },
+    {
+      content: formatJson({ ...matrixMetadata, entries: serializedEntries }),
+      path: MATRIX_PATH,
+    },
+    { content: renderSummary(matrixEntries), path: SUMMARY_PATH },
+    {
       content: renderFrameworkDecisions(matrixEntries),
+      path: FRAMEWORK_DECISIONS_PATH,
     },
     {
-      path: LOCAL_DECISIONS_PATH,
       content: renderLocalSurfaceDecisions(matrixEntries),
+      path: LOCAL_DECISIONS_PATH,
     },
-    { path: REPORT_PATH, content: renderFreezeGateReport(matrixEntries) },
-    { path: CLOSURE_PATH, content: renderClosureInventory(matrixEntries) },
+    { content: renderFreezeGateReport(matrixEntries), path: REPORT_PATH },
+    { content: renderClosureInventory(matrixEntries), path: CLOSURE_PATH },
   ];
 
   if (mode === "check") {
@@ -566,11 +580,11 @@ function authorityAnchorPresenceFailures(entry: CoverageEntry): string[] {
   return failures;
 }
 
-function authorityEvidenceReferences(entry: CoverageEntry): Array<{
+function authorityEvidenceReferences(entry: CoverageEntry): {
   field: string;
   path: string;
-}> {
-  const references: Array<{ field: string; path: string }> = [];
+}[] {
+  const references: { field: string; path: string }[] = [];
 
   for (const field of REQUIRED_AUTHORITY_ANCHOR_FIELDS) {
     references.push(
@@ -598,7 +612,7 @@ function extractEvidencePaths(value: string): string[] {
   }
 
   return [...value.matchAll(EVIDENCE_PATH_PATTERN)].map((match) =>
-    (match[0] ?? "").replace(/[.,]+$/g, "")
+    (match[0] ?? "").replaceAll(/[.,]+$/g, "")
   );
 }
 
@@ -623,7 +637,7 @@ async function parseDocSource(source: DocSource): Promise<{
   claims: NormativeClaim[];
   rationaleSections: RationaleSection[];
 }> {
-  const text = await readFile(source.path, "utf8");
+  const text = await readFile(source.path, "utf-8");
   const state: DocParseState = {
     claimedIds: new Map<string, string>(),
     claims: [],
@@ -923,7 +937,7 @@ function addDuplicateLinks(
   const firstByNormalizedText = new Map<string, string>();
 
   return claims.map((claim) => {
-    const normalized = claim.text.toLowerCase().replace(/\W+/g, " ").trim();
+    const normalized = claim.text.toLowerCase().replaceAll(/\W+/g, " ").trim();
     const firstClaimId = firstByNormalizedText.get(normalized);
 
     if (firstClaimId == null) {
@@ -963,8 +977,8 @@ function toCoverageEntry(claim: NormativeClaim): CoverageEntry {
 
 function toInventoryEntry(entry: CoverageEntry): ClaimInventoryEntry {
   return {
-    affectedBoundary: entry.affectedBoundary,
     adapterCapability: entry.adapterCapability,
+    affectedBoundary: entry.affectedBoundary,
     claimFingerprint: entry.claimFingerprint,
     claimId: entry.claimId,
     duplicateOf: entry.duplicateOf,
@@ -2259,7 +2273,7 @@ function toSectionKey(heading: string): string {
 }
 
 function escapeTableCell(value: string): string {
-  return value.replace(/\|/g, "\\|").replace(/\n/g, " ");
+  return value.replaceAll("|", "\\|").replaceAll("\n", " ");
 }
 
 function formatJson(value: unknown): string {
@@ -2272,7 +2286,7 @@ async function writeArtifacts(
   await mkdir(OUTPUT_DIR, { recursive: true });
 
   for (const artifact of artifacts) {
-    await writeFile(artifact.path, artifact.content, "utf8");
+    await writeFile(artifact.path, artifact.content, "utf-8");
   }
 }
 
@@ -2284,7 +2298,7 @@ async function checkArtifacts(
   for (const artifact of artifacts) {
     let currentContent: string;
     try {
-      currentContent = await readFile(artifact.path, "utf8");
+      currentContent = await readFile(artifact.path, "utf-8");
     } catch (error) {
       if (
         error instanceof Error &&
@@ -2305,8 +2319,9 @@ async function checkArtifacts(
   if (stalePaths.length > 0) {
     throw new Error(
       "docs authority freeze gate artifacts are stale. " +
-        "Run `bun run docs:authority-freeze` and commit the updated files: " +
-        stalePaths.join(", ")
+        `Run \`bun run docs:authority-freeze\` and commit the updated files: ${stalePaths.join(
+          ", "
+        )}`
     );
   }
 }

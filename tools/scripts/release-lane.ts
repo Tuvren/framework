@@ -123,7 +123,7 @@ async function listPendingChangesets(): Promise<string[]> {
 
 async function readWorkspaceManifests(): Promise<WorkspaceManifest[]> {
   const rootManifest = JSON.parse(
-    await readFile(path.join(REPO_ROOT, "package.json"), "utf8")
+    await readFile(path.join(REPO_ROOT, "package.json"), "utf-8")
   ) as { workspaces?: string[] };
   const manifests: WorkspaceManifest[] = [];
 
@@ -160,7 +160,7 @@ async function readManifest(
   let text: string;
 
   try {
-    text = await readFile(manifestPath, "utf8");
+    text = await readFile(manifestPath, "utf-8");
   } catch {
     return undefined; // a workspace parent directory without a package.json
   }
@@ -174,7 +174,7 @@ async function readManifest(
   };
 
   if (typeof parsed.name !== "string" || typeof parsed.version !== "string") {
-    throw new Error(`${manifestPath} is missing a name or version field`);
+    throw new TypeError(`${manifestPath} is missing a name or version field`);
   }
 
   const tuvrenDependencyRanges = new Map<string, string>();
@@ -238,11 +238,11 @@ function validateSingleVersionInvariant(
   return violations;
 }
 
-function spawnCommand(
+async function spawnCommand(
   executable: string,
   args: readonly string[]
 ): Promise<number> {
-  return new Promise<number>((resolve, reject) => {
+  return await new Promise<number>((resolve, reject) => {
     const child = spawn(executable, args, {
       cwd: REPO_ROOT,
       env: process.env,

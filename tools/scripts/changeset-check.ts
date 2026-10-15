@@ -229,7 +229,7 @@ async function readChangedPaths(
 ): Promise<ReadonlySet<string>> {
   // A source move changes both endpoints; retain the current public-package
   // deletion even when the destination is private or outside any package.
-  const commands: ReadonlyArray<readonly string[]> = [
+  const commands: readonly (readonly string[])[] = [
     [
       "diff",
       "--no-renames",
@@ -372,7 +372,7 @@ async function readJsonFile(filePath: string): Promise<unknown> {
   let text: string;
 
   try {
-    text = await readFile(filePath, "utf8");
+    text = await readFile(filePath, "utf-8");
   } catch {
     throw new Error(`cannot read ${filePath}`);
   }
@@ -451,7 +451,7 @@ async function readPendingChangesetPaths(
         continue;
       }
 
-      throw new Error(`cannot read ${directory} directory`);
+      throw new Error(`cannot read ${directory} directory`, { cause: error });
     }
 
     for (const entry of entries) {
@@ -508,7 +508,7 @@ async function parseChangeset(
   filename: string,
   workspaceNames: ReadonlySet<string>
 ): Promise<PendingChangeset> {
-  const text = await readFile(filePath, "utf8");
+  const text = await readFile(filePath, "utf-8");
   const contents = await parseChangesetContents(text, filename, workspaceNames);
 
   return {
@@ -531,7 +531,8 @@ async function parseChangesetContents(
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(
-      `.changeset/${filename} has invalid frontmatter: ${message}`
+      `.changeset/${filename} has invalid frontmatter: ${message}`,
+      { cause: error }
     );
   }
 
@@ -559,9 +560,9 @@ async function parseChangesetContents(
   };
 }
 
-function getChangesetParser(): Promise<ChangesetParser> {
+async function getChangesetParser(): Promise<ChangesetParser> {
   changesetParserPromise ??= loadChangesetParser();
-  return changesetParserPromise;
+  return await changesetParserPromise;
 }
 
 async function loadChangesetParser(): Promise<ChangesetParser> {
@@ -856,7 +857,7 @@ async function compareGeneratedRelease(
 
 async function readOptionalFile(filePath: string): Promise<string | undefined> {
   try {
-    return await readFile(filePath, "utf8");
+    return await readFile(filePath, "utf-8");
   } catch {
     return undefined;
   }
@@ -900,12 +901,12 @@ function formatPackageNames(manifests: readonly PackageManifest[]): string {
   return manifests.map((manifest) => manifest.name).join(", ");
 }
 
-function runCommand(
+async function runCommand(
   executable: string,
   args: readonly string[],
   cwd: string
 ): Promise<CommandResult> {
-  return new Promise((resolve) => {
+  return await new Promise((resolve) => {
     const child = spawn(executable, args, {
       cwd,
       env: process.env,
