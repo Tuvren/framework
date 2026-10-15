@@ -2,8 +2,8 @@ owner: KRT-BZ004
 mode: contract_test
 produced:
   date: '2026-10-15'
-  commit: 24f8dd217a7b1879473ef671c124239788b0466f
-  command: 'bunx --bun oxlint --type-aware --format=json <cohort paths> (M1-M6 before/after snapshots)'
+  commit: 168f203db4088ef471413b15058801947ba14a96
+  command: 'KRT-BZ001 Oxlint before/after snapshots plus KRT-BZ003 M8 scoped initialization, typecheck, test, and conformance proof'
 files:
   - path: M1-raw-diagnostics.tar.gz
     sha256: 0c6905b1398eafb2f298810df123198d5df7af6cbc2996936556c8a6d2e8bae6
@@ -53,4 +53,12 @@ files:
     sha256: a69d92ccba778a56262f110076ec0303ad25c0ba4cd9deff1171885ef60eee2e
     bytes: 889
     role: measurement
-pass_criteria: 'Pinned Oxlint captures remain parseable; KRT-BZ001 reduces provider-api 39→29, certification 27→24, testkit 143→128, bridge src+smoke 360→315, bridge test 161→110, runner src+bench 443→389, and runner test 236→185 diagnostics while every cohort passes scoped tests and typechecks plus the workspace typecheck.'
+  - path: M8-proof.tar.gz
+    sha256: 376823efe73db63cb1893925db0a7f35e0de330dedf6ef60b9141109145f3b57
+    bytes: 10432
+    role: measurement
+  - path: M8-proof-index.json
+    sha256: 2c3f59eeb3157872637dabcbc1165c301f3abe21809fe4fcd425b9c338e6e197
+    bytes: 728
+    role: measurement
+pass_criteria: 'KRT-BZ001 captures remain parseable with the recorded reductions. M8 reduces provider-api and certification func-style 12→0 and no-use-before-define 32→0, preserves first-import export/error identity in fresh processes, and passes scoped tests/typechecks, workspace typecheck, and provider conformance.'

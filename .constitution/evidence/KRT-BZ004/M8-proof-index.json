@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "cohort": [
+    "typescript/providers/provider-api",
+    "typescript/providers/certification"
+  ],
+  "diagnostics": {
+    "before": {
+      "func_style": 12,
+      "no_use_before_define": 32
+    },
+    "after": {
+      "func_style": 0,
+      "no_use_before_define": 0
+    }
+  },
+  "verification_exit_codes": {
+    "providers_certification_typecheck": 0,
+    "providers_certification_test": 0,
+    "provider_api_typecheck": 0,
+    "provider_api_test": 0,
+    "oxfmt_check": 0,
+    "workspace_conformance": 0,
+    "providers_testkit_conformance": 0,
+    "providers_certification_conformance": 0,
+    "ordering_rule_proof": 0
+  },
+  "expected_oxlint_exit": 1,
+  "checksum_manifest": "proof-sha256.txt"
+}
