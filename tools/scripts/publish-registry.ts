@@ -236,7 +236,7 @@ async function buildPublishableSet(): Promise<void> {
   const projects = await Promise.all(
     publishable.map(async (pkg) => {
       const project = JSON.parse(
-        await readFile(path.join(pkg.directory, "project.json"), "utf8")
+        await readFile(path.join(pkg.directory, "project.json"), "utf-8")
       ) as { name?: string };
 
       if (project.name === undefined) {
@@ -366,8 +366,10 @@ async function validatePackage(
     );
   }
 
-  failures.push(...(await validateInternalPosture(pkg)));
-  failures.push(...validateDependencyRanges(pkg, publishableNames));
+  failures.push(
+    ...(await validateInternalPosture(pkg)),
+    ...validateDependencyRanges(pkg, publishableNames)
+  );
 
   return failures;
 }
@@ -390,7 +392,7 @@ async function validateInternalPosture(
 
   const readme = await readFile(
     path.join(pkg.directory, "README.md"),
-    "utf8"
+    "utf-8"
   ).catch(() => "");
 
   if (!INTERNAL_POSTURE_PATTERN.test(readme)) {
@@ -488,7 +490,7 @@ function isAlreadyPublished(name: string, version: string): boolean {
   const result = spawnSync(
     "npm",
     ["view", `${name}@${version}`, "version", "--json"],
-    { encoding: "utf8" }
+    { encoding: "utf-8" }
   );
 
   return (
@@ -500,7 +502,7 @@ function isAlreadyPublished(name: string, version: string): boolean {
 function assertCleanWorktree(): void {
   const status = spawnSync("git", ["status", "--porcelain"], {
     cwd: REPO_ROOT,
-    encoding: "utf8",
+    encoding: "utf-8",
   });
 
   if (status.status !== 0 || (status.stdout ?? "").trim() !== "") {
@@ -535,7 +537,7 @@ async function publishPackages(
     }
 
     const manifestPath = path.join(pkg.directory, "package.json");
-    const original = await readFile(manifestPath, "utf8");
+    const original = await readFile(manifestPath, "utf-8");
 
     await writeFile(manifestPath, `${JSON.stringify(materialized, null, 2)}\n`);
 
@@ -578,7 +580,7 @@ async function publishPackages(
 
 function materializeManifest(pkg: WorkspacePackage): PackageManifest {
   const manifest = structuredClone(pkg.manifest);
-  const version = manifest.version;
+  const { version } = manifest;
 
   if (version === undefined) {
     throw new Error(`${pkg.name}: manifest has no version`);
@@ -739,7 +741,7 @@ async function readWorkspacePackages(): Promise<WorkspacePackage[]> {
     path.join(REPO_ROOT, "typescript")
   )) {
     const manifest = JSON.parse(
-      await readFile(manifestPath, "utf8")
+      await readFile(manifestPath, "utf-8")
     ) as PackageManifest;
 
     if (manifest.name?.startsWith("@tuvren/")) {

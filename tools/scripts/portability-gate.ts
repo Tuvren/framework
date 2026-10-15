@@ -46,17 +46,16 @@
 
 import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { dirname, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { relative, resolve } from "node:path";
 
 interface AuthorityPacketManifest {
-  authoritativeSources: Array<{ format: string; path: string }>;
+  authoritativeSources: { format: string; path: string }[];
   bindingProjections?: Record<string, string>;
   boundary: string;
-  conformancePlans?: Array<{ path: string; planId: string }>;
+  conformancePlans?: { path: string; planId: string }[];
   packetId: string;
   surface: string;
-  verificationPaths: Array<{ kind: string; target: string }>;
+  verificationPaths: { kind: string; target: string }[];
   version: string;
 }
 
@@ -101,7 +100,7 @@ interface PortabilityInventoryManifest {
   standingExceptions: readonly InventoryStandingException[];
 }
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const TYPESCRIPT_ROOT = resolve(REPO_ROOT, "typescript");
 const RUST_ROOT = resolve(REPO_ROOT, "rust");
@@ -193,10 +192,12 @@ async function runPortabilityGate(
     inventory.expectedPackets.map((entry) => entry.packetPath)
   );
 
-  failures.push(...checkInventoryExists());
-  failures.push(...(await checkInventoryMdJsonConsistency(inventory)));
-  failures.push(...checkExpectedTopologyIsUnique(inventory));
   failures.push(
+    ...checkInventoryExists(),
+    ...(await checkInventoryMdJsonConsistency(inventory))
+  );
+  failures.push(
+    ...checkExpectedTopologyIsUnique(inventory),
     ...checkExpectedPacketsPresent(
       inventory,
       expectedPacketIds,
@@ -208,20 +209,22 @@ async function runPortabilityGate(
       expectedPaths,
       expectedPacketIds,
       onDiskManifests
-    )
+    ),
+    ...checkPacketIdUniqueness(onDiskManifests)
   );
-  failures.push(...checkPacketIdUniqueness(onDiskManifests));
-  failures.push(...checkExecutableVerification(onDiskManifests));
-  failures.push(...checkStandingExceptions(inventory, onDiskManifests));
-  failures.push(...checkRequiredSources(inventory, onDiskManifests));
-  failures.push(...checkAdapterCoverage(onDiskManifests, adapterManifests));
+  failures.push(
+    ...checkExecutableVerification(onDiskManifests),
+    ...checkStandingExceptions(inventory, onDiskManifests)
+  );
+  failures.push(
+    ...checkRequiredSources(inventory, onDiskManifests),
+    ...checkAdapterCoverage(onDiskManifests, adapterManifests)
+  );
   failures.push(
     ...(await checkPlanApplicabilityHasAdapter(
       onDiskManifests,
       adapterManifests
-    ))
-  );
-  failures.push(
+    )),
     ...(await checkAdapterCapabilityCoveredByPlan(adapterManifests))
   );
 
@@ -238,8 +241,8 @@ async function loadInventoryManifest(): Promise<InventoryLoadResult> {
     return {
       failures: [
         {
-          rule: "inventory-manifest",
           message: `machine-readable inventory companion missing at ${relative(REPO_ROOT, INVENTORY_MANIFEST_PATH)}; this JSON is the gate's source of truth and must accompany the human inventory MD`,
+          rule: "inventory-manifest",
         },
       ],
       manifest: undefined,
@@ -249,14 +252,14 @@ async function loadInventoryManifest(): Promise<InventoryLoadResult> {
   let parsed: unknown;
 
   try {
-    parsed = JSON.parse(await readFile(INVENTORY_MANIFEST_PATH, "utf8"));
+    parsed = JSON.parse(await readFile(INVENTORY_MANIFEST_PATH, "utf-8"));
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     return {
       failures: [
         {
-          rule: "inventory-manifest",
           message: `inventory manifest at ${relative(REPO_ROOT, INVENTORY_MANIFEST_PATH)} is not parseable JSON: ${detail}`,
+          rule: "inventory-manifest",
         },
       ],
       manifest: undefined,
@@ -286,9 +289,9 @@ function validateInventoryManifestShape(
     return {
       failures: [
         {
-          rule: "inventory-manifest",
           message:
             "inventory manifest must be a JSON object with manifestId, manifestVersion, expectedPackets, standingExceptions, and requiredAuthoritativeSources",
+          rule: "inventory-manifest",
         },
       ],
       manifest: undefined,
@@ -297,15 +300,15 @@ function validateInventoryManifestShape(
 
   if (raw.manifestId !== INVENTORY_MANIFEST_ID) {
     failures.push({
-      rule: "inventory-manifest",
       message: `inventory manifest manifestId must equal "${INVENTORY_MANIFEST_ID}"; got ${JSON.stringify(raw.manifestId)}`,
+      rule: "inventory-manifest",
     });
   }
 
   if (typeof raw.manifestVersion !== "string") {
     failures.push({
-      rule: "inventory-manifest",
       message: "inventory manifest manifestVersion must be a string",
+      rule: "inventory-manifest",
     });
   }
 
@@ -345,8 +348,8 @@ function validateExpectedPackets(value: unknown): {
 
   if (!Array.isArray(value)) {
     failures.push({
-      rule: "inventory-manifest",
       message: "inventory manifest expectedPackets must be an array",
+      rule: "inventory-manifest",
     });
     return { entries, failures };
   }
@@ -354,24 +357,24 @@ function validateExpectedPackets(value: unknown): {
   for (const [index, entry] of value.entries()) {
     if (!isRecord(entry)) {
       failures.push({
-        rule: "inventory-manifest",
         message: `expectedPackets[${index}] must be an object`,
+        rule: "inventory-manifest",
       });
       continue;
     }
 
     if (typeof entry.packetId !== "string") {
       failures.push({
-        rule: "inventory-manifest",
         message: `expectedPackets[${index}].packetId must be a string`,
+        rule: "inventory-manifest",
       });
       continue;
     }
 
     if (typeof entry.packetPath !== "string") {
       failures.push({
-        rule: "inventory-manifest",
         message: `expectedPackets[${index}].packetPath must be a string`,
+        rule: "inventory-manifest",
       });
       continue;
     }
@@ -381,8 +384,8 @@ function validateExpectedPackets(value: unknown): {
       !ALLOWED_CLASSIFICATIONS.has(entry.classification)
     ) {
       failures.push({
-        rule: "inventory-manifest",
         message: `expectedPackets[${index}].classification must be one of ${[...ALLOWED_CLASSIFICATIONS].join(", ")}`,
+        rule: "inventory-manifest",
       });
       continue;
     }
@@ -413,8 +416,8 @@ function validateStandingExceptions(value: unknown): {
 
   if (!Array.isArray(value)) {
     failures.push({
-      rule: "inventory-manifest",
       message: "inventory manifest standingExceptions must be an array",
+      rule: "inventory-manifest",
     });
     return { entries, failures };
   }
@@ -422,16 +425,16 @@ function validateStandingExceptions(value: unknown): {
   for (const [index, entry] of value.entries()) {
     if (!isRecord(entry)) {
       failures.push({
-        rule: "inventory-manifest",
         message: `standingExceptions[${index}] must be an object`,
+        rule: "inventory-manifest",
       });
       continue;
     }
 
     if (typeof entry.label !== "string") {
       failures.push({
-        rule: "inventory-manifest",
         message: `standingExceptions[${index}].label must be a string`,
+        rule: "inventory-manifest",
       });
       continue;
     }
@@ -443,14 +446,14 @@ function validateStandingExceptions(value: unknown): {
       )
     ) {
       failures.push({
-        rule: "inventory-manifest",
         message: `standingExceptions[${index}].forbiddenSurfaceNames must be a non-empty array of strings`,
+        rule: "inventory-manifest",
       });
       continue;
     }
 
     entries.push({
-      forbiddenSurfaceNames: entry.forbiddenSurfaceNames as string[],
+      forbiddenSurfaceNames: entry.forbiddenSurfaceNames,
       inventorySection:
         typeof entry.inventorySection === "string"
           ? entry.inventorySection
@@ -471,9 +474,9 @@ function validateRequiredSources(value: unknown): {
 
   if (!Array.isArray(value)) {
     failures.push({
-      rule: "inventory-manifest",
       message:
         "inventory manifest requiredAuthoritativeSources must be an array",
+      rule: "inventory-manifest",
     });
     return { entries, failures };
   }
@@ -481,8 +484,8 @@ function validateRequiredSources(value: unknown): {
   for (const [index, entry] of value.entries()) {
     if (!isRecord(entry)) {
       failures.push({
-        rule: "inventory-manifest",
         message: `requiredAuthoritativeSources[${index}] must be an object`,
+        rule: "inventory-manifest",
       });
       continue;
     }
@@ -494,8 +497,8 @@ function validateRequiredSources(value: unknown): {
       typeof entry.sourceFormat !== "string"
     ) {
       failures.push({
-        rule: "inventory-manifest",
         message: `requiredAuthoritativeSources[${index}] must declare string packetId, sourcePath, rationale, and sourceFormat`,
+        rule: "inventory-manifest",
       });
       continue;
     }
@@ -556,8 +559,8 @@ function checkAdapterCoverage(
 
     if (adapters.length === 0) {
       failures.push({
-        rule: "adapter-coverage",
         message: `packet ${manifest.packetId} declares ${planCount} conformance plan(s) but no adapter manifest exists for boundary ${manifest.boundary}; the shared runner cannot discover this packet's plans`,
+        rule: "adapter-coverage",
       });
       continue;
     }
@@ -573,8 +576,8 @@ function checkAdapterCoverage(
         .join(", ");
 
       failures.push({
-        rule: "adapter-coverage",
         message: `packet ${manifest.packetId} at ${packetPath} declares ${planCount} conformance plan(s) but is not referenced by every ${manifest.boundary}-boundary adapter manifest; add ${packetPath} to: ${missingAdapterIds}`,
+        rule: "adapter-coverage",
       });
     }
   }
@@ -595,8 +598,8 @@ function checkExpectedTopologyIsUnique(
   for (const entry of inventory.expectedPackets) {
     if (seenPacketIds.has(entry.packetId)) {
       failures.push({
-        rule: "expected-topology-unique",
         message: `inventory manifest lists packetId ${entry.packetId} more than once`,
+        rule: "expected-topology-unique",
       });
     } else {
       seenPacketIds.add(entry.packetId);
@@ -604,8 +607,8 @@ function checkExpectedTopologyIsUnique(
 
     if (seenPaths.has(entry.packetPath)) {
       failures.push({
-        rule: "expected-topology-unique",
         message: `inventory manifest lists packetPath ${entry.packetPath} more than once`,
+        rule: "expected-topology-unique",
       });
     } else {
       seenPaths.add(entry.packetPath);
@@ -623,7 +626,7 @@ async function loadAllManifests(): Promise<
 
   for (const manifestPath of paths) {
     const manifest = JSON.parse(
-      await readFile(manifestPath, "utf8")
+      await readFile(manifestPath, "utf-8")
     ) as AuthorityPacketManifest;
     manifests.set(relative(REPO_ROOT, manifestPath), manifest);
   }
@@ -644,7 +647,7 @@ async function loadAllAdapterManifests(): Promise<
   ].filter((root) => existsSync(root));
   const paths = (
     await Promise.all(
-      adapterRoots.map((root) =>
+      adapterRoots.map(async (root) =>
         findFiles(root, (name) => ADAPTER_MANIFEST_NAME_PATTERN.test(name))
       )
     )
@@ -652,7 +655,7 @@ async function loadAllAdapterManifests(): Promise<
 
   for (const manifestPath of paths) {
     const manifest = JSON.parse(
-      await readFile(manifestPath, "utf8")
+      await readFile(manifestPath, "utf-8")
     ) as AdapterManifest;
     manifests.set(relative(REPO_ROOT, manifestPath), manifest);
   }
@@ -701,8 +704,8 @@ function checkInventoryExists(): PortabilityGateFailure[] {
 
   return [
     {
-      rule: "inventory-presence",
       message: `Epic AL inventory missing at ${relative(REPO_ROOT, INVENTORY_PATH)}; portability gate requires the inventory as the human-readable closure record.`,
+      rule: "inventory-presence",
     },
   ];
 }
@@ -747,15 +750,15 @@ async function checkInventoryMdJsonConsistency(
     return [];
   }
 
-  const mdContent = await readFile(INVENTORY_PATH, "utf8");
+  const mdContent = await readFile(INVENTORY_PATH, "utf-8");
   const failures: PortabilityGateFailure[] = [];
   const inventoryRel = relative(REPO_ROOT, INVENTORY_PATH);
 
   for (const entry of inventory.expectedPackets) {
     if (!mdContent.includes(entry.packetId)) {
       failures.push({
-        rule: "inventory-md-json-consistency",
         message: `inventory JSON lists packetId ${entry.packetId} but ${inventoryRel} does not mention it; paired-edit drift — revise the MD and JSON together`,
+        rule: "inventory-md-json-consistency",
       });
     }
   }
@@ -763,8 +766,8 @@ async function checkInventoryMdJsonConsistency(
   for (const entry of inventory.expectedPackets) {
     if (!mdContent.includes(entry.packetPath)) {
       failures.push({
-        rule: "inventory-md-json-consistency",
         message: `inventory JSON locates packet ${entry.packetId} at ${entry.packetPath} but ${inventoryRel} does not cite that path; paired-edit drift — a packet lift must update the MD's packet list and surface table together with the JSON`,
+        rule: "inventory-md-json-consistency",
       });
     }
   }
@@ -776,8 +779,8 @@ async function checkInventoryMdJsonConsistency(
 
     if (!anyMentioned) {
       failures.push({
-        rule: "inventory-md-json-consistency",
         message: `inventory JSON declares standing exception "${exception.label}" with forbidden surfaces [${exception.forbiddenSurfaceNames.join(", ")}] but ${inventoryRel} does not mention any of them; paired-edit drift — document the exception in the MD or remove it from the JSON`,
+        rule: "inventory-md-json-consistency",
       });
     }
   }
@@ -839,8 +842,8 @@ async function checkPlanApplicabilityHasAdapter(
 
       if (advertisingAdapter === undefined) {
         failures.push({
-          rule: "plan-applicability-has-adapter",
           message: `plan ${plan.planId} at ${plan.path} requires applicability capabilities ${[...planCapabilities].sort().join(", ")} but no ${manifest.boundary}-boundary adapter advertises that full set; the portability promotion of ${manifest.packetId} would record zero applicable evidence`,
+          rule: "plan-applicability-has-adapter",
         });
       }
     }
@@ -866,9 +869,9 @@ async function readPlanApplicabilityCapabilities(
     return [];
   }
 
-  const plan = JSON.parse(await readFile(absolutePath, "utf8")) as {
+  const plan = JSON.parse(await readFile(absolutePath, "utf-8")) as {
     applicability?: { capabilities?: unknown };
-    checks?: Array<{ capabilities?: unknown }>;
+    checks?: { capabilities?: unknown }[];
   };
   const collected = new Set<string>();
 
@@ -920,8 +923,8 @@ async function checkAdapterCapabilityCoveredByPlan(
     for (const capability of declared) {
       if (!planCapabilities.has(capability)) {
         failures.push({
-          rule: "adapter-capability-covered-by-plan",
           message: `adapter ${adapter.adapterId} advertises capability ${capability} but no conformance plan in the workspace exercises it; remove it from the adapter manifest or add a plan check that asserts on the capability`,
+          rule: "adapter-capability-covered-by-plan",
         });
       }
     }
@@ -974,16 +977,16 @@ function checkExpectedPacketsPresent(
 
     if (manifest === undefined) {
       failures.push({
-        rule: "expected-packet-present",
         message: `expected packet ${expected.packetId} missing at ${expected.packetPath}`,
+        rule: "expected-packet-present",
       });
       continue;
     }
 
     if (manifest.packetId !== expected.packetId) {
       failures.push({
-        rule: "expected-packet-present",
         message: `packet at ${expected.packetPath} declares packetId ${manifest.packetId}; inventory expects ${expected.packetId}`,
+        rule: "expected-packet-present",
       });
     }
   }
@@ -991,8 +994,8 @@ function checkExpectedPacketsPresent(
   for (const expected of expectedPacketIds) {
     if (!seenPacketIds.has(expected)) {
       failures.push({
-        rule: "expected-packet-present",
         message: `inventory expects packetId ${expected} but no on-disk packet declares it`,
+        rule: "expected-packet-present",
       });
     }
   }
@@ -1016,16 +1019,16 @@ function checkNoUnexpectedPackets(
     // inventory has not promoted.
     if (!expectedPaths.has(path)) {
       failures.push({
-        rule: "no-unexpected-packets",
         message: `authority-packet.json at ${path} is not listed in EXPECTED_PACKET_TOPOLOGY; revise the AL inventory and the expected-topology table together before adding new cross-implementation surfaces (declared packetId: ${manifest.packetId})`,
+        rule: "no-unexpected-packets",
       });
       continue;
     }
 
     if (!expectedPacketIds.has(manifest.packetId)) {
       failures.push({
-        rule: "no-unexpected-packets",
         message: `packet ${manifest.packetId} at ${path} is not listed in the AL inventory's expected topology; revise the inventory and EXPECTED_PACKET_TOPOLOGY together before adding new cross-implementation surfaces`,
+        rule: "no-unexpected-packets",
       });
     }
   }
@@ -1057,8 +1060,8 @@ function checkPacketIdUniqueness(
   for (const [packetId, paths] of pathsByPacketId.entries()) {
     if (paths.length > 1) {
       failures.push({
-        rule: "packet-id-uniqueness",
         message: `packetId ${packetId} is declared at multiple paths: ${paths.sort().join(", ")}`,
+        rule: "packet-id-uniqueness",
       });
     }
   }
@@ -1078,8 +1081,8 @@ function checkExecutableVerification(
 
     if (!executable) {
       failures.push({
-        rule: "executable-verification",
         message: `packet ${manifest.packetId} at ${path} has no executable verification path; portable packets require schema-validation, openapi-validation, conformance-plan, interop-smoke, or vocabulary-check`,
+        rule: "executable-verification",
       });
     }
   }
@@ -1099,8 +1102,8 @@ function checkStandingExceptions(
     for (const [path, manifest] of onDisk.entries()) {
       if (forbidden.has(manifest.surface)) {
         failures.push({
-          rule: "standing-exceptions-unchanged",
           message: `packet ${manifest.packetId} at ${path} owns surface "${manifest.surface}" which is the Epic AL standing exception ${exception.label}; standing exceptions may not be promoted to portable authority without an explicit Tasks.md/TechSpec revision`,
+          rule: "standing-exceptions-unchanged",
         });
       }
     }
@@ -1123,8 +1126,8 @@ function checkRequiredSources(
   for (const required of inventory.requiredAuthoritativeSources) {
     if (!existsSync(resolve(REPO_ROOT, required.sourcePath))) {
       failures.push({
-        rule: "required-sources",
         message: `${required.rationale}: required source ${required.sourcePath} is missing on disk`,
+        rule: "required-sources",
       });
       continue;
     }
@@ -1133,8 +1136,8 @@ function checkRequiredSources(
 
     if (manifest === undefined) {
       failures.push({
-        rule: "required-sources",
         message: `${required.rationale}: packet ${required.packetId} is not present on disk; cannot verify source registration`,
+        rule: "required-sources",
       });
       continue;
     }
@@ -1145,8 +1148,8 @@ function checkRequiredSources(
 
     if (declaredSource === undefined) {
       failures.push({
-        rule: "required-sources",
         message: `${required.rationale}: ${required.sourcePath} exists on disk but is not declared under ${required.packetId}.authoritativeSources`,
+        rule: "required-sources",
       });
       continue;
     }
@@ -1162,8 +1165,8 @@ function checkRequiredSources(
     // verification path.
     if (declaredSource.format !== required.sourceFormat) {
       failures.push({
-        rule: "required-sources",
         message: `${required.rationale}: ${required.sourcePath} is registered under ${required.packetId}.authoritativeSources with format "${declaredSource.format}"; inventory requires format "${required.sourceFormat}"`,
+        rule: "required-sources",
       });
     }
   }

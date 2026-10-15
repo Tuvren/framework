@@ -439,7 +439,7 @@ const EPIC_AF_FOLLOW_UP_PREFIX = "KRT-AF";
 async function main(): Promise<void> {
   const options = readCliOptions(process.argv.slice(2));
   const matrix = readCoverageMatrix(
-    JSON.parse(await readFile(MATRIX_PATH, "utf8")) as unknown
+    JSON.parse(await readFile(MATRIX_PATH, "utf-8")) as unknown
   );
   const plannedSurfaces = createPlannedSurfaces(matrix.entries);
   const plan: GapPlan = {
@@ -494,12 +494,12 @@ function readCliOptions(args: readonly string[]): CliOptions {
 }
 
 async function checkGeneratedArtifacts(
-  artifacts: ReadonlyArray<{ content: string; path: string }>
+  artifacts: readonly { content: string; path: string }[]
 ): Promise<void> {
   const drifted: string[] = [];
 
   for (const artifact of artifacts) {
-    const current = await readFile(artifact.path, "utf8");
+    const current = await readFile(artifact.path, "utf-8");
 
     if (current !== artifact.content) {
       drifted.push(artifact.path);
@@ -599,7 +599,7 @@ async function readImplementedCheckEvidence(): Promise<
   }
 
   for (const planPath of planPaths) {
-    const plan = JSON.parse(await readFile(planPath, "utf8")) as unknown;
+    const plan = JSON.parse(await readFile(planPath, "utf-8")) as unknown;
 
     if (!(isRecord(plan) && Array.isArray(plan.checks))) {
       continue;
@@ -616,7 +616,7 @@ async function readImplementedCheckEvidence(): Promise<
 }
 
 function readEvidencePaths(check: Record<string, unknown>): Set<string> {
-  const evidence = check.evidence;
+  const { evidence } = check;
 
   if (!Array.isArray(evidence)) {
     return new Set();
@@ -735,40 +735,41 @@ function renderMarkdown(plan: GapPlan): string {
   ];
 
   for (const surface of plan.surfaces) {
-    lines.push(`### ${surface.surface}`);
-    lines.push("");
-    lines.push(`- Disposition: \`${surface.disposition}\``);
-    lines.push(`- Delivery ticket: \`${surface.deliveryTicket}\``);
+    lines.push(`### ${surface.surface}`, "");
     lines.push(
-      `- Matrix follow-up tickets: ${inlineList(surface.matrixFollowUpTickets)}`
+      `- Disposition: \`${surface.disposition}\``,
+      `- Delivery ticket: \`${surface.deliveryTicket}\``
     );
-    lines.push(`- Claim IDs: ${inlineList(surface.claimIds)}`);
-    lines.push(`- Authority packet: \`${surface.authorityPacket}\``);
-    lines.push(`- Conformance plan: \`${surface.conformancePlan}\``);
-    lines.push(`- Fixture or scenario: \`${surface.fixture}\``);
-    lines.push(`- Adapter operation: \`${surface.adapterOperation}\``);
     lines.push(
-      `- Capability requirement: \`${surface.capabilityRequirement}\``
+      `- Matrix follow-up tickets: ${inlineList(surface.matrixFollowUpTickets)}`,
+      `- Claim IDs: ${inlineList(surface.claimIds)}`
     );
-    lines.push(`- Required evidence: ${inlineList(surface.requiredEvidence)}`);
-    lines.push(`- Planned check IDs: ${inlineList(surface.checkIds)}`);
-    lines.push(`- Evidence update: ${surface.evidenceUpdate}`);
-    lines.push(`- Rationale: ${surface.rationale}`);
-    lines.push("");
+    lines.push(
+      `- Authority packet: \`${surface.authorityPacket}\``,
+      `- Conformance plan: \`${surface.conformancePlan}\``
+    );
+    lines.push(
+      `- Fixture or scenario: \`${surface.fixture}\``,
+      `- Adapter operation: \`${surface.adapterOperation}\``
+    );
+    lines.push(
+      `- Capability requirement: \`${surface.capabilityRequirement}\``,
+      `- Required evidence: ${inlineList(surface.requiredEvidence)}`
+    );
+    lines.push(
+      `- Planned check IDs: ${inlineList(surface.checkIds)}`,
+      `- Evidence update: ${surface.evidenceUpdate}`
+    );
+    lines.push(`- Rationale: ${surface.rationale}`, "");
   }
 
-  lines.push("## Guardrails");
-  lines.push("");
+  lines.push("## Guardrails", "");
   lines.push(
-    "- Runner and adapter code must not receive expected event sequences, expected phase traces, or pass/fail decisions from this plan."
-  );
-  lines.push(
+    "- Runner and adapter code must not receive expected event sequences, expected phase traces, or pass/fail decisions from this plan.",
     "- Every promoted check must declare required evidence in its conformance plan and must be backed by adapter observations only."
   );
   lines.push(
-    "- Unsupported implementations remain non-applicable through capability selection; no AF check may target an implementation ID or language directly."
-  );
-  lines.push(
+    "- Unsupported implementations remain non-applicable through capability selection; no AF check may target an implementation ID or language directly.",
     "- Excluded implementation-local surfaces stay out of shared conformance until a later TechSpec/Tasks revision promotes them explicitly."
   );
 
@@ -939,7 +940,7 @@ function readString(record: Record<string, unknown>, key: string): string {
   const value = record[key];
 
   if (typeof value !== "string") {
-    throw new Error(`coverage entry ${key} must be a string`);
+    throw new TypeError(`coverage entry ${key} must be a string`);
   }
 
   return value;
