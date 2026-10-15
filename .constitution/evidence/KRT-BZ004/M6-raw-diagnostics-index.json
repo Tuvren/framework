@@ -1,0 +1,30 @@
+{
+  "milestone": "M6",
+  "ticket": "KRT-BZ001",
+  "producedAtCommit": "78de3b0fd69038e1e5bdf131954a2f2c316c4ff5",
+  "command": "bunx --bun oxlint --type-aware --format=json typescript/runners/react/test",
+  "captures": [
+    {
+      "archivePath": "epic-bz-m6-runner-test-before.json",
+      "project": "runner-react",
+      "cohort": "test",
+      "phase": "before",
+      "diagnostics": 236,
+      "rules": 474,
+      "selectedFiles": 12,
+      "bytes": 116511,
+      "sha256": "781c5e7a363bd761ac7aaa85d1b48a9dd5afd7033254c697d676dbae37d179fa"
+    },
+    {
+      "archivePath": "epic-bz-m6-runner-test-after.json",
+      "project": "runner-react",
+      "cohort": "test",
+      "phase": "after",
+      "diagnostics": 185,
+      "rules": 474,
+      "selectedFiles": 12,
+      "bytes": 83575,
+      "sha256": "91d8c300d4d0ad87d05ea696523624d88efc6e0d2be5f5136fe774ee40c29656"
+    }
+  ]
+}
