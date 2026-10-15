@@ -446,6 +446,68 @@
     {
       "assertions": [
         {
+          "equals": [2],
+          "field": "$.recovery.runnerDispatchCountsAtExecute",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-skips-runner",
+      "input": {
+        "scenarioPath": "$.stale-recovery-interrupted-tool-batch"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.recovery.runnerDispatchCountsAtExecute"]
+    },
+    {
+      "assertions": [
+        {
+          "equalsPath": "$.result.recovery.durableMissingCallIds",
+          "field": "$.recovery.dispatchedCallIds",
+          "kind": "resultField"
+        },
+        {
+          "contains": "call-missing-nonretryable",
+          "field": "$.recovery.dispatchedCallIds",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-dispatches-missing-set",
+      "input": {
+        "scenarioPath": "$.stale-recovery-interrupted-tool-batch"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.recovery.dispatchedCallIds",
+        "result.recovery.durableMissingCallIds"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equalsPath": "$.result.recovery.originalAttemptDispatches",
+          "field": "$.recovery.resumedDispatches",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys",
+      "input": {
+        "scenarioPath": "$.stale-recovery-interrupted-tool-batch"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.recovery.originalAttemptDispatches",
+        "result.recovery.resumedDispatches"
+      ]
+    },
+    {
+      "assertions": [
+        {
           "equals": false,
           "field": "$.recovery.sameTurn",
           "kind": "resultField"
@@ -600,7 +662,7 @@
   ],
   "packetId": "tuvren.shared.core",
   "planId": "tuvren.framework.runtime-api.lifecycle-extended",
-  "planVersion": "0.2.0",
+  "planVersion": "0.3.0",
   "scenarios": {
     "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json"
   }

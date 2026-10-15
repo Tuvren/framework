@@ -9678,6 +9678,72 @@
     {
       "assertionResults": [
         {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-dispatches-missing-set.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-dispatches-missing-set.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-dispatches-missing-set.requiredEvidence.result.recovery.dispatchedCallIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-dispatches-missing-set.requiredEvidence.result.recovery.durableMissingCallIds",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-dispatches-missing-set",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys.requiredEvidence.result.recovery.originalAttemptDispatches",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys.requiredEvidence.result.recovery.resumedDispatches",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-skips-runner.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-skips-runner.requiredEvidence.result.recovery.runnerDispatchCountsAtExecute",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.interrupted-batch-skips-runner",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate.1.resultField",
           "status": "pass"
         },
@@ -11818,9 +11884,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 499,
-    "totalChecks": 511,
-    "applicableChecks": 499,
+    "passedChecks": 502,
+    "totalChecks": 514,
+    "applicableChecks": 502,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

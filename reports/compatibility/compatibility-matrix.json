@@ -419,6 +419,9 @@
             "runtime-lifecycle-ext.recover-result.uncommitted-count",
             "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status",
             "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent",
+            "runtime-lifecycle-ext.stale-recovery.interrupted-batch-dispatches-missing-set",
+            "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys",
+            "runtime-lifecycle-ext.stale-recovery.interrupted-batch-skips-runner",
             "runtime-lifecycle-ext.stale-recovery.same-signal-iterate",
             "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn",
             "runtime-api-operational-telemetry.approval-events",
@@ -509,9 +512,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 499,
-            "totalChecks": 511,
-            "applicableChecks": 499,
+            "passedChecks": 502,
+            "totalChecks": 514,
+            "applicableChecks": 502,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -555,9 +558,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 12,
-            "totalChecks": 511,
+            "totalChecks": 514,
             "applicableChecks": 12,
-            "nonApplicableChecks": 499
+            "nonApplicableChecks": 502
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json",
@@ -1383,9 +1386,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 511,
+            "totalChecks": 514,
             "applicableChecks": 0,
-            "nonApplicableChecks": 511
+            "nonApplicableChecks": 514
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/certification-harness.framework-rust-certification.json",
