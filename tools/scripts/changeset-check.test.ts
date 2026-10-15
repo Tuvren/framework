@@ -42,6 +42,307 @@ const CHANGESET_CLI = path.join(
 );
 const fixtureRoots: string[] = [];
 
+const publicManifest = (
+  description: string,
+  isPrivate = false
+): Record<string, unknown> => {
+  return {
+    description,
+    name: "@tuvren/public-a",
+    ...(isPrivate ? { private: true } : {}),
+    version: "1.0.0",
+  };
+};
+
+const writeFixtureFile = async (
+  root: string,
+  relativePath: string,
+  content: string
+): Promise<void> => {
+  const filePath = path.join(root, relativePath);
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFile(filePath, content);
+};
+
+const check = (fixture: Fixture): Promise<void> => {
+  return checkChangesetCoverage({
+    base: "master",
+    rootDirectory: fixture.root,
+  });
+};
+
+const isObject = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+const run = (
+  executable: string,
+  args: readonly string[],
+  cwd: string
+): Promise<CommandResult> => {
+  return new Promise((resolve) => {
+    const child = spawn(executable, args, {
+      cwd,
+      env: process.env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+    child.once("error", (error: Error) => {
+      stderr += error.message;
+    });
+    child.once("close", (code) => {
+      resolve({ exitCode: code ?? 1, stderr, stdout });
+    });
+  });
+};
+
+const generateRelease = async (fixture: Fixture): Promise<void> => {
+  const version = await run(
+    process.execPath,
+    [CHANGESET_CLI, "version"],
+    fixture.root
+  );
+  expect(version.exitCode).toBe(0);
+  await fixture.commit("generate release");
+};
+
+const createFixture = async (): Promise<Fixture> => {
+  const root = await mkdtemp(path.join(tmpdir(), "tuvren-changeset-check-"));
+  fixtureRoots.push(root);
+  await writeFixtureFile(
+    root,
+    "package.json",
+    JSON.stringify(
+      { name: "fixture", private: true, workspaces: ["packages/*"] },
+      null,
+      2
+    )
+  );
+  // @manypkg/tools detects Bun workspaces from the repository's lockfile.
+  await writeFixtureFile(root, "bun.lock", "");
+  await writeFixtureFile(
+    root,
+    ".changeset/config.json",
+    JSON.stringify(
+      {
+        access: "public",
+        baseBranch: "master",
+        changelog: "@changesets/cli/changelog",
+        commit: false,
+        fixed: [["@tuvren/*"]],
+        ignore: [],
+        linked: [],
+        privatePackages: { tag: false, version: true },
+        updateInternalDependencies: "patch",
+      },
+      null,
+      2
+    )
+  );
+  await writeFixtureFile(root, ".changeset/README.md", "fixture metadata\n");
+  await writeFixtureFile(
+    root,
+    "packages/public-a/package.json",
+    JSON.stringify(publicManifest("initial"), null, 2)
+  );
+  await writeFixtureFile(
+    root,
+    "packages/public-a/src.ts",
+    "export const initial = true;\n"
+  );
+  await writeFixtureFile(
+    root,
+    "packages/private-a/package.json",
+    JSON.stringify(
+      { name: "@tuvren/private-a", private: true, version: "1.0.0" },
+      null,
+      2
+    )
+  );
+  await writeFixtureFile(
+    root,
+    "packages/private-a/src.ts",
+    "export const initial = true;\n"
+  );
+  await run("git", ["init", "--initial-branch=master"], root);
+  await run("git", ["config", "user.email", "fixture@example.test"], root);
+  await run("git", ["config", "user.name", "Fixture"], root);
+  await run("git", ["add", "."], root);
+  await run("git", ["commit", "-m", "initial"], root);
+  await run("git", ["checkout", "-b", "feature"], root);
+
+  return {
+    commit: async (message: string): Promise<void> => {
+      const add = await run("git", ["add", "."], root);
+      expect(add.exitCode).toBe(0);
+      const commit = await run("git", ["commit", "-m", message], root);
+      expect(commit.exitCode).toBe(0);
+    },
+    movePublicSource: async (destination: string): Promise<void> => {
+      const moved = await run(
+        "git",
+        ["mv", "packages/public-a/src.ts", destination],
+        root
+      );
+      expect(moved.exitCode).toBe(0);
+    },
+    privateChange: async (content: string): Promise<void> => {
+      await writeFixtureFile(root, "packages/private-a/src.ts", content);
+    },
+    publicChange: async (content: string): Promise<void> => {
+      await writeFixtureFile(root, "packages/public-a/src.ts", content);
+    },
+    publicSourceTypeChange: async (): Promise<void> => {
+      await rm(path.join(root, "packages/public-a/src.ts"));
+      await symlink(
+        "../private-a/src.ts",
+        path.join(root, "packages/public-a/src.ts")
+      );
+    },
+    root,
+    writeChangeset: async (
+      filename: string,
+      frontmatter: string
+    ): Promise<void> => {
+      await writeFixtureFile(
+        root,
+        `.changeset/${filename}`,
+        `---\n${frontmatter}\n---\n\nFixture release note.\n`
+      );
+    },
+    writeChangesetContents: async (
+      filename: string,
+      contents: string
+    ): Promise<void> => {
+      await writeFixtureFile(root, `.changeset/${filename}`, contents);
+    },
+    writePublicManifest: async (
+      description: string,
+      isPrivate = false
+    ): Promise<void> => {
+      await writeFixtureFile(
+        root,
+        "packages/public-a/package.json",
+        JSON.stringify(publicManifest(description, isPrivate), null, 2)
+      );
+    },
+  };
+};
+
+const createGeneratedReleaseFixture = async (): Promise<Fixture> => {
+  const fixture = await createFixture();
+  await run("git", ["checkout", "master"], fixture.root);
+  await fixture.writeChangeset("release.md", '"@tuvren/public-a": patch');
+  await fixture.commit("record release intent");
+  await run("git", ["branch", "-f", "feature", "master"], fixture.root);
+  await run("git", ["checkout", "feature"], fixture.root);
+  await generateRelease(fixture);
+  return fixture;
+};
+
+const assertPublicSourceMoveRequiresIntent = async (
+  destination: string
+): Promise<void> => {
+  const fixture = await createFixture();
+  await fixture.movePublicSource(destination);
+
+  const staged = await run(
+    "git",
+    ["diff", "--cached", "--name-status"],
+    fixture.root
+  );
+  expect(staged.exitCode).toBe(0);
+  expect(staged.stdout).toContain(
+    `R100\tpackages/public-a/src.ts\t${destination}`
+  );
+
+  await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+  await fixture.commit("move public source");
+
+  const committed = await run(
+    "git",
+    ["diff", "--name-status", "master...HEAD"],
+    fixture.root
+  );
+  expect(committed.exitCode).toBe(0);
+  expect(committed.stdout).toContain(
+    `R100\tpackages/public-a/src.ts\t${destination}`
+  );
+  await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+
+  await fixture.writeChangeset("source-move.md", '"@tuvren/public-a": patch');
+  await fixture.commit("record source move intent");
+
+  await expect(check(fixture)).resolves.toBeUndefined();
+};
+
+const readNativeChangesets = async (rootDirectory: string): Promise<void> => {
+  const cliRequire = createRequire(await realpath(CHANGESET_CLI));
+  const readerPath = cliRequire.resolve("@changesets/read");
+  const reader = await import(pathToFileURL(readerPath).href);
+
+  if (
+    !("readChangesets" in reader && typeof reader.readChangesets === "function")
+  ) {
+    throw new Error("installed Changesets reader has an invalid API");
+  }
+
+  await reader.readChangesets(rootDirectory);
+};
+
+const releaseNames = (value: unknown): string[] => {
+  if (!(isObject(value) && Array.isArray(value.releases))) {
+    throw new Error("Changesets status did not produce a releases array");
+  }
+
+  const names: string[] = [];
+
+  for (const release of value.releases) {
+    if (!isObject(release) || typeof release.name !== "string") {
+      throw new Error("Changesets status produced an invalid release entry");
+    }
+
+    names.push(release.name);
+  }
+
+  return names;
+};
+
+const releaseVersion = (
+  value: unknown,
+  packageName: string
+): { readonly newVersion: string; readonly oldVersion: string } => {
+  if (!(isObject(value) && Array.isArray(value.releases))) {
+    throw new Error("Changesets status did not produce a releases array");
+  }
+
+  const release = value.releases.find(
+    (entry) => isObject(entry) && entry.name === packageName
+  );
+
+  if (
+    !(
+      isObject(release) &&
+      typeof release.oldVersion === "string" &&
+      typeof release.newVersion === "string"
+    )
+  ) {
+    throw new Error(
+      `Changesets status did not produce versions for ${JSON.stringify(packageName)}`
+    );
+  }
+
+  return { newVersion: release.newVersion, oldVersion: release.oldVersion };
+};
+
 afterEach(async () => {
   await Promise.all(
     fixtureRoots
@@ -66,6 +367,33 @@ describe("changeset-check", () => {
     await fixture.commit("change public package with intent");
 
     await expect(check(fixture)).resolves.toBeUndefined();
+  });
+
+  test("public command terminates with success and failure statuses", async () => {
+    const command = path.join(REPO_ROOT, "tools/scripts/changeset-check.ts");
+    const success = await run(
+      process.execPath,
+      [command, "--base=HEAD"],
+      REPO_ROOT
+    );
+
+    expect(success).toEqual({
+      exitCode: 0,
+      stderr: "",
+      stdout: "changeset-check: OK — no publishable package paths changed\n",
+    });
+
+    const failure = await run(
+      process.execPath,
+      [command, "--base=refs/heads/__changeset_check_missing_base__"],
+      REPO_ROOT
+    );
+
+    expect(failure.exitCode).toBe(1);
+    expect(failure.stdout).toBe("");
+    expect(failure.stderr).toContain(
+      'changeset-check: FAIL — cannot resolve base revision "refs/heads/__changeset_check_missing_base__"'
+    );
   });
 
   test("does not let unrelated or empty changesets cover a public package", async () => {
@@ -622,304 +950,3 @@ describe("changeset-check", () => {
     );
   });
 });
-
-async function createGeneratedReleaseFixture(): Promise<Fixture> {
-  const fixture = await createFixture();
-  await run("git", ["checkout", "master"], fixture.root);
-  await fixture.writeChangeset("release.md", '"@tuvren/public-a": patch');
-  await fixture.commit("record release intent");
-  await run("git", ["branch", "-f", "feature", "master"], fixture.root);
-  await run("git", ["checkout", "feature"], fixture.root);
-  await generateRelease(fixture);
-  return fixture;
-}
-
-async function generateRelease(fixture: Fixture): Promise<void> {
-  const version = await run(
-    process.execPath,
-    [CHANGESET_CLI, "version"],
-    fixture.root
-  );
-  expect(version.exitCode).toBe(0);
-  await fixture.commit("generate release");
-}
-
-async function createFixture(): Promise<Fixture> {
-  const root = await mkdtemp(path.join(tmpdir(), "tuvren-changeset-check-"));
-  fixtureRoots.push(root);
-  await writeFixtureFile(
-    root,
-    "package.json",
-    JSON.stringify(
-      { name: "fixture", private: true, workspaces: ["packages/*"] },
-      null,
-      2
-    )
-  );
-  // @manypkg/tools detects Bun workspaces from the repository's lockfile.
-  await writeFixtureFile(root, "bun.lock", "");
-  await writeFixtureFile(
-    root,
-    ".changeset/config.json",
-    JSON.stringify(
-      {
-        access: "public",
-        baseBranch: "master",
-        changelog: "@changesets/cli/changelog",
-        commit: false,
-        fixed: [["@tuvren/*"]],
-        ignore: [],
-        linked: [],
-        privatePackages: { tag: false, version: true },
-        updateInternalDependencies: "patch",
-      },
-      null,
-      2
-    )
-  );
-  await writeFixtureFile(root, ".changeset/README.md", "fixture metadata\n");
-  await writeFixtureFile(
-    root,
-    "packages/public-a/package.json",
-    JSON.stringify(publicManifest("initial"), null, 2)
-  );
-  await writeFixtureFile(
-    root,
-    "packages/public-a/src.ts",
-    "export const initial = true;\n"
-  );
-  await writeFixtureFile(
-    root,
-    "packages/private-a/package.json",
-    JSON.stringify(
-      { name: "@tuvren/private-a", private: true, version: "1.0.0" },
-      null,
-      2
-    )
-  );
-  await writeFixtureFile(
-    root,
-    "packages/private-a/src.ts",
-    "export const initial = true;\n"
-  );
-  await run("git", ["init", "--initial-branch=master"], root);
-  await run("git", ["config", "user.email", "fixture@example.test"], root);
-  await run("git", ["config", "user.name", "Fixture"], root);
-  await run("git", ["add", "."], root);
-  await run("git", ["commit", "-m", "initial"], root);
-  await run("git", ["checkout", "-b", "feature"], root);
-
-  return {
-    commit: async (message: string): Promise<void> => {
-      const add = await run("git", ["add", "."], root);
-      expect(add.exitCode).toBe(0);
-      const commit = await run("git", ["commit", "-m", message], root);
-      expect(commit.exitCode).toBe(0);
-    },
-    movePublicSource: async (destination: string): Promise<void> => {
-      const moved = await run(
-        "git",
-        ["mv", "packages/public-a/src.ts", destination],
-        root
-      );
-      expect(moved.exitCode).toBe(0);
-    },
-    privateChange: async (content: string): Promise<void> => {
-      await writeFixtureFile(root, "packages/private-a/src.ts", content);
-    },
-    publicChange: async (content: string): Promise<void> => {
-      await writeFixtureFile(root, "packages/public-a/src.ts", content);
-    },
-    publicSourceTypeChange: async (): Promise<void> => {
-      await rm(path.join(root, "packages/public-a/src.ts"));
-      await symlink(
-        "../private-a/src.ts",
-        path.join(root, "packages/public-a/src.ts")
-      );
-    },
-    root,
-    writeChangeset: async (
-      filename: string,
-      frontmatter: string
-    ): Promise<void> => {
-      await writeFixtureFile(
-        root,
-        `.changeset/${filename}`,
-        `---\n${frontmatter}\n---\n\nFixture release note.\n`
-      );
-    },
-    writeChangesetContents: async (
-      filename: string,
-      contents: string
-    ): Promise<void> => {
-      await writeFixtureFile(root, `.changeset/${filename}`, contents);
-    },
-    writePublicManifest: async (
-      description: string,
-      isPrivate = false
-    ): Promise<void> => {
-      await writeFixtureFile(
-        root,
-        "packages/public-a/package.json",
-        JSON.stringify(publicManifest(description, isPrivate), null, 2)
-      );
-    },
-  };
-}
-
-async function assertPublicSourceMoveRequiresIntent(
-  destination: string
-): Promise<void> {
-  const fixture = await createFixture();
-  await fixture.movePublicSource(destination);
-
-  const staged = await run(
-    "git",
-    ["diff", "--cached", "--name-status"],
-    fixture.root
-  );
-  expect(staged.exitCode).toBe(0);
-  expect(staged.stdout).toContain(
-    `R100\tpackages/public-a/src.ts\t${destination}`
-  );
-
-  await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
-  await fixture.commit("move public source");
-
-  const committed = await run(
-    "git",
-    ["diff", "--name-status", "master...HEAD"],
-    fixture.root
-  );
-  expect(committed.exitCode).toBe(0);
-  expect(committed.stdout).toContain(
-    `R100\tpackages/public-a/src.ts\t${destination}`
-  );
-  await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
-
-  await fixture.writeChangeset("source-move.md", '"@tuvren/public-a": patch');
-  await fixture.commit("record source move intent");
-
-  await expect(check(fixture)).resolves.toBeUndefined();
-}
-
-function publicManifest(
-  description: string,
-  isPrivate = false
-): Record<string, unknown> {
-  return {
-    description,
-    name: "@tuvren/public-a",
-    ...(isPrivate ? { private: true } : {}),
-    version: "1.0.0",
-  };
-}
-
-async function writeFixtureFile(
-  root: string,
-  relativePath: string,
-  content: string
-): Promise<void> {
-  const filePath = path.join(root, relativePath);
-  await mkdir(path.dirname(filePath), { recursive: true });
-  await writeFile(filePath, content);
-}
-
-function check(fixture: Fixture): Promise<void> {
-  return checkChangesetCoverage({
-    base: "master",
-    rootDirectory: fixture.root,
-  });
-}
-
-async function readNativeChangesets(rootDirectory: string): Promise<void> {
-  const cliRequire = createRequire(await realpath(CHANGESET_CLI));
-  const readerPath = cliRequire.resolve("@changesets/read");
-  const reader = await import(pathToFileURL(readerPath).href);
-
-  if (
-    !("readChangesets" in reader && typeof reader.readChangesets === "function")
-  ) {
-    throw new Error("installed Changesets reader has an invalid API");
-  }
-
-  await reader.readChangesets(rootDirectory);
-}
-
-function releaseNames(value: unknown): string[] {
-  if (!(isObject(value) && Array.isArray(value.releases))) {
-    throw new Error("Changesets status did not produce a releases array");
-  }
-
-  const names: string[] = [];
-
-  for (const release of value.releases) {
-    if (!isObject(release) || typeof release.name !== "string") {
-      throw new Error("Changesets status produced an invalid release entry");
-    }
-
-    names.push(release.name);
-  }
-
-  return names;
-}
-
-function releaseVersion(
-  value: unknown,
-  packageName: string
-): { readonly newVersion: string; readonly oldVersion: string } {
-  if (!(isObject(value) && Array.isArray(value.releases))) {
-    throw new Error("Changesets status did not produce a releases array");
-  }
-
-  const release = value.releases.find(
-    (entry) => isObject(entry) && entry.name === packageName
-  );
-
-  if (
-    !(
-      isObject(release) &&
-      typeof release.oldVersion === "string" &&
-      typeof release.newVersion === "string"
-    )
-  ) {
-    throw new Error(
-      `Changesets status did not produce versions for ${JSON.stringify(packageName)}`
-    );
-  }
-
-  return { newVersion: release.newVersion, oldVersion: release.oldVersion };
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function run(
-  executable: string,
-  args: readonly string[],
-  cwd: string
-): Promise<CommandResult> {
-  return new Promise((resolve) => {
-    const child = spawn(executable, args, {
-      cwd,
-      env: process.env,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString();
-    });
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString();
-    });
-    child.once("error", (error: Error) => {
-      stderr += error.message;
-    });
-    child.once("close", (code) => {
-      resolve({ exitCode: code ?? 1, stderr, stdout });
-    });
-  });
-}

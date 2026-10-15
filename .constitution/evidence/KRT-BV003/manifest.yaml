@@ -18,7 +18,13 @@
       "sha256": "fe8afffe75ca7b3e87e9aa8e25568eaad8dd81de4e74d2d3a66f101af12beb63",
       "bytes": 1828,
       "role": "measurement"
+    },
+    {
+      "path": "M11-summary.json",
+      "sha256": "b01ca7a987f3dd20b9a08e1491eded176e5f38052a6c731ea2b657dec327e901",
+      "bytes": 3856,
+      "role": "measurement"
     }
   ],
-  "pass_criteria": "Pinned Oxfmt 0.71.0 changes only formatter trivia from the exact assessed compatibility-report candidate; all 63 callable signatures, normalized bodies, parameters, types, modifiers, literals and comments, nonfunction runtime order, unconditional await main entry and following interfaces remain equivalent; compatibility artifacts remain byte-identical; original locked M8 verification passes."
+  "pass_criteria": "M8: pinned Oxfmt 0.71.0 changes only formatter trivia from the exact assessed compatibility-report candidate; all 63 callable signatures, normalized bodies, parameters, types, modifiers, literals and comments, nonfunction runtime order, unconditional await main entry and following interfaces remain equivalent; compatibility artifacts remain byte-identical; original locked M8 verification passes. M11: all 12 test helpers and nested runCommand.finish preserve their signatures and bodies, finish initializes before every use with unchanged resolution/cleanup/error ordering, public success and failure commands terminate with expected statuses, all ordering diagnostics are cleared, and original locked verification passes."
 }

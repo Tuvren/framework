@@ -1,0 +1,126 @@
+{
+  "milestone": "EPIC-BV M11",
+  "ticket": "KRT-BV003",
+  "baseline_commit": "e3a5b52",
+  "scope": [
+    "tools/scripts/changeset-check.ts",
+    "tools/scripts/changeset-check.test.ts"
+  ],
+  "files": {
+    "tools/scripts/changeset-check.ts": {
+      "sha256": "2a9cc65c0890cf2e4c51d1bd48029fd82a3163860ef981d6dc522706af62526e",
+      "bytes": 25140
+    },
+    "tools/scripts/changeset-check.test.ts": {
+      "sha256": "eef3b3c387d0974ae7e61903428deaa4f8f5df8cdd895e3d4f01716df039eb18",
+      "bytes": 33409
+    }
+  },
+  "candidate": {
+    "path": "/tmp/bv-m9-changeset-check.test.ts",
+    "sha256": "b8296064b0547b5a525ae6cd56077572e9fb2645297df6716e1a9782032c4510",
+    "bytes": 32594,
+    "applied_exactly_before_focused_test": true,
+    "final_delta": {
+      "added": 27,
+      "deleted": 0,
+      "purpose": "public CLI success/failure termination proof"
+    }
+  },
+  "diff": {
+    "added": 330,
+    "deleted": 303,
+    "total": 633,
+    "files": 2
+  },
+  "ast_equivalence": {
+    "typescript": "6.0.2",
+    "test_helpers": {
+      "count": 12,
+      "signature_body_parameters_return_type_type_parameters_async_modifiers_equal": true,
+      "remaining_function_declarations": 0
+    },
+    "existing_test_count": 33,
+    "existing_test_order_preserved": true,
+    "registration_before": [
+      "afterEach",
+      "describe"
+    ],
+    "registration_after": [
+      "afterEach",
+      "describe"
+    ],
+    "finish": {
+      "signature_body_parameters_return_type_type_parameters_async_modifiers_equal": true,
+      "const_arrow": true,
+      "declaration_end_offset": 5397,
+      "use_start_offsets": [
+        5662,
+        5723
+      ],
+      "initialized_before_every_use": true,
+      "settled_guard_resolution_and_error_then_close_listener_order_preserved": true,
+      "remaining_source_function_declarations": 0
+    }
+  },
+  "public_behavior": {
+    "test": "public command terminates with success and failure statuses",
+    "success": {
+      "base": "HEAD",
+      "exit_code": 0,
+      "stdout": "changeset-check: OK — no publishable package paths changed"
+    },
+    "failure": {
+      "base": "refs/heads/__changeset_check_missing_base__",
+      "exit_code": 1,
+      "stderr_contains": "changeset-check: FAIL — cannot resolve base revision"
+    },
+    "focused_suite": {
+      "passed": 34,
+      "failed": 0,
+      "assertions": 200
+    },
+    "full_script_suite": {
+      "passed": 99,
+      "failed": 0,
+      "assertions": 1355
+    }
+  },
+  "diagnostics": {
+    "oxfmt": "0.71.0",
+    "oxlint": "1.86.0",
+    "scoped_type_aware": {
+      "files": 2,
+      "rules": 474,
+      "remaining_total": 125,
+      "by_file": {
+        "tools/scripts/changeset-check.ts": 25,
+        "tools/scripts/changeset-check.test.ts": 100
+      },
+      "no_use_before_define_or_func_style": 0,
+      "note": "Remaining diagnostics belong to later planned KRT-BV003/KRT-BV004 cohorts; repository lint passes under current ownership."
+    }
+  },
+  "gates": {
+    "focused_changeset_tests": "pass",
+    "original_nine_file_suite": "pass",
+    "format_check": "pass; 1314 files",
+    "lint": "pass",
+    "conformance": "pass; 11 runners",
+    "docs_authority_freeze_check": "pass; 264 claims",
+    "compatibility_check": "pass",
+    "codegen": "pass; no tracked drift",
+    "api_freeze_check": "pass; 14 entrypoints, 404 exports",
+    "portability_check": "pass; 12 packets, 3 standing exceptions, 15 sources",
+    "host_boundary_check": "pass; 57 files",
+    "docs_af_gap_plan_check": "pass",
+    "root_typecheck": "pass; 33 projects plus prerequisite",
+    "tools_tsc": "pass"
+  },
+  "environment": {
+    "initial_sandbox_probe": "Nx/devenv metadata was read-only after Nx tasks passed; required gates reran with approved repository environment access.",
+    "main_checkout_drift": false,
+    "generated_drift": false
+  },
+  "new_decisions": []
+}
