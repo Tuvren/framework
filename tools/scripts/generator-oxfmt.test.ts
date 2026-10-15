@@ -37,7 +37,6 @@ interface ArtifactTarget {
 const ARTIFACT_TARGETS: ArtifactTarget[] = [
   {
     file: "spec/core/project.json",
-    target: "codegen",
     preservedInputs: [
       "default",
       "^production",
@@ -45,10 +44,10 @@ const ARTIFACT_TARGETS: ArtifactTarget[] = [
       "{workspaceRoot}/spec/core/artifacts/**/*",
       "{workspaceRoot}/bun.lock",
     ],
+    target: "codegen",
   },
   {
     file: "spec/providers/project.json",
-    target: "codegen",
     preservedInputs: [
       "default",
       "^production",
@@ -56,10 +55,10 @@ const ARTIFACT_TARGETS: ArtifactTarget[] = [
       "{workspaceRoot}/spec/providers/artifacts/**/*",
       "{workspaceRoot}/bun.lock",
     ],
+    target: "codegen",
   },
   {
     file: "spec/runners/project.json",
-    target: "codegen",
     preservedInputs: [
       "default",
       "^production",
@@ -67,10 +66,10 @@ const ARTIFACT_TARGETS: ArtifactTarget[] = [
       "{workspaceRoot}/spec/runners/artifacts/**/*",
       "{workspaceRoot}/bun.lock",
     ],
+    target: "codegen",
   },
   {
     file: "spec/tools/project.json",
-    target: "codegen",
     preservedInputs: [
       "default",
       "^production",
@@ -78,10 +77,10 @@ const ARTIFACT_TARGETS: ArtifactTarget[] = [
       "{workspaceRoot}/spec/tools/artifacts/**/*",
       "{workspaceRoot}/bun.lock",
     ],
+    target: "codegen",
   },
   {
     file: "spec/host/project.json",
-    target: "codegen",
     preservedInputs: [
       "default",
       "^production",
@@ -91,10 +90,10 @@ const ARTIFACT_TARGETS: ArtifactTarget[] = [
       "{workspaceRoot}/spec/host/session/artifacts/**/*",
       "{workspaceRoot}/bun.lock",
     ],
+    target: "codegen",
   },
   {
     file: "spec/streaming/project.json",
-    target: "codegen",
     preservedInputs: [
       "default",
       "^production",
@@ -108,16 +107,17 @@ const ARTIFACT_TARGETS: ArtifactTarget[] = [
       "{workspaceRoot}/spec/streaming/ws/artifacts/**/*",
       "{workspaceRoot}/bun.lock",
     ],
+    target: "codegen",
   },
   {
     file: "spec/telemetry/project.json",
-    target: "codegen",
     preservedInputs: [
       "default",
       "{workspaceRoot}/tools/scripts/telemetry-codegen.ts",
       "{workspaceRoot}/tools/scripts/lib/**/*",
       "{workspaceRoot}/tools/generators/telemetry/**/*",
     ],
+    target: "codegen",
   },
   {
     // Only the evidence-refresh target invokes the changed compatibility
@@ -153,7 +153,7 @@ function stdio(relativePath: string): string {
 }
 
 function read(relativePath: string): string {
-  return readFileSync(stdio(relativePath), "utf8");
+  return readFileSync(stdio(relativePath), "utf-8");
 }
 
 interface ProjectTarget {
@@ -190,7 +190,7 @@ function missingInputs(
 function runGenerator(args: readonly string[]): SpawnSyncReturns<string> {
   return spawnSync(process.execPath, [KERNEL_PLAN_SCRIPT, ...args], {
     cwd: REPO_ROOT,
-    encoding: "utf8",
+    encoding: "utf-8",
     maxBuffer: 64 * 1024 * 1024,
   });
 }
@@ -320,11 +320,11 @@ describe("preserved input controls", () => {
 
 describe("kernel plan promotion guard", () => {
   test("the committed plan keeps 44 checks, 10 promoted checks, and resultField assertions", () => {
-    const plan = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf8")) as {
-      checks: Array<{
+    const plan = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf-8")) as {
+      checks: {
         assertions: Array<{ kind?: string }>;
         checkId: string;
-      }>;
+      }[];
     };
     const generatedFamilies = plan.checks.filter(
       (check) =>
@@ -346,23 +346,23 @@ describe("kernel plan promotion guard", () => {
   });
 
   test("--format-only preserves the parsed plan", () => {
-    const before = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf8"));
+    const before = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf-8"));
     const result = runGenerator(["--format-only"]);
 
     expect(result.status, result.stderr).toBe(0);
-    const after = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf8"));
+    const after = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf-8"));
     expect(isDeepStrictEqual(after, before)).toBe(true);
   });
 
   test("normal generation still refuses to drop promoted checks", () => {
-    const before = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf8"));
+    const before = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf-8"));
     const result = runGenerator([]);
 
     expect(result.status).not.toBe(0);
     expect(`${result.stdout}${result.stderr}`).toContain(
       "refusing to overwrite"
     );
-    const after = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf8"));
+    const after = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf-8"));
     expect(isDeepStrictEqual(after, before)).toBe(true);
   });
 });

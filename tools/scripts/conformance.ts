@@ -40,7 +40,7 @@ if (gate.status !== 0) {
 const manifest: { projects: string[] } = JSON.parse(
   readFileSync(
     join(ROOT, "tools/conformance/certification/certified-projects.json"),
-    "utf8"
+    "utf-8"
   )
 );
 

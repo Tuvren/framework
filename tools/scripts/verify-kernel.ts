@@ -22,8 +22,8 @@ import {
   hasVerificationFailure,
   printVerificationSummary,
   runVerificationPhases,
-  type VerificationPhase,
 } from "./verify.js";
+import type { VerificationPhase } from "./verify.js";
 
 const KERNEL_TYPECHECK_PROJECTS = [
   "kernel-contract-protocol",

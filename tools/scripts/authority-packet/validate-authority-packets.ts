@@ -16,8 +16,7 @@
 
 import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { dirname, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { relative, resolve } from "node:path";
 
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
@@ -25,36 +24,36 @@ import Ajv2020 from "ajv/dist/2020.js";
 import { parseRegenerateCommandArgv } from "../lib/regenerate-command-argv.js";
 
 interface AuthorityPacketManifest {
-  authoritativeSources: Array<{
+  authoritativeSources: {
     format: string;
     path: string;
-  }>;
-  bindingAppendices?: Array<{
+  }[];
+  bindingAppendices?: {
     language: string;
     path: string;
-  }>;
+  }[];
   bindingProjections?: Record<string, string>;
-  conformancePlans?: Array<{
+  conformancePlans?: {
     path: string;
     planId: string;
     planVersion: string;
-  }>;
+  }[];
   forbiddenAuthoritySources: string[];
-  freshnessChecks?: Array<{
+  freshnessChecks?: {
     artifact: string;
     regenerateCommand: string;
-  }>;
-  generatedArtifacts?: Array<{
+  }[];
+  generatedArtifacts?: {
     generatedFrom: string;
     generator?: string;
     path: string;
-  }>;
+  }[];
   humanAuthorityRefs?: string[];
   packetId: string;
-  verificationPaths: Array<{
+  verificationPaths: {
     kind: string;
     target: string;
-  }>;
+  }[];
   version: string;
 }
 
@@ -71,7 +70,7 @@ interface ValidationFailure {
 
 const MARKDOWN_HEADING_RE = /^#{1,6}\s+(.+)/;
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const SCHEMA_PATH = resolve(
   REPO_ROOT,
@@ -107,7 +106,7 @@ export async function validateAuthorityPackets(): Promise<ValidationFailure[]> {
     );
   }
   const schema = readJsonSchema(
-    JSON.parse(await readFile(SCHEMA_PATH, "utf8")) as unknown,
+    JSON.parse(await readFile(SCHEMA_PATH, "utf-8")) as unknown,
     SCHEMA_PATH
   );
   const ajv = new Ajv2020({ allErrors: true, strict: false });
@@ -116,7 +115,7 @@ export async function validateAuthorityPackets(): Promise<ValidationFailure[]> {
   const seenPacketIds = new Map<string, string>();
 
   for (const manifestPath of manifestPaths) {
-    const value = JSON.parse(await readFile(manifestPath, "utf8")) as unknown;
+    const value = JSON.parse(await readFile(manifestPath, "utf-8")) as unknown;
 
     if (!validate(value)) {
       failures.push({
@@ -318,7 +317,7 @@ async function validateConformancePlanLinks(
       continue;
     }
 
-    const value = JSON.parse(await readFile(sourcePath, "utf8")) as unknown;
+    const value = JSON.parse(await readFile(sourcePath, "utf-8")) as unknown;
 
     if (!isConformancePlanDocument(value)) {
       failures.push({
@@ -425,7 +424,7 @@ async function validateHumanAuthorityRefs(
     }
 
     if (anchor !== undefined) {
-      const content = await readFile(absolutePath, "utf8");
+      const content = await readFile(absolutePath, "utf-8");
       if (!markdownAnchorExists(content, anchor)) {
         failures.push({
           manifestPath,
@@ -449,9 +448,9 @@ function markdownAnchorExists(content: string, anchor: string): boolean {
 function toMarkdownSlug(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
+    .replaceAll(/[^\w\s-]/g, "")
+    .replaceAll(/\s+/g, "-")
+    .replaceAll(/-+/g, "-")
     .trim();
 }
 

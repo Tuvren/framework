@@ -114,7 +114,7 @@ function withoutSelfAlias(
   options: ts.CompilerOptions,
   packageName: string
 ): ts.CompilerOptions {
-  const paths = { ...(options.paths ?? {}) };
+  const paths = { ...options.paths };
   delete paths[packageName];
   return { ...options, paths };
 }

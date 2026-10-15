@@ -271,7 +271,7 @@ function spawnCommandCaptured(
     child.once("close", (code) => {
       resolve({
         code: code ?? 1,
-        output: Buffer.concat(chunks).toString("utf8"),
+        output: Buffer.concat(chunks).toString("utf-8"),
       });
     });
   });

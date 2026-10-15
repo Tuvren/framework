@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { spawnSync, type SpawnSyncReturns } from "node:child_process";
+import { spawnSync } from "node:child_process";
+import type { SpawnSyncReturns } from "node:child_process";
 import {
   copyFileSync,
   mkdirSync,
@@ -50,7 +51,7 @@ function prepareCliFixture(directory: string): void {
   );
   const initialized = spawnSync("git", ["init", "--quiet"], {
     cwd: directory,
-    encoding: "utf8",
+    encoding: "utf-8",
   });
   if (initialized.status !== 0) {
     throw new Error(`git init failed: ${initialized.stderr}`);
@@ -61,7 +62,7 @@ function runCli(directory: string): SpawnSyncReturns<string> {
   return spawnSync(
     process.execPath,
     ["tools/scripts/json-check.ts", "--json-only", "project"],
-    { cwd: directory, encoding: "utf8" }
+    { cwd: directory, encoding: "utf-8" }
   );
 }
 

@@ -31,8 +31,8 @@ import {
   printVerificationSummary,
   runVerificationPhases,
   selectAuthorityGateSteps,
-  type VerificationPhase,
 } from "./verify.js";
+import type { VerificationPhase } from "./verify.js";
 
 const BASE_FLAG = "--base=";
 const DEFAULT_BASE = "master";

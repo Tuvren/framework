@@ -17,9 +17,9 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 
-import { type RunCommandResult, runCommand } from "./lib/command-runner.js";
+import { runCommand } from "./lib/command-runner.js";
+import type { RunCommandResult } from "./lib/command-runner.js";
 
 interface ResolvedTelemetryAttribute {
   brief: string;
@@ -46,7 +46,7 @@ interface TelemetryGeneratorTarget {
   templatePath: string;
 }
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const SEMCONV_REGISTRY_PATH = "spec/telemetry/semconv";
 const WEAVER_TEMPLATE_ROOT = resolve(REPO_ROOT, "tools/generators/telemetry");
 const WEAVER_RESOLVED_REGISTRY_TARGET = "resolved-registry";
@@ -134,7 +134,7 @@ async function main(): Promise<void> {
 }
 
 async function readGeneratorPlan(): Promise<TelemetryGeneratorPlan> {
-  const planText = await readFile(GENERATOR_PLAN_PATH, "utf8");
+  const planText = await readFile(GENERATOR_PLAN_PATH, "utf-8");
   const plan = JSON.parse(planText);
 
   if (!isRecord(plan)) {
@@ -171,7 +171,7 @@ async function writeRustTelemetryOutput(
   rustOutputPath: string,
   resolvedRegistry: ResolvedTelemetryRegistry
 ): Promise<void> {
-  await readFile(resolve(REPO_ROOT, rustTarget.templatePath), "utf8");
+  await readFile(resolve(REPO_ROOT, rustTarget.templatePath), "utf-8");
 
   if (!rustTarget.enabled) {
     return;
@@ -254,14 +254,14 @@ async function generateResolvedWeaverRegistry(
 
   const resolvedJson = await readFile(
     resolve(outputDirectory, "resolved-registry.json"),
-    "utf8"
+    "utf-8"
   );
 
   return parseResolvedTelemetryRegistry(resolvedJson, schemaUrl);
 }
 
 async function readRegistrySchemaUrl(): Promise<string> {
-  const manifestText = await readFile(REGISTRY_MANIFEST_PATH, "utf8");
+  const manifestText = await readFile(REGISTRY_MANIFEST_PATH, "utf-8");
 
   for (const line of manifestText.split(NEWLINE_PATTERN)) {
     if (line.startsWith("schema_url: ")) {

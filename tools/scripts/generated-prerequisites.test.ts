@@ -37,9 +37,8 @@ import {
   createVerificationPhases,
   MACHINE_AUTHORITY_GUARDRAILS_STEP,
   runVerificationPhases,
-  type VerificationPhase,
-  type VerificationStep,
 } from "./verify.js";
+import type { VerificationPhase, VerificationStep } from "./verify.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 const scratchDirectories: string[] = [];
@@ -214,7 +213,7 @@ describe("generated prerequisite phase", () => {
 
   test("the cached prerequisite target declares its generated bindings output", () => {
     const projectPath = path.join(REPO_ROOT, "spec/interop/project.json");
-    const parsed: unknown = JSON.parse(readFileSync(projectPath, "utf8"));
+    const parsed: unknown = JSON.parse(readFileSync(projectPath, "utf-8"));
     const project = requireObject(parsed, projectPath);
     const targets = requireObject(project.targets, `${projectPath}#targets`);
     const codegen = requireObject(targets.codegen, `${projectPath}#codegen`);

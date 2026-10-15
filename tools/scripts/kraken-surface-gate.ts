@@ -34,7 +34,7 @@ import { join } from "node:path";
 import process from "node:process";
 
 const WORKSPACE_GLOBS: readonly string[] = JSON.parse(
-  readFileSync("package.json", "utf8")
+  readFileSync("package.json", "utf-8")
 ).workspaces;
 
 interface Violation {
@@ -77,7 +77,7 @@ function sourceCandidatesForExport(subpath: string): string[] {
 
 function collectEntryFiles(packageDir: string): string[] {
   const manifest = JSON.parse(
-    readFileSync(join(packageDir, "package.json"), "utf8")
+    readFileSync(join(packageDir, "package.json"), "utf-8")
   );
 
   // No exports map and no src entry barrel: the package declares no public
@@ -274,11 +274,11 @@ let scannedEntries = 0;
 
 for (const packageDir of resolveWorkspaceDirs()) {
   const packageName = JSON.parse(
-    readFileSync(join(packageDir, "package.json"), "utf8")
+    readFileSync(join(packageDir, "package.json"), "utf-8")
   ).name;
 
   for (const entry of collectEntryFiles(packageDir)) {
-    const source = readFileSync(entry, "utf8");
+    const source = readFileSync(entry, "utf-8");
     scannedEntries += 1;
 
     if (WILDCARD_EXPORT.test(source)) {
