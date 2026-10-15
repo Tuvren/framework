@@ -28,6 +28,7 @@ import {
   createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
 } from "../src/index.ts";
+import { deriveIdempotencyKey } from "../src/lib/idempotency-identity.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
   assistantText,
@@ -37,6 +38,167 @@ import {
 } from "./runtime-core-test-helpers.ts";
 
 describe("framework-runtime-core", () => {
+  test("preserves the original call idempotency identity across approval resume", async () => {
+    const harness = createFakeKernelHarness();
+    let dispatchedCallId: string | undefined;
+    let dispatchedIdempotencyKey: string | undefined;
+    const runner = {
+      async execute(context) {
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-approved-effect",
+                  input: { recipient: "ops@example.com" },
+                  name: "notify",
+                },
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("Notification sent.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies RuntimeRunner;
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      runnerRegistry: createRunnerRegistry([runner]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const pausedHandle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            approval: true,
+            description: "Send an approved notification",
+            execute(_input, context) {
+              dispatchedCallId = context.callId;
+              dispatchedIdempotencyKey = context.idempotencyKey;
+              return { sent: true };
+            },
+            inputSchema: {
+              properties: {
+                recipient: { type: "string" },
+              },
+              required: ["recipient"],
+              type: "object",
+            },
+            name: "notify",
+            outputSchema: {
+              properties: {
+                sent: { type: "boolean" },
+              },
+              required: ["sent"],
+              type: "object",
+            },
+          },
+        ],
+      },
+      signal: textSignal("Send a notification after approval"),
+      threadId: thread.threadId,
+    });
+
+    const pausedEvents = await collectEvents(pausedHandle.events());
+    const turnStart = pausedEvents.find(
+      (
+        event
+      ): event is Extract<
+        (typeof pausedEvents)[number],
+        { type: "turn.start" }
+      > => event.type === "turn.start"
+    );
+    const approvalRequested = pausedEvents.find(
+      (
+        event
+      ): event is Extract<
+        (typeof pausedEvents)[number],
+        { type: "approval.requested" }
+      > => event.type === "approval.requested"
+    );
+
+    if (turnStart === undefined || approvalRequested === undefined) {
+      throw new Error("expected the turn to pause with an approval request");
+    }
+
+    const originalCallId = approvalRequested.request.toolCalls[0]?.callId;
+    if (originalCallId === undefined) {
+      throw new Error("expected the approval request to retain its call id");
+    }
+
+    const pausedRunAudit = pausedEvents.find(
+      (
+        event
+      ): event is Extract<
+        (typeof pausedEvents)[number],
+        { type: "tool.audit" }
+      > =>
+        event.type === "tool.audit" &&
+        event.callId === originalCallId &&
+        event.lifecycle === "input_validated"
+    );
+    if (pausedRunAudit === undefined) {
+      throw new Error("expected an audit event from the paused Run");
+    }
+
+    expect(pausedHandle.status().phase).toBe("paused");
+    expect(
+      pausedEvents.some(
+        (event) => event.type === "turn.end" && event.status === "paused"
+      )
+    ).toBe(true);
+    expect(originalCallId).toBe("call-approved-effect");
+    expect(dispatchedIdempotencyKey).toBeUndefined();
+
+    const resumedHandle = pausedHandle.resolveApproval({
+      decisions: [{ callId: originalCallId, type: "approve" }],
+    });
+    const resumedEvents = await collectEvents(resumedHandle.events());
+    const resumedDispatchAudit = resumedEvents.find(
+      (
+        event
+      ): event is Extract<
+        (typeof resumedEvents)[number],
+        { type: "tool.audit" }
+      > =>
+        event.type === "tool.audit" &&
+        event.callId === originalCallId &&
+        event.lifecycle === "output_validated"
+    );
+
+    if (resumedDispatchAudit === undefined) {
+      throw new Error("expected an audit event from the resumed dispatch");
+    }
+
+    expect(dispatchedCallId).toBe(originalCallId);
+    expect(dispatchedIdempotencyKey).toBe(
+      deriveIdempotencyKey(turnStart.turnId, originalCallId)
+    );
+    expect(resumedDispatchAudit.turnId).toBe(turnStart.turnId);
+    expect(resumedDispatchAudit.runId).not.toBe(pausedRunAudit.runId);
+    expect(resumedHandle.status().phase).toBe("completed");
+  });
+
   test("pauses for mixed approval batches and resumes only unfinished tool calls", async () => {
     const harness = createFakeKernelHarness();
     let afterIterationCount = 0;

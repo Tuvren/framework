@@ -1,0 +1,12 @@
+owner: KRT-CR006
+mode: contract_test
+produced:
+  date: 2026-10-15
+  commit: 696c162d6fa0f8af09ed3c028a6b5aa19034f1df
+  command: LC_ALL=C bun run nx run framework-runtime:typecheck; LC_ALL=C bun run nx run framework-runtime:test; LC_ALL=C bun run nx run framework-runtime:lint; LC_ALL=C flock /tmp/tuvren-wave-1-verification.lock direnv exec . env PGHOST=/run/user/1000/devenv-3ea1e50/postgres PGPORT=5432 bun run check
+files:
+  - path: approval-resume-summary.md
+    sha256: 587ea35e0b85e0c9b29374805f704d58c918c75ba1c34b8429232c74ee7ebac6
+    bytes: 1055
+    role: measurement
+pass_criteria: A real approval pause/resume dispatch keeps the original Turn and call identity, derives the dispatch key from that pair, executes under a different resumed Run, and all runtime and repository verification commands exit 0.
