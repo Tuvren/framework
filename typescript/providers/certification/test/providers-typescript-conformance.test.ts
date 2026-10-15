@@ -34,6 +34,136 @@ const PROVIDER_SUITE_MANIFEST_SCHEMA = new URL(
   import.meta.url
 );
 
+interface SuiteFixture {
+  id: string;
+  path: string;
+}
+
+interface SuiteManifest {
+  boundary: string;
+  fixtureSchemaPath: string;
+  fixtures: [SuiteFixture];
+  suiteId: string;
+  suiteVersion: string;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readJsonObject = (path: string): Record<string, unknown> => {
+  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
+
+  if (!isRecord(value)) {
+    throw new Error(`${path} must contain a JSON object`);
+  }
+
+  return value;
+};
+
+const readJsonSchema = (path: string): AnySchema => {
+  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
+
+  if (typeof value === "boolean" || isRecord(value)) {
+    return value;
+  }
+
+  throw new Error(`${path} must contain a JSON Schema object or boolean`);
+};
+
+const assertProviderTestkitFixtureSet: (
+  value: unknown,
+  label: string
+) => asserts value is ProviderTestkitFixtureSet = (
+  value: unknown,
+  label: string
+): asserts value is ProviderTestkitFixtureSet => {
+  if (
+    !(
+      isRecord(value) &&
+      isRecord(value.prompt) &&
+      isRecord(value.response) &&
+      isRecord(value.structuredPrompt) &&
+      isRecord(value.toolPrompt)
+    )
+  ) {
+    throw new Error(`${label} must contain provider prompt/response fixtures`);
+  }
+};
+
+const readSuiteManifest = (url: URL): SuiteManifest => {
+  const value = readJsonObject(fileURLToPath(url));
+
+  if (
+    typeof value.boundary !== "string" ||
+    typeof value.fixtureSchemaPath !== "string" ||
+    !Array.isArray(value.fixtures) ||
+    value.fixtures.length !== 1 ||
+    typeof value.suiteId !== "string" ||
+    typeof value.suiteVersion !== "string"
+  ) {
+    throw new Error(`${url.pathname} must be a valid suite manifest`);
+  }
+
+  const fixture = value.fixtures[0];
+
+  if (
+    !isRecord(fixture) ||
+    typeof fixture.id !== "string" ||
+    typeof fixture.path !== "string"
+  ) {
+    throw new Error(`${url.pathname} must contain valid fixture entries`);
+  }
+
+  return {
+    boundary: value.boundary,
+    fixtureSchemaPath: value.fixtureSchemaPath,
+    fixtures: [{ id: fixture.id, path: fixture.path }],
+    suiteId: value.suiteId,
+    suiteVersion: value.suiteVersion,
+  };
+};
+
+const readValidatedSingleFixtureSuite = (
+  manifestUrl: URL,
+  expectedFixtureId: string
+): ProviderTestkitFixtureSet => {
+  const manifest = readSuiteManifest(manifestUrl);
+  const manifestSchema = readJsonSchema(
+    fileURLToPath(PROVIDER_SUITE_MANIFEST_SCHEMA)
+  );
+  const manifestAjv = new Ajv2020({ allErrors: true, strict: false });
+  const validateManifest = manifestAjv.compile(manifestSchema);
+
+  expect(
+    validateManifest(readJsonObject(fileURLToPath(manifestUrl))),
+    manifestAjv.errorsText(validateManifest.errors)
+  ).toBe(true);
+  expect(manifest).toMatchObject({
+    boundary: "providers",
+    suiteId: "tuvren.providers.api-fixtures",
+    suiteVersion: "0.2.0",
+  });
+  expect(manifest.fixtures).toEqual([
+    {
+      id: expectedFixtureId,
+      path: "../fixtures/provider-fixtures.json",
+    },
+  ]);
+
+  const manifestDirectory = dirname(fileURLToPath(manifestUrl));
+  const schema = readJsonSchema(
+    join(manifestDirectory, manifest.fixtureSchemaPath)
+  );
+  const fixturePath = join(manifestDirectory, manifest.fixtures[0].path);
+  const fixture = readJsonObject(fixturePath);
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  const validate = ajv.compile(schema);
+
+  expect(validate(fixture), ajv.errorsText(validate.errors)).toBe(true);
+  assertProviderTestkitFixtureSet(fixture, fixturePath);
+  return fixture;
+};
+
 describe("providers TypeScript certification", () => {
   test("executes the shared provider fixture suite", () => {
     const fixture = readValidatedSingleFixtureSuite(
@@ -80,131 +210,3 @@ describe("providers TypeScript certification", () => {
     });
   });
 });
-
-function readValidatedSingleFixtureSuite(
-  manifestUrl: URL,
-  expectedFixtureId: string
-): ProviderTestkitFixtureSet {
-  const manifest = readSuiteManifest(manifestUrl);
-  const manifestSchema = readJsonSchema(
-    fileURLToPath(PROVIDER_SUITE_MANIFEST_SCHEMA)
-  );
-  const manifestAjv = new Ajv2020({ allErrors: true, strict: false });
-  const validateManifest = manifestAjv.compile(manifestSchema);
-
-  expect(
-    validateManifest(readJsonObject(fileURLToPath(manifestUrl))),
-    manifestAjv.errorsText(validateManifest.errors)
-  ).toBe(true);
-  expect(manifest).toMatchObject({
-    boundary: "providers",
-    suiteId: "tuvren.providers.api-fixtures",
-    suiteVersion: "0.2.0",
-  });
-  expect(manifest.fixtures).toEqual([
-    {
-      id: expectedFixtureId,
-      path: "../fixtures/provider-fixtures.json",
-    },
-  ]);
-
-  const manifestDirectory = dirname(fileURLToPath(manifestUrl));
-  const schema = readJsonSchema(
-    join(manifestDirectory, manifest.fixtureSchemaPath)
-  );
-  const fixturePath = join(manifestDirectory, manifest.fixtures[0].path);
-  const fixture = readJsonObject(fixturePath);
-  const ajv = new Ajv2020({ allErrors: true, strict: false });
-  const validate = ajv.compile(schema);
-
-  expect(validate(fixture), ajv.errorsText(validate.errors)).toBe(true);
-  assertProviderTestkitFixtureSet(fixture, fixturePath);
-  return fixture;
-}
-
-interface SuiteFixture {
-  id: string;
-  path: string;
-}
-
-interface SuiteManifest {
-  boundary: string;
-  fixtureSchemaPath: string;
-  fixtures: [SuiteFixture];
-  suiteId: string;
-  suiteVersion: string;
-}
-
-function readSuiteManifest(url: URL): SuiteManifest {
-  const value = readJsonObject(fileURLToPath(url));
-
-  if (
-    typeof value.boundary !== "string" ||
-    typeof value.fixtureSchemaPath !== "string" ||
-    !Array.isArray(value.fixtures) ||
-    value.fixtures.length !== 1 ||
-    typeof value.suiteId !== "string" ||
-    typeof value.suiteVersion !== "string"
-  ) {
-    throw new Error(`${url.pathname} must be a valid suite manifest`);
-  }
-
-  const fixture = value.fixtures[0];
-
-  if (
-    !isRecord(fixture) ||
-    typeof fixture.id !== "string" ||
-    typeof fixture.path !== "string"
-  ) {
-    throw new Error(`${url.pathname} must contain valid fixture entries`);
-  }
-
-  return {
-    boundary: value.boundary,
-    fixtureSchemaPath: value.fixtureSchemaPath,
-    fixtures: [{ id: fixture.id, path: fixture.path }],
-    suiteId: value.suiteId,
-    suiteVersion: value.suiteVersion,
-  };
-}
-
-function assertProviderTestkitFixtureSet(
-  value: unknown,
-  label: string
-): asserts value is ProviderTestkitFixtureSet {
-  if (
-    !(
-      isRecord(value) &&
-      isRecord(value.prompt) &&
-      isRecord(value.response) &&
-      isRecord(value.structuredPrompt) &&
-      isRecord(value.toolPrompt)
-    )
-  ) {
-    throw new Error(`${label} must contain provider prompt/response fixtures`);
-  }
-}
-
-function readJsonObject(path: string): Record<string, unknown> {
-  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
-
-  if (!isRecord(value)) {
-    throw new Error(`${path} must contain a JSON object`);
-  }
-
-  return value;
-}
-
-function readJsonSchema(path: string): AnySchema {
-  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
-
-  if (typeof value === "boolean" || isRecord(value)) {
-    return value;
-  }
-
-  throw new Error(`${path} must contain a JSON Schema object or boolean`);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
