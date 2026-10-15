@@ -107,7 +107,7 @@ export class StreamAccumulator {
    */
   absorb(chunk: ProviderStreamChunk): TuvrenStreamEvent[] {
     switch (chunk.type) {
-      case "text_delta":
+      case "text_delta": {
         this.appendText(chunk.text);
         return [
           {
@@ -117,7 +117,8 @@ export class StreamAccumulator {
             type: "text.delta",
           },
         ];
-      case "reasoning_delta":
+      }
+      case "reasoning_delta": {
         this.appendReasoning(chunk.text, chunk.signature);
         return chunk.text.length === 0
           ? []
@@ -129,7 +130,8 @@ export class StreamAccumulator {
                 type: "reasoning.delta",
               },
             ];
-      case "reasoning_done":
+      }
+      case "reasoning_done": {
         return this.completeReasoning()
           ? [
               {
@@ -139,7 +141,8 @@ export class StreamAccumulator {
               },
             ]
           : [];
-      case "structured_delta":
+      }
+      case "structured_delta": {
         this.appendStructuredDelta(chunk.delta);
         return [
           {
@@ -149,14 +152,17 @@ export class StreamAccumulator {
             type: "structured.delta",
           },
         ];
-      case "structured_done":
+      }
+      case "structured_done": {
         return this.completeStructuredAndCreateEvents(chunk.data, chunk.name);
-      case "tool_call_start":
+      }
+      case "tool_call_start": {
         return [
           ...this.completeOpenAssistantPartsForToolCall(),
           this.startToolCall(chunk.providerCallId, chunk.name),
         ];
-      case "tool_call_args_delta":
+      }
+      case "tool_call_args_delta": {
         this.appendToolCallArgs(chunk.providerCallId, chunk.delta);
         return [
           {
@@ -166,13 +172,15 @@ export class StreamAccumulator {
             type: "tool_call.args_delta",
           },
         ];
-      case "tool_call_done":
+      }
+      case "tool_call_done": {
         return this.completeToolCallAndCreateEvents(
           chunk.providerCallId,
           chunk.input,
           chunk.name,
           chunk.providerMetadata
         );
+      }
       case "provider_tool_result": {
         // Accumulate provider-native/mediated result for pre-staging (AY002/AY004).
         const rawClass = chunk.providerMetadata?.executionClass;
@@ -193,15 +201,18 @@ export class StreamAccumulator {
         });
         return [];
       }
-      case "finish":
+      case "finish": {
         this.finishChunk = cloneValue(chunk);
         this.assertCompletedProviderParts();
         this.messageDonePublished = true;
         return this.createTerminalEventsFromFinish(chunk);
-      case "error":
+      }
+      case "error": {
         throw toProviderError(chunk.error);
-      default:
+      }
+      default: {
         return [];
+      }
     }
   }
 
@@ -317,7 +328,7 @@ export class StreamAccumulator {
   private assertCompletedProviderParts(): void {
     for (const part of this.parts) {
       switch (part.kind) {
-        case "structured":
+        case "structured": {
           if (!part.done) {
             throw new TuvrenProviderError(
               "provider stream finished before structured output completed",
@@ -327,7 +338,8 @@ export class StreamAccumulator {
             );
           }
           break;
-        case "tool_call":
+        }
+        case "tool_call": {
           if (!part.state.done) {
             throw new TuvrenProviderError(
               "provider stream finished before tool call completed",
@@ -340,8 +352,10 @@ export class StreamAccumulator {
             );
           }
           break;
-        default:
+        }
+        default: {
           break;
+        }
       }
     }
   }
@@ -608,7 +622,7 @@ export class StreamAccumulator {
     part: AccumulatedPart
   ): TuvrenStreamEvent | undefined {
     switch (part.kind) {
-      case "reasoning":
+      case "reasoning": {
         if (part.done) {
           return undefined;
         }
@@ -619,7 +633,8 @@ export class StreamAccumulator {
           timestamp: this.now(),
           type: "reasoning.done",
         };
-      case "text":
+      }
+      case "text": {
         if (part.done) {
           return undefined;
         }
@@ -631,8 +646,10 @@ export class StreamAccumulator {
           timestamp: this.now(),
           type: "text.done",
         };
-      default:
+      }
+      default: {
         return undefined;
+      }
     }
   }
 
@@ -662,7 +679,7 @@ export class StreamAccumulator {
     part: AccumulatedPart
   ): TuvrenStreamEvent | undefined {
     switch (part.kind) {
-      case "text":
+      case "text": {
         if (part.done) {
           return undefined;
         }
@@ -674,7 +691,8 @@ export class StreamAccumulator {
           timestamp: this.now(),
           type: "text.done",
         };
-      case "reasoning":
+      }
+      case "reasoning": {
         if (part.done) {
           return undefined;
         }
@@ -685,12 +703,16 @@ export class StreamAccumulator {
           timestamp: this.now(),
           type: "reasoning.done",
         };
-      case "structured":
+      }
+      case "structured": {
         return this.createPartialStructuredDoneEvent(part);
-      case "tool_call":
+      }
+      case "tool_call": {
         return this.createPartialToolCallDoneEvent(part.state);
-      default:
+      }
+      default: {
         return undefined;
+      }
     }
   }
 
@@ -763,12 +785,15 @@ export class StreamAccumulator {
   private hasOpenPartialContent(): boolean {
     return this.parts.some((part) => {
       switch (part.kind) {
-        case "structured":
+        case "structured": {
           return !part.done;
-        case "tool_call":
+        }
+        case "tool_call": {
           return !part.state.done;
-        default:
+        }
+        default: {
           return false;
+        }
       }
     });
   }
@@ -800,7 +825,7 @@ export class StreamAccumulator {
 
     for (const part of this.parts) {
       switch (part.kind) {
-        case "text":
+        case "text": {
           if (!part.done) {
             events.push({
               messageId: this.messageId,
@@ -811,7 +836,8 @@ export class StreamAccumulator {
             part.done = true;
           }
           break;
-        case "reasoning":
+        }
+        case "reasoning": {
           if (!part.done) {
             events.push({
               messageId: this.messageId,
@@ -821,7 +847,8 @@ export class StreamAccumulator {
             part.done = true;
           }
           break;
-        case "structured":
+        }
+        case "structured": {
           if (!part.done) {
             events.push({
               data: cloneValue(part.data ?? parseStructuredValue(part.delta)),
@@ -833,7 +860,8 @@ export class StreamAccumulator {
             part.done = true;
           }
           break;
-        case "tool_call":
+        }
+        case "tool_call": {
           if (!part.state.done) {
             events.push({
               callId: part.state.callId,
@@ -850,8 +878,10 @@ export class StreamAccumulator {
             part.state.done = true;
           }
           break;
-        default:
+        }
+        default: {
           break;
+        }
       }
     }
 
@@ -897,25 +927,30 @@ function finalizeAccumulatedPart(input: {
   pendingReasoningProviderMetadata: Record<string, unknown>[];
 }): TuvrenModelResponse["parts"][number] | undefined {
   switch (input.part.kind) {
-    case "text":
+    case "text": {
       return {
         text: input.part.text,
         type: "text",
       };
-    case "reasoning":
+    }
+    case "reasoning": {
       return finalizeReasoningPart(
         input.part,
         input.partial,
         input.pendingReasoningProviderMetadata
       );
-    case "structured":
+    }
+    case "structured": {
       return finalizeStructuredPart(input.part, input.partial);
-    case "tool_call":
+    }
+    case "tool_call": {
       return finalizeToolCallPart(input.part, input.partial);
-    default:
+    }
+    default: {
       throw new TuvrenRuntimeError("unsupported accumulated content part", {
         code: "react_runner_invalid_model_response",
       });
+    }
   }
 }
 

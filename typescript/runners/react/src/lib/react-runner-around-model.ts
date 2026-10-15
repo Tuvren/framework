@@ -33,14 +33,12 @@ import type {
 import {
   createAroundModelContextSnapshot,
   createExtensionStateSnapshot,
-  type NormalizedAroundModelResult,
   normalizeAroundModelResult,
   normalizeNextAroundModelContext,
 } from "./react-runner-prompt.js";
-import {
-  type BufferedAssistantSequence,
-  createBufferedAssistantSequence,
-} from "./react-runner-stream.js";
+import type { NormalizedAroundModelResult } from "./react-runner-prompt.js";
+import { createBufferedAssistantSequence } from "./react-runner-stream.js";
+import type { BufferedAssistantSequence } from "./react-runner-stream.js";
 
 /**
  * Result of running the `aroundModel` chain (or its terminal provider call)
@@ -455,35 +453,40 @@ function partsEmitEquivalentAssistantEvents(
   durablePart: TuvrenModelResponse["parts"][number]
 ): boolean {
   switch (livePart.type) {
-    case "file":
+    case "file": {
       return (
         durablePart.type === "file" &&
         livePart.filename === durablePart.filename &&
         livePart.mediaType === durablePart.mediaType &&
         isDeepStrictEqual(livePart.data, durablePart.data)
       );
-    case "reasoning":
+    }
+    case "reasoning": {
       return (
         durablePart.type === "reasoning" &&
         livePart.redacted === durablePart.redacted &&
         (livePart.redacted || livePart.text === durablePart.text)
       );
-    case "structured":
+    }
+    case "structured": {
       return (
         durablePart.type === "structured" &&
         livePart.name === durablePart.name &&
         isDeepStrictEqual(livePart.data, durablePart.data)
       );
-    case "text":
+    }
+    case "text": {
       return durablePart.type === "text" && livePart.text === durablePart.text;
-    case "tool_call":
+    }
+    case "tool_call": {
       return (
         durablePart.type === "tool_call" &&
         livePart.callId === durablePart.callId &&
         livePart.name === durablePart.name &&
         isDeepStrictEqual(livePart.input, durablePart.input)
       );
-    case "tool_result":
+    }
+    case "tool_result": {
       return (
         durablePart.type === "tool_result" &&
         isDeepStrictEqual(
@@ -491,8 +494,10 @@ function partsEmitEquivalentAssistantEvents(
           stripUndefinedDeep(durablePart)
         )
       );
-    default:
+    }
+    default: {
       return false;
+    }
   }
 }
 

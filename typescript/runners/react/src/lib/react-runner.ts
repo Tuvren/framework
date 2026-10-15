@@ -45,10 +45,8 @@ import Ajv from "ajv";
 import Ajv2019 from "ajv/dist/2019.js";
 import Ajv2020 from "ajv/dist/2020.js";
 
-import {
-  type ModelExecutionOutcome,
-  runAroundModelChain,
-} from "./react-runner-around-model.js";
+import { runAroundModelChain } from "./react-runner-around-model.js";
+import type { ModelExecutionOutcome } from "./react-runner-around-model.js";
 import {
   createAroundModelContextSnapshot,
   preparePromptState,
@@ -347,7 +345,7 @@ async function executeIteration(
     initialContext: aroundModelContext,
     normalizeExecutionError,
   });
-  const response = execution.response;
+  const { response } = execution;
   const cancelled = execution.cancelled === true;
 
   assertTuvrenModelResponse(response, "response");
@@ -1106,7 +1104,7 @@ function buildPrestagedProviderToolMessage(
     providerMetadata: {
       // Spread record.providerMetadata first so canonical attribution fields
       // below are always authoritative regardless of what the provider stamps. (AY002/AY004)
-      ...(record.providerMetadata ?? {}),
+      ...record.providerMetadata,
       executionClass: record.executionClass,
       owner: "provider",
       providerCallId: record.providerCallId,

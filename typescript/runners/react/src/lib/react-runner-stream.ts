@@ -284,7 +284,7 @@ function synthesizeAssistantEvents(
 
   for (const part of response.parts) {
     switch (part.type) {
-      case "text":
+      case "text": {
         events.push({
           delta: part.text,
           messageId,
@@ -298,7 +298,8 @@ function synthesizeAssistantEvents(
           type: "text.done",
         });
         break;
-      case "reasoning":
+      }
+      case "reasoning": {
         if (!part.redacted) {
           events.push({
             delta: part.text,
@@ -314,7 +315,8 @@ function synthesizeAssistantEvents(
           type: "reasoning.done",
         });
         break;
-      case "structured":
+      }
+      case "structured": {
         events.push({
           delta: serializeAssistantDeltaValue(part.data),
           messageId,
@@ -329,7 +331,8 @@ function synthesizeAssistantEvents(
           type: "structured.done",
         });
         break;
-      case "file":
+      }
+      case "file": {
         events.push({
           data:
             typeof part.data === "string"
@@ -342,7 +345,8 @@ function synthesizeAssistantEvents(
           type: "file.done",
         });
         break;
-      case "tool_call":
+      }
+      case "tool_call": {
         events.push({
           callId: part.callId,
           messageId,
@@ -365,7 +369,8 @@ function synthesizeAssistantEvents(
           type: "tool_call.done",
         });
         break;
-      case "tool_result":
+      }
+      case "tool_result": {
         throw new TuvrenRuntimeError(
           "provider responses must not emit tool_result parts",
           {
@@ -375,8 +380,10 @@ function synthesizeAssistantEvents(
             },
           }
         );
-      default:
+      }
+      default: {
         break;
+      }
     }
   }
 
