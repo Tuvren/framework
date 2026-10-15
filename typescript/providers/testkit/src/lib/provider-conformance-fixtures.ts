@@ -76,8 +76,8 @@ function loadProviderTestkitFixtures(): ProviderTestkitFixtureSet {
   const manifest = readConformanceManifest(manifestPath);
   const fixturePath = join(dirname(manifestPath), manifest.fixturePath);
   const schemaPath = join(dirname(manifestPath), manifest.fixtureSchemaPath);
-  const fixtureText = readFileSync(fixturePath, "utf8");
-  const schemaText = readFileSync(schemaPath, "utf8");
+  const fixtureText = readFileSync(fixturePath, "utf-8");
+  const schemaText = readFileSync(schemaPath, "utf-8");
   const parsedFixture = JSON.parse(fixtureText);
   const parsedSchema = readJsonSchema(JSON.parse(schemaText));
   assertSchemaValid(
@@ -126,10 +126,10 @@ function readConformanceManifest(manifestPath: string): {
   fixturePath: string;
   fixtureSchemaPath: string;
 } {
-  const manifestText = readFileSync(manifestPath, "utf8");
+  const manifestText = readFileSync(manifestPath, "utf-8");
   const manifestSchemaText = readFileSync(
     join(dirname(manifestPath), MANIFEST_SCHEMA_RELATIVE_PATH),
-    "utf8"
+    "utf-8"
   );
   const parsedManifest = JSON.parse(manifestText);
   const parsedManifestSchema = readJsonSchema(JSON.parse(manifestSchemaText));
