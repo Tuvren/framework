@@ -52,53 +52,15 @@ const MANIFEST_SCHEMA_RELATIVE_PATH = "../schemas/suite-manifest.schema.json";
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 
 /**
- * The schema-validated fixture set (prompts, response) shared by provider
- * conformance tests, loaded once at module init from
- * `spec/conformance/providers/`. See {@link providerTestkitFixtures} in
- * `provider-testkit.ts` for the re-export public consumers import.
- */
-export const providerTestkitFixtures: ProviderTestkitFixtureSet =
-  loadProviderTestkitFixtures();
-
-/**
- * Locates the providers conformance suite manifest, reads its declared
- * fixture and fixture schema, validates the fixture against that schema,
- * and asserts it satisfies {@link ProviderTestkitFixtureSet}.
- *
- * @throws Error when the manifest cannot be located, is malformed, or the
- *   fixture fails schema validation or shape assertion.
- */
-function loadProviderTestkitFixtures(): ProviderTestkitFixtureSet {
-  const manifestPath = resolveFixturePath(
-    import.meta.url,
-    MANIFEST_PATH_SEGMENTS
-  );
-  const manifest = readConformanceManifest(manifestPath);
-  const fixturePath = join(dirname(manifestPath), manifest.fixturePath);
-  const schemaPath = join(dirname(manifestPath), manifest.fixtureSchemaPath);
-  const fixtureText = readFileSync(fixturePath, "utf-8");
-  const schemaText = readFileSync(schemaPath, "utf-8");
-  const parsedFixture = JSON.parse(fixtureText);
-  const parsedSchema = readJsonSchema(JSON.parse(schemaText));
-  assertSchemaValid(
-    parsedSchema,
-    parsedFixture,
-    "provider conformance fixture"
-  );
-  assertProviderTestkitFixtureSet(parsedFixture);
-  return parsedFixture;
-}
-
-/**
  * Walks up from `metaUrl`'s directory looking for `pathSegments` joined onto
  * each ancestor, returning the first match.
  *
  * @throws Error when no ancestor within 8 levels contains the path.
  */
-function resolveFixturePath(
+const resolveFixturePath = (
   metaUrl: string,
   pathSegments: readonly string[]
-): string {
+): string => {
   const currentFilePath = fileURLToPath(metaUrl);
   let currentDirectory = dirname(currentFilePath);
 
@@ -113,7 +75,46 @@ function resolveFixturePath(
   }
 
   throw new Error("unable to locate provider conformance fixture file");
-}
+};
+
+/** True when a value is a non-null object (loose record predicate; no plain-object or key-shape checks). */
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+/**
+ * Narrows a parsed JSON value to an Ajv `AnySchema` (boolean or object).
+ *
+ * @throws Error when the value is neither.
+ */
+const readJsonSchema = (value: unknown): AnySchema => {
+  if (typeof value === "boolean" || isRecord(value)) {
+    return value;
+  }
+
+  throw new Error("provider conformance schema must be an object or boolean");
+};
+
+/**
+ * Compiles `schema` with the shared Ajv instance and asserts `value`
+ * validates against it.
+ *
+ * @throws Error with the Ajv error text when validation fails.
+ */
+const assertSchemaValid = (
+  schema: AnySchema,
+  value: unknown,
+  label: string
+): void => {
+  const validate = ajv.compile(schema);
+
+  if (validate(value)) {
+    return;
+  }
+
+  throw new Error(
+    `${label} failed JSON Schema validation: ${ajv.errorsText(validate.errors)}`
+  );
+};
 
 /**
  * Reads and schema-validates the suite manifest, then extracts its single
@@ -122,10 +123,12 @@ function resolveFixturePath(
  * @throws Error when the manifest fails schema validation, does not declare
  *   exactly one fixture, or that fixture entry is malformed.
  */
-function readConformanceManifest(manifestPath: string): {
+const readConformanceManifest = (
+  manifestPath: string
+): {
   fixturePath: string;
   fixtureSchemaPath: string;
-} {
+} => {
   const manifestText = readFileSync(manifestPath, "utf-8");
   const manifestSchemaText = readFileSync(
     join(dirname(manifestPath), MANIFEST_SCHEMA_RELATIVE_PATH),
@@ -158,61 +161,7 @@ function readConformanceManifest(manifestPath: string): {
     fixturePath: fixture.path,
     fixtureSchemaPath: parsedManifest.fixtureSchemaPath,
   };
-}
-
-/**
- * Narrows a parsed JSON value to an Ajv `AnySchema` (boolean or object).
- *
- * @throws Error when the value is neither.
- */
-function readJsonSchema(value: unknown): AnySchema {
-  if (typeof value === "boolean" || isRecord(value)) {
-    return value;
-  }
-
-  throw new Error("provider conformance schema must be an object or boolean");
-}
-
-/**
- * Compiles `schema` with the shared Ajv instance and asserts `value`
- * validates against it.
- *
- * @throws Error with the Ajv error text when validation fails.
- */
-function assertSchemaValid(
-  schema: AnySchema,
-  value: unknown,
-  label: string
-): void {
-  const validate = ajv.compile(schema);
-
-  if (validate(value)) {
-    return;
-  }
-
-  throw new Error(
-    `${label} failed JSON Schema validation: ${ajv.errorsText(validate.errors)}`
-  );
-}
-
-/**
- * Asserts a parsed fixture value has the `prompt`/`response`/
- * `structuredPrompt`/`toolPrompt` shape of {@link ProviderTestkitFixtureSet}.
- *
- * @throws Error when the value or any of its required fields is malformed.
- */
-function assertProviderTestkitFixtureSet(
-  value: unknown
-): asserts value is ProviderTestkitFixtureSet {
-  if (!isRecord(value)) {
-    throw new Error("provider conformance fixture set must be an object");
-  }
-
-  assertTuvrenPrompt(value.prompt, "prompt");
-  assertTuvrenModelResponse(value.response, "response");
-  assertTuvrenPrompt(value.structuredPrompt, "structuredPrompt");
-  assertTuvrenPrompt(value.toolPrompt, "toolPrompt");
-}
+};
 
 /**
  * Asserts a value is at least shaped like a `TuvrenPrompt` (a non-empty
@@ -223,10 +172,13 @@ function assertProviderTestkitFixtureSet(
  * @throws Error when the value is not an object or `messages` is not a
  *   non-empty array.
  */
-function assertTuvrenPrompt(
+const assertTuvrenPrompt: (
   value: unknown,
   label: string
-): asserts value is TuvrenPrompt {
+) => asserts value is TuvrenPrompt = (
+  value: unknown,
+  label: string
+): asserts value is TuvrenPrompt => {
   if (!isRecord(value)) {
     throw new Error(`${label} must be an object`);
   }
@@ -237,9 +189,63 @@ function assertTuvrenPrompt(
   if (!Array.isArray(value.messages) || value.messages.length === 0) {
     throw new Error(`${label}.messages must be a non-empty array`);
   }
-}
+};
 
-/** True when a value is a non-null object (loose record predicate; no plain-object or key-shape checks). */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
+/**
+ * Asserts a parsed fixture value has the `prompt`/`response`/
+ * `structuredPrompt`/`toolPrompt` shape of {@link ProviderTestkitFixtureSet}.
+ *
+ * @throws Error when the value or any of its required fields is malformed.
+ */
+const assertProviderTestkitFixtureSet: (
+  value: unknown
+) => asserts value is ProviderTestkitFixtureSet = (
+  value: unknown
+): asserts value is ProviderTestkitFixtureSet => {
+  if (!isRecord(value)) {
+    throw new Error("provider conformance fixture set must be an object");
+  }
+
+  assertTuvrenPrompt(value.prompt, "prompt");
+  assertTuvrenModelResponse(value.response, "response");
+  assertTuvrenPrompt(value.structuredPrompt, "structuredPrompt");
+  assertTuvrenPrompt(value.toolPrompt, "toolPrompt");
+};
+
+/**
+ * Locates the providers conformance suite manifest, reads its declared
+ * fixture and fixture schema, validates the fixture against that schema,
+ * and asserts it satisfies {@link ProviderTestkitFixtureSet}.
+ *
+ * @throws Error when the manifest cannot be located, is malformed, or the
+ *   fixture fails schema validation or shape assertion.
+ */
+const loadProviderTestkitFixtures = (): ProviderTestkitFixtureSet => {
+  const manifestPath = resolveFixturePath(
+    import.meta.url,
+    MANIFEST_PATH_SEGMENTS
+  );
+  const manifest = readConformanceManifest(manifestPath);
+  const fixturePath = join(dirname(manifestPath), manifest.fixturePath);
+  const schemaPath = join(dirname(manifestPath), manifest.fixtureSchemaPath);
+  const fixtureText = readFileSync(fixturePath, "utf-8");
+  const schemaText = readFileSync(schemaPath, "utf-8");
+  const parsedFixture = JSON.parse(fixtureText);
+  const parsedSchema = readJsonSchema(JSON.parse(schemaText));
+  assertSchemaValid(
+    parsedSchema,
+    parsedFixture,
+    "provider conformance fixture"
+  );
+  assertProviderTestkitFixtureSet(parsedFixture);
+  return parsedFixture;
+};
+
+/**
+ * The schema-validated fixture set (prompts, response) shared by provider
+ * conformance tests, loaded once at module init from
+ * `spec/conformance/providers/`. See {@link providerTestkitFixtures} in
+ * `provider-testkit.ts` for the re-export public consumers import.
+ */
+export const providerTestkitFixtures: ProviderTestkitFixtureSet =
+  loadProviderTestkitFixtures();

@@ -27,6 +27,12 @@ import {
   startOfficialMcpEverythingStreamableHttpServer,
 } from "../src/index.ts";
 
+const createClient = (): Client =>
+  new Client({
+    name: "provider-testkit-test",
+    version: "0.0.0",
+  });
+
 describe("@tuvren/provider-testkit mock MCP server", () => {
   test("serves deterministic tools over stdio", async () => {
     const command = createMockMcpStdioCommand();
@@ -110,10 +116,3 @@ describe("@tuvren/provider-testkit mock MCP server", () => {
     }
   });
 });
-
-function createClient(): Client {
-  return new Client({
-    name: "provider-testkit-test",
-    version: "0.0.0",
-  });
-}
