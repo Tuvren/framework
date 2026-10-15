@@ -21,16 +21,18 @@ import {
   assertStoredSchema,
   assertStoredStagedResult,
   assertStoredThread,
-  type RuntimeBackendTx as KrakenBackendTx,
-  type ListThreadsCursorPayload,
-  type StoredObject,
-  type StoredObserveAnnotation,
-  type StoredOrderedPathChunk,
-  type StoredRun,
-  type StoredSchema,
-  type StoredStagedResult,
-  type StoredThread,
-  type StoredTurnNode,
+} from "@tuvren/kernel-protocol";
+import type {
+  RuntimeBackendTx as KrakenBackendTx,
+  ListThreadsCursorPayload,
+  StoredObject,
+  StoredObserveAnnotation,
+  StoredOrderedPathChunk,
+  StoredRun,
+  StoredSchema,
+  StoredStagedResult,
+  StoredThread,
+  StoredTurnNode,
 } from "@tuvren/kernel-protocol";
 import type Database from "better-sqlite3";
 
@@ -190,53 +192,6 @@ export function createSupportRepositories(
   const { assertTransactionActive, db, writeTracker } = context;
 
   return {
-    observeAnnotations: {
-      listByRun(runId) {
-        assertTransactionActive();
-        const records = helpers.selectObserveAnnotationsByRun(db, runId);
-        records.sort(helpers.compareStoredObserveAnnotation);
-        return Promise.resolve(
-          records.map(helpers.cloneStoredObserveAnnotation)
-        );
-      },
-      set(record) {
-        assertTransactionActive();
-        assertStoredObserveAnnotation(record, "record");
-        helpers.ensureRunExistsInDatabase(db, record.runId, "record.runId");
-
-        if (record.turnNodeHash !== null) {
-          helpers.ensureTurnNodeExistsInDatabase(
-            db,
-            record.turnNodeHash,
-            "record.turnNodeHash"
-          );
-        }
-
-        db.prepare(
-          `
-            INSERT INTO observe_annotations (
-              record_key,
-              run_id,
-              annotation_hash,
-              turn_node_hash,
-              annotation_cbor,
-              created_at_ms
-            ) VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(record_key) DO UPDATE SET
-              annotation_cbor = excluded.annotation_cbor
-          `
-        ).run(
-          helpers.nextObserveAnnotationRecordKey(db, record),
-          record.runId,
-          record.annotationHash,
-          record.turnNodeHash,
-          helpers.bufferFromBytes(record.annotationCbor),
-          record.createdAtMs
-        );
-
-        return Promise.resolve();
-      },
-    },
     objects: {
       get(hash) {
         assertTransactionActive();
@@ -282,6 +237,53 @@ export function createSupportRepositories(
           record.byteLength,
           record.createdAtMs
         );
+      },
+    },
+    observeAnnotations: {
+      listByRun(runId) {
+        assertTransactionActive();
+        const records = helpers.selectObserveAnnotationsByRun(db, runId);
+        records.sort(helpers.compareStoredObserveAnnotation);
+        return Promise.resolve(
+          records.map(helpers.cloneStoredObserveAnnotation)
+        );
+      },
+      set(record) {
+        assertTransactionActive();
+        assertStoredObserveAnnotation(record, "record");
+        helpers.ensureRunExistsInDatabase(db, record.runId, "record.runId");
+
+        if (record.turnNodeHash !== null) {
+          helpers.ensureTurnNodeExistsInDatabase(
+            db,
+            record.turnNodeHash,
+            "record.turnNodeHash"
+          );
+        }
+
+        db.prepare(
+          `
+            INSERT INTO observe_annotations (
+              record_key,
+              run_id,
+              annotation_hash,
+              turn_node_hash,
+              annotation_cbor,
+              created_at_ms
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(record_key) DO UPDATE SET
+              annotation_cbor = excluded.annotation_cbor
+          `
+        ).run(
+          helpers.nextObserveAnnotationRecordKey(db, record),
+          record.runId,
+          record.annotationHash,
+          record.turnNodeHash,
+          helpers.bufferFromBytes(record.annotationCbor),
+          record.createdAtMs
+        );
+
+        return Promise.resolve();
       },
     },
     orderedPathChunks: {

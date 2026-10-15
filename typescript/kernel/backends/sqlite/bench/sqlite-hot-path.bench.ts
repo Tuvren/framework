@@ -35,11 +35,11 @@ import {
   createStoredTurnTreeRecord,
   formatNs,
   formatPhaseTable,
-  type PhaseStats,
   percentile,
   readSampleCountFromEnv,
   summarizePhases,
 } from "@tuvren/kernel-testkit";
+import type { PhaseStats } from "@tuvren/kernel-testkit";
 
 import { createSqliteBackend } from "../src/index.js";
 
@@ -160,11 +160,11 @@ function createBenchmarkCases(
   let objectWriteCounter = 0;
   let rollbackArchiveCounter = 0;
   let rollbackBranchCounter = 0;
-  const rollbackBranches: Array<{
+  const rollbackBranches: {
     branchId: string;
     createdAtMs: number;
-  }> = [];
-  const historySize = seededHistory.historySize;
+  }[] = [];
+  const { historySize } = seededHistory;
 
   return [
     {
@@ -173,7 +173,7 @@ function createBenchmarkCases(
       name: "no-op transaction",
       async run(iterations) {
         for (let index = 0; index < iterations; index += 1) {
-          await backend.transact(async () => undefined);
+          await backend.transact(() => Promise.resolve());
         }
       },
     },
@@ -282,6 +282,9 @@ function createBenchmarkCases(
       },
     },
     {
+      historySize,
+      iterations: 10,
+      name: "deep branch non-root rollback transaction",
       async prepare(iterations) {
         for (let index = 0; index < iterations; index += 1) {
           const branchIndex = rollbackBranchCounter;
@@ -301,9 +304,6 @@ function createBenchmarkCases(
           rollbackBranches.push({ branchId, createdAtMs });
         }
       },
-      historySize,
-      iterations: 10,
-      name: "deep branch non-root rollback transaction",
       async run(iterations) {
         for (let index = 0; index < iterations; index += 1) {
           const rollbackBranch = rollbackBranches.shift();
@@ -391,10 +391,10 @@ async function measure(
     bestNs,
     historySize: benchmarkCase.historySize,
     iterations: benchmarkCase.iterations,
-    phases: summarizePhases(observer.samples),
     medianNs,
     name: benchmarkCase.name,
     p95Ns,
+    phases: summarizePhases(observer.samples),
   };
 }
 

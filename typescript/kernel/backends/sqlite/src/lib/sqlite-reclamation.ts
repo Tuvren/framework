@@ -25,7 +25,8 @@ import { reclaimBackendState as reclaimSharedBackendState } from "@tuvren/backen
 import type { EpochMs } from "@tuvren/core";
 import type { ReclamationSummary } from "@tuvren/kernel-protocol";
 
-import { type BackendState, decodeHashStringArray } from "./sqlite-records.js";
+import { decodeHashStringArray } from "./sqlite-records.js";
+import type { BackendState } from "./sqlite-records.js";
 import {
   decodeRunCreatedTurnNodeHashes,
   decodeTurnNodeConsumedStagedResultObjectHashes,

@@ -20,31 +20,27 @@ import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, format, parse } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  NOOP_PHASE_OBSERVER,
-  type PhaseObserver,
-} from "@tuvren/backend-shared";
-import {
-  assertScope,
-  DEFAULT_SCOPE,
-  type EpochMs,
-  type Scope,
-} from "@tuvren/core";
+import { NOOP_PHASE_OBSERVER } from "@tuvren/backend-shared";
+import type { PhaseObserver } from "@tuvren/backend-shared";
+import { assertScope, DEFAULT_SCOPE } from "@tuvren/core";
+import type { EpochMs, Scope } from "@tuvren/core";
 import {
   assertStoredObjectIdentity,
   assertStoredOrderedPathChunkIdentity,
   assertStoredTurnNodeIdentity,
   assertStoredTurnTreeIdentity,
   assertStoredTurnTreePath,
-  type BackendCapability,
   encodeDeterministicKernelRecord,
   hashKernelRecord,
-  type RuntimeBackend as KrakenBackend,
-  type RuntimeBackendTx as KrakenBackendTx,
-  type ReclamationOptions,
-  type ReclamationSummary,
-  type StoredOrderedPathChunk,
-  type StoredTurnTreePath,
+} from "@tuvren/kernel-protocol";
+import type {
+  BackendCapability,
+  RuntimeBackend as KrakenBackend,
+  RuntimeBackendTx as KrakenBackendTx,
+  ReclamationOptions,
+  ReclamationSummary,
+  StoredOrderedPathChunk,
+  StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 import Database from "better-sqlite3";
 
@@ -95,11 +91,8 @@ import {
 } from "./sqlite-lookups.js";
 import { assertReclamationSurvivorInvariants } from "./sqlite-reclamation-validation.js";
 import { reclaimBackendState } from "./sqlite-reclamation.js";
-import {
-  type BackendState,
-  decodeHashStringArray,
-  loadState,
-} from "./sqlite-records.js";
+import { decodeHashStringArray, loadState } from "./sqlite-records.js";
+import type { BackendState } from "./sqlite-records.js";
 import { createCoreRepositories } from "./sqlite-repositories-core.js";
 import { createSupportRepositories } from "./sqlite-repositories-support.js";
 import {
@@ -768,8 +761,8 @@ function createRepositories(
       },
       {
         areStoredTurnNodesEqual,
-        areStoredTurnTreesEqual,
         areStoredTurnTreePathsEqual,
+        areStoredTurnTreesEqual,
         assertBranchHeadMoveIsLinearInDatabase,
         assertImmutableField,
         assertImmutableOptionalField,
@@ -1040,7 +1033,7 @@ function resolveScopedDatabasePath(
  * derived filename short. Do not shorten it without reassessing that budget.
  */
 function scopeFileSlug(scope: Scope): string {
-  return createHash("sha256").update(scope, "utf8").digest("hex").slice(0, 32);
+  return createHash("sha256").update(scope, "utf-8").digest("hex").slice(0, 32);
 }
 
 /**
@@ -1079,7 +1072,7 @@ function runMigrations(db: Database.Database, now: () => number): void {
       continue;
     }
 
-    const sql = readFileSync(`${migrationDirectory}/${fileName}`, "utf8");
+    const sql = readFileSync(`${migrationDirectory}/${fileName}`, "utf-8");
     applyMigration(fileName, sql);
   }
 
@@ -1189,8 +1182,8 @@ function captureReclamationKeys(state: BackendState): ReclamationSurvivorKeys {
     orderedPathChunks: new Set(state.orderedPathChunks.keys()),
     runs: new Set(state.runs.keys()),
     turnNodes: new Set(state.turnNodes.keys()),
-    turns: new Set(state.turns.keys()),
     turnTrees: new Set(state.turnTrees.keys()),
+    turns: new Set(state.turns.keys()),
   };
 }
 

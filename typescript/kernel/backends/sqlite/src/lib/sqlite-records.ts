@@ -27,19 +27,21 @@ import {
   assertStoredTurnNode,
   assertTurnTreeSchema,
   decodeDeterministicKernelRecord,
-  type StoredBranch,
-  type StoredObject,
-  type StoredObserveAnnotation,
-  type StoredOrderedPathChunk,
-  type StoredRun,
-  type StoredSchema,
-  type StoredStagedResult,
-  type StoredThread,
-  type StoredTurn,
-  type StoredTurnNode,
-  type StoredTurnTree,
-  type StoredTurnTreePath,
-  type TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
+import type {
+  StoredBranch,
+  StoredObject,
+  StoredObserveAnnotation,
+  StoredOrderedPathChunk,
+  StoredRun,
+  StoredSchema,
+  StoredStagedResult,
+  StoredThread,
+  StoredTurn,
+  StoredTurnNode,
+  StoredTurnTree,
+  StoredTurnTreePath,
+  TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import type Database from "better-sqlite3";
 
@@ -228,8 +230,8 @@ export interface SqliteStagedResultRow {
 export function createEmptyState(): BackendState {
   return {
     branches: new Map(),
-    observeAnnotations: new Map(),
     objects: new Map(),
+    observeAnnotations: new Map(),
     orderedPathChunks: new Map(),
     runs: new Map(),
     schemas: new Map(),

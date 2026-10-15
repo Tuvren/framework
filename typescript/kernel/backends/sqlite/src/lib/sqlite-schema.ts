@@ -933,8 +933,8 @@ export function resolveMigrationDirectory(
   persistenceError: SqlitePersistenceErrorFactory
 ): string {
   const candidates = [
-    fileURLToPath(new URL("./sqlite-migrations", import.meta.url)),
-    fileURLToPath(new URL("./migrations", import.meta.url)),
+    fileURLToPath(new URL("sqlite-migrations", import.meta.url)),
+    fileURLToPath(new URL("migrations", import.meta.url)),
     fileURLToPath(new URL("../../migrations", import.meta.url)),
     fileURLToPath(new URL("../migrations", import.meta.url)),
   ];
