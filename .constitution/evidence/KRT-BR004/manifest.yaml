@@ -450,6 +450,54 @@
       "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
       "bytes": 20,
       "role": "measurement"
+    },
+    {
+      "path": "M13-postgres-records-before-syntactic.json.gz",
+      "sha256": "b614a0354f75419162a26388b3b26017b6903f195c3cdf68d1e3ca1e67db791e",
+      "bytes": 2810,
+      "role": "baseline"
+    },
+    {
+      "path": "M13-postgres-records-before-type-aware.json.gz",
+      "sha256": "0a9e8be9def071a89ad3c1acf5f7191f704877d00a9b090c067537cfa8b1b893",
+      "bytes": 2811,
+      "role": "baseline"
+    },
+    {
+      "path": "M13-postgres-records-after-syntactic.json.gz",
+      "sha256": "5b6f85b2e31be4b81a8f49082216b688da10467df71c9e0b2a1fd42661a77ecf",
+      "bytes": 420,
+      "role": "measurement"
+    },
+    {
+      "path": "M13-postgres-records-after-type-aware.json.gz",
+      "sha256": "fff1ca820acf15d59103f9a9878a9d83265abd9f8b3ad7070866c5a46b77c6a1",
+      "bytes": 419,
+      "role": "measurement"
+    },
+    {
+      "path": "M13-postgres-records-before-syntactic-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "baseline"
+    },
+    {
+      "path": "M13-postgres-records-before-type-aware-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "baseline"
+    },
+    {
+      "path": "M13-postgres-records-after-syntactic-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "measurement"
+    },
+    {
+      "path": "M13-postgres-records-after-type-aware-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "measurement"
     }
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."
