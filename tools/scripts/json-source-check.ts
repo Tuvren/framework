@@ -22,9 +22,11 @@ import {
   discoverJsonInventory,
   JSON_SOURCE_INTEGRITY_EXCLUSIONS,
   validateJsonSources,
-  type JsonDiscoveryDependencies,
-  type JsonIntegrityIssue,
-  type JsonProtectedFile,
+} from "./lib/json-source-integrity.js";
+import type {
+  JsonDiscoveryDependencies,
+  JsonIntegrityIssue,
+  JsonProtectedFile,
 } from "./lib/json-source-integrity.js";
 
 export interface JsonSourceCheckResult {

@@ -150,7 +150,7 @@ describe("changeset-check", () => {
       [CHANGESET_CLI, "status", "--since", "master", "--output", outputPath],
       fixture.root
     );
-    const report = JSON.parse(await readFile(outputPath, "utf8")) as unknown;
+    const report = JSON.parse(await readFile(outputPath, "utf-8")) as unknown;
 
     expect(status.exitCode).toBe(0);
     expect(releaseVersion(report, "@tuvren/public-a")).toEqual({
@@ -436,7 +436,7 @@ describe("changeset-check", () => {
       [CHANGESET_CLI, "status", "--since", "master", "--output", outputPath],
       fixture.root
     );
-    const report = JSON.parse(await readFile(outputPath, "utf8")) as unknown;
+    const report = JSON.parse(await readFile(outputPath, "utf-8")) as unknown;
 
     expect(status.exitCode).toBe(0);
     expect(releaseNames(report)).toContain("@tuvren/private-a");
@@ -610,7 +610,7 @@ describe("changeset-check", () => {
   test("wires CI to test the checker and pass the exact pull-request base SHA", async () => {
     const workflow = await readFile(
       path.join(REPO_ROOT, ".github/workflows/ci.yml"),
-      "utf8"
+      "utf-8"
     );
 
     expect(workflow).toContain(
@@ -710,7 +710,6 @@ async function createFixture(): Promise<Fixture> {
   await run("git", ["checkout", "-b", "feature"], root);
 
   return {
-    root,
     commit: async (message: string): Promise<void> => {
       const add = await run("git", ["add", "."], root);
       expect(add.exitCode).toBe(0);
@@ -725,6 +724,9 @@ async function createFixture(): Promise<Fixture> {
       );
       expect(moved.exitCode).toBe(0);
     },
+    privateChange: async (content: string): Promise<void> => {
+      await writeFixtureFile(root, "packages/private-a/src.ts", content);
+    },
     publicChange: async (content: string): Promise<void> => {
       await writeFixtureFile(root, "packages/public-a/src.ts", content);
     },
@@ -735,9 +737,7 @@ async function createFixture(): Promise<Fixture> {
         path.join(root, "packages/public-a/src.ts")
       );
     },
-    privateChange: async (content: string): Promise<void> => {
-      await writeFixtureFile(root, "packages/private-a/src.ts", content);
-    },
+    root,
     writeChangeset: async (
       filename: string,
       frontmatter: string

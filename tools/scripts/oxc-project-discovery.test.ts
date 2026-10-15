@@ -95,7 +95,7 @@ function parseJson<T>(text: string): T {
 
 function readProjectTsConfig(relativePath: string): ProjectTsConfig {
   return parseJson<ProjectTsConfig>(
-    readFileSync(path.join(REPO_ROOT, relativePath), "utf8")
+    readFileSync(path.join(REPO_ROOT, relativePath), "utf-8")
   );
 }
 
@@ -114,7 +114,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function readConfigDocument(relativePath: string): Record<string, unknown> {
   const parsed: unknown = JSON.parse(
-    readFileSync(path.join(REPO_ROOT, relativePath), "utf8")
+    readFileSync(path.join(REPO_ROOT, relativePath), "utf-8")
   );
   if (!isRecord(parsed)) {
     throw new Error(`${relativePath} is not a JSON object`);
@@ -148,7 +148,7 @@ function compilerFlag(
   config: Record<string, unknown>,
   key: string
 ): boolean | undefined {
-  const compilerOptions = config.compilerOptions;
+  const { compilerOptions } = config;
   if (!isRecord(compilerOptions)) {
     return undefined;
   }

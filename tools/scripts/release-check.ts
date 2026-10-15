@@ -59,7 +59,7 @@ if (hasVerificationFailure(results)) {
 }
 
 async function readRuntimeVersionReport(): Promise<RuntimeVersionReport> {
-  const packageJsonText = await readFile(PACKAGE_JSON_PATH, "utf8");
+  const packageJsonText = await readFile(PACKAGE_JSON_PATH, "utf-8");
   const packageJson = JSON.parse(packageJsonText);
   const packageManager = readStringProperty(packageJson, "packageManager");
 

@@ -22,11 +22,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import oxfmtConfig from "../../oxfmt.config.js";
-import {
-  readSnapshot,
-  type SnapshotLedgerEntry,
-  writeApiSnapshot,
-} from "./api-freeze-gate.js";
+import { readSnapshot, writeApiSnapshot } from "./api-freeze-gate.js";
+import type { SnapshotLedgerEntry } from "./api-freeze-gate.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 const REPOSITORY_SNAPSHOT_PATH = path.join(
@@ -113,7 +110,7 @@ describe("API freeze snapshot writer", () => {
         ],
         {
           cwd: REPO_ROOT,
-          encoding: "utf8",
+          encoding: "utf-8",
           stdio: ["ignore", "pipe", "pipe"],
         }
       );
@@ -146,7 +143,7 @@ describe("API freeze snapshot writer", () => {
       await expect(
         writeApiSnapshot({
           formatter: ({ snapshotPath }) => {
-            const before = readFileSync(snapshotPath, "utf8");
+            const before = readFileSync(snapshotPath, "utf-8");
             const after = before.replace(
               EXPECTED_LEDGER_ENTRY.recordedAt,
               "2099-01-01T00:00:00.000Z"

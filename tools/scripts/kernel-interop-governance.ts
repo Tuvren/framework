@@ -15,13 +15,12 @@
  */
 
 import { access, readdir } from "node:fs/promises";
-import { dirname, relative, resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
 
 import { runCommand } from "./lib/command-runner.js";
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const PROTO_ROOT = "spec/interop/proto";
 const GENERATED_ROOT =
   "typescript/kernel/grpc-client/src/lib/generated/kernel-interop";
@@ -40,20 +39,25 @@ const BREAKING_BASELINE_FETCH_TIMEOUT_MS = 30_000;
 const mode = process.argv[2] ?? "interop-smoke";
 
 switch (mode) {
-  case "breaking":
+  case "breaking": {
     await runBreakingCheck();
     break;
-  case "codegen":
+  }
+  case "codegen": {
     await runCodegen();
     break;
-  case "interop-smoke":
+  }
+  case "interop-smoke": {
     await runInteropSmoke();
     break;
-  case "lint":
+  }
+  case "lint": {
     await runBufLint();
     break;
-  default:
+  }
+  default: {
     throw new Error(`unknown kernel interop governance mode "${mode}"`);
+  }
 }
 
 async function runInteropSmoke(): Promise<void> {
@@ -121,8 +125,8 @@ async function refreshRemoteBreakingBaseline(): Promise<void> {
         GCM_INTERACTIVE: "never",
         GIT_ASKPASS: "true",
         GIT_SSH_COMMAND: "ssh -o BatchMode=yes",
-        SSH_ASKPASS: "/bin/false",
         GIT_TERMINAL_PROMPT: "0",
+        SSH_ASKPASS: "/bin/false",
       },
       // Governance smoke must fail fast when the remote baseline cannot be
       // refreshed non-interactively; hanging for credentials would stall the

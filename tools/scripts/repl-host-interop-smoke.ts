@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-import { type ChildProcess, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
 import { once } from "node:events";
 import net from "node:net";
-import { dirname, resolve } from "node:path";
+import { resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 
 import { runCommand } from "./lib/command-runner.js";
 
@@ -38,7 +39,7 @@ interface ReplHostInteropModule {
   }): Promise<unknown>;
 }
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const REPL_HOST_DIST_PATH = resolve(
   REPO_ROOT,
   "typescript/host/repl/dist/index.js"
@@ -241,8 +242,8 @@ function runCliWithInput(
     child.once("close", (code) => {
       resolveRun({
         code: code ?? 1,
-        stderr: Buffer.concat(stderrChunks).toString("utf8"),
-        stdout: Buffer.concat(stdoutChunks).toString("utf8"),
+        stderr: Buffer.concat(stderrChunks).toString("utf-8"),
+        stdout: Buffer.concat(stdoutChunks).toString("utf-8"),
       });
     });
   });
@@ -359,10 +360,12 @@ async function readStream(
     (stream as NodeJS.ReadableStream & { readableEnded?: boolean })
       .readableEnded !== true
   ) {
-    await once(stream, "end").catch(() => undefined);
+    await once(stream, "end").catch(() => {
+      // The stream can close between the state check and listener registration.
+    });
   }
 
-  return Buffer.concat(chunks).toString("utf8").trim();
+  return Buffer.concat(chunks).toString("utf-8").trim();
 }
 
 async function stopProcessTree(processHandle: ChildProcess): Promise<void> {

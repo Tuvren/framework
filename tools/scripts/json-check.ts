@@ -24,9 +24,11 @@ import {
   discoverJsonInventory,
   JSON_SOURCE_INTEGRITY_EXCLUSIONS,
   validateJsonSources,
-  type JsonDiscoveryDependencies,
-  type JsonIntegrityIssue,
-  type JsonProtectedFile,
+} from "./lib/json-source-integrity.js";
+import type {
+  JsonDiscoveryDependencies,
+  JsonIntegrityIssue,
+  JsonProtectedFile,
 } from "./lib/json-source-integrity.js";
 
 const JSON_ONLY_FLAG = "--json-only";
@@ -60,7 +62,7 @@ export async function runJsonCheck(
       `no JSON or JSONC files matched requested scope(s): ${deps.scopes.join(", ")}`
     );
   }
-  const codeFiles = inventory.codeFiles;
+  const { codeFiles } = inventory;
   if (deps.jsonOnly && codeFiles.length > 0) {
     throw new Error(`JSON-only scope contains code: ${codeFiles.join(", ")}`);
   }

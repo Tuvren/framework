@@ -15,10 +15,8 @@ import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
 import { runJsonSourceCheck } from "./json-source-check.js";
-import {
-  runCommand as runCommandProcess,
-  type RunCommandResult,
-} from "./lib/command-runner.js";
+import { runCommand as runCommandProcess } from "./lib/command-runner.js";
+import type { RunCommandResult } from "./lib/command-runner.js";
 import {
   discoverJsonInventory,
   isJsoncProfile,
@@ -146,10 +144,10 @@ describe("native JSON source integrity", () => {
   test("validation is read-only and creates no build artifacts", async () => {
     await withScratch(async (directory) => {
       const file = write(directory, "source.json", '{"a":1}\n');
-      const before = readFileSync(file, "utf8");
+      const before = readFileSync(file, "utf-8");
       const entriesBefore = readdirSync(directory);
       expect((await validateJsonSources([file])).issues).toEqual([]);
-      expect(readFileSync(file, "utf8")).toBe(before);
+      expect(readFileSync(file, "utf-8")).toBe(before);
       expect(readdirSync(directory)).toEqual(entriesBefore);
     });
   });
@@ -162,7 +160,7 @@ describe("native JSON source integrity", () => {
       const schema = JSON.parse(
         readFileSync(
           path.join(REPO_ROOT, "tools/schemas/authority-packet.schema.json"),
-          "utf8"
+          "utf-8"
         )
       ) as AnySchema;
       const validate = new Ajv2020({ allErrors: true, strict: false }).compile(

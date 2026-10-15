@@ -17,29 +17,28 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
-import { dirname, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { relative, resolve } from "node:path";
 
 import { parseRegenerateCommandArgv } from "../lib/regenerate-command-argv.js";
 
 interface AuthorityPacketManifest {
-  authoritativeSources: Array<{
+  authoritativeSources: {
     format: string;
     path: string;
-  }>;
-  conformancePlans?: Array<{
+  }[];
+  conformancePlans?: {
     path: string;
     planId: string;
-  }>;
+  }[];
   forbiddenAuthoritySources: string[];
-  freshnessChecks?: Array<{
+  freshnessChecks?: {
     artifact: string;
     regenerateCommand: string;
-  }>;
-  generatedArtifacts?: Array<{
+  }[];
+  generatedArtifacts?: {
     generatedFrom: string;
     path: string;
-  }>;
+  }[];
   packetId: string;
 }
 
@@ -53,7 +52,7 @@ interface FileSnapshot {
   relativePath: string;
 }
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const TYPESCRIPT_ROOT = resolve(REPO_ROOT, "typescript");
 const RUST_ROOT = resolve(REPO_ROOT, "rust");
@@ -167,7 +166,7 @@ async function loadAuthorityPackets(): Promise<AuthorityPacketManifest[]> {
   const manifests: AuthorityPacketManifest[] = [];
 
   for (const manifestPath of manifestPaths) {
-    const value: unknown = JSON.parse(await readFile(manifestPath, "utf8"));
+    const value: unknown = JSON.parse(await readFile(manifestPath, "utf-8"));
 
     if (isAuthorityPacketManifest(value)) {
       manifests.push(value);
@@ -323,7 +322,7 @@ async function checkForbiddenAuthorityEvidence(
   const failures: GuardrailFailure[] = [];
 
   for (const evidencePath of evidencePaths) {
-    const evidenceText = await readFile(evidencePath, "utf8");
+    const evidenceText = await readFile(evidencePath, "utf-8");
     failures.push(
       ...collectForbiddenAuthorityEvidenceFailures(
         evidenceText,
@@ -396,7 +395,7 @@ async function checkPlanEvidenceOracleShapes(
   for (const manifest of manifests) {
     for (const plan of manifest.conformancePlans ?? []) {
       const planValue: unknown = JSON.parse(
-        await readFile(resolve(REPO_ROOT, plan.path), "utf8")
+        await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
       );
       failures.push(
         ...collectPlanEvidenceOracleShapeFailures(planValue, plan.path)
@@ -412,7 +411,7 @@ async function checkRootTypescriptFixtures(): Promise<GuardrailFailure[]> {
   const failures: GuardrailFailure[] = [];
 
   for (const sourcePath of sourcePaths) {
-    const source = await readFile(sourcePath, "utf8");
+    const source = await readFile(sourcePath, "utf-8");
     const sourceLabel = relative(REPO_ROOT, sourcePath);
 
     if (ROOT_TUVREN_IMPORT_PATTERN.test(source)) {
@@ -436,7 +435,7 @@ async function checkTypescriptOwnedConformanceSources(): Promise<
     const sourcePaths = await findSourceFiles(resolve(REPO_ROOT, runnerRoot));
 
     for (const sourcePath of sourcePaths) {
-      const source = await readFile(sourcePath, "utf8");
+      const source = await readFile(sourcePath, "utf-8");
       failures.push(
         ...collectTypescriptOwnedConformanceFailures(
           source,
@@ -458,7 +457,7 @@ async function checkTypescriptOwnedFrameworkFixtures(): Promise<
   const failures: GuardrailFailure[] = [];
 
   for (const sourcePath of sourcePaths) {
-    const source = await readFile(sourcePath, "utf8");
+    const source = await readFile(sourcePath, "utf-8");
     failures.push(
       ...collectTypescriptOwnedFrameworkFixtureFailures(
         source,
@@ -514,7 +513,7 @@ async function collectPlanCheckIds(
   for (const manifest of manifests) {
     for (const plan of manifest.conformancePlans ?? []) {
       const planValue: unknown = JSON.parse(
-        await readFile(resolve(REPO_ROOT, plan.path), "utf8")
+        await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
       );
 
       collectCheckIdsFromPlanValue(planValue, planCheckIds);
@@ -532,7 +531,7 @@ async function collectPlanAssertionLiterals(
   for (const manifest of manifests) {
     for (const plan of manifest.conformancePlans ?? []) {
       const planValue: unknown = JSON.parse(
-        await readFile(resolve(REPO_ROOT, plan.path), "utf8")
+        await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
       );
 
       collectAssertionLiteralsFromPlanValue(planValue, literals);
@@ -550,7 +549,7 @@ async function collectPlanOperationNames(
   for (const manifest of manifests) {
     for (const plan of manifest.conformancePlans ?? []) {
       const planValue: unknown = JSON.parse(
-        await readFile(resolve(REPO_ROOT, plan.path), "utf8")
+        await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
       );
 
       collectOperationNamesFromPlanValue(planValue, operationNames);
@@ -750,7 +749,7 @@ function hasDecisiveAssertion(assertions: Record<string, unknown>[]): boolean {
 }
 
 function isDecisiveAssertion(assertion: Record<string, unknown>): boolean {
-  const kind = assertion.kind;
+  const { kind } = assertion;
 
   if (kind === "resultField") {
     return true;
@@ -942,7 +941,7 @@ async function checkRunnerSourceFile(
   planOperationNames: ReadonlySet<string>,
   planAssertionLiterals: ReadonlySet<string>
 ): Promise<GuardrailFailure[]> {
-  const source = await readFile(sourcePath, "utf8");
+  const source = await readFile(sourcePath, "utf-8");
   return checkRunnerSourceText(
     source,
     relative(REPO_ROOT, sourcePath),
@@ -1116,7 +1115,7 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
   const freshnessFixture: unknown = JSON.parse(
     await readFile(
       resolve(FIXTURE_ROOT, "freshness-drift/authority-packet.json"),
-      "utf8"
+      "utf-8"
     )
   );
 
@@ -1133,7 +1132,7 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
 
   const evidenceFixture = await readFile(
     resolve(FIXTURE_ROOT, "forbidden-authority-evidence/evidence.json"),
-    "utf8"
+    "utf-8"
   );
   const evidenceFailures = collectForbiddenAuthorityEvidenceFailures(
     evidenceFixture,
@@ -1157,7 +1156,7 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
 
   const runnerFixture = await readFile(
     resolve(FIXTURE_ROOT, "runner-oracle/source.ts"),
-    "utf8"
+    "utf-8"
   );
   const runnerFailures = checkRunnerSourceText(
     runnerFixture,
@@ -1207,14 +1206,14 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
         {
           assertions: [
             {
+              equals: "ready",
               field: "$.answer",
               kind: "evidenceField",
-              equals: "ready",
             },
           ],
           checkId: "fixture.evidence-only",
-          operation: "runtime.assertion",
           evidence: ["answer"],
+          operation: "runtime.assertion",
         },
       ],
     },
@@ -1241,8 +1240,8 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
             },
           ],
           checkId: "fixture.schema-valid-evidence",
-          operation: "runtime.assertion",
           evidence: ["schema"],
+          operation: "runtime.assertion",
         },
         {
           assertions: [
@@ -1286,15 +1285,15 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
           operation: "runtime.assertion",
           steps: [
             {
-              stepId: "trace",
-              operation: "runtime.assertion",
               assertions: [
                 {
+                  equals: "ready",
                   field: "$.answer",
                   kind: "evidenceField",
-                  equals: "ready",
                 },
               ],
+              operation: "runtime.assertion",
+              stepId: "trace",
             },
           ],
         },
@@ -1420,7 +1419,7 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
 
   const typescriptOwnedFixture = await readFile(
     resolve(FIXTURE_ROOT, "typescript-owned-conformance/source.ts"),
-    "utf8"
+    "utf-8"
   );
   const typescriptOwnedFailures = collectTypescriptOwnedConformanceFailures(
     typescriptOwnedFixture,
@@ -1451,7 +1450,7 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
 
   const vocabularyFixture = await readFile(
     resolve(FIXTURE_ROOT, "forbidden-vocabulary/main.tsp"),
-    "utf8"
+    "utf-8"
   );
 
   if (
@@ -1489,7 +1488,7 @@ async function checkForbiddenVocabulary(
         continue;
       }
 
-      const sourceText = await readFile(sourcePath, "utf8");
+      const sourceText = await readFile(sourcePath, "utf-8");
 
       for (const pattern of FORBIDDEN_VOCABULARY_PATTERNS) {
         if (pattern.test(sourceText)) {
@@ -1692,7 +1691,7 @@ async function snapshotPath(path: string): Promise<FileSnapshot[]> {
   if (stats.isFile()) {
     return [
       {
-        content: await readFile(path, "utf8"),
+        content: await readFile(path, "utf-8"),
         relativePath: relative(path, path),
       },
     ];
@@ -1721,7 +1720,7 @@ async function collectSnapshotEntries(
 
     if (entry.isFile()) {
       snapshots.push({
-        content: await readFile(entryPath, "utf8"),
+        content: await readFile(entryPath, "utf-8"),
         relativePath: relative(rootPath, entryPath),
       });
     }
@@ -1788,8 +1787,8 @@ function runRegenerateCommand(
     });
     const output: string[] = [];
 
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
+    child.stdout.setEncoding("utf-8");
+    child.stderr.setEncoding("utf-8");
     child.stdout.on("data", (chunk: string) => output.push(chunk));
     child.stderr.on("data", (chunk: string) => output.push(chunk));
     child.on("error", (error) => {

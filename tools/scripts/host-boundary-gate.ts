@@ -57,8 +57,7 @@
 
 import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { dirname, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { relative, resolve } from "node:path";
 
 import ts from "typescript";
 
@@ -73,7 +72,7 @@ interface FoundSpecifier {
   specifier: string;
 }
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const HOST_ROOT = resolve(REPO_ROOT, "typescript/host");
 
 // Engine-tier specifiers a host must never import directly (ADR-0057 §3,
@@ -125,7 +124,7 @@ async function main(): Promise<void> {
   const violations: HostBoundaryViolation[] = [];
 
   for (const filePath of files) {
-    const content = await readFile(filePath, "utf8");
+    const content = await readFile(filePath, "utf-8");
     const relativePath = relative(REPO_ROOT, filePath);
 
     for (const found of extractForbiddenImports(content, filePath)) {

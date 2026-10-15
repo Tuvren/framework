@@ -32,8 +32,8 @@ import {
   printVerificationSummary,
   runVerificationPhases,
   selectAuthorityGateSteps,
-  type VerificationPhase,
 } from "./verify.js";
+import type { VerificationPhase } from "./verify.js";
 
 // The read-only portion of package.json's previous validator chain, in its
 // original order, selected by ID from verify's shared AUTHORITY_GATE_STEPS so
