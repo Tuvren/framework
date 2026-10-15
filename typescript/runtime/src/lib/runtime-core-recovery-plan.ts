@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { TuvrenRecoveryError } from "@tuvren/core";
+import { type HashString, TuvrenRecoveryError } from "@tuvren/core";
 import type {
   ToolCallPart,
   ToolResultPart,
@@ -56,6 +56,10 @@ export interface InterruptedIterationRecoveryPlan {
   missingToolCalls: ToolCallPart[];
   /** Every original tool-call part in assistant-message order. */
   originalToolCalls: ToolCallPart[];
+  /** Recovered messages whose hashes are not yet present in the branch head. */
+  stagedMessages: TuvrenMessage[];
+  /** Hashes for {@link stagedMessages}, in the same order. */
+  stagedMessageHashes: HashString[];
 }
 
 /** Inputs needed to reconstruct one interrupted iterate step. */
@@ -82,7 +86,8 @@ export interface InterruptedIterationRecoveryPlanInput {
 export async function deriveInterruptedIterationRecoveryPlan(
   input: InterruptedIterationRecoveryPlanInput
 ): Promise<InterruptedIterationRecoveryPlan> {
-  const interruptedMessages = await readInterruptedMessages(input);
+  const recovered = await readInterruptedMessages(input);
+  const interruptedMessages = recovered.messages;
   const assistantMessage = [...interruptedMessages]
     .reverse()
     .find(isToolCallingAssistantMessage);
@@ -94,6 +99,8 @@ export async function deriveInterruptedIterationRecoveryPlan(
       disposition: "re_infer",
       missingToolCalls: [],
       originalToolCalls: [],
+      stagedMessages: recovered.stagedMessages,
+      stagedMessageHashes: recovered.stagedMessageHashes,
     };
   }
 
@@ -142,6 +149,8 @@ export async function deriveInterruptedIterationRecoveryPlan(
         : "resume_tool_batch",
     missingToolCalls,
     originalToolCalls,
+    stagedMessages: recovered.stagedMessages,
+    stagedMessageHashes: recovered.stagedMessageHashes,
   };
 }
 
@@ -176,7 +185,11 @@ export function createInterruptedIterationUnreadableError(
 
 async function readInterruptedMessages(
   input: InterruptedIterationRecoveryPlanInput
-): Promise<TuvrenMessage[]> {
+): Promise<{
+  messages: TuvrenMessage[];
+  stagedMessages: TuvrenMessage[];
+  stagedMessageHashes: HashString[];
+}> {
   const committedMessagesByHash = new Map<string, TuvrenMessage>();
 
   for (const [
@@ -195,6 +208,8 @@ async function readInterruptedMessages(
     ...input.recoveryState.uncommittedStagedResults,
   ];
   const messages: TuvrenMessage[] = [];
+  const stagedMessages: TuvrenMessage[] = [];
+  const stagedMessageHashes: HashString[] = [];
   const seenHashes = new Set<string>();
 
   for (const stagedResult of stagedResults) {
@@ -216,13 +231,14 @@ async function readInterruptedMessages(
     }
 
     try {
-      messages.push(
-        await readMessage(
-          input.kernel,
-          input.payloadCodecBinding,
-          stagedResult.objectHash
-        )
+      const message = await readMessage(
+        input.kernel,
+        input.payloadCodecBinding,
+        stagedResult.objectHash
       );
+      messages.push(message);
+      stagedMessages.push(message);
+      stagedMessageHashes.push(stagedResult.objectHash);
     } catch (error: unknown) {
       throw createInterruptedIterationUnreadableError(
         input.turnId,
@@ -233,7 +249,7 @@ async function readInterruptedMessages(
     }
   }
 
-  return messages;
+  return { messages, stagedMessages, stagedMessageHashes };
 }
 
 function isToolCallingAssistantMessage(

@@ -38,7 +38,10 @@ import type {
 import type { ToolRegistry } from "@tuvren/core/tools";
 
 import { observationForClass } from "./capability-attribution.js";
-import { updateContextManifest } from "./context-manifest.js";
+import {
+  createContextManifest,
+  updateContextManifest,
+} from "./context-manifest.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import { validateRunnerAssistantEvents } from "./runtime-core-assistant-validation.js";
 import type { InterruptedIterationRecoveryPlan } from "./runtime-core-recovery-plan.js";
@@ -827,6 +830,7 @@ export async function executeIterationPhase(
 
 interface PreparedIteration {
   partial: boolean;
+  rebuildManifestFromHistory?: boolean;
   requestedToolCalls: ToolCallPart[];
   resolution: RuntimeResolution;
   runnerResponse: TuvrenModelResponse;
@@ -878,8 +882,9 @@ async function executeRecoveredIterationPhase(
       [],
       undefined
     ),
-    stagedMessageHashes: [],
-    stagedMessages: [],
+    rebuildManifestFromHistory: true,
+    stagedMessageHashes: [...recoveryPlan.stagedMessageHashes],
+    stagedMessages: [...recoveryPlan.stagedMessages],
     toolExecutionMode: "parallel",
     toolResults: [...recoveryPlan.completedToolResults],
   });
@@ -917,12 +922,22 @@ async function completePreparedIteration(
 
   resolution = createCancelledResolution(input.handle) ?? resolution;
 
-  const manifest = updateContextManifest(
-    input.headState.manifest,
-    prepared.stagedMessages,
-    [...input.loopState.carriedStateUpdates],
-    []
-  );
+  const manifest = prepared.rebuildManifestFromHistory
+    ? updateContextManifest(
+        createContextManifest(
+          [...input.headState.messages, ...prepared.stagedMessages],
+          input.headState.manifest.extensions
+        ),
+        [],
+        [...input.loopState.carriedStateUpdates],
+        []
+      )
+    : updateContextManifest(
+        input.headState.manifest,
+        prepared.stagedMessages,
+        [...input.loopState.carriedStateUpdates],
+        []
+      );
   input.loopState.carriedStateUpdates = [];
   const turnNodeHash = await host.completeIterationArtifacts(
     input.handle,
