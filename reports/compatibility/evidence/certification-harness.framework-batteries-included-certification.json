@@ -641,6 +641,9 @@
     "runtime-lifecycle-ext.recover-result.uncommitted-count",
     "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status",
     "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent",
+    "runtime-lifecycle-ext.stale-recovery.interrupted-batch-dispatches-missing-set",
+    "runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys",
+    "runtime-lifecycle-ext.stale-recovery.interrupted-batch-skips-runner",
     "runtime-lifecycle-ext.stale-recovery.same-signal-iterate",
     "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn",
     "runtime-api-operational-telemetry.approval-events",
@@ -736,9 +739,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 12,
-    "totalChecks": 511,
+    "totalChecks": 514,
     "applicableChecks": 12,
-    "nonApplicableChecks": 499
+    "nonApplicableChecks": 502
   },
   "suiteId": "tuvren.framework.runtime-api.batteries-included",
   "suiteVersion": "0.1.0"

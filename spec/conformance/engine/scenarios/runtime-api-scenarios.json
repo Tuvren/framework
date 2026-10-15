@@ -355,6 +355,32 @@
     "recoveredAssistantText": "Recovered durable assistant output.",
     "finalText": "Replacement iteration completed."
   },
+  "stale-recovery-interrupted-tool-batch": {
+    "operation": "runtime.recover-stale-run",
+    "recoveryCase": "interrupted_tool_batch",
+    "prompt": "Resume the interrupted tool batch",
+    "finalText": "Recovered tool batch completed.",
+    "toolCalls": [
+      {
+        "callId": "call-completed",
+        "name": "lookup-completed",
+        "nonRetryable": false,
+        "state": "completed"
+      },
+      {
+        "callId": "call-missing-retryable",
+        "name": "lookup-missing",
+        "nonRetryable": false,
+        "state": "missing"
+      },
+      {
+        "callId": "call-missing-nonretryable",
+        "name": "charge-missing",
+        "nonRetryable": true,
+        "state": "missing"
+      }
+    ]
+  },
   "stale-recovery-signal-mismatch": {
     "operation": "runtime.recover-stale-run",
     "recoveryCase": "signal_mismatch",

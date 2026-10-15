@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+import type { KernelRecord } from "@tuvren/core";
 import type {
   AttachedClientEndpoint,
   ClientInvocationEnvelope,
   ClientReportedResult,
 } from "@tuvren/core/capabilities";
 import type { RuntimeRunner } from "@tuvren/core/runner";
+import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 import {
   createRunnerRegistry,
@@ -62,6 +64,18 @@ export interface FrameworkAdapterRecoveryScenarioDependencies {
     property: string,
     path: string
   ): string;
+}
+
+interface InterruptedToolCallScenario {
+  callId: string;
+  name: string;
+  nonRetryable: boolean;
+  state: "completed" | "missing";
+}
+
+interface ObservedToolDispatch {
+  callId: string;
+  idempotencyKey: string | null;
 }
 
 export function createFrameworkAdapterRecoveryScenarios(
@@ -179,6 +193,10 @@ export function createFrameworkAdapterRecoveryScenarios(
       "recoveryCase",
       "runtime.recover-stale-run.recoveryCase"
     );
+    if (recoveryCase === "interrupted_tool_batch") {
+      return await runInterruptedToolBatchRecovery(scenario);
+    }
+
     const prompt = dependencies.readStringProperty(
       scenario,
       "prompt",
@@ -371,6 +389,325 @@ export function createFrameworkAdapterRecoveryScenarios(
         recovery: recoveryProjection,
       },
     };
+  }
+
+  async function runInterruptedToolBatchRecovery(
+    scenario: Record<string, unknown>
+  ): Promise<AdapterProjection> {
+    const prompt = dependencies.readStringProperty(
+      scenario,
+      "prompt",
+      "runtime.recover-stale-run.prompt"
+    );
+    const finalText = dependencies.readStringProperty(
+      scenario,
+      "finalText",
+      "runtime.recover-stale-run.finalText"
+    );
+    const calls = readInterruptedToolCalls(scenario);
+    const originalAttempt = await observeOriginalToolDispatches(
+      calls,
+      prompt,
+      finalText
+    );
+    const harness = createConformanceKernelHarness();
+    const livenessHarness = createConformanceRunLivenessKernelHarness(harness);
+    const resumedDispatches: ObservedToolDispatch[] = [];
+    const runnerDispatchCountsAtExecute: number[] = [];
+    const runner = {
+      execute() {
+        runnerDispatchCountsAtExecute.push(resumedDispatches.length);
+        return Promise.resolve({
+          messages: [assistantText(finalText)],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        });
+      },
+      id: RUNNER_ID,
+    } satisfies RuntimeRunner;
+    const runtime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([runner]),
+      kernel: livenessHarness.kernel,
+      resolveAgentConfig(agentName) {
+        return agentName === "primary" ? { name: agentName } : undefined;
+      },
+      runLiveness: {
+        executionOwnerId: "worker-1",
+        leaseDurationMs: 50,
+      },
+    });
+    const thread = await runtime.createThread({});
+    const staleTurn = await livenessHarness.kernel.turn.create(
+      originalAttempt.turnId,
+      thread.threadId,
+      thread.branchId,
+      null,
+      thread.rootTurnNodeHash
+    );
+    const staleRunId = "run_interrupted_tool_batch";
+
+    await livenessHarness.kernel.runLiveness.createLeasedRun({
+      branchId: thread.branchId,
+      executionOwnerId: "worker-stale",
+      leaseExpiresAtMs: 1,
+      runId: staleRunId,
+      schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
+      startTurnNodeHash: thread.rootTurnNodeHash,
+      steps: [
+        {
+          deterministic: false,
+          id: "iterate",
+          sideEffects: true,
+        },
+      ],
+      turnId: staleTurn.turnId,
+    });
+    await livenessHarness.kernel.run.beginStep(staleRunId, "iterate");
+    await stageRecoveredMessage(
+      livenessHarness,
+      staleRunId,
+      "interrupted_batch_user_message",
+      prompt
+    );
+    await stageRecoveredTurnLineage(
+      livenessHarness,
+      staleRunId,
+      "interrupted_batch_turn_lineage",
+      staleTurn.turnId
+    );
+    await stageRecoveredRecord(
+      livenessHarness,
+      staleRunId,
+      "interrupted_batch_assistant_message",
+      {
+        parts: calls.map((call) => ({
+          callId: call.callId,
+          input: {},
+          name: call.name,
+          type: "tool_call",
+        })),
+        role: "assistant",
+      }
+    );
+
+    for (const call of calls) {
+      if (call.state !== "completed") {
+        continue;
+      }
+      await stageRecoveredRecord(
+        livenessHarness,
+        staleRunId,
+        `interrupted_batch_result_${call.callId}`,
+        {
+          parts: [
+            {
+              callId: call.callId,
+              name: call.name,
+              output: { recovered: true },
+              type: "tool_result",
+            },
+          ],
+          role: "tool",
+        }
+      );
+    }
+
+    const durableBeforeRecovery = await harness.readRunningStagedMessages(
+      thread.branchId
+    );
+    const durableToolCallIds = readMessagePartCallIds(
+      durableBeforeRecovery,
+      "tool_call"
+    );
+    const durableToolResultIds = new Set(
+      readMessagePartCallIds(durableBeforeRecovery, "tool_result")
+    );
+    const durableMissingCallIds = durableToolCallIds
+      .filter((callId) => !durableToolResultIds.has(callId))
+      .toSorted();
+
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: createObservedToolDefinitions(calls, resumedDispatches),
+      },
+      signal: textSignal(prompt),
+      threadId: thread.threadId,
+    });
+    const events = await collectValues(handle.events());
+    const durableAfterRecovery = await harness.readBranchMessages(
+      thread.branchId
+    );
+    const missingCallIdSet = new Set(durableMissingCallIds);
+    const recoveryProjection = {
+      dispatchedCallIds: resumedDispatches
+        .map((dispatch) => dispatch.callId)
+        .toSorted(),
+      durableMissingCallIds,
+      originalAttemptDispatches: sortDispatches(
+        originalAttempt.dispatches.filter((dispatch) =>
+          missingCallIdSet.has(dispatch.callId)
+        )
+      ),
+      resumedDispatches: sortDispatches(resumedDispatches),
+      runnerDispatchCountsAtExecute,
+    };
+
+    return {
+      events,
+      result: { recovery: recoveryProjection },
+      state: {
+        durableAfterRecovery,
+        durableBeforeRecovery,
+      },
+    };
+  }
+
+  async function observeOriginalToolDispatches(
+    calls: readonly InterruptedToolCallScenario[],
+    prompt: string,
+    finalText: string
+  ): Promise<{
+    dispatches: ObservedToolDispatch[];
+    turnId: string;
+  }> {
+    const harness = createConformanceKernelHarness();
+    const dispatches: ObservedToolDispatch[] = [];
+    let runnerExecuteCalls = 0;
+    const runner = {
+      execute() {
+        runnerExecuteCalls += 1;
+        if (runnerExecuteCalls === 1) {
+          return Promise.resolve({
+            messages: [
+              assistantToolCalls(
+                calls.map((call) => ({
+                  callId: call.callId,
+                  input: {},
+                  name: call.name,
+                }))
+              ),
+            ],
+            resolution: { type: "continue_iteration" },
+            toolExecutionMode: "parallel",
+          });
+        }
+        return Promise.resolve({
+          messages: [assistantText(finalText)],
+          resolution: { reason: "done", type: "end_turn" },
+        });
+      },
+      id: RUNNER_ID,
+    } satisfies RuntimeRunner;
+    const runtime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([runner]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: createObservedToolDefinitions(calls, dispatches),
+      },
+      signal: textSignal(prompt),
+      threadId: thread.threadId,
+    });
+    const events = await collectValues(handle.events());
+    const turnId = readTurnId(events);
+
+    if (turnId === undefined) {
+      throw new Error("original tool dispatch emitted no turn identity");
+    }
+
+    return { dispatches, turnId };
+  }
+
+  function createObservedToolDefinitions(
+    calls: readonly InterruptedToolCallScenario[],
+    dispatches: ObservedToolDispatch[]
+  ): TuvrenToolDefinition[] {
+    return calls.map((call) => ({
+      description: `Observe dispatch for ${call.name}`,
+      execute(_input, context) {
+        dispatches.push({
+          callId: context.callId,
+          idempotencyKey: context.idempotencyKey ?? null,
+        });
+        return { callId: context.callId };
+      },
+      inputSchema: { type: "object" },
+      name: call.name,
+      ...(call.nonRetryable ? { nonRetryable: true } : {}),
+    }));
+  }
+
+  function readInterruptedToolCalls(
+    scenario: Record<string, unknown>
+  ): InterruptedToolCallScenario[] {
+    const value = scenario.toolCalls;
+    if (!Array.isArray(value)) {
+      throw new Error("runtime.recover-stale-run.toolCalls must be an array");
+    }
+
+    return value.map((entry, index) => {
+      if (!dependencies.isRecord(entry)) {
+        throw new Error(
+          `runtime.recover-stale-run.toolCalls.${index.toString()} must be an object`
+        );
+      }
+      const path = `runtime.recover-stale-run.toolCalls.${index.toString()}`;
+      const state = dependencies.readStringProperty(entry, "state", path);
+      if (state !== "completed" && state !== "missing") {
+        throw new Error(`${path}.state must be completed or missing`);
+      }
+      if (typeof entry.nonRetryable !== "boolean") {
+        throw new Error(`${path}.nonRetryable must be a boolean`);
+      }
+      return {
+        callId: dependencies.readStringProperty(entry, "callId", path),
+        name: dependencies.readStringProperty(entry, "name", path),
+        nonRetryable: entry.nonRetryable,
+        state,
+      };
+    });
+  }
+
+  function readMessagePartCallIds(
+    messages: readonly unknown[],
+    partType: "tool_call" | "tool_result"
+  ): string[] {
+    const callIds: string[] = [];
+    for (const message of messages) {
+      if (!dependencies.isRecord(message) || !Array.isArray(message.parts)) {
+        continue;
+      }
+      for (const part of message.parts) {
+        if (
+          dependencies.isRecord(part) &&
+          part.type === partType &&
+          typeof part.callId === "string"
+        ) {
+          callIds.push(part.callId);
+        }
+      }
+    }
+    return callIds;
+  }
+
+  function sortDispatches(
+    dispatches: readonly ObservedToolDispatch[]
+  ): ObservedToolDispatch[] {
+    return dispatches.toSorted((left, right) =>
+      left.callId.localeCompare(right.callId)
+    );
   }
 
   /**
@@ -593,12 +930,23 @@ export function createFrameworkAdapterRecoveryScenarios(
     text: string,
     role: "assistant" | "user" = "user"
   ): Promise<void> {
+    await stageRecoveredRecord(livenessHarness, runId, taskId, {
+      parts: [{ text, type: "text" }],
+      role,
+    });
+  }
+
+  async function stageRecoveredRecord(
+    livenessHarness: ReturnType<
+      typeof createConformanceRunLivenessKernelHarness
+    >,
+    runId: string,
+    taskId: string,
+    record: KernelRecord
+  ): Promise<void> {
     await livenessHarness.kernel.staging.stage(
       runId,
-      encodeDeterministicKernelRecord({
-        parts: [{ text, type: "text" }],
-        role,
-      }),
+      encodeDeterministicKernelRecord(record),
       taskId,
       "message",
       "completed"
