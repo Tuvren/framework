@@ -22,10 +22,8 @@ import { fileURLToPath } from "node:url";
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
-import {
-  type ProviderTestkitFixtureSet,
-  providerTestkitFixtures,
-} from "../../testkit/src/index.ts";
+import { providerTestkitFixtures } from "../../testkit/src/index.ts";
+import type { ProviderTestkitFixtureSet } from "../../testkit/src/index.ts";
 
 const PROVIDER_SUITE_MANIFEST = new URL(
   "../../../../spec/conformance/providers/scenarios/suite-manifest.json",
@@ -188,7 +186,7 @@ function assertProviderTestkitFixtureSet(
 }
 
 function readJsonObject(path: string): Record<string, unknown> {
-  const value: unknown = JSON.parse(readFileSync(path, "utf8"));
+  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
 
   if (!isRecord(value)) {
     throw new Error(`${path} must contain a JSON object`);
@@ -198,7 +196,7 @@ function readJsonObject(path: string): Record<string, unknown> {
 }
 
 function readJsonSchema(path: string): AnySchema {
-  const value: unknown = JSON.parse(readFileSync(path, "utf8"));
+  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
 
   if (typeof value === "boolean" || isRecord(value)) {
     return value;

@@ -20,8 +20,10 @@ import {
   assertProviderStreamChunk,
   assertTuvrenModelResponse,
   isTuvrenModelResponse,
-  type ProviderStreamChunk,
-  type TuvrenModelResponse,
+} from "@tuvren/provider-api";
+import type {
+  ProviderStreamChunk,
+  TuvrenModelResponse,
 } from "@tuvren/provider-api";
 
 describe("provider-api package exports", () => {
