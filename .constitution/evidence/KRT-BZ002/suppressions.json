@@ -1,0 +1,2927 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BZ002",
+  "future_handoff": "KRT-BZ004/suppressions.json",
+  "base_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+  "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+  "measurement_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+  "owned_paths": [
+    "typescript/providers/provider-api",
+    "typescript/providers/bridge-ai-sdk",
+    "typescript/providers/testkit",
+    "typescript/providers/certification",
+    "typescript/runners/react"
+  ],
+  "identity_convention": "repository-relative path::Biome rule::one-based occurrence within that path/rule; line is informational",
+  "drift": {
+    "added": [],
+    "removed": [],
+    "changed_reasons": []
+  },
+  "diagnostic_drift": [],
+  "counts": {
+    "baseline": 19,
+    "live": 19,
+    "retained_needed": 19,
+    "native_counterpart": 15,
+    "no_native_counterpart": 4,
+    "early_deletions": 0,
+    "biome_directives_added": 0
+  },
+  "entries": [
+    {
+      "identity": "typescript/providers/bridge-ai-sdk/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/providers/bridge-ai-sdk/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "011bb782440850ecb16344bffc9b87e232f9455470fbc8f2a32a6d4ba5146309",
+        "bytes": 1876
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-providers-bridge-ai-sdk-suppressed.json",
+        "virtual_stdin_report": "raw/biome-01-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "35143adff4d46468ee377c19e1f49dee330fecd5ff316970fce952b30f99d949",
+        "suppressed_mirror_report": "raw/biome-01-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-01-scratch-unsuppressed.json",
+        "expected_category": "lint/performance/noBarrelFile",
+        "matching_diagnostics": 1,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-providers-bridge-ai-sdk-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-providers-bridge-ai-sdk-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "rationale": "The enabled shipped oxc/no-barrel-file rule does not fire in fresh syntactic or type-aware project-root diagnostics; unrelated findings cannot justify a native counterpart."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-executed-fidelity.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-executed-fidelity.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock AI SDK model hooks intentionally preserve async provider signatures.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock AI SDK model hooks intentionally preserve async provider signatures.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "445e8a742ba7b063b1693c033f197d1a9aa7795030f2e1359a80158a1dd76a99",
+        "bytes": 21205
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-providers-bridge-ai-sdk-suppressed.json",
+        "virtual_stdin_report": "raw/biome-02-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "2bffe7eac94df25b3d9d4758b1a29b554d665951c5edb988abd1119fb7ff6d54",
+        "suppressed_mirror_report": "raw/biome-02-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-02-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 8,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-providers-bridge-ai-sdk-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-providers-bridge-ai-sdk-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-executed-fidelity.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 3381,
+                  "length": 10,
+                  "line": 77,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-executed-fidelity.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 5718,
+                  "length": 10,
+                  "line": 141,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-executed-fidelity.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 6799,
+                  "length": 10,
+                  "line": 172,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-executed-fidelity.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 9170,
+                  "length": 8,
+                  "line": 228,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-executed-fidelity.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 11827,
+                  "length": 8,
+                  "line": 299,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-executed-fidelity.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 14490,
+                  "length": 8,
+                  "line": 360,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-executed-fidelity.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 17953,
+                  "length": 8,
+                  "line": 448,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-executed-fidelity.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 19484,
+                  "length": 8,
+                  "line": 486,
+                  "column": 15
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(require-await)",
+          "typescript(await-thenable)",
+          "typescript(no-confusing-void-expression)",
+          "typescript(no-unsafe-type-assertion)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock model hooks preserve async provider signatures.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock model hooks preserve async provider signatures.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "3dd6eac3a86bdaa33c95bdb0ea69d39752464fcca00fb710449d746d97211c6f",
+        "bytes": 21721
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-providers-bridge-ai-sdk-suppressed.json",
+        "virtual_stdin_report": "raw/biome-03-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "80c98483b73156ab596f923c8feacc77fab5a98c6f34f821494621a350ece8fe",
+        "suppressed_mirror_report": "raw/biome-03-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-03-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 8,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-providers-bridge-ai-sdk-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-providers-bridge-ai-sdk-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 2953,
+                  "length": 10,
+                  "line": 75,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 5817,
+                  "length": 10,
+                  "line": 158,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 8140,
+                  "length": 10,
+                  "line": 220,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 10240,
+                  "length": 8,
+                  "line": 282,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 12837,
+                  "length": 10,
+                  "line": 355,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 15517,
+                  "length": 10,
+                  "line": 437,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 17402,
+                  "length": 10,
+                  "line": 499,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 19668,
+                  "length": 8,
+                  "line": 564,
+                  "column": 15
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(func-style)",
+          "eslint(require-await)",
+          "typescript(no-unsafe-type-assertion)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock AI SDK model hooks intentionally preserve async provider signatures.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock AI SDK model hooks intentionally preserve async provider signatures.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "91e8a9ee941497053d40ce55d743e2ed7d49f334d1a791f7f22dc2e060bef898",
+        "bytes": 14658
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-providers-bridge-ai-sdk-suppressed.json",
+        "virtual_stdin_report": "raw/biome-04-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "56f7728845fac5f26450146d22c505c5a643b9e01139f765cb395f5aac999ee2",
+        "suppressed_mirror_report": "raw/biome-04-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-04-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 11,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-providers-bridge-ai-sdk-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-providers-bridge-ai-sdk-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 1694,
+                  "length": 10,
+                  "line": 45,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 2648,
+                  "length": 10,
+                  "line": 77,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 3501,
+                  "length": 10,
+                  "line": 106,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 4575,
+                  "length": 10,
+                  "line": 141,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 6010,
+                  "length": 10,
+                  "line": 181,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 6794,
+                  "length": 8,
+                  "line": 207,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 8157,
+                  "length": 8,
+                  "line": 251,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 9304,
+                  "length": 10,
+                  "line": 286,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 10282,
+                  "length": 10,
+                  "line": 319,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 12284,
+                  "length": 8,
+                  "line": 382,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 14129,
+                  "length": 10,
+                  "line": 438,
+                  "column": 15
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(require-await)",
+          "eslint(sort-keys)",
+          "typescript(await-thenable)",
+          "typescript(no-confusing-void-expression)",
+          "typescript(no-unsafe-type-assertion)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-rejections.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-rejections.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock AI SDK model hooks intentionally preserve async provider signatures in rejection tests.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock AI SDK model hooks intentionally preserve async provider signatures in rejection tests.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "ed79cc1a668788c17dbd95215e70066dc49bc4136960e1bed5b7d2bce313d4de",
+        "bytes": 13773
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-providers-bridge-ai-sdk-suppressed.json",
+        "virtual_stdin_report": "raw/biome-05-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "8e4150b97143f9b39c141e3019a3ae2fc4096be6baf3b070b5f334ad44cea034",
+        "suppressed_mirror_report": "raw/biome-05-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-05-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 2,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-providers-bridge-ai-sdk-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-providers-bridge-ai-sdk-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-rejections.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 1439,
+                  "length": 10,
+                  "line": 39,
+                  "column": 15
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-rejections.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 1550,
+                  "length": 8,
+                  "line": 43,
+                  "column": 15
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(require-await)",
+          "typescript(await-thenable)",
+          "typescript(no-confusing-void-expression)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/providers/provider-api/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/providers/provider-api/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public contract surface.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "e2dc08cc0f0619ca9377ed69b9b1cd8d562efbadff44ffdb55e3264846b2314d",
+        "bytes": 2241
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-providers-provider-api-suppressed.json",
+        "virtual_stdin_report": "raw/biome-06-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "223c2831559e697611647e98336f2b71e3166b2810e6ef0f094b041f1648bf24",
+        "suppressed_mirror_report": "raw/biome-06-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-06-scratch-unsuppressed.json",
+        "expected_category": "lint/performance/noBarrelFile",
+        "matching_diagnostics": 1,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-providers-provider-api-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-providers-provider-api-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "rationale": "The enabled shipped oxc/no-barrel-file rule does not fire in fresh syntactic or type-aware project-root diagnostics; unrelated findings cannot justify a native counterpart."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/providers/testkit/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/providers/testkit/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional testkit surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional testkit surface.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "5186e2bf71d51c867ffe7b730a7bb40aaa44235bf29ae0be5eefe5721b49c084",
+        "bytes": 2317
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-providers-testkit-suppressed.json",
+        "virtual_stdin_report": "raw/biome-07-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "af09eb5a0fc0722b7f477565fb005cb308083d94ef01d202ce1b125f93037cb1",
+        "suppressed_mirror_report": "raw/biome-07-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-07-scratch-unsuppressed.json",
+        "expected_category": "lint/performance/noBarrelFile",
+        "matching_diagnostics": 1,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-providers-testkit-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-providers-testkit-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "rationale": "The enabled shipped oxc/no-barrel-file rule does not fire in fresh syntactic or type-aware project-root diagnostics; unrelated findings cannot justify a native counterpart."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/runners/react/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/runners/react/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "baseline_line": 39,
+      "live_line": 39,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "b3d0a078554220a31e7d9e97386190ef502a12b6f43e62da91e33ded82f3ff0d",
+        "bytes": 2107
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-runners-react-suppressed.json",
+        "virtual_stdin_report": "raw/biome-08-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "a8c0165a4d28a4704c11d045d8ccb8403a3f1a9d56267671b31a0235b043003f",
+        "suppressed_mirror_report": "raw/biome-08-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-08-scratch-unsuppressed.json",
+        "expected_category": "lint/performance/noBarrelFile",
+        "matching_diagnostics": 1,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-runners-react-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-runners-react-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "rationale": "The enabled shipped oxc/no-barrel-file rule does not fire in fresh syntactic or type-aware project-root diagnostics; unrelated findings cannot justify a native counterpart."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/runners/react/test/conversation-state.cache-correctness-neutral.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/conversation-state.cache-correctness-neutral.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async provider interfaces intentionally preserve promise-based signatures.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "1c757c67cb45d8029afa64c1618509a024b21cd31ab496f26c8e27afcd2221b5",
+        "bytes": 12465
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-runners-react-suppressed.json",
+        "virtual_stdin_report": "raw/biome-09-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "c999f009dcf0be9bc75dc0535de032412d2b375114d017bd985b07f637429d4c",
+        "suppressed_mirror_report": "raw/biome-09-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-09-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 1,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-runners-react-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-runners-react-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/conversation-state.cache-correctness-neutral.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 5318,
+                  "length": 8,
+                  "line": 113,
+                  "column": 11
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(func-style)",
+          "eslint(require-await)",
+          "typescript(no-unsafe-type-assertion)",
+          "unicorn(no-array-reverse)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/runners/react/test/conversation-state.continuity-round-trip.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/conversation-state.continuity-round-trip.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async provider interfaces intentionally preserve promise-based signatures.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "9101eba231d13cb23c8072b054d2dc589243e69e1475aaf1c9ab7af75710e4fb",
+        "bytes": 8048
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-runners-react-suppressed.json",
+        "virtual_stdin_report": "raw/biome-10-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "8a6c096863258facbad687bfd0b8367a05905de2ff733cbbeb33c9cfe28c0a06",
+        "suppressed_mirror_report": "raw/biome-10-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-10-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 1,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-runners-react-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-runners-react-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/conversation-state.continuity-round-trip.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 4537,
+                  "length": 8,
+                  "line": 86,
+                  "column": 11
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(func-style)",
+          "eslint(prefer-destructuring)",
+          "eslint(require-await)",
+          "typescript(no-unsafe-type-assertion)",
+          "unicorn(no-array-reverse)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/runners/react/test/conversation-state.reconstruct-from-dag.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/conversation-state.reconstruct-from-dag.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async provider interfaces intentionally preserve promise-based signatures.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "ca9ea355d892d29c5488b3a4b7a769bbc608eb6133ed4eea603325c9f3abe52f",
+        "bytes": 7028
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-runners-react-suppressed.json",
+        "virtual_stdin_report": "raw/biome-11-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "049010178c757cdf786fe031491facb6d1a4f3d86bb3835411d2fc152cae6289",
+        "suppressed_mirror_report": "raw/biome-11-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-11-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 1,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-runners-react-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-runners-react-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/conversation-state.reconstruct-from-dag.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 2655,
+                  "length": 8,
+                  "line": 60,
+                  "column": 11
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(func-style)",
+          "eslint(prefer-destructuring)",
+          "eslint(require-await)",
+          "typescript(no-unsafe-type-assertion)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner-around-model.integration.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner-around-model.integration.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "284eb65048ba13f7ff0ef6b9569d03c785e74d4b86aad73f1a7d2907d5948e1b",
+        "bytes": 15444
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-runners-react-suppressed.json",
+        "virtual_stdin_report": "raw/biome-12-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "827b0c5b1489a7787bc7e73dbca784a98c9c6539ed73005052a531fa50125b8d",
+        "suppressed_mirror_report": "raw/biome-12-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-12-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 12,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-runners-react-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-runners-react-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 1827,
+                  "length": 8,
+                  "line": 44,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 2587,
+                  "length": 11,
+                  "line": 71,
+                  "column": 19
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 3659,
+                  "length": 8,
+                  "line": 106,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 5713,
+                  "length": 8,
+                  "line": 180,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 7509,
+                  "length": 8,
+                  "line": 248,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 9641,
+                  "length": 8,
+                  "line": 323,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 11926,
+                  "length": 8,
+                  "line": 402,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 13622,
+                  "length": 8,
+                  "line": 465,
+                  "column": 13
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(require-await)",
+          "node(callback-return)",
+          "typescript(no-unsafe-argument)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner-around-model.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner-around-model.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Test doubles intentionally match async provider and extension contracts.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Test doubles intentionally match async provider and extension contracts.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "667fa77e8d585aedfe097a68b9f711f7813f924db9fe52cdf31de8104918c991",
+        "bytes": 20638
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-runners-react-suppressed.json",
+        "virtual_stdin_report": "raw/biome-13-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "81bf1194edba2091d003dd9ebbfb986530c5557cb0671f44a07e96964a8d4960",
+        "suppressed_mirror_report": "raw/biome-13-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-13-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 14,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-runners-react-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-runners-react-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 1558,
+                  "length": 8,
+                  "line": 42,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 1912,
+                  "length": 11,
+                  "line": 55,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 3113,
+                  "length": 8,
+                  "line": 97,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 5164,
+                  "length": 8,
+                  "line": 170,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 7074,
+                  "length": 8,
+                  "line": 234,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 8699,
+                  "length": 8,
+                  "line": 292,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 10555,
+                  "length": 8,
+                  "line": 360,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 12205,
+                  "length": 8,
+                  "line": 421,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 13971,
+                  "length": 8,
+                  "line": 486,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 15719,
+                  "length": 8,
+                  "line": 551,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 17299,
+                  "length": 8,
+                  "line": 609,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-around-model.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 19101,
+                  "length": 8,
+                  "line": 674,
+                  "column": 13
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(require-await)",
+          "node(callback-return)",
+          "typescript(no-unsafe-argument)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner-stream-failures.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner-stream-failures.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "ff30a5911745e0f1bbae12ed01e8c544547e76b2049626ca8c61bfdd26dd5d73",
+        "bytes": 16954
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-runners-react-suppressed.json",
+        "virtual_stdin_report": "raw/biome-14-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "4f50e2eb43b168b3dbaedb0d39d3627588f7597cabfca0cd7d0866731887863f",
+        "suppressed_mirror_report": "raw/biome-14-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-14-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 15,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-runners-react-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-runners-react-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-failures.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 1409,
+                  "length": 8,
+                  "line": 38,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-failures.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 2396,
+                  "length": 8,
+                  "line": 77,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-failures.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 3568,
+                  "length": 8,
+                  "line": 123,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-failures.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 4732,
+                  "length": 8,
+                  "line": 166,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-failures.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 5956,
+                  "length": 8,
+                  "line": 208,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-failures.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 8325,
+                  "length": 6,
+                  "line": 296,
+                  "column": 17
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-failures.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 8572,
+                  "length": 8,
+                  "line": 309,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-failures.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 9780,
+                  "length": 8,
+                  "line": 353,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-failures.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 12030,
+                  "length": 8,
+                  "line": 432,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-failures.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 13653,
+                  "length": 8,
+                  "line": 487,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-failures.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 15524,
+                  "length": 8,
+                  "line": 554,
+                  "column": 13
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(prefer-destructuring)",
+          "eslint(require-await)",
+          "promise(avoid-new)",
+          "typescript(no-unsafe-assignment)",
+          "typescript(no-unsafe-member-access)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner-stream-mapping.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner-stream-mapping.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these stream-mapping tests.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these stream-mapping tests.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "f9c870382e01235502f5895b42dcdd58f31e5facae582d49be5250e4bad04160",
+        "bytes": 20447
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-runners-react-suppressed.json",
+        "virtual_stdin_report": "raw/biome-15-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "16ba932cc036fb8a194b42731f72106c469af1edb741fa268517e9b22fda33da",
+        "suppressed_mirror_report": "raw/biome-15-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-15-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 19,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-runners-react-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-runners-react-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-mapping.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 1364,
+                  "length": 8,
+                  "line": 37,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-mapping.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 4207,
+                  "length": 8,
+                  "line": 140,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-mapping.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 5545,
+                  "length": 8,
+                  "line": 197,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-mapping.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 7500,
+                  "length": 8,
+                  "line": 276,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-mapping.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 9998,
+                  "length": 8,
+                  "line": 370,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-mapping.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 12807,
+                  "length": 8,
+                  "line": 475,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-mapping.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 14565,
+                  "length": 8,
+                  "line": 547,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-mapping.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 16353,
+                  "length": 8,
+                  "line": 617,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-mapping.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 18015,
+                  "length": 8,
+                  "line": 681,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-mapping.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 19335,
+                  "length": 8,
+                  "line": 730,
+                  "column": 13
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(prefer-destructuring)",
+          "eslint(require-await)",
+          "promise(avoid-new)",
+          "typescript(no-unsafe-assignment)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner-stream-runtime.integration.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner-stream-runtime.integration.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "6fc7b81775fbde4913c6784be9ad5348d4b1f66fe715928966174a09963b4716",
+        "bytes": 13281
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-runners-react-suppressed.json",
+        "virtual_stdin_report": "raw/biome-16-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "43e6f37afc3182ede35ec2d59d20f60fede9851cd086b40bf2e232fc14dfc412",
+        "suppressed_mirror_report": "raw/biome-16-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-16-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 10,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-runners-react-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-runners-react-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-runtime.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 1853,
+                  "length": 8,
+                  "line": 42,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-runtime.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 5365,
+                  "length": 8,
+                  "line": 168,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-runtime.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 7438,
+                  "length": 8,
+                  "line": 241,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-runtime.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 9298,
+                  "length": 8,
+                  "line": 305,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-stream-runtime.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 11373,
+                  "length": 8,
+                  "line": 371,
+                  "column": 13
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(require-await)",
+          "typescript(no-unsafe-argument)",
+          "typescript(no-unsafe-assignment)",
+          "typescript(no-unsafe-enum-comparison)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner-structured-output.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner-structured-output.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures in these validation tests.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async provider interfaces intentionally preserve promise-based signatures in these validation tests.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "9b8ee03e197a5ce420b55b72296f9c3c700940ecc470e35206016baedf6709de",
+        "bytes": 11588
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-runners-react-suppressed.json",
+        "virtual_stdin_report": "raw/biome-17-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "1bc2403ed8b743bd95d1610d75f79952ce44e70360bf8fde8024e01b9bbe001f",
+        "suppressed_mirror_report": "raw/biome-17-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-17-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 6,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-runners-react-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-runners-react-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-structured-output.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 2712,
+                  "length": 8,
+                  "line": 85,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-structured-output.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 4075,
+                  "length": 8,
+                  "line": 140,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-structured-output.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 5481,
+                  "length": 8,
+                  "line": 200,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-structured-output.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 7430,
+                  "length": 8,
+                  "line": 275,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-structured-output.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 8973,
+                  "length": 8,
+                  "line": 333,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner-structured-output.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 10452,
+                  "length": 8,
+                  "line": 390,
+                  "column": 13
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(require-await)",
+          "typescript(no-unsafe-assignment)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner.integration.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner.integration.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "e210f421768347130d82a4729a62c3de3d92ad028bd4d550b994a68ee4dc3212",
+        "bytes": 25198
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-runners-react-suppressed.json",
+        "virtual_stdin_report": "raw/biome-18-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "4baf207788fe79ec72da69f52bf8c98e8dd56a79528ce75e6c24e593fc7882a4",
+        "suppressed_mirror_report": "raw/biome-18-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-18-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 12,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-runners-react-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-runners-react-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 1702,
+                  "length": 8,
+                  "line": 45,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 4077,
+                  "length": 8,
+                  "line": 125,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 6460,
+                  "length": 8,
+                  "line": 200,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 8250,
+                  "length": 8,
+                  "line": 261,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 10480,
+                  "length": 8,
+                  "line": 340,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 11879,
+                  "length": 8,
+                  "line": 393,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 13481,
+                  "length": 8,
+                  "line": 444,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 18619,
+                  "length": 8,
+                  "line": 641,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 21566,
+                  "length": 8,
+                  "line": 746,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.integration.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 23561,
+                  "length": 8,
+                  "line": 814,
+                  "column": 13
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(require-await)",
+          "promise(avoid-new)",
+          "typescript(no-unsafe-argument)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Test doubles intentionally match async provider and extension contracts.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Test doubles intentionally match async provider and extension contracts.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "0d7e4ced29145ac9dff94e6220c7108d7d23570c65ae396fc409f10a7a8f5b6b",
+        "bytes": 24261
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/biome-typescript-runners-react-suppressed.json",
+        "virtual_stdin_report": "raw/biome-19-virtual-stdin-unsuppressed.json",
+        "virtual_stdin_sha256": "b7e72839c7374c2e687ee22844144ddc322bffecd2e97482c556b30fdc60457e",
+        "suppressed_mirror_report": "raw/biome-19-scratch-suppressed.json",
+        "unsuppressed_mirror_report": "raw/biome-19-scratch-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 16,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/oxlint-typescript-runners-react-syntactic.json",
+        "type_aware_report": "raw/oxlint-typescript-runners-react-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 1439,
+                  "length": 8,
+                  "line": 40,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 2819,
+                  "length": 8,
+                  "line": 88,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 3944,
+                  "length": 8,
+                  "line": 130,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 5514,
+                  "length": 8,
+                  "line": 190,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 6675,
+                  "length": 8,
+                  "line": 235,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 7936,
+                  "length": 8,
+                  "line": 280,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 9328,
+                  "length": 8,
+                  "line": 332,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 10724,
+                  "length": 8,
+                  "line": 386,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 11905,
+                  "length": 8,
+                  "line": 429,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 13188,
+                  "length": 8,
+                  "line": 477,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 14312,
+                  "length": 8,
+                  "line": 518,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 15440,
+                  "length": 8,
+                  "line": 559,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 16361,
+                  "length": 8,
+                  "line": 592,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "message": "Async function has no `await` expression.",
+            "code": "eslint(require-await)",
+            "severity": "error",
+            "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/require-await.html",
+            "help": "Consider removing the `async` keyword.",
+            "filename": "typescript/runners/react/test/react-runner.test.ts",
+            "labels": [
+              {
+                "span": {
+                  "offset": 17407,
+                  "length": 8,
+                  "line": 629,
+                  "column": 13
+                }
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(require-await)",
+          "typescript(no-unsafe-assignment)",
+          "typescript(no-unsafe-member-access)",
+          "typescript(no-unsafe-return)",
+          "typescript(no-unsafe-type-assertion)"
+        ],
+        "rationale": "The enabled shipped eslint(require-await) rule fires in the fresh full type-aware project-root diagnostic; the async contract reason remains valid, so KRT-BZ004 may translate the directive atomically at native admission."
+      },
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+    }
+  ]
+}

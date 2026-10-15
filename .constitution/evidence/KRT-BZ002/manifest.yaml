@@ -1,0 +1,28 @@
+owner: KRT-BZ002
+mode: contract_test
+produced:
+  date: '2026-10-15'
+  commit: bbb4e932591a28578c930faf44ce08024607b77c
+  command: 'bun EXTERNAL_PROBE REPOSITORY EXTERNAL_OUTPUT (EXTERNAL_PROBE is an external /tmp copy; run under one outer verification lock with direnv-loaded PostgreSQL environment); measured output copied into evidence after measurement'
+files:
+  - path: probe.ts
+    sha256: ef3f0710e12ad8c1a4368fe279f5512070e3ce9bf3258d0fae6b920b525c188e
+    bytes: 19847
+    role: measurement
+  - path: suppressions.json
+    sha256: 6ce9985dacf29d2f5b1080c33ee8fe97c315447b448030779fef44e0dae5e36d
+    bytes: 128975
+    role: measurement
+  - path: raw-index.json
+    sha256: 283ddae049e6d065f470994a97c9677260ade218324322cbb4195b3e2098d081
+    bytes: 19991
+    role: measurement
+  - path: assertions.json
+    sha256: 04293c133d519a1750e89d22e21a2ad6d19f58dc495acb7e2152ca71b6c06714
+    bytes: 1191
+    role: measurement
+  - path: raw-diagnostics.tar.gz
+    sha256: 8c80a9bb3b2290e63cce0f7bd1cef7de429fe86cc49f6f7c54bf3bf9973a6b25
+    bytes: 131861
+    role: measurement
+pass_criteria: 'All 19 live directive identities preserve their original reasons; 15 useAwait identities have fresh firing eslint(require-await) counterparts, four barrel identities have no firing oxc/no-barrel-file counterpart, no directive is added or deleted, and all scoped tests/typechecks plus workspace typecheck and full lint pass.'
