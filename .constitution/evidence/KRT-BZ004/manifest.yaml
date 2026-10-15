@@ -2,7 +2,7 @@ owner: KRT-BZ004
 mode: contract_test
 produced:
   date: '2026-10-15'
-  commit: 78de3b0fd69038e1e5bdf131954a2f2c316c4ff5
+  commit: 24f8dd217a7b1879473ef671c124239788b0466f
   command: 'bunx --bun oxlint --type-aware --format=json <cohort paths> (M1-M6 before/after snapshots)'
 files:
   - path: M1-raw-diagnostics.tar.gz
@@ -38,12 +38,12 @@ files:
     bytes: 921
     role: measurement
   - path: M5-raw-diagnostics.tar.gz
-    sha256: e5a59fa76814eaccdd73414ebb7b62b3d4863c785375eb1ffcf850bd26664ccc
-    bytes: 22479
+    sha256: 4fd1c575c05b85afda830abcc73ee228861888bab77d0d01e1f43c3a2c484aa3
+    bytes: 22121
     role: measurement
   - path: M5-raw-diagnostics-index.json
-    sha256: 7f069e72f15cec5a2a659b4408ca02d8f03cdc88c2d2c8d4367fac4bc44841aa
-    bytes: 938
+    sha256: 9195c0d3cc934fe8b6f01cf8049fefbe6f001850d6be8048940dea6681e10660
+    bytes: 925
     role: measurement
   - path: M6-raw-diagnostics.tar.gz
     sha256: 81080877b9e3b6458b59fbef649535ef342461680c432ba62903d91384180bca
@@ -53,4 +53,4 @@ files:
     sha256: a69d92ccba778a56262f110076ec0303ad25c0ba4cd9deff1171885ef60eee2e
     bytes: 889
     role: measurement
-pass_criteria: 'Pinned Oxlint captures remain parseable; KRT-BZ001 reduces provider-api 39→29, certification 27→24, testkit 143→128, bridge src+smoke 360→315, bridge test 161→110, runner src+bench 443→393, and runner test 236→185 diagnostics while every cohort passes scoped tests and typechecks plus the workspace typecheck.'
+pass_criteria: 'Pinned Oxlint captures remain parseable; KRT-BZ001 reduces provider-api 39→29, certification 27→24, testkit 143→128, bridge src+smoke 360→315, bridge test 161→110, runner src+bench 443→389, and runner test 236→185 diagnostics while every cohort passes scoped tests and typechecks plus the workspace typecheck.'

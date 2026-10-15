@@ -1,7 +1,7 @@
 {
   "milestone": "M5",
   "ticket": "KRT-BZ001",
-  "producedAtCommit": "84e2cc1998026062b4ac3c9d18a30bd3633e85f7",
+  "producedAtCommit": "24f8dd217a7b1879473ef671c124239788b0466f",
   "command": "bunx --bun oxlint --type-aware --format=json typescript/runners/react/src typescript/runners/react/bench",
   "captures": [
     {
@@ -16,15 +16,15 @@
       "sha256": "d049c3a409f3f2c9d6f6d4349f90147a5986ba1b3db5eba990b549a00b435cdb"
     },
     {
-      "archivePath": "epic-bz-m5-runner-src-bench-after.json",
+      "archivePath": "epic-bz-m5-after-fix.json",
       "project": "runner-react",
       "cohort": "src+bench",
       "phase": "after",
-      "diagnostics": 393,
+      "diagnostics": 389,
       "rules": 474,
       "selectedFiles": 7,
-      "bytes": 202398,
-      "sha256": "c753a12551cb9bda0b3d7be39ef46a2482c932d80fda441c0781a528aa062687"
+      "bytes": 200564,
+      "sha256": "74a44ae80a7ca97f8056d4d6a786df0d5946fe70b3d9c19534aa12aea4a3da95"
     }
   ]
 }
