@@ -171,7 +171,8 @@ export interface RuntimeCoreRunnerHost {
     warningContext?: {
       handle: RuntimeExecutionHandle;
       loopState: LoopState;
-    }
+    },
+    taskId?: string
   ): Promise<HashString>;
   stageMessage(
     runId: string,

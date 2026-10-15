@@ -36,6 +36,7 @@ import {
   createBoundExceededError,
   type ResolvedExecutionBounds,
 } from "./runtime-core-bounds.js";
+import { withoutInterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
 import type {
   ExecutedIterationResult,
   IterationPhaseResult,
@@ -128,7 +129,11 @@ export interface RuntimeCoreLoopHost {
     schemaId: string,
     plan: ContextEngineeringPlan,
     loopState: LoopState,
-    stateUpdates: ExtensionStateUpdate[]
+    stateUpdates: ExtensionStateUpdate[],
+    recoveredHistory?: {
+      messageHashes: HashString[];
+      messages: TuvrenMessage[];
+    }
   ): Promise<void>;
   applyTerminalAgentTransitionIfNeeded(
     handle: RuntimeExecutionHandle,
@@ -441,6 +446,21 @@ async function prepareIterationState(
 ): Promise<IterationPreparationResult> {
   let headState = await host.loadHeadState(handle.request.branchId);
   headState = includeRecoveredIterationHistory(headState, loopState);
+  const canonicalOrderPlan = recoveredToolResultOrderPlan(loopState);
+  if (canonicalOrderPlan !== undefined) {
+    await host.applyContextEngineeringPlan(
+      handle,
+      schemaId,
+      canonicalOrderPlan,
+      loopState,
+      loopState.carriedStateUpdates,
+      uncommittedRecoveredHistory(loopState)
+    );
+    loopState.carriedStateUpdates = [];
+    markRecoveredHistoryCommitted(loopState);
+    headState = await host.loadHeadState(handle.request.branchId);
+    headState = includeRecoveredIterationHistory(headState, loopState);
+  }
   handle.updateStatus({
     manifest: headState.manifest,
   });
@@ -490,9 +510,11 @@ async function prepareIterationState(
       schemaId,
       beforeIteration.cePlan,
       loopState,
-      loopState.carriedStateUpdates
+      loopState.carriedStateUpdates,
+      uncommittedRecoveredHistory(loopState)
     );
     loopState.carriedStateUpdates = [];
+    markRecoveredHistoryCommitted(loopState);
     headState = await host.loadHeadState(handle.request.branchId);
     headState = includeRecoveredIterationHistory(headState, loopState);
   }
@@ -508,9 +530,11 @@ async function prepareIterationState(
       schemaId,
       policyPlan,
       loopState,
-      loopState.carriedStateUpdates
+      loopState.carriedStateUpdates,
+      uncommittedRecoveredHistory(loopState)
     );
     loopState.carriedStateUpdates = [];
+    markRecoveredHistoryCommitted(loopState);
     headState = await host.loadHeadState(handle.request.branchId);
     headState = includeRecoveredIterationHistory(headState, loopState);
   }
@@ -520,21 +544,104 @@ async function prepareIterationState(
   };
 }
 
+function recoveredToolResultOrderPlan(
+  loopState: LoopState
+): ContextEngineeringPlan | undefined {
+  const recoveryPlan = loopState.interruptedIterationPlan;
+  const assistantHash = recoveryPlan?.assistantMessageHash;
+  if (
+    recoveryPlan === undefined ||
+    recoveryPlan.disposition === "re_infer" ||
+    assistantHash === undefined ||
+    !recoveryPlan.completedToolResultsOutOfOrder ||
+    recoveryPlan.completedToolResultHashes.length < 2
+  ) {
+    return undefined;
+  }
+
+  const orderedResultHashes = [
+    ...new Set(recoveryPlan.completedToolResultHashes),
+  ];
+  return {
+    action: "restore interrupted tool-result order",
+    execute(context) {
+      const resultHashes = orderedResultHashes.filter((hash) =>
+        context.messageHashes.includes(hash)
+      );
+      const currentPositions = resultHashes.map((hash) =>
+        context.messageHashes.indexOf(hash)
+      );
+      const hasOutOfOrderResults = currentPositions.some((position, index) => {
+        const previousPosition = currentPositions[index - 1];
+        return previousPosition !== undefined && position < previousPosition;
+      });
+      if (!hasOutOfOrderResults) {
+        return context.messageHashes;
+      }
+
+      const nextHashes = context.messageHashes.filter(
+        (hash) => !resultHashes.includes(hash)
+      );
+      const assistantIndex = nextHashes.indexOf(assistantHash);
+      if (assistantIndex < 0) {
+        return context.messageHashes;
+      }
+      nextHashes.splice(assistantIndex + 1, 0, ...resultHashes);
+      return nextHashes;
+    },
+  };
+}
+
+function uncommittedRecoveredHistory(
+  loopState: LoopState
+): { messageHashes: HashString[]; messages: TuvrenMessage[] } | undefined {
+  const recoveryPlan = loopState.interruptedIterationPlan;
+  if (
+    recoveryPlan === undefined ||
+    recoveryPlan.disposition === "re_infer" ||
+    recoveryPlan.stagedMessages.length === 0
+  ) {
+    return undefined;
+  }
+  return {
+    messageHashes: recoveryPlan.stagedMessageHashes,
+    messages: recoveryPlan.stagedMessages,
+  };
+}
+
+function markRecoveredHistoryCommitted(loopState: LoopState): void {
+  const recoveryPlan = loopState.interruptedIterationPlan;
+  if (recoveryPlan === undefined || recoveryPlan.stagedMessages.length === 0) {
+    return;
+  }
+
+  loopState.interruptedIterationPlan = {
+    ...recoveryPlan,
+    stagedMessageHashes: [],
+    stagedMessages: [],
+  };
+}
+
 function includeRecoveredIterationHistory(
   headState: HeadState,
   loopState: LoopState
 ): HeadState {
   const recoveryPlan = loopState.interruptedIterationPlan;
+  const cleanManifest = withoutInterruptedToolBatchDescriptor(
+    headState.manifest
+  );
 
   if (recoveryPlan === undefined || recoveryPlan.disposition === "re_infer") {
-    return headState;
+    return { ...headState, manifest: cleanManifest };
   }
 
   return {
     ...headState,
-    manifest: createContextManifest(
-      [...headState.messages, ...recoveryPlan.stagedMessages],
-      headState.manifest.extensions
+    manifest: withoutInterruptedToolBatchDescriptor(
+      createContextManifest(
+        [...headState.messages, ...recoveryPlan.stagedMessages],
+        cleanManifest.extensions
+      )
     ),
   };
 }

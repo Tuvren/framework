@@ -21,6 +21,7 @@ import type {
   ContextEngineeringPlan,
   HandoffContextPlan,
 } from "@tuvren/core/execution";
+import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { ToolRegistry } from "@tuvren/core/tools";
 import type { PathValue } from "@tuvren/kernel-protocol";
 
@@ -161,19 +162,31 @@ export async function applyContextEngineeringPlan(
   schemaId: string,
   plan: ContextEngineeringPlan,
   loopState: LoopState,
-  updates: ExtensionStateUpdate[]
+  updates: ExtensionStateUpdate[],
+  recoveredHistory?: {
+    messageHashes: HashString[];
+    messages: TuvrenMessage[];
+  }
 ): Promise<void> {
   const runId = host.createId();
   const headState = await host.loadHeadState(handle.request.branchId);
+  const messageHashes = [
+    ...headState.messageHashes,
+    ...(recoveredHistory?.messageHashes ?? []),
+  ];
+  const messages = [
+    ...headState.messages,
+    ...(recoveredHistory?.messages ?? []),
+  ];
   const helperBundle = host.createContextEngineeringHelpers(
-    headState.messageHashes,
-    headState.messages
+    messageHashes,
+    messages
   );
   const context: ContextEngineeringContext = {
     helpers: helperBundle.helpers,
-    manifest: headState.manifest,
-    messageHashes: headState.messageHashes,
-    messages: headState.messages,
+    manifest: createContextManifest(messages, headState.manifest.extensions),
+    messageHashes,
+    messages,
   };
   const nextMessageHashes = plan.execute(context);
   await helperBundle.flush();

@@ -452,6 +452,8 @@ export function createRuntimeCoreFacadeHosts(
         dependencies.resolveDefaultHandoffContextBuilder(mode),
       resolveTargetAgent: (targetAgent) =>
         dependencies.resolveTargetAgent(targetAgent),
+      stageManifest: (runId, manifest, taskId) =>
+        dependencies.stageManifest(runId, manifest, undefined, taskId),
       stageMessage: (runId, message, taskId) =>
         dependencies.stageMessage(runId, message, taskId as string),
     }),

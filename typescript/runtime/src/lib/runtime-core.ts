@@ -727,12 +727,13 @@ class RuntimeCore implements TuvrenRuntime {
       resumePausedToolExecution: (...args) =>
         resumeRuntimeCorePausedToolExecution(this.hosts, ...args),
       runLivenessOptions: this.options.runLiveness,
-      stageManifest: (runId, manifest, warningContext) =>
+      stageManifest: (runId, manifest, warningContext, taskId) =>
         stageRuntimeManifestRecord(
           this.hosts.persistence,
           runId,
           manifest,
-          warningContext
+          warningContext,
+          taskId
         ),
       stageMessage: (runId, message, taskId) =>
         stageRuntimeMessageRecord(
@@ -1257,6 +1258,8 @@ class RuntimeCore implements TuvrenRuntime {
         createRunnerExecutionContext: (...args) =>
           this.createRunnerExecutionContext(...args),
         createId: () => this.createId(),
+        stageManifest: (runId, manifest, taskId) =>
+          this.hosts.runner.stageManifest(runId, manifest, undefined, taskId),
         createTrackedRun: (...args) =>
           createRuntimeCoreTrackedRun(this.hosts.liveness, ...args),
         ensureRunnerAssistantEvents: (

@@ -719,7 +719,11 @@ export async function applyRuntimeCoreContextEngineeringPlan(
   schemaId: string,
   plan: ContextEngineeringPlan,
   loopState: LoopState,
-  updates: ExtensionStateUpdate[]
+  updates: ExtensionStateUpdate[],
+  recoveredHistory?: {
+    messageHashes: HashString[];
+    messages: TuvrenMessage[];
+  }
 ): Promise<void> {
   await applyRuntimeContextEngineeringPlanFacade(
     hosts.contextOps,
@@ -727,6 +731,7 @@ export async function applyRuntimeCoreContextEngineeringPlan(
     schemaId,
     plan,
     loopState,
-    updates
+    updates,
+    recoveredHistory
   );
 }

@@ -781,7 +781,8 @@ export async function stageAndEmitResult(
   result: ToolResultPart,
   orderIndex: number,
   startBarrier: ToolStartBarrier,
-  executionClass?: ExecutionClass
+  executionClass?: ExecutionClass,
+  updates: ExtensionStateUpdate[] = []
 ): Promise<StagedToolResult> {
   await startBarrier.waitUntilReady();
   const sanitized = applySanitizeToolResult(
@@ -789,7 +790,7 @@ export async function stageAndEmitResult(
     result,
     executionClass
   );
-  const hash = await environment.stageResult(sanitized, orderIndex);
+  const hash = await environment.stageResult(sanitized, orderIndex, updates);
   emitToolResultEvent(environment, sanitized);
   return { hash, result: sanitized };
 }
@@ -807,18 +808,20 @@ export async function stageAndEmitResults(
   results: ToolResultPart[],
   orderIndex: number,
   startBarrier: ToolStartBarrier,
-  executionClass?: ExecutionClass
+  executionClass?: ExecutionClass,
+  updates: ExtensionStateUpdate[] = []
 ): Promise<StagedToolResult[]> {
   const staged: StagedToolResult[] = [];
 
-  for (const result of results) {
+  for (const [index, result] of results.entries()) {
     staged.push(
       await stageAndEmitResult(
         environment,
         result,
         orderIndex,
         startBarrier,
-        executionClass
+        executionClass,
+        index === 0 ? updates : []
       )
     );
   }
@@ -889,9 +892,15 @@ export function applySanitizeHookToPart(
   try {
     const sanitized = hook(result, context);
     return {
-      ...sanitized,
       callId: result.callId,
+      ...(sanitized.isError === undefined
+        ? {}
+        : { isError: sanitized.isError }),
       name: result.name,
+      output: sanitized.output,
+      ...(sanitized.providerMetadata === undefined
+        ? {}
+        : { providerMetadata: sanitized.providerMetadata }),
       type: "tool_result",
     };
   } catch (error: unknown) {

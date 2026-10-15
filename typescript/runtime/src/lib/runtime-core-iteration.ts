@@ -44,6 +44,10 @@ import {
 } from "./context-manifest.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import { validateRunnerAssistantEvents } from "./runtime-core-assistant-validation.js";
+import {
+  withInterruptedToolBatchDescriptor,
+  withoutInterruptedToolBatchDescriptor,
+} from "./runtime-core-interrupted-metadata.js";
 import type { InterruptedIterationRecoveryPlan } from "./runtime-core-recovery-plan.js";
 import {
   createCancelledResolution,
@@ -194,6 +198,11 @@ export interface RuntimeCoreIterationHost {
     appendedMessageHashes: HashString[]
   ): Promise<HashString | undefined>;
   createId(): string;
+  stageManifest(
+    runId: string,
+    manifest: ContextManifest,
+    taskId?: string
+  ): Promise<HashString>;
   createRunnerExecutionContext(
     handle: RuntimeExecutionHandle,
     schemaId: string,
@@ -782,6 +791,19 @@ export async function executeIterationPhase(
 
   applyRunnerStateUpdates(input.loopState, runnerResult.stateUpdates);
 
+  if (requestedToolCalls.length > 0) {
+    await host.stageManifest(
+      iterationRunId,
+      withInterruptedToolBatchDescriptor(input.headState.manifest, {
+        executable:
+          (cancellationResolution ?? resolution).type ===
+            "continue_iteration" && !partial,
+        toolExecutionMode,
+      }),
+      "interrupted_tool_batch_eligibility"
+    );
+  }
+
   host.flushBufferedRunnerEventsIfNeeded(
     input.handle,
     resolution,
@@ -814,8 +836,16 @@ export async function executeIterationPhase(
     runnerResult.assistantEventReconciliation
   );
   const toolResults: ToolResultPart[] = [];
+  const assistantIndex = stagedMessages.findIndex(
+    (message) =>
+      message.role === "assistant" &&
+      message.parts.some((part) => part.type === "tool_call")
+  );
 
   return await completePreparedIteration(host, input, iterationRunId, {
+    ...(assistantIndex < 0 || stagedMessageHashes[assistantIndex] === undefined
+      ? {}
+      : { assistantMessageHash: stagedMessageHashes[assistantIndex] }),
     partial,
     requestedToolCalls,
     resolution: cancellationResolution ?? resolution,
@@ -829,6 +859,7 @@ export async function executeIterationPhase(
 }
 
 interface PreparedIteration {
+  assistantMessageHash?: HashString;
   partial: boolean;
   rebuildManifestFromHistory?: boolean;
   requestedToolCalls: ToolCallPart[];
@@ -869,6 +900,9 @@ async function executeRecoveredIterationPhase(
 
   const resolution: RuntimeResolution = { type: "continue_iteration" };
   return await completePreparedIteration(host, input, iterationRunId, {
+    ...(recoveryPlan.assistantMessageHash === undefined
+      ? {}
+      : { assistantMessageHash: recoveryPlan.assistantMessageHash }),
     partial: false,
     requestedToolCalls: recoveryPlan.originalToolCalls,
     toolCallsToExecute:
@@ -885,7 +919,7 @@ async function executeRecoveredIterationPhase(
     rebuildManifestFromHistory: true,
     stagedMessageHashes: [...recoveryPlan.stagedMessageHashes],
     stagedMessages: [...recoveryPlan.stagedMessages],
-    toolExecutionMode: "parallel",
+    toolExecutionMode: recoveryPlan.descriptor?.toolExecutionMode ?? "parallel",
     toolResults: [...recoveryPlan.completedToolResults],
   });
 }
@@ -897,9 +931,41 @@ async function completePreparedIteration(
   prepared: PreparedIteration
 ): Promise<IterationPhaseResult> {
   let resolution = prepared.resolution;
+  let durableBatchManifest = input.headState.manifest;
+  if (
+    prepared.assistantMessageHash !== undefined &&
+    prepared.requestedToolCalls.length > 0
+  ) {
+    // Persist the batch descriptor before a call can complete and the process can die.
+    const descriptorManifest = withInterruptedToolBatchDescriptor(
+      updateContextManifest(
+        input.headState.manifest,
+        prepared.stagedMessages,
+        input.loopState.carriedStateUpdates,
+        []
+      ),
+      {
+        assistantMessageHash: prepared.assistantMessageHash,
+        executable:
+          prepared.resolution.type === "continue_iteration" &&
+          !prepared.partial,
+        toolExecutionMode: prepared.toolExecutionMode,
+      }
+    );
+    durableBatchManifest = descriptorManifest;
+    await host.stageManifest(
+      iterationRunId,
+      descriptorManifest,
+      "interrupted_tool_batch_descriptor"
+    );
+  }
+
   const toolBatchResult = await host.applyRequestedToolBatchIfNeeded({
     handle: input.handle,
-    headState: input.headState,
+    headState: {
+      ...input.headState,
+      manifest: durableBatchManifest,
+    },
     iterationCount: input.iterationCount,
     loopState: input.loopState,
     requestedToolCalls: prepared.toolCallsToExecute,
@@ -938,6 +1004,7 @@ async function completePreparedIteration(
         [...input.loopState.carriedStateUpdates],
         []
       );
+  const cleanManifest = withoutInterruptedToolBatchDescriptor(manifest);
   input.loopState.carriedStateUpdates = [];
   const turnNodeHash = await host.completeIterationArtifacts(
     input.handle,
@@ -947,13 +1014,13 @@ async function completePreparedIteration(
     input.iterationCount,
     iterationRunId,
     resolution,
-    manifest,
+    cleanManifest,
     prepared.stagedMessageHashes
   );
   const checkpointedPause = resolution.type === "pause";
   input.handle.updateStatus({
     activeAgent: input.loopState.activeConfig.name,
-    manifest,
+    manifest: cleanManifest,
   });
   resolution = await host.applyAfterIterationResolution(
     input.handle,
@@ -965,7 +1032,7 @@ async function completePreparedIteration(
     prepared.toolResults,
     input.headState.messages,
     prepared.stagedMessages,
-    manifest
+    cleanManifest
   );
   resolution = await host.reconcileCheckpointedPauseResolution(
     checkpointedPause,
