@@ -20,14 +20,14 @@ import { TuvrenPersistenceError, TuvrenValidationError } from "@tuvren/core";
  * Constructs the backend's uniform `TuvrenPersistenceError`. Codes follow the
  * `sqlite_backend_<reason>` convention.
  */
-export function persistenceError(
+export const persistenceError = (
   message: string,
   code: string,
   details?: unknown,
   cause?: unknown
-): TuvrenPersistenceError {
+): TuvrenPersistenceError => {
   return new TuvrenPersistenceError(message, { cause, code, details });
-}
+};
 
 /**
  * Normalizes any thrown value at the backend boundary so callers only ever
@@ -37,7 +37,7 @@ export function persistenceError(
  * pass through, and non-`Error` values are wrapped as
  * `sqlite_backend_operation_failed`.
  */
-export function normalizeBackendError(error: unknown): Error {
+export const normalizeBackendError = (error: unknown): Error => {
   if (error instanceof TuvrenPersistenceError) {
     return error;
   }
@@ -72,13 +72,13 @@ export function normalizeBackendError(error: unknown): Error {
     "sqlite_backend_operation_failed",
     { value: String(error) }
   );
-}
+};
 
 /** Extracts a human-readable message from any thrown value. */
-export function getErrorMessage(error: unknown): string {
+export const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
     return error.message;
   }
 
   return String(error);
-}
+};

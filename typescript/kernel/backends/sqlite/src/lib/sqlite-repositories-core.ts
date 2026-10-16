@@ -222,13 +222,13 @@ interface CoreRepositoryHelpers {
  * `context.writeTracker` so `validateTransactionWriteSet` can re-check
  * exactly the affected records before commit.
  */
-export function createCoreRepositories(
+export const createCoreRepositories = (
   context: CoreRepositoryContext,
   helpers: CoreRepositoryHelpers
 ): Pick<
   KrakenBackendTx,
   "branches" | "runs" | "turnNodes" | "turnTreePaths" | "turnTrees" | "turns"
-> {
+> => {
   const { assertTransactionActive, db, now, writeTracker } = context;
 
   return {
@@ -784,4 +784,4 @@ export function createCoreRepositories(
       },
     },
   };
-}
+};

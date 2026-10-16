@@ -156,7 +156,7 @@ interface SupportRepositoryHelpers {
 // KRT-BK006: threads.list's LIMIT clause is user-input-driven. Extracted
 // out of `list()` so the guard's branching doesn't count against that
 // method's own cognitive-complexity budget.
-function assertSafeThreadListLimit(limit: number | undefined): void {
+const assertSafeThreadListLimit = (limit: number | undefined): void => {
   if (limit !== undefined && !(Number.isSafeInteger(limit) && limit >= 0)) {
     throw persistenceError(
       "threads.list options.limit must be a non-negative safe integer",
@@ -164,7 +164,7 @@ function assertSafeThreadListLimit(limit: number | undefined): void {
       { limit }
     );
   }
-}
+};
 
 /**
  * Builds the `observeAnnotations`, `objects`, `orderedPathChunks`,
@@ -177,7 +177,7 @@ function assertSafeThreadListLimit(limit: number | undefined): void {
  * writes still record touched keys on `context.writeTracker` where later
  * pre-commit validation depends on them (staged results, threads).
  */
-export function createSupportRepositories(
+export const createSupportRepositories = (
   context: SupportRepositoryContext,
   helpers: SupportRepositoryHelpers
 ): Pick<
@@ -188,7 +188,7 @@ export function createSupportRepositories(
   | "schemas"
   | "stagedResults"
   | "threads"
-> {
+> => {
   const { assertTransactionActive, db, writeTracker } = context;
 
   return {
@@ -551,4 +551,4 @@ export function createSupportRepositories(
       },
     },
   };
-}
+};
