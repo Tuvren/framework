@@ -76,10 +76,10 @@ const CONTINUITY = { openai: { previousResponseId: "resp-turn-1-9f3a" } };
  * carries a continuity token. It holds no cross-turn state of its own, so any
  * continuity seen on a later turn must have come from the durable lineage.
  */
-function createRecordingProvider(): {
+const createRecordingProvider = (): {
   capturedPrompts: TuvrenMessage[][];
   provider: TuvrenProvider;
-} {
+} => {
   const capturedPrompts: TuvrenMessage[][] = [];
   let call = 0;
   const provider: TuvrenProvider = {
@@ -104,9 +104,9 @@ function createRecordingProvider(): {
     },
   };
   return { capturedPrompts, provider };
-}
+};
 
-function buildRuntime(provider: TuvrenProvider) {
+const buildRuntime = (provider: TuvrenProvider) => {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntimeCore({
     defaultRunnerId: REACT_RUNNER_ID,
@@ -116,13 +116,13 @@ function buildRuntime(provider: TuvrenProvider) {
     ]),
   });
   return { harness, provider, runtime };
-}
+};
 
-async function runTurn(
+const runTurn = async (
   runtime: ReturnType<typeof buildRuntime>,
   ids: { branchId: string; threadId: string },
   text: string
-): Promise<void> {
+): Promise<void> => {
   const handle = runtime.runtime.executeTurn({
     branchId: ids.branchId,
     config: { model: runtime.provider, name: "primary" },
@@ -131,18 +131,18 @@ async function runTurn(
   });
   const result = await handle.awaitResult();
   expect(result.status).toBe("completed");
-}
+};
 
-function lastAssistantContinuity(
+const lastAssistantContinuity = (
   messages: TuvrenMessage[]
-): Record<string, unknown> | undefined {
+): Record<string, unknown> | undefined => {
   const assistant = [...messages]
     .reverse()
     .find((message) => message.role === "assistant");
   return assistant && "providerMetadata" in assistant
     ? assistant.providerMetadata
     : undefined;
-}
+};
 
 describe("KRT-BH003 multi-turn continuity round-trip", () => {
   test("a response's continuity is extracted into lineage and re-injected into the next turn's request, with no provider-held state", async () => {

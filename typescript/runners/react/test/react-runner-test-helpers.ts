@@ -19,13 +19,88 @@ import type { ContextManifest, InputSignal } from "@tuvren/core/execution";
 import type { RunnerExecutionContext } from "@tuvren/core/runner";
 import type { ToolRegistry, TuvrenToolDefinition } from "@tuvren/core/tools";
 
-export function createRunnerExecutionContext(input?: {
+export const createContextManifest = (): ContextManifest => ({
+  byRole: {
+    assistant: 0,
+    system: 0,
+    tool: 0,
+    user: 1,
+  },
+  extensions: {},
+  lastAssistantMessageIndex: -1,
+  lastUserMessageIndex: 0,
+  messageCount: 1,
+  tokenEstimate: 0,
+  toolCalls: {
+    byName: {},
+    total: 0,
+  },
+  toolResults: {
+    byName: {},
+    total: 0,
+  },
+  turnBoundaries: [0],
+});
+
+const isCustomSchema = (
+  inputSchema: TuvrenToolDefinition["inputSchema"]
+): inputSchema is Extract<
+  TuvrenToolDefinition["inputSchema"],
+  { toJSONSchema(): unknown }
+> =>
+  inputSchema !== null &&
+  typeof inputSchema === "object" &&
+  "toJSONSchema" in inputSchema &&
+  typeof inputSchema.toJSONSchema === "function";
+
+const toToolInputSchema = (
+  tool: TuvrenToolDefinition
+): ReturnType<ToolRegistry["toDefinitions"]>[number]["inputSchema"] => {
+  const { inputSchema } = tool;
+
+  if (isCustomSchema(inputSchema)) {
+    return inputSchema.toJSONSchema();
+  }
+
+  return inputSchema;
+};
+
+export const createToolRegistry = (
+  tools: TuvrenToolDefinition[]
+): ToolRegistry => {
+  const definitions = tools.map((tool) => ({
+    description: tool.description,
+    inputSchema: toToolInputSchema(tool),
+    name: tool.name,
+  }));
+  const toolsByName = new Map(tools.map((tool) => [tool.name, tool]));
+
+  return {
+    get(name: string) {
+      return toolsByName.get(name);
+    },
+    has(name: string) {
+      return toolsByName.has(name);
+    },
+    list() {
+      return [...toolsByName.values()];
+    },
+    register(tool: TuvrenToolDefinition) {
+      toolsByName.set(tool.name, tool);
+    },
+    toDefinitions() {
+      return definitions;
+    },
+  };
+};
+
+export const createRunnerExecutionContext = (input?: {
   config?: RunnerExecutionContext["config"];
   emittedEvents?: TuvrenStreamEvent[];
   manifest?: ContextManifest;
   signal?: AbortSignal;
   toolDefinitions?: TuvrenToolDefinition[];
-}): RunnerExecutionContext {
+}): RunnerExecutionContext => {
   const emittedEvents = input?.emittedEvents ?? [];
   const toolDefinitions = input?.toolDefinitions ?? [];
 
@@ -92,95 +167,47 @@ export function createRunnerExecutionContext(input?: {
     toolRegistry: createToolRegistry(toolDefinitions),
     turnId: "turn-1",
   };
-}
+};
 
-export function createToolRegistry(
-  tools: TuvrenToolDefinition[]
-): ToolRegistry {
-  const definitions = tools.map((tool) => ({
-    description: tool.description,
-    inputSchema: toToolInputSchema(tool),
-    name: tool.name,
-  }));
-  const toolsByName = new Map(tools.map((tool) => [tool.name, tool]));
+export const toRecord = (value: unknown): Record<string, unknown> => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
 
-  return {
-    get(name: string) {
-      return toolsByName.get(name);
-    },
-    has(name: string) {
-      return toolsByName.has(name);
-    },
-    list() {
-      return [...toolsByName.values()];
-    },
-    register(tool: TuvrenToolDefinition) {
-      toolsByName.set(tool.name, tool);
-    },
-    toDefinitions() {
-      return definitions;
-    },
-  };
-}
+  return Object.fromEntries(Object.entries(value));
+};
 
-export function createContextManifest(): ContextManifest {
-  return {
-    byRole: {
-      assistant: 0,
-      system: 0,
-      tool: 0,
-      user: 1,
+export const createSearchTool = (): TuvrenToolDefinition => ({
+  description: "Search project docs",
+  execute(input) {
+    return {
+      ...toRecord(input),
+      result: "matched docs",
+    };
+  },
+  inputSchema: {
+    properties: {
+      query: { type: "string" },
     },
-    extensions: {},
-    lastAssistantMessageIndex: -1,
-    lastUserMessageIndex: 0,
-    messageCount: 1,
-    tokenEstimate: 0,
-    toolCalls: {
-      byName: {},
-      total: 0,
-    },
-    toolResults: {
-      byName: {},
-      total: 0,
-    },
-    turnBoundaries: [0],
-  };
-}
+    required: ["query"],
+    type: "object",
+  },
+  name: "search",
+});
 
-export function createSearchTool(): TuvrenToolDefinition {
-  return {
-    description: "Search project docs",
-    execute(input) {
-      return {
-        ...toRecord(input),
-        result: "matched docs",
-      };
-    },
-    inputSchema: {
-      properties: {
-        query: { type: "string" },
-      },
-      required: ["query"],
-      type: "object",
-    },
-    name: "search",
-  };
-}
+export const textSignal = (text: string): InputSignal => ({
+  parts: [{ text, type: "text" }],
+});
 
-export function textSignal(text: string): InputSignal {
-  return {
-    parts: [{ text, type: "text" }],
-  };
-}
-
-export async function wait(milliseconds: number): Promise<void> {
+export const wait = async (milliseconds: number): Promise<void> => {
   await new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
   });
-}
+};
 
-export async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
+export const collectEvents = async <T>(
+  events: AsyncIterable<T>
+): Promise<T[]> => {
   const collected: T[] = [];
 
   for await (const event of events) {
@@ -188,11 +215,11 @@ export async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
   }
 
   return collected;
-}
+};
 
-export async function collectRemaining<T>(
+export const collectRemaining = async <T>(
   iterator: AsyncIterator<T>
-): Promise<T[]> {
+): Promise<T[]> => {
   const collected: T[] = [];
 
   while (true) {
@@ -204,12 +231,12 @@ export async function collectRemaining<T>(
 
     collected.push(result.value);
   }
-}
+};
 
-export async function collectUntil<T>(
+export const collectUntil = async <T>(
   iterator: AsyncIterator<T>,
   predicate: (value: T) => boolean
-): Promise<T[]> {
+): Promise<T[]> => {
   const collected: T[] = [];
 
   while (true) {
@@ -225,9 +252,9 @@ export async function collectUntil<T>(
       return collected;
     }
   }
-}
+};
 
-export async function waitFor(predicate: () => boolean): Promise<void> {
+export const waitFor = async (predicate: () => boolean): Promise<void> => {
   for (let attempt = 0; attempt < 50; attempt += 1) {
     if (predicate()) {
       return;
@@ -239,38 +266,4 @@ export async function waitFor(predicate: () => boolean): Promise<void> {
   }
 
   throw new Error("condition was not met before timeout");
-}
-
-export function toRecord(value: unknown): Record<string, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    return {};
-  }
-
-  return Object.fromEntries(Object.entries(value));
-}
-
-function toToolInputSchema(
-  tool: TuvrenToolDefinition
-): ReturnType<ToolRegistry["toDefinitions"]>[number]["inputSchema"] {
-  const { inputSchema } = tool;
-
-  if (isCustomSchema(inputSchema)) {
-    return inputSchema.toJSONSchema();
-  }
-
-  return inputSchema;
-}
-
-function isCustomSchema(
-  inputSchema: TuvrenToolDefinition["inputSchema"]
-): inputSchema is Extract<
-  TuvrenToolDefinition["inputSchema"],
-  { toJSONSchema(): unknown }
-> {
-  return (
-    inputSchema !== null &&
-    typeof inputSchema === "object" &&
-    "toJSONSchema" in inputSchema &&
-    typeof inputSchema.toJSONSchema === "function"
-  );
-}
+};

@@ -80,34 +80,34 @@ const USAGE_CACHE_HIT: ProviderUsage = { inputTokens: 64, outputTokens: 40 };
 // the assistant message's providerMetadata (aiSdkBridge.rawUsage) and which the
 // runner persists verbatim. `cacheRead` reflects the cache state; the rest is the
 // fixed prompt/output accounting.
-function bridgeCostMetadata(cacheReadTokens: number): Record<string, unknown> {
-  return {
-    aiSdkBridge: {
-      rawUsage: {
-        inputTokens: {
-          cacheRead: cacheReadTokens,
-          cacheWrite: 0,
-          noCache: 1024 - cacheReadTokens,
-          total: 1024,
-        },
-        outputTokens: { reasoning: 0, text: 40, total: 40 },
+const bridgeCostMetadata = (
+  cacheReadTokens: number
+): Record<string, unknown> => ({
+  aiSdkBridge: {
+    rawUsage: {
+      inputTokens: {
+        cacheRead: cacheReadTokens,
+        cacheWrite: 0,
+        noCache: 1024 - cacheReadTokens,
+        total: 1024,
       },
+      outputTokens: { reasoning: 0, text: 40, total: 40 },
     },
-  };
-}
+  },
+});
 
 /**
  * A stateless provider that returns fixed produced content with a fixed usage
  * profile and optional message-level providerMetadata, recording every prompt it
  * is handed. It holds no cross-turn state.
  */
-function createCachingProvider(options: {
+const createCachingProvider = (options: {
   providerMetadata?: Record<string, unknown>;
   usage: ProviderUsage;
 }): {
   capturedPrompts: TuvrenMessage[][];
   provider: TuvrenProvider;
-} {
+} => {
   const capturedPrompts: TuvrenMessage[][] = [];
   const provider: TuvrenProvider = {
     async generate(prompt: TuvrenPrompt) {
@@ -127,9 +127,9 @@ function createCachingProvider(options: {
     },
   };
   return { capturedPrompts, provider };
-}
+};
 
-function buildRuntime() {
+const buildRuntime = () => {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntimeCore({
     defaultRunnerId: REACT_RUNNER_ID,
@@ -139,17 +139,17 @@ function buildRuntime() {
     ]),
   });
   return { harness, runtime };
-}
+};
 
 /**
  * Runs a single turn to completion and returns the branch id plus the cost the
  * runtime surfaced on the terminal message.done event.
  */
-async function runTurn(
+const runTurn = async (
   runtime: ReturnType<typeof buildRuntime>,
   provider: TuvrenProvider,
   text: string
-): Promise<{ branchId: string; usage: ProviderUsage | undefined }> {
+): Promise<{ branchId: string; usage: ProviderUsage | undefined }> => {
   const thread = await runtime.runtime.createThread({});
   const handle = runtime.runtime.executeTurn({
     branchId: thread.branchId,
@@ -164,11 +164,11 @@ async function runTurn(
       event.type === "message.done"
   );
   return { branchId: thread.branchId, usage: done?.usage };
-}
+};
 
-function lastAssistantMessage(
+const lastAssistantMessage = (
   messages: unknown[]
-): Extract<TuvrenMessage, { role: "assistant" }> {
+): Extract<TuvrenMessage, { role: "assistant" }> => {
   const assistant = [...(messages as TuvrenMessage[])]
     .reverse()
     .find((message) => message.role === "assistant");
@@ -176,7 +176,7 @@ function lastAssistantMessage(
     throw new Error("expected a durable assistant message");
   }
   return assistant;
-}
+};
 
 describe("KRT-BH004 correctness-neutral provider-side caching", () => {
   test("with cost on the usage channel, the durable record is byte-identical across a cache miss and hit; only cost differs", async () => {
