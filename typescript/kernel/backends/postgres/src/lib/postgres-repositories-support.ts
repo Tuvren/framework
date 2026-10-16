@@ -190,7 +190,7 @@ interface SupportRepositoryHelpers {
   ) => Promise<StoredThread | null>;
 }
 
-function assertSafeThreadListLimit(limit: number | undefined): void {
+const assertSafeThreadListLimit = (limit: number | undefined): void => {
   if (limit !== undefined && !(Number.isSafeInteger(limit) && limit >= 0)) {
     throw persistenceError(
       "threads.list options.limit must be a non-negative safe integer",
@@ -198,14 +198,14 @@ function assertSafeThreadListLimit(limit: number | undefined): void {
       { limit }
     );
   }
-}
+};
 
 /**
  * Builds the `observeAnnotations`, `objects`, `orderedPathChunks`,
  * `schemas`, `stagedResults`, and `threads` repositories of a
  * `RuntimeBackendTx` for one scope partition.
  */
-export function createSupportRepositories(
+export const createSupportRepositories = (
   context: SupportRepositoryContext,
   helpers: SupportRepositoryHelpers
 ): Pick<
@@ -216,7 +216,7 @@ export function createSupportRepositories(
   | "schemas"
   | "stagedResults"
   | "threads"
-> {
+> => {
   const { assertTransactionActive, schemaName, scope, sql, writeTracker } =
     context;
 
@@ -656,4 +656,4 @@ export function createSupportRepositories(
       },
     },
   };
-}
+};

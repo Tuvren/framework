@@ -36,13 +36,13 @@ const POSTGRES_JS_CONNECTION_ERROR_CODES = new Set([
 ]);
 
 /** True for a runtime error raised by DNS lookup or socket I/O. */
-function isNetworkError(error: Error, code: string): boolean {
+const isNetworkError = (error: Error, code: string): boolean => {
   const syscall = Reflect.get(error, "syscall");
   return (
     (typeof syscall === "string" && NETWORK_SYSCALLS.has(syscall)) ||
     TLS_ERROR_CODE.test(code)
   );
-}
+};
 
 /**
  * True only for errors the PostgreSQL driver/engine actually produced. A
@@ -54,26 +54,26 @@ function isNetworkError(error: Error, code: string): boolean {
  * errors and Postgres.js's own connection-lifecycle errors are classified
  * separately by {@link normalizeBackendError}.
  */
-function isPostgresEngineError(error: Error, code: string): boolean {
+const isPostgresEngineError = (error: Error, code: string): boolean => {
   return (
     SQLSTATE_CODE.test(code) &&
     (error.name === "PostgresError" ||
       typeof Reflect.get(error, "severity") === "string")
   );
-}
+};
 
 /**
  * Constructs the backend's uniform `TuvrenPersistenceError`. Codes follow the
  * `postgres_backend_<reason>` convention.
  */
-export function persistenceError(
+export const persistenceError = (
   message: string,
   code: string,
   details?: unknown,
   cause?: unknown
-): TuvrenPersistenceError {
+): TuvrenPersistenceError => {
   return new TuvrenPersistenceError(message, { cause, code, details });
-}
+};
 
 /**
  * Normalizes any thrown value at the backend boundary so callers only ever
@@ -82,7 +82,7 @@ export function persistenceError(
  * the original as `cause`, other `Error`s pass through, and non-`Error`
  * values are wrapped as `postgres_backend_operation_failed`.
  */
-export function normalizeBackendError(error: unknown): Error {
+export const normalizeBackendError = (error: unknown): Error => {
   if (error instanceof TuvrenPersistenceError) {
     return error;
   }
@@ -144,13 +144,13 @@ export function normalizeBackendError(error: unknown): Error {
     "postgres_backend_operation_failed",
     { value: String(error) }
   );
-}
+};
 
 /** Extracts a human-readable message from any thrown value. */
-export function getErrorMessage(error: unknown): string {
+export const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
     return error.message;
   }
 
   return String(error);
-}
+};

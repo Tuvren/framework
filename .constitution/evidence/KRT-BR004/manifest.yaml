@@ -602,7 +602,15 @@
     {"path":"M16-postgres-schema-before-syntactic-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"baseline"},
     {"path":"M16-postgres-schema-before-type-aware-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"baseline"},
     {"path":"M16-postgres-schema-after-syntactic-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"measurement"},
-    {"path":"M16-postgres-schema-after-type-aware-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"measurement"}
+    {"path":"M16-postgres-schema-after-type-aware-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"measurement"},
+    {"path":"M17-postgres-repositories-before-syntactic.json.gz","sha256":"c7418ad071625d2139fa2fd4cdb486793ba32839d96c866a0f936530c6e99c95","bytes":2336,"role":"baseline"},
+    {"path":"M17-postgres-repositories-before-type-aware.json.gz","sha256":"ba286be63d39d23f6caeb2243ce913a1a85495b5445749614b20117c911c4166","bytes":3028,"role":"baseline"},
+    {"path":"M17-postgres-repositories-after-syntactic.json.gz","sha256":"a917a85839c121a745e78a7037410053432118fe1ce14c492ecf467af606c993","bytes":1168,"role":"measurement"},
+    {"path":"M17-postgres-repositories-after-type-aware.json.gz","sha256":"d9471e8f4863e62958d57a877afb8473efb48beba1bdada78c9bc2828366e4a6","bytes":1874,"role":"measurement"},
+    {"path":"M17-postgres-repositories-before-syntactic-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"baseline"},
+    {"path":"M17-postgres-repositories-before-type-aware-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"baseline"},
+    {"path":"M17-postgres-repositories-after-syntactic-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"measurement"},
+    {"path":"M17-postgres-repositories-after-type-aware-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"measurement"}
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."
 }
