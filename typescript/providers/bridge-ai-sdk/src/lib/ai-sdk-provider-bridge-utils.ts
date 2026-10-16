@@ -93,6 +93,97 @@ const ASSISTANT_TEXT_REPLAY_PROVIDER_KEYS = {
 } as const;
 
 /**
+ * Strict plain-object predicate: `Object.prototype` or `null` prototype
+ * only, no symbol keys, and only enumerable data properties — the shape the
+ * bridge accepts for provider options and metadata records.
+ */
+export const isPlainObject = (
+  value: unknown
+): value is Record<string, unknown> => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+
+  if (prototype !== Object.prototype && prototype !== null) {
+    return false;
+  }
+
+  if (Object.getOwnPropertySymbols(value).length > 0) {
+    return false;
+  }
+
+  return Object.values(Object.getOwnPropertyDescriptors(value)).every(
+    (descriptor) => descriptor.enumerable === true && "value" in descriptor
+  );
+};
+
+/**
+ * Recursively converts an arbitrary value into a JSON-safe shape for
+ * metadata and error details: Dates/URLs become strings, `Uint8Array`
+ * becomes a base64-tagged object, Errors keep name and message,
+ * `undefined` object entries are dropped, and anything non-plain is
+ * stringified.
+ */
+export const sanitizeMetadataValue = (value: unknown): unknown => {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (value instanceof URL) {
+    return value.toString();
+  }
+
+  if (value instanceof Uint8Array) {
+    return {
+      base64: Buffer.from(value).toString("base64"),
+      type: "uint8array",
+    };
+  }
+
+  if (value instanceof Error) {
+    return {
+      message: value.message,
+      name: value.name,
+    };
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => sanitizeMetadataValue(entry));
+  }
+
+  if (isPlainObject(value)) {
+    const sanitized: Record<string, unknown> = {};
+
+    for (const [key, entry] of Object.entries(value)) {
+      const normalized = sanitizeMetadataValue(entry);
+
+      if (normalized !== undefined) {
+        sanitized[key] = normalized;
+      }
+    }
+
+    return sanitized;
+  }
+
+  return String(value);
+};
+
+/**
  * Records a stream part's provider metadata (with part type and ids) into the
  * per-call collection surfaced on the finish chunk's provider metadata.
  * Parts without `providerMetadata` are ignored.
@@ -114,6 +205,171 @@ export function captureStreamPartMetadata(
     })
   );
 }
+
+/**
+ * Sanitizes a record via {@link sanitizeMetadataValue}, returning `undefined`
+ * unless the result is still a plain object.
+ */
+export const sanitizeRecord = (
+  value: Record<string, unknown> | undefined
+): Record<string, unknown> | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const sanitized = sanitizeMetadataValue(value);
+  return isPlainObject(sanitized) ? sanitized : undefined;
+};
+
+/**
+ * Constructs a `TuvrenProviderError` with a stable bridge error code and
+ * sanitized (JSON-safe) details.
+ */
+export const bridgeError = (
+  message: string,
+  code: string,
+  details?: Record<string, unknown>
+): TuvrenProviderError =>
+  new TuvrenProviderError(message, {
+    code,
+    ...(details === undefined
+      ? {}
+      : {
+          details: sanitizeMetadataValue(details),
+        }),
+  });
+
+/**
+ * Recursive JSON-value predicate; non-finite numbers and non-plain objects
+ * are rejected.
+ */
+export const isJsonValue = (value: unknown): value is JsonValue => {
+  if (value === null || typeof value === "string") {
+    return true;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value);
+  }
+
+  if (typeof value === "boolean") {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.every((entry) => isJsonValue(entry));
+  }
+
+  if (!isPlainObject(value)) {
+    return false;
+  }
+
+  return Object.values(value).every((entry) => isJsonValue(entry));
+};
+
+/** Recursively clones one already-validated {@link JsonValue}. */
+const cloneJsonValue = (value: JsonValue): JsonValue => {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => cloneJsonValue(entry));
+  }
+
+  const cloned: JsonObject = {};
+
+  for (const [key, entry] of Object.entries(value)) {
+    if (entry === undefined) {
+      continue;
+    }
+
+    if (!isJsonValue(entry)) {
+      throw bridgeError(
+        "AI SDK bridge JSON object values must be JSON-serializable",
+        "invalid_ai_sdk_bridge_config",
+        {
+          key,
+          value: entry,
+        }
+      );
+    }
+
+    cloned[key] = cloneJsonValue(entry);
+  }
+
+  return cloned;
+};
+
+/**
+ * Deep-clones a record as a JSON object, dropping `undefined` entries.
+ *
+ * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config` when
+ *   an entry is not JSON-serializable.
+ */
+export const cloneJsonObject = (value: Record<string, unknown>): JsonObject => {
+  const cloned: JsonObject = {};
+
+  for (const [key, entry] of Object.entries(value)) {
+    if (entry === undefined) {
+      continue;
+    }
+
+    if (!isJsonValue(entry)) {
+      throw bridgeError(
+        "AI SDK bridge JSON object values must be JSON-serializable",
+        "invalid_ai_sdk_bridge_config",
+        {
+          key,
+          value: entry,
+        }
+      );
+    }
+
+    cloned[key] = cloneJsonValue(entry);
+  }
+
+  return cloned;
+};
+
+/**
+ * Deep-clones a provider-options record, enforcing that every provider
+ * namespace is a plain JSON-serializable object.
+ *
+ * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config` when
+ *   a namespace entry is not a plain object.
+ */
+export const cloneProviderOptions = (
+  value: SharedV3ProviderOptions | Record<string, unknown> | undefined
+): SharedV3ProviderOptions | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const cloned: SharedV3ProviderOptions = {};
+
+  for (const [key, entry] of Object.entries(value)) {
+    if (!isPlainObject(entry)) {
+      throw bridgeError(
+        "AI SDK bridge providerOptions entries must be plain objects",
+        "invalid_ai_sdk_bridge_config",
+        {
+          providerNamespace: key,
+          value: entry,
+        }
+      );
+    }
+
+    cloned[key] = cloneJsonObject(entry);
+  }
+
+  return cloned;
+};
 
 /**
  * Maps a prompt part's stored `providerMetadata` to AI SDK `providerOptions`
@@ -238,6 +494,32 @@ function getFlatReasoningSignatureProviderNamespace(
 
   return "anthropic";
 }
+
+/**
+ * Structurally clones metadata values (arrays, plain objects, `Uint8Array`);
+ * other values are returned as-is.
+ */
+export const cloneMetadataValue = <T>(value: T): T => {
+  if (value instanceof Uint8Array) {
+    return new Uint8Array(value) as T;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => cloneMetadataValue(entry)) as T;
+  }
+
+  if (isPlainObject(value)) {
+    const clone: Record<string, unknown> = {};
+
+    for (const [key, entry] of Object.entries(value)) {
+      clone[key] = cloneMetadataValue(entry);
+    }
+
+    return clone as T;
+  }
+
+  return value;
+};
 
 /**
  * Keeps provider-namespaced plain-object entries and lifts a flat
@@ -529,123 +811,10 @@ export function hasAnthropicRedactedReasoningMetadata(
   );
 }
 
-/**
- * Sanitizes a record via {@link sanitizeMetadataValue}, returning `undefined`
- * unless the result is still a plain object.
- */
-export function sanitizeRecord(
-  value: Record<string, unknown> | undefined
-): Record<string, unknown> | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  const sanitized = sanitizeMetadataValue(value);
-  return isPlainObject(sanitized) ? sanitized : undefined;
-}
-
-/**
- * Recursively converts an arbitrary value into a JSON-safe shape for
- * metadata and error details: Dates/URLs become strings, `Uint8Array`
- * becomes a base64-tagged object, Errors keep name and message,
- * `undefined` object entries are dropped, and anything non-plain is
- * stringified.
- */
-export function sanitizeMetadataValue(value: unknown): unknown {
-  if (
-    value === null ||
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean"
-  ) {
-    return value;
-  }
-
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-
-  if (value instanceof URL) {
-    return value.toString();
-  }
-
-  if (value instanceof Uint8Array) {
-    return {
-      base64: Buffer.from(value).toString("base64"),
-      type: "uint8array",
-    };
-  }
-
-  if (value instanceof Error) {
-    return {
-      message: value.message,
-      name: value.name,
-    };
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((entry) => sanitizeMetadataValue(entry));
-  }
-
-  if (isPlainObject(value)) {
-    const sanitized: Record<string, unknown> = {};
-
-    for (const [key, entry] of Object.entries(value)) {
-      const normalized = sanitizeMetadataValue(entry);
-
-      if (normalized !== undefined) {
-        sanitized[key] = normalized;
-      }
-    }
-
-    return sanitized;
-  }
-
-  return String(value);
-}
-
-/**
- * Deep-clones a provider-options record, enforcing that every provider
- * namespace is a plain JSON-serializable object.
- *
- * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config` when
- *   a namespace entry is not a plain object.
- */
-export function cloneProviderOptions(
-  value: SharedV3ProviderOptions | Record<string, unknown> | undefined
-): SharedV3ProviderOptions | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  const cloned: SharedV3ProviderOptions = {};
-
-  for (const [key, entry] of Object.entries(value)) {
-    if (!isPlainObject(entry)) {
-      throw bridgeError(
-        "AI SDK bridge providerOptions entries must be plain objects",
-        "invalid_ai_sdk_bridge_config",
-        {
-          providerNamespace: key,
-          value: entry,
-        }
-      );
-    }
-
-    cloned[key] = cloneJsonObject(entry);
-  }
-
-  return cloned;
-}
-
 /** Shallow-clones a headers record so callers cannot mutate bridge defaults. */
-export function cloneHeaders(
+export const cloneHeaders = (
   value: Record<string, string | undefined> | undefined
-): Record<string, string | undefined> | undefined {
+): Record<string, string | undefined> | undefined => {
   if (value === undefined) {
     return undefined;
   }
@@ -653,181 +822,21 @@ export function cloneHeaders(
   return {
     ...value,
   };
-}
-
-/**
- * Structurally clones metadata values (arrays, plain objects, `Uint8Array`);
- * other values are returned as-is.
- */
-export function cloneMetadataValue<T>(value: T): T {
-  if (value instanceof Uint8Array) {
-    return new Uint8Array(value) as T;
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((entry) => cloneMetadataValue(entry)) as T;
-  }
-
-  if (isPlainObject(value)) {
-    const clone: Record<string, unknown> = {};
-
-    for (const [key, entry] of Object.entries(value)) {
-      clone[key] = cloneMetadataValue(entry);
-    }
-
-    return clone as T;
-  }
-
-  return value;
-}
+};
 
 /** Clones binary file data; string (URL/base64) file data is immutable as-is. */
-export function cloneFileData(value: string | Uint8Array): string | Uint8Array {
-  return value instanceof Uint8Array ? new Uint8Array(value) : value;
-}
+export const cloneFileData = (
+  value: string | Uint8Array
+): string | Uint8Array =>
+  value instanceof Uint8Array ? new Uint8Array(value) : value;
 
 /**
  * Deep-clones a structured-output schema before handing it to Ajv or the AI
  * SDK, so neither can observe later host mutations.
  */
-export function cloneJsonSchema(
+export const cloneJsonSchema = (
   schema: StructuredOutputRequest["schema"]
-): JSONSchema7 {
-  return cloneMetadataValue(schema) as JSONSchema7;
-}
-
-/**
- * Parses text as JSON, wrapping any parse failure in a `TuvrenProviderError`
- * with the given code and the offending text in its details.
- */
-export function parseJsonInput(
-  text: string,
-  label: string,
-  code: string,
-  details?: Record<string, unknown>
-): unknown {
-  try {
-    return JSON.parse(text);
-  } catch (error: unknown) {
-    throw normalizeBridgeError(error, code, {
-      ...details,
-      label,
-      text,
-    });
-  }
-}
-
-/**
- * A tool part is "provider-owned" when the provider executed it itself
- * (`providerExecuted`) or it is a runtime-defined provider tool (`dynamic`, e.g.
- * an MCP call). AI SDK v6 surfaces both flags on provider-executed tool-calls
- * (vercel/ai #10888). Client-executed function tools carry neither.
- *
- * Invariant: this predicate only CLASSIFIES; it never decides skip-vs-execute on
- * its own. The bridge skips a provider-owned tool only when the host ALSO
- * declared that tool name provider-native/mediated (`ProviderToolClassLookup`
- * resolves it). A `dynamic` client function tool the host never declared
- * provider-native therefore can never be silently swallowed — it falls through
- * to the baseline rejection, exactly as before this seam existed.
- */
-export function isProviderOwnedToolPart(part: {
-  dynamic?: boolean;
-  providerExecuted?: boolean;
-}): boolean {
-  return part.providerExecuted === true || part.dynamic === true;
-}
-
-/**
- * Builds the `unsupported_ai_sdk_content` rejection for provider-owned tool
- * execution the host never declared provider-native/mediated — the baseline
- * bridge's protection against silently accepting provider-side execution.
- */
-export function providerOwnedToolExecutionUnsupportedError(
-  toolName: string,
-  model: {
-    modelId: string;
-    provider: string;
-  }
-): TuvrenProviderError {
-  return bridgeError(
-    "provider-owned tool execution is out of scope for the baseline AI SDK bridge",
-    "unsupported_ai_sdk_content",
-    {
-      modelId: model.modelId,
-      provider: model.provider,
-      reason: "provider_owned_tool_execution_unsupported",
-      toolName,
-    }
-  );
-}
-
-/**
- * Looks up the tool state seeded by `tool-input-start` for a provider call
- * id.
- *
- * @throws TuvrenProviderError with code `unsupported_ai_sdk_stream_part`
- *   when input parts arrive before the tool input started.
- */
-export function requireToolState(
-  toolStates: Map<string, StreamToolState>,
-  id: string,
-  model: {
-    modelId: string;
-    provider: string;
-  },
-  part: {
-    type: string;
-  }
-): StreamToolState {
-  const state = toolStates.get(id);
-
-  if (state !== undefined) {
-    return state;
-  }
-
-  throw bridgeError(
-    "AI SDK stream emitted tool input deltas before tool input started",
-    "unsupported_ai_sdk_stream_part",
-    {
-      modelId: model.modelId,
-      partType: part.type,
-      provider: model.provider,
-      providerCallId: id,
-    }
-  );
-}
-
-/**
- * Builds the `unsupported_ai_sdk_stream_part` rejection for stream parts
- * outside the baseline contract, tagging provider-owned approval/result
- * parts with a machine-readable `reason`.
- */
-export function unsupportedStreamPartError(
-  partType: string,
-  model: {
-    modelId: string;
-    provider: string;
-  }
-): TuvrenProviderError {
-  let reason: string | undefined;
-
-  if (partType === "tool-approval-request") {
-    reason = "provider_owned_tool_approval_unsupported";
-  } else if (partType === "tool-result") {
-    reason = "provider_owned_tool_result_unsupported";
-  }
-
-  return bridgeError(
-    `AI SDK stream part "${partType}" is out of scope for the baseline bridge`,
-    "unsupported_ai_sdk_stream_part",
-    {
-      modelId: model.modelId,
-      partType,
-      provider: model.provider,
-      ...(reason === undefined ? {} : { reason }),
-    }
-  );
-}
+): JSONSchema7 => cloneMetadataValue(schema) as JSONSchema7;
 
 /**
  * Normalizes any thrown value into a `TuvrenProviderError`: existing
@@ -835,11 +844,11 @@ export function unsupportedStreamPartError(
  * `AISDKError`s and plain `Error`s keep their message with the error name in
  * details, and anything else is sanitized into the details.
  */
-export function normalizeBridgeError(
+export const normalizeBridgeError = (
   error: unknown,
   code: string,
   details?: Record<string, unknown>
-): TuvrenProviderError {
+): TuvrenProviderError => {
   if (error instanceof TuvrenProviderError) {
     return error;
   }
@@ -862,127 +871,134 @@ export function normalizeBridgeError(
     ...details,
     error: sanitizeMetadataValue(error),
   });
-}
+};
 
 /**
- * Constructs a `TuvrenProviderError` with a stable bridge error code and
- * sanitized (JSON-safe) details.
+ * Parses text as JSON, wrapping any parse failure in a `TuvrenProviderError`
+ * with the given code and the offending text in its details.
  */
-export function bridgeError(
-  message: string,
+export const parseJsonInput = (
+  text: string,
+  label: string,
   code: string,
   details?: Record<string, unknown>
-): TuvrenProviderError {
-  return new TuvrenProviderError(message, {
-    code,
-    ...(details === undefined
-      ? {}
-      : {
-          details: sanitizeMetadataValue(details),
-        }),
-  });
-}
+): unknown => {
+  try {
+    return JSON.parse(text);
+  } catch (error: unknown) {
+    throw normalizeBridgeError(error, code, {
+      ...details,
+      label,
+      text,
+    });
+  }
+};
 
 /**
- * Strict plain-object predicate: `Object.prototype` or `null` prototype
- * only, no symbol keys, and only enumerable data properties — the shape the
- * bridge accepts for provider options and metadata records.
- */
-export function isPlainObject(
-  value: unknown
-): value is Record<string, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    return false;
-  }
-
-  const prototype = Object.getPrototypeOf(value);
-
-  if (prototype !== Object.prototype && prototype !== null) {
-    return false;
-  }
-
-  if (Object.getOwnPropertySymbols(value).length > 0) {
-    return false;
-  }
-
-  return Object.values(Object.getOwnPropertyDescriptors(value)).every(
-    (descriptor) => descriptor.enumerable === true && "value" in descriptor
-  );
-}
-
-/**
- * Recursive JSON-value predicate; non-finite numbers and non-plain objects
- * are rejected.
- */
-export function isJsonValue(value: unknown): value is JsonValue {
-  if (value === null || typeof value === "string") {
-    return true;
-  }
-
-  if (typeof value === "number") {
-    return Number.isFinite(value);
-  }
-
-  if (typeof value === "boolean") {
-    return true;
-  }
-
-  if (Array.isArray(value)) {
-    return value.every((entry) => isJsonValue(entry));
-  }
-
-  if (!isPlainObject(value)) {
-    return false;
-  }
-
-  return Object.values(value).every((entry) => isJsonValue(entry));
-}
-
-/**
- * Deep-clones a record as a JSON object, dropping `undefined` entries.
+ * A tool part is "provider-owned" when the provider executed it itself
+ * (`providerExecuted`) or it is a runtime-defined provider tool (`dynamic`, e.g.
+ * an MCP call). AI SDK v6 surfaces both flags on provider-executed tool-calls
+ * (vercel/ai #10888). Client-executed function tools carry neither.
  *
- * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config` when
- *   an entry is not JSON-serializable.
+ * Invariant: this predicate only CLASSIFIES; it never decides skip-vs-execute on
+ * its own. The bridge skips a provider-owned tool only when the host ALSO
+ * declared that tool name provider-native/mediated (`ProviderToolClassLookup`
+ * resolves it). A `dynamic` client function tool the host never declared
+ * provider-native therefore can never be silently swallowed — it falls through
+ * to the baseline rejection, exactly as before this seam existed.
  */
-export function cloneJsonObject(value: Record<string, unknown>): JsonObject {
-  const cloned: JsonObject = {};
+export const isProviderOwnedToolPart = (part: {
+  dynamic?: boolean;
+  providerExecuted?: boolean;
+}): boolean => part.providerExecuted === true || part.dynamic === true;
 
-  for (const [key, entry] of Object.entries(value)) {
-    if (entry === undefined) {
-      continue;
+/**
+ * Builds the `unsupported_ai_sdk_content` rejection for provider-owned tool
+ * execution the host never declared provider-native/mediated — the baseline
+ * bridge's protection against silently accepting provider-side execution.
+ */
+export const providerOwnedToolExecutionUnsupportedError = (
+  toolName: string,
+  model: {
+    modelId: string;
+    provider: string;
+  }
+): TuvrenProviderError =>
+  bridgeError(
+    "provider-owned tool execution is out of scope for the baseline AI SDK bridge",
+    "unsupported_ai_sdk_content",
+    {
+      modelId: model.modelId,
+      provider: model.provider,
+      reason: "provider_owned_tool_execution_unsupported",
+      toolName,
     }
+  );
 
-    if (!isJsonValue(entry)) {
-      throw bridgeError(
-        "AI SDK bridge JSON object values must be JSON-serializable",
-        "invalid_ai_sdk_bridge_config",
-        {
-          key,
-          value: entry,
-        }
-      );
+/**
+ * Looks up the tool state seeded by `tool-input-start` for a provider call
+ * id.
+ *
+ * @throws TuvrenProviderError with code `unsupported_ai_sdk_stream_part`
+ *   when input parts arrive before the tool input started.
+ */
+export const requireToolState = (
+  toolStates: Map<string, StreamToolState>,
+  id: string,
+  model: {
+    modelId: string;
+    provider: string;
+  },
+  part: {
+    type: string;
+  }
+): StreamToolState => {
+  const state = toolStates.get(id);
+
+  if (state !== undefined) {
+    return state;
+  }
+
+  throw bridgeError(
+    "AI SDK stream emitted tool input deltas before tool input started",
+    "unsupported_ai_sdk_stream_part",
+    {
+      modelId: model.modelId,
+      partType: part.type,
+      provider: model.provider,
+      providerCallId: id,
     }
+  );
+};
 
-    cloned[key] = cloneJsonValue(entry);
+/**
+ * Builds the `unsupported_ai_sdk_stream_part` rejection for stream parts
+ * outside the baseline contract, tagging provider-owned approval/result
+ * parts with a machine-readable `reason`.
+ */
+export const unsupportedStreamPartError = (
+  partType: string,
+  model: {
+    modelId: string;
+    provider: string;
+  }
+): TuvrenProviderError => {
+  let reason: string | undefined;
+
+  if (partType === "tool-approval-request") {
+    reason = "provider_owned_tool_approval_unsupported";
+  } else if (partType === "tool-result") {
+    reason = "provider_owned_tool_result_unsupported";
   }
 
-  return cloned;
-}
-
-/** Recursively clones one already-validated {@link JsonValue}. */
-function cloneJsonValue(value: JsonValue): JsonValue {
-  if (
-    value === null ||
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean"
-  ) {
-    return value;
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((entry) => cloneJsonValue(entry));
-  }
-
-  return cloneJsonObject(value);
-}
+  return bridgeError(
+    `AI SDK stream part "${partType}" is out of scope for the baseline bridge`,
+    "unsupported_ai_sdk_stream_part",
+    {
+      modelId: model.modelId,
+      partType,
+      provider: model.provider,
+      ...(reason === undefined ? {} : { reason }),
+    }
+  );
+};
