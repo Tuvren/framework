@@ -682,6 +682,30 @@
       "sha256": "1bfffade260fbb977bac71364b3b14bb9b113eb6eee4897bcf07ab7a8d0fe3d3",
       "bytes": 1289,
       "role": "measurement"
+    },
+    {
+      "path": "M21-sqlite-transaction-before-syntactic.json.gz",
+      "sha256": "f15ba7a2110aa1f24c0d248332e0e48f736e8774d76c40b39e97b83f58006bff",
+      "bytes": 1360,
+      "role": "baseline"
+    },
+    {
+      "path": "M21-sqlite-transaction-before-type-aware.json.gz",
+      "sha256": "1c0c0f29731b46dd38df5e28a030e33ab620ef515394555ba63bedd207c3cf27",
+      "bytes": 1600,
+      "role": "baseline"
+    },
+    {
+      "path": "M21-sqlite-transaction-after-syntactic.json.gz",
+      "sha256": "f35b2d6b81211f85042e0ea822af01c2b4d3e97dbf3ea3901f82d4b600e6ec15",
+      "bytes": 505,
+      "role": "measurement"
+    },
+    {
+      "path": "M21-sqlite-transaction-after-type-aware.json.gz",
+      "sha256": "fc46dbec6e4a5db01bdb1e6d666dad55ca0ca3f9fa0c05b8c1748d10328bc07f",
+      "bytes": 772,
+      "role": "measurement"
     }
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."

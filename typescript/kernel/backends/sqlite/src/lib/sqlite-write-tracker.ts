@@ -32,6 +32,11 @@ interface TrackedRecord<T> {
   before: T | null;
 }
 
+/** Shallow-clones a stored branch row for before/after snapshotting. */
+const cloneStoredBranch = (record: StoredBranch): StoredBranch => {
+  return { ...record };
+};
+
 /**
  * Records which rows a transaction touched so pre-commit validation
  * (`validateTransactionWriteSet` in sqlite-transaction-validation) can
@@ -160,9 +165,4 @@ export class TransactionWriteTracker {
   recordTurnTreePut(record: StoredTurnTree): void {
     this.turnTreeHashes.add(record.hash);
   }
-}
-
-/** Shallow-clones a stored branch row for before/after snapshotting. */
-function cloneStoredBranch(record: StoredBranch): StoredBranch {
-  return { ...record };
 }
