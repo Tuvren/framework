@@ -53,6 +53,7 @@ import {
 } from "./runtime-core-recovery.js";
 import { synthesizeResponse } from "./runtime-core-response.js";
 import { cloneValue } from "./runtime-core-shared.js";
+import { finalizeToolBatchProjection } from "./runtime-core-tool-batch-finalization.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import { applySanitizeHookToPart } from "./tool-execution-helpers.js";
 
@@ -992,16 +993,28 @@ async function completePreparedIteration(
 
   resolution = createCancelledResolution(input.handle) ?? resolution;
 
-  const canonicalizedRecovery = canonicalizeRecoveredToolBatchHistory(
-    input.headState,
-    prepared.recoveryPlan,
-    prepared.stagedMessageHashes,
-    prepared.stagedMessages
-  );
-  const checkpointHeadState =
-    canonicalizedRecovery?.headState ?? input.headState;
+  const finalizedProjection =
+    prepared.recoveryPlan === undefined ||
+    prepared.recoveryPlan.disposition === "re_infer"
+      ? undefined
+      : finalizeToolBatchProjection(
+          input.headState,
+          prepared.recoveryPlan.assistantMessageHash,
+          prepared.stagedMessageHashes,
+          prepared.stagedMessages,
+          prepared.toolResults
+        );
+  const checkpointHeadState = finalizedProjection?.headState ?? input.headState;
   const checkpointAppendedHashes =
-    canonicalizedRecovery === undefined ? prepared.stagedMessageHashes : [];
+    finalizedProjection === undefined ? prepared.stagedMessageHashes : [];
+  const finalizedToolResults =
+    finalizedProjection?.toolResults ?? prepared.toolResults;
+  const afterIterationMessages =
+    finalizedProjection === undefined
+      ? input.headState.messages
+      : checkpointHeadState.messages;
+  const afterIterationStagedMessages =
+    finalizedProjection === undefined ? prepared.stagedMessages : [];
 
   const manifest = prepared.rebuildManifestFromHistory
     ? updateContextManifest(
@@ -1053,9 +1066,9 @@ async function completePreparedIteration(
     iterationRunId,
     resolution,
     prepared.runnerResponse,
-    prepared.toolResults,
-    input.headState.messages,
-    prepared.stagedMessages,
+    finalizedToolResults,
+    afterIterationMessages,
+    afterIterationStagedMessages,
     cleanManifest
   );
   resolution = await host.reconcileCheckpointedPauseResolution(
@@ -1088,105 +1101,8 @@ async function completePreparedIteration(
       resolution,
       stableHeadTurnNodeHash: input.headState.branchHeadHash,
       toolExecutionMode: prepared.toolExecutionMode,
-      toolResults: prepared.toolResults,
+      toolResults: finalizedToolResults,
       turnNodeHash,
-    },
-  };
-}
-
-function canonicalizeRecoveredToolBatchHistory(
-  headState: {
-    branchHeadHash: HashString;
-    manifest: ContextManifest;
-    messageHashes: HashString[];
-    messages: TuvrenMessage[];
-    turnNode: { turnTreeHash: HashString };
-  },
-  recoveryPlan: InterruptedIterationRecoveryPlan | undefined,
-  stagedHashes: HashString[],
-  stagedMessages: TuvrenMessage[]
-):
-  | {
-      headState: {
-        branchHeadHash: HashString;
-        manifest: ContextManifest;
-        messageHashes: HashString[];
-        messages: TuvrenMessage[];
-        turnNode: { turnTreeHash: HashString };
-      };
-    }
-  | undefined {
-  if (
-    recoveryPlan === undefined ||
-    recoveryPlan.disposition === "re_infer" ||
-    recoveryPlan.assistantMessageHash === undefined
-  ) {
-    return undefined;
-  }
-
-  const hashes = [...headState.messageHashes, ...stagedHashes];
-  const messagesByHash = new Map<HashString, TuvrenMessage>();
-  for (const [index, hash] of headState.messageHashes.entries()) {
-    const message = headState.messages[index];
-    if (message !== undefined) {
-      messagesByHash.set(hash, message);
-    }
-  }
-  for (const [index, hash] of stagedHashes.entries()) {
-    const message = stagedMessages[index];
-    if (message !== undefined) {
-      messagesByHash.set(hash, message);
-    }
-  }
-
-  const resultHashByCallId = new Map<string, HashString>();
-  const originalCallIds = new Set(
-    recoveryPlan.originalToolCalls.map((toolCall) => toolCall.callId)
-  );
-  for (const [hash, message] of messagesByHash) {
-    if (message.role !== "tool") {
-      continue;
-    }
-    for (const part of message.parts) {
-      if (
-        part.type === "tool_result" &&
-        originalCallIds.has(part.callId) &&
-        !resultHashByCallId.has(part.callId)
-      ) {
-        resultHashByCallId.set(part.callId, hash);
-      }
-    }
-  }
-
-  const orderedResultHashes = recoveryPlan.originalToolCalls.flatMap(
-    (toolCall) => {
-      const hash = resultHashByCallId.get(toolCall.callId);
-      return hash === undefined ? [] : [hash];
-    }
-  );
-  const uniqueResultHashes = [...new Set(orderedResultHashes)];
-  const assistantIndex = hashes.indexOf(recoveryPlan.assistantMessageHash);
-  if (assistantIndex < 0 || uniqueResultHashes.length < 2) {
-    return undefined;
-  }
-
-  const withoutResults = hashes.filter(
-    (hash) => !uniqueResultHashes.includes(hash)
-  );
-  const orderedAssistantIndex = withoutResults.indexOf(
-    recoveryPlan.assistantMessageHash
-  );
-  withoutResults.splice(orderedAssistantIndex + 1, 0, ...uniqueResultHashes);
-  const messages = withoutResults.flatMap((hash) => {
-    const message = messagesByHash.get(hash);
-    return message === undefined ? [] : [message];
-  });
-
-  return {
-    headState: {
-      ...headState,
-      messageHashes: withoutResults,
-      messages,
     },
   };
 }
