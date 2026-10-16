@@ -89,13 +89,627 @@ interface SqliteTableInfoPragmaRow {
 }
 
 /** Reads the applied-migration ledger (`backend_sqlite_migrations`), name-ordered. */
-export function loadAppliedMigrationNames(db: Database.Database): string[] {
+export const loadAppliedMigrationNames = (db: Database.Database): string[] => {
   return (
     db
       .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
       .all() as SqliteMigrationRow[]
   ).map((row) => row.name);
-}
+};
+
+/** Lists `sqlite_master` object names of the given `type`, name-ordered. */
+const loadSqliteMasterNames = (
+  db: Database.Database,
+  type: "index" | "table"
+): Set<string> => {
+  return new Set(
+    (
+      db
+        .prepare(
+          `SELECT name FROM sqlite_master WHERE type = '${type}' ORDER BY name`
+        )
+        .all() as { name: string }[]
+    ).map((row) => row.name)
+  );
+};
+
+// Per-migration validators below come in two flavors, both called from
+// validateMigrationState: `*SchemaPresence` checks only that a migration's
+// own tables/columns/indexes exist (cheap, run for every applied
+// migration), while `*SchemaShape` additionally checks the full expected
+// column/foreign-key/index shape for every table visible at that migration
+// generation (run only once, for the latest applied migration, since older
+// generations are subsumed by later ones' shape checks).
+
+const validateBaselineSchemaPresence = (
+  db: Database.Database,
+  persistenceError: SqlitePersistenceErrorFactory
+): void => {
+  const existingTables = loadSqliteMasterNames(db, "table");
+  const missingTables = INITIAL_SCHEMA_REQUIRED_TABLES.filter(
+    (tableName) => !existingTables.has(tableName)
+  );
+
+  if (missingTables.length > 0) {
+    throw persistenceError(
+      "sqlite backend found an applied migration without its required schema tables",
+      "sqlite_backend_applied_migration_schema_missing",
+      {
+        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+        missingTables,
+      }
+    );
+  }
+
+  const existingIndexes = loadSqliteMasterNames(db, "index");
+  const missingIndexes = INITIAL_SCHEMA_REQUIRED_INDEXES.filter(
+    (indexName) => !existingIndexes.has(indexName)
+  );
+
+  if (missingIndexes.length > 0) {
+    throw persistenceError(
+      "sqlite backend found an applied migration without its required schema indexes",
+      "sqlite_backend_applied_migration_index_missing",
+      {
+        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
+        missingIndexes,
+      }
+    );
+  }
+};
+
+const validateTargetedValidationSchemaPresence = (
+  db: Database.Database,
+  persistenceError: SqlitePersistenceErrorFactory
+): void => {
+  const existingTables = loadSqliteMasterNames(db, "table");
+  const missingTables = TARGETED_VALIDATION_REQUIRED_TABLES.filter(
+    (tableName) => !existingTables.has(tableName)
+  );
+
+  if (missingTables.length > 0) {
+    throw persistenceError(
+      "sqlite backend found an applied migration without its targeted validation tables",
+      "sqlite_backend_applied_migration_schema_missing",
+      {
+        migrationName: TARGETED_VALIDATION_MIGRATION_NAME,
+        missingTables,
+      }
+    );
+  }
+
+  const existingIndexes = loadSqliteMasterNames(db, "index");
+  const missingIndexes = TARGETED_VALIDATION_REQUIRED_INDEXES.filter(
+    (indexName) => !existingIndexes.has(indexName)
+  );
+
+  if (missingIndexes.length > 0) {
+    throw persistenceError(
+      "sqlite backend found an applied migration without its targeted validation indexes",
+      "sqlite_backend_applied_migration_index_missing",
+      {
+        migrationName: TARGETED_VALIDATION_MIGRATION_NAME,
+        missingIndexes,
+      }
+    );
+  }
+};
+
+const validatePendingSignalsAndAnnotationsSchemaPresence = (
+  db: Database.Database,
+  persistenceError: SqlitePersistenceErrorFactory
+): void => {
+  const tableInfo = db
+    .prepare("PRAGMA table_info(runs)")
+    .all() as SqliteTableInfoPragmaRow[];
+  const columns = new Map(tableInfo.map((column) => [column.name, column]));
+
+  for (const columnName of PRE_PENDING_RUN_COLUMN_NAMES) {
+    const column = columns.get(columnName);
+
+    if (column === undefined) {
+      throw persistenceError(
+        "sqlite backend found an applied migration without its pending signal schema columns",
+        "sqlite_backend_applied_migration_schema_missing",
+        {
+          columnName,
+          migrationName: PENDING_SIGNALS_AND_ANNOTATIONS_MIGRATION_NAME,
+          tableName: "runs",
+        }
+      );
+    }
+
+    if (column.type.toUpperCase() !== "BLOB" || column.notnull !== 0) {
+      throw persistenceError(
+        "sqlite backend found an applied migration column whose pending signal contract does not match the package schema",
+        "sqlite_backend_applied_migration_schema_mismatch",
+        {
+          actualColumn: {
+            name: column.name,
+            notNull: column.notnull === 1,
+            type: column.type.toUpperCase(),
+          },
+          expectedColumn: {
+            name: columnName,
+            notNull: false,
+            type: "BLOB",
+          },
+          migrationName: PENDING_SIGNALS_AND_ANNOTATIONS_MIGRATION_NAME,
+          tableName: "runs",
+        }
+      );
+    }
+  }
+};
+
+/** Groups `PRAGMA foreign_key_list` rows by foreign key id into one entry per key. */
+const groupForeignKeyRows = (
+  rows: readonly SqliteForeignKeyPragmaRow[]
+): ExpectedSqliteForeignKeySchema[] => {
+  const groupedRows = new Map<number, SqliteForeignKeyPragmaRow[]>();
+
+  for (const row of rows) {
+    const group = groupedRows.get(row.id) ?? [];
+    group.push(row);
+    groupedRows.set(row.id, group);
+  }
+
+  return [...groupedRows.entries()]
+    .sort((left, right) => left[0] - right[0])
+    .map(([, group]) => {
+      const sortedGroup = [...group].sort(
+        (left, right) => left.seq - right.seq
+      );
+      const [firstRow] = sortedGroup;
+      if (firstRow === undefined) {
+        throw new Error("expected at least one foreign key row");
+      }
+
+      return {
+        columns: sortedGroup.map((row) => row.from),
+        referencedColumns: sortedGroup.map((row) => row.to),
+        referencedTable: firstRow.table,
+      };
+    });
+};
+
+/** Order-sensitive equality of two expected-column-schema lists. */
+const areExpectedColumnsEqual = (
+  left: readonly ExpectedSqliteColumnSchema[],
+  right: readonly ExpectedSqliteColumnSchema[]
+): boolean => {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (const [index, leftColumn] of left.entries()) {
+    const rightColumn = right[index];
+    if (
+      rightColumn === undefined ||
+      leftColumn.name !== rightColumn.name ||
+      leftColumn.notNull !== rightColumn.notNull ||
+      leftColumn.primaryKeyOrder !== rightColumn.primaryKeyOrder ||
+      leftColumn.type !== rightColumn.type
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+/** Deterministic ordering for foreign-key schemas, used to normalize before comparing. */
+const compareExpectedForeignKeys = (
+  left: ExpectedSqliteForeignKeySchema,
+  right: ExpectedSqliteForeignKeySchema
+): number => {
+  return [
+    left.referencedTable,
+    left.columns.join("\u0000"),
+    left.referencedColumns.join("\u0000"),
+  ]
+    .join("\u0001")
+    .localeCompare(
+      [
+        right.referencedTable,
+        right.columns.join("\u0000"),
+        right.referencedColumns.join("\u0000"),
+      ].join("\u0001")
+    );
+};
+
+/** Order-sensitive equality of two string arrays. */
+const areStringArraysEqual = (
+  left: readonly string[],
+  right: readonly string[]
+): boolean => {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (const [index, leftValue] of left.entries()) {
+    if (right[index] !== leftValue) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+/** Order-insensitive equality of two expected-foreign-key-schema lists. */
+const areExpectedForeignKeysEqual = (
+  left: readonly ExpectedSqliteForeignKeySchema[],
+  right: readonly ExpectedSqliteForeignKeySchema[]
+): boolean => {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  const normalizedLeft = [...left].sort(compareExpectedForeignKeys);
+  const normalizedRight = [...right].sort(compareExpectedForeignKeys);
+
+  for (const [index, leftForeignKey] of normalizedLeft.entries()) {
+    const rightForeignKey = normalizedRight[index];
+    if (
+      rightForeignKey === undefined ||
+      leftForeignKey.referencedTable !== rightForeignKey.referencedTable ||
+      !areStringArraysEqual(leftForeignKey.columns, rightForeignKey.columns) ||
+      !areStringArraysEqual(
+        leftForeignKey.referencedColumns,
+        rightForeignKey.referencedColumns
+      )
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+/**
+ * Validates one table's live column shape (via `PRAGMA table_info`) and
+ * foreign keys (via `PRAGMA foreign_key_list`) against `expectedSchema`.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_applied_migration_schema_mismatch` on the first
+ *   mismatch.
+ */
+const validateSqliteTableSchema = (
+  db: Database.Database,
+  migrationName: string,
+  tableName: string,
+  expectedSchema: ExpectedSqliteTableSchema,
+  persistenceError: SqlitePersistenceErrorFactory
+): void => {
+  const tableInfo = db
+    .prepare(`PRAGMA table_info(${tableName})`)
+    .all() as SqliteTableInfoPragmaRow[];
+  const actualColumns = tableInfo.map((column) => ({
+    name: column.name,
+    notNull: column.notnull === 1,
+    primaryKeyOrder: column.pk,
+    type: column.type.toUpperCase(),
+  }));
+  const expectedColumns = expectedSchema.columns.map((column) => ({
+    ...column,
+    type: column.type.toUpperCase(),
+  }));
+
+  if (!areExpectedColumnsEqual(actualColumns, expectedColumns)) {
+    throw persistenceError(
+      "sqlite backend found an applied migration table whose column contract does not match the package schema",
+      "sqlite_backend_applied_migration_schema_mismatch",
+      {
+        actualColumns,
+        expectedColumns,
+        migrationName,
+        tableName,
+      }
+    );
+  }
+
+  const foreignKeyRows = db
+    .prepare(`PRAGMA foreign_key_list(${tableName})`)
+    .all() as SqliteForeignKeyPragmaRow[];
+  const actualForeignKeys = groupForeignKeyRows(foreignKeyRows);
+  if (
+    !areExpectedForeignKeysEqual(actualForeignKeys, expectedSchema.foreignKeys)
+  ) {
+    throw persistenceError(
+      "sqlite backend found an applied migration table whose foreign-key contract does not match the package schema",
+      "sqlite_backend_applied_migration_schema_mismatch",
+      {
+        actualForeignKeys,
+        expectedForeignKeys: expectedSchema.foreignKeys,
+        migrationName,
+        tableName,
+      }
+    );
+  }
+};
+
+/** Field-wise equality of two resolved index definitions. */
+const areExpectedIndexDefinitionsEqual = (
+  left: {
+    columns: readonly string[];
+    origin: string;
+    partial: boolean;
+    tableName: string;
+    unique: boolean;
+  },
+  right: {
+    columns: readonly string[];
+    origin: string;
+    partial: boolean;
+    tableName: string;
+    unique: boolean;
+  }
+): boolean => {
+  return (
+    left.origin === right.origin &&
+    left.partial === right.partial &&
+    left.tableName === right.tableName &&
+    left.unique === right.unique &&
+    areStringArraysEqual(left.columns, right.columns)
+  );
+};
+
+/**
+ * Validates one index's live definition (via `PRAGMA index_list` and
+ * `PRAGMA index_info`) against `expectedSchema`: every checked-in index must
+ * be a complete (non-partial), user-created (`origin: "c"`) index over
+ * exactly the expected columns in order, with the expected uniqueness.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_applied_migration_index_missing` when the index does
+ *   not exist, or `sqlite_backend_applied_migration_index_mismatch` when its
+ *   definition differs.
+ */
+const validateSqliteIndexSchema = (
+  db: Database.Database,
+  migrationName: string,
+  indexName: string,
+  expectedSchema: ExpectedSqliteIndexSchema,
+  persistenceError: SqlitePersistenceErrorFactory
+): void => {
+  const indexEntry = (
+    db
+      .prepare(`PRAGMA index_list(${expectedSchema.tableName})`)
+      .all() as SqliteIndexListPragmaRow[]
+  ).find((entry) => entry.name === indexName);
+
+  if (indexEntry === undefined) {
+    throw persistenceError(
+      "sqlite backend found an applied migration without its required schema indexes",
+      "sqlite_backend_applied_migration_index_missing",
+      {
+        indexName,
+        migrationName,
+      }
+    );
+  }
+
+  const actualIndex = {
+    columns: (
+      db
+        .prepare(`PRAGMA index_info(${indexName})`)
+        .all() as SqliteIndexInfoPragmaRow[]
+    )
+      .sort((left, right) => left.seqno - right.seqno)
+      .map((column) => column.name),
+    origin: indexEntry.origin,
+    partial: indexEntry.partial === 1,
+    tableName: expectedSchema.tableName,
+    unique: indexEntry.unique === 1,
+  };
+  const expectedIndex = {
+    columns: [...expectedSchema.columns],
+    origin: "c",
+    partial: false,
+    tableName: expectedSchema.tableName,
+    unique: expectedSchema.unique,
+  };
+
+  if (!areExpectedIndexDefinitionsEqual(actualIndex, expectedIndex)) {
+    throw persistenceError(
+      "sqlite backend found an applied migration index whose definition does not match the package schema",
+      "sqlite_backend_applied_migration_index_mismatch",
+      {
+        actualIndex,
+        expectedIndex,
+        indexName,
+        migrationName,
+      }
+    );
+  }
+};
+
+/**
+ * Validates every table and index in `tableDefinitions`/`indexDefinitions`
+ * against the live database schema for one migration generation, via
+ * {@link validateSqliteTableSchema} and {@link validateSqliteIndexSchema}.
+ * Shared by every per-migration-generation shape validator so each one only
+ * needs to supply the table/index definitions for its generation.
+ */
+const validateSqliteSchemaShape = (
+  db: Database.Database,
+  migrationName: string,
+  tableDefinitions: Readonly<Record<string, ExpectedSqliteTableSchema>>,
+  indexDefinitions: Readonly<Record<string, ExpectedSqliteIndexSchema>>,
+  persistenceError: SqlitePersistenceErrorFactory
+): void => {
+  for (const [tableName, tableSchema] of Object.entries(tableDefinitions)) {
+    validateSqliteTableSchema(
+      db,
+      migrationName,
+      tableName,
+      tableSchema,
+      persistenceError
+    );
+  }
+
+  for (const [indexName, indexSchema] of Object.entries(indexDefinitions)) {
+    validateSqliteIndexSchema(
+      db,
+      migrationName,
+      indexName,
+      indexSchema,
+      persistenceError
+    );
+  }
+};
+
+const validatePrePendingSignalsSchemaShape = (
+  db: Database.Database,
+  persistenceError: SqlitePersistenceErrorFactory
+): void => {
+  validateSqliteSchemaShape(
+    db,
+    INITIAL_SCHEMA_MIGRATION_NAME,
+    PRE_PENDING_SIGNALS_SCHEMA_TABLE_DEFINITIONS,
+    INITIAL_SCHEMA_INDEX_DEFINITIONS,
+    persistenceError
+  );
+};
+
+const validateRunLivenessSchemaShape = (
+  db: Database.Database,
+  persistenceError: SqlitePersistenceErrorFactory
+): void => {
+  validateSqliteSchemaShape(
+    db,
+    RUN_LIVENESS_MIGRATION_NAME,
+    {
+      ...INITIAL_SCHEMA_TABLE_DEFINITIONS,
+      ...TARGETED_VALIDATION_TABLE_DEFINITIONS,
+      ...OBSERVE_ANNOTATIONS_TABLE_DEFINITIONS,
+    },
+    {
+      ...INITIAL_SCHEMA_INDEX_DEFINITIONS,
+      ...TARGETED_VALIDATION_INDEX_DEFINITIONS,
+      ...OBSERVE_ANNOTATIONS_INDEX_DEFINITIONS,
+      ...RUN_LIVENESS_INDEX_DEFINITIONS,
+    },
+    persistenceError
+  );
+};
+
+const validateCurrentPackageSchemaShape = (
+  db: Database.Database,
+  persistenceError: SqlitePersistenceErrorFactory
+): void => {
+  validateRunLivenessSchemaShape(db, persistenceError);
+};
+
+const validateTargetedValidationSchemaShape = (
+  db: Database.Database,
+  persistenceError: SqlitePersistenceErrorFactory
+): void => {
+  validateSqliteSchemaShape(
+    db,
+    TARGETED_VALIDATION_MIGRATION_NAME,
+    TARGETED_VALIDATION_TABLE_DEFINITIONS,
+    TARGETED_VALIDATION_INDEX_DEFINITIONS,
+    persistenceError
+  );
+};
+
+const validatePendingSignalsAndAnnotationsSchemaShape = (
+  db: Database.Database,
+  persistenceError: SqlitePersistenceErrorFactory
+): void => {
+  validateSqliteSchemaShape(
+    db,
+    PENDING_SIGNALS_AND_ANNOTATIONS_MIGRATION_NAME,
+    PRE_RUN_LIVENESS_SCHEMA_TABLE_DEFINITIONS,
+    INITIAL_SCHEMA_INDEX_DEFINITIONS,
+    persistenceError
+  );
+  validateTargetedValidationSchemaShape(db, persistenceError);
+};
+
+const validateObserveAnnotationsSchemaPresence = (
+  db: Database.Database,
+  persistenceError: SqlitePersistenceErrorFactory
+): void => {
+  const existingTables = loadSqliteMasterNames(db, "table");
+
+  for (const tableName of OBSERVE_ANNOTATIONS_REQUIRED_TABLES) {
+    if (existingTables.has(tableName)) {
+      continue;
+    }
+
+    throw persistenceError(
+      "sqlite backend found an applied migration without its observe annotation schema table",
+      "sqlite_backend_applied_migration_schema_missing",
+      {
+        migrationName: OBSERVE_ANNOTATIONS_MIGRATION_NAME,
+        tableName,
+      }
+    );
+  }
+};
+
+const validatePreRunLivenessSchemaShape = (
+  db: Database.Database,
+  persistenceError: SqlitePersistenceErrorFactory
+): void => {
+  validateSqliteSchemaShape(
+    db,
+    OBSERVE_ANNOTATIONS_MIGRATION_NAME,
+    {
+      ...PRE_RUN_LIVENESS_SCHEMA_TABLE_DEFINITIONS,
+      ...OBSERVE_ANNOTATIONS_TABLE_DEFINITIONS,
+    },
+    {
+      ...INITIAL_SCHEMA_INDEX_DEFINITIONS,
+      ...TARGETED_VALIDATION_INDEX_DEFINITIONS,
+      ...OBSERVE_ANNOTATIONS_INDEX_DEFINITIONS,
+    },
+    persistenceError
+  );
+};
+
+const validateRunLivenessSchemaPresence = (
+  db: Database.Database,
+  persistenceError: SqlitePersistenceErrorFactory
+): void => {
+  const tableInfo = db
+    .prepare("PRAGMA table_info(runs)")
+    .all() as SqliteTableInfoPragmaRow[];
+  const columns = new Map(tableInfo.map((column) => [column.name, column]));
+
+  for (const columnName of RUN_LIVENESS_RUN_COLUMN_NAMES) {
+    const column = columns.get(columnName);
+
+    if (column === undefined) {
+      throw persistenceError(
+        "sqlite backend found an applied migration without its run liveness schema columns",
+        "sqlite_backend_applied_migration_schema_missing",
+        {
+          columnName,
+          migrationName: RUN_LIVENESS_MIGRATION_NAME,
+          tableName: "runs",
+        }
+      );
+    }
+  }
+
+  for (const indexName of RUN_LIVENESS_REQUIRED_INDEXES) {
+    if (loadSqliteMasterNames(db, "index").has(indexName)) {
+      continue;
+    }
+
+    throw persistenceError(
+      "sqlite backend found an applied migration without its run liveness schema index",
+      "sqlite_backend_applied_migration_schema_missing",
+      {
+        indexName,
+        migrationName: RUN_LIVENESS_MIGRATION_NAME,
+      }
+    );
+  }
+};
 
 /**
  * Validates the database's migration posture against the checked-in
@@ -108,10 +722,10 @@ export function loadAppliedMigrationNames(db: Database.Database): string[] {
  * @throws The injected persistence error with a `sqlite_backend_*` code on
  *   the first posture mismatch (e.g. `sqlite_backend_unknown_applied_migration`).
  */
-export function validateMigrationState(
+export const validateMigrationState = (
   db: Database.Database,
   persistenceError: SqlitePersistenceErrorFactory
-): void {
+): void => {
   const knownMigrationFiles = listMigrationFiles(
     resolveMigrationDirectory(persistenceError)
   );
@@ -182,628 +796,14 @@ export function validateMigrationState(
   if (latestAppliedMigrationName === RUN_LIVENESS_MIGRATION_NAME) {
     validateCurrentPackageSchemaShape(db, persistenceError);
   }
-}
-
-// Per-migration validators below come in two flavors, both called from
-// validateMigrationState: `*SchemaPresence` checks only that a migration's
-// own tables/columns/indexes exist (cheap, run for every applied
-// migration), while `*SchemaShape` additionally checks the full expected
-// column/foreign-key/index shape for every table visible at that migration
-// generation (run only once, for the latest applied migration, since older
-// generations are subsumed by later ones' shape checks).
-
-function validateBaselineSchemaPresence(
-  db: Database.Database,
-  persistenceError: SqlitePersistenceErrorFactory
-): void {
-  const existingTables = loadSqliteMasterNames(db, "table");
-  const missingTables = INITIAL_SCHEMA_REQUIRED_TABLES.filter(
-    (tableName) => !existingTables.has(tableName)
-  );
-
-  if (missingTables.length > 0) {
-    throw persistenceError(
-      "sqlite backend found an applied migration without its required schema tables",
-      "sqlite_backend_applied_migration_schema_missing",
-      {
-        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
-        missingTables,
-      }
-    );
-  }
-
-  const existingIndexes = loadSqliteMasterNames(db, "index");
-  const missingIndexes = INITIAL_SCHEMA_REQUIRED_INDEXES.filter(
-    (indexName) => !existingIndexes.has(indexName)
-  );
-
-  if (missingIndexes.length > 0) {
-    throw persistenceError(
-      "sqlite backend found an applied migration without its required schema indexes",
-      "sqlite_backend_applied_migration_index_missing",
-      {
-        migrationName: INITIAL_SCHEMA_MIGRATION_NAME,
-        missingIndexes,
-      }
-    );
-  }
-}
-
-function validateTargetedValidationSchemaPresence(
-  db: Database.Database,
-  persistenceError: SqlitePersistenceErrorFactory
-): void {
-  const existingTables = loadSqliteMasterNames(db, "table");
-  const missingTables = TARGETED_VALIDATION_REQUIRED_TABLES.filter(
-    (tableName) => !existingTables.has(tableName)
-  );
-
-  if (missingTables.length > 0) {
-    throw persistenceError(
-      "sqlite backend found an applied migration without its targeted validation tables",
-      "sqlite_backend_applied_migration_schema_missing",
-      {
-        migrationName: TARGETED_VALIDATION_MIGRATION_NAME,
-        missingTables,
-      }
-    );
-  }
-
-  const existingIndexes = loadSqliteMasterNames(db, "index");
-  const missingIndexes = TARGETED_VALIDATION_REQUIRED_INDEXES.filter(
-    (indexName) => !existingIndexes.has(indexName)
-  );
-
-  if (missingIndexes.length > 0) {
-    throw persistenceError(
-      "sqlite backend found an applied migration without its targeted validation indexes",
-      "sqlite_backend_applied_migration_index_missing",
-      {
-        migrationName: TARGETED_VALIDATION_MIGRATION_NAME,
-        missingIndexes,
-      }
-    );
-  }
-}
-
-function validatePendingSignalsAndAnnotationsSchemaPresence(
-  db: Database.Database,
-  persistenceError: SqlitePersistenceErrorFactory
-): void {
-  const tableInfo = db
-    .prepare("PRAGMA table_info(runs)")
-    .all() as SqliteTableInfoPragmaRow[];
-  const columns = new Map(tableInfo.map((column) => [column.name, column]));
-
-  for (const columnName of PRE_PENDING_RUN_COLUMN_NAMES) {
-    const column = columns.get(columnName);
-
-    if (column === undefined) {
-      throw persistenceError(
-        "sqlite backend found an applied migration without its pending signal schema columns",
-        "sqlite_backend_applied_migration_schema_missing",
-        {
-          columnName,
-          migrationName: PENDING_SIGNALS_AND_ANNOTATIONS_MIGRATION_NAME,
-          tableName: "runs",
-        }
-      );
-    }
-
-    if (column.type.toUpperCase() !== "BLOB" || column.notnull !== 0) {
-      throw persistenceError(
-        "sqlite backend found an applied migration column whose pending signal contract does not match the package schema",
-        "sqlite_backend_applied_migration_schema_mismatch",
-        {
-          actualColumn: {
-            name: column.name,
-            notNull: column.notnull === 1,
-            type: column.type.toUpperCase(),
-          },
-          expectedColumn: {
-            name: columnName,
-            notNull: false,
-            type: "BLOB",
-          },
-          migrationName: PENDING_SIGNALS_AND_ANNOTATIONS_MIGRATION_NAME,
-          tableName: "runs",
-        }
-      );
-    }
-  }
-}
-
-function validatePrePendingSignalsSchemaShape(
-  db: Database.Database,
-  persistenceError: SqlitePersistenceErrorFactory
-): void {
-  validateSqliteSchemaShape(
-    db,
-    INITIAL_SCHEMA_MIGRATION_NAME,
-    PRE_PENDING_SIGNALS_SCHEMA_TABLE_DEFINITIONS,
-    INITIAL_SCHEMA_INDEX_DEFINITIONS,
-    persistenceError
-  );
-}
-
-function validateCurrentPackageSchemaShape(
-  db: Database.Database,
-  persistenceError: SqlitePersistenceErrorFactory
-): void {
-  validateRunLivenessSchemaShape(db, persistenceError);
-}
-
-function validatePendingSignalsAndAnnotationsSchemaShape(
-  db: Database.Database,
-  persistenceError: SqlitePersistenceErrorFactory
-): void {
-  validateSqliteSchemaShape(
-    db,
-    PENDING_SIGNALS_AND_ANNOTATIONS_MIGRATION_NAME,
-    PRE_RUN_LIVENESS_SCHEMA_TABLE_DEFINITIONS,
-    INITIAL_SCHEMA_INDEX_DEFINITIONS,
-    persistenceError
-  );
-  validateTargetedValidationSchemaShape(db, persistenceError);
-}
-
-function validateTargetedValidationSchemaShape(
-  db: Database.Database,
-  persistenceError: SqlitePersistenceErrorFactory
-): void {
-  validateSqliteSchemaShape(
-    db,
-    TARGETED_VALIDATION_MIGRATION_NAME,
-    TARGETED_VALIDATION_TABLE_DEFINITIONS,
-    TARGETED_VALIDATION_INDEX_DEFINITIONS,
-    persistenceError
-  );
-}
-
-function validateObserveAnnotationsSchemaPresence(
-  db: Database.Database,
-  persistenceError: SqlitePersistenceErrorFactory
-): void {
-  const existingTables = loadSqliteMasterNames(db, "table");
-
-  for (const tableName of OBSERVE_ANNOTATIONS_REQUIRED_TABLES) {
-    if (existingTables.has(tableName)) {
-      continue;
-    }
-
-    throw persistenceError(
-      "sqlite backend found an applied migration without its observe annotation schema table",
-      "sqlite_backend_applied_migration_schema_missing",
-      {
-        migrationName: OBSERVE_ANNOTATIONS_MIGRATION_NAME,
-        tableName,
-      }
-    );
-  }
-}
+};
 
 // Unused; retained only as documented dead code pending removal (superseded
 // by validatePreRunLivenessSchemaShape, which this function just forwards
 // to).
-function _validateObserveAnnotationsSchemaShape(
+const _validateObserveAnnotationsSchemaShape = (
   db: Database.Database,
   persistenceError: SqlitePersistenceErrorFactory
-): void {
+): void => {
   validatePreRunLivenessSchemaShape(db, persistenceError);
-}
-
-function validatePreRunLivenessSchemaShape(
-  db: Database.Database,
-  persistenceError: SqlitePersistenceErrorFactory
-): void {
-  validateSqliteSchemaShape(
-    db,
-    OBSERVE_ANNOTATIONS_MIGRATION_NAME,
-    {
-      ...PRE_RUN_LIVENESS_SCHEMA_TABLE_DEFINITIONS,
-      ...OBSERVE_ANNOTATIONS_TABLE_DEFINITIONS,
-    },
-    {
-      ...INITIAL_SCHEMA_INDEX_DEFINITIONS,
-      ...TARGETED_VALIDATION_INDEX_DEFINITIONS,
-      ...OBSERVE_ANNOTATIONS_INDEX_DEFINITIONS,
-    },
-    persistenceError
-  );
-}
-
-function validateRunLivenessSchemaPresence(
-  db: Database.Database,
-  persistenceError: SqlitePersistenceErrorFactory
-): void {
-  const tableInfo = db
-    .prepare("PRAGMA table_info(runs)")
-    .all() as SqliteTableInfoPragmaRow[];
-  const columns = new Map(tableInfo.map((column) => [column.name, column]));
-
-  for (const columnName of RUN_LIVENESS_RUN_COLUMN_NAMES) {
-    const column = columns.get(columnName);
-
-    if (column === undefined) {
-      throw persistenceError(
-        "sqlite backend found an applied migration without its run liveness schema columns",
-        "sqlite_backend_applied_migration_schema_missing",
-        {
-          columnName,
-          migrationName: RUN_LIVENESS_MIGRATION_NAME,
-          tableName: "runs",
-        }
-      );
-    }
-  }
-
-  for (const indexName of RUN_LIVENESS_REQUIRED_INDEXES) {
-    if (loadSqliteMasterNames(db, "index").has(indexName)) {
-      continue;
-    }
-
-    throw persistenceError(
-      "sqlite backend found an applied migration without its run liveness schema index",
-      "sqlite_backend_applied_migration_schema_missing",
-      {
-        indexName,
-        migrationName: RUN_LIVENESS_MIGRATION_NAME,
-      }
-    );
-  }
-}
-
-function validateRunLivenessSchemaShape(
-  db: Database.Database,
-  persistenceError: SqlitePersistenceErrorFactory
-): void {
-  validateSqliteSchemaShape(
-    db,
-    RUN_LIVENESS_MIGRATION_NAME,
-    {
-      ...INITIAL_SCHEMA_TABLE_DEFINITIONS,
-      ...TARGETED_VALIDATION_TABLE_DEFINITIONS,
-      ...OBSERVE_ANNOTATIONS_TABLE_DEFINITIONS,
-    },
-    {
-      ...INITIAL_SCHEMA_INDEX_DEFINITIONS,
-      ...TARGETED_VALIDATION_INDEX_DEFINITIONS,
-      ...OBSERVE_ANNOTATIONS_INDEX_DEFINITIONS,
-      ...RUN_LIVENESS_INDEX_DEFINITIONS,
-    },
-    persistenceError
-  );
-}
-
-/**
- * Validates every table and index in `tableDefinitions`/`indexDefinitions`
- * against the live database schema for one migration generation, via
- * {@link validateSqliteTableSchema} and {@link validateSqliteIndexSchema}.
- * Shared by every per-migration-generation shape validator so each one only
- * needs to supply the table/index definitions for its generation.
- */
-function validateSqliteSchemaShape(
-  db: Database.Database,
-  migrationName: string,
-  tableDefinitions: Readonly<Record<string, ExpectedSqliteTableSchema>>,
-  indexDefinitions: Readonly<Record<string, ExpectedSqliteIndexSchema>>,
-  persistenceError: SqlitePersistenceErrorFactory
-): void {
-  for (const [tableName, tableSchema] of Object.entries(tableDefinitions)) {
-    validateSqliteTableSchema(
-      db,
-      migrationName,
-      tableName,
-      tableSchema,
-      persistenceError
-    );
-  }
-
-  for (const [indexName, indexSchema] of Object.entries(indexDefinitions)) {
-    validateSqliteIndexSchema(
-      db,
-      migrationName,
-      indexName,
-      indexSchema,
-      persistenceError
-    );
-  }
-}
-
-/** Lists `sqlite_master` object names of the given `type`, name-ordered. */
-function loadSqliteMasterNames(
-  db: Database.Database,
-  type: "index" | "table"
-): Set<string> {
-  return new Set(
-    (
-      db
-        .prepare(
-          `SELECT name FROM sqlite_master WHERE type = '${type}' ORDER BY name`
-        )
-        .all() as { name: string }[]
-    ).map((row) => row.name)
-  );
-}
-
-/**
- * Validates one table's live column shape (via `PRAGMA table_info`) and
- * foreign keys (via `PRAGMA foreign_key_list`) against `expectedSchema`.
- *
- * @throws The injected persistence error with code
- *   `sqlite_backend_applied_migration_schema_mismatch` on the first
- *   mismatch.
- */
-function validateSqliteTableSchema(
-  db: Database.Database,
-  migrationName: string,
-  tableName: string,
-  expectedSchema: ExpectedSqliteTableSchema,
-  persistenceError: SqlitePersistenceErrorFactory
-): void {
-  const tableInfo = db
-    .prepare(`PRAGMA table_info(${tableName})`)
-    .all() as SqliteTableInfoPragmaRow[];
-  const actualColumns = tableInfo.map((column) => ({
-    name: column.name,
-    notNull: column.notnull === 1,
-    primaryKeyOrder: column.pk,
-    type: column.type.toUpperCase(),
-  }));
-  const expectedColumns = expectedSchema.columns.map((column) => ({
-    ...column,
-    type: column.type.toUpperCase(),
-  }));
-
-  if (!areExpectedColumnsEqual(actualColumns, expectedColumns)) {
-    throw persistenceError(
-      "sqlite backend found an applied migration table whose column contract does not match the package schema",
-      "sqlite_backend_applied_migration_schema_mismatch",
-      {
-        actualColumns,
-        expectedColumns,
-        migrationName,
-        tableName,
-      }
-    );
-  }
-
-  const foreignKeyRows = db
-    .prepare(`PRAGMA foreign_key_list(${tableName})`)
-    .all() as SqliteForeignKeyPragmaRow[];
-  const actualForeignKeys = groupForeignKeyRows(foreignKeyRows);
-  if (
-    !areExpectedForeignKeysEqual(actualForeignKeys, expectedSchema.foreignKeys)
-  ) {
-    throw persistenceError(
-      "sqlite backend found an applied migration table whose foreign-key contract does not match the package schema",
-      "sqlite_backend_applied_migration_schema_mismatch",
-      {
-        actualForeignKeys,
-        expectedForeignKeys: expectedSchema.foreignKeys,
-        migrationName,
-        tableName,
-      }
-    );
-  }
-}
-
-/**
- * Validates one index's live definition (via `PRAGMA index_list` and
- * `PRAGMA index_info`) against `expectedSchema`: every checked-in index must
- * be a complete (non-partial), user-created (`origin: "c"`) index over
- * exactly the expected columns in order, with the expected uniqueness.
- *
- * @throws The injected persistence error with code
- *   `sqlite_backend_applied_migration_index_missing` when the index does
- *   not exist, or `sqlite_backend_applied_migration_index_mismatch` when its
- *   definition differs.
- */
-function validateSqliteIndexSchema(
-  db: Database.Database,
-  migrationName: string,
-  indexName: string,
-  expectedSchema: ExpectedSqliteIndexSchema,
-  persistenceError: SqlitePersistenceErrorFactory
-): void {
-  const indexEntry = (
-    db
-      .prepare(`PRAGMA index_list(${expectedSchema.tableName})`)
-      .all() as SqliteIndexListPragmaRow[]
-  ).find((entry) => entry.name === indexName);
-
-  if (indexEntry === undefined) {
-    throw persistenceError(
-      "sqlite backend found an applied migration without its required schema indexes",
-      "sqlite_backend_applied_migration_index_missing",
-      {
-        indexName,
-        migrationName,
-      }
-    );
-  }
-
-  const actualIndex = {
-    columns: (
-      db
-        .prepare(`PRAGMA index_info(${indexName})`)
-        .all() as SqliteIndexInfoPragmaRow[]
-    )
-      .sort((left, right) => left.seqno - right.seqno)
-      .map((column) => column.name),
-    origin: indexEntry.origin,
-    partial: indexEntry.partial === 1,
-    tableName: expectedSchema.tableName,
-    unique: indexEntry.unique === 1,
-  };
-  const expectedIndex = {
-    columns: [...expectedSchema.columns],
-    origin: "c",
-    partial: false,
-    tableName: expectedSchema.tableName,
-    unique: expectedSchema.unique,
-  };
-
-  if (!areExpectedIndexDefinitionsEqual(actualIndex, expectedIndex)) {
-    throw persistenceError(
-      "sqlite backend found an applied migration index whose definition does not match the package schema",
-      "sqlite_backend_applied_migration_index_mismatch",
-      {
-        actualIndex,
-        expectedIndex,
-        indexName,
-        migrationName,
-      }
-    );
-  }
-}
-
-/** Groups `PRAGMA foreign_key_list` rows by foreign key id into one entry per key. */
-function groupForeignKeyRows(
-  rows: readonly SqliteForeignKeyPragmaRow[]
-): ExpectedSqliteForeignKeySchema[] {
-  const groupedRows = new Map<number, SqliteForeignKeyPragmaRow[]>();
-
-  for (const row of rows) {
-    const group = groupedRows.get(row.id) ?? [];
-    group.push(row);
-    groupedRows.set(row.id, group);
-  }
-
-  return [...groupedRows.entries()]
-    .sort((left, right) => left[0] - right[0])
-    .map(([, group]) => {
-      const sortedGroup = [...group].sort(
-        (left, right) => left.seq - right.seq
-      );
-      const [firstRow] = sortedGroup;
-      if (firstRow === undefined) {
-        throw new Error("expected at least one foreign key row");
-      }
-
-      return {
-        columns: sortedGroup.map((row) => row.from),
-        referencedColumns: sortedGroup.map((row) => row.to),
-        referencedTable: firstRow.table,
-      };
-    });
-}
-
-/** Order-sensitive equality of two expected-column-schema lists. */
-function areExpectedColumnsEqual(
-  left: readonly ExpectedSqliteColumnSchema[],
-  right: readonly ExpectedSqliteColumnSchema[]
-): boolean {
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  for (const [index, leftColumn] of left.entries()) {
-    const rightColumn = right[index];
-    if (
-      rightColumn === undefined ||
-      leftColumn.name !== rightColumn.name ||
-      leftColumn.notNull !== rightColumn.notNull ||
-      leftColumn.primaryKeyOrder !== rightColumn.primaryKeyOrder ||
-      leftColumn.type !== rightColumn.type
-    ) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/** Order-insensitive equality of two expected-foreign-key-schema lists. */
-function areExpectedForeignKeysEqual(
-  left: readonly ExpectedSqliteForeignKeySchema[],
-  right: readonly ExpectedSqliteForeignKeySchema[]
-): boolean {
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  const normalizedLeft = [...left].sort(compareExpectedForeignKeys);
-  const normalizedRight = [...right].sort(compareExpectedForeignKeys);
-
-  for (const [index, leftForeignKey] of normalizedLeft.entries()) {
-    const rightForeignKey = normalizedRight[index];
-    if (
-      rightForeignKey === undefined ||
-      leftForeignKey.referencedTable !== rightForeignKey.referencedTable ||
-      !areStringArraysEqual(leftForeignKey.columns, rightForeignKey.columns) ||
-      !areStringArraysEqual(
-        leftForeignKey.referencedColumns,
-        rightForeignKey.referencedColumns
-      )
-    ) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/** Deterministic ordering for foreign-key schemas, used to normalize before comparing. */
-function compareExpectedForeignKeys(
-  left: ExpectedSqliteForeignKeySchema,
-  right: ExpectedSqliteForeignKeySchema
-): number {
-  return [
-    left.referencedTable,
-    left.columns.join("\u0000"),
-    left.referencedColumns.join("\u0000"),
-  ]
-    .join("\u0001")
-    .localeCompare(
-      [
-        right.referencedTable,
-        right.columns.join("\u0000"),
-        right.referencedColumns.join("\u0000"),
-      ].join("\u0001")
-    );
-}
-
-/** Field-wise equality of two resolved index definitions. */
-function areExpectedIndexDefinitionsEqual(
-  left: {
-    columns: readonly string[];
-    origin: string;
-    partial: boolean;
-    tableName: string;
-    unique: boolean;
-  },
-  right: {
-    columns: readonly string[];
-    origin: string;
-    partial: boolean;
-    tableName: string;
-    unique: boolean;
-  }
-): boolean {
-  return (
-    left.origin === right.origin &&
-    left.partial === right.partial &&
-    left.tableName === right.tableName &&
-    left.unique === right.unique &&
-    areStringArraysEqual(left.columns, right.columns)
-  );
-}
-
-/** Order-sensitive equality of two string arrays. */
-function areStringArraysEqual(
-  left: readonly string[],
-  right: readonly string[]
-): boolean {
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  for (const [index, leftValue] of left.entries()) {
-    if (right[index] !== leftValue) {
-      return false;
-    }
-  }
-
-  return true;
-}
+};
