@@ -1,0 +1,124 @@
+{
+  "milestone": "M14",
+  "scope": {
+    "source": "typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-utils.ts",
+    "originalCohort": "lines 100-530",
+    "changedLines": 429,
+    "numstat": {
+      "added": 213,
+      "removed": 216
+    }
+  },
+  "candidate": {
+    "m13StageSha256": "35ef3263612dc21100b0671eea2a1ad07dfbe3d3030db1c44834914f0e8d78d0",
+    "finalSha256": "1722621a267cea6e0eb8907bcf188369868a8d97491355a06d12ef8ac032d8ec",
+    "byteEqual": true
+  },
+  "diagnostics": {
+    "syntactic": {
+      "before": {
+        "total": 29,
+        "target": 26,
+        "functionStyle": 15,
+        "noUseBeforeDefine": 11,
+        "nonTargetRules": {
+          "jsdoc(require-throws-type)": 3
+        }
+      },
+      "after": {
+        "total": 3,
+        "target": 0,
+        "functionStyle": 0,
+        "noUseBeforeDefine": 0,
+        "nonTargetRules": {
+          "jsdoc(require-throws-type)": 3
+        }
+      }
+    },
+    "typeAware": {
+      "before": {
+        "total": 37,
+        "target": 26,
+        "functionStyle": 15,
+        "noUseBeforeDefine": 11,
+        "nonTargetRules": {
+          "jsdoc(require-throws-type)": 3,
+          "typescript(no-base-to-string)": 1,
+          "typescript(no-unsafe-assignment)": 1,
+          "typescript(no-unsafe-return)": 1,
+          "typescript(no-unsafe-type-assertion)": 4,
+          "typescript(switch-exhaustiveness-check)": 1
+        }
+      },
+      "after": {
+        "total": 11,
+        "target": 0,
+        "functionStyle": 0,
+        "noUseBeforeDefine": 0,
+        "nonTargetRules": {
+          "jsdoc(require-throws-type)": 3,
+          "typescript(no-base-to-string)": 1,
+          "typescript(no-unsafe-assignment)": 1,
+          "typescript(no-unsafe-return)": 1,
+          "typescript(no-unsafe-type-assertion)": 4,
+          "typescript(switch-exhaustiveness-check)": 1
+        }
+      }
+    }
+  },
+  "ast": {
+    "review": "pass",
+    "approvedPrivateRepair": "cloneJsonValue",
+    "publicCloneBehavior": "unchanged"
+  },
+  "behavior": {
+    "packageTests": {
+      "tests": 67,
+      "failures": 0
+    },
+    "focusedPublic": {
+      "tests": 3,
+      "assertions": 9,
+      "failures": 0
+    },
+    "cloneBehavior": "pass",
+    "freshImport": "pass"
+  },
+  "gates": {
+    "candidate-equality": "pass",
+    "candidate-equality-final": "pass",
+    "diff-check": "pass",
+    "bridge-typecheck": "pass",
+    "bridge-lint": "pass",
+    "bridge-build": "pass",
+    "bridge-test": "pass",
+    "focused-public": "pass",
+    "clone-behavior": "pass",
+    "fresh-import": "pass",
+    "formatter": "pass",
+    "changeset": "pass",
+    "constitution": "pass",
+    "ast-review": "pass",
+    "diagnostic-summary": "pass",
+    "workspace-typecheck": "pass",
+    "workspace-conformance": "pass",
+    "provider-testkit-conformance": "pass",
+    "provider-certification-conformance": "pass"
+  },
+  "diagnosticCommands": {
+    "syntacticExitExpected": 1,
+    "typeAwareExitExpected": 1
+  },
+  "isolation": {
+    "laneModifiedFiles": [
+      "typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-utils.ts"
+    ],
+    "main": "clean master",
+    "unexpectedWork": false
+  },
+  "environment": {
+    "postgresSocket": "/run/user/1000/devenv-3ea1e50/postgres",
+    "outerGlobalLock": "/tmp/tuvren-wave-1-verification.lock",
+    "metadataElevation": true
+  }
+}
