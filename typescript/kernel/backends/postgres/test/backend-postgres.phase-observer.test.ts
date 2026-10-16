@@ -50,7 +50,7 @@ import {
  * PhaseObserver seam must leave byte-identical across every construction
  * path, not just the two identity fields the caller already knows.
  */
-async function dumpFamilyRows(
+const dumpFamilyRows = async (
   options: PostgresBackendOptions,
   schemaId: string,
   objectHash: string
@@ -62,7 +62,7 @@ async function dumpFamilyRows(
     mediaType: string;
   } | null;
   schemaRow: { createdAtMs: number; schemaCbor: number[] } | null;
-}> {
+}> => {
   const schemaName = options.schemaName ?? "public";
   const admin = createAdminClient(options);
 
@@ -113,7 +113,7 @@ async function dumpFamilyRows(
   } finally {
     await admin.end({ timeout: 0 });
   }
-}
+};
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();

@@ -42,11 +42,11 @@ const TEST_SCHEMA = {
   schemaId: "schema_postgres_purge",
 } satisfies TurnTreeSchema;
 
-async function closeBackend(
+const closeBackend = async (
   backend: ReturnType<typeof createPostgresBackend>
-): Promise<void> {
+): Promise<void> => {
   await backend.destroy();
-}
+};
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();

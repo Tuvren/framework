@@ -59,6 +59,68 @@ import {
   compareStoredStagedResult,
 } from "../src/lib/postgres-state-utils.js";
 
+// These comparators give the encoded snapshot a deterministic element order
+// per record family, by identity key, independent of `Map` iteration order.
+
+const compareStoredObject = (
+  left: StoredObject,
+  right: StoredObject
+): number => {
+  return left.hash.localeCompare(right.hash);
+};
+
+const compareStoredOrderedPathChunk = (
+  left: StoredOrderedPathChunk,
+  right: StoredOrderedPathChunk
+): number => {
+  return left.chunkHash.localeCompare(right.chunkHash);
+};
+
+const compareStoredSchema = (
+  left: StoredSchema,
+  right: StoredSchema
+): number => {
+  return left.schemaId.localeCompare(right.schemaId);
+};
+
+const compareStoredThread = (
+  left: StoredThread,
+  right: StoredThread
+): number => {
+  return left.threadId.localeCompare(right.threadId);
+};
+
+const compareStoredTurnNode = (
+  left: StoredTurnNode,
+  right: StoredTurnNode
+): number => {
+  return left.hash.localeCompare(right.hash);
+};
+
+const compareStoredTurnTree = (
+  left: StoredTurnTree,
+  right: StoredTurnTree
+): number => {
+  return left.hash.localeCompare(right.hash);
+};
+
+const compareStoredTurnTreePath = (
+  left: StoredTurnTreePath,
+  right: StoredTurnTreePath
+): number => {
+  const treeCompare = left.turnTreeHash.localeCompare(right.turnTreeHash);
+
+  if (treeCompare !== 0) {
+    return treeCompare;
+  }
+
+  return left.path.localeCompare(right.path);
+};
+
+const compareStoredTurn = (left: StoredTurn, right: StoredTurn): number => {
+  return left.turnId.localeCompare(right.turnId);
+};
+
 /**
  * Projects a `BackendState` into the legacy snapshot wire format: every
  * record family flattened to a deterministically sorted array (so the
@@ -69,7 +131,7 @@ import {
  * is test-only, used to seed a pre-#110 `backend_postgres_snapshots` blob
  * row so a test can exercise the open-time migration end-to-end.
  */
-export function encodeSnapshot(state: BackendState): Uint8Array {
+export const encodeSnapshot = (state: BackendState): Uint8Array => {
   const snapshot = {
     branches: Array.from(state.branches.values(), cloneStoredBranch).sort(
       compareStoredBranch
@@ -121,57 +183,4 @@ export function encodeSnapshot(state: BackendState): Uint8Array {
   return encodeDeterministicKernelRecord(
     snapshot as unknown as Parameters<typeof encodeDeterministicKernelRecord>[0]
   );
-}
-
-// Comparators below give the encoded snapshot a deterministic element order
-// per record family, by identity key, independent of `Map` iteration order.
-
-function compareStoredObject(left: StoredObject, right: StoredObject): number {
-  return left.hash.localeCompare(right.hash);
-}
-
-function compareStoredOrderedPathChunk(
-  left: StoredOrderedPathChunk,
-  right: StoredOrderedPathChunk
-): number {
-  return left.chunkHash.localeCompare(right.chunkHash);
-}
-
-function compareStoredSchema(left: StoredSchema, right: StoredSchema): number {
-  return left.schemaId.localeCompare(right.schemaId);
-}
-
-function compareStoredThread(left: StoredThread, right: StoredThread): number {
-  return left.threadId.localeCompare(right.threadId);
-}
-
-function compareStoredTurnNode(
-  left: StoredTurnNode,
-  right: StoredTurnNode
-): number {
-  return left.hash.localeCompare(right.hash);
-}
-
-function compareStoredTurnTree(
-  left: StoredTurnTree,
-  right: StoredTurnTree
-): number {
-  return left.hash.localeCompare(right.hash);
-}
-
-function compareStoredTurnTreePath(
-  left: StoredTurnTreePath,
-  right: StoredTurnTreePath
-): number {
-  const treeCompare = left.turnTreeHash.localeCompare(right.turnTreeHash);
-
-  if (treeCompare !== 0) {
-    return treeCompare;
-  }
-
-  return left.path.localeCompare(right.path);
-}
-
-function compareStoredTurn(left: StoredTurn, right: StoredTurn): number {
-  return left.turnId.localeCompare(right.turnId);
-}
+};

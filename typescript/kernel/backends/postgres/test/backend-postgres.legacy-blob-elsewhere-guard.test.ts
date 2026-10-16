@@ -43,23 +43,23 @@ import {
   createPostgresTestBackendOptions,
 } from "./postgres-test-helpers.js";
 
-function freshSchemaName(label: string): string {
+const freshSchemaName = (label: string): string => {
   return `test_${label}_${randomUUID().replaceAll("-", "_")}`;
-}
+};
 
-async function dropSchema(sql: Sql, schemaName: string): Promise<void> {
+const dropSchema = async (sql: Sql, schemaName: string): Promise<void> => {
   await sql.unsafe(
     `DROP SCHEMA IF EXISTS ${quoteIdentifier(schemaName)} CASCADE`
   );
-}
+};
 
-async function schemaExists(sql: Sql, schemaName: string): Promise<boolean> {
+const schemaExists = async (sql: Sql, schemaName: string): Promise<boolean> => {
   const rows = await sql.unsafe<{ exists: boolean }[]>(
     "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1) AS exists",
     [schemaName]
   );
   return rows[0]?.exists === true;
-}
+};
 
 const fixedNow = (): number => 1_700_000_000_000;
 

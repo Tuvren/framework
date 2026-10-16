@@ -80,29 +80,29 @@ const TEST_SCHEMA = {
 // encoding to chunked `ordered_path_chunks` rows.
 const CHUNK_THRESHOLD = 32;
 
-function createMonotonicClock(start: number): () => number {
+const createMonotonicClock = (start: number): (() => number) => {
   let clock = start;
   return () => {
     clock += 1;
     return clock;
   };
-}
+};
 
-async function seededHashes(count: number, seed: string): Promise<string[]> {
+const seededHashes = async (count: number, seed: string): Promise<string[]> => {
   const hashes: string[] = [];
   for (let index = 0; index < count; index += 1) {
     hashes.push(await hashKernelRecord(`${seed}-${index}`));
   }
   return hashes;
-}
+};
 
-function countNestedValues<K, V>(outer: Map<K, Map<string, V>>): number {
+const countNestedValues = <K, V>(outer: Map<K, Map<string, V>>): number => {
   let total = 0;
   for (const inner of outer.values()) {
     total += inner.size;
   }
   return total;
-}
+};
 
 // `loadState` (and the exported `encodeSnapshot`'s own internal
 // `cloneStoredX`/`cloneEncodedBytes` helpers) attach a non-index `dataView`
@@ -117,11 +117,11 @@ function countNestedValues<K, V>(outer: Map<K, Map<string, V>>): number {
 // `encodeSnapshot`'s exact field mapping but strips that marker via a plain
 // `Uint8Array.from` copy first, so it can build a legacy snapshot blob
 // spanning every record family for this test's seed data.
-function plainBytes(bytes: Uint8Array): Uint8Array {
+const plainBytes = (bytes: Uint8Array): Uint8Array => {
   return Uint8Array.from(bytes);
-}
+};
 
-function toPlainStoredRun(record: StoredRun): StoredRun {
+const toPlainStoredRun = (record: StoredRun): StoredRun => {
   return {
     ...record,
     createdTurnNodesCbor: plainBytes(record.createdTurnNodesCbor),
@@ -130,11 +130,11 @@ function toPlainStoredRun(record: StoredRun): StoredRun {
       ? {}
       : { pendingSignalsCbor: plainBytes(record.pendingSignalsCbor) }),
   };
-}
+};
 
-function toPlainStoredStagedResult(
+const toPlainStoredStagedResult = (
   record: StoredStagedResult
-): StoredStagedResult {
+): StoredStagedResult => {
   if (record.status === "interrupted") {
     return {
       ...record,
@@ -142,11 +142,11 @@ function toPlainStoredStagedResult(
     };
   }
   return { ...record };
-}
+};
 
-function toPlainStoredTurnTreePath(
+const toPlainStoredTurnTreePath = (
   record: StoredTurnTreePath
-): StoredTurnTreePath {
+): StoredTurnTreePath => {
   if (record.collectionKind === "single") {
     return { ...record };
   }
@@ -160,36 +160,36 @@ function toPlainStoredTurnTreePath(
     ...record,
     orderedChunkListCbor: plainBytes(record.orderedChunkListCbor),
   };
-}
+};
 
-function toPlainStoredTurnNode(record: StoredTurnNode): StoredTurnNode {
+const toPlainStoredTurnNode = (record: StoredTurnNode): StoredTurnNode => {
   return {
     ...record,
     consumedStagedResultsCbor: plainBytes(record.consumedStagedResultsCbor),
   };
-}
+};
 
-function toPlainStoredSchema(record: StoredSchema): StoredSchema {
+const toPlainStoredSchema = (record: StoredSchema): StoredSchema => {
   return { ...record, schemaCbor: plainBytes(record.schemaCbor) };
-}
+};
 
-function toPlainStoredTurnTree(record: StoredTurnTree): StoredTurnTree {
+const toPlainStoredTurnTree = (record: StoredTurnTree): StoredTurnTree => {
   return { ...record, manifestCbor: plainBytes(record.manifestCbor) };
-}
+};
 
-function toPlainStoredOrderedPathChunk(
+const toPlainStoredOrderedPathChunk = (
   record: StoredOrderedPathChunk
-): StoredOrderedPathChunk {
+): StoredOrderedPathChunk => {
   return { ...record, itemsCbor: plainBytes(record.itemsCbor) };
-}
+};
 
-function toPlainStoredObserveAnnotation(
+const toPlainStoredObserveAnnotation = (
   record: StoredObserveAnnotation
-): StoredObserveAnnotation {
+): StoredObserveAnnotation => {
   return { ...record, annotationCbor: plainBytes(record.annotationCbor) };
-}
+};
 
-function encodeLegacySnapshotForTest(state: BackendState): Uint8Array {
+const encodeLegacySnapshotForTest = (state: BackendState): Uint8Array => {
   const snapshot = {
     branches: Array.from(state.branches.values(), (record) => ({
       ...record,
@@ -223,7 +223,7 @@ function encodeLegacySnapshotForTest(state: BackendState): Uint8Array {
   return encodeDeterministicKernelRecord(
     snapshot as unknown as Parameters<typeof encodeDeterministicKernelRecord>[0]
   );
-}
+};
 
 interface LegacySnapshotSeedRow {
   schemaVersion: number;
@@ -240,10 +240,10 @@ interface LegacySnapshotSeedRow {
  * open-time migration over a specific legacy shape (multi-scope, or a single
  * scope with a deliberately malformed row).
  */
-async function seedLegacySnapshotSchema(
+const seedLegacySnapshotSchema = async (
   options: PostgresBackendOptions,
   rows: LegacySnapshotSeedRow[]
-): Promise<void> {
+): Promise<void> => {
   const schemaName = options.schemaName ?? "public";
   const qSchema = quoteIdentifier(schemaName);
   const snapshotsTable = qualifyIdentifier(
@@ -296,7 +296,7 @@ async function seedLegacySnapshotSchema(
   } finally {
     await seedAdmin.end({ timeout: 0 });
   }
-}
+};
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();

@@ -35,13 +35,13 @@ const TEST_SCHEMA = {
   schemaId: "schema_postgres_reclamation",
 } satisfies TurnTreeSchema;
 
-function createMonotonicClock(): () => number {
+const createMonotonicClock = (): (() => number) => {
   let clock = 0;
   return () => {
     clock += 1;
     return clock;
   };
-}
+};
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();

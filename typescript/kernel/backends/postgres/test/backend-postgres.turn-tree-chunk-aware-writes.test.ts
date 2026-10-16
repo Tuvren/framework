@@ -58,7 +58,7 @@ afterAll(async () => {
   await cleanupAllocatedSchemas();
 });
 
-async function seededHashes(count: number, seed: string): Promise<string[]> {
+const seededHashes = async (count: number, seed: string): Promise<string[]> => {
   const hashes: string[] = [];
 
   for (let index = 0; index < count; index += 1) {
@@ -66,7 +66,7 @@ async function seededHashes(count: number, seed: string): Promise<string[]> {
   }
 
   return hashes;
-}
+};
 
 describe("createPostgresBackend chunk-aware TurnTree caller writes (KRT-BK008)", () => {
   test("resolves the expected manifest after growing an ordered path past the ADR-0011 chunking threshold", async () => {

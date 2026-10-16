@@ -35,7 +35,95 @@ interface DevenvPostgresEnvironment {
   username: string;
 }
 
-export async function assertDevenvPostgresReady(): Promise<void> {
+const assertSchemaName = (schemaName: string): void => {
+  if (!SCHEMA_NAME_PATTERN.test(schemaName)) {
+    throw new Error(`invalid PostgreSQL schema name "${schemaName}"`);
+  }
+};
+const readDevenvPostgresEnvironment = (): DevenvPostgresEnvironment => {
+  const host = process.env.PGHOST;
+  const portValue = process.env.PGPORT;
+  const username = process.env.PGUSER ?? process.env.USER;
+
+  if (host === undefined || host.length === 0) {
+    throw new Error(
+      "PGHOST is missing. Load the repo environment with direnv and start PostgreSQL with `devenv up -d` before running PostgreSQL-backed tests."
+    );
+  }
+
+  if (portValue === undefined || portValue.length === 0) {
+    throw new Error(
+      "PGPORT is missing. Load the repo environment with direnv and start PostgreSQL with `devenv up -d` before running PostgreSQL-backed tests."
+    );
+  }
+
+  if (username === undefined || username.length === 0) {
+    throw new Error(
+      "PGUSER/USER is missing. PostgreSQL-backed tests require a local database user."
+    );
+  }
+
+  const port = Number.parseInt(portValue, 10);
+
+  if (!Number.isSafeInteger(port) || port <= 0) {
+    throw new Error(
+      `PGPORT must be a positive integer, received "${portValue}"`
+    );
+  }
+
+  return {
+    host,
+    port,
+    username,
+  };
+};
+
+const createSqlClient = () => {
+  const environment = readDevenvPostgresEnvironment();
+
+  return postgres({
+    connect_timeout: 5,
+    database: DEVENV_DATABASE_NAME,
+    host: environment.host,
+    idle_timeout: 1,
+    max: 1,
+    onnotice: () => undefined,
+    port: environment.port,
+    prepare: false,
+    username: environment.username,
+  });
+};
+
+const requireSchemaName = (options: PostgresBackendOptions): string => {
+  if (options.schemaName === undefined) {
+    throw new Error("expected a schema name on the test backend options");
+  }
+
+  return options.schemaName;
+};
+
+/**
+ * Canonical admin `postgres` client for test-only direct-SQL access
+ * (schema/scope teardown, corruption injection, etc.), bypassing the
+ * backend's own connection handling. Shared by every test file that needs
+ * to reach into a schema the backend under test owns.
+ */
+export const createAdminClient = (options: PostgresBackendOptions): Sql => {
+  return postgres({
+    connect_timeout: 5,
+    database: options.database,
+    host: options.host,
+    idle_timeout: 1,
+    max: 1,
+    onnotice: () => undefined,
+    password: options.password,
+    port: options.port,
+    prepare: false,
+    username: options.username,
+  });
+};
+
+export const assertDevenvPostgresReady = async (): Promise<void> => {
   // The session starts PostgreSQL through `devenv up -d`, but the daemon can
   // still report ready before the server accepts connections. On a cold shell
   // the socket file may not exist yet, surfacing as `ENOENT` on the first
@@ -72,11 +160,11 @@ export async function assertDevenvPostgresReady(): Promise<void> {
   throw new Error(
     `devenv postgres did not become ready within ${totalBudgetMs}ms: ${message}`
   );
-}
+};
 
-export function createPostgresTestBackendOptions(
+export const createPostgresTestBackendOptions = (
   overrides: Partial<PostgresBackendOptions> = {}
-): PostgresBackendOptions {
+): PostgresBackendOptions => {
   const environment = readDevenvPostgresEnvironment();
   const schemaName =
     overrides.schemaName ?? `test_${randomUUID().replaceAll("-", "_")}`;
@@ -92,9 +180,9 @@ export function createPostgresTestBackendOptions(
     username: environment.username,
     ...overrides,
   };
-}
+};
 
-export async function cleanupAllocatedSchemas(): Promise<void> {
+export const cleanupAllocatedSchemas = async (): Promise<void> => {
   if (allocatedSchemas.size === 0) {
     return;
   }
@@ -112,7 +200,7 @@ export async function cleanupAllocatedSchemas(): Promise<void> {
     allocatedSchemas.clear();
     await sql.end({ timeout: 0 });
   }
-}
+};
 
 /**
  * Overwrites a branch head via direct SQL, bypassing every backend-owned
@@ -120,11 +208,11 @@ export async function cleanupAllocatedSchemas(): Promise<void> {
  * corruption that connectivity checks cannot see (relational equivalent of
  * the pre-#110 snapshot_cbor tamper path).
  */
-export async function updateBranchHeadDirectly(
+export const updateBranchHeadDirectly = async (
   options: PostgresBackendOptions,
   branchId: string,
   headTurnNodeHash: string
-): Promise<void> {
+): Promise<void> => {
   const sql = createAdminClient(options);
 
   try {
@@ -145,93 +233,4 @@ export async function updateBranchHeadDirectly(
   } finally {
     await sql.end({ timeout: 0 });
   }
-}
-
-function requireSchemaName(options: PostgresBackendOptions): string {
-  if (options.schemaName === undefined) {
-    throw new Error("expected a schema name on the test backend options");
-  }
-
-  return options.schemaName;
-}
-
-/**
- * Canonical admin `postgres` client for test-only direct-SQL access
- * (schema/scope teardown, corruption injection, etc.), bypassing the
- * backend's own connection handling. Shared by every test file that needs
- * to reach into a schema the backend under test owns.
- */
-export function createAdminClient(options: PostgresBackendOptions): Sql {
-  return postgres({
-    connect_timeout: 5,
-    database: options.database,
-    host: options.host,
-    idle_timeout: 1,
-    max: 1,
-    onnotice: () => undefined,
-    password: options.password,
-    port: options.port,
-    prepare: false,
-    username: options.username,
-  });
-}
-
-function createSqlClient() {
-  const environment = readDevenvPostgresEnvironment();
-
-  return postgres({
-    connect_timeout: 5,
-    database: DEVENV_DATABASE_NAME,
-    host: environment.host,
-    idle_timeout: 1,
-    max: 1,
-    onnotice: () => undefined,
-    port: environment.port,
-    prepare: false,
-    username: environment.username,
-  });
-}
-
-function readDevenvPostgresEnvironment(): DevenvPostgresEnvironment {
-  const host = process.env.PGHOST;
-  const portValue = process.env.PGPORT;
-  const username = process.env.PGUSER ?? process.env.USER;
-
-  if (host === undefined || host.length === 0) {
-    throw new Error(
-      "PGHOST is missing. Load the repo environment with direnv and start PostgreSQL with `devenv up -d` before running PostgreSQL-backed tests."
-    );
-  }
-
-  if (portValue === undefined || portValue.length === 0) {
-    throw new Error(
-      "PGPORT is missing. Load the repo environment with direnv and start PostgreSQL with `devenv up -d` before running PostgreSQL-backed tests."
-    );
-  }
-
-  if (username === undefined || username.length === 0) {
-    throw new Error(
-      "PGUSER/USER is missing. PostgreSQL-backed tests require a local database user."
-    );
-  }
-
-  const port = Number.parseInt(portValue, 10);
-
-  if (!Number.isSafeInteger(port) || port <= 0) {
-    throw new Error(
-      `PGPORT must be a positive integer, received "${portValue}"`
-    );
-  }
-
-  return {
-    host,
-    port,
-    username,
-  };
-}
-
-function assertSchemaName(schemaName: string): void {
-  if (!SCHEMA_NAME_PATTERN.test(schemaName)) {
-    throw new Error(`invalid PostgreSQL schema name "${schemaName}"`);
-  }
-}
+};
