@@ -1054,7 +1054,6 @@ class SqliteBackend implements KrakenBackend {
   health(): Promise<{ ok: true } | { ok: false; reason: string }> {
     return this.queueConnectionWork(
       /* oxlint-disable require-await -- queueConnectionWork requires a Promise-returning callback; every read below is synchronous better-sqlite3 work, so there is nothing to await. */
-      // biome-ignore lint/suspicious/useAwait: queueConnectionWork requires a Promise-returning callback; every read below is synchronous better-sqlite3 work, so there is nothing to await.
       async () => {
         try {
           this.db.exec("BEGIN IMMEDIATE");
