@@ -84,76 +84,10 @@ interface SeededHistory {
   threadId: string;
 }
 
-await main();
-
-async function main(): Promise<void> {
-  process.stdout.write("sqlite backend hot-path benchmark\n");
-  const results: BenchmarkResult[] = [];
-
-  for (const historySize of HOT_PATH_HISTORY_SIZES) {
-    const tempDirectory = mkdtempSync(join(tmpdir(), "tuvren-sqlite-bench-"));
-
-    try {
-      const observer = createRecordingPhaseObserver();
-      const backend = createSqliteBackend({
-        databasePath: join(tempDirectory, "kraken.db"),
-        phaseObserver: observer,
-      });
-
-      const seededHistory = await seedHistory(backend, historySize);
-
-      for (const benchmarkCase of createBenchmarkCases(
-        backend,
-        seededHistory
-      )) {
-        const result = await measure(benchmarkCase, observer);
-        results.push(result);
-        process.stdout.write(
-          `${result.name} at ${result.historySize} TurnNodes (n=${SAMPLE_COUNT}): best ${formatNs(
-            result.bestNs
-          )} total, ${formatNs(result.bestNs / result.iterations)}/iter; median ${formatNs(
-            result.medianNs / result.iterations
-          )}/iter; p95 ${formatNs(result.p95Ns / result.iterations)}/iter; avg ${formatNs(
-            result.averageNs
-          )} total\n`
-        );
-        process.stdout.write(formatPhaseTable(result.phases));
-      }
-    } finally {
-      rmSync(tempDirectory, { force: true, recursive: true });
-    }
-  }
-
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        benchmark: "sqlite-hot-path",
-        generatedAt: new Date().toISOString(),
-        results: results.map((result) => ({
-          averageNs: result.averageNs,
-          averagePerIterationNs: result.averageNs / result.iterations,
-          bestNs: result.bestNs,
-          bestPerIterationNs: result.bestNs / result.iterations,
-          historySize: result.historySize,
-          iterations: result.iterations,
-          medianNs: result.medianNs,
-          medianPerIterationNs: result.medianNs / result.iterations,
-          name: result.name,
-          p95Ns: result.p95Ns,
-          p95PerIterationNs: result.p95Ns / result.iterations,
-          phases: result.phases,
-        })),
-      },
-      null,
-      2
-    )}\n`
-  );
-}
-
-function createBenchmarkCases(
+const createBenchmarkCases = (
   backend: RuntimeBackend,
   seededHistory: SeededHistory
-): BenchmarkCase[] {
+): BenchmarkCase[] => {
   let forwardBranchCounter = 0;
   let membershipBranchCounter = 0;
   let nonRootForwardBranchCounter = 0;
@@ -352,12 +286,12 @@ function createBenchmarkCases(
       },
     },
   ];
-}
+};
 
-async function measure(
+const measure = async (
   benchmarkCase: BenchmarkCase,
   observer: ReturnType<typeof createRecordingPhaseObserver>
-): Promise<BenchmarkResult> {
+): Promise<BenchmarkResult> => {
   const warmupIterations = Math.min(
     WARMUP_ITERATIONS,
     benchmarkCase.iterations
@@ -396,12 +330,12 @@ async function measure(
     p95Ns,
     phases: summarizePhases(observer.samples),
   };
-}
+};
 
-async function seedHistory(
+const seedHistory = async (
   backend: RuntimeBackend,
   extraTurnNodeCount: number
-): Promise<SeededHistory> {
+): Promise<SeededHistory> => {
   const schema = createCanonicalKernelTestSchema();
   const schemaRecord = createStoredSchemaRecord(schema, 1);
   const turnTree = await createStoredTurnTreeRecord(
@@ -498,4 +432,70 @@ async function seedHistory(
     rootTurnNodeHash: rootTurnNode.hash,
     threadId: thread.threadId,
   };
-}
+};
+
+const main = async (): Promise<void> => {
+  process.stdout.write("sqlite backend hot-path benchmark\n");
+  const results: BenchmarkResult[] = [];
+
+  for (const historySize of HOT_PATH_HISTORY_SIZES) {
+    const tempDirectory = mkdtempSync(join(tmpdir(), "tuvren-sqlite-bench-"));
+
+    try {
+      const observer = createRecordingPhaseObserver();
+      const backend = createSqliteBackend({
+        databasePath: join(tempDirectory, "kraken.db"),
+        phaseObserver: observer,
+      });
+
+      const seededHistory = await seedHistory(backend, historySize);
+
+      for (const benchmarkCase of createBenchmarkCases(
+        backend,
+        seededHistory
+      )) {
+        const result = await measure(benchmarkCase, observer);
+        results.push(result);
+        process.stdout.write(
+          `${result.name} at ${result.historySize} TurnNodes (n=${SAMPLE_COUNT}): best ${formatNs(
+            result.bestNs
+          )} total, ${formatNs(result.bestNs / result.iterations)}/iter; median ${formatNs(
+            result.medianNs / result.iterations
+          )}/iter; p95 ${formatNs(result.p95Ns / result.iterations)}/iter; avg ${formatNs(
+            result.averageNs
+          )} total\n`
+        );
+        process.stdout.write(formatPhaseTable(result.phases));
+      }
+    } finally {
+      rmSync(tempDirectory, { force: true, recursive: true });
+    }
+  }
+
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        benchmark: "sqlite-hot-path",
+        generatedAt: new Date().toISOString(),
+        results: results.map((result) => ({
+          averageNs: result.averageNs,
+          averagePerIterationNs: result.averageNs / result.iterations,
+          bestNs: result.bestNs,
+          bestPerIterationNs: result.bestNs / result.iterations,
+          historySize: result.historySize,
+          iterations: result.iterations,
+          medianNs: result.medianNs,
+          medianPerIterationNs: result.medianNs / result.iterations,
+          name: result.name,
+          p95Ns: result.p95Ns,
+          p95PerIterationNs: result.p95Ns / result.iterations,
+          phases: result.phases,
+        })),
+      },
+      null,
+      2
+    )}\n`
+  );
+};
+
+await main();
