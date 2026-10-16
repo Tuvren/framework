@@ -34,8 +34,6 @@
  *
  * Everything re-exported below tracks `@tuvren/core/provider` verbatim; see
  * that subpath for the authoritative type and assertion-helper docs.
- *
- * @packageDocumentation
  */
 export type {
   ProviderMediatedToolConfig,

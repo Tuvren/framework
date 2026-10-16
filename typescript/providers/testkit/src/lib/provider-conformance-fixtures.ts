@@ -15,7 +15,7 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { TuvrenModelResponse, TuvrenPrompt } from "@tuvren/provider-api";
@@ -55,36 +55,36 @@ const ajv = new Ajv2020({ allErrors: true, strict: false });
  * Walks up from `metaUrl`'s directory looking for `pathSegments` joined onto
  * each ancestor, returning the first match.
  *
- * @throws Error when no ancestor within 8 levels contains the path.
+ * @throws {Error} When no ancestor within 8 levels contains the path.
  */
 const resolveFixturePath = (
   metaUrl: string,
   pathSegments: readonly string[]
 ): string => {
   const currentFilePath = fileURLToPath(metaUrl);
-  let currentDirectory = dirname(currentFilePath);
+  let currentDirectory = path.dirname(currentFilePath);
 
   for (let index = 0; index < 8; index += 1) {
-    const candidatePath = join(currentDirectory, ...pathSegments);
+    const candidatePath = path.join(currentDirectory, ...pathSegments);
 
     if (existsSync(candidatePath)) {
       return candidatePath;
     }
 
-    currentDirectory = dirname(currentDirectory);
+    currentDirectory = path.dirname(currentDirectory);
   }
 
   throw new Error("unable to locate provider conformance fixture file");
 };
 
-/** True when a value is a non-null object (loose record predicate; no plain-object or key-shape checks). */
+/** True when a value is a non-null, non-array object (no plain-object or key-shape checks). */
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 /**
  * Narrows a parsed JSON value to an Ajv `AnySchema` (boolean or object).
  *
- * @throws Error when the value is neither.
+ * @throws {Error} When the value is neither.
  */
 const readJsonSchema = (value: unknown): AnySchema => {
   if (typeof value === "boolean" || isRecord(value)) {
@@ -98,7 +98,7 @@ const readJsonSchema = (value: unknown): AnySchema => {
  * Compiles `schema` with the shared Ajv instance and asserts `value`
  * validates against it.
  *
- * @throws Error with the Ajv error text when validation fails.
+ * @throws {Error} With the Ajv error text when validation fails.
  */
 const assertSchemaValid = (
   schema: AnySchema,
@@ -107,7 +107,7 @@ const assertSchemaValid = (
 ): void => {
   const validate = ajv.compile(schema);
 
-  if (validate(value)) {
+  if (validate(value) === true) {
     return;
   }
 
@@ -120,7 +120,7 @@ const assertSchemaValid = (
  * Reads and schema-validates the suite manifest, then extracts its single
  * declared fixture's path plus the fixture schema path.
  *
- * @throws Error when the manifest fails schema validation, does not declare
+ * @throws {Error} When the manifest fails schema validation, does not declare
  *   exactly one fixture, or that fixture entry is malformed.
  */
 const readConformanceManifest = (
@@ -131,10 +131,10 @@ const readConformanceManifest = (
 } => {
   const manifestText = readFileSync(manifestPath, "utf-8");
   const manifestSchemaText = readFileSync(
-    join(dirname(manifestPath), MANIFEST_SCHEMA_RELATIVE_PATH),
+    path.join(path.dirname(manifestPath), MANIFEST_SCHEMA_RELATIVE_PATH),
     "utf-8"
   );
-  const parsedManifest = JSON.parse(manifestText);
+  const parsedManifest: unknown = JSON.parse(manifestText);
   const parsedManifestSchema = readJsonSchema(JSON.parse(manifestSchemaText));
   assertSchemaValid(
     parsedManifestSchema,
@@ -151,7 +151,7 @@ const readConformanceManifest = (
     throw new Error("provider conformance manifest is invalid");
   }
 
-  const [fixture] = parsedManifest.fixtures;
+  const fixture: unknown = parsedManifest.fixtures.at(0);
 
   if (!isRecord(fixture) || typeof fixture.path !== "string") {
     throw new Error("provider conformance manifest fixture entry is invalid");
@@ -169,7 +169,7 @@ const readConformanceManifest = (
  * {@link loadProviderTestkitFixtures}) owns the full prompt shape; this is
  * only a narrowing guard for TypeScript.
  *
- * @throws Error when the value is not an object or `messages` is not a
+ * @throws {Error} When the value is not an object or `messages` is not a
  *   non-empty array.
  */
 const assertTuvrenPrompt: (
@@ -195,7 +195,7 @@ const assertTuvrenPrompt: (
  * Asserts a parsed fixture value has the `prompt`/`response`/
  * `structuredPrompt`/`toolPrompt` shape of {@link ProviderTestkitFixtureSet}.
  *
- * @throws Error when the value or any of its required fields is malformed.
+ * @throws {Error} When the value or any of its required fields is malformed.
  */
 const assertProviderTestkitFixtureSet: (
   value: unknown
@@ -217,7 +217,7 @@ const assertProviderTestkitFixtureSet: (
  * fixture and fixture schema, validates the fixture against that schema,
  * and asserts it satisfies {@link ProviderTestkitFixtureSet}.
  *
- * @throws Error when the manifest cannot be located, is malformed, or the
+ * @throws {Error} When the manifest cannot be located, is malformed, or the
  *   fixture fails schema validation or shape assertion.
  */
 const loadProviderTestkitFixtures = (): ProviderTestkitFixtureSet => {
@@ -226,11 +226,17 @@ const loadProviderTestkitFixtures = (): ProviderTestkitFixtureSet => {
     MANIFEST_PATH_SEGMENTS
   );
   const manifest = readConformanceManifest(manifestPath);
-  const fixturePath = join(dirname(manifestPath), manifest.fixturePath);
-  const schemaPath = join(dirname(manifestPath), manifest.fixtureSchemaPath);
+  const fixturePath = path.join(
+    path.dirname(manifestPath),
+    manifest.fixturePath
+  );
+  const schemaPath = path.join(
+    path.dirname(manifestPath),
+    manifest.fixtureSchemaPath
+  );
   const fixtureText = readFileSync(fixturePath, "utf-8");
   const schemaText = readFileSync(schemaPath, "utf-8");
-  const parsedFixture = JSON.parse(fixtureText);
+  const parsedFixture: unknown = JSON.parse(fixtureText);
   const parsedSchema = readJsonSchema(JSON.parse(schemaText));
   assertSchemaValid(
     parsedSchema,

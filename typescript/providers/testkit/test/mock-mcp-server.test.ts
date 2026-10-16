@@ -41,7 +41,7 @@ describe("@tuvren/provider-testkit mock MCP server", () => {
 
     try {
       const tools = await client.listTools();
-      expect(tools.tools.map((tool) => tool.name).sort()).toEqual([
+      expect(tools.tools.map((tool) => tool.name).toSorted()).toEqual([
         "echo",
         "search",
       ]);
@@ -64,7 +64,7 @@ describe("@tuvren/provider-testkit mock MCP server", () => {
 
     try {
       const tools = await client.listTools();
-      expect(tools.tools.map((tool) => tool.name).sort()).toEqual([
+      expect(tools.tools.map((tool) => tool.name).toSorted()).toEqual([
         "echo",
         "search",
       ]);

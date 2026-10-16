@@ -27,8 +27,6 @@
  * `createMockMcpStdioCommand`, and their official-server counterparts spin up
  * MCP servers (mock or the official `@modelcontextprotocol/server-everything`)
  * over stdio or Streamable HTTP for MCP-client conformance tests.
- *
- * @packageDocumentation
  */
 export type {
   MockMcpServerOptions,

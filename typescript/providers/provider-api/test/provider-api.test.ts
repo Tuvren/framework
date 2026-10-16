@@ -16,7 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import Ajv2020 from "ajv/dist/2020.js";
@@ -100,15 +100,22 @@ const loadJsonSchemas = (directoryUrl: URL): Ajv2020 => {
     entry.endsWith(".json")
   );
 
-  expect(entries.sort()).toEqual(
+  expect(entries.toSorted()).toEqual(
     EXPECTED_PROVIDER_ARTIFACT_SCHEMAS.map(
       (schemaName) => `${schemaName}.json`
-    ).sort()
+    ).toSorted()
   );
 
   for (const entry of entries) {
-    const schemaPath = join(directory, entry);
-    const schema = JSON.parse(readFileSync(schemaPath, "utf-8"));
+    const schemaPath = path.join(directory, entry);
+    const schema: unknown = JSON.parse(readFileSync(schemaPath, "utf-8"));
+
+    if (!(typeof schema === "boolean" || isRecord(schema))) {
+      throw new Error(
+        `${schemaPath} must contain a JSON Schema object or boolean`
+      );
+    }
+
     ajv.addSchema(schema);
   }
 
@@ -150,11 +157,13 @@ describe("provider-api", () => {
       type: "structured_delta",
     } satisfies ProviderStreamChunk;
     const provider = {
-      generate: () =>
-        Promise.resolve({
+      generate: async () => {
+        await Promise.resolve();
+        return {
           finishReason: "stop",
           parts: [],
-        }),
+        };
+      },
       id: "provider-1",
       async *stream() {
         await Promise.resolve();
@@ -164,7 +173,9 @@ describe("provider-api", () => {
 
     expect(provider.id).toBe("provider-1");
     expect(isProviderStreamChunk(chunk)).toBe(true);
-    expect(() => assertProviderStreamChunk(chunk)).not.toThrow();
+    expect(() => {
+      assertProviderStreamChunk(chunk);
+    }).not.toThrow();
   });
 
   test("emits TypeSpec JSON Schema artifacts for provider payload fixtures", () => {
@@ -177,7 +188,7 @@ describe("provider-api", () => {
         import.meta.url
       )
     );
-    const fixture = JSON.parse(
+    const fixture: unknown = JSON.parse(
       readFileSync(
         new URL(
           "../../../../spec/conformance/providers/fixtures/provider-fixtures.json",
@@ -186,42 +197,70 @@ describe("provider-api", () => {
         "utf-8"
       )
     );
+
+    if (!isRecord(fixture)) {
+      throw new Error("provider fixture must contain a JSON object");
+    }
+
+    const { prompt, response, structuredPrompt, toolPrompt } = fixture;
+
+    if (
+      !(
+        isRecord(prompt) &&
+        isRecord(response) &&
+        isRecord(structuredPrompt) &&
+        isRecord(structuredPrompt.responseFormat) &&
+        isRecord(toolPrompt) &&
+        Array.isArray(toolPrompt.tools)
+      )
+    ) {
+      throw new Error(
+        "provider fixture must contain the expected prompt and response objects"
+      );
+    }
+
+    const firstTool: unknown = toolPrompt.tools[0];
+
+    if (!isRecord(firstTool)) {
+      throw new Error("provider tool prompt must contain a tool definition");
+    }
+
     const negativeUsageResponse = {
-      ...fixture.response,
+      ...response,
       usage: {
         inputTokens: -1,
         outputTokens: -2,
       },
     };
     const nonRedactedEmptyReasoningResponse = {
-      ...fixture.response,
+      ...response,
       parts: [{ redacted: false, text: "", type: "reasoning" }],
     };
     const emptyStructuredNameResponse = {
-      ...fixture.response,
+      ...response,
       parts: [{ data: { status: "ok" }, name: "", type: "structured" }],
     };
     const emptyStringPromptFields = {
-      ...fixture.prompt,
+      ...prompt,
       config: {
         model: "",
         provider: "",
         settings: {},
       },
-      messages: [{ role: "system", content: "" }],
+      messages: [{ content: "", role: "system" }],
       responseFormat: {
         name: "",
         schema: { type: "object" },
       },
     };
     const whitespaceToolPrompt = {
-      ...fixture.toolPrompt,
-      tools: [{ ...fixture.toolPrompt.tools[0], name: "   " }],
+      ...toolPrompt,
+      tools: [{ ...firstTool, name: "   " }],
     };
     const invalidStructuredPrompt = {
-      ...fixture.structuredPrompt,
+      ...structuredPrompt,
       responseFormat: {
-        ...fixture.structuredPrompt.responseFormat,
+        ...structuredPrompt.responseFormat,
         schema: { type: "definitely_not_json_schema_type" },
       },
     };
@@ -229,22 +268,22 @@ describe("provider-api", () => {
     expectSchemaValidation(
       ajv,
       "https://tuvren.dev/schemas/providers/provider-api/TuvrenPrompt.json",
-      fixture.prompt
+      prompt
     );
     expectSchemaValidation(
       ajv,
       "https://tuvren.dev/schemas/providers/provider-api/TuvrenModelResponse.json",
-      fixture.response
+      response
     );
     expectSchemaValidation(
       ajv,
       "https://tuvren.dev/schemas/providers/provider-api/TuvrenPrompt.json",
-      fixture.structuredPrompt
+      structuredPrompt
     );
     expectSchemaValidation(
       ajv,
       "https://tuvren.dev/schemas/providers/provider-api/TuvrenPrompt.json",
-      fixture.toolPrompt
+      toolPrompt
     );
     // The provider-facing packet mirrors the focused provider binding rather
     // than durable-runtime message predicates, so empty optional strings remain
@@ -292,8 +331,8 @@ describe("provider-api", () => {
     );
 
     expect(document.openapi).toBe("3.1.0");
-    expect(Object.keys(readOpenApiSchemas(document)).sort()).toEqual(
-      [...EXPECTED_PROVIDER_ARTIFACT_SCHEMAS].sort()
+    expect(Object.keys(readOpenApiSchemas(document)).toSorted()).toEqual(
+      [...EXPECTED_PROVIDER_ARTIFACT_SCHEMAS].toSorted()
     );
     // Provider artifacts are schema catalogs only; introducing HTTP paths here
     // would accidentally move Epic T transport scope into Epic S.

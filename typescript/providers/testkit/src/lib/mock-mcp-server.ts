@@ -19,8 +19,9 @@ import type { ChildProcess } from "node:child_process";
 import { once } from "node:events";
 import { existsSync } from "node:fs";
 import { createServer } from "node:http";
-import type { IncomingMessage, Server } from "node:http";
-import { dirname, join } from "node:path";
+import type { IncomingMessage, Server, ServerResponse } from "node:http";
+import path from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -48,7 +49,7 @@ export interface MockMcpServerOptions {
 /** A running mock MCP Streamable HTTP server bound to a loopback TCP port. */
 export interface RunningMockMcpHttpServer {
   /** Stops the server and releases the port. */
-  close(): Promise<void>;
+  close: () => Promise<void>;
   /** The `http://127.0.0.1:<port>/mcp` endpoint URL. */
   endpoint: string;
 }
@@ -56,7 +57,7 @@ export interface RunningMockMcpHttpServer {
 /** A running official `@modelcontextprotocol/server-everything` Streamable HTTP process. */
 export interface RunningOfficialMcpEverythingServer {
   /** Stops the child process and releases the port. */
-  close(): Promise<void>;
+  close: () => Promise<void>;
   /** The `http://127.0.0.1:<port>/mcp` endpoint URL. */
   endpoint: string;
 }
@@ -147,35 +148,25 @@ const closeHttpServer = async (server: Server): Promise<void> => {
     return;
   }
 
-  await new Promise<void>((resolve, reject) => {
-    server.close((error) => {
-      if (error === undefined) {
-        resolve();
-        return;
-      }
-
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        error.code === "ERR_SERVER_NOT_RUNNING"
-      ) {
-        resolve();
-        return;
-      }
-
-      reject(error);
-    });
-    server.closeAllConnections();
-  });
+  const closeEvent = once(server, "close");
+  server.close();
+  server.closeAllConnections();
+  await closeEvent;
 };
 
 /** Buffers a request body and JSON-parses it; returns `undefined` for an empty body. */
 const readRequestBody = async (request: IncomingMessage): Promise<unknown> => {
-  const chunks: Buffer[] = [];
+  const chunks: Uint8Array[] = [];
 
-  for await (const chunk of request) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  for await (const unsafeChunk of request) {
+    const chunk: unknown = unsafeChunk;
+
+    if (typeof chunk === "string" || chunk instanceof Uint8Array) {
+      chunks.push(Buffer.from(chunk));
+      continue;
+    }
+
+    throw new Error("request body emitted a non-buffer chunk");
   }
 
   const body = Buffer.concat(chunks).toString("utf-8");
@@ -201,49 +192,65 @@ const isJsonRpcMethod = (value: unknown, method: string): boolean => {
   );
 };
 
+/** Keeps request tasks reachable until Node closes their corresponding responses. */
+const activeHttpRequests = new Set<Promise<void>>();
+
+/** Handles one Streamable HTTP request without returning a promise to Node's request-listener seam. */
+const handleMockMcpHttpRequest = async (
+  request: IncomingMessage,
+  response: ServerResponse,
+  options: MockMcpServerOptions
+): Promise<void> => {
+  if (request.url?.startsWith("/mcp") !== true) {
+    response.writeHead(404).end();
+    return;
+  }
+
+  if (!headersMatch(request, options.requireHeaders ?? {})) {
+    response.writeHead(401).end("unauthorized");
+    return;
+  }
+
+  try {
+    const parsedBody =
+      request.method === "POST" ? await readRequestBody(request) : undefined;
+
+    if (
+      options.failToolCallsWithTransportClose === true &&
+      isJsonRpcMethod(parsedBody, "tools/call")
+    ) {
+      request.socket.destroy();
+      return;
+    }
+
+    const mcpServer = createMockMcpServer(options);
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+    });
+    await mcpServer.connect(transport);
+    await transport.handleRequest(request, response, parsedBody);
+  } catch (error: unknown) {
+    response
+      .writeHead(500)
+      .end(error instanceof Error ? error.message : String(error));
+  }
+};
+
 /**
  * Starts a mock MCP server on a Streamable HTTP transport, bound to an
  * ephemeral loopback port.
  *
- * @throws Error when the underlying HTTP server does not bind a TCP port.
+ * @throws {Error} When the underlying HTTP server does not bind a TCP port.
  */
 export const startMockMcpHttpServer = async (
   options: MockMcpServerOptions = {}
 ): Promise<RunningMockMcpHttpServer> => {
-  const httpServer = createServer(async (request, response) => {
-    if (!request.url?.startsWith("/mcp")) {
-      response.writeHead(404).end();
-      return;
-    }
-
-    if (!headersMatch(request, options.requireHeaders ?? {})) {
-      response.writeHead(401).end("unauthorized");
-      return;
-    }
-
-    try {
-      const parsedBody =
-        request.method === "POST" ? await readRequestBody(request) : undefined;
-
-      if (
-        options.failToolCallsWithTransportClose === true &&
-        isJsonRpcMethod(parsedBody, "tools/call")
-      ) {
-        request.socket.destroy();
-        return;
-      }
-
-      const mcpServer = createMockMcpServer(options);
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: undefined,
-      });
-      await mcpServer.connect(transport);
-      await transport.handleRequest(request, response, parsedBody);
-    } catch (error: unknown) {
-      response
-        .writeHead(500)
-        .end(error instanceof Error ? error.message : String(error));
-    }
+  const httpServer = createServer((request, response) => {
+    const requestTask = handleMockMcpHttpRequest(request, response, options);
+    activeHttpRequests.add(requestTask);
+    response.once("close", () => {
+      activeHttpRequests.delete(requestTask);
+    });
   });
 
   httpServer.listen(0, "127.0.0.1");
@@ -266,19 +273,24 @@ export const startMockMcpHttpServer = async (
 /**
  * Walks up from this file to find `src/bin/mock-mcp-stdio.ts`.
  *
- * @throws Error when the bin file cannot be located within 8 parent directories.
+ * @throws {Error} When the bin file cannot be located within 8 parent directories.
  */
 const resolveMockMcpStdioBin = (): string => {
   let currentDirectory = import.meta.dirname;
 
   for (let index = 0; index < 8; index += 1) {
-    const candidate = join(currentDirectory, "src", "bin", "mock-mcp-stdio.ts");
+    const candidate = path.join(
+      currentDirectory,
+      "src",
+      "bin",
+      "mock-mcp-stdio.ts"
+    );
 
     if (existsSync(candidate)) {
       return candidate;
     }
 
-    currentDirectory = dirname(currentDirectory);
+    currentDirectory = path.dirname(currentDirectory);
   }
 
   throw new Error("unable to locate mock MCP stdio bin");
@@ -309,13 +321,13 @@ export const createMockMcpStdioCommand = (
  * Walks up from this file to find the installed
  * `node_modules/.bin/mcp-server-everything` binary.
  *
- * @throws Error when the binary cannot be located within 10 parent directories.
+ * @throws {Error} When the binary cannot be located within 10 parent directories.
  */
 const resolveMcpEverythingBin = (): string => {
   let currentDirectory = import.meta.dirname;
 
   for (let index = 0; index < 10; index += 1) {
-    const candidate = join(
+    const candidate = path.join(
       currentDirectory,
       "node_modules",
       ".bin",
@@ -326,7 +338,7 @@ const resolveMcpEverythingBin = (): string => {
       return candidate;
     }
 
-    currentDirectory = dirname(currentDirectory);
+    currentDirectory = path.dirname(currentDirectory);
   }
 
   throw new Error("unable to locate official MCP everything server bin");
@@ -345,7 +357,7 @@ export const createOfficialMcpEverythingStdioCommand = (): {
  * Binds an ephemeral loopback port, closes the probe server, and returns the
  * OS-assigned port number for a subsequent server to reuse.
  *
- * @throws Error when the OS does not assign a TCP port.
+ * @throws {Error} When the OS does not assign a TCP port.
  */
 const reserveTcpPort = async (): Promise<number> => {
   const server = createServer();
@@ -365,40 +377,47 @@ const reserveTcpPort = async (): Promise<number> => {
  * Polls `endpoint` with `POST` requests until it responds, the child process
  * exits, or a 5-second deadline elapses.
  *
- * @throws Error when the child exits early or the deadline elapses first.
+ * @throws {Error} When the child exits early or the deadline elapses first.
  */
+const pollHttpServer = async (
+  endpoint: string,
+  child: ChildProcess,
+  deadline: number,
+  lastError?: unknown
+): Promise<void> => {
+  if (Date.now() >= deadline) {
+    throw new Error(
+      `official MCP everything server did not become ready: ${
+        lastError instanceof Error ? lastError.message : String(lastError)
+      }`
+    );
+  }
+
+  if (child.exitCode !== null) {
+    throw new Error(`official MCP everything server exited ${child.exitCode}`);
+  }
+
+  let nextLastError = lastError;
+
+  try {
+    const response = await fetch(endpoint, { method: "POST" });
+
+    if (response.status !== 0) {
+      return;
+    }
+  } catch (error: unknown) {
+    nextLastError = error;
+  }
+
+  await delay(50);
+  await pollHttpServer(endpoint, child, deadline, nextLastError);
+};
+
 const waitForHttpServer = async (
   endpoint: string,
   child: ChildProcess
 ): Promise<void> => {
-  const deadline = Date.now() + 5000;
-  let lastError: unknown;
-
-  while (Date.now() < deadline) {
-    if (child.exitCode !== null) {
-      throw new Error(
-        `official MCP everything server exited ${child.exitCode}`
-      );
-    }
-
-    try {
-      const response = await fetch(endpoint, { method: "POST" });
-
-      if (response.status !== 0) {
-        return;
-      }
-    } catch (error: unknown) {
-      lastError = error;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
-
-  throw new Error(
-    `official MCP everything server did not become ready: ${
-      lastError instanceof Error ? lastError.message : String(lastError)
-    }`
-  );
+  await pollHttpServer(endpoint, child, Date.now() + 5000);
 };
 
 /** Sends `SIGINT`, waits up to 1 second, then escalates to `SIGKILL` if the process is still alive. */
@@ -408,10 +427,7 @@ const stopChildProcess = async (child: ChildProcess): Promise<void> => {
   }
 
   child.kill("SIGINT");
-  await Promise.race([
-    once(child, "exit"),
-    new Promise((resolve) => setTimeout(resolve, 1000)),
-  ]);
+  await Promise.race([once(child, "exit"), delay(1000)]);
 
   if (child.exitCode === null) {
     child.kill("SIGKILL");
@@ -424,7 +440,7 @@ const stopChildProcess = async (child: ChildProcess): Promise<void> => {
  * `@modelcontextprotocol/server-everything` binary on Streamable HTTP, and
  * waits for it to accept requests before resolving.
  *
- * @throws Error when the child process exits, or does not become ready,
+ * @throws {Error} When the child process exits, or does not become ready,
  *   before the readiness deadline.
  */
 export const startOfficialMcpEverythingStreamableHttpServer =

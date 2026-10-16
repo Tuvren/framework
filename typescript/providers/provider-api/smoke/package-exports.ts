@@ -33,7 +33,9 @@ describe("provider-api package exports", () => {
       type: "finish",
     } satisfies ProviderStreamChunk;
 
-    expect(() => assertProviderStreamChunk(chunk)).not.toThrow();
+    expect(() => {
+      assertProviderStreamChunk(chunk);
+    }).not.toThrow();
   });
 
   test("export model-response validators from the facade surface", () => {
@@ -43,6 +45,8 @@ describe("provider-api package exports", () => {
     } satisfies TuvrenModelResponse;
 
     expect(isTuvrenModelResponse(response)).toBe(true);
-    expect(() => assertTuvrenModelResponse(response)).not.toThrow();
+    expect(() => {
+      assertTuvrenModelResponse(response);
+    }).not.toThrow();
   });
 });

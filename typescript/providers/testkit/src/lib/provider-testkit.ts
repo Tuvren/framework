@@ -54,7 +54,7 @@ export interface ProviderRejectionVerification {
   /** Label used in assertion failure messages. */
   label?: string;
   /** The operation expected to reject. */
-  run: () => Promise<unknown> | unknown;
+  run: () => unknown;
 }
 
 /** Canned behavior for {@link createStaticTuvrenProvider}'s `generate`/`stream` methods. */
@@ -95,7 +95,7 @@ export const providerTestkitFixtures: ProviderTestkitFixtureSet =
  * Calls `provider.generate(prompt)`, asserts the result is a well-formed
  * `TuvrenModelResponse`, then runs the optional `check` callback.
  *
- * @throws Error (from the assertion helper) when the response is malformed.
+ * @throws {Error} When the response is malformed.
  */
 export const verifyProviderGenerate = async (
   verification: ProviderGenerateVerification
@@ -123,7 +123,7 @@ const cloneProviderStreamChunk = (
  * well-formed `ProviderStreamChunk` (§3.2) as it arrives and defensively
  * cloning it.
  *
- * @throws Error (from the assertion helper) when a chunk is malformed.
+ * @throws {Error} When a chunk is malformed.
  */
 export const collectProviderStream = async (
   stream: AsyncIterable<ProviderStreamChunk>,
@@ -160,7 +160,7 @@ export const verifyProviderStream = async (
  * Asserts a message includes a substring (string `expectedMessage`) or
  * matches a pattern (`RegExp`).
  *
- * @throws Error when the message does not satisfy `expectedMessage`.
+ * @throws {Error} When the message does not satisfy `expectedMessage`.
  */
 const assertMessageMatches = (
   actualMessage: string,
@@ -192,7 +192,7 @@ const assertMessageMatches = (
  * Runs `verification.run()` and asserts it rejects, optionally checking the
  * rejection message against `expectedMessage`.
  *
- * @throws Error when `run()` resolves instead of rejecting, or when the
+ * @throws {Error} When `run()` resolves instead of rejecting, or when the
  *   rejection message does not match `expectedMessage`.
  */
 export const verifyProviderRejects = async (
@@ -234,7 +234,7 @@ const arraysAreEqual = (
  * Asserts a chunk list's `type` sequence exactly matches `expectedTypes`, in
  * order and length.
  *
- * @throws Error when the sequences differ.
+ * @throws {Error} When the sequences differ.
  */
 export const assertProviderChunkTypes = (
   chunks: readonly ProviderStreamChunk[],
@@ -256,7 +256,7 @@ export const assertProviderChunkTypes = (
  * Finds the stream's `finish` chunk and asserts its `finishReason` matches
  * `expected`.
  *
- * @throws Error when no `finish` chunk was emitted, or its reason differs.
+ * @throws {Error} When no `finish` chunk was emitted, or its reason differs.
  */
 export const assertProviderFinishChunk = (
   chunks: readonly ProviderStreamChunk[],
@@ -285,7 +285,7 @@ export const assertProviderFinishChunk = (
  * Finds the stream's `structured_done` chunk and asserts its `name` matches
  * `expectedName`.
  *
- * @throws Error when no `structured_done` chunk was emitted, or its name differs.
+ * @throws {Error} When no `structured_done` chunk was emitted, or its name differs.
  */
 export const assertProviderStructuredDoneChunk = (
   chunks: readonly ProviderStreamChunk[],
@@ -323,19 +323,21 @@ const createStaticProviderStream = (
     let nextIndex = 0;
 
     return {
-      next() {
+      async next() {
+        await Promise.resolve();
+
         if (streamError !== undefined) {
-          return Promise.reject(streamError);
+          throw streamError;
         }
 
         if (nextIndex >= streamChunks.length) {
-          return Promise.resolve({ done: true, value: undefined });
+          return { done: true, value: undefined };
         }
 
         const value = cloneProviderStreamChunk(streamChunks[nextIndex]);
         nextIndex += 1;
 
-        return Promise.resolve({ done: false, value });
+        return { done: false, value };
       },
     };
   },
@@ -373,12 +375,14 @@ export const createStaticTuvrenProvider = (
   ];
 
   return {
-    generate() {
+    async generate() {
+      await Promise.resolve();
+
       if (options.generateError !== undefined) {
-        return Promise.reject(options.generateError);
+        throw options.generateError;
       }
 
-      return Promise.resolve(cloneModelResponse(response));
+      return cloneModelResponse(response);
     },
     id: options.id ?? "static-provider",
     stream() {
