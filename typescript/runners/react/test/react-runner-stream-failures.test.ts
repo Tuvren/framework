@@ -429,6 +429,95 @@ describe("runner-react streamed failure handling", () => {
     ]);
   });
 
+  test("observes cancellation when the terminal provider pull completes", async () => {
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const controller = new AbortController();
+    let nextCalls = 0;
+    let returnCalls = 0;
+    const stream = {
+      [Symbol.asyncIterator](): AsyncIterator<ProviderStreamChunk> {
+        return {
+          async next(): Promise<IteratorResult<ProviderStreamChunk>> {
+            nextCalls += 1;
+
+            if (nextCalls === 1) {
+              return await Promise.resolve({
+                done: false,
+                value: {
+                  text: "partial",
+                  type: "text_delta",
+                },
+              });
+            }
+
+            return await Promise.resolve({
+              get done(): true {
+                controller.abort(new Error("cancelled during terminal pull"));
+
+                return true;
+              },
+              value: undefined,
+            });
+          },
+          async return() {
+            returnCalls += 1;
+
+            return await Promise.resolve({
+              done: true,
+              value: undefined,
+            });
+          },
+        };
+      },
+    };
+    const provider = {
+      async generate() {
+        await Promise.resolve();
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      stream() {
+        return stream;
+      },
+    } satisfies TuvrenProvider;
+    const runner = createReActRunner({
+      providerCallMode: "stream",
+    }).create();
+
+    const result = await runner.execute(
+      createRunnerExecutionContext({
+        config: {
+          model: provider,
+          name: "primary",
+        },
+        emittedEvents,
+        signal: controller.signal,
+      })
+    );
+
+    expect(nextCalls).toBe(2);
+    expect(returnCalls).toBe(1);
+    expect(result.resolution).toMatchObject({
+      error: {
+        code: "react_runner_execution_cancelled",
+      },
+      type: "fail",
+    });
+    expect(result.partial).toBe(true);
+    expect(result.messages).toEqual([
+      {
+        parts: [{ text: "partial", type: "text" }],
+        role: "assistant",
+      },
+    ]);
+    expect(emittedEvents.map((event) => event.type)).toEqual([
+      "message.start",
+      "text.delta",
+      "text.done",
+      "message.done",
+    ]);
+  });
+
   test("returns a contract-valid partial tool-call message when stream aborts after a tool call", async () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const controller = new AbortController();
