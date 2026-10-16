@@ -124,37 +124,7 @@ const GENERIC_RUNNER_LITERAL_ALLOWLIST = new Set([
   "paused",
 ]);
 
-if (import.meta.main) {
-  await main();
-}
-
-async function main(): Promise<void> {
-  const manifests = await loadAuthorityPackets();
-  const failures = [
-    ...checkFreshnessDeclarations(manifests),
-    ...(await checkFreshnessDrift(manifests)),
-    ...(await checkForbiddenAuthorityEvidence(manifests)),
-    ...(await checkRootTypescriptFixtures()),
-    ...(await checkTypescriptOwnedConformanceSources()),
-    ...(await checkTypescriptOwnedFrameworkFixtures()),
-    ...(await checkPlanEvidenceOracleShapes(manifests)),
-    ...(await checkRunnerOracleLiterals(manifests)),
-    ...(await checkForbiddenVocabulary(manifests)),
-    ...(await runFixtureSelfTests()),
-  ];
-
-  if (failures.length > 0) {
-    for (const failure of failures) {
-      console.error(`${failure.check}: ${failure.message}`);
-    }
-    process.exitCode = 1;
-    return;
-  }
-
-  console.log("authority guardrails passed");
-}
-
-async function loadAuthorityPackets(): Promise<AuthorityPacketManifest[]> {
+const loadAuthorityPackets = async (): Promise<AuthorityPacketManifest[]> => {
   // No existsSync guard on the root: a missing spec/ (sparse checkout,
   // wrong cwd) must fail this gate loudly, never pass it vacuously.
   const manifestPaths = await findFiles(SPEC_ROOT, "authority-packet.json");
@@ -174,11 +144,11 @@ async function loadAuthorityPackets(): Promise<AuthorityPacketManifest[]> {
   }
 
   return manifests;
-}
+};
 
-function checkFreshnessDeclarations(
+const checkFreshnessDeclarations = (
   manifests: readonly AuthorityPacketManifest[]
-): GuardrailFailure[] {
+): GuardrailFailure[] => {
   const failures: GuardrailFailure[] = [];
 
   for (const manifest of manifests) {
@@ -218,16 +188,11 @@ function checkFreshnessDeclarations(
   }
 
   return failures;
-}
+};
 
-interface FreshnessCheckEntry {
-  artifact: string;
-  artifactPath: string;
-}
-
-function groupFreshnessChecksByCommand(
+const groupFreshnessChecksByCommand = (
   manifest: AuthorityPacketManifest
-): Map<string, FreshnessCheckEntry[]> {
+): Map<string, FreshnessCheckEntry[]> => {
   // One regenerate command may produce multiple artifacts. Group freshness
   // checks by command so we snapshot every relevant artifact before running
   // the command once, then compare each artifact's after-state. Running the
@@ -256,13 +221,13 @@ function groupFreshnessChecksByCommand(
   }
 
   return checksByCommand;
-}
+};
 
-async function checkFreshnessForCommand(
+const checkFreshnessForCommand = async (
   packetId: string,
   command: string,
   checks: readonly FreshnessCheckEntry[]
-): Promise<GuardrailFailure[]> {
+): Promise<GuardrailFailure[]> => {
   const failures: GuardrailFailure[] = [];
   const beforeSnapshots = new Map<string, FileSnapshot[]>();
 
@@ -295,11 +260,11 @@ async function checkFreshnessForCommand(
   }
 
   return failures;
-}
+};
 
-async function checkFreshnessDrift(
+const checkFreshnessDrift = async (
   manifests: readonly AuthorityPacketManifest[]
-): Promise<GuardrailFailure[]> {
+): Promise<GuardrailFailure[]> => {
   const failures: GuardrailFailure[] = [];
 
   for (const manifest of manifests) {
@@ -313,33 +278,13 @@ async function checkFreshnessDrift(
   }
 
   return failures;
-}
+};
 
-async function checkForbiddenAuthorityEvidence(
-  manifests: readonly AuthorityPacketManifest[]
-): Promise<GuardrailFailure[]> {
-  const evidencePaths = await findFiles(COMPATIBILITY_EVIDENCE_ROOT, ".json");
-  const failures: GuardrailFailure[] = [];
-
-  for (const evidencePath of evidencePaths) {
-    const evidenceText = await readFile(evidencePath, "utf-8");
-    failures.push(
-      ...collectForbiddenAuthorityEvidenceFailures(
-        evidenceText,
-        relative(REPO_ROOT, evidencePath),
-        manifests
-      )
-    );
-  }
-
-  return failures;
-}
-
-function collectForbiddenAuthorityEvidenceFailures(
+const collectForbiddenAuthorityEvidenceFailures = (
   evidenceText: string,
   evidenceLabel: string,
   manifests: readonly AuthorityPacketManifest[]
-): GuardrailFailure[] {
+): GuardrailFailure[] => {
   const failures: GuardrailFailure[] = [];
 
   for (const manifest of manifests) {
@@ -358,55 +303,29 @@ function collectForbiddenAuthorityEvidenceFailures(
   }
 
   return failures;
-}
+};
 
-async function checkRunnerOracleLiterals(
+const checkForbiddenAuthorityEvidence = async (
   manifests: readonly AuthorityPacketManifest[]
-): Promise<GuardrailFailure[]> {
+): Promise<GuardrailFailure[]> => {
+  const evidencePaths = await findFiles(COMPATIBILITY_EVIDENCE_ROOT, ".json");
   const failures: GuardrailFailure[] = [];
-  const planCheckIds = await collectPlanCheckIds(manifests);
-  const planOperationNames = await collectPlanOperationNames(manifests);
-  const planAssertionLiterals = await collectPlanAssertionLiterals(manifests);
-  const conformanceSourceRoots = await findConformanceSourceRoots();
 
-  for (const runnerRoot of conformanceSourceRoots) {
-    const sourcePaths = await findSourceFiles(resolve(REPO_ROOT, runnerRoot));
-
-    for (const sourcePath of sourcePaths) {
-      failures.push(
-        ...(await checkRunnerSourceFile(
-          sourcePath,
-          planCheckIds,
-          planOperationNames,
-          planAssertionLiterals
-        ))
-      );
-    }
+  for (const evidencePath of evidencePaths) {
+    const evidenceText = await readFile(evidencePath, "utf-8");
+    failures.push(
+      ...collectForbiddenAuthorityEvidenceFailures(
+        evidenceText,
+        relative(REPO_ROOT, evidencePath),
+        manifests
+      )
+    );
   }
 
   return failures;
-}
+};
 
-async function checkPlanEvidenceOracleShapes(
-  manifests: readonly AuthorityPacketManifest[]
-): Promise<GuardrailFailure[]> {
-  const failures: GuardrailFailure[] = [];
-
-  for (const manifest of manifests) {
-    for (const plan of manifest.conformancePlans ?? []) {
-      const planValue: unknown = JSON.parse(
-        await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
-      );
-      failures.push(
-        ...collectPlanEvidenceOracleShapeFailures(planValue, plan.path)
-      );
-    }
-  }
-
-  return failures;
-}
-
-async function checkRootTypescriptFixtures(): Promise<GuardrailFailure[]> {
+const checkRootTypescriptFixtures = async (): Promise<GuardrailFailure[]> => {
   const sourcePaths = await findSourceFiles(ROOT_TESTS_ROOT);
   const failures: GuardrailFailure[] = [];
 
@@ -423,11 +342,29 @@ async function checkRootTypescriptFixtures(): Promise<GuardrailFailure[]> {
   }
 
   return failures;
-}
+};
 
-async function checkTypescriptOwnedConformanceSources(): Promise<
+const collectTypescriptOwnedConformanceFailures = (
+  source: string,
+  sourceLabel: string
+): GuardrailFailure[] => {
+  const failures: GuardrailFailure[] = [];
+
+  for (const pattern of TYPESCRIPT_OWNED_CONFORMANCE_PATTERNS) {
+    if (pattern.test(source)) {
+      failures.push({
+        check: "typescript-owned-conformance-source",
+        message: `${sourceLabel} cites TypeScript-owned testkit fixtures; promoted runner source must load boundary conformance-plan fixtures`,
+      });
+    }
+  }
+
+  return failures;
+};
+
+const checkTypescriptOwnedConformanceSources = async (): Promise<
   GuardrailFailure[]
-> {
+> => {
   const failures: GuardrailFailure[] = [];
   const conformanceSourceRoots = await findConformanceSourceRoots();
 
@@ -446,11 +383,29 @@ async function checkTypescriptOwnedConformanceSources(): Promise<
   }
 
   return failures;
-}
+};
 
-async function checkTypescriptOwnedFrameworkFixtures(): Promise<
+const collectTypescriptOwnedFrameworkFixtureFailures = (
+  source: string,
+  sourceLabel: string
+): GuardrailFailure[] => {
+  const failures: GuardrailFailure[] = [];
+
+  for (const pattern of TYPESCRIPT_OWNED_FRAMEWORK_FIXTURE_PATTERNS) {
+    if (pattern.test(source)) {
+      failures.push({
+        check: "typescript-owned-framework-fixture",
+        message: `${sourceLabel} contains a TypeScript-owned framework conformance fixture facade; use boundary conformance-plan fixtures instead`,
+      });
+    }
+  }
+
+  return failures;
+};
+
+const checkTypescriptOwnedFrameworkFixtures = async (): Promise<
   GuardrailFailure[]
-> {
+> => {
   const sourcePaths = await findSourceFiles(
     resolve(REPO_ROOT, TYPESCRIPT_SCAN_ROOT)
   );
@@ -467,182 +422,233 @@ async function checkTypescriptOwnedFrameworkFixtures(): Promise<
   }
 
   return failures;
-}
+};
 
-function collectTypescriptOwnedConformanceFailures(
-  source: string,
-  sourceLabel: string
-): GuardrailFailure[] {
+const collectEvidencePathOracleFailures = (
+  check: Record<string, unknown>,
+  planLabel: string
+): GuardrailFailure[] => {
+  if (!Array.isArray(check.evidence)) {
+    return [];
+  }
+
+  return check.evidence
+    .filter(
+      (evidencePath): evidencePath is string =>
+        typeof evidencePath === "string" && isBooleanOraclePath(evidencePath)
+    )
+    .map((evidencePath) => ({
+      check: "plan-oracle-shape",
+      message: `${planLabel} check ${String(check.checkId)} declares boolean-oracle evidence path ${evidencePath}`,
+    }));
+};
+
+const collectSingleAssertionOracleFailures = (
+  assertion: Record<string, unknown>,
+  check: Record<string, unknown>,
+  planLabel: string
+): GuardrailFailure[] => {
+  const assertionKind = assertion.kind;
+
+  if (assertionKind !== "evidenceField" && assertionKind !== "stateField") {
+    return [];
+  }
+
   const failures: GuardrailFailure[] = [];
+  const field =
+    typeof assertion.field === "string" ? assertion.field : undefined;
 
-  for (const pattern of TYPESCRIPT_OWNED_CONFORMANCE_PATTERNS) {
-    if (pattern.test(source)) {
-      failures.push({
-        check: "typescript-owned-conformance-source",
-        message: `${sourceLabel} cites TypeScript-owned testkit fixtures; promoted runner source must load boundary conformance-plan fixtures`,
-      });
-    }
+  if (field !== undefined && isBooleanOraclePath(field)) {
+    failures.push({
+      check: "plan-oracle-shape",
+      message: `${planLabel} check ${String(check.checkId)} asserts boolean-oracle field ${field}`,
+    });
   }
 
   return failures;
-}
+};
 
-function collectTypescriptOwnedFrameworkFixtureFailures(
-  source: string,
-  sourceLabel: string
-): GuardrailFailure[] {
-  const failures: GuardrailFailure[] = [];
-
-  for (const pattern of TYPESCRIPT_OWNED_FRAMEWORK_FIXTURE_PATTERNS) {
-    if (pattern.test(source)) {
-      failures.push({
-        check: "typescript-owned-framework-fixture",
-        message: `${sourceLabel} contains a TypeScript-owned framework conformance fixture facade; use boundary conformance-plan fixtures instead`,
-      });
-    }
+const collectAssertionOracleFailures = (
+  check: Record<string, unknown>,
+  planLabel: string
+): GuardrailFailure[] => {
+  if (!Array.isArray(check.assertions)) {
+    return [];
   }
 
-  return failures;
-}
+  return check.assertions.flatMap((assertion) =>
+    isRecord(assertion)
+      ? collectSingleAssertionOracleFailures(assertion, check, planLabel)
+      : []
+  );
+};
 
-async function collectPlanCheckIds(
-  manifests: readonly AuthorityPacketManifest[]
-): Promise<Set<string>> {
-  const planCheckIds = new Set<string>();
-
-  for (const manifest of manifests) {
-    for (const plan of manifest.conformancePlans ?? []) {
-      const planValue: unknown = JSON.parse(
-        await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
-      );
-
-      collectCheckIdsFromPlanValue(planValue, planCheckIds);
-    }
-  }
-
-  return planCheckIds;
-}
-
-async function collectPlanAssertionLiterals(
-  manifests: readonly AuthorityPacketManifest[]
-): Promise<Set<string>> {
-  const literals = new Set<string>();
-
-  for (const manifest of manifests) {
-    for (const plan of manifest.conformancePlans ?? []) {
-      const planValue: unknown = JSON.parse(
-        await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
-      );
-
-      collectAssertionLiteralsFromPlanValue(planValue, literals);
-    }
-  }
-
-  return literals;
-}
-
-async function collectPlanOperationNames(
-  manifests: readonly AuthorityPacketManifest[]
-): Promise<Set<string>> {
-  const operationNames = new Set<string>();
-
-  for (const manifest of manifests) {
-    for (const plan of manifest.conformancePlans ?? []) {
-      const planValue: unknown = JSON.parse(
-        await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
-      );
-
-      collectOperationNamesFromPlanValue(planValue, operationNames);
-    }
-  }
-
-  return operationNames;
-}
-
-function collectCheckIdsFromPlanValue(
-  planValue: unknown,
-  planCheckIds: Set<string>
-): void {
-  if (!(isRecord(planValue) && Array.isArray(planValue.checks))) {
-    return;
-  }
-
-  for (const check of planValue.checks) {
-    if (isRecord(check) && typeof check.checkId === "string") {
-      planCheckIds.add(check.checkId);
-    }
-  }
-}
-
-function collectAssertionLiteralsFromPlanValue(
-  planValue: unknown,
-  literals: Set<string>
-): void {
-  if (!(isRecord(planValue) && Array.isArray(planValue.checks))) {
-    return;
-  }
-
-  for (const check of planValue.checks) {
-    if (!isRecord(check)) {
-      continue;
-    }
-
-    collectAssertionLiteralsFromAssertions(check.assertions, literals);
-
-    for (const step of readPlanSteps(check)) {
-      collectAssertionLiteralsFromAssertions(step.assertions, literals);
-    }
-  }
-}
-
-function collectAssertionLiteralsFromAssertions(
-  assertions: unknown,
-  literals: Set<string>
-): void {
+const readAssertions = (assertions: unknown): Record<string, unknown>[] => {
   if (!Array.isArray(assertions)) {
-    return;
+    return [];
   }
 
-  for (const assertion of assertions) {
-    if (!isRecord(assertion)) {
-      continue;
-    }
+  return assertions.filter(isRecord);
+};
 
-    collectStringLiterals(assertion.equals, literals);
-    collectStringLiterals(assertion.contains, literals);
-    collectStringLiterals(assertion.eventType, literals);
-  }
-}
+const isDecisiveAssertion = (assertion: Record<string, unknown>): boolean => {
+  const { kind } = assertion;
 
-function collectOperationNamesFromPlanValue(
-  planValue: unknown,
-  operationNames: Set<string>
-): void {
-  if (!(isRecord(planValue) && Array.isArray(planValue.checks))) {
-    return;
+  if (kind === "resultField") {
+    return true;
   }
 
-  for (const check of planValue.checks) {
-    if (!isRecord(check)) {
-      continue;
-    }
-
-    if (typeof check.operation === "string") {
-      operationNames.add(check.operation);
-    }
-
-    for (const step of readPlanSteps(check)) {
-      if (typeof step.operation === "string") {
-        operationNames.add(step.operation);
-      }
-    }
+  if (
+    kind === "stateField" ||
+    kind === "eventSequence" ||
+    kind === "terminalEvent" ||
+    kind === "ordering" ||
+    kind === "noEvent" ||
+    kind === "errorEnvelope" ||
+    // `secretAbsence` reads a concrete implementation surface from `$.result`
+    // and fails the check when any configured secret (or a derived variant)
+    // leaks into it. A leak is a real conformance failure, so the assertion is
+    // decisive — not evidence-only bookkeeping.
+    kind === "secretAbsence"
+  ) {
+    return true;
   }
-}
 
-export function collectPlanEvidenceOracleShapeFailures(
+  if (kind !== "schemaValid") {
+    return false;
+  }
+
+  const path = typeof assertion.path === "string" ? assertion.path : "$.result";
+  return (
+    path === "$.result" ||
+    path.startsWith("$.result.") ||
+    path === "$.events" ||
+    path.startsWith("$.events.") ||
+    path === "$.state" ||
+    path.startsWith("$.state.")
+  );
+};
+
+const hasDecisiveAssertion = (assertions: Record<string, unknown>[]): boolean =>
+  assertions.some(isDecisiveAssertion);
+
+const collectDecisiveAssertionFailures = (
+  check: Record<string, unknown>,
+  planLabel: string
+): GuardrailFailure[] => {
+  const assertions = readAssertions(check.assertions);
+
+  if (assertions.length === 0) {
+    return [];
+  }
+
+  if (hasDecisiveAssertion(assertions)) {
+    return [];
+  }
+
+  return [
+    {
+      check: "plan-decisive-assertion",
+      message: `${planLabel} promoted check ${String(check.checkId)} has no decisive assertion`,
+    },
+  ];
+};
+
+const isFixtureEventAssertion = (assertion: unknown): boolean => {
+  if (!isRecord(assertion)) {
+    return false;
+  }
+
+  return (
+    assertion.kind === "eventSequence" ||
+    assertion.kind === "terminalEvent" ||
+    assertion.kind === "ordering" ||
+    assertion.kind === "noEvent"
+  );
+};
+
+const collectFixtureSelfCertificationFailures = (
+  check: Record<string, unknown>,
+  planLabel: string
+): GuardrailFailure[] => {
+  const operation =
+    typeof check.operation === "string" ? check.operation : undefined;
+
+  if (operation?.endsWith(".fixture-events") === true) {
+    return [
+      {
+        check: "plan-self-certification",
+        message: `${planLabel} check ${String(check.checkId)} replays authority fixture events as implementation conformance`,
+      },
+    ];
+  }
+
+  if (
+    check.fixture !== undefined &&
+    operation?.startsWith("event-stream.") === true
+  ) {
+    return [
+      {
+        check: "plan-self-certification",
+        message: `${planLabel} check ${String(check.checkId)} uses fixture input for event-stream implementation conformance; event-stream checks must consume implementation-emitted events`,
+      },
+    ];
+  }
+
+  if (
+    check.fixture !== undefined &&
+    Array.isArray(check.assertions) &&
+    check.assertions.length > 0 &&
+    check.assertions.every(isFixtureEventAssertion)
+  ) {
+    return [
+      {
+        check: "plan-self-certification",
+        message: `${planLabel} check ${String(check.checkId)} asserts only fixture event shape; fixture validation must not count as implementation conformance`,
+      },
+    ];
+  }
+
+  return [];
+};
+
+const readPlanSteps = (
+  check: Record<string, unknown>
+): Record<string, unknown>[] => {
+  if (!Array.isArray(check.steps)) {
+    return [];
+  }
+
+  return check.steps.filter(isRecord);
+};
+
+const collectStepDecisiveAssertionFailures = (
+  step: Record<string, unknown>,
+  planLabel: string,
+  checkId: string
+): GuardrailFailure[] => {
+  const assertions = readAssertions(step.assertions);
+
+  if (assertions.length === 0) {
+    return [];
+  }
+
+  if (hasDecisiveAssertion(assertions)) {
+    return [];
+  }
+
+  return [
+    {
+      check: "step-decisive-assertion",
+      message: `${planLabel} promoted check ${checkId} step ${String(step.stepId)} has no decisive assertion`,
+    },
+  ];
+};
+
+export const collectPlanEvidenceOracleShapeFailures = (
   planValue: unknown,
   planLabel: string
-): GuardrailFailure[] {
+): GuardrailFailure[] => {
   const failures: GuardrailFailure[] = [];
 
   if (!(isRecord(planValue) && Array.isArray(planValue.checks))) {
@@ -689,231 +695,104 @@ export function collectPlanEvidenceOracleShapeFailures(
   }
 
   return failures;
-}
+};
 
-function collectDecisiveAssertionFailures(
-  check: Record<string, unknown>,
-  planLabel: string
-): GuardrailFailure[] {
-  const assertions = readAssertions(check.assertions);
-
-  if (assertions.length === 0) {
-    return [];
-  }
-
-  if (hasDecisiveAssertion(assertions)) {
-    return [];
-  }
-
-  return [
-    {
-      check: "plan-decisive-assertion",
-      message: `${planLabel} promoted check ${String(check.checkId)} has no decisive assertion`,
-    },
-  ];
-}
-
-function collectStepDecisiveAssertionFailures(
-  step: Record<string, unknown>,
-  planLabel: string,
-  checkId: string
-): GuardrailFailure[] {
-  const assertions = readAssertions(step.assertions);
-
-  if (assertions.length === 0) {
-    return [];
-  }
-
-  if (hasDecisiveAssertion(assertions)) {
-    return [];
-  }
-
-  return [
-    {
-      check: "step-decisive-assertion",
-      message: `${planLabel} promoted check ${checkId} step ${String(step.stepId)} has no decisive assertion`,
-    },
-  ];
-}
-
-function readAssertions(assertions: unknown): Record<string, unknown>[] {
-  if (!Array.isArray(assertions)) {
-    return [];
-  }
-
-  return assertions.filter(isRecord);
-}
-
-function hasDecisiveAssertion(assertions: Record<string, unknown>[]): boolean {
-  return assertions.some(isDecisiveAssertion);
-}
-
-function isDecisiveAssertion(assertion: Record<string, unknown>): boolean {
-  const { kind } = assertion;
-
-  if (kind === "resultField") {
-    return true;
-  }
-
-  if (
-    kind === "stateField" ||
-    kind === "eventSequence" ||
-    kind === "terminalEvent" ||
-    kind === "ordering" ||
-    kind === "noEvent" ||
-    kind === "errorEnvelope" ||
-    // `secretAbsence` reads a concrete implementation surface from `$.result`
-    // and fails the check when any configured secret (or a derived variant)
-    // leaks into it. A leak is a real conformance failure, so the assertion is
-    // decisive — not evidence-only bookkeeping.
-    kind === "secretAbsence"
-  ) {
-    return true;
-  }
-
-  if (kind !== "schemaValid") {
-    return false;
-  }
-
-  const path = typeof assertion.path === "string" ? assertion.path : "$.result";
-  return (
-    path === "$.result" ||
-    path.startsWith("$.result.") ||
-    path === "$.events" ||
-    path.startsWith("$.events.") ||
-    path === "$.state" ||
-    path.startsWith("$.state.")
-  );
-}
-
-function readPlanSteps(
-  check: Record<string, unknown>
-): Record<string, unknown>[] {
-  if (!Array.isArray(check.steps)) {
-    return [];
-  }
-
-  return check.steps.filter(isRecord);
-}
-
-function collectFixtureSelfCertificationFailures(
-  check: Record<string, unknown>,
-  planLabel: string
-): GuardrailFailure[] {
-  const operation =
-    typeof check.operation === "string" ? check.operation : undefined;
-
-  if (operation?.endsWith(".fixture-events") === true) {
-    return [
-      {
-        check: "plan-self-certification",
-        message: `${planLabel} check ${String(check.checkId)} replays authority fixture events as implementation conformance`,
-      },
-    ];
-  }
-
-  if (
-    check.fixture !== undefined &&
-    operation?.startsWith("event-stream.") === true
-  ) {
-    return [
-      {
-        check: "plan-self-certification",
-        message: `${planLabel} check ${String(check.checkId)} uses fixture input for event-stream implementation conformance; event-stream checks must consume implementation-emitted events`,
-      },
-    ];
-  }
-
-  if (
-    check.fixture !== undefined &&
-    Array.isArray(check.assertions) &&
-    check.assertions.length > 0 &&
-    check.assertions.every(isFixtureEventAssertion)
-  ) {
-    return [
-      {
-        check: "plan-self-certification",
-        message: `${planLabel} check ${String(check.checkId)} asserts only fixture event shape; fixture validation must not count as implementation conformance`,
-      },
-    ];
-  }
-
-  return [];
-}
-
-function isFixtureEventAssertion(assertion: unknown): boolean {
-  if (!isRecord(assertion)) {
-    return false;
-  }
-
-  return (
-    assertion.kind === "eventSequence" ||
-    assertion.kind === "terminalEvent" ||
-    assertion.kind === "ordering" ||
-    assertion.kind === "noEvent"
-  );
-}
-
-function collectEvidencePathOracleFailures(
-  check: Record<string, unknown>,
-  planLabel: string
-): GuardrailFailure[] {
-  if (!Array.isArray(check.evidence)) {
-    return [];
-  }
-
-  return check.evidence
-    .filter(
-      (evidencePath): evidencePath is string =>
-        typeof evidencePath === "string" && isBooleanOraclePath(evidencePath)
-    )
-    .map((evidencePath) => ({
-      check: "plan-oracle-shape",
-      message: `${planLabel} check ${String(check.checkId)} declares boolean-oracle evidence path ${evidencePath}`,
-    }));
-}
-
-function collectAssertionOracleFailures(
-  check: Record<string, unknown>,
-  planLabel: string
-): GuardrailFailure[] {
-  if (!Array.isArray(check.assertions)) {
-    return [];
-  }
-
-  return check.assertions.flatMap((assertion) =>
-    isRecord(assertion)
-      ? collectSingleAssertionOracleFailures(assertion, check, planLabel)
-      : []
-  );
-}
-
-function collectSingleAssertionOracleFailures(
-  assertion: Record<string, unknown>,
-  check: Record<string, unknown>,
-  planLabel: string
-): GuardrailFailure[] {
-  const assertionKind = assertion.kind;
-
-  if (assertionKind !== "evidenceField" && assertionKind !== "stateField") {
-    return [];
-  }
-
+const checkPlanEvidenceOracleShapes = async (
+  manifests: readonly AuthorityPacketManifest[]
+): Promise<GuardrailFailure[]> => {
   const failures: GuardrailFailure[] = [];
-  const field =
-    typeof assertion.field === "string" ? assertion.field : undefined;
 
-  if (field !== undefined && isBooleanOraclePath(field)) {
-    failures.push({
-      check: "plan-oracle-shape",
-      message: `${planLabel} check ${String(check.checkId)} asserts boolean-oracle field ${field}`,
-    });
+  for (const manifest of manifests) {
+    for (const plan of manifest.conformancePlans ?? []) {
+      const planValue: unknown = JSON.parse(
+        await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
+      );
+      failures.push(
+        ...collectPlanEvidenceOracleShapeFailures(planValue, plan.path)
+      );
+    }
   }
 
   return failures;
-}
+};
 
-function collectStringLiterals(value: unknown, literals: Set<string>): void {
+const collectCheckIdsFromPlanValue = (
+  planValue: unknown,
+  planCheckIds: Set<string>
+): void => {
+  if (!(isRecord(planValue) && Array.isArray(planValue.checks))) {
+    return;
+  }
+
+  for (const check of planValue.checks) {
+    if (isRecord(check) && typeof check.checkId === "string") {
+      planCheckIds.add(check.checkId);
+    }
+  }
+};
+
+const collectPlanCheckIds = async (
+  manifests: readonly AuthorityPacketManifest[]
+): Promise<Set<string>> => {
+  const planCheckIds = new Set<string>();
+
+  for (const manifest of manifests) {
+    for (const plan of manifest.conformancePlans ?? []) {
+      const planValue: unknown = JSON.parse(
+        await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
+      );
+
+      collectCheckIdsFromPlanValue(planValue, planCheckIds);
+    }
+  }
+
+  return planCheckIds;
+};
+
+const collectOperationNamesFromPlanValue = (
+  planValue: unknown,
+  operationNames: Set<string>
+): void => {
+  if (!(isRecord(planValue) && Array.isArray(planValue.checks))) {
+    return;
+  }
+
+  for (const check of planValue.checks) {
+    if (!isRecord(check)) {
+      continue;
+    }
+
+    if (typeof check.operation === "string") {
+      operationNames.add(check.operation);
+    }
+
+    for (const step of readPlanSteps(check)) {
+      if (typeof step.operation === "string") {
+        operationNames.add(step.operation);
+      }
+    }
+  }
+};
+
+const collectPlanOperationNames = async (
+  manifests: readonly AuthorityPacketManifest[]
+): Promise<Set<string>> => {
+  const operationNames = new Set<string>();
+
+  for (const manifest of manifests) {
+    for (const plan of manifest.conformancePlans ?? []) {
+      const planValue: unknown = JSON.parse(
+        await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
+      );
+
+      collectOperationNamesFromPlanValue(planValue, operationNames);
+    }
+  }
+
+  return operationNames;
+};
+
+const collectStringLiterals = (value: unknown, literals: Set<string>): void => {
   if (typeof value === "string") {
     if (value.length >= 3 && !GENERIC_RUNNER_LITERAL_ALLOWLIST.has(value)) {
       literals.add(value);
@@ -933,7 +812,118 @@ function collectStringLiterals(value: unknown, literals: Set<string>): void {
       collectStringLiterals(item, literals);
     }
   }
-}
+};
+
+const collectAssertionLiteralsFromAssertions = (
+  assertions: unknown,
+  literals: Set<string>
+): void => {
+  if (!Array.isArray(assertions)) {
+    return;
+  }
+
+  for (const assertion of assertions) {
+    if (!isRecord(assertion)) {
+      continue;
+    }
+
+    collectStringLiterals(assertion.equals, literals);
+    collectStringLiterals(assertion.contains, literals);
+    collectStringLiterals(assertion.eventType, literals);
+  }
+};
+
+const collectAssertionLiteralsFromPlanValue = (
+  planValue: unknown,
+  literals: Set<string>
+): void => {
+  if (!(isRecord(planValue) && Array.isArray(planValue.checks))) {
+    return;
+  }
+
+  for (const check of planValue.checks) {
+    if (!isRecord(check)) {
+      continue;
+    }
+
+    collectAssertionLiteralsFromAssertions(check.assertions, literals);
+
+    for (const step of readPlanSteps(check)) {
+      collectAssertionLiteralsFromAssertions(step.assertions, literals);
+    }
+  }
+};
+
+const collectPlanAssertionLiterals = async (
+  manifests: readonly AuthorityPacketManifest[]
+): Promise<Set<string>> => {
+  const literals = new Set<string>();
+
+  for (const manifest of manifests) {
+    for (const plan of manifest.conformancePlans ?? []) {
+      const planValue: unknown = JSON.parse(
+        await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
+      );
+
+      collectAssertionLiteralsFromPlanValue(planValue, literals);
+    }
+  }
+
+  return literals;
+};
+
+const checkRunnerOracleLiterals = async (
+  manifests: readonly AuthorityPacketManifest[]
+): Promise<GuardrailFailure[]> => {
+  const failures: GuardrailFailure[] = [];
+  const planCheckIds = await collectPlanCheckIds(manifests);
+  const planOperationNames = await collectPlanOperationNames(manifests);
+  const planAssertionLiterals = await collectPlanAssertionLiterals(manifests);
+  const conformanceSourceRoots = await findConformanceSourceRoots();
+
+  for (const runnerRoot of conformanceSourceRoots) {
+    const sourcePaths = await findSourceFiles(resolve(REPO_ROOT, runnerRoot));
+
+    for (const sourcePath of sourcePaths) {
+      failures.push(
+        ...(await checkRunnerSourceFile(
+          sourcePath,
+          planCheckIds,
+          planOperationNames,
+          planAssertionLiterals
+        ))
+      );
+    }
+  }
+
+  return failures;
+};
+
+const main = async (): Promise<void> => {
+  const manifests = await loadAuthorityPackets();
+  const failures = [
+    ...checkFreshnessDeclarations(manifests),
+    ...(await checkFreshnessDrift(manifests)),
+    ...(await checkForbiddenAuthorityEvidence(manifests)),
+    ...(await checkRootTypescriptFixtures()),
+    ...(await checkTypescriptOwnedConformanceSources()),
+    ...(await checkTypescriptOwnedFrameworkFixtures()),
+    ...(await checkPlanEvidenceOracleShapes(manifests)),
+    ...(await checkRunnerOracleLiterals(manifests)),
+    ...(await checkForbiddenVocabulary(manifests)),
+    ...(await runFixtureSelfTests()),
+  ];
+
+  if (failures.length > 0) {
+    for (const failure of failures) {
+      console.error(`${failure.check}: ${failure.message}`);
+    }
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log("authority guardrails passed");
+};
 
 async function checkRunnerSourceFile(
   sourcePath: string,
@@ -1816,4 +1806,13 @@ function isAuthorityPacketManifest(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+if (import.meta.main) {
+  await main();
+}
+
+interface FreshnessCheckEntry {
+  artifact: string;
+  artifactPath: string;
 }
