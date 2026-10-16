@@ -78,25 +78,346 @@ const SCHEMA_PATH = resolve(
 );
 const MANIFEST_FILE_NAME = "authority-packet.json";
 
-await main();
+const findAuthorityPacketManifests = async (
+  directory: string
+): Promise<string[]> => {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const manifests: string[] = [];
 
-async function main(): Promise<void> {
-  const failures = await validateAuthorityPackets();
+  for (const entry of entries) {
+    const entryPath = resolve(directory, entry.name);
 
-  if (failures.length > 0) {
-    for (const failure of failures) {
-      console.error(
-        `${relative(REPO_ROOT, failure.manifestPath)}: ${failure.message}`
-      );
+    if (entry.isDirectory()) {
+      manifests.push(...(await findAuthorityPacketManifests(entryPath)));
+      continue;
     }
-    process.exitCode = 1;
-    return;
+
+    if (entry.isFile() && entry.name === MANIFEST_FILE_NAME) {
+      manifests.push(entryPath);
+    }
   }
 
-  console.log("authority packet validation passed");
-}
+  return manifests.sort();
+};
 
-export async function validateAuthorityPackets(): Promise<ValidationFailure[]> {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const readJsonSchema = (value: unknown, label: string): AnySchema => {
+  if (typeof value === "boolean" || isRecord(value)) {
+    return value;
+  }
+
+  throw new Error(`${label} must contain a JSON Schema object or boolean`);
+};
+
+const requireExistingPath = (
+  manifestPath: string,
+  candidatePath: string,
+  failures: ValidationFailure[],
+  label: string
+): void => {
+  const absolutePath = resolve(REPO_ROOT, candidatePath);
+
+  if (!existsSync(absolutePath)) {
+    failures.push({
+      manifestPath,
+      message: `declared ${label} does not exist: ${candidatePath}`,
+    });
+  }
+};
+
+const validateManifestPaths = (
+  manifestPath: string,
+  manifest: AuthorityPacketManifest,
+  failures: ValidationFailure[]
+): void => {
+  for (const source of manifest.authoritativeSources) {
+    requireExistingPath(manifestPath, source.path, failures, "source");
+  }
+
+  for (const artifact of manifest.generatedArtifacts ?? []) {
+    requireExistingPath(manifestPath, artifact.path, failures, "artifact");
+    requireExistingPath(
+      manifestPath,
+      artifact.generatedFrom,
+      failures,
+      "generatedFrom"
+    );
+  }
+
+  for (const plan of manifest.conformancePlans ?? []) {
+    requireExistingPath(manifestPath, plan.path, failures, "conformance plan");
+  }
+
+  for (const appendix of manifest.bindingAppendices ?? []) {
+    requireExistingPath(
+      manifestPath,
+      appendix.path,
+      failures,
+      "binding appendix"
+    );
+  }
+
+  for (const [language, projectionPath] of Object.entries(
+    manifest.bindingProjections ?? {}
+  )) {
+    requireExistingPath(
+      manifestPath,
+      projectionPath,
+      failures,
+      `${language} binding projection`
+    );
+  }
+};
+
+const validateForbiddenSources = (
+  manifestPath: string,
+  manifest: AuthorityPacketManifest,
+  failures: ValidationFailure[]
+): void => {
+  const forbiddenSources = new Set(manifest.forbiddenAuthoritySources);
+
+  for (const projectionPath of Object.values(
+    manifest.bindingProjections ?? {}
+  )) {
+    if (!forbiddenSources.has(projectionPath)) {
+      failures.push({
+        manifestPath,
+        message: `binding projection ${projectionPath} must also appear in forbiddenAuthoritySources`,
+      });
+    }
+  }
+};
+
+const validateGeneratedArtifacts = (
+  manifestPath: string,
+  manifest: AuthorityPacketManifest,
+  failures: ValidationFailure[]
+): void => {
+  const freshnessChecks = new Map(
+    (manifest.freshnessChecks ?? []).map((check) => [check.artifact, check])
+  );
+  const generatedArtifacts = new Set(
+    (manifest.generatedArtifacts ?? []).map((artifact) => artifact.path)
+  );
+
+  for (const artifact of manifest.generatedArtifacts ?? []) {
+    const check = freshnessChecks.get(artifact.path);
+
+    if (check === undefined) {
+      failures.push({
+        manifestPath,
+        message: `generated artifact ${artifact.path} lacks a freshnessChecks entry`,
+      });
+      continue;
+    }
+
+    if (check.regenerateCommand.trim().length === 0) {
+      failures.push({
+        manifestPath,
+        message: `freshness check for ${artifact.path} lacks a regenerate command`,
+      });
+      continue;
+    }
+
+    try {
+      parseRegenerateCommandArgv(check.regenerateCommand);
+    } catch (error) {
+      failures.push({
+        manifestPath,
+        message:
+          `freshness check for ${artifact.path} has an invalid regenerate command: ` +
+          `${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
+  }
+
+  for (const check of manifest.freshnessChecks ?? []) {
+    if (!generatedArtifacts.has(check.artifact)) {
+      failures.push({
+        manifestPath,
+        message: `freshness check ${check.artifact} does not match a generatedArtifacts entry`,
+      });
+    }
+  }
+};
+
+const isConformancePlanDocument = (
+  value: unknown
+): value is ConformancePlanDocument =>
+  isRecord(value) &&
+  typeof value.packetId === "string" &&
+  typeof value.planId === "string" &&
+  typeof value.planVersion === "string";
+
+const validateConformancePlanLinks = async (
+  manifestPath: string,
+  manifest: AuthorityPacketManifest,
+  failures: ValidationFailure[]
+): Promise<void> => {
+  const declaredPlans = new Map(
+    (manifest.conformancePlans ?? []).map((plan) => [plan.path, plan])
+  );
+  const authorityPlanSources = manifest.authoritativeSources.filter(
+    (source) => source.format === "conformance-plan"
+  );
+
+  for (const source of authorityPlanSources) {
+    if (!declaredPlans.has(source.path)) {
+      failures.push({
+        manifestPath,
+        message: `authoritative conformance plan ${source.path} must also appear in conformancePlans`,
+      });
+    }
+  }
+
+  for (const plan of manifest.conformancePlans ?? []) {
+    const sourcePath = resolve(REPO_ROOT, plan.path);
+
+    if (!existsSync(sourcePath)) {
+      continue;
+    }
+
+    const value = JSON.parse(await readFile(sourcePath, "utf-8")) as unknown;
+
+    if (!isConformancePlanDocument(value)) {
+      failures.push({
+        manifestPath,
+        message: `conformance plan ${plan.path} is missing packetId, planId, or planVersion`,
+      });
+      continue;
+    }
+
+    if (value.packetId !== manifest.packetId) {
+      failures.push({
+        manifestPath,
+        message: `conformance plan ${plan.path} packetId ${value.packetId} does not match ${manifest.packetId}`,
+      });
+    }
+
+    if (
+      value.planId !== plan.planId ||
+      value.planVersion !== plan.planVersion
+    ) {
+      failures.push({
+        manifestPath,
+        message: `conformance plan ${plan.path} metadata does not match manifest declaration`,
+      });
+    }
+  }
+};
+
+const validateVerificationPaths = (
+  manifestPath: string,
+  manifest: AuthorityPacketManifest,
+  failures: ValidationFailure[]
+): void => {
+  const hasExecutableVerification = manifest.verificationPaths.some(
+    (verificationPath) =>
+      verificationPath.kind === "schema-validation" ||
+      verificationPath.kind === "openapi-validation" ||
+      verificationPath.kind === "conformance-plan" ||
+      verificationPath.kind === "interop-smoke" ||
+      verificationPath.kind === "vocabulary-check"
+  );
+
+  if (!(hasExecutableVerification || manifest.version.startsWith("0.0."))) {
+    failures.push({
+      manifestPath,
+      message:
+        "packets without schema-validation, openapi-validation, conformance-plan, interop-smoke, or vocabulary-check verification must use a 0.0.x version",
+    });
+  }
+
+  for (const verificationPath of manifest.verificationPaths) {
+    requireExistingPath(
+      manifestPath,
+      verificationPath.target,
+      failures,
+      `${verificationPath.kind} verification target`
+    );
+  }
+
+  const conformanceVerificationTargets = new Set(
+    manifest.verificationPaths
+      .filter(
+        (verificationPath) => verificationPath.kind === "conformance-plan"
+      )
+      .map((verificationPath) => verificationPath.target)
+  );
+
+  for (const plan of manifest.conformancePlans ?? []) {
+    if (!conformanceVerificationTargets.has(plan.path)) {
+      failures.push({
+        manifestPath,
+        message: `conformance plan ${plan.path} is not listed as an executable verification path`,
+      });
+    }
+  }
+};
+
+const toMarkdownSlug = (text: string): string =>
+  text
+    .toLowerCase()
+    .replaceAll(/[^\w\s-]/g, "")
+    .replaceAll(/\s+/g, "-")
+    .replaceAll(/-+/g, "-")
+    .trim();
+
+const markdownAnchorExists = (content: string, anchor: string): boolean => {
+  for (const line of content.split("\n")) {
+    const match = MARKDOWN_HEADING_RE.exec(line);
+    if (match !== null && toMarkdownSlug(match[1]) === anchor) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const validateHumanAuthorityRefs = async (
+  manifestPath: string,
+  manifest: AuthorityPacketManifest,
+  failures: ValidationFailure[]
+): Promise<void> => {
+  for (const ref of manifest.humanAuthorityRefs ?? []) {
+    if (ref.startsWith("http://") || ref.startsWith("https://")) {
+      continue;
+    }
+
+    const hashIndex = ref.indexOf("#");
+    const filePath = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+    const anchor = hashIndex === -1 ? undefined : ref.slice(hashIndex + 1);
+
+    if (!filePath) {
+      continue;
+    }
+
+    const absolutePath = resolve(REPO_ROOT, filePath);
+
+    if (!existsSync(absolutePath)) {
+      failures.push({
+        manifestPath,
+        message: `humanAuthorityRef file does not exist: ${filePath}`,
+      });
+      continue;
+    }
+
+    if (anchor !== undefined) {
+      const content = await readFile(absolutePath, "utf-8");
+      if (!markdownAnchorExists(content, anchor)) {
+        failures.push({
+          manifestPath,
+          message: `humanAuthorityRef anchor #${anchor} not found in ${filePath}`,
+        });
+      }
+    }
+  }
+};
+
+export const validateAuthorityPackets = async (): Promise<
+  ValidationFailure[]
+> => {
   // No existsSync guard on the root: a missing spec/ (sparse checkout,
   // wrong cwd) must fail this gate loudly, never pass it vacuously.
   const manifestPaths = (await findAuthorityPacketManifests(SPEC_ROOT)).sort();
@@ -149,346 +470,22 @@ export async function validateAuthorityPackets(): Promise<ValidationFailure[]> {
   }
 
   return failures;
-}
+};
 
-async function findAuthorityPacketManifests(
-  directory: string
-): Promise<string[]> {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const manifests: string[] = [];
+const main = async (): Promise<void> => {
+  const failures = await validateAuthorityPackets();
 
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      manifests.push(...(await findAuthorityPacketManifests(entryPath)));
-      continue;
+  if (failures.length > 0) {
+    for (const failure of failures) {
+      console.error(
+        `${relative(REPO_ROOT, failure.manifestPath)}: ${failure.message}`
+      );
     }
-
-    if (entry.isFile() && entry.name === MANIFEST_FILE_NAME) {
-      manifests.push(entryPath);
-    }
+    process.exitCode = 1;
+    return;
   }
 
-  return manifests.sort();
-}
+  console.log("authority packet validation passed");
+};
 
-function validateManifestPaths(
-  manifestPath: string,
-  manifest: AuthorityPacketManifest,
-  failures: ValidationFailure[]
-): void {
-  for (const source of manifest.authoritativeSources) {
-    requireExistingPath(manifestPath, source.path, failures, "source");
-  }
-
-  for (const artifact of manifest.generatedArtifacts ?? []) {
-    requireExistingPath(manifestPath, artifact.path, failures, "artifact");
-    requireExistingPath(
-      manifestPath,
-      artifact.generatedFrom,
-      failures,
-      "generatedFrom"
-    );
-  }
-
-  for (const plan of manifest.conformancePlans ?? []) {
-    requireExistingPath(manifestPath, plan.path, failures, "conformance plan");
-  }
-
-  for (const appendix of manifest.bindingAppendices ?? []) {
-    requireExistingPath(
-      manifestPath,
-      appendix.path,
-      failures,
-      "binding appendix"
-    );
-  }
-
-  for (const [language, projectionPath] of Object.entries(
-    manifest.bindingProjections ?? {}
-  )) {
-    requireExistingPath(
-      manifestPath,
-      projectionPath,
-      failures,
-      `${language} binding projection`
-    );
-  }
-}
-
-function validateForbiddenSources(
-  manifestPath: string,
-  manifest: AuthorityPacketManifest,
-  failures: ValidationFailure[]
-): void {
-  const forbiddenSources = new Set(manifest.forbiddenAuthoritySources);
-
-  for (const projectionPath of Object.values(
-    manifest.bindingProjections ?? {}
-  )) {
-    if (!forbiddenSources.has(projectionPath)) {
-      failures.push({
-        manifestPath,
-        message: `binding projection ${projectionPath} must also appear in forbiddenAuthoritySources`,
-      });
-    }
-  }
-}
-
-function validateGeneratedArtifacts(
-  manifestPath: string,
-  manifest: AuthorityPacketManifest,
-  failures: ValidationFailure[]
-): void {
-  const freshnessChecks = new Map(
-    (manifest.freshnessChecks ?? []).map((check) => [check.artifact, check])
-  );
-  const generatedArtifacts = new Set(
-    (manifest.generatedArtifacts ?? []).map((artifact) => artifact.path)
-  );
-
-  for (const artifact of manifest.generatedArtifacts ?? []) {
-    const check = freshnessChecks.get(artifact.path);
-
-    if (check === undefined) {
-      failures.push({
-        manifestPath,
-        message: `generated artifact ${artifact.path} lacks a freshnessChecks entry`,
-      });
-      continue;
-    }
-
-    if (check.regenerateCommand.trim().length === 0) {
-      failures.push({
-        manifestPath,
-        message: `freshness check for ${artifact.path} lacks a regenerate command`,
-      });
-      continue;
-    }
-
-    try {
-      parseRegenerateCommandArgv(check.regenerateCommand);
-    } catch (error) {
-      failures.push({
-        manifestPath,
-        message:
-          `freshness check for ${artifact.path} has an invalid regenerate command: ` +
-          `${error instanceof Error ? error.message : String(error)}`,
-      });
-    }
-  }
-
-  for (const check of manifest.freshnessChecks ?? []) {
-    if (!generatedArtifacts.has(check.artifact)) {
-      failures.push({
-        manifestPath,
-        message: `freshness check ${check.artifact} does not match a generatedArtifacts entry`,
-      });
-    }
-  }
-}
-
-async function validateConformancePlanLinks(
-  manifestPath: string,
-  manifest: AuthorityPacketManifest,
-  failures: ValidationFailure[]
-): Promise<void> {
-  const declaredPlans = new Map(
-    (manifest.conformancePlans ?? []).map((plan) => [plan.path, plan])
-  );
-  const authorityPlanSources = manifest.authoritativeSources.filter(
-    (source) => source.format === "conformance-plan"
-  );
-
-  for (const source of authorityPlanSources) {
-    if (!declaredPlans.has(source.path)) {
-      failures.push({
-        manifestPath,
-        message: `authoritative conformance plan ${source.path} must also appear in conformancePlans`,
-      });
-    }
-  }
-
-  for (const plan of manifest.conformancePlans ?? []) {
-    const sourcePath = resolve(REPO_ROOT, plan.path);
-
-    if (!existsSync(sourcePath)) {
-      continue;
-    }
-
-    const value = JSON.parse(await readFile(sourcePath, "utf-8")) as unknown;
-
-    if (!isConformancePlanDocument(value)) {
-      failures.push({
-        manifestPath,
-        message: `conformance plan ${plan.path} is missing packetId, planId, or planVersion`,
-      });
-      continue;
-    }
-
-    if (value.packetId !== manifest.packetId) {
-      failures.push({
-        manifestPath,
-        message: `conformance plan ${plan.path} packetId ${value.packetId} does not match ${manifest.packetId}`,
-      });
-    }
-
-    if (
-      value.planId !== plan.planId ||
-      value.planVersion !== plan.planVersion
-    ) {
-      failures.push({
-        manifestPath,
-        message: `conformance plan ${plan.path} metadata does not match manifest declaration`,
-      });
-    }
-  }
-}
-
-function validateVerificationPaths(
-  manifestPath: string,
-  manifest: AuthorityPacketManifest,
-  failures: ValidationFailure[]
-): void {
-  const hasExecutableVerification = manifest.verificationPaths.some(
-    (verificationPath) =>
-      verificationPath.kind === "schema-validation" ||
-      verificationPath.kind === "openapi-validation" ||
-      verificationPath.kind === "conformance-plan" ||
-      verificationPath.kind === "interop-smoke" ||
-      verificationPath.kind === "vocabulary-check"
-  );
-
-  if (!(hasExecutableVerification || manifest.version.startsWith("0.0."))) {
-    failures.push({
-      manifestPath,
-      message:
-        "packets without schema-validation, openapi-validation, conformance-plan, interop-smoke, or vocabulary-check verification must use a 0.0.x version",
-    });
-  }
-
-  for (const verificationPath of manifest.verificationPaths) {
-    requireExistingPath(
-      manifestPath,
-      verificationPath.target,
-      failures,
-      `${verificationPath.kind} verification target`
-    );
-  }
-
-  const conformanceVerificationTargets = new Set(
-    manifest.verificationPaths
-      .filter(
-        (verificationPath) => verificationPath.kind === "conformance-plan"
-      )
-      .map((verificationPath) => verificationPath.target)
-  );
-
-  for (const plan of manifest.conformancePlans ?? []) {
-    if (!conformanceVerificationTargets.has(plan.path)) {
-      failures.push({
-        manifestPath,
-        message: `conformance plan ${plan.path} is not listed as an executable verification path`,
-      });
-    }
-  }
-}
-
-async function validateHumanAuthorityRefs(
-  manifestPath: string,
-  manifest: AuthorityPacketManifest,
-  failures: ValidationFailure[]
-): Promise<void> {
-  for (const ref of manifest.humanAuthorityRefs ?? []) {
-    if (ref.startsWith("http://") || ref.startsWith("https://")) {
-      continue;
-    }
-
-    const hashIndex = ref.indexOf("#");
-    const filePath = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
-    const anchor = hashIndex === -1 ? undefined : ref.slice(hashIndex + 1);
-
-    if (!filePath) {
-      continue;
-    }
-
-    const absolutePath = resolve(REPO_ROOT, filePath);
-
-    if (!existsSync(absolutePath)) {
-      failures.push({
-        manifestPath,
-        message: `humanAuthorityRef file does not exist: ${filePath}`,
-      });
-      continue;
-    }
-
-    if (anchor !== undefined) {
-      const content = await readFile(absolutePath, "utf-8");
-      if (!markdownAnchorExists(content, anchor)) {
-        failures.push({
-          manifestPath,
-          message: `humanAuthorityRef anchor #${anchor} not found in ${filePath}`,
-        });
-      }
-    }
-  }
-}
-
-function markdownAnchorExists(content: string, anchor: string): boolean {
-  for (const line of content.split("\n")) {
-    const match = MARKDOWN_HEADING_RE.exec(line);
-    if (match !== null && toMarkdownSlug(match[1]) === anchor) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function toMarkdownSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .replaceAll(/[^\w\s-]/g, "")
-    .replaceAll(/\s+/g, "-")
-    .replaceAll(/-+/g, "-")
-    .trim();
-}
-
-function requireExistingPath(
-  manifestPath: string,
-  candidatePath: string,
-  failures: ValidationFailure[],
-  label: string
-): void {
-  const absolutePath = resolve(REPO_ROOT, candidatePath);
-
-  if (!existsSync(absolutePath)) {
-    failures.push({
-      manifestPath,
-      message: `declared ${label} does not exist: ${candidatePath}`,
-    });
-  }
-}
-
-function readJsonSchema(value: unknown, label: string): AnySchema {
-  if (typeof value === "boolean" || isRecord(value)) {
-    return value;
-  }
-
-  throw new Error(`${label} must contain a JSON Schema object or boolean`);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function isConformancePlanDocument(
-  value: unknown
-): value is ConformancePlanDocument {
-  return (
-    isRecord(value) &&
-    typeof value.packetId === "string" &&
-    typeof value.planId === "string" &&
-    typeof value.planVersion === "string"
-  );
-}
+await main();
