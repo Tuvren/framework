@@ -1,1 +1,1 @@
-["typescript/kernel/backends/memory", "typescript/kernel/backends/sqlite"]
+["typescript/kernel/backends/memory"]
