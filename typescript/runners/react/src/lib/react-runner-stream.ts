@@ -293,6 +293,8 @@ const sequentially = async function* sequentially<T>(
   yield* values;
 };
 
+const providerStreamComplete = Symbol("provider stream complete");
+
 /** Applies {@link appendAndEmit} to each event in order. */
 const appendAllAndEmit = async (
   events: TuvrenStreamEvent[],
@@ -349,15 +351,27 @@ export const executeStreamCall = async (input: {
     cloneProviderPrompt(input.prompt, input.signal)
   );
   const iterator = stream[Symbol.asyncIterator]();
-  const abortableChunks: AsyncIterable<ProviderStreamChunk> = {
+  const abortableChunks: AsyncIterable<
+    ProviderStreamChunk | typeof providerStreamComplete
+  > = {
     [Symbol.asyncIterator]: () => ({
-      next: async () => await waitForAbortable(iterator.next(), input.signal),
+      next: async () => {
+        const result = await waitForAbortable(iterator.next(), input.signal);
+
+        return result.done === true
+          ? { done: false, value: providerStreamComplete }
+          : { done: false, value: result.value };
+      },
     }),
   };
 
   try {
     for await (const chunk of abortableChunks) {
       throwIfAborted(input.signal);
+      if (chunk === providerStreamComplete) {
+        break;
+      }
+
       assertProviderStreamChunk(chunk, "provider stream chunk");
       await appendAllAndEmit(events, accumulator.absorb(chunk), input.runtime);
     }
