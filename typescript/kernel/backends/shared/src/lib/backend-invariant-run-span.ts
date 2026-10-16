@@ -45,7 +45,9 @@ export interface BackendInvariantRunSpanConfig extends BackendInvariantRecordUti
    * here rather than imported, mirroring the same injection precedent in
    * `backend-invariant-run-logic.ts`.
    */
-  decodeRunCreatedTurnNodeHashes: (run: StoredRun) => string[];
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  decodeRunCreatedTurnNodeHashes(run: StoredRun): string[];
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -63,11 +65,12 @@ export interface BackendInvariantRunSpan {
    *   `<prefix>_backend_active_run_branch_head_mismatch` or
    *   `<prefix>_backend_active_run_turn_head_mismatch`.
    */
-  assertActiveRunHeadAlignment: (
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  assertActiveRunHeadAlignment(
     run: StoredRun,
     branch: StoredBranch,
     turn: StoredTurn
-  ) => void;
+  ): void;
   /**
    * Asserts that a run's `createdTurnNodesCbor` decodes to a canonical
    * lineage: unique hashes forming a contiguous `previousTurnNodeHash` chain
@@ -77,10 +80,10 @@ export interface BackendInvariantRunSpan {
    *   `<prefix>_backend_run_created_turn_nodes_duplicate` or
    *   `<prefix>_backend_run_created_turn_nodes_not_contiguous`.
    */
-  assertRunCreatedTurnNodesAreCanonical: (
+  assertRunCreatedTurnNodesAreCanonical(
     state: BackendState,
     run: StoredRun
-  ) => void;
+  ): void;
   /**
    * Asserts that a turn node recorded in a run's `createdTurnNodesCbor`
    * lineage lies within the run's turn span (between the turn's start node
@@ -89,12 +92,12 @@ export interface BackendInvariantRunSpan {
    * @throws {TuvrenPersistenceError} The injected persistence error with code
    *   `<prefix>_backend_run_created_turn_node_outside_turn_span`.
    */
-  assertRunCreatedTurnNodeWithinTurnSpan: (
+  assertRunCreatedTurnNodeWithinTurnSpan(
     state: BackendState,
     turn: StoredTurn,
     createdTurnNode: StoredTurnNode,
     label: string
-  ) => void;
+  ): void;
   /**
    * Asserts that a run's start turn node lies within its turn's span: at or
    * after the turn's start node and at or before the turn's head node on the
@@ -103,12 +106,12 @@ export interface BackendInvariantRunSpan {
    * @throws {TuvrenPersistenceError} The injected persistence error with code
    *   `<prefix>_backend_run_turn_span_mismatch`.
    */
-  assertRunStartTurnNodeWithinTurnSpan: (
+  assertRunStartTurnNodeWithinTurnSpan(
     state: BackendState,
     turn: StoredTurn,
     startTurnNodeHash: string,
     label: string
-  ) => void;
+  ): void;
   /**
    * Classifies the lineage relationship from `sourceTurnNodeHash` to
    * `targetTurnNodeHash` over the loaded state projection.
@@ -117,11 +120,11 @@ export interface BackendInvariantRunSpan {
    *   `<prefix>_backend_cyclic_turn_node_lineage` when either ancestry walk
    *   encounters a cycle.
    */
-  classifyTurnNodeRelationship: (
+  classifyTurnNodeRelationship(
     state: BackendState,
     sourceTurnNodeHash: string,
     targetTurnNodeHash: string
-  ) => TurnNodeRelationship;
+  ): TurnNodeRelationship;
   /**
    * Decodes a turn node's `consumedStagedResultsCbor` and extracts the
    * validated `objectHash` of every staged result the node consumed.
@@ -130,9 +133,10 @@ export interface BackendInvariantRunSpan {
    *   `<prefix>_backend_invalid_consumed_staged_results_cbor` or
    *   `<prefix>_backend_invalid_consumed_staged_result_entry`.
    */
-  decodeTurnNodeConsumedStagedResultObjectHashes: (
+  decodeTurnNodeConsumedStagedResultObjectHashes(
     turnNode: StoredTurnNode
-  ) => string[];
+  ): string[];
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -147,6 +151,7 @@ export interface BackendInvariantRunSpan {
 export const createBackendInvariantRunSpan = (
   config: BackendInvariantRunSpanConfig
 ): BackendInvariantRunSpan => {
+  // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
   const { ensureTurnNodeExists, persistenceError, validateHashString } =
     createBackendInvariantRecordUtils(config);
 

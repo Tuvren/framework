@@ -58,6 +58,27 @@ import {
   rejectionOf,
 } from "./backend-memory-test-helpers.js";
 
+test("escaped repository handles throw before returning a promise", async () => {
+  const backend = createMemoryBackend();
+  let escaped: KrakenBackendTx | undefined;
+
+  await backend.transact(async (tx) => {
+    escaped = tx;
+    await Promise.resolve();
+  });
+
+  if (escaped === undefined) {
+    throw new Error("transaction did not expose its repository handle");
+  }
+  const transactionHandle = escaped;
+
+  let returned: Promise<unknown> | undefined;
+  expect(() => {
+    returned = transactionHandle.objects.get("missing-object");
+  }).toThrow("must not outlive their transaction");
+  expect(returned).toBeUndefined();
+});
+
 const singlePath = (
   turnTreeHash: string,
   singleHash: string | null

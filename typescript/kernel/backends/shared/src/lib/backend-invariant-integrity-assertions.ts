@@ -139,7 +139,9 @@ export interface BackendInvariantIntegrityAssertionsConfig extends BackendInvari
    * `decodeRunCreatedTurnNodeHashes` injection precedent in
    * `backend-invariant-run-logic.ts`.
    */
-  getRunActiveTurnNodeHash: (run: StoredRun) => string;
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  getRunActiveTurnNodeHash(run: StoredRun): string;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -149,35 +151,37 @@ export interface BackendInvariantIntegrityAssertionsConfig extends BackendInvari
  * `BackendInvariantRecordUtils`.
  */
 export interface BackendInvariantIntegrityAssertions {
-  assertBackwardBranchMoveIsArchived: (
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  assertBackwardBranchMoveIsArchived(
     state: BackendState,
     baseState: BackendState,
     previousBranch: StoredBranch,
     nextBranch: StoredBranch
-  ) => void;
-  assertChunkedTurnTreePathChunkLayout: (
+  ): void;
+  assertChunkedTurnTreePathChunkLayout(
     chunk: StoredOrderedPathChunk,
     index: number,
     totalChunks: number
-  ) => void;
-  assertTurnParentLink: (
+  ): void;
+  assertTurnParentLink(
     state: BackendState,
     turn: StoredTurn,
     label: string
-  ) => void;
-  ensureImmutableRecordMatch: <T>(
+  ): void;
+  ensureImmutableRecordMatch<T>(
     existing: T,
     incoming: T,
     areEqual: (left: T, right: T) => boolean,
     label: string
-  ) => void;
-  listTurnsByThread: (
+  ): void;
+  listTurnsByThread(
     state: BackendState,
     threadId: string,
     excludedTurnId?: string
-  ) => StoredTurn[];
+  ): StoredTurn[];
   /** Fixed item capacity of every non-final ordered path chunk. */
   readonly ORDERED_PATH_CHUNK_SIZE: number;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -221,6 +225,7 @@ export const ORDERED_PATH_CHUNK_SIZE = 32;
 export const createBackendInvariantIntegrityAssertions = (
   config: BackendInvariantIntegrityAssertionsConfig
 ): BackendInvariantIntegrityAssertions => {
+  // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
   const { ensureImmutableRecordMatch, ensureTurnExists, persistenceError } =
     createBackendInvariantRecordUtils(config);
 
@@ -340,6 +345,7 @@ export const createBackendInvariantIntegrityAssertions = (
       previousBranch,
       nextBranch,
       config.errorPrefix,
+      // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
       config.getRunActiveTurnNodeHash,
       persistenceError
     );

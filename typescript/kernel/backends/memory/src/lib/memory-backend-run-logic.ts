@@ -29,4 +29,5 @@ const runLogic = createBackendInvariantRunLogic({
   errorPrefix: "memory",
 });
 
+// oxlint-disable-next-line typescript/unbound-method -- Compatibility: the shared API intentionally retains method variance; these returned implementations are standalone functions.
 export const { assertMonotonicUpdatedAtMs, assertRunUpdateIsLegal } = runLogic;

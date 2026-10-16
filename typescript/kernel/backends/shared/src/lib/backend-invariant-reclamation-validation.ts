@@ -35,18 +35,20 @@ import {
  */
 export interface BackendInvariantReclamationValidationConfig extends BackendInvariantRecordUtilsConfig {
   /** Decodes a deterministically-encoded hash array (e.g. an ordered path chunk's `itemsCbor`). */
-  decodeHashStringArray: (bytes: Uint8Array, label: string) => string[];
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  decodeHashStringArray(bytes: Uint8Array, label: string): string[];
   /** Decodes a stored run's `createdTurnNodesCbor` into its append-only turn node hash lineage. */
-  decodeRunCreatedTurnNodeHashes: (run: StoredRun) => string[];
+  decodeRunCreatedTurnNodeHashes(run: StoredRun): string[];
   /** Decodes a turn node's `consumedStagedResultsCbor` into the object hashes of the staged results it consumed. */
-  decodeTurnNodeConsumedStagedResultObjectHashes: (
+  decodeTurnNodeConsumedStagedResultObjectHashes(
     turnNode: StoredTurnNode
-  ) => string[];
+  ): string[];
   /** Resolves a stored turn tree path's logical value (single hash, flat hash array, or chunked hash array) against `state`. */
-  resolveStoredTurnTreePathValue: (
+  resolveStoredTurnTreePathValue(
     state: BackendState,
     storedPath: StoredTurnTreePath
-  ) => string[] | string | null;
+  ): string[] | string | null;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -159,7 +161,9 @@ export interface BackendInvariantReclamationValidation {
    * @throws {TuvrenPersistenceError} The injected persistence error with a `<prefix>_backend_*` code
    *   on the first invariant a defective sweep violated.
    */
-  assertReclamationSurvivorInvariants: (state: BackendState) => void;
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  assertReclamationSurvivorInvariants(state: BackendState): void;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -175,14 +179,23 @@ export const createBackendInvariantReclamationValidation = (
   config: BackendInvariantReclamationValidationConfig
 ): BackendInvariantReclamationValidation => {
   const {
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     ensureBranchExists,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     ensureObjectExists,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     ensureOrderedPathChunkExists,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     ensureRunExists,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     ensureThreadExists,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     ensureTurnExists,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     ensureTurnNodeExists,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     ensureTurnTreeExists,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     persistenceError,
   } = createBackendInvariantRecordUtils(config);
 

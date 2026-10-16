@@ -55,18 +55,20 @@ interface KeepClosure {
  */
 export interface BackendInvariantReclamationDeps {
   /** Decodes a deterministically-encoded hash array (e.g. an ordered path chunk's `itemsCbor`). */
-  decodeHashStringArray: (bytes: Uint8Array, label: string) => string[];
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  decodeHashStringArray(bytes: Uint8Array, label: string): string[];
   /** Decodes a stored run's `createdTurnNodesCbor` into its append-only turn node hash lineage. */
-  decodeRunCreatedTurnNodeHashes: (run: StoredRun) => string[];
+  decodeRunCreatedTurnNodeHashes(run: StoredRun): string[];
   /** Decodes a turn node's `consumedStagedResultsCbor` into the object hashes of the staged results it consumed. */
-  decodeTurnNodeConsumedStagedResultObjectHashes: (
+  decodeTurnNodeConsumedStagedResultObjectHashes(
     turnNode: StoredTurnNode
-  ) => string[];
+  ): string[];
   /** Resolves a stored turn tree path's logical value (single hash, flat hash array, or chunked hash array) against `state`. */
-  resolveStoredTurnTreePathValue: (
+  resolveStoredTurnTreePathValue(
     state: BackendState,
     storedPath: StoredTurnTreePath
-  ) => string[] | string | null;
+  ): string[] | string | null;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 const isRunRetained = (

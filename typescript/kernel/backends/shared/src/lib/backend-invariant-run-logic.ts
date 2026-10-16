@@ -32,7 +32,9 @@ export interface BackendInvariantRunLogicConfig extends BackendInvariantRecordUt
    * because this shared module has no access to any single backend's
    * lineage file.
    */
-  decodeRunCreatedTurnNodeHashes: (run: StoredRun) => string[];
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  decodeRunCreatedTurnNodeHashes(run: StoredRun): string[];
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -55,12 +57,13 @@ export interface BackendInvariantRunLogic {
    * @throws {TuvrenPersistenceError} when `nextUpdatedAtMs` is less than
    *   `previousUpdatedAtMs`.
    */
-  assertMonotonicUpdatedAtMs: (
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  assertMonotonicUpdatedAtMs(
     previousUpdatedAtMs: number,
     nextUpdatedAtMs: number,
     label: string,
     updatedAtCode: string
-  ) => void;
+  ): void;
   /**
    * Asserts that replacing `existingRun` with `nextRun` is a legal stored-run
    * transition: identity/lineage fields stay immutable, `updatedAtMs` and
@@ -72,7 +75,8 @@ export interface BackendInvariantRunLogic {
    * @throws {TuvrenPersistenceError} with a backend-prefixed
    *   `<prefix>_backend_run_*` code identifying the first violated invariant.
    */
-  assertRunUpdateIsLegal: (existingRun: StoredRun, nextRun: StoredRun) => void;
+  assertRunUpdateIsLegal(existingRun: StoredRun, nextRun: StoredRun): void;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -86,9 +90,13 @@ export const createBackendInvariantRunLogic = (
   config: BackendInvariantRunLogicConfig
 ): BackendInvariantRunLogic => {
   const {
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     assertImmutableBytes,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     assertImmutableField,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     assertRunStatusTransition,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     persistenceError,
   } = createBackendInvariantRecordUtils(config);
 

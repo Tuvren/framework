@@ -51,7 +51,8 @@ export interface BackendInvariantRecordUtilsConfig {
    * database row) in a way the in-memory backend, which never leaves the
    * process, does not need to.
    */
-  cloneEncodedBytes?: (bytes: Uint8Array) => Uint8Array;
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  cloneEncodedBytes?(bytes: Uint8Array): Uint8Array;
   /**
    * The backend-owned error-code prefix (e.g. `"memory"`, `"sqlite"`,
    * `"postgres"`). Every persistence error this module raises is coded
@@ -59,6 +60,7 @@ export interface BackendInvariantRecordUtilsConfig {
    * hardcoded literal byte-for-byte when given that backend's own prefix.
    */
   errorPrefix: string;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -70,152 +72,144 @@ export interface BackendInvariantRecordUtilsConfig {
  * referencing this named one.
  */
 export interface BackendInvariantRecordUtils {
-  areBytesEqual: (left: Uint8Array, right: Uint8Array) => boolean;
-  areStoredObjectsEqual: (left: StoredObject, right: StoredObject) => boolean;
-  areStoredOrderedPathChunksEqual: (
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  areBytesEqual(left: Uint8Array, right: Uint8Array): boolean;
+  areStoredObjectsEqual(left: StoredObject, right: StoredObject): boolean;
+  areStoredOrderedPathChunksEqual(
     left: StoredOrderedPathChunk,
     right: StoredOrderedPathChunk
-  ) => boolean;
-  areStoredSchemasEqual: (left: StoredSchema, right: StoredSchema) => boolean;
-  areStoredStagedResultsEqual: (
+  ): boolean;
+  areStoredSchemasEqual(left: StoredSchema, right: StoredSchema): boolean;
+  areStoredStagedResultsEqual(
     left: StoredStagedResult,
     right: StoredStagedResult
-  ) => boolean;
-  areStoredThreadsEqual: (left: StoredThread, right: StoredThread) => boolean;
-  areStoredTurnNodesEqual: (
-    left: StoredTurnNode,
-    right: StoredTurnNode
-  ) => boolean;
-  areStoredTurnTreePathsEqual: (
+  ): boolean;
+  areStoredThreadsEqual(left: StoredThread, right: StoredThread): boolean;
+  areStoredTurnNodesEqual(left: StoredTurnNode, right: StoredTurnNode): boolean;
+  areStoredTurnTreePathsEqual(
     left: StoredTurnTreePath,
     right: StoredTurnTreePath
-  ) => boolean;
-  areStoredTurnTreesEqual: (
-    left: StoredTurnTree,
-    right: StoredTurnTree
-  ) => boolean;
-  assertImmutableBytes: (
+  ): boolean;
+  areStoredTurnTreesEqual(left: StoredTurnTree, right: StoredTurnTree): boolean;
+  assertImmutableBytes(
     previousValue: Uint8Array,
     nextValue: Uint8Array,
     label: string,
     fieldCode: string
-  ) => void;
-  assertImmutableField: <T>(
+  ): void;
+  assertImmutableField<T>(
     previousValue: T,
     nextValue: T,
     label: string,
     fieldCode: string
-  ) => void;
-  assertImmutableOptionalField: <T>(
+  ): void;
+  assertImmutableOptionalField<T>(
     previousValue: T | undefined,
     nextValue: T | undefined,
     label: string,
     fieldCode: string
-  ) => void;
-  assertRunStatusTransition: (
+  ): void;
+  assertRunStatusTransition(
     previousStatus: StoredRun["status"],
     nextStatus: StoredRun["status"]
-  ) => void;
-  cloneBytes: (bytes: Uint8Array) => Uint8Array;
-  cloneStoredBranch: (record: StoredBranch) => StoredBranch;
-  cloneStoredObject: (record: StoredObject) => StoredObject;
-  cloneStoredObserveAnnotation: (
+  ): void;
+  cloneBytes(bytes: Uint8Array): Uint8Array;
+  cloneStoredBranch(record: StoredBranch): StoredBranch;
+  cloneStoredObject(record: StoredObject): StoredObject;
+  cloneStoredObserveAnnotation(
     record: StoredObserveAnnotation
-  ) => StoredObserveAnnotation;
-  cloneStoredOrderedPathChunk: (
+  ): StoredObserveAnnotation;
+  cloneStoredOrderedPathChunk(
     record: StoredOrderedPathChunk
-  ) => StoredOrderedPathChunk;
-  cloneStoredRun: (record: StoredRun) => StoredRun;
-  cloneStoredSchema: (record: StoredSchema) => StoredSchema;
-  cloneStoredStagedResult: (record: StoredStagedResult) => StoredStagedResult;
-  cloneStoredThread: (record: StoredThread) => StoredThread;
-  cloneStoredTurn: (record: StoredTurn) => StoredTurn;
-  cloneStoredTurnNode: (record: StoredTurnNode) => StoredTurnNode;
-  cloneStoredTurnTree: (record: StoredTurnTree) => StoredTurnTree;
-  cloneStoredTurnTreePath: (record: StoredTurnTreePath) => StoredTurnTreePath;
-  compareByTimestampAndKey: (
+  ): StoredOrderedPathChunk;
+  cloneStoredRun(record: StoredRun): StoredRun;
+  cloneStoredSchema(record: StoredSchema): StoredSchema;
+  cloneStoredStagedResult(record: StoredStagedResult): StoredStagedResult;
+  cloneStoredThread(record: StoredThread): StoredThread;
+  cloneStoredTurn(record: StoredTurn): StoredTurn;
+  cloneStoredTurnNode(record: StoredTurnNode): StoredTurnNode;
+  cloneStoredTurnTree(record: StoredTurnTree): StoredTurnTree;
+  cloneStoredTurnTreePath(record: StoredTurnTreePath): StoredTurnTreePath;
+  compareByTimestampAndKey(
     leftTimestamp: number,
     rightTimestamp: number,
     leftKey: string,
     rightKey: string
-  ) => number;
-  compareStoredBranch: (left: StoredBranch, right: StoredBranch) => number;
-  compareStoredObserveAnnotation: (
+  ): number;
+  compareStoredBranch(left: StoredBranch, right: StoredBranch): number;
+  compareStoredObserveAnnotation(
     left: StoredObserveAnnotation,
     right: StoredObserveAnnotation
-  ) => number;
-  compareStoredRun: (left: StoredRun, right: StoredRun) => number;
-  compareStoredStagedResult: (
+  ): number;
+  compareStoredRun(left: StoredRun, right: StoredRun): number;
+  compareStoredStagedResult(
     left: StoredStagedResult,
     right: StoredStagedResult
-  ) => number;
-  compareStoredTurn: (left: StoredTurn, right: StoredTurn) => number;
-  ensureBranchExists: (
+  ): number;
+  compareStoredTurn(left: StoredTurn, right: StoredTurn): number;
+  ensureBranchExists(
     state: BackendState,
     branchId: string,
     label: string
-  ) => StoredBranch;
-  ensureImmutableRecordMatch: <T>(
+  ): StoredBranch;
+  ensureImmutableRecordMatch<T>(
     existing: T,
     incoming: T,
     areEqual: (left: T, right: T) => boolean,
     label: string
-  ) => void;
-  ensureObjectExists: (
+  ): void;
+  ensureObjectExists(
     state: BackendState,
     hash: string,
     label: string
-  ) => StoredObject;
-  ensureOrderedPathChunkExists: (
+  ): StoredObject;
+  ensureOrderedPathChunkExists(
     state: BackendState,
     chunkHash: string,
     label: string
-  ) => StoredOrderedPathChunk;
-  ensureRunExists: (
-    state: BackendState,
-    runId: string,
-    label: string
-  ) => StoredRun;
-  ensureSchemaRecordExists: (
+  ): StoredOrderedPathChunk;
+  ensureRunExists(state: BackendState, runId: string, label: string): StoredRun;
+  ensureSchemaRecordExists(
     state: BackendState,
     schemaId: string,
     label: string
-  ) => StoredSchema;
-  ensureThreadExists: (
+  ): StoredSchema;
+  ensureThreadExists(
     state: BackendState,
     threadId: string,
     label: string
-  ) => StoredThread;
-  ensureTurnExists: (
+  ): StoredThread;
+  ensureTurnExists(
     state: BackendState,
     turnId: string,
     label: string
-  ) => StoredTurn;
-  ensureTurnNodeExists: (
+  ): StoredTurn;
+  ensureTurnNodeExists(
     state: BackendState,
     hash: string,
     label: string
-  ) => StoredTurnNode;
-  ensureTurnTreeExists: (
+  ): StoredTurnNode;
+  ensureTurnTreeExists(
     state: BackendState,
     hash: string,
     label: string
-  ) => StoredTurnTree;
-  isExpiredLeasedRunningRun: (run: StoredRun, nowMs: EpochMs) => boolean;
-  persistenceError: (
+  ): StoredTurnTree;
+  isExpiredLeasedRunningRun(run: StoredRun, nowMs: EpochMs): boolean;
+  persistenceError(
     message: string,
     errorCode: string,
     details?: unknown
-  ) => TuvrenPersistenceError;
-  putImmutableRecord: <T>(
+  ): TuvrenPersistenceError;
+  putImmutableRecord<T>(
     records: Map<string, T>,
     key: string,
     record: T,
     cloneRecord: (record: T) => T,
     areEqual: (left: T, right: T) => boolean,
     label: string
-  ) => void;
-  validateHashString: (hash: string) => string;
+  ): void;
+  validateHashString(hash: string): string;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /** Copies a byte array so a caller mutating the result cannot corrupt stored state. */
@@ -511,6 +505,7 @@ export const createBackendInvariantRecordUtils = (
   const code = (suffix: string): string =>
     `${config.errorPrefix}_backend_${suffix}`;
 
+  // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
   const cloneEncodedBytes = config.cloneEncodedBytes ?? cloneBytes;
 
   const assertRunStatusTransition = (

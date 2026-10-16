@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript package documentation tag on the public entrypoint. */
 /**
  * In-memory reference backend for the Tuvren kernel.
  *
@@ -30,7 +31,10 @@
  * stay isolated by construction.
  *
  * Public contract surface for the in-memory kernel backend.
+ *
+ * @packageDocumentation
  */
+/* oxlint-enable jsdoc/check-tag-names */
 
 export type { MemoryBackendOptions } from "./lib/memory-backend.js";
 export { createMemoryBackend } from "./lib/memory-backend.js";

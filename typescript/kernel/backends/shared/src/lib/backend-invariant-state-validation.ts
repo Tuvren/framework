@@ -89,13 +89,15 @@ export interface BackendInvariantStateValidationConfig extends BackendInvariantR
    * element. This stays backend-owned (each backend has its own records
    * module) and is injected here rather than imported.
    */
-  decodeHashStringArray: (bytes: Uint8Array, label: string) => string[];
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  decodeHashStringArray(bytes: Uint8Array, label: string): string[];
   /**
    * Decodes deterministic-CBOR bytes into a validated `TurnTreeSchema`. This
    * stays backend-owned (each backend has its own records module) and is
    * injected here rather than imported.
    */
-  decodeTurnTreeSchema: (bytes: Uint8Array, label: string) => TurnTreeSchema;
+  decodeTurnTreeSchema(bytes: Uint8Array, label: string): TurnTreeSchema;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -109,53 +111,55 @@ export interface BackendInvariantStateValidationConfig extends BackendInvariantR
  * itself exported.
  */
 export interface ValidationHelpers {
-  assertActiveRunHeadAlignment: (
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  assertActiveRunHeadAlignment(
     run: StoredRun,
     branch: StoredBranch,
     turn: StoredTurn
-  ) => void;
-  assertBackwardBranchMoveIsArchived: (
+  ): void;
+  assertBackwardBranchMoveIsArchived(
     state: BackendState,
     baseState: BackendState,
     previousBranch: StoredBranch,
     branch: StoredBranch
-  ) => void;
-  assertChunkedTurnTreePathChunkLayout: (
+  ): void;
+  assertChunkedTurnTreePathChunkLayout(
     chunk: StoredOrderedPathChunk,
     index: number,
     chunkCount: number
-  ) => void;
-  assertRunCreatedTurnNodesAreCanonical: (
+  ): void;
+  assertRunCreatedTurnNodesAreCanonical(
     state: BackendState,
     run: StoredRun
-  ) => void;
-  assertRunCreatedTurnNodeWithinTurnSpan: (
+  ): void;
+  assertRunCreatedTurnNodeWithinTurnSpan(
     state: BackendState,
     turn: StoredTurn,
     createdTurnNode: StoredTurnNode,
     label: string
-  ) => void;
-  assertRunStartTurnNodeWithinTurnSpan: (
+  ): void;
+  assertRunStartTurnNodeWithinTurnSpan(
     state: BackendState,
     turn: StoredTurn,
     startTurnNodeHash: string,
     label: string
-  ) => void;
-  assertTurnParentLink: (
+  ): void;
+  assertTurnParentLink(
     state: BackendState,
     turn: StoredTurn,
     label: string
-  ) => void;
-  classifyTurnNodeRelationship: (
+  ): void;
+  classifyTurnNodeRelationship(
     state: BackendState,
     fromTurnNodeHash: string,
     toTurnNodeHash: string
-  ) => "backward" | "forward" | "same" | "lateral";
-  decodeRunCreatedTurnNodeHashes: (run: StoredRun) => string[];
-  decodeTurnNodeConsumedStagedResultObjectHashes: (
+  ): "backward" | "forward" | "same" | "lateral";
+  decodeRunCreatedTurnNodeHashes(run: StoredRun): string[];
+  decodeTurnNodeConsumedStagedResultObjectHashes(
     turnNode: StoredTurnNode
-  ) => string[];
-  validateHashString: (hash: string) => string;
+  ): string[];
+  validateHashString(hash: string): string;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -171,10 +175,11 @@ export interface BackendInvariantStateValidation {
    * ordered paths, or the concatenation of all referenced chunks' items for
    * `chunked` ordered paths.
    */
-  resolveStoredTurnTreePathValue: (
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  resolveStoredTurnTreePathValue(
     state: BackendState,
     storedPath: StoredTurnTreePath
-  ) => string[] | string | null;
+  ): string[] | string | null;
   /**
    * Validates the full committed-state invariant suite over a loaded state
    * projection before it may be persisted: thread roots are unique genesis
@@ -191,11 +196,11 @@ export interface BackendInvariantStateValidation {
    *   on the first violated invariant; the caller must then abort the
    *   transaction.
    */
-  validateCommittedState: (
+  validateCommittedState(
     state: BackendState,
     baseState: BackendState,
     helpers: ValidationHelpers
-  ) => void;
+  ): void;
   /**
    * Re-validates every record in a loaded state projection against the
    * kernel-protocol schema/identity assertions (`assertStored*`), the same
@@ -205,7 +210,7 @@ export interface BackendInvariantStateValidation {
    * well-formed and, for content-addressed families, that its identity still
    * matches its content.
    */
-  validateLoadedState: (state: BackendState) => Promise<void>;
+  validateLoadedState(state: BackendState): Promise<void>;
   /**
    * Validates every stored turn-tree path collection: no turn tree
    * references an empty path collection, every ordered path's
@@ -216,10 +221,11 @@ export interface BackendInvariantStateValidation {
    * @throws {TuvrenPersistenceError} The injected persistence error with a `<prefix>_backend_*` code
    *   on the first violated invariant.
    */
-  validateTurnTreePathInvariants: (
+  validateTurnTreePathInvariants(
     state: BackendState,
     helpers: ValidationHelpers
-  ) => void;
+  ): void;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -691,12 +697,19 @@ export const createBackendInvariantStateValidation = (
 ): BackendInvariantStateValidation => {
   const recordUtils = createBackendInvariantRecordUtils(config);
   const {
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     ensureObjectExists,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     ensureOrderedPathChunkExists,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     ensureRunExists,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     ensureSchemaRecordExists,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     ensureTurnNodeExists,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     ensureTurnTreeExists,
+    // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
     persistenceError,
   } = recordUtils;
 
