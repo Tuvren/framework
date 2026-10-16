@@ -125,49 +125,9 @@ interface SqliteTurnTreePathRow {
   turn_tree_hash: string;
 }
 
-await main();
-
-async function main(): Promise<void> {
-  const tempDirectory = mkdtempSync(join(tmpdir(), "tuvren-sqlite-retention-"));
-
-  try {
-    const databasePath = join(tempDirectory, "kraken.db");
-    const backend = createSqliteBackend({ databasePath });
-    await seedRetentionProofDatabase(backend);
-
-    const db = new Database(databasePath, { readonly: true });
-    try {
-      const beforeCounts = countTables(db);
-      const summary = runRetentionDryRun(db);
-      const afterCounts = countTables(db);
-
-      assertTableCountsEqual(beforeCounts, afterCounts);
-      assertExpectedSummary(summary);
-
-      process.stdout.write("sqlite retention dry-run proof\n");
-      process.stdout.write(
-        `${JSON.stringify(
-          {
-            dryRun: "sqlite-retention-mark-only",
-            generatedAt: new Date().toISOString(),
-            rowCountsUnchanged: true,
-            summary,
-          },
-          null,
-          2
-        )}\n`
-      );
-    } finally {
-      db.close();
-    }
-  } finally {
-    rmSync(tempDirectory, { force: true, recursive: true });
-  }
-}
-
-async function seedRetentionProofDatabase(
+const seedRetentionProofDatabase = async (
   backend: RuntimeBackend
-): Promise<void> {
+): Promise<void> => {
   const schema = createCanonicalKernelTestSchema();
   const schemaRecord = createStoredSchemaRecord(schema, 1);
   const messageObjects = await Promise.all(
@@ -301,9 +261,311 @@ async function seedRetentionProofDatabase(
     await tx.stagedResults.set(stagedResult);
     await tx.branches.set(branch);
   });
-}
+};
 
-function runRetentionDryRun(db: Database.Database): RetentionDryRunSummary {
+const decodeConsumedStagedResultObjectHashes = (
+  bytes: Uint8Array
+): string[] => {
+  const decodedValue = decodeDeterministicKernelRecord(bytes);
+
+  if (!Array.isArray(decodedValue)) {
+    throw new TypeError(
+      "turn node consumed staged results must decode to an array"
+    );
+  }
+
+  const objectHashes: string[] = [];
+  for (const item of decodedValue) {
+    if (
+      typeof item !== "object" ||
+      item === null ||
+      !("objectHash" in item) ||
+      typeof item.objectHash !== "string"
+    ) {
+      throw new Error("consumed staged result entry must include objectHash");
+    }
+
+    objectHashes.push(item.objectHash);
+  }
+
+  return objectHashes;
+};
+
+const collectTurnNodeEdges = (
+  retainedTurnNodes: readonly SqliteTurnNodeRow[],
+  retainedTurnTreeHashes: Set<string>,
+  retainedSchemaIds: Set<string>,
+  retainedObjectHashes: Set<string>
+): void => {
+  for (const turnNode of retainedTurnNodes) {
+    retainedTurnTreeHashes.add(turnNode.turn_tree_hash);
+    retainedSchemaIds.add(turnNode.schema_id);
+
+    if (turnNode.event_hash !== null) {
+      retainedObjectHashes.add(turnNode.event_hash);
+    }
+
+    for (const objectHash of decodeConsumedStagedResultObjectHashes(
+      turnNode.consumed_staged_results_cbor
+    )) {
+      retainedObjectHashes.add(objectHash);
+    }
+  }
+};
+
+const collectSinglePathObjectEdge = (
+  path: SqliteTurnTreePathRow,
+  retainedObjectHashes: Set<string>
+): void => {
+  if (path.single_hash !== null) {
+    retainedObjectHashes.add(path.single_hash);
+  }
+};
+
+const decodeHashStringArray = (bytes: Uint8Array, label: string): string[] => {
+  const decodedValue = decodeDeterministicKernelRecord(bytes);
+
+  if (!Array.isArray(decodedValue)) {
+    throw new TypeError(`${label} must decode to an array`);
+  }
+
+  const hashes: string[] = [];
+  for (const item of decodedValue) {
+    if (typeof item !== "string") {
+      throw new TypeError(`${label} entries must be strings`);
+    }
+
+    hashes.push(item);
+  }
+
+  return hashes;
+};
+
+const collectOrderedInlineObjectEdges = (
+  path: SqliteTurnTreePathRow,
+  retainedObjectHashes: Set<string>
+): void => {
+  if (path.ordered_encoding !== "flat" || path.ordered_inline_cbor === null) {
+    return;
+  }
+
+  for (const objectHash of decodeHashStringArray(
+    path.ordered_inline_cbor,
+    "turn_tree_paths.ordered_inline_cbor"
+  )) {
+    retainedObjectHashes.add(objectHash);
+  }
+};
+
+const collectOrderedChunkEdgesFromPath = (
+  path: SqliteTurnTreePathRow,
+  retainedOrderedChunkHashes: Set<string>
+): void => {
+  if (
+    path.ordered_encoding !== "chunked" ||
+    path.ordered_chunk_list_cbor === null
+  ) {
+    return;
+  }
+
+  for (const chunkHash of decodeHashStringArray(
+    path.ordered_chunk_list_cbor,
+    "turn_tree_paths.ordered_chunk_list_cbor"
+  )) {
+    retainedOrderedChunkHashes.add(chunkHash);
+  }
+};
+
+const selectTurnTreePaths = (
+  db: Database.Database,
+  hashes: ReadonlySet<string>
+): SqliteTurnTreePathRow[] => {
+  return (
+    db.prepare("SELECT * FROM turn_tree_paths").all() as SqliteTurnTreePathRow[]
+  ).filter((row) => hashes.has(row.turn_tree_hash));
+};
+
+const collectTurnTreePathEdges = (
+  db: Database.Database,
+  retainedTurnTreeHashes: ReadonlySet<string>,
+  retainedObjectHashes: Set<string>
+): {
+  retainedOrderedChunkHashes: Set<string>;
+  retainedTurnTreePaths: SqliteTurnTreePathRow[];
+} => {
+  const retainedTurnTreePaths = selectTurnTreePaths(db, retainedTurnTreeHashes);
+  const retainedOrderedChunkHashes = new Set<string>();
+
+  for (const path of retainedTurnTreePaths) {
+    collectSinglePathObjectEdge(path, retainedObjectHashes);
+    collectOrderedInlineObjectEdges(path, retainedObjectHashes);
+    collectOrderedChunkEdgesFromPath(path, retainedOrderedChunkHashes);
+  }
+
+  return { retainedOrderedChunkHashes, retainedTurnTreePaths };
+};
+
+const selectOrderedPathChunks = (
+  db: Database.Database,
+  hashes: ReadonlySet<string>
+): SqliteOrderedPathChunkRow[] => {
+  return (
+    db
+      .prepare("SELECT * FROM ordered_path_chunks")
+      .all() as SqliteOrderedPathChunkRow[]
+  ).filter((row) => hashes.has(row.chunk_hash));
+};
+
+const collectOrderedChunkEdges = (
+  db: Database.Database,
+  retainedOrderedChunkHashes: ReadonlySet<string>,
+  retainedObjectHashes: Set<string>
+): void => {
+  for (const chunk of selectOrderedPathChunks(db, retainedOrderedChunkHashes)) {
+    for (const objectHash of decodeHashStringArray(
+      chunk.items_cbor,
+      "ordered_path_chunks.items_cbor"
+    )) {
+      retainedObjectHashes.add(objectHash);
+    }
+  }
+};
+
+const collectRunEdges = (
+  retainedRuns: readonly SqliteRunRow[],
+  retainedTurnNodeHashes: Set<string>,
+  retainedSchemaIds: Set<string>
+): Set<string> => {
+  const retainedRunIds = new Set<string>();
+
+  for (const run of retainedRuns) {
+    retainedRunIds.add(run.run_id);
+    retainedSchemaIds.add(run.schema_id);
+
+    for (const turnNodeHash of decodeHashStringArray(
+      run.created_turn_nodes_cbor,
+      "runs.created_turn_nodes_cbor"
+    )) {
+      retainedTurnNodeHashes.add(turnNodeHash);
+    }
+  }
+
+  return retainedRunIds;
+};
+
+const selectRetainedStagedResults = (
+  db: Database.Database,
+  runIds: ReadonlySet<string>
+): SqliteStagedResultRow[] => {
+  return (
+    db.prepare("SELECT * FROM staged_results").all() as SqliteStagedResultRow[]
+  ).filter((row) => runIds.has(row.run_id));
+};
+
+const collectStagedResultEdges = (
+  db: Database.Database,
+  retainedRunIds: ReadonlySet<string>,
+  retainedObjectHashes: Set<string>
+): SqliteStagedResultRow[] => {
+  const retainedStagedResults = selectRetainedStagedResults(db, retainedRunIds);
+
+  for (const stagedResult of retainedStagedResults) {
+    retainedObjectHashes.add(stagedResult.object_hash);
+  }
+
+  return retainedStagedResults;
+};
+
+const selectRetainedThreads = (
+  db: Database.Database,
+  turnNodeHashes: ReadonlySet<string>
+): SqliteThreadRow[] => {
+  return (
+    db.prepare("SELECT * FROM threads").all() as SqliteThreadRow[]
+  ).filter((row) => turnNodeHashes.has(row.root_turn_node_hash));
+};
+
+const collectThreadEdges = (
+  db: Database.Database,
+  retainedTurnNodeHashes: ReadonlySet<string>,
+  retainedSchemaIds: Set<string>
+): SqliteThreadRow[] => {
+  const retainedThreads = selectRetainedThreads(db, retainedTurnNodeHashes);
+
+  for (const thread of retainedThreads) {
+    retainedSchemaIds.add(thread.schema_id);
+  }
+
+  return retainedThreads;
+};
+
+const loadRetainedTurnNodeHashes = (db: Database.Database): Set<string> => {
+  const rows = db
+    .prepare(
+      `
+        WITH RECURSIVE roots(hash) AS (
+          SELECT head_turn_node_hash FROM branches
+          UNION
+          SELECT root_turn_node_hash FROM threads
+          UNION
+          SELECT start_turn_node_hash FROM turns
+          UNION
+          SELECT head_turn_node_hash FROM turns
+          UNION
+          SELECT start_turn_node_hash
+          FROM runs
+          WHERE status IN ('running', 'paused')
+        ),
+        lineage(hash) AS (
+          SELECT hash FROM roots
+          UNION
+          SELECT turn_nodes.previous_turn_node_hash
+          FROM turn_nodes
+          JOIN lineage ON turn_nodes.hash = lineage.hash
+          WHERE turn_nodes.previous_turn_node_hash IS NOT NULL
+        )
+        SELECT hash
+        FROM lineage
+        ORDER BY hash
+      `
+    )
+    .all() as { hash: string }[];
+  return new Set(rows.map((row) => row.hash));
+};
+
+const selectTurnNodes = (
+  db: Database.Database,
+  hashes: ReadonlySet<string>
+): SqliteTurnNodeRow[] => {
+  return (
+    db.prepare("SELECT * FROM turn_nodes").all() as SqliteTurnNodeRow[]
+  ).filter((row) => hashes.has(row.hash));
+};
+
+const selectRetainedTurns = (
+  db: Database.Database,
+  turnNodeHashes: ReadonlySet<string>
+): SqliteTurnRow[] => {
+  return (db.prepare("SELECT * FROM turns").all() as SqliteTurnRow[]).filter(
+    (row) =>
+      turnNodeHashes.has(row.start_turn_node_hash) ||
+      turnNodeHashes.has(row.head_turn_node_hash)
+  );
+};
+
+const selectRetainedRuns = (
+  db: Database.Database,
+  turnIds: ReadonlySet<string>
+): SqliteRunRow[] => {
+  return (db.prepare("SELECT * FROM runs").all() as SqliteRunRow[]).filter(
+    (row) =>
+      turnIds.has(row.turn_id) ||
+      row.status === "running" ||
+      row.status === "paused"
+  );
+};
+
+const runRetentionDryRun = (db: Database.Database): RetentionDryRunSummary => {
   const retainedTurnNodeHashes = loadRetainedTurnNodeHashes(db);
   const retainedTurnNodes = selectTurnNodes(db, retainedTurnNodeHashes);
   const retainedTurnTreeHashes = new Set<string>();
@@ -363,309 +625,16 @@ function runRetentionDryRun(db: Database.Database): RetentionDryRunSummary {
     retainedTurnTreeCount: retainedTurnTreeHashes.size,
     retainedTurnTreePathCount: retainedTurnTreePaths.length,
   };
-}
+};
 
-function collectTurnNodeEdges(
-  retainedTurnNodes: readonly SqliteTurnNodeRow[],
-  retainedTurnTreeHashes: Set<string>,
-  retainedSchemaIds: Set<string>,
-  retainedObjectHashes: Set<string>
-): void {
-  for (const turnNode of retainedTurnNodes) {
-    retainedTurnTreeHashes.add(turnNode.turn_tree_hash);
-    retainedSchemaIds.add(turnNode.schema_id);
+const countTable = (db: Database.Database, tableName: string): number => {
+  const row = db.prepare(`SELECT COUNT(*) AS count FROM ${tableName}`).get() as
+    | { count: number }
+    | undefined;
+  return row?.count ?? 0;
+};
 
-    if (turnNode.event_hash !== null) {
-      retainedObjectHashes.add(turnNode.event_hash);
-    }
-
-    for (const objectHash of decodeConsumedStagedResultObjectHashes(
-      turnNode.consumed_staged_results_cbor
-    )) {
-      retainedObjectHashes.add(objectHash);
-    }
-  }
-}
-
-function collectTurnTreePathEdges(
-  db: Database.Database,
-  retainedTurnTreeHashes: ReadonlySet<string>,
-  retainedObjectHashes: Set<string>
-): {
-  retainedOrderedChunkHashes: Set<string>;
-  retainedTurnTreePaths: SqliteTurnTreePathRow[];
-} {
-  const retainedTurnTreePaths = selectTurnTreePaths(db, retainedTurnTreeHashes);
-  const retainedOrderedChunkHashes = new Set<string>();
-
-  for (const path of retainedTurnTreePaths) {
-    collectSinglePathObjectEdge(path, retainedObjectHashes);
-    collectOrderedInlineObjectEdges(path, retainedObjectHashes);
-    collectOrderedChunkEdgesFromPath(path, retainedOrderedChunkHashes);
-  }
-
-  return { retainedOrderedChunkHashes, retainedTurnTreePaths };
-}
-
-function collectSinglePathObjectEdge(
-  path: SqliteTurnTreePathRow,
-  retainedObjectHashes: Set<string>
-): void {
-  if (path.single_hash !== null) {
-    retainedObjectHashes.add(path.single_hash);
-  }
-}
-
-function collectOrderedInlineObjectEdges(
-  path: SqliteTurnTreePathRow,
-  retainedObjectHashes: Set<string>
-): void {
-  if (path.ordered_encoding !== "flat" || path.ordered_inline_cbor === null) {
-    return;
-  }
-
-  for (const objectHash of decodeHashStringArray(
-    path.ordered_inline_cbor,
-    "turn_tree_paths.ordered_inline_cbor"
-  )) {
-    retainedObjectHashes.add(objectHash);
-  }
-}
-
-function collectOrderedChunkEdgesFromPath(
-  path: SqliteTurnTreePathRow,
-  retainedOrderedChunkHashes: Set<string>
-): void {
-  if (
-    path.ordered_encoding !== "chunked" ||
-    path.ordered_chunk_list_cbor === null
-  ) {
-    return;
-  }
-
-  for (const chunkHash of decodeHashStringArray(
-    path.ordered_chunk_list_cbor,
-    "turn_tree_paths.ordered_chunk_list_cbor"
-  )) {
-    retainedOrderedChunkHashes.add(chunkHash);
-  }
-}
-
-function collectOrderedChunkEdges(
-  db: Database.Database,
-  retainedOrderedChunkHashes: ReadonlySet<string>,
-  retainedObjectHashes: Set<string>
-): void {
-  for (const chunk of selectOrderedPathChunks(db, retainedOrderedChunkHashes)) {
-    for (const objectHash of decodeHashStringArray(
-      chunk.items_cbor,
-      "ordered_path_chunks.items_cbor"
-    )) {
-      retainedObjectHashes.add(objectHash);
-    }
-  }
-}
-
-function collectRunEdges(
-  retainedRuns: readonly SqliteRunRow[],
-  retainedTurnNodeHashes: Set<string>,
-  retainedSchemaIds: Set<string>
-): Set<string> {
-  const retainedRunIds = new Set<string>();
-
-  for (const run of retainedRuns) {
-    retainedRunIds.add(run.run_id);
-    retainedSchemaIds.add(run.schema_id);
-
-    for (const turnNodeHash of decodeHashStringArray(
-      run.created_turn_nodes_cbor,
-      "runs.created_turn_nodes_cbor"
-    )) {
-      retainedTurnNodeHashes.add(turnNodeHash);
-    }
-  }
-
-  return retainedRunIds;
-}
-
-function collectStagedResultEdges(
-  db: Database.Database,
-  retainedRunIds: ReadonlySet<string>,
-  retainedObjectHashes: Set<string>
-): SqliteStagedResultRow[] {
-  const retainedStagedResults = selectRetainedStagedResults(db, retainedRunIds);
-
-  for (const stagedResult of retainedStagedResults) {
-    retainedObjectHashes.add(stagedResult.object_hash);
-  }
-
-  return retainedStagedResults;
-}
-
-function collectThreadEdges(
-  db: Database.Database,
-  retainedTurnNodeHashes: ReadonlySet<string>,
-  retainedSchemaIds: Set<string>
-): SqliteThreadRow[] {
-  const retainedThreads = selectRetainedThreads(db, retainedTurnNodeHashes);
-
-  for (const thread of retainedThreads) {
-    retainedSchemaIds.add(thread.schema_id);
-  }
-
-  return retainedThreads;
-}
-
-function loadRetainedTurnNodeHashes(db: Database.Database): Set<string> {
-  const rows = db
-    .prepare(
-      `
-        WITH RECURSIVE roots(hash) AS (
-          SELECT head_turn_node_hash FROM branches
-          UNION
-          SELECT root_turn_node_hash FROM threads
-          UNION
-          SELECT start_turn_node_hash FROM turns
-          UNION
-          SELECT head_turn_node_hash FROM turns
-          UNION
-          SELECT start_turn_node_hash
-          FROM runs
-          WHERE status IN ('running', 'paused')
-        ),
-        lineage(hash) AS (
-          SELECT hash FROM roots
-          UNION
-          SELECT turn_nodes.previous_turn_node_hash
-          FROM turn_nodes
-          JOIN lineage ON turn_nodes.hash = lineage.hash
-          WHERE turn_nodes.previous_turn_node_hash IS NOT NULL
-        )
-        SELECT hash
-        FROM lineage
-        ORDER BY hash
-      `
-    )
-    .all() as { hash: string }[];
-  return new Set(rows.map((row) => row.hash));
-}
-
-function selectTurnNodes(
-  db: Database.Database,
-  hashes: ReadonlySet<string>
-): SqliteTurnNodeRow[] {
-  return (
-    db.prepare("SELECT * FROM turn_nodes").all() as SqliteTurnNodeRow[]
-  ).filter((row) => hashes.has(row.hash));
-}
-
-function selectTurnTreePaths(
-  db: Database.Database,
-  hashes: ReadonlySet<string>
-): SqliteTurnTreePathRow[] {
-  return (
-    db.prepare("SELECT * FROM turn_tree_paths").all() as SqliteTurnTreePathRow[]
-  ).filter((row) => hashes.has(row.turn_tree_hash));
-}
-
-function selectOrderedPathChunks(
-  db: Database.Database,
-  hashes: ReadonlySet<string>
-): SqliteOrderedPathChunkRow[] {
-  return (
-    db
-      .prepare("SELECT * FROM ordered_path_chunks")
-      .all() as SqliteOrderedPathChunkRow[]
-  ).filter((row) => hashes.has(row.chunk_hash));
-}
-
-function selectRetainedTurns(
-  db: Database.Database,
-  turnNodeHashes: ReadonlySet<string>
-): SqliteTurnRow[] {
-  return (db.prepare("SELECT * FROM turns").all() as SqliteTurnRow[]).filter(
-    (row) =>
-      turnNodeHashes.has(row.start_turn_node_hash) ||
-      turnNodeHashes.has(row.head_turn_node_hash)
-  );
-}
-
-function selectRetainedRuns(
-  db: Database.Database,
-  turnIds: ReadonlySet<string>
-): SqliteRunRow[] {
-  return (db.prepare("SELECT * FROM runs").all() as SqliteRunRow[]).filter(
-    (row) =>
-      turnIds.has(row.turn_id) ||
-      row.status === "running" ||
-      row.status === "paused"
-  );
-}
-
-function selectRetainedStagedResults(
-  db: Database.Database,
-  runIds: ReadonlySet<string>
-): SqliteStagedResultRow[] {
-  return (
-    db.prepare("SELECT * FROM staged_results").all() as SqliteStagedResultRow[]
-  ).filter((row) => runIds.has(row.run_id));
-}
-
-function selectRetainedThreads(
-  db: Database.Database,
-  turnNodeHashes: ReadonlySet<string>
-): SqliteThreadRow[] {
-  return (
-    db.prepare("SELECT * FROM threads").all() as SqliteThreadRow[]
-  ).filter((row) => turnNodeHashes.has(row.root_turn_node_hash));
-}
-
-function decodeConsumedStagedResultObjectHashes(bytes: Uint8Array): string[] {
-  const decodedValue = decodeDeterministicKernelRecord(bytes);
-
-  if (!Array.isArray(decodedValue)) {
-    throw new TypeError(
-      "turn node consumed staged results must decode to an array"
-    );
-  }
-
-  const objectHashes: string[] = [];
-  for (const item of decodedValue) {
-    if (
-      typeof item !== "object" ||
-      item === null ||
-      !("objectHash" in item) ||
-      typeof item.objectHash !== "string"
-    ) {
-      throw new Error("consumed staged result entry must include objectHash");
-    }
-
-    objectHashes.push(item.objectHash);
-  }
-
-  return objectHashes;
-}
-
-function decodeHashStringArray(bytes: Uint8Array, label: string): string[] {
-  const decodedValue = decodeDeterministicKernelRecord(bytes);
-
-  if (!Array.isArray(decodedValue)) {
-    throw new TypeError(`${label} must decode to an array`);
-  }
-
-  const hashes: string[] = [];
-  for (const item of decodedValue) {
-    if (typeof item !== "string") {
-      throw new TypeError(`${label} entries must be strings`);
-    }
-
-    hashes.push(item);
-  }
-
-  return hashes;
-}
-
-function countTables(db: Database.Database): TableCounts {
+const countTables = (db: Database.Database): TableCounts => {
   return {
     branches: countTable(db, "branches"),
     objects: countTable(db, "objects"),
@@ -679,16 +648,12 @@ function countTables(db: Database.Database): TableCounts {
     turnTrees: countTable(db, "turn_trees"),
     turns: countTable(db, "turns"),
   };
-}
+};
 
-function countTable(db: Database.Database, tableName: string): number {
-  const row = db.prepare(`SELECT COUNT(*) AS count FROM ${tableName}`).get() as
-    | { count: number }
-    | undefined;
-  return row?.count ?? 0;
-}
-
-function assertTableCountsEqual(left: TableCounts, right: TableCounts): void {
+const assertTableCountsEqual = (
+  left: TableCounts,
+  right: TableCounts
+): void => {
   for (const [tableName, leftCount] of Object.entries(left)) {
     const rightCount = right[tableName as keyof TableCounts];
 
@@ -698,9 +663,9 @@ function assertTableCountsEqual(left: TableCounts, right: TableCounts): void {
       );
     }
   }
-}
+};
 
-function assertExpectedSummary(summary: RetentionDryRunSummary): void {
+const assertExpectedSummary = (summary: RetentionDryRunSummary): void => {
   const expected: RetentionDryRunSummary = {
     retainedObjectCount: RETENTION_MESSAGE_COUNT + 3,
     retainedOrderedChunkCount: 2,
@@ -723,4 +688,44 @@ function assertExpectedSummary(summary: RetentionDryRunSummary): void {
       );
     }
   }
-}
+};
+
+const main = async (): Promise<void> => {
+  const tempDirectory = mkdtempSync(join(tmpdir(), "tuvren-sqlite-retention-"));
+
+  try {
+    const databasePath = join(tempDirectory, "kraken.db");
+    const backend = createSqliteBackend({ databasePath });
+    await seedRetentionProofDatabase(backend);
+
+    const db = new Database(databasePath, { readonly: true });
+    try {
+      const beforeCounts = countTables(db);
+      const summary = runRetentionDryRun(db);
+      const afterCounts = countTables(db);
+
+      assertTableCountsEqual(beforeCounts, afterCounts);
+      assertExpectedSummary(summary);
+
+      process.stdout.write("sqlite retention dry-run proof\n");
+      process.stdout.write(
+        `${JSON.stringify(
+          {
+            dryRun: "sqlite-retention-mark-only",
+            generatedAt: new Date().toISOString(),
+            rowCountsUnchanged: true,
+            summary,
+          },
+          null,
+          2
+        )}\n`
+      );
+    } finally {
+      db.close();
+    }
+  } finally {
+    rmSync(tempDirectory, { force: true, recursive: true });
+  }
+};
+
+await main();

@@ -66,6 +66,32 @@ import { createSqliteBackend } from "../src/index.js";
 // tier at a time.
 const SAMPLE_COUNT = readSampleCountFromEnv(15);
 const WARMUP_ITERATIONS = 2;
+
+/**
+ * Reads a comma-separated `BENCH_DATABASE_SIZES` override from the
+ * environment (e.g. `BENCH_DATABASE_SIZES=10000` to run one decisive tier at
+ * a time), falling back to `fallback`.
+ */
+const readDatabaseSizesFromEnv = (fallback: readonly number[]): number[] => {
+  const raw = process.env.BENCH_DATABASE_SIZES;
+
+  if (raw === undefined || raw.length === 0) {
+    return [...fallback];
+  }
+
+  return raw.split(",").map((entry) => {
+    const parsed = Number.parseInt(entry.trim(), 10);
+
+    if (!Number.isSafeInteger(parsed) || parsed < 0) {
+      throw new Error(
+        `BENCH_DATABASE_SIZES entries must be non-negative integers, received "${entry}"`
+      );
+    }
+
+    return parsed;
+  });
+};
+
 // Turn node chain length; an equal count of orphaned (unreferenced) objects
 // is seeded alongside it so reclaim() has real, size-independent sweep work
 // to do at every database size (see reseedOrphanGarbage).
@@ -87,9 +113,172 @@ interface LoadCostResult extends Record<string, unknown> {
   reclaim: OperationResult;
 }
 
-await main();
+const measureRepeated = async (
+  warmupIterations: number,
+  sampleCount: number,
+  measurement: RepeatedMeasurement,
+  observer: RecordingPhaseObserver
+): Promise<OperationResult> => {
+  for (let index = 0; index < warmupIterations; index += 1) {
+    await measurement.prepareSample?.(-1 - index);
+    await measurement.run();
+  }
 
-async function main(): Promise<void> {
+  // Only attribute phases for the measured samples below, not the warmup
+  // iterations above, so the phase table lines up with the reported sample
+  // count.
+  observer.reset();
+
+  const samples: number[] = [];
+  for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += 1) {
+    await measurement.prepareSample?.(sampleIndex);
+    const startedAt = process.hrtime.bigint();
+    await measurement.run();
+    samples.push(Number(process.hrtime.bigint() - startedAt));
+  }
+
+  const sortedSamples = [...samples].sort((left, right) => left - right);
+
+  return {
+    averageNs:
+      samples.reduce((total, sample) => total + sample, 0) / samples.length,
+    bestNs: Math.min(...samples),
+    medianNs: percentile(sortedSamples, 0.5),
+    n: samples.length,
+    p95Ns: percentile(sortedSamples, 0.95),
+    phases: summarizePhases(observer.samples),
+  };
+};
+
+const seedChain = async (
+  backend: RuntimeBackend,
+  turnNodeCount: number
+): Promise<void> => {
+  const schema = createCanonicalKernelTestSchema();
+  const schemaRecord = createStoredSchemaRecord(schema, 1);
+  const turnTree = await createStoredTurnTreeRecord(
+    schema,
+    {
+      "context.manifest": null,
+      messages: [],
+    },
+    2
+  );
+  const rootTurnNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 3,
+    eventHash: null,
+    previousTurnNodeHash: null,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const turnNodes = [rootTurnNode];
+
+  for (let index = 0; index < turnNodeCount; index += 1) {
+    const previousTurnNode = turnNodes.at(-1);
+
+    if (previousTurnNode === undefined) {
+      throw new Error("expected seeded root turn node");
+    }
+
+    turnNodes.push(
+      await createStoredTurnNodeRecord({
+        consumedStagedResults: [],
+        createdAtMs: 4 + index,
+        eventHash: null,
+        previousTurnNodeHash: previousTurnNode.hash,
+        schemaId: schema.schemaId,
+        turnTreeHash: turnTree.hash,
+      })
+    );
+  }
+
+  const headTurnNode = turnNodes.at(-1);
+
+  if (headTurnNode === undefined) {
+    throw new Error("expected seeded head turn node");
+  }
+
+  const thread: StoredThread = {
+    createdAtMs: 5000,
+    rootTurnNodeHash: rootTurnNode.hash,
+    schemaId: schema.schemaId,
+    threadId: `thread_bench_${turnNodeCount}`,
+  };
+  const branch: StoredBranch = {
+    branchId: `branch_bench_${turnNodeCount}`,
+    createdAtMs: 5001,
+    headTurnNodeHash: headTurnNode.hash,
+    threadId: thread.threadId,
+    updatedAtMs: 5001,
+  };
+  const turn: StoredTurn = {
+    branchId: branch.branchId,
+    createdAtMs: 5002,
+    headTurnNodeHash: headTurnNode.hash,
+    parentTurnId: null,
+    startTurnNodeHash: rootTurnNode.hash,
+    threadId: thread.threadId,
+    turnId: `turn_bench_${turnNodeCount}`,
+    updatedAtMs: 5002,
+  };
+
+  await backend.transact(async (tx) => {
+    await tx.schemas.put(schemaRecord);
+    await tx.turnTrees.put(turnTree);
+    await tx.turnTreePaths.putMany(
+      createCanonicalTurnTreePaths(turnTree, {
+        "context.manifest": null,
+        messages: [],
+      })
+    );
+
+    for (const turnNode of turnNodes) {
+      await tx.turnNodes.put(turnNode);
+    }
+
+    await tx.threads.put(thread);
+    await tx.branches.set(branch);
+    await tx.turns.set(turn);
+  });
+};
+
+/**
+ * Objects with no referencing TurnNode/Turn/Branch are unreachable by
+ * construction, so reclaim()'s sweep always finds exactly `count` of them
+ * regardless of database size -- this is what keeps reclaim()'s real delete
+ * work constant across samples and sizes (see ORPHAN_GARBAGE_PER_RECLAIM_SAMPLE).
+ * `startSequence` is a globally-unique running counter (not reset per call)
+ * so bytes never collide across calls, even when a prior batch's objects
+ * were already swept by an intervening reclaim() and a later batch reuses
+ * small index values.
+ */
+const seedOrphanObjects = async (
+  backend: RuntimeBackend,
+  databaseSize: number,
+  startSequence: number,
+  count: number
+): Promise<number> => {
+  await backend.transact(async (tx) => {
+    for (let offset = 0; offset < count; offset += 1) {
+      const sequence = startSequence + offset;
+      const record = await createStoredObjectRecord(
+        new Uint8Array([
+          databaseSize % 251,
+          sequence % 251,
+          Math.floor(sequence / 251) % 251,
+          Math.floor(sequence / 63_001) % 251,
+        ]),
+        30_000 + sequence
+      );
+      await tx.objects.put(record);
+    }
+  });
+
+  return startSequence + count;
+};
+
+const main = async (): Promise<void> => {
   process.stdout.write("sqlite backend load-cost benchmark\n");
   process.stdout.write(
     `sample count: ${SAMPLE_COUNT} (BENCH_SAMPLE_COUNT to override); sizes: ${DATABASE_SIZES.join(", ")} (BENCH_DATABASE_SIZES to override)\n`
@@ -220,199 +409,11 @@ async function main(): Promise<void> {
       2
     )}\n`
   );
-}
+};
+
+await main();
 
 interface RepeatedMeasurement {
   prepareSample?(sampleIndex: number): Promise<void>;
   run(): Promise<void>;
-}
-
-async function measureRepeated(
-  warmupIterations: number,
-  sampleCount: number,
-  measurement: RepeatedMeasurement,
-  observer: RecordingPhaseObserver
-): Promise<OperationResult> {
-  for (let index = 0; index < warmupIterations; index += 1) {
-    await measurement.prepareSample?.(-1 - index);
-    await measurement.run();
-  }
-
-  // Only attribute phases for the measured samples below, not the warmup
-  // iterations above, so the phase table lines up with the reported sample
-  // count.
-  observer.reset();
-
-  const samples: number[] = [];
-  for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += 1) {
-    await measurement.prepareSample?.(sampleIndex);
-    const startedAt = process.hrtime.bigint();
-    await measurement.run();
-    samples.push(Number(process.hrtime.bigint() - startedAt));
-  }
-
-  const sortedSamples = [...samples].sort((left, right) => left - right);
-
-  return {
-    averageNs:
-      samples.reduce((total, sample) => total + sample, 0) / samples.length,
-    bestNs: Math.min(...samples),
-    medianNs: percentile(sortedSamples, 0.5),
-    n: samples.length,
-    p95Ns: percentile(sortedSamples, 0.95),
-    phases: summarizePhases(observer.samples),
-  };
-}
-
-async function seedChain(
-  backend: RuntimeBackend,
-  turnNodeCount: number
-): Promise<void> {
-  const schema = createCanonicalKernelTestSchema();
-  const schemaRecord = createStoredSchemaRecord(schema, 1);
-  const turnTree = await createStoredTurnTreeRecord(
-    schema,
-    {
-      "context.manifest": null,
-      messages: [],
-    },
-    2
-  );
-  const rootTurnNode = await createStoredTurnNodeRecord({
-    consumedStagedResults: [],
-    createdAtMs: 3,
-    eventHash: null,
-    previousTurnNodeHash: null,
-    schemaId: schema.schemaId,
-    turnTreeHash: turnTree.hash,
-  });
-  const turnNodes = [rootTurnNode];
-
-  for (let index = 0; index < turnNodeCount; index += 1) {
-    const previousTurnNode = turnNodes.at(-1);
-
-    if (previousTurnNode === undefined) {
-      throw new Error("expected seeded root turn node");
-    }
-
-    turnNodes.push(
-      await createStoredTurnNodeRecord({
-        consumedStagedResults: [],
-        createdAtMs: 4 + index,
-        eventHash: null,
-        previousTurnNodeHash: previousTurnNode.hash,
-        schemaId: schema.schemaId,
-        turnTreeHash: turnTree.hash,
-      })
-    );
-  }
-
-  const headTurnNode = turnNodes.at(-1);
-
-  if (headTurnNode === undefined) {
-    throw new Error("expected seeded head turn node");
-  }
-
-  const thread: StoredThread = {
-    createdAtMs: 5000,
-    rootTurnNodeHash: rootTurnNode.hash,
-    schemaId: schema.schemaId,
-    threadId: `thread_bench_${turnNodeCount}`,
-  };
-  const branch: StoredBranch = {
-    branchId: `branch_bench_${turnNodeCount}`,
-    createdAtMs: 5001,
-    headTurnNodeHash: headTurnNode.hash,
-    threadId: thread.threadId,
-    updatedAtMs: 5001,
-  };
-  const turn: StoredTurn = {
-    branchId: branch.branchId,
-    createdAtMs: 5002,
-    headTurnNodeHash: headTurnNode.hash,
-    parentTurnId: null,
-    startTurnNodeHash: rootTurnNode.hash,
-    threadId: thread.threadId,
-    turnId: `turn_bench_${turnNodeCount}`,
-    updatedAtMs: 5002,
-  };
-
-  await backend.transact(async (tx) => {
-    await tx.schemas.put(schemaRecord);
-    await tx.turnTrees.put(turnTree);
-    await tx.turnTreePaths.putMany(
-      createCanonicalTurnTreePaths(turnTree, {
-        "context.manifest": null,
-        messages: [],
-      })
-    );
-
-    for (const turnNode of turnNodes) {
-      await tx.turnNodes.put(turnNode);
-    }
-
-    await tx.threads.put(thread);
-    await tx.branches.set(branch);
-    await tx.turns.set(turn);
-  });
-}
-
-/**
- * Objects with no referencing TurnNode/Turn/Branch are unreachable by
- * construction, so reclaim()'s sweep always finds exactly `count` of them
- * regardless of database size -- this is what keeps reclaim()'s real delete
- * work constant across samples and sizes (see ORPHAN_GARBAGE_PER_RECLAIM_SAMPLE).
- * `startSequence` is a globally-unique running counter (not reset per call)
- * so bytes never collide across calls, even when a prior batch's objects
- * were already swept by an intervening reclaim() and a later batch reuses
- * small index values.
- */
-async function seedOrphanObjects(
-  backend: RuntimeBackend,
-  databaseSize: number,
-  startSequence: number,
-  count: number
-): Promise<number> {
-  await backend.transact(async (tx) => {
-    for (let offset = 0; offset < count; offset += 1) {
-      const sequence = startSequence + offset;
-      const record = await createStoredObjectRecord(
-        new Uint8Array([
-          databaseSize % 251,
-          sequence % 251,
-          Math.floor(sequence / 251) % 251,
-          Math.floor(sequence / 63_001) % 251,
-        ]),
-        30_000 + sequence
-      );
-      await tx.objects.put(record);
-    }
-  });
-
-  return startSequence + count;
-}
-
-/**
- * Reads a comma-separated `BENCH_DATABASE_SIZES` override from the
- * environment (e.g. `BENCH_DATABASE_SIZES=10000` to run one decisive tier at
- * a time), falling back to `fallback`.
- */
-function readDatabaseSizesFromEnv(fallback: readonly number[]): number[] {
-  const raw = process.env.BENCH_DATABASE_SIZES;
-
-  if (raw === undefined || raw.length === 0) {
-    return [...fallback];
-  }
-
-  return raw.split(",").map((entry) => {
-    const parsed = Number.parseInt(entry.trim(), 10);
-
-    if (!Number.isSafeInteger(parsed) || parsed < 0) {
-      throw new Error(
-        `BENCH_DATABASE_SIZES entries must be non-negative integers, received "${entry}"`
-      );
-    }
-
-    return parsed;
-  });
 }
