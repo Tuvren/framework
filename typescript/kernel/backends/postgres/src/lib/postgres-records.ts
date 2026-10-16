@@ -272,7 +272,7 @@ export const decodeTurnTreeSchema = (
  * Decodes deterministic-CBOR bytes into a `HashString[]`, validating every
  * element.
  *
- * @throws TuvrenPersistenceError `postgres_backend_invalid_hash_array_payload`.
+ * @throws {TuvrenPersistenceError} `postgres_backend_invalid_hash_array_payload`.
  */
 export const decodeHashStringArray = (
   bytes: Uint8Array,
@@ -563,7 +563,7 @@ export const decodeObserveAnnotationRow = (
  * Decodes a `turns` row arriving as `unknown` (e.g. from a dynamic query),
  * validating each column's type before delegating to {@link decodeTurnRow}.
  *
- * @throws TuvrenPersistenceError `postgres_backend_invalid_turn_row`.
+ * @throws {TuvrenPersistenceError} `postgres_backend_invalid_turn_row`.
  */
 export const decodeUnknownTurnRow = (row: unknown): StoredTurn => {
   const label = "stored turn query row";
@@ -605,7 +605,7 @@ export const decodeUnknownTurnRow = (row: unknown): StoredTurn => {
  * optional columns (lease fields, pending signals, preemption reason) to
  * absent properties.
  *
- * @throws TuvrenPersistenceError `postgres_backend_invalid_run_status`.
+ * @throws {TuvrenPersistenceError} `postgres_backend_invalid_run_status`.
  */
 export const decodeRunRow = (row: PostgresRunRow): StoredRun => {
   const status = decodeStoredRunStatus(row.status, row.run_id);
@@ -666,7 +666,7 @@ export const decodeRunRow = (row: PostgresRunRow): StoredRun => {
  * Decodes and shape-asserts a `staged_results` row, enforcing that
  * `interrupt_payload_cbor` is present exactly when status is `interrupted`.
  *
- * @throws TuvrenPersistenceError `postgres_backend_invalid_staged_result_row`.
+ * @throws {TuvrenPersistenceError} `postgres_backend_invalid_staged_result_row`.
  */
 export const decodeStagedResultRow = (
   row: PostgresStagedResultRow
@@ -754,7 +754,7 @@ const decodeStoredNonNegativeInteger = (
  * variant (`single`, ordered `flat`, or ordered `chunked`), rejecting rows
  * whose variant columns are inconsistent.
  *
- * @throws TuvrenPersistenceError `postgres_backend_invalid_turn_tree_path_row`.
+ * @throws {TuvrenPersistenceError} `postgres_backend_invalid_turn_tree_path_row`.
  */
 export const decodeTurnTreePathRow = (
   row: PostgresTurnTreePathRow
@@ -835,7 +835,7 @@ export const decodeTurnTreePathRow = (
  * Decodes an `ordered_path_chunks` row, verifying `item_count` matches the
  * decoded `items_cbor` cardinality.
  *
- * @throws TuvrenPersistenceError
+ * @throws {TuvrenPersistenceError}
  *   `postgres_backend_ordered_path_chunk_item_count_mismatch` or
  *   `postgres_backend_invalid_ordered_path_chunk_row`.
  */

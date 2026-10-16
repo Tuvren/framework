@@ -34,9 +34,9 @@ interface TrackedRecord<T> {
 }
 
 /** Shallow-clones a stored branch row for before/after snapshotting. */
-const cloneStoredBranch = (record: StoredBranch): StoredBranch => {
-  return { ...record };
-};
+const cloneStoredBranch = (record: StoredBranch): StoredBranch => ({
+  ...record,
+});
 
 /**
  * Records which rows a transaction touched so pre-commit validation

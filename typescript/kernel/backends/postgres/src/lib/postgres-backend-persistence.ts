@@ -27,7 +27,7 @@ import { persistenceError } from "./postgres-errors.js";
  * `"public"`.
  */
 const DEFAULT_SCHEMA_NAME = "tuvren_kernel";
-const VALID_SCHEMA_NAME_PATTERN = /^[a-z][a-z0-9_-]*$/;
+const VALID_SCHEMA_NAME_PATTERN = /^[a-z][a-z0-9_-]*$/u;
 
 /**
  * Connection-wide bound (milliseconds) on how long any statement on a
@@ -185,7 +185,7 @@ const MAX_SCHEMA_NAME_BYTES = 63;
  * keeps a default-constructed backend from ever touching a schema it does
  * not exclusively own.
  *
- * @throws TuvrenPersistenceError `postgres_backend_invalid_schema_name` when
+ * @throws {TuvrenPersistenceError} `postgres_backend_invalid_schema_name` when
  *   the name does not match the pattern or exceeds the byte-length limit.
  */
 export const normalizeSchemaName = (schemaName: string | undefined): string => {
@@ -229,6 +229,4 @@ export const normalizeSchemaName = (schemaName: string | undefined): string => {
  */
 export const wasSchemaNameDefaulted = (
   schemaName: string | undefined
-): boolean => {
-  return schemaName === undefined;
-};
+): boolean => schemaName === undefined;

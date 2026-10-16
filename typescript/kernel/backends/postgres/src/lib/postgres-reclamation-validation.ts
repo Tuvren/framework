@@ -56,7 +56,7 @@ const reclamationValidation = createBackendInvariantReclamationValidation({
  * `deletedTurnNodeHashes` (item 5) is computed once in
  * `postgres-backend.ts`'s `applyReclamationDeletions`.
  *
- * @throws TuvrenPersistenceError with a `postgres_backend_*` code on the first
+ * @throws {TuvrenPersistenceError} With a `postgres_backend_*` code on the first
  *   invariant a defective sweep violated.
  */
 export const assertReclamationSurvivorInvariants = (

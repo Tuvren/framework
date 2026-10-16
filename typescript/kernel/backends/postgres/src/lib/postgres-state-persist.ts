@@ -43,23 +43,21 @@ const MAX_PARAMETERS_PER_STATEMENT = 20_000;
 const turnTreePathRow = (
   scope: string,
   record: StoredTurnTreePath
-): unknown[] => {
-  return [
-    scope,
-    record.turnTreeHash,
-    record.path,
-    record.collectionKind,
-    record.collectionKind === "single" ? record.singleHash : null,
-    record.collectionKind === "ordered" ? record.orderedEncoding : null,
-    record.collectionKind === "ordered" ? record.orderedCount : null,
-    record.collectionKind === "ordered" && record.orderedEncoding === "flat"
-      ? record.orderedInlineCbor
-      : null,
-    record.collectionKind === "ordered" && record.orderedEncoding === "chunked"
-      ? record.orderedChunkListCbor
-      : null,
-  ];
-};
+): unknown[] => [
+  scope,
+  record.turnTreeHash,
+  record.path,
+  record.collectionKind,
+  record.collectionKind === "single" ? record.singleHash : null,
+  record.collectionKind === "ordered" ? record.orderedEncoding : null,
+  record.collectionKind === "ordered" ? record.orderedCount : null,
+  record.collectionKind === "ordered" && record.orderedEncoding === "flat"
+    ? record.orderedInlineCbor
+    : null,
+  record.collectionKind === "ordered" && record.orderedEncoding === "chunked"
+    ? record.orderedChunkListCbor
+    : null,
+];
 
 /**
  * Recomputes every turn node's lineage-root position from the parent chain,
@@ -128,6 +126,7 @@ const insertRowsInBatches = async (
     Math.floor(MAX_PARAMETERS_PER_STATEMENT / columns.length)
   );
 
+  /* oxlint-disable no-await-in-loop -- Insert bounded chunks sequentially so the first database failure and transaction statement order stay deterministic. */
   for (let offset = 0; offset < rows.length; offset += chunkSize) {
     const chunk = rows.slice(offset, offset + chunkSize);
     const parameters: unknown[] = [];
@@ -140,16 +139,17 @@ const insertRowsInBatches = async (
     });
 
     try {
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- Each internally constructed row contains only values accepted by the postgres driver; keep the assertion at this driver boundary. */
       await sql.unsafe(
         `INSERT INTO ${table} (${columns.join(", ")})
          VALUES ${tuples.join(", ")}`,
         parameters as ParameterOrJSON<never>[]
       );
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
     } catch (error: unknown) {
-      const code =
-        error instanceof Error && typeof Reflect.get(error, "code") === "string"
-          ? (Reflect.get(error, "code") as string)
-          : undefined;
+      const codeValue: unknown =
+        error instanceof Error ? Reflect.get(error, "code") : undefined;
+      const code = typeof codeValue === "string" ? codeValue : undefined;
       if (code === "22021") {
         throw persistenceError(
           `postgres backend migration cannot store a value from table "${table}": ` +
@@ -179,6 +179,7 @@ const insertRowsInBatches = async (
       );
     }
   }
+  /* oxlint-enable no-await-in-loop */
 };
 
 /**
@@ -416,9 +417,7 @@ export const insertBackendStateRows = async (
       record.createdTurnNodesCbor,
       record.createdAtMs,
       record.updatedAtMs,
-      record.pendingSignalsCbor === undefined
-        ? null
-        : record.pendingSignalsCbor,
+      record.pendingSignalsCbor ?? null,
       record.executionOwnerId ?? null,
       record.leaseExpiresAtMs ?? null,
       record.fencingToken ?? null,

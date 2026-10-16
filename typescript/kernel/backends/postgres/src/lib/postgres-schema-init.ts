@@ -126,7 +126,7 @@ const loadAppliedMigrations = async (
  * `information_schema.columns` for collation, and one against `pg_constraint`
  * for FK deferrability.
  *
- * @throws TuvrenPersistenceError `postgres_backend_unknown_migrations`,
+ * @throws {TuvrenPersistenceError} `postgres_backend_unknown_migrations`,
  *   `postgres_backend_relational_schema_missing`,
  *   `postgres_backend_relational_tables_missing`,
  *   `postgres_backend_relational_indexes_missing`,
@@ -417,7 +417,7 @@ const tableExists = async (
      ) AS exists`,
     [schemaName, tableName]
   );
-  return rows[0]?.exists === true;
+  return rows[0]?.exists ?? false;
 };
 
 /**
@@ -439,7 +439,7 @@ const schemaExistsInDatabase = async (
      ) AS exists`,
     [schemaName]
   );
-  return rows[0]?.exists === true;
+  return rows[0]?.exists ?? false;
 };
 
 /**
@@ -453,7 +453,7 @@ const schemaExistsInDatabase = async (
  * schema where it was found, rather than letting the deployment come up
  * against a fresh empty schema with no error at all.
  *
- * @throws TuvrenPersistenceError `postgres_backend_legacy_blob_schema_elsewhere`
+ * @throws {TuvrenPersistenceError} `postgres_backend_legacy_blob_schema_elsewhere`
  *   when the legacy table exists in one or more other schemas.
  */
 const assertNoLegacyBlobSnapshotsTableElsewhere = async (
@@ -594,6 +594,7 @@ export const ensurePostgresRelationalSchemaInitialized = async (
     const { directory: migrationDirectory, names: migrationFiles } =
       resolveMigrationFileListing();
 
+    /* oxlint-disable no-await-in-loop -- Apply migrations serially because each statement depends on the preceding durable schema state and ledger entry. */
     for (const migrationName of migrationFiles) {
       if (applied.has(migrationName)) {
         continue;
@@ -612,6 +613,7 @@ export const ensurePostgresRelationalSchemaInitialized = async (
       );
       applied.add(migrationName);
     }
+    /* oxlint-enable no-await-in-loop */
 
     if (!applied.has(RELATIONAL_SCHEMA_MIGRATION_NAME)) {
       // The loop above applies every checked-in migration file, so reaching

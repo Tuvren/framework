@@ -17,7 +17,7 @@
 import { TuvrenPersistenceError, TuvrenValidationError } from "@tuvren/core";
 
 /** SQLSTATE codes from Postgres drivers (e.g. 23503 foreign_key_violation). */
-const SQLSTATE_CODE = /^[0-9A-Z]{5}$/;
+const SQLSTATE_CODE = /^[0-9A-Z]{5}$/u;
 
 /** Runtime syscalls that identify a DNS or socket operation. */
 const NETWORK_SYSCALLS = new Set(["connect", "getaddrinfo", "read", "write"]);
@@ -35,9 +35,19 @@ const POSTGRES_JS_CONNECTION_ERROR_CODES = new Set([
   "SASL_SIGNATURE_MISMATCH",
 ]);
 
+/** Narrows driver and runtime errors that expose an otherwise untyped property. */
+const hasProperty = <Key extends PropertyKey>(
+  value: unknown,
+  key: Key
+): value is Record<Key, unknown> =>
+  typeof value === "object" && value !== null && key in value;
+
 /** True for a runtime error raised by DNS lookup or socket I/O. */
 const isNetworkError = (error: Error, code: string): boolean => {
-  const syscall = Reflect.get(error, "syscall");
+  const errorValue: unknown = error;
+  const syscall = hasProperty(errorValue, "syscall")
+    ? errorValue.syscall
+    : undefined;
   return (
     (typeof syscall === "string" && NETWORK_SYSCALLS.has(syscall)) ||
     TLS_ERROR_CODE.test(code)
@@ -54,13 +64,10 @@ const isNetworkError = (error: Error, code: string): boolean => {
  * errors and Postgres.js's own connection-lifecycle errors are classified
  * separately by {@link normalizeBackendError}.
  */
-const isPostgresEngineError = (error: Error, code: string): boolean => {
-  return (
-    SQLSTATE_CODE.test(code) &&
-    (error.name === "PostgresError" ||
-      typeof Reflect.get(error, "severity") === "string")
-  );
-};
+const isPostgresEngineError = (error: Error, code: string): boolean =>
+  SQLSTATE_CODE.test(code) &&
+  (error.name === "PostgresError" ||
+    typeof Reflect.get(error, "severity") === "string");
 
 /**
  * Constructs the backend's uniform `TuvrenPersistenceError`. Codes follow the
@@ -71,9 +78,8 @@ export const persistenceError = (
   code: string,
   details?: unknown,
   cause?: unknown
-): TuvrenPersistenceError => {
-  return new TuvrenPersistenceError(message, { cause, code, details });
-};
+): TuvrenPersistenceError =>
+  new TuvrenPersistenceError(message, { cause, code, details });
 
 /**
  * Normalizes any thrown value at the backend boundary so callers only ever
@@ -92,10 +98,11 @@ export const normalizeBackendError = (error: unknown): Error => {
   }
 
   if (error instanceof Error) {
-    const code =
-      typeof Reflect.get(error, "code") === "string"
-        ? (Reflect.get(error, "code") as string)
-        : undefined;
+    const errorValue: unknown = error;
+    const codeValue = hasProperty(errorValue, "code")
+      ? errorValue.code
+      : undefined;
+    const code = typeof codeValue === "string" ? codeValue : undefined;
     // node-postgres / postgres.js surface SQLSTATE codes as 5-char strings
     // (e.g. 23503 foreign_key_violation). Postgres.js deliberately forwards
     // native runtime DNS/socket failures unchanged, so keep those codes out of

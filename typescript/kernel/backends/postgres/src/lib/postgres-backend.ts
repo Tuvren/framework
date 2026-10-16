@@ -190,7 +190,7 @@ const RECLAMATION_DELETE_BATCH_SIZE = 500;
 const POSTURE_REVALIDATION_INTERVAL_MS = 60_000;
 
 /** A reserved single connection from the pool, released after use. */
-type ReservedSql = Sql & { release(): Promise<void> };
+type ReservedSql = Sql & { release: () => void };
 
 /** A transaction's repository surface, plus the transaction-local clock it was built with. */
 interface MutableRepositories extends KrakenBackendTx {
@@ -202,9 +202,9 @@ interface MutableRepositories extends KrakenBackendTx {
  * (`FAULT_INJECTION_CONTROL`); see {@link BackendFaultInjectionControl}.
  */
 interface BackendFaultHooks {
-  afterCommitBeforeAck?(): Promise<void>;
-  beforeCommit?(): Promise<void>;
-  midCommit?(commit: () => Promise<void>): Promise<void>;
+  afterCommitBeforeAck?: () => Promise<void>;
+  beforeCommit?: () => Promise<void>;
+  midCommit?: (commit: () => Promise<void>) => Promise<void>;
 }
 
 /**
@@ -214,8 +214,8 @@ interface BackendFaultHooks {
  * discover which named fault points this backend supports.
  */
 interface BackendFaultInjectionControl {
-  setFaultHooks(hooks: BackendFaultHooks | null): void;
-  supportsFaultPoint(point: string): boolean;
+  setFaultHooks: (hooks: BackendFaultHooks | null) => void;
+  supportsFaultPoint: (point: string) => boolean;
 }
 
 /** Options for {@link PostgresBackend.destroy}. */
@@ -351,17 +351,15 @@ interface ReclamationSurvivorKeys {
 /** Captures the pre-sweep key sets for {@link applyReclamationDeletions}. */
 const captureReclamationKeys = (
   state: BackendState
-): ReclamationSurvivorKeys => {
-  return {
-    branches: new Set(state.branches.keys()),
-    objects: new Set(state.objects.keys()),
-    orderedPathChunks: new Set(state.orderedPathChunks.keys()),
-    runs: new Set(state.runs.keys()),
-    turnNodes: new Set(state.turnNodes.keys()),
-    turnTrees: new Set(state.turnTrees.keys()),
-    turns: new Set(state.turns.keys()),
-  };
-};
+): ReclamationSurvivorKeys => ({
+  branches: new Set(state.branches.keys()),
+  objects: new Set(state.objects.keys()),
+  orderedPathChunks: new Set(state.orderedPathChunks.keys()),
+  runs: new Set(state.runs.keys()),
+  turnNodes: new Set(state.turnNodes.keys()),
+  turnTrees: new Set(state.turnTrees.keys()),
+  turns: new Set(state.turns.keys()),
+});
 
 /** Keys present before the sweep but absent from the swept draft. */
 const reclaimedKeys = (
@@ -395,6 +393,7 @@ const deleteByColumn = async (
 
   const qualified = qualifyIdentifier(schemaName, table);
 
+  /* oxlint-disable no-await-in-loop -- Delete bounded key batches serially to preserve transaction statement order and the first database failure. */
   for (
     let index = 0;
     index < keys.length;
@@ -406,6 +405,7 @@ const deleteByColumn = async (
       [scope, batch]
     );
   }
+  /* oxlint-enable no-await-in-loop */
 };
 
 /**
@@ -573,11 +573,10 @@ const insertOrderedPathChunk = async (
  * Encodes a hash array as deterministic CBOR, validating every element first
  * so only well-formed hash strings are ever persisted.
  */
-const encodeHashStringArray = (hashes: string[]): Uint8Array => {
-  return encodeDeterministicKernelRecord(
+const encodeHashStringArray = (hashes: string[]): Uint8Array =>
+  encodeDeterministicKernelRecord(
     hashes.map((hash) => validateHashString(hash))
   );
-};
 
 /**
  * Normalizes an incoming turn-tree path record to its canonical stored
@@ -614,6 +613,7 @@ const normalizeStoredTurnTreePathInDatabase = async (
     }
 
     let totalCount = 0;
+    /* oxlint-disable no-await-in-loop -- Load chunk records in encoded order and stop at the first missing or invalid chunk. */
     for (const [index, chunkHash] of chunkHashes.entries()) {
       const chunk = await selectOrderedPathChunk(
         sql,
@@ -632,6 +632,7 @@ const normalizeStoredTurnTreePathInDatabase = async (
       assertChunkedTurnTreePathChunkLayout(chunk, index, chunkHashes.length);
       totalCount += chunk.itemCount;
     }
+    /* oxlint-enable no-await-in-loop */
 
     if (totalCount !== record.orderedCount) {
       throw persistenceError(
@@ -654,6 +655,7 @@ const normalizeStoredTurnTreePathInDatabase = async (
   );
   const chunkHashes: string[] = [];
 
+  /* oxlint-disable no-await-in-loop -- Hash, look up, and insert promoted chunks in deterministic order while bounding retained data. */
   for (
     let index = 0;
     index < orderedHashes.length;
@@ -681,6 +683,7 @@ const normalizeStoredTurnTreePathInDatabase = async (
     await insertOrderedPathChunk(sql, schemaName, scope, chunkRecord);
     chunkHashes.push(chunkHash);
   }
+  /* oxlint-enable no-await-in-loop */
 
   return {
     collectionKind: "ordered",
@@ -817,7 +820,7 @@ const createRepositories = (
  * rendezvous clock.
  */
 const readBackendClockMs = async (reserved: Sql): Promise<number> => {
-  const rows = await reserved.unsafe<{ now_ms: string }[]>(
+  const rows = await reserved.unsafe<{ now_ms: number | string }[]>(
     "SELECT (extract(epoch from clock_timestamp()) * 1000)::bigint AS now_ms"
   );
   const rawNowMs = rows[0]?.now_ms;
@@ -920,6 +923,8 @@ class PostgresBackend implements KrakenBackend {
   }
 
   /** Reports the fixed {@link POSTGRES_BACKEND_CAPABILITIES} this backend supports. */
+  // The runtime interface requires an instance method even though this backend reports a fixed capability bitmask.
+  // oxlint-disable-next-line class-methods-use-this
   capabilities(): BackendCapability {
     return POSTGRES_BACKEND_CAPABILITIES;
   }
@@ -1083,7 +1088,7 @@ class PostgresBackend implements KrakenBackend {
    * authoritative timestamp captured once at the start (the injected clock
    * under test, otherwise the PostgreSQL server clock — ADR-0050).
    *
-   * @throws TuvrenPersistenceError `postgres_backend_nested_transaction` when
+   * @throws {TuvrenPersistenceError} `postgres_backend_nested_transaction` when
    *   called from inside another transaction on this instance.
    */
   async transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {
@@ -1124,8 +1129,9 @@ class PostgresBackend implements KrakenBackend {
           writeTracker
         );
 
-        const result = await this.transactionContext.run(true, () =>
-          work(repositories)
+        const result = await this.transactionContext.run(
+          true,
+          async () => await work(repositories)
         );
         active = false;
 
@@ -1199,7 +1205,7 @@ class PostgresBackend implements KrakenBackend {
    * mirror removed keys as batched row deletions (with deferred FKs), then
    * assert survivor invariants before `COMMIT`.
    *
-   * @throws TuvrenPersistenceError `postgres_backend_nested_transaction` when
+   * @throws {TuvrenPersistenceError} `postgres_backend_nested_transaction` when
    *   called from inside a transaction on this instance.
    */
   async reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
@@ -1290,7 +1296,7 @@ class PostgresBackend implements KrakenBackend {
    * blob. The instance should be discarded afterward per the purgeScope
    * contract.
    *
-   * @throws TuvrenPersistenceError `postgres_backend_nested_transaction` when
+   * @throws {TuvrenPersistenceError} `postgres_backend_nested_transaction` when
    *   called from inside a transaction on this instance.
    */
   async purgeScope(): Promise<void> {
@@ -1312,12 +1318,14 @@ class PostgresBackend implements KrakenBackend {
         // the order non-load-bearing. Using the roster (not a local copy)
         // means a new family table cannot be missed here and leak rows
         // across a tenant purge.
+        /* oxlint-disable no-await-in-loop -- Purge every table serially in the shared child-first roster and stop at the first failed delete. */
         for (const tableName of RELATIONAL_REQUIRED_TABLES) {
           const table = qualifyIdentifier(this.schemaName, tableName);
           await reserved.unsafe(`DELETE FROM ${table} WHERE scope = $1`, [
             this.scope,
           ]);
         }
+        /* oxlint-enable no-await-in-loop */
         await reserved.unsafe("COMMIT");
         inTransaction = false;
       } catch (error: unknown) {
@@ -1363,6 +1371,8 @@ class PostgresBackend implements KrakenBackend {
       const priorTransaction = this.transactionQueue;
       let releaseQueue: (() => void) | undefined;
 
+      // A resolver-backed promise is the queue lock: its identity and explicit release preserve FIFO serialization.
+      // oxlint-disable-next-line promise/avoid-new
       this.transactionQueue = new Promise<void>((resolve) => {
         releaseQueue = resolve;
       });
@@ -1372,12 +1382,12 @@ class PostgresBackend implements KrakenBackend {
       endQueueWait();
 
       try {
-        const reserved = (await this.sql.reserve()) as ReservedSql;
+        const reserved = await this.sql.reserve();
 
         try {
           return await body(reserved);
         } finally {
-          await reserved.release();
+          reserved.release();
         }
       } finally {
         releaseQueue?.();
@@ -1445,6 +1455,8 @@ class PostgresBackend implements KrakenBackend {
         this.now,
         this.phaseObserver
       );
+      // The wrapper's identity must be installed before rejection cleanup can compare and clear only the active attempt.
+      // oxlint-disable-next-line promise/prefer-await-to-then, promise/prefer-await-to-callbacks
       const retryableInitialization = initialization.catch((error: unknown) => {
         if (this.initializationPromise === retryableInitialization) {
           this.initializationPromise = undefined;
@@ -1478,9 +1490,7 @@ class PostgresBackend implements KrakenBackend {
 export const createPostgresBackend = (
   options?: PostgresBackendOptions
 ): KrakenBackend & {
-  close(): Promise<void>;
-  destroy(options?: { dropSchema?: boolean }): Promise<void>;
-  fsck(): Promise<{ ok: true } | { ok: false; reason: string }>;
-} => {
-  return new PostgresBackend(options);
-};
+  close: () => Promise<void>;
+  destroy: (options?: { dropSchema?: boolean }) => Promise<void>;
+  fsck: () => Promise<{ ok: true } | { ok: false; reason: string }>;
+} => new PostgresBackend(options);

@@ -108,10 +108,8 @@ export const OBSERVE_ANNOTATION_KEY_SEPARATOR = "\u001F";
  * what characters the caller-supplied fields contain (identifiers are
  * contract-opaque strings; nothing forbids them containing the separator).
  */
-export const keyObserveAnnotation = (
-  record: StoredObserveAnnotation
-): string => {
-  return [
+export const keyObserveAnnotation = (record: StoredObserveAnnotation): string =>
+  [
     record.runId,
     String(record.createdAtMs),
     record.annotationHash,
@@ -121,7 +119,6 @@ export const keyObserveAnnotation = (
       (field) => `${field.length}${OBSERVE_ANNOTATION_KEY_SEPARATOR}${field}`
     )
     .join(OBSERVE_ANNOTATION_KEY_SEPARATOR);
-};
 
 /**
  * Computes the storage `record_key` for a new observe annotation: its
@@ -171,7 +168,7 @@ export const nextObserveAnnotationRecordKey = async (
 /**
  * Unlike its `compareStoredBranch`/`compareStoredRun`/`compareStoredTurn`/
  * `compareStoredStagedResult` siblings above (all sourced verbatim from
- * @tuvren/backend-shared), this comparator does not delegate to the shared
+ * `@tuvren/backend-shared`), this comparator does not delegate to the shared
  * factory: the shared factory's `compareStoredObserveAnnotation` breaks
  * same-timestamp ties on `annotationHash` alone, but two annotations can
  * legitimately share an `annotationHash` (the same content hashed twice)
@@ -183,11 +180,10 @@ export const nextObserveAnnotationRecordKey = async (
 export const compareStoredObserveAnnotation = (
   left: StoredObserveAnnotation,
   right: StoredObserveAnnotation
-): number => {
-  return compareByTimestampAndKey(
+): number =>
+  compareByTimestampAndKey(
     left.createdAtMs,
     right.createdAtMs,
     keyObserveAnnotation(left),
     keyObserveAnnotation(right)
   );
-};

@@ -47,8 +47,8 @@ import { resolveStoredTurnTreePathValue } from "./postgres-state-validation.js";
 export const reclaimBackendState = (
   state: BackendState,
   nowMs: EpochMs
-): ReclamationSummary => {
-  return reclaimSharedBackendState(
+): ReclamationSummary =>
+  reclaimSharedBackendState(
     state,
     {
       decodeHashStringArray,
@@ -58,4 +58,3 @@ export const reclaimBackendState = (
     },
     nowMs
   );
-};

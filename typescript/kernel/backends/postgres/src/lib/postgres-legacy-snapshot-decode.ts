@@ -79,16 +79,20 @@ export const CURRENT_SNAPSHOT_VERSION = 1;
 // `postgres_backend_snapshot_payload_invalid` error instead of a confusing
 // downstream type error.
 
+/** True only for non-null, non-array objects with unknown property values. */
+const isUnknownRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 /** Asserts the decoded snapshot root is a plain object. */
 const readSnapshotRecord = (value: unknown): Record<string, unknown> => {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+  if (!isUnknownRecord(value)) {
     throw persistenceError(
       "postgres backend snapshot payload must be an object",
       "postgres_backend_snapshot_payload_invalid"
     );
   }
 
-  return value as Record<string, unknown>;
+  return value;
 };
 
 /** Asserts a snapshot field is an array and validates every element with `assertRecord`. */
@@ -142,9 +146,7 @@ const readSnapshotVersion = (value: unknown): number => {
 };
 
 /** Copies a possibly-driver-specific byte buffer into a plain `Uint8Array`. */
-const toUint8Array = (value: Uint8Array): Uint8Array => {
-  return new Uint8Array(value);
-};
+const toUint8Array = (value: Uint8Array): Uint8Array => new Uint8Array(value);
 
 /** Resolves a turn-tree schema by id from a decoded snapshot state. */
 const getSchemaForSchemaId = (
@@ -167,9 +169,7 @@ const getSchemaForSchemaId = (
 const getSchemaForTurnTree = (
   state: BackendState,
   turnTree: { schemaId: string }
-) => {
-  return getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
-};
+) => getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
 
 /**
  * Decodes the snapshot wire format back into a `BackendState`, re-validating
@@ -185,7 +185,7 @@ const getSchemaForTurnTree = (
  * writer side of this wire format retired from production source once
  * ADR-0067's relational schema replaced blob-per-scope persistence).
  *
- * @throws TuvrenPersistenceError with code `postgres_backend_snapshot_payload_invalid`
+ * @throws {TuvrenPersistenceError} With code `postgres_backend_snapshot_payload_invalid`
  *   when the payload or a field's shape is malformed, or
  *   `postgres_backend_snapshot_payload_version_unsupported` when the
  *   embedded version does not match {@link CURRENT_SNAPSHOT_VERSION}.
@@ -215,6 +215,8 @@ export const decodeSnapshot = (value: Uint8Array): BackendState => {
     snapshot.turnTrees,
     "turnTrees"
   ).entries()) {
+    // Schema resolution needs schemaId before the schema-dependent assertion can validate the full record.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     const candidate = record as StoredTurnTree;
     const schema = getSchemaForSchemaId(
       state,
@@ -240,6 +242,8 @@ export const decodeSnapshot = (value: Uint8Array): BackendState => {
     snapshot.turnTreePaths,
     "turnTreePaths"
   ).entries()) {
+    // Turn-tree resolution needs turnTreeHash before the schema-dependent assertion can validate the full record.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     const candidate = record as StoredTurnTreePath;
     const turnTree = state.turnTrees.get(candidate.turnTreeHash);
 

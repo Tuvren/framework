@@ -579,9 +579,7 @@ export const createCoreRepositories = (
             record.createdTurnNodesCbor,
             record.createdAtMs,
             record.updatedAtMs,
-            record.pendingSignalsCbor === undefined
-              ? null
-              : record.pendingSignalsCbor,
+            record.pendingSignalsCbor ?? null,
             record.executionOwnerId ?? null,
             record.leaseExpiresAtMs ?? null,
             record.fencingToken ?? null,
@@ -729,6 +727,7 @@ export const createCoreRepositories = (
         const turnTreeMemo = new Map<string, StoredTurnTree>();
         const schemaMemo = new Map<string, TurnTreeSchema>();
 
+        /* oxlint-disable no-await-in-loop -- Validate and persist batch records in input order, stopping at the first duplicate, missing reference, or immutable conflict. */
         for (const record of records) {
           assertPostgresIndexedText(record.path, "record.path");
           const compositeKey = `${record.turnTreeHash}:${record.path}`;
@@ -834,6 +833,7 @@ export const createCoreRepositories = (
           );
           writeTracker.recordTurnTreePathWrite(record.turnTreeHash);
         }
+        /* oxlint-enable no-await-in-loop */
       },
     },
     turnTrees: {

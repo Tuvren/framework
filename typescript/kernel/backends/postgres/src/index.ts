@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript package documentation tag on the public entrypoint. */
 /**
  * PostgreSQL-backed persistent backend for the Tuvren kernel.
  *
@@ -40,3 +41,4 @@ export {
   createPostgresBackend,
   destroyPostgresBackend,
 } from "./lib/postgres-backend.js";
+/* oxlint-enable jsdoc/check-tag-names */
