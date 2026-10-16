@@ -69,6 +69,7 @@ export const explodeLegacyBlobSnapshots = async (
       `SELECT scope, schema_version FROM ${snapshotsTable} ORDER BY scope`
     );
 
+    /* oxlint-disable no-await-in-loop -- Migrate scopes in durable order, stop at the first invalid snapshot, and keep peak decoded state bounded to one scope. */
     for (const row of scopes) {
       if (row.schema_version !== CURRENT_SNAPSHOT_VERSION) {
         throw persistenceError(
@@ -86,7 +87,7 @@ export const explodeLegacyBlobSnapshots = async (
         `SELECT snapshot_cbor FROM ${snapshotsTable} WHERE scope = $1 ORDER BY snapshot_id`,
         [row.scope]
       );
-      const blob = blobs[0];
+      const [blob] = blobs;
 
       if (blob === undefined) {
         throw persistenceError(
@@ -98,9 +99,9 @@ export const explodeLegacyBlobSnapshots = async (
 
       // The legacy primary key was (snapshot_id, scope): the legacy writer
       // only ever wrote snapshot_id = 1, so exactly one row per scope is the
-      // load-bearing assumption `blobs[0]` below relies on. ADR-0067 decision
+      // load-bearing assumption the destructuring above relies on. ADR-0067 decision
       // 5 forbids losing any committed logical state, so a second row for
-      // the same scope — which `blobs[0]` would otherwise silently drop —
+      // the same scope — which selecting only the first row would otherwise silently drop —
       // must fail loudly instead of being ignored.
       if (blobs.length > 1) {
         throw persistenceError(
@@ -153,6 +154,7 @@ export const explodeLegacyBlobSnapshots = async (
         );
       }
     }
+    /* oxlint-enable no-await-in-loop */
 
     await tx.unsafe(`DROP TABLE ${snapshotsTable}`);
   } finally {

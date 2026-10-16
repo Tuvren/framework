@@ -79,7 +79,7 @@ const createBenchBackendOptions = (
     );
   }
 
-  const port = Number.parseInt(portValue, 10);
+  const port = Math.trunc(Number(portValue));
 
   if (!Number.isSafeInteger(port) || port <= 0) {
     throw new Error(
@@ -97,14 +97,13 @@ const createBenchBackendOptions = (
   };
 };
 
-const seededObjectBytes = (scopeObjectCount: number, index: number) => {
-  return new Uint8Array([
+const seededObjectBytes = (scopeObjectCount: number, index: number) =>
+  new Uint8Array([
     scopeObjectCount % 251,
     index % 251,
     Math.floor(index / 251) % 251,
     Math.floor(index / 63_001) % 251,
   ]);
-};
 
 const measureMarginalWriteLatency = async (
   backend: ReturnType<typeof createPostgresBackend>,
@@ -127,6 +126,7 @@ const measureMarginalWriteLatency = async (
     return Number(process.hrtime.bigint() - startedAt);
   };
 
+  /* oxlint-disable no-await-in-loop -- Warmup and measured writes must remain serial so each latency sample covers one complete write. */
   for (let index = 0; index < WARMUP_WRITES; index += 1) {
     await writeOnce();
   }
@@ -140,8 +140,9 @@ const measureMarginalWriteLatency = async (
   for (let index = 0; index < SAMPLE_COUNT; index += 1) {
     samples.push(await writeOnce());
   }
+  /* oxlint-enable no-await-in-loop */
 
-  const sortedSamples = [...samples].sort((left, right) => left - right);
+  const sortedSamples = samples.toSorted((left, right) => left - right);
 
   return {
     averageNs:
@@ -162,6 +163,7 @@ const main = async (): Promise<void> => {
   );
   const results: WriteLatencyResult[] = [];
 
+  /* oxlint-disable no-await-in-loop -- Run scope-size cases and their seed writes serially so samples and cleanup never overlap. */
   for (const scopeObjectCount of SCOPE_OBJECT_COUNTS) {
     const observer = createRecordingPhaseObserver();
     const options = createBenchBackendOptions(observer);
@@ -204,6 +206,7 @@ const main = async (): Promise<void> => {
       await destroyPostgresBackend(options);
     }
   }
+  /* oxlint-enable no-await-in-loop */
 
   process.stdout.write(
     `${JSON.stringify(

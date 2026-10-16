@@ -79,6 +79,7 @@ const assertScopeIsolation = async (
   backends: ReturnType<typeof createPostgresBackend>[],
   expectedHashesByScope: string[][]
 ): Promise<void> => {
+  /* oxlint-disable no-await-in-loop -- Query each scope and hash serially so isolation failures are deterministic and the benchmark does not add read concurrency. */
   for (const [scopeIndex, backend] of backends.entries()) {
     const ownHashes = expectedHashesByScope[scopeIndex] ?? [];
     const siblingHashes = expectedHashesByScope
@@ -102,10 +103,11 @@ const assertScopeIsolation = async (
       }
     });
   }
+  /* oxlint-enable no-await-in-loop */
 };
 
 const summarize = (samples: readonly number[]): TimingStats => {
-  const sorted = [...samples].sort((left, right) => left - right);
+  const sorted = samples.toSorted((left, right) => left - right);
 
   return {
     averageNs:
@@ -143,7 +145,7 @@ const createBenchBackendOptions = (
     );
   }
 
-  const port = Number.parseInt(portValue, 10);
+  const port = Math.trunc(Number(portValue));
 
   if (!Number.isSafeInteger(port) || port <= 0) {
     throw new Error(
@@ -165,14 +167,13 @@ const seededObjectBytes = (
   repetition: number,
   scopeIndex: number,
   writeIndex: number
-): Uint8Array => {
-  return new Uint8Array([
+): Uint8Array =>
+  new Uint8Array([
     repetition % 251,
     scopeIndex % 251,
     writeIndex % 251,
     Math.floor(writeIndex / 251) % 251,
   ]);
-};
 
 const runRepetition = async (
   schemaName: string,
@@ -205,6 +206,7 @@ const runRepetition = async (
   // `backend-postgres.pool-contention.test.ts` uses -- otherwise cold-start
   // schema initialization on the first backend would masquerade as
   // cross-scope contention.
+  /* oxlint-disable no-await-in-loop -- Keep benchmark setup, each per-scope write stream, the serial baseline, and teardown ordered so measured work does not overlap accidentally. */
   for (const backend of [...concurrentBackends, ...serialBackends]) {
     await backend.health();
   }
@@ -259,6 +261,7 @@ const runRepetition = async (
   for (const backend of [...concurrentBackends, ...serialBackends]) {
     await closeBackend(backend);
   }
+  /* oxlint-enable no-await-in-loop */
 
   return { concurrentNs, serialNs };
 };
@@ -273,9 +276,11 @@ const main = async (): Promise<void> => {
   const results: RepetitionResult[] = [];
 
   try {
+    /* oxlint-disable no-await-in-loop -- Benchmark repetitions must run serially to keep samples independent and preserve their output order. */
     for (let repetition = 0; repetition < SAMPLE_COUNT; repetition += 1) {
       results.push(await runRepetition(schemaName, repetition));
     }
+    /* oxlint-enable no-await-in-loop */
   } finally {
     await destroyPostgresBackend(createBenchBackendOptions(schemaName));
   }

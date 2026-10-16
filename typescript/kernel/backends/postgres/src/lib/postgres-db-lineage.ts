@@ -104,7 +104,7 @@ const selectBoundedTurnNodeLineageProofInDatabase = async (
  * module: they read `turn_node_lineage_roots` for O(1) comparisons only
  * after (or via) this check, instead of re-walking the full chain each time.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `postgres_backend_turn_node_lineage_metadata_mismatch` when the recomputed
  *   proof disagrees with the stored root hash or depth.
  */
@@ -161,7 +161,7 @@ export const validateTurnNodeLineageMetadataInDatabase = async (
  * the shared entry point every lineage-relationship check in this module
  * uses to obtain a metadata row it can trust.
  *
- * @throws The injected persistence error when the turn node does not exist or
+ * @throws {TuvrenPersistenceError} The injected persistence error when the turn node does not exist or
  *   its lineage metadata fails validation.
  */
 const ensureValidatedTurnNodeLineageMetadataInDatabase = async (
@@ -198,15 +198,14 @@ export const getValidatedTurnNodeLineageMetadataInDatabase = async (
   schemaName: string,
   scope: string,
   turnNodeHash: string
-): Promise<TurnNodeLineageMetadata> => {
-  return await ensureValidatedTurnNodeLineageMetadataInDatabase(
+): Promise<TurnNodeLineageMetadata> =>
+  await ensureValidatedTurnNodeLineageMetadataInDatabase(
     sql,
     schemaName,
     scope,
     turnNodeHash,
     "record.previousTurnNodeHash"
   );
-};
 
 /**
  * Derives and inserts a new turn node's lineage metadata row: depth 0 rooted
@@ -261,7 +260,7 @@ export const insertTurnNodeLineageMetadata = async (
  * `writeTracker.branchWrites` (falling back to a freshly captured baseline)
  * to identify branches this transaction newly created.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `postgres_backend_backward_branch_move_missing_archive` when no matching
  *   archive branch is found.
  */
@@ -275,6 +274,7 @@ export const assertBackwardBranchMoveIsArchivedInDatabase = async (
 ): Promise<void> => {
   let archiveBranchFound = false;
 
+  /* oxlint-disable no-await-in-loop -- Check candidate archive branches in query order and stop on the first match without issuing speculative reads. */
   for (const branch of await selectBranchesByThread(
     sql,
     schemaName,
@@ -304,6 +304,7 @@ export const assertBackwardBranchMoveIsArchivedInDatabase = async (
       break;
     }
   }
+  /* oxlint-enable no-await-in-loop */
 
   if (!archiveBranchFound) {
     throw persistenceError(
@@ -323,7 +324,7 @@ export const assertBackwardBranchMoveIsArchivedInDatabase = async (
  * node — i.e. the node genuinely belongs to the thread rather than merely
  * existing in the database.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `postgres_backend_thread_lineage_mismatch` when the roots disagree.
  */
 export const assertTurnNodeBelongsToThreadInDatabase = async (
@@ -397,7 +398,7 @@ const selectCandidateParentTurns = async (
  * parent shares the branch it must be the immediately previous semantic turn,
  * not an earlier one.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `postgres_backend_turn_parent_required`,
  *   `postgres_backend_turn_parent_thread_mismatch`,
  *   `postgres_backend_turn_parent_start_turn_node_mismatch`, or
@@ -500,7 +501,7 @@ export const assertTurnParentLinkInDatabase = async (
  * unique hashes forming a contiguous `previousTurnNodeHash` chain that starts
  * immediately after the run's start turn node.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `postgres_backend_run_created_turn_nodes_duplicate` or
  *   `postgres_backend_run_created_turn_nodes_not_contiguous`.
  */
@@ -514,6 +515,7 @@ export const assertRunCreatedTurnNodesAreCanonicalInDatabase = async (
   const seenTurnNodeHashes = new Set<string>();
   let previousTurnNodeHash = run.startTurnNodeHash;
 
+  /* oxlint-disable no-await-in-loop -- Validate the lineage chain serially because each node is checked against the preceding node and failures are order-sensitive. */
   for (const [index, turnNodeHash] of createdTurnNodeHashes.entries()) {
     if (seenTurnNodeHashes.has(turnNodeHash)) {
       throw persistenceError(
@@ -555,6 +557,7 @@ export const assertRunCreatedTurnNodesAreCanonicalInDatabase = async (
     seenTurnNodeHashes.add(turnNodeHash);
     previousTurnNodeHash = turnNodeHash;
   }
+  /* oxlint-enable no-await-in-loop */
 };
 
 /**
@@ -563,7 +566,7 @@ export const assertRunCreatedTurnNodesAreCanonicalInDatabase = async (
  * branch head and the turn head, so an in-flight run can never drift from
  * the lineage position the branch and turn claim.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `postgres_backend_active_run_branch_head_mismatch` or
  *   `postgres_backend_active_run_turn_head_mismatch`.
  */
@@ -688,7 +691,7 @@ const isTurnNodeDescendantOfInDatabase = async (
  * descendant of it along the `previousTurnNodeHash` chain. Used to keep turn
  * heads append-only: a turn's new head must extend its previous head.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `postgres_backend_turn_node_not_descendant` when the ancestor is not on the
  *   descendant's lineage.
  */
@@ -806,7 +809,7 @@ export const classifyTurnNodeRelationshipInDatabase = async (
  * after the turn's start node and at or before the turn's head node on the
  * same lineage.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `postgres_backend_run_turn_span_mismatch`.
  */
 export const assertRunStartTurnNodeWithinTurnSpanInDatabase = async (
@@ -869,7 +872,7 @@ export const assertRunStartTurnNodeWithinTurnSpanInDatabase = async (
  * lies within the run's turn span (between the turn's start node and head
  * node, inclusive).
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `postgres_backend_run_created_turn_node_outside_turn_span`.
  */
 export const assertRunCreatedTurnNodeWithinTurnSpanInDatabase = async (
@@ -933,7 +936,7 @@ export const assertRunCreatedTurnNodeWithinTurnSpanInDatabase = async (
  * (backward move, e.g. a rewind) of the current head. Lateral jumps onto an
  * unrelated lineage are rejected.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `postgres_backend_branch_head_lateral_move`.
  */
 export const assertBranchHeadMoveIsLinearInDatabase = async (

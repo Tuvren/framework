@@ -32,12 +32,8 @@ export type { TurnNodeRelationship } from "@tuvren/backend-shared";
  * Decodes a run's `createdTurnNodesCbor` into its ordered, append-only list
  * of created turn node hashes.
  */
-export const decodeRunCreatedTurnNodeHashes = (run: StoredRun): string[] => {
-  return decodeHashStringArray(
-    run.createdTurnNodesCbor,
-    "run.createdTurnNodesCbor"
-  );
-};
+export const decodeRunCreatedTurnNodeHashes = (run: StoredRun): string[] =>
+  decodeHashStringArray(run.createdTurnNodesCbor, "run.createdTurnNodesCbor");
 
 // This module is a thin delegate to the shared kernel-backend invariant core
 // (KRT-BK001) for: the run-transition-legality and immutability-primitive

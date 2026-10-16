@@ -30,6 +30,7 @@ import type {
   StoredTurnTreePath,
   TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
+import type { ParameterOrJSON } from "postgres";
 
 import { persistenceError } from "./postgres-errors.js";
 import {
@@ -77,19 +78,17 @@ import { qualifyIdentifier } from "./postgres-sql.js";
 const selectOne = async <T>(
   sql: DbSql,
   query: string,
-  params: unknown[]
+  params: ParameterOrJSON<never>[]
 ): Promise<T | undefined> => {
-  const rows = await sql.unsafe<T[]>(query, params as never[]);
+  const rows = await sql.unsafe<T[]>(query, params);
   return rows[0];
 };
 
 const selectMany = async <T>(
   sql: DbSql,
   query: string,
-  params: unknown[]
-): Promise<T[]> => {
-  return await sql.unsafe<T[]>(query, params as never[]);
-};
+  params: ParameterOrJSON<never>[]
+): Promise<T[]> => await sql.unsafe<T[]>(query, params);
 
 /** Fetches one object by content hash, or `null`. */
 export const selectObject = async (
@@ -709,17 +708,16 @@ export const getSchemaForSchemaIdInDatabase = async (
 };
 
 /** Loads and decodes the turn-tree schema a stored turn tree references. */
-export const getSchemaForTurnTreeInDatabase = (
+export const getSchemaForTurnTreeInDatabase = async (
   sql: DbSql,
   schemaName: string,
   scope: string,
   turnTree: StoredTurnTree
-): Promise<TurnTreeSchema> => {
-  return getSchemaForSchemaIdInDatabase(
+): Promise<TurnTreeSchema> =>
+  await getSchemaForSchemaIdInDatabase(
     sql,
     schemaName,
     scope,
     turnTree.schemaId,
     "turnTree.schemaId"
   );
-};

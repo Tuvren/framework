@@ -586,16 +586,16 @@ export const createSupportRepositories = (
           const last = threads.at(-1);
           if (last !== undefined) {
             nextCursor = {
-              v: 1,
-              kind: "list-threads",
-              lastThreadId: last.threadId,
-              lastCreatedAtMs: last.createdAtMs,
               filter: options?.filter,
+              kind: "list-threads",
+              lastCreatedAtMs: last.createdAtMs,
+              lastThreadId: last.threadId,
+              v: 1,
             };
           }
         }
 
-        return { threads, nextCursor };
+        return { nextCursor, threads };
       },
       async put(record) {
         assertTransactionActive();

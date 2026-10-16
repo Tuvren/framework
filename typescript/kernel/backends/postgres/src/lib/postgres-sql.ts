@@ -28,7 +28,7 @@ import type { RelationalTableName } from "./postgres-schema.js";
 export type DbSql = Sql | TransactionSql<Record<string, never>>;
 
 /** Conservative unquoted-identifier alphabet (letters, digits, `_`, `-`). */
-const SAFE_SQL_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_-]*$/;
+const SAFE_SQL_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_-]*$/u;
 
 /** The one well-formed Unicode code point PostgreSQL text cannot encode. */
 const NUL_CODE_POINT = "\u0000";
@@ -152,7 +152,7 @@ export const assertPostgresWellFormedText = (
  * digests validated by kernel-protocol's own hash guards and cannot contain a
  * NUL byte.
  *
- * @throws TuvrenPersistenceError `postgres_backend_unstorable_text` when
+ * @throws {TuvrenPersistenceError} `postgres_backend_unstorable_text` when
  *   `value` is not well-formed UTF-16 or contains U+0000.
  */
 export const assertPostgresStorableText = (
@@ -196,9 +196,7 @@ export const assertPostgresIndexedText = (
 export const qualifyIdentifier = (
   schemaName: string,
   tableName: RelationalTableName
-): string => {
-  return `${quoteIdentifier(schemaName)}.${quoteIdentifier(tableName)}`;
-};
+): string => `${quoteIdentifier(schemaName)}.${quoteIdentifier(tableName)}`;
 
 /**
  * Derives a PostgreSQL advisory-lock key (signed 64-bit, the single-argument

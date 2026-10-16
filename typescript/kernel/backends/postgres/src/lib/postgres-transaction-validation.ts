@@ -149,7 +149,7 @@ const validateThreadInDatabase = async (
     `,
     [scope, thread.rootTurnNodeHash, thread.threadId]
   );
-  const duplicateRootThread = duplicateRootThreads[0];
+  const [duplicateRootThread] = duplicateRootThreads;
 
   if (duplicateRootThread !== undefined) {
     throw persistenceError(
@@ -380,6 +380,7 @@ const validateTurnNodeInDatabase = async (
     turnNode
   );
 
+  /* oxlint-disable no-await-in-loop -- Resolve consumed object references in encoded order and stop on the first missing object. */
   for (const objectHash of decodeTurnNodeConsumedStagedResultObjectHashes(
     turnNode
   )) {
@@ -391,6 +392,7 @@ const validateTurnNodeInDatabase = async (
       "turnNode.consumedStagedResultsCbor"
     );
   }
+  /* oxlint-enable no-await-in-loop */
 };
 
 /**
@@ -560,6 +562,7 @@ const validateRunInDatabase = async (
     "run.startTurnNodeHash"
   );
 
+  /* oxlint-disable no-await-in-loop -- Validate created turn nodes in their encoded lineage order and preserve the first failure. */
   for (const turnNodeHash of decodeRunCreatedTurnNodeHashes(run)) {
     const createdTurnNode = await ensureTurnNodeExistsInDatabase(
       sql,
@@ -585,6 +588,7 @@ const validateRunInDatabase = async (
       "run.createdTurnNodesCbor"
     );
   }
+  /* oxlint-enable no-await-in-loop */
 
   await assertRunCreatedTurnNodesAreCanonicalInDatabase(
     sql,
@@ -594,7 +598,7 @@ const validateRunInDatabase = async (
   );
 
   if (run.status === "running" || run.status === "paused") {
-    await assertActiveRunHeadAlignmentInDatabase(run, branch, turn);
+    assertActiveRunHeadAlignmentInDatabase(run, branch, turn);
   }
 };
 
@@ -609,6 +613,7 @@ const validateTurnDependentsInDatabase = async (
   scope: string,
   turnId: string
 ): Promise<void> => {
+  /* oxlint-disable no-await-in-loop -- Revalidate dependent turns and runs serially so database reads and first-failure ordering remain stable. */
   for (const dependentTurn of await selectTurnsByParentTurnId(
     sql,
     schemaName,
@@ -621,6 +626,7 @@ const validateTurnDependentsInDatabase = async (
   for (const run of await selectRunsByTurn(sql, schemaName, scope, turnId)) {
     await validateRunInDatabase(sql, schemaName, scope, run.runId);
   }
+  /* oxlint-enable no-await-in-loop */
 };
 
 /** Asserts a non-`running` run retains no staged results. */
@@ -691,6 +697,7 @@ const validateActiveRunsForBranchInDatabase = async (
     );
   }
 
+  /* oxlint-disable no-await-in-loop -- Validate active runs in query order and stop on the first missing turn or head mismatch. */
   for (const run of activeRuns) {
     const turn = await ensureTurnExistsInDatabase(
       sql,
@@ -699,8 +706,9 @@ const validateActiveRunsForBranchInDatabase = async (
       run.turnId,
       "run.turnId"
     );
-    await assertActiveRunHeadAlignmentInDatabase(run, branch, turn);
+    assertActiveRunHeadAlignmentInDatabase(run, branch, turn);
   }
+  /* oxlint-enable no-await-in-loop */
 };
 
 /**
@@ -742,6 +750,7 @@ const validateTurnTreePathsInDatabase = async (
   state.schemas.set(schemaRecord.schemaId, schemaRecord);
   state.turnTrees.set(turnTree.hash, turnTree);
 
+  /* oxlint-disable no-await-in-loop -- Load referenced chunks in stored path order and preserve the first missing-reference error. */
   for (const storedPath of storedPaths) {
     pathMap.set(storedPath.path, storedPath);
 
@@ -767,6 +776,7 @@ const validateTurnTreePathsInDatabase = async (
       state.orderedPathChunks.set(chunk.chunkHash, chunk);
     }
   }
+  /* oxlint-enable no-await-in-loop */
 
   if (pathMap.size > 0) {
     state.turnTreePaths.set(turnTree.hash, pathMap);
@@ -811,7 +821,7 @@ const validateTurnTreePathsInDatabase = async (
  * (including backward-move archiving), runs, staged results, and the
  * one-active-run-per-branch rule.
  *
- * @throws TuvrenPersistenceError with a `postgres_backend_*` code on the first
+ * @throws {TuvrenPersistenceError} With a `postgres_backend_*` code on the first
  *   violated invariant; the caller must roll the transaction back.
  */
 export const validateTransactionWriteSet = async (
@@ -820,6 +830,7 @@ export const validateTransactionWriteSet = async (
   scope: string,
   writeTracker: TransactionWriteTracker
 ): Promise<void> => {
+  /* oxlint-disable no-await-in-loop -- Validate each tracked family serially to preserve write-set order and the first invariant failure. */
   for (const threadId of writeTracker.threadIds) {
     await validateThreadInDatabase(sql, schemaName, scope, threadId);
   }
@@ -866,6 +877,7 @@ export const validateTransactionWriteSet = async (
       branchId
     );
   }
+  /* oxlint-enable no-await-in-loop */
 };
 
 /**
@@ -898,7 +910,7 @@ const setUniqueLoadedRecord = <T>(
  * has an entry, and each entry's root hash and depth match a recomputed
  * ancestry walk.
  *
- * @throws TuvrenPersistenceError with a `postgres_backend_*` code describing
+ * @throws {TuvrenPersistenceError} With a `postgres_backend_*` code describing
  *   the first index/lineage divergence.
  */
 export const validateTurnNodeLineageRootIndex = async (
