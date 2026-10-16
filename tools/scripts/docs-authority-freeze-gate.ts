@@ -39,24 +39,24 @@ const LOCAL_DECISIONS_PATH = `${OUTPUT_DIR}/epic-ad-kernel-backend-provider-loca
 const REPORT_PATH = `${OUTPUT_DIR}/epic-ad-typescript-freeze-gate-report.md`;
 const CLOSURE_PATH = `${OUTPUT_DIR}/epic-ad-docs-to-authority-freeze-gate-closure-inventory.md`;
 
-const NORMATIVE_PATTERN =
-  /\b(must|must not|should|cannot|can not|never|always|required|requires|required|guarantee|guarantees|only|canonical|authoritative|valid|invalid|deferred|MUST|SHOULD|MAY)\b|\bdoes not define\b/i;
-const ANCHOR_BACKTICK_PATTERN = /`/g;
-const ANCHOR_UNSAFE_CHAR_PATTERN = /[^a-z0-9\s-]/g;
-const CODE_FENCE_COMMENT_PATTERN = /^\s*\/\//;
-const CODE_FENCE_INLINE_COMMENT_PATTERN = /\/\/(.+)$/;
-const CODE_FENCE_STRONG_NORMATIVE_PATTERN = /\b(MUST|SHOULD|MAY)\b/;
-const HEADING_PATTERN = /^(#{1,6})\s+(.+)$/;
-const LEADING_LIST_MARKER_PATTERN = /^\s*[-*]\s+/;
-const LINE_SPLIT_PATTERN = /\r?\n/;
-const LIST_ITEM_PATTERN = /^\s*(?:[-*]|\d+[.)])\s+/;
-const SECTION_NUMBER_PATTERN = /^(\d+(?:\.\d+)*)\b/;
-const SECTION_TRAILING_DASH_PATTERN = /-+$/g;
-const SECTION_UNSAFE_CHAR_PATTERN = /[^a-z0-9]+/g;
-const TABLE_ROW_PATTERN = /^\s*\|/;
-const WHITESPACE_PATTERN = /\s+/g;
+const NORMATIVE_PATTERN_SOURCE = String.raw`\b(must|must not|should|cannot|can not|never|always|required|requires|required|guarantee|guarantees|only|canonical|authoritative|valid|invalid|deferred|MUST|SHOULD|MAY)\b|\bdoes not define\b`;
+const NORMATIVE_PATTERN = new RegExp(NORMATIVE_PATTERN_SOURCE, "iu");
+const ANCHOR_BACKTICK_PATTERN = /`/gu;
+const ANCHOR_UNSAFE_CHAR_PATTERN = /[^a-z0-9\s-]/gu;
+const CODE_FENCE_COMMENT_PATTERN = /^\s*\/\//u;
+const CODE_FENCE_INLINE_COMMENT_PATTERN = /\/\/(?<comment>.+)$/u;
+const CODE_FENCE_STRONG_NORMATIVE_PATTERN = /\b(?<keyword>MUST|SHOULD|MAY)\b/u;
+const HEADING_PATTERN = /^(?<marks>#{1,6})\s+(?<text>.+)$/u;
+const LEADING_LIST_MARKER_PATTERN = /^\s*[-*]\s+/u;
+const LINE_SPLIT_PATTERN = /\r?\n/u;
+const LIST_ITEM_PATTERN = /^\s*(?:[-*]|\d+[.)])\s+/u;
+const SECTION_NUMBER_PATTERN = /^(?<number>\d+(?:\.\d+)*)\b/u;
+const SECTION_TRAILING_DASH_PATTERN = /-+$/gu;
+const SECTION_UNSAFE_CHAR_PATTERN = /[^a-z0-9]+/gu;
+const TABLE_ROW_PATTERN = /^\s*\|/u;
+const WHITESPACE_PATTERN = /\s+/gu;
 const EVIDENCE_PATH_PATTERN =
-  /\b(?:typescript|rust|spec|reports|tools|constitution)\/[^\s;,)`]+/g;
+  /\b(?:typescript|rust|spec|reports|tools|constitution)\/[^\s;,)`]+/gu;
 const CLAIM_ID_HASH_LENGTH = 12;
 const REQUIRED_AUTHORITY_ANCHOR_FIELDS = [
   "authorityPacket",
@@ -182,87 +182,20 @@ interface EvidenceTemplate {
 }
 
 const EVIDENCE = {
-  runnerApi: {
-    adapterCapability: "framework.runner-api",
+  // KRT-BC001/BC002: capability-orchestration model (ADR-0046) — four
+  // execution classes, MCP-as-binding, exposure/invocation policy, and
+  // per-class observation limits. All §11 normative claims are backed by
+  // the cross-class integration conformance plan plus the per-class plans
+  // promoted by Epics AW–BB.
+  capabilityOrchestration: {
+    adapterCapability: "framework.runtime-api",
     authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "spec/conformance/runners/plans/runner-api-core.json; spec/conformance/runners/plans/runner-api-extended.json",
-    fixture: "spec/conformance/runners/scenarios/runner-api-scenarios.json",
-    generatedArtifact: "spec/runners/artifacts/json-schema",
-  },
-  eventStream: {
-    adapterCapability: "framework.event-stream",
-    authorityPacket: "spec/core/authority-packet.json",
-    compatibilityEvidence:
-      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
-    conformancePlan:
-      "spec/conformance/streaming/plans/event-stream-core.json; spec/conformance/streaming/plans/event-stream-extended.json",
-    fixture: "spec/conformance/streaming/fixtures/stream-events.json",
-    generatedArtifact: "spec/streaming/artifacts/json-schema",
-  },
-  kernelProtocol: {
-    adapterCapability: "kernel.protocol; kernel.logical",
-    authorityPacket: "spec/kernel/authority-packet.json",
-    compatibilityEvidence:
-      "reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.kernel-rust-certification.json",
-    conformancePlan:
-      "spec/conformance/kernel/plans/kernel-protocol-core.json; spec/conformance/kernel/plans/kernel-protocol-extended.json",
-    fixture:
-      "spec/conformance/kernel/fixtures/kernel-protocol-logical.json; spec/conformance/kernel/fixtures/kernel-protocol-deterministic.json",
-    generatedArtifact:
-      "N/A - kernel protocol behavior is fixture/conformance-backed; grammar source is spec/kernel/cddl/kernel-records.cddl",
-  },
-  // Scope-resolved object identity (kernel spec §2.3, ADR-0048/0049). KRT-BE001
-  // declared the surface and its conformance-plan reference in the
-  // kernel-protocol authority packet (bindingSections.scope-isolation), with the
-  // cross-scope isolation conformance contract at kernel-scope-isolation.json.
-  // KRT-BE007 promoted the plan to runnable, registered, evidence-backed
-  // conformance: the plan is registered in the packet, the memory/SQLite/
-  // PostgreSQL adapters advertise kernel.scope-isolation, and the
-  // compatibility evidence below records the cross-scope-probe results, so the
-  // claim is now authority-backed-conformance-covered.
-  scopeIsolation: {
-    adapterCapability: "kernel.scope-isolation",
-    authorityPacket: "spec/kernel/authority-packet.json",
-    compatibilityEvidence:
-      "reports/compatibility/evidence/certification-harness.kernel-typescript-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json",
-    conformancePlan:
-      "spec/conformance/kernel/plans/kernel-scope-isolation.json",
-    fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
-    generatedArtifact:
-      "N/A - scope isolation is conformance-plan authority without generated schema artifacts",
-  },
-  // Data-lifecycle reclamation + crypto-shredding erasure (kernel spec §9.4,
-  // ADR-0051). KRT-BF001 declared the maintenance.reclamation surface and its
-  // conformance-plan reference; KRT-BF003/BF004 realize the primitive across the
-  // memory, SQLite, and PostgreSQL backends. KRT-BF007 promoted the plan to
-  // runnable, registered, evidence-backed conformance: the plan is registered in
-  // the kernel-protocol packet, the three adapters advertise kernel.reclamation
-  // and answer the reclaim-probe and erasure-probe operations, and the
-  // compatibility evidence below records both across all three backends, so the
-  // §9.4 claim is now authority-backed-conformance-covered.
-  reclamation: {
-    adapterCapability: "kernel.reclamation",
-    authorityPacket: "spec/kernel/authority-packet.json",
-    compatibilityEvidence:
-      "reports/compatibility/evidence/certification-harness.kernel-typescript-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json",
-    conformancePlan: "spec/conformance/kernel/plans/kernel-reclamation.json",
-    fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
-    generatedArtifact:
-      "N/A - data-lifecycle reclamation and crypto-shredding erasure are conformance-plan authority without generated schema artifacts",
-  },
-  providerApi: {
-    adapterCapability: "providers.provider-api; providers.ai-sdk-bridge",
-    authorityPacket: "spec/providers/authority-packet.json",
-    compatibilityEvidence:
-      "reports/compatibility/evidence/certification-harness.providers-typescript-certification.json",
-    conformancePlan:
-      "spec/conformance/providers/plans/provider-api-bridge.json; spec/conformance/providers/plans/provider-api-bridge-extended.json",
-    fixture: "spec/conformance/providers/fixtures/provider-fixtures.json",
-    generatedArtifact:
-      "spec/providers/artifacts/json-schema; spec/providers/artifacts/openapi",
+      "spec/conformance/tools/plans/capability-orchestration-integration.json; spec/conformance/tools/plans/tuvren-server-execution-class.json; spec/conformance/tools/plans/tuvren-client-execution-class.json; spec/conformance/telemetry/plans/invocation-lifecycle-observation.json; spec/conformance/tools/plans/capability-policy.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
+    generatedArtifact: "spec/core/artifacts/json-schema",
   },
   // Conversation-state ownership (framework spec §1.1 v0.21 note, ADR-0053,
   // PRD CAP-P0-069). The durable lineage is the unconditional source of truth
@@ -290,6 +223,54 @@ const EVIDENCE = {
     generatedArtifact:
       "N/A - conversation-state ownership is conformance-plan authority without generated schema artifacts",
   },
+  eventStream: {
+    adapterCapability: "framework.event-stream",
+    authorityPacket: "spec/core/authority-packet.json",
+    compatibilityEvidence:
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
+    conformancePlan:
+      "spec/conformance/streaming/plans/event-stream-core.json; spec/conformance/streaming/plans/event-stream-extended.json",
+    fixture: "spec/conformance/streaming/fixtures/stream-events.json",
+    generatedArtifact: "spec/streaming/artifacts/json-schema",
+  },
+  // KRT-BD008: §4.12 Execution Bounds (ADR-0043) — the framework-owned hard-stop
+  // guard above runner LoopPolicy. All §4.12 normative claims are backed by the
+  // runtime-api execution-bounds checks promoted into
+  // `runtime-api-callables-extended.json` (KRT-BD007) and the ExecutionBounds /
+  // ExecutionBoundExceededDetails shapes generated from the shared-core packet.
+  executionBounds: {
+    adapterCapability: "framework.runtime-api",
+    authorityPacket: "spec/core/authority-packet.json",
+    compatibilityEvidence:
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
+    conformancePlan:
+      "spec/conformance/engine/plans/runtime-api-callables-extended.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
+    generatedArtifact: "spec/core/artifacts/json-schema",
+  },
+  kernelProtocol: {
+    adapterCapability: "kernel.protocol; kernel.logical",
+    authorityPacket: "spec/kernel/authority-packet.json",
+    compatibilityEvidence:
+      "reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.kernel-rust-certification.json",
+    conformancePlan:
+      "spec/conformance/kernel/plans/kernel-protocol-core.json; spec/conformance/kernel/plans/kernel-protocol-extended.json",
+    fixture:
+      "spec/conformance/kernel/fixtures/kernel-protocol-logical.json; spec/conformance/kernel/fixtures/kernel-protocol-deterministic.json",
+    generatedArtifact:
+      "N/A - kernel protocol behavior is fixture/conformance-backed; grammar source is spec/kernel/cddl/kernel-records.cddl",
+  },
+  providerApi: {
+    adapterCapability: "providers.provider-api; providers.ai-sdk-bridge",
+    authorityPacket: "spec/providers/authority-packet.json",
+    compatibilityEvidence:
+      "reports/compatibility/evidence/certification-harness.providers-typescript-certification.json",
+    conformancePlan:
+      "spec/conformance/providers/plans/provider-api-bridge.json; spec/conformance/providers/plans/provider-api-bridge-extended.json",
+    fixture: "spec/conformance/providers/fixtures/provider-fixtures.json",
+    generatedArtifact:
+      "spec/providers/artifacts/json-schema; spec/providers/artifacts/openapi",
+  },
   reactRunner: {
     adapterCapability: "framework.react-runner",
     authorityPacket: "spec/runners/react/authority-packet.json",
@@ -301,41 +282,35 @@ const EVIDENCE = {
     generatedArtifact:
       "N/A - react-runner packet is conformance-plan authority without generated schema artifacts",
   },
-  runtimeApi: {
-    adapterCapability: "framework.runtime-api",
-    authorityPacket: "spec/core/authority-packet.json",
+  // Data-lifecycle reclamation + crypto-shredding erasure (kernel spec §9.4,
+  // ADR-0051). KRT-BF001 declared the maintenance.reclamation surface and its
+  // conformance-plan reference; KRT-BF003/BF004 realize the primitive across the
+  // memory, SQLite, and PostgreSQL backends. KRT-BF007 promoted the plan to
+  // runnable, registered, evidence-backed conformance: the plan is registered in
+  // the kernel-protocol packet, the three adapters advertise kernel.reclamation
+  // and answer the reclaim-probe and erasure-probe operations, and the
+  // compatibility evidence below records both across all three backends, so the
+  // §9.4 claim is now authority-backed-conformance-covered.
+  reclamation: {
+    adapterCapability: "kernel.reclamation",
+    authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
-    conformancePlan:
-      "spec/conformance/engine/plans/runtime-api-lifecycle.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json; spec/conformance/engine/plans/runtime-api-callables.json; spec/conformance/engine/plans/runtime-api-callables-extended.json",
-    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
-    generatedArtifact: "spec/host/artifacts/json-schema",
-  },
-  // KRT-AL002 G1 split tool and approval-result authority out of
-  // `runtime-api` into a dedicated `tuvren.framework.tool-contracts`
-  // packet. Doc classifications that previously rooted tool/approval
-  // claims at `runtimeApi` now route here so the freeze gate stops
-  // blessing stale `runtime-api` anchors for those promoted claims.
-  toolContracts: {
-    adapterCapability: "framework.runtime-api",
-    authorityPacket: "spec/core/authority-packet.json",
-    compatibilityEvidence:
-      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
-    conformancePlan:
-      "spec/conformance/tools/plans/tool-contracts-extended.json",
-    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
+      "reports/compatibility/evidence/certification-harness.kernel-typescript-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json",
+    conformancePlan: "spec/conformance/kernel/plans/kernel-reclamation.json",
+    fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
-      "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
+      "N/A - data-lifecycle reclamation and crypto-shredding erasure are conformance-plan authority without generated schema artifacts",
   },
-  runtimeOrchestration: {
-    adapterCapability: "framework.orchestration",
-    authorityPacket: "spec/core/authority-packet.json",
+  restartRecovery: {
+    adapterCapability: "kernel.restart-recovery",
+    authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
+      "reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json",
     conformancePlan:
-      "spec/conformance/engine/plans/runtime-api-orchestration.json",
-    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
-    generatedArtifact: "spec/host/artifacts/json-schema",
+      "spec/conformance/kernel/plans/kernel-restart-recovery.json",
+    fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
+    generatedArtifact:
+      "N/A - restart recovery is conformance-plan authority without generated schema artifacts",
   },
   // Backend-authoritative execution-lease clock (kernel spec §5.2, ADR-0050)
   // composed with side-effect-once under preemption (framework spec "Running
@@ -364,46 +339,71 @@ const EVIDENCE = {
     generatedArtifact:
       "N/A - run-liveness is conformance-plan authority without generated schema artifacts",
   },
-  restartRecovery: {
-    adapterCapability: "kernel.restart-recovery",
+  runnerApi: {
+    adapterCapability: "framework.runner-api",
+    authorityPacket: "spec/core/authority-packet.json",
+    compatibilityEvidence:
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
+    conformancePlan:
+      "spec/conformance/runners/plans/runner-api-core.json; spec/conformance/runners/plans/runner-api-extended.json",
+    fixture: "spec/conformance/runners/scenarios/runner-api-scenarios.json",
+    generatedArtifact: "spec/runners/artifacts/json-schema",
+  },
+  runtimeApi: {
+    adapterCapability: "framework.runtime-api",
+    authorityPacket: "spec/core/authority-packet.json",
+    compatibilityEvidence:
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
+    conformancePlan:
+      "spec/conformance/engine/plans/runtime-api-lifecycle.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json; spec/conformance/engine/plans/runtime-api-callables.json; spec/conformance/engine/plans/runtime-api-callables-extended.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
+    generatedArtifact: "spec/host/artifacts/json-schema",
+  },
+  runtimeOrchestration: {
+    adapterCapability: "framework.orchestration",
+    authorityPacket: "spec/core/authority-packet.json",
+    compatibilityEvidence:
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
+    conformancePlan:
+      "spec/conformance/engine/plans/runtime-api-orchestration.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
+    generatedArtifact: "spec/host/artifacts/json-schema",
+  },
+  // Scope-resolved object identity (kernel spec §2.3, ADR-0048/0049). KRT-BE001
+  // declared the surface and its conformance-plan reference in the
+  // kernel-protocol authority packet (bindingSections.scope-isolation), with the
+  // cross-scope isolation conformance contract at kernel-scope-isolation.json.
+  // KRT-BE007 promoted the plan to runnable, registered, evidence-backed
+  // conformance: the plan is registered in the packet, the memory/SQLite/
+  // PostgreSQL adapters advertise kernel.scope-isolation, and the
+  // compatibility evidence below records the cross-scope-probe results, so the
+  // claim is now authority-backed-conformance-covered.
+  scopeIsolation: {
+    adapterCapability: "kernel.scope-isolation",
     authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json",
+      "reports/compatibility/evidence/certification-harness.kernel-typescript-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json",
     conformancePlan:
-      "spec/conformance/kernel/plans/kernel-restart-recovery.json",
+      "spec/conformance/kernel/plans/kernel-scope-isolation.json",
     fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
-      "N/A - restart recovery is conformance-plan authority without generated schema artifacts",
+      "N/A - scope isolation is conformance-plan authority without generated schema artifacts",
   },
-  // KRT-BC001/BC002: capability-orchestration model (ADR-0046) — four
-  // execution classes, MCP-as-binding, exposure/invocation policy, and
-  // per-class observation limits. All §11 normative claims are backed by
-  // the cross-class integration conformance plan plus the per-class plans
-  // promoted by Epics AW–BB.
-  capabilityOrchestration: {
+  // KRT-AL002 G1 split tool and approval-result authority out of
+  // `runtime-api` into a dedicated `tuvren.framework.tool-contracts`
+  // packet. Doc classifications that previously rooted tool/approval
+  // claims at `runtimeApi` now route here so the freeze gate stops
+  // blessing stale `runtime-api` anchors for those promoted claims.
+  toolContracts: {
     adapterCapability: "framework.runtime-api",
     authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
       "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "spec/conformance/tools/plans/capability-orchestration-integration.json; spec/conformance/tools/plans/tuvren-server-execution-class.json; spec/conformance/tools/plans/tuvren-client-execution-class.json; spec/conformance/telemetry/plans/invocation-lifecycle-observation.json; spec/conformance/tools/plans/capability-policy.json",
+      "spec/conformance/tools/plans/tool-contracts-extended.json",
     fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
-    generatedArtifact: "spec/core/artifacts/json-schema",
-  },
-  // KRT-BD008: §4.12 Execution Bounds (ADR-0043) — the framework-owned hard-stop
-  // guard above runner LoopPolicy. All §4.12 normative claims are backed by the
-  // runtime-api execution-bounds checks promoted into
-  // `runtime-api-callables-extended.json` (KRT-BD007) and the ExecutionBounds /
-  // ExecutionBoundExceededDetails shapes generated from the shared-core packet.
-  executionBounds: {
-    adapterCapability: "framework.runtime-api",
-    authorityPacket: "spec/core/authority-packet.json",
-    compatibilityEvidence:
-      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
-    conformancePlan:
-      "spec/conformance/engine/plans/runtime-api-callables-extended.json",
-    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
-    generatedArtifact: "spec/core/artifacts/json-schema",
+    generatedArtifact:
+      "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
   },
 } as const satisfies Record<string, EvidenceTemplate>;
 
@@ -469,7 +469,7 @@ const extractEvidencePaths = (value: string): string[] => {
   }
 
   return [...value.matchAll(EVIDENCE_PATH_PATTERN)].map((match) =>
-    (match[0] ?? "").replaceAll(/[.,]+$/g, "")
+    (match[0] ?? "").replaceAll(/[.,]+$/gu, "")
   );
 };
 
@@ -525,7 +525,7 @@ const currentHeadingFor = (
 
 const isNormativeCodeFenceLine = (trimmed: string): boolean => {
   const commentMatch = CODE_FENCE_INLINE_COMMENT_PATTERN.exec(trimmed);
-  if (commentMatch?.[1] != null) {
+  if (commentMatch?.[1] !== undefined) {
     return NORMATIVE_PATTERN.test(commentMatch[1]);
   }
 
@@ -539,7 +539,7 @@ const addRationaleLines = (
 ): void => {
   const rationaleKey = `${state.source.path}:${heading.anchor}`;
   const existing = state.rationaleLineCounts.get(rationaleKey);
-  if (existing == null) {
+  if (existing === undefined) {
     state.rationaleLineCounts.set(rationaleKey, {
       affectedBoundary: state.source.boundary,
       nonNormativeLineCount: lineCount,
@@ -619,10 +619,10 @@ const addDuplicateLinks = (
   const firstByNormalizedText = new Map<string, string>();
 
   return claims.map((claim) => {
-    const normalized = claim.text.toLowerCase().replaceAll(/\W+/g, " ").trim();
+    const normalized = claim.text.toLowerCase().replaceAll(/\W+/gu, " ").trim();
     const firstClaimId = firstByNormalizedText.get(normalized);
 
-    if (firstClaimId == null) {
+    if (firstClaimId === undefined) {
       firstByNormalizedText.set(normalized, claim.claimId);
       return claim;
     }
@@ -1398,7 +1398,7 @@ const unclassifiedDecision = (
 
 const uniqueClaimEntries = <T extends Pick<NormativeClaim, "duplicateOf">>(
   entries: readonly T[]
-): T[] => entries.filter((entry) => entry.duplicateOf == null);
+): T[] => entries.filter((entry) => entry.duplicateOf === null);
 
 const groupCount = <T>(
   values: readonly T[],
@@ -1416,7 +1416,7 @@ const groupCount = <T>(
 
 const duplicateClaimCount = (
   entries: readonly Pick<NormativeClaim, "duplicateOf">[]
-): number => entries.filter((entry) => entry.duplicateOf != null).length;
+): number => entries.filter((entry) => entry.duplicateOf !== null).length;
 
 const escapeTableCell = (value: string): string =>
   value.replaceAll("|", "\\|").replaceAll("\n", " ");
@@ -1426,7 +1426,7 @@ const renderCountTable = (
   label: string
 ): string => {
   const lines = [`| ${label} | Count |`, "| --- | ---: |"];
-  for (const [key, count] of [...counts.entries()].sort(([left], [right]) =>
+  for (const [key, count] of [...counts.entries()].toSorted(([left], [right]) =>
     left.localeCompare(right)
   )) {
     lines.push(`| ${escapeTableCell(key)} | ${count} |`);
@@ -1495,7 +1495,7 @@ const groupBy = <T>(
   for (const value of values) {
     const key = keySelector(value);
     const existing = groups.get(key);
-    if (existing == null) {
+    if (existing === undefined) {
       groups.set(key, [value]);
     } else {
       existing.push(value);
@@ -1513,7 +1513,7 @@ const renderSurfaceTable = (
     "| --- | ---: | --- | --- | --- |",
   ];
 
-  for (const [surface, surfaceEntries] of [...groups.entries()].sort(
+  for (const [surface, surfaceEntries] of [...groups.entries()].toSorted(
     ([left], [right]) => left.localeCompare(right)
   )) {
     const independentEntries = uniqueClaimEntries(surfaceEntries);
@@ -1723,7 +1723,7 @@ const toAnchor = (heading: string): string =>
 
 const toSectionKey = (heading: string): string => {
   const numbered = SECTION_NUMBER_PATTERN.exec(heading);
-  if (numbered?.[1] != null) {
+  if (numbered?.[1] !== undefined) {
     return numbered[1];
   }
 
@@ -1740,14 +1740,28 @@ const toSectionKey = (heading: string): string => {
 const formatJson = (value: unknown): string =>
   `${JSON.stringify(value, null, 2)}\n`;
 
+const forEachSequential = async <T>(
+  values: readonly T[],
+  operation: (value: T, index: number) => Promise<void>,
+  index = 0
+): Promise<void> => {
+  const value = values[index];
+  if (value === undefined) {
+    return;
+  }
+
+  await operation(value, index);
+  await forEachSequential(values, operation, index + 1);
+};
+
 const writeArtifacts = async (
   artifacts: readonly OutputArtifact[]
 ): Promise<void> => {
   await mkdir(OUTPUT_DIR, { recursive: true });
 
-  for (const artifact of artifacts) {
+  await forEachSequential(artifacts, async (artifact) => {
     await writeFile(artifact.path, artifact.content, "utf-8");
-  }
+  });
 };
 
 const checkArtifacts = async (
@@ -1755,7 +1769,7 @@ const checkArtifacts = async (
 ): Promise<void> => {
   const stalePaths: string[] = [];
 
-  for (const artifact of artifacts) {
+  await forEachSequential(artifacts, async (artifact) => {
     let currentContent: string;
     try {
       currentContent = await readFile(artifact.path, "utf-8");
@@ -1766,7 +1780,7 @@ const checkArtifacts = async (
         error.code === "ENOENT"
       ) {
         stalePaths.push(artifact.path);
-        continue;
+        return;
       }
       throw error;
     }
@@ -1774,7 +1788,7 @@ const checkArtifacts = async (
     if (currentContent !== artifact.content) {
       stalePaths.push(artifact.path);
     }
-  }
+  });
 
   if (stalePaths.length > 0) {
     throw new Error(
@@ -1815,7 +1829,7 @@ const pushClaim = async (
 };
 
 const flushProseBlock = async (state: DocParseState): Promise<void> => {
-  if (state.proseBlock == null) {
+  if (state.proseBlock === null) {
     return;
   }
 
@@ -1901,7 +1915,7 @@ const appendProseLine = async (
     await flushProseBlock(state);
   }
 
-  if (state.proseBlock == null) {
+  if (state.proseBlock === null) {
     state.proseBlock = {
       heading,
       line,
@@ -1939,7 +1953,7 @@ const parseDocLine = async (
   }
 
   const headingMatch = HEADING_PATTERN.exec(trimmed);
-  if (headingMatch != null) {
+  if (headingMatch !== null) {
     await parseHeadingLine(state, headingMatch, line);
     return;
   }
@@ -1976,9 +1990,12 @@ const parseDocSource = async (
     source,
   };
 
-  for (const [index, rawLine] of text.split(LINE_SPLIT_PATTERN).entries()) {
-    await parseDocLine(state, rawLine, index + 1);
-  }
+  await forEachSequential(
+    text.split(LINE_SPLIT_PATTERN),
+    async (rawLine, index) => {
+      await parseDocLine(state, rawLine, index + 1);
+    }
+  );
 
   await flushProseBlock(state);
 
@@ -2000,7 +2017,7 @@ const classifyFrameworkCoreSection = (
   }
 
   const eventSectionDecision = classifyFrameworkEventStreamSection(section);
-  if (eventSectionDecision != null) {
+  if (eventSectionDecision !== null) {
     return eventSectionDecision;
   }
 
@@ -2055,7 +2072,7 @@ const classifyFrameworkClaim = (
   const text = claim.text.toLowerCase();
 
   const saasTargetDecision = classifySaaSReadinessTargetClaim(section, text);
-  if (saasTargetDecision != null) {
+  if (saasTargetDecision !== null) {
     return saasTargetDecision;
   }
 
@@ -2091,7 +2108,7 @@ const classifyFrameworkClaim = (
     section,
     text
   );
-  if (controlSurfaceDecision != null) {
+  if (controlSurfaceDecision !== null) {
     return controlSurfaceDecision;
   }
 
@@ -2107,12 +2124,12 @@ const classifyFrameworkClaim = (
   }
 
   const coreSectionDecision = classifyFrameworkCoreSection(section, text);
-  if (coreSectionDecision != null) {
+  if (coreSectionDecision !== null) {
     return coreSectionDecision;
   }
 
   const runtimeSectionDecision = classifyFrameworkRuntimeSection(section);
-  if (runtimeSectionDecision != null) {
+  if (runtimeSectionDecision !== null) {
     return runtimeSectionDecision;
   }
 
@@ -2126,19 +2143,19 @@ const classifyKernelClaim = (claim: NormativeClaim): ClassificationDecision => {
   const section = claim.sectionKey;
   const text = claim.text.toLowerCase();
   const saasTargetDecision = classifySaaSReadinessTargetClaim(section, text);
-  if (saasTargetDecision != null) {
+  if (saasTargetDecision !== null) {
     return saasTargetDecision;
   }
   const portabilityNoteDecision = classifyKernelPortabilityNoteText(text);
-  if (portabilityNoteDecision != null) {
+  if (portabilityNoteDecision !== null) {
     return portabilityNoteDecision;
   }
   const postureDecision = classifyKernelPostureText(text);
-  if (postureDecision != null) {
+  if (postureDecision !== null) {
     return postureDecision;
   }
   const deferredDecisionResult = classifyKernelDeferredText(section, text);
-  if (deferredDecisionResult != null) {
+  if (deferredDecisionResult !== null) {
     return deferredDecisionResult;
   }
 
@@ -2150,7 +2167,7 @@ const classifyKernelClaim = (claim: NormativeClaim): ClassificationDecision => {
     classifyKernelCoreSection,
   ]) {
     const decision = classifier(section, text);
-    if (decision != null) {
+    if (decision !== null) {
       return decision;
     }
   }
@@ -2189,21 +2206,24 @@ const validateCoverageMatrixEvidence = async (
 ): Promise<void> => {
   const failures: string[] = [];
 
-  for (const entry of entries) {
+  await forEachSequential(entries, async (entry) => {
     if (entry.classification !== "authority-backed-conformance-covered") {
-      continue;
+      return;
     }
 
     failures.push(...authorityAnchorPresenceFailures(entry));
 
-    for (const reference of authorityEvidenceReferences(entry)) {
-      if (!(await pathExists(reference.path))) {
-        failures.push(
-          `${entry.claimId} ${reference.field} path does not exist: ${reference.path}`
-        );
+    await forEachSequential(
+      authorityEvidenceReferences(entry),
+      async (reference) => {
+        if (!(await pathExists(reference.path))) {
+          failures.push(
+            `${entry.claimId} ${reference.field} path does not exist: ${reference.path}`
+          );
+        }
       }
-    }
-  }
+    );
+  });
 
   if (failures.length > 0) {
     throw new Error(
