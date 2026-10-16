@@ -32,12 +32,16 @@ import {
   wait,
 } from "./react-runner-test-helpers.ts";
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 describe("runner-react", () => {
   test("renders host and extension system prompts plus tools into the provider prompt", async () => {
     let capturedMessages: TuvrenMessage[] = [];
     let capturedToolsLength = 0;
     const provider = {
       async generate(prompt) {
+        await Promise.resolve();
         capturedMessages = prompt.messages;
         capturedToolsLength = prompt.tools?.length ?? 0;
         return {
@@ -86,6 +90,7 @@ describe("runner-react", () => {
     let capturedMessages: TuvrenMessage[] = [];
     const provider = {
       async generate(prompt) {
+        await Promise.resolve();
         capturedMessages = prompt.messages;
         return {
           finishReason: "stop",
@@ -128,6 +133,7 @@ describe("runner-react", () => {
     let capturedMessages: TuvrenMessage[] = [];
     const provider = {
       async generate(prompt) {
+        await Promise.resolve();
         capturedMessages = prompt.messages;
         return {
           finishReason: "stop",
@@ -188,6 +194,7 @@ describe("runner-react", () => {
     let streamCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         generateCalls += 1;
         return {
           finishReason: "tool_call",
@@ -233,6 +240,7 @@ describe("runner-react", () => {
     let generateCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         generateCalls += 1;
         return {
           finishReason: "stop",
@@ -278,6 +286,7 @@ describe("runner-react", () => {
   test("fails hard with invalid_loop_policy when loopPolicy disables tool execution for tool-call responses", async () => {
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "tool_call",
           parts: [
@@ -330,6 +339,7 @@ describe("runner-react", () => {
   test("fails hard with invalid_loop_policy when loopPolicy returns a terminal decision for tool-call responses", async () => {
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "tool_call",
           parts: [
@@ -384,6 +394,7 @@ describe("runner-react", () => {
     let streamCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         generateCalls += 1;
         return {
           finishReason: "stop",
@@ -396,11 +407,9 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const runner = createReActRunner({
-      providerCallMode() {
-        return JSON.parse('"bogus"');
-      },
-    }).create();
+    const runnerOptions = { providerCallMode: "generate" as const };
+    Reflect.set(runnerOptions, "providerCallMode", () => "bogus");
+    const runner = createReActRunner(runnerOptions).create();
 
     const result = await runner.execute(
       createRunnerExecutionContext({
@@ -427,6 +436,7 @@ describe("runner-react", () => {
     let generateCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         generateCalls += 1;
         return {
           finishReason: "tool_call",
@@ -445,12 +455,12 @@ describe("runner-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const runner = createReActRunner({
+    const runnerOptions = {
       providerCallMode: "generate",
-      toolExecutionMode() {
-        return JSON.parse('"bogus"');
-      },
-    }).create();
+      toolExecutionMode: "parallel",
+    } as const;
+    Reflect.set(runnerOptions, "toolExecutionMode", () => "bogus");
+    const runner = createReActRunner(runnerOptions).create();
 
     const result = await runner.execute(
       createRunnerExecutionContext({
@@ -475,6 +485,7 @@ describe("runner-react", () => {
   test("fails hard when loopPolicy returns a malformed IterationDecision", async () => {
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "stop",
           parts: [{ text: "bad decision", type: "text" }],
@@ -489,14 +500,20 @@ describe("runner-react", () => {
       providerCallMode: "generate",
     }).create();
 
+    const loopPolicy = {
+      evaluate() {
+        return { continue: false, executeTools: false };
+      },
+    };
+    Reflect.set(loopPolicy, "evaluate", () => ({
+      continue: "yes",
+      executeTools: false,
+    }));
+
     const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
-          loopPolicy: {
-            evaluate() {
-              return JSON.parse('{"continue":"yes","executeTools":false}');
-            },
-          },
+          loopPolicy,
           model: provider,
           name: "primary",
         },
@@ -516,6 +533,7 @@ describe("runner-react", () => {
   test("fails hard when loopPolicy returns a non-object value", async () => {
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "stop",
           parts: [{ text: "bad primitive decision", type: "text" }],
@@ -530,14 +548,17 @@ describe("runner-react", () => {
       providerCallMode: "generate",
     }).create();
 
+    const loopPolicy = {
+      evaluate() {
+        return { continue: false, executeTools: false };
+      },
+    };
+    Reflect.set(loopPolicy, "evaluate", () => null);
+
     const result = await runner.execute(
       createRunnerExecutionContext({
         config: {
-          loopPolicy: {
-            evaluate() {
-              return JSON.parse("null");
-            },
-          },
+          loopPolicy,
           model: provider,
           name: "primary",
         },
@@ -555,15 +576,23 @@ describe("runner-react", () => {
   });
 
   test("fails hard with a stable contract error when generate returns a malformed response", async () => {
-    const provider = {
+    const provider: TuvrenProvider = {
       async generate() {
-        return JSON.parse('{"finishReason":"stop"}');
+        await Promise.resolve();
+        return {
+          finishReason: "stop",
+          parts: [{ text: "valid placeholder", type: "text" }],
+        };
       },
       id: "provider",
       async *stream() {
         yield* [];
       },
-    } satisfies TuvrenProvider;
+    };
+    Reflect.set(provider, "generate", async () => {
+      await Promise.resolve();
+      return { finishReason: "stop" };
+    });
     const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
@@ -588,17 +617,26 @@ describe("runner-react", () => {
   });
 
   test("fails hard with a stable contract error when generate returns an uncloneable malformed response", async () => {
-    const provider = {
+    const provider: TuvrenProvider = {
       async generate() {
-        const response = JSON.parse('{"finishReason":"stop"}');
-        response.uncloneable = () => "invalid";
-        return response;
+        await Promise.resolve();
+        return {
+          finishReason: "stop",
+          parts: [{ text: "valid placeholder", type: "text" }],
+        };
       },
       id: "provider",
       async *stream() {
         yield* [];
       },
-    } satisfies TuvrenProvider;
+    };
+    Reflect.set(provider, "generate", async () => {
+      await Promise.resolve();
+      return {
+        finishReason: "stop",
+        uncloneable: () => "invalid",
+      };
+    });
     const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
@@ -627,6 +665,7 @@ describe("runner-react", () => {
     let generateCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         generateCalls += 1;
         return {
           finishReason: "stop",
@@ -765,17 +804,22 @@ describe("runner-react", () => {
     expect(result.messages).toHaveLength(1);
     const toolMessage = result.messages?.[0];
     expect(toolMessage?.role).toBe("tool");
-    const toolMessageParts = (toolMessage as { parts?: unknown[] })?.parts;
-    const toolResultPart = toolMessageParts?.[0] as
-      | Record<string, unknown>
-      | undefined;
+    if (toolMessage?.role !== "tool") {
+      throw new TypeError("expected a tool message");
+    }
+    const [toolResultPart] = toolMessage.parts;
     expect(toolResultPart?.name).toBe("code_execution");
     expect(toolResultPart?.type).toBe("tool_result");
-    const nativeMeta = toolResultPart?.providerMetadata as
-      | Record<string, unknown>
-      | undefined;
-    expect(nativeMeta?.owner).toBe("provider");
-    expect(nativeMeta?.executionClass).toBe("provider-native");
+    if (toolResultPart?.type !== "tool_result") {
+      throw new TypeError("expected a tool result part");
+    }
+    const nativeMeta = toolResultPart.providerMetadata;
+    expect(isRecord(nativeMeta) ? nativeMeta.owner : undefined).toBe(
+      "provider"
+    );
+    expect(isRecord(nativeMeta) ? nativeMeta.executionClass : undefined).toBe(
+      "provider-native"
+    );
 
     // Resolution should be end_turn (no regular tool calls dispatched)
     expect(result.resolution.type).toBe("end_turn");
@@ -832,15 +876,20 @@ describe("runner-react", () => {
     expect(result.messages).toHaveLength(1);
     const toolMessage = result.messages?.[0];
     expect(toolMessage?.role).toBe("tool");
-    const toolResultPart = (toolMessage as { parts?: unknown[] })
-      ?.parts?.[0] as Record<string, unknown> | undefined;
+    if (toolMessage?.role !== "tool") {
+      throw new TypeError("expected a tool message");
+    }
+    const [toolResultPart] = toolMessage.parts;
     expect(toolResultPart?.name).toBe("mcp_tool");
+    if (toolResultPart?.type !== "tool_result") {
+      throw new TypeError("expected a tool result part");
+    }
     // Canonical attribution fields must survive end-to-end
-    const meta = toolResultPart?.providerMetadata as
-      | Record<string, unknown>
-      | undefined;
-    expect(meta?.owner).toBe("provider");
-    expect(meta?.executionClass).toBe("provider-mediated");
+    const meta = toolResultPart.providerMetadata;
+    expect(isRecord(meta) ? meta.owner : undefined).toBe("provider");
+    expect(isRecord(meta) ? meta.executionClass : undefined).toBe(
+      "provider-mediated"
+    );
     expect(result.resolution.type).toBe("end_turn");
   });
 });

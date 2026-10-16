@@ -40,6 +40,7 @@ describe("runner-react aroundModel", () => {
     let providerCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         providerCalls += 1;
         return {
           finishReason: "stop",
@@ -53,6 +54,7 @@ describe("runner-react aroundModel", () => {
     } satisfies TuvrenProvider;
     const extension: TuvrenExtension = {
       async aroundModel(_context, _next) {
+        await Promise.resolve();
         return {
           finishReason: "stop",
           parts: [{ text: "short-circuit", type: "text" }],
@@ -95,6 +97,7 @@ describe("runner-react aroundModel", () => {
     let capturedToolsLength = 0;
     const provider = {
       async generate(prompt) {
+        await Promise.resolve();
         capturedMessages = prompt.messages;
         capturedConfig = prompt.config;
         capturedToolsLength = prompt.tools?.length ?? 0;
@@ -117,7 +120,7 @@ describe("runner-react aroundModel", () => {
         config: {
           extensions: [
             {
-              async aroundModel(context, next) {
+              async aroundModel(context, proceed) {
                 context.config = {
                   ...context.config,
                   model: "mutated-model",
@@ -133,7 +136,7 @@ describe("runner-react aroundModel", () => {
                   },
                 ];
                 context.tools = [];
-                return await next();
+                return await proceed();
               },
               name: "mutator",
             },
@@ -152,14 +155,12 @@ describe("runner-react aroundModel", () => {
         temperature: 0.1,
       },
     });
-    expect(capturedMessages).toEqual(
-      expect.arrayContaining([
-        {
-          content: "Injected guidance",
-          role: "system",
-        },
-      ])
-    );
+    expect(
+      capturedMessages.some(
+        (message) =>
+          message.role === "system" && message.content === "Injected guidance"
+      )
+    ).toBe(true);
     expect(capturedToolsLength).toBe(0);
   });
 
@@ -168,6 +169,7 @@ describe("runner-react aroundModel", () => {
     let observedSharedExport: unknown;
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "stop",
           parts: [{ text: "isolated snapshots", type: "text" }],
@@ -191,22 +193,22 @@ describe("runner-react aroundModel", () => {
               name: "source",
             },
             {
-              async aroundModel(context, next) {
+              async aroundModel(context, proceed) {
                 context.manifest.extensions.source = {
                   exported: "mutated-manifest",
                 };
                 context.sharedExports.source.exported = "mutated-shared";
-                return await next(context);
+                return await proceed(context);
               },
               name: "outer",
             },
             {
-              async aroundModel(context, next) {
+              async aroundModel(context, proceed) {
                 observedManifestSource = toRecord(
                   context.manifest.extensions.source
                 );
                 observedSharedExport = context.sharedExports.source?.exported;
-                return await next(context);
+                return await proceed(context);
               },
               name: "observer",
             },
@@ -232,6 +234,7 @@ describe("runner-react aroundModel", () => {
     let capturedResponseFormat: TuvrenPrompt["responseFormat"];
     const provider = {
       async generate(prompt) {
+        await Promise.resolve();
         capturedResponseFormat = prompt.responseFormat;
         return {
           finishReason: "stop",
@@ -252,9 +255,9 @@ describe("runner-react aroundModel", () => {
         config: {
           extensions: [
             {
-              async aroundModel(context, next) {
+              async aroundModel(context, proceed) {
                 context.prompt.responseFormat = undefined;
-                return await next();
+                return await proceed();
               },
               name: "schema-toggle",
             },
@@ -290,6 +293,7 @@ describe("runner-react aroundModel", () => {
     let capturedResponseFormat: TuvrenPrompt["responseFormat"];
     const provider = {
       async generate(prompt) {
+        await Promise.resolve();
         capturedResponseFormat = prompt.responseFormat;
         return {
           finishReason: "stop",
@@ -310,8 +314,8 @@ describe("runner-react aroundModel", () => {
         config: {
           extensions: [
             {
-              async aroundModel(context, next) {
-                const response = await next();
+              async aroundModel(context, proceed) {
+                const response = await proceed();
                 context.prompt.responseFormat = undefined;
                 return response;
               },
@@ -358,6 +362,7 @@ describe("runner-react aroundModel", () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -381,8 +386,8 @@ describe("runner-react aroundModel", () => {
         config: {
           extensions: [
             {
-              async aroundModel(_context, next) {
-                const response = await next();
+              async aroundModel(_context, proceed) {
+                const response = await proceed();
                 return {
                   ...response,
                   parts: [{ text: "modified", type: "text" }],
@@ -419,6 +424,7 @@ describe("runner-react aroundModel", () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "stop",
           parts: [{ text: "provider response", type: "text" }],
@@ -438,8 +444,8 @@ describe("runner-react aroundModel", () => {
         config: {
           extensions: [
             {
-              async aroundModel(_context, next) {
-                await next();
+              async aroundModel(_context, proceed) {
+                await proceed();
                 throw new Error("telemetry write failed");
               },
               name: "telemetry",
@@ -484,6 +490,7 @@ describe("runner-react aroundModel", () => {
     let generateCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         generateCalls += 1;
         return {
           finishReason: "stop",
@@ -501,8 +508,8 @@ describe("runner-react aroundModel", () => {
       },
     } satisfies TuvrenProvider;
     const extension: TuvrenExtension = {
-      async aroundModel(context, next) {
-        await next(context);
+      async aroundModel(context, proceed) {
+        await proceed(context);
         const retryContext = {
           ...context,
           prompt: {
@@ -516,7 +523,7 @@ describe("runner-react aroundModel", () => {
             ],
           },
         };
-        return await next(retryContext);
+        return await proceed(retryContext);
       },
       name: "retry",
     };
@@ -549,6 +556,7 @@ describe("runner-react aroundModel", () => {
     let generateCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         generateCalls += 1;
         return {
           finishReason: "stop",
@@ -574,9 +582,9 @@ describe("runner-react aroundModel", () => {
         config: {
           extensions: [
             {
-              async aroundModel(context, next) {
-                const firstResponse = await next(context);
-                await next(context);
+              async aroundModel(context, proceed) {
+                const firstResponse = await proceed(context);
+                await proceed(context);
                 return firstResponse;
               },
               name: "retry",
@@ -607,6 +615,7 @@ describe("runner-react aroundModel", () => {
     let streamCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -631,9 +640,9 @@ describe("runner-react aroundModel", () => {
         config: {
           extensions: [
             {
-              async aroundModel(context, next) {
-                const firstResponse = await next(context);
-                await next(context);
+              async aroundModel(context, proceed) {
+                const firstResponse = await proceed(context);
+                await proceed(context);
                 return firstResponse;
               },
               name: "retry",
@@ -672,6 +681,7 @@ describe("runner-react aroundModel", () => {
     let generateCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         generateCalls += 1;
         return {
           finishReason: "stop",
@@ -692,15 +702,15 @@ describe("runner-react aroundModel", () => {
         config: {
           extensions: [
             {
-              async aroundModel(context, next) {
-                await next(context);
-                return await next(context);
+              async aroundModel(context, proceed) {
+                await proceed(context);
+                return await proceed(context);
               },
               name: "retry",
             },
             {
-              async aroundModel(context, next) {
-                const response = await next(context);
+              async aroundModel(context, proceed) {
+                const response = await proceed(context);
                 return {
                   response,
                   state:

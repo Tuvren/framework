@@ -36,6 +36,7 @@ describe("runner-react streamed failure handling", () => {
   test("fails hard when provider emits an error chunk", async () => {
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -75,6 +76,7 @@ describe("runner-react streamed failure handling", () => {
   test("preserves provider error codes from stream error chunks", async () => {
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -121,6 +123,7 @@ describe("runner-react streamed failure handling", () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -164,14 +167,17 @@ describe("runner-react streamed failure handling", () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
       async *stream() {
-        const chunk = JSON.parse(
-          '{"finishReason":"stop","type":"finish","unexpected":true}'
-        );
-        chunk.uncloneable = () => "invalid";
+        const chunk = {
+          finishReason: "stop",
+          type: "finish",
+          uncloneable: () => "invalid",
+          unexpected: true,
+        } as const;
         yield chunk;
       },
     } satisfies TuvrenProvider;
@@ -206,6 +212,7 @@ describe("runner-react streamed failure handling", () => {
     const controller = new AbortController();
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -284,9 +291,11 @@ describe("runner-react streamed failure handling", () => {
             }
 
             controller.abort(new Error("cancelled during stream"));
-            await new Promise<void>((resolve) => {
-              releasePendingRead = resolve;
-            });
+            const { promise, resolve } = Promise.withResolvers<null>();
+            releasePendingRead = () => {
+              resolve(null);
+            };
+            await promise;
 
             return {
               done: true,
@@ -297,16 +306,17 @@ describe("runner-react streamed failure handling", () => {
             returnCalls += 1;
             releasePendingRead?.();
 
-            return {
+            return await Promise.resolve({
               done: true,
               value: undefined,
-            };
+            });
           },
         };
       },
     };
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -346,11 +356,85 @@ describe("runner-react streamed failure handling", () => {
     ]);
   });
 
+  test("observes cancellation after a completed provider pull before consuming its chunk", async () => {
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const controller = new AbortController();
+    let nextCalls = 0;
+    let returnCalls = 0;
+    const stream = {
+      [Symbol.asyncIterator](): AsyncIterator<ProviderStreamChunk> {
+        return {
+          async next(): Promise<IteratorResult<ProviderStreamChunk>> {
+            nextCalls += 1;
+
+            return await Promise.resolve({
+              done: false,
+              get value(): ProviderStreamChunk {
+                controller.abort(new Error("cancelled during pull handoff"));
+
+                return {
+                  text: "must not be consumed",
+                  type: "text_delta",
+                };
+              },
+            });
+          },
+          async return() {
+            returnCalls += 1;
+
+            return await Promise.resolve({
+              done: true,
+              value: undefined,
+            });
+          },
+        };
+      },
+    };
+    const provider = {
+      async generate() {
+        await Promise.resolve();
+        throw new Error("generate should not be called");
+      },
+      id: "provider",
+      stream() {
+        return stream;
+      },
+    } satisfies TuvrenProvider;
+    const runner = createReActRunner({
+      providerCallMode: "stream",
+    }).create();
+
+    const result = await runner.execute(
+      createRunnerExecutionContext({
+        config: {
+          model: provider,
+          name: "primary",
+        },
+        emittedEvents,
+        signal: controller.signal,
+      })
+    );
+
+    expect(nextCalls).toBe(1);
+    expect(returnCalls).toBe(1);
+    expect(result.resolution).toMatchObject({
+      error: {
+        code: "react_runner_execution_cancelled",
+      },
+      type: "fail",
+    });
+    expect(emittedEvents.map((event) => event.type)).toEqual([
+      "message.start",
+      "message.done",
+    ]);
+  });
+
   test("returns a contract-valid partial tool-call message when stream aborts after a tool call", async () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const controller = new AbortController();
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -406,7 +490,7 @@ describe("runner-react streamed failure handling", () => {
       throw new Error("expected a partial assistant message");
     }
 
-    const part = message.parts[0];
+    const [part] = message.parts;
 
     if (part?.type !== "tool_call") {
       throw new Error("expected a partial tool call");
@@ -430,6 +514,7 @@ describe("runner-react streamed failure handling", () => {
     const controller = new AbortController();
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -485,6 +570,7 @@ describe("runner-react streamed failure handling", () => {
     const controller = new AbortController();
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -552,6 +638,7 @@ describe("runner-react streamed failure handling", () => {
     const controller = new AbortController();
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",

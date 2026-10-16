@@ -36,12 +36,37 @@ import {
   textSignal,
 } from "./react-runner-test-helpers.ts";
 
+const isUnknownArray = (value: unknown): value is unknown[] =>
+  Array.isArray(value);
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const findAssistantTextMessage = (messages: unknown, text: string): unknown => {
+  if (!isUnknownArray(messages)) {
+    return undefined;
+  }
+  return messages.find((message) => {
+    if (!(isRecord(message) && isUnknownArray(message.parts))) {
+      return false;
+    }
+    const [part] = message.parts;
+    return (
+      message.role === "assistant" &&
+      isRecord(part) &&
+      part.text === text &&
+      part.type === "text"
+    );
+  });
+};
+
 describe("runner-react integration aroundModel", () => {
   test("executes end to end through runtime-core for aroundModel short-circuit synthesis", async () => {
     const harness = createFakeKernelHarness();
     let providerCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         providerCalls += 1;
         return {
           finishReason: "stop",
@@ -69,6 +94,7 @@ describe("runner-react integration aroundModel", () => {
         extensions: [
           {
             async aroundModel() {
+              await Promise.resolve();
               return {
                 finishReason: "stop",
                 parts: [{ text: "cached answer", type: "text" }],
@@ -85,25 +111,22 @@ describe("runner-react integration aroundModel", () => {
     });
 
     const events = await collectEvents(handle.events());
-    const messages = await harness.readBranchMessages(thread.branchId);
+    const messages: unknown = await harness.readBranchMessages(thread.branchId);
 
     expect(providerCalls).toBe(0);
     expect(events.some((event) => event.type === "message.done")).toBe(true);
     expect(handle.status().phase).toBe("completed");
-    expect(messages).toEqual(
-      expect.arrayContaining([
-        {
-          parts: [{ text: "cached answer", type: "text" }],
-          role: "assistant",
-        },
-      ])
-    );
+    expect(findAssistantTextMessage(messages, "cached answer")).toEqual({
+      parts: [{ text: "cached answer", type: "text" }],
+      role: "assistant",
+    });
   });
 
   test("executes end to end through runtime-core when aroundModel replaces the durable response after one next() call", async () => {
     const harness = createFakeKernelHarness();
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -133,8 +156,8 @@ describe("runner-react integration aroundModel", () => {
       config: {
         extensions: [
           {
-            async aroundModel(_context, next) {
-              const response = await next();
+            async aroundModel(_context, proceed) {
+              const response = await proceed();
               return {
                 ...response,
                 parts: [{ text: "modified", type: "text" }],
@@ -151,7 +174,7 @@ describe("runner-react integration aroundModel", () => {
     });
 
     const events = await collectEvents(handle.events());
-    const messages = await harness.readBranchMessages(thread.branchId);
+    const messages: unknown = await harness.readBranchMessages(thread.branchId);
 
     expect(handle.status().phase).toBe("completed");
     expect(
@@ -164,20 +187,17 @@ describe("runner-react integration aroundModel", () => {
         )
         .map((event) => event.text)
     ).toEqual(["provider"]);
-    expect(messages).toEqual(
-      expect.arrayContaining([
-        {
-          parts: [{ text: "modified", type: "text" }],
-          role: "assistant",
-        },
-      ])
-    );
+    expect(findAssistantTextMessage(messages, "modified")).toEqual({
+      parts: [{ text: "modified", type: "text" }],
+      role: "assistant",
+    });
   });
 
   test("does not request final sequence divergence for metadata-only aroundModel changes", async () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -204,8 +224,8 @@ describe("runner-react integration aroundModel", () => {
         config: {
           extensions: [
             {
-              async aroundModel(_context, next) {
-                const response = await next();
+              async aroundModel(_context, proceed) {
+                const response = await proceed();
 
                 return {
                   ...response,
@@ -246,6 +266,7 @@ describe("runner-react integration aroundModel", () => {
     const harness = createFakeKernelHarness();
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -278,8 +299,8 @@ describe("runner-react integration aroundModel", () => {
       config: {
         extensions: [
           {
-            async aroundModel(_context, next) {
-              const response = await next();
+            async aroundModel(_context, proceed) {
+              const response = await proceed();
 
               return {
                 ...response,
@@ -299,21 +320,17 @@ describe("runner-react integration aroundModel", () => {
     });
 
     const events = await collectEvents(handle.events());
-    const messages = await harness.readBranchMessages(thread.branchId);
+    const messages: unknown = await harness.readBranchMessages(thread.branchId);
 
     expect(handle.status().phase).toBe("completed");
     expect(events.some((event) => event.type === "error")).toBe(false);
-    expect(messages).toEqual(
-      expect.arrayContaining([
-        {
-          parts: [{ text: "provider", type: "text" }],
-          providerMetadata: {
-            cache: "hit",
-          },
-          role: "assistant",
-        },
-      ])
-    );
+    expect(findAssistantTextMessage(messages, "provider")).toEqual({
+      parts: [{ text: "provider", type: "text" }],
+      providerMetadata: {
+        cache: "hit",
+      },
+      role: "assistant",
+    });
   });
 
   test("fails end to end through runtime-core when aroundModel retry returns a stale streamed response", async () => {
@@ -321,6 +338,7 @@ describe("runner-react integration aroundModel", () => {
     let streamCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -351,9 +369,9 @@ describe("runner-react integration aroundModel", () => {
       config: {
         extensions: [
           {
-            async aroundModel(context, next) {
-              const firstResponse = await next(context);
-              await next(context);
+            async aroundModel(context, proceed) {
+              const firstResponse = await proceed(context);
+              await proceed(context);
               return firstResponse;
             },
             name: "retry",
@@ -400,6 +418,7 @@ describe("runner-react integration aroundModel", () => {
     const harness = createFakeKernelHarness();
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "stop",
           parts: [{ text: "Stateful response", type: "text" }],
@@ -425,8 +444,8 @@ describe("runner-react integration aroundModel", () => {
       config: {
         extensions: [
           {
-            async aroundModel(_context, next) {
-              const response = await next();
+            async aroundModel(_context, proceed) {
+              const response = await proceed();
               return {
                 response,
                 state: {
@@ -463,6 +482,7 @@ describe("runner-react integration aroundModel", () => {
     let generateCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         generateCalls += 1;
         return {
           finishReason: "stop",
@@ -489,15 +509,15 @@ describe("runner-react integration aroundModel", () => {
       config: {
         extensions: [
           {
-            async aroundModel(context, next) {
-              await next(context);
-              return await next(context);
+            async aroundModel(context, proceed) {
+              await proceed(context);
+              return await proceed(context);
             },
             name: "retry",
           },
           {
-            async aroundModel(context, next) {
-              const response = await next(context);
+            async aroundModel(context, proceed) {
+              const response = await proceed(context);
               return {
                 response,
                 state:

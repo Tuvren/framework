@@ -58,6 +58,7 @@ const createRecordingProvider = (): {
   let call = 0;
   const provider: TuvrenProvider = {
     async generate(prompt) {
+      await Promise.resolve();
       capturedPrompts.push(structuredClone(prompt.messages));
       call += 1;
       if (call === 1) {
@@ -98,6 +99,17 @@ const buildRuntime = (provider: TuvrenProvider) => {
   return { harness, provider, runtime };
 };
 
+const isUnknownArray = (value: unknown): value is unknown[] =>
+  Array.isArray(value);
+
+const isAssistantRecord = (
+  message: unknown
+): message is { parts?: unknown; role: "assistant" } =>
+  typeof message === "object" &&
+  message !== null &&
+  "role" in message &&
+  message.role === "assistant";
+
 const runTurn = async (
   runtime: ReturnType<typeof buildRuntime>,
   ids: { branchId: string; threadId: string },
@@ -113,13 +125,22 @@ const runTurn = async (
   expect(result.status).toBe("completed");
 };
 
-const assistantContinuity = (messages: TuvrenMessage[]): unknown => {
-  const assistant = messages.find((message) => message.role === "assistant");
-  const firstPart = assistant?.parts[0];
-  return firstPart && "providerMetadata" in firstPart
+const assistantContinuity = (messages: unknown[]): unknown => {
+  const assistant = messages.find(isAssistantRecord);
+  const firstPart = isUnknownArray(assistant?.parts)
+    ? assistant.parts[0]
+    : undefined;
+  return typeof firstPart === "object" &&
+    firstPart !== null &&
+    "providerMetadata" in firstPart
     ? firstPart.providerMetadata
     : undefined;
 };
+
+const messageRole = (message: unknown): unknown =>
+  typeof message === "object" && message !== null && "role" in message
+    ? message.role
+    : undefined;
 
 describe("KRT-BH002 reconstruct-from-DAG", () => {
   test("the next turn's provider request is reconstructed from durable lineage carrying the prior continuity, with no provider-held state", async () => {
@@ -132,12 +153,15 @@ describe("KRT-BH002 reconstruct-from-DAG", () => {
     await runTurn(runtime, ids, "first question");
 
     // The durable lineage after turn 1, read back purely from the DAG.
-    const durableAfterTurn1 = (await runtime.harness.readBranchMessages(
+    const durableAfterTurn1: unknown = await runtime.harness.readBranchMessages(
       ids.branchId
-    )) as TuvrenMessage[];
+    );
+    if (!isUnknownArray(durableAfterTurn1)) {
+      throw new TypeError("expected durable branch messages");
+    }
     expect(durableAfterTurn1).toHaveLength(2);
-    expect(durableAfterTurn1[0]?.role).toBe("user");
-    expect(durableAfterTurn1[1]?.role).toBe("assistant");
+    expect(messageRole(durableAfterTurn1[0])).toBe("user");
+    expect(messageRole(durableAfterTurn1[1])).toBe("assistant");
     // The continuity artifact was persisted onto the durable assistant message.
     expect(JSON.stringify(durableAfterTurn1)).toContain(CONTINUITY);
 
@@ -148,7 +172,7 @@ describe("KRT-BH002 reconstruct-from-DAG", () => {
     // The provider was called twice; the second call's prompt is what the
     // Provider Gateway built for the next turn.
     expect(capturedPrompts).toHaveLength(2);
-    const secondRequest = capturedPrompts[1];
+    const [, secondRequest] = capturedPrompts;
     if (secondRequest === undefined) {
       throw new Error("expected a second provider request");
     }
@@ -156,8 +180,8 @@ describe("KRT-BH002 reconstruct-from-DAG", () => {
     // (1) Reconstructed from durable lineage: the second request's leading
     // history is exactly the durable reconstruction after turn 1 (user +
     // continuity-bearing assistant), not anything the provider retained.
-    expect(secondRequest.slice(0, durableAfterTurn1.length)).toEqual(
-      durableAfterTurn1
+    expect(durableAfterTurn1).toEqual(
+      secondRequest.slice(0, durableAfterTurn1.length)
     );
 
     // (2) The carried continuity rode through the DAG into the next request.

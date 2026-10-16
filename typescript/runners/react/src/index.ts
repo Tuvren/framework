@@ -15,7 +15,7 @@
  */
 
 /**
- * @packageDocumentation
+ * Package documentation
  *
  * `@tuvren/runner-react` implements the ReAct (reason-then-act) shared runner:
  * a single-provider-call-per-iteration `RuntimeRunner` that drives the model,

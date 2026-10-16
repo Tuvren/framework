@@ -43,6 +43,7 @@ describe("runner-react integration", () => {
     const harness = createFakeKernelHarness();
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -123,6 +124,7 @@ describe("runner-react integration", () => {
     const harness = createFakeKernelHarness();
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -198,6 +200,7 @@ describe("runner-react integration", () => {
     const harness = createFakeKernelHarness();
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -238,20 +241,16 @@ describe("runner-react integration", () => {
 
     expect(handle.status().phase).toBe("completed");
     expect(events.map((event) => event.type)).toContain("structured.delta");
-    expect(messages).toEqual(
-      expect.arrayContaining([
+    expect(messages).toContainEqual({
+      parts: [
         {
-          parts: [
-            {
-              data: { answer: "ok" },
-              name: "answer",
-              type: "structured",
-            },
-          ],
-          role: "assistant",
+          data: { answer: "ok" },
+          name: "answer",
+          type: "structured",
         },
-      ])
-    );
+      ],
+      role: "assistant",
+    });
   });
 
   test("runtime-core executes another iteration when ReAct loopPolicy requests continuation after plain assistant output", async () => {
@@ -259,6 +258,7 @@ describe("runner-react integration", () => {
     let generateCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         generateCalls += 1;
         return {
           finishReason: "stop",
@@ -338,6 +338,7 @@ describe("runner-react integration", () => {
   test("fails hard when streamed structured output cannot be parsed", async () => {
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -391,6 +392,7 @@ describe("runner-react integration", () => {
     });
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "stop",
           parts: [{ text: "Hello from ReAct.", type: "text" }],
@@ -417,14 +419,10 @@ describe("runner-react integration", () => {
 
     expect(events.some((event) => event.type === "message.done")).toBe(true);
     expect(handle.status().phase).toBe("completed");
-    expect(messages).toEqual(
-      expect.arrayContaining([
-        {
-          parts: [{ text: "Hello from ReAct.", type: "text" }],
-          role: "assistant",
-        },
-      ])
-    );
+    expect(messages).toContainEqual({
+      parts: [{ text: "Hello from ReAct.", type: "text" }],
+      role: "assistant",
+    });
   });
 
   test("executes end to end through runtime-core with a generated response that preserves canonical metadata fields", async () => {
@@ -442,6 +440,7 @@ describe("runner-react integration", () => {
     });
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "length",
           parts: [
@@ -522,19 +521,16 @@ describe("runner-react integration", () => {
     );
 
     expect(handle.status().phase).toBe("completed");
-    expect(events.map((event) => event.type)).toEqual(
-      expect.arrayContaining([
-        "message.start",
-        "text.delta",
-        "text.done",
-        "reasoning.delta",
-        "reasoning.done",
-        "structured.delta",
-        "structured.done",
-        "file.done",
-        "message.done",
-      ])
-    );
+    const eventTypes = events.map((event) => event.type);
+    expect(eventTypes).toContain("message.start");
+    expect(eventTypes).toContain("text.delta");
+    expect(eventTypes).toContain("text.done");
+    expect(eventTypes).toContain("reasoning.delta");
+    expect(eventTypes).toContain("reasoning.done");
+    expect(eventTypes).toContain("structured.delta");
+    expect(eventTypes).toContain("structured.done");
+    expect(eventTypes).toContain("file.done");
+    expect(eventTypes).toContain("message.done");
     expect(messageDoneEvent).toMatchObject({
       finishReason: "length",
       usage: {
@@ -542,51 +538,47 @@ describe("runner-react integration", () => {
         outputTokens: 7,
       },
     });
-    expect(messages).toEqual(
-      expect.arrayContaining([
+    expect(messages).toContainEqual({
+      parts: [
         {
-          parts: [
-            {
-              providerMetadata: {
-                source: "openai-output-text",
-              },
-              text: "Generated answer",
-              type: "text",
-            },
-            {
-              providerMetadata: {
-                signature: "sig-1",
-              },
-              redacted: false,
-              text: "internal reasoning",
-              type: "reasoning",
-            },
-            {
-              data: { answer: "ok" },
-              name: "answer",
-              providerMetadata: {
-                enforcement: "strict",
-              },
-              type: "structured",
-            },
-            {
-              data: fileData,
-              filename: "report.csv",
-              mediaType: "text/csv",
-              providerMetadata: {
-                uploadId: "file-1",
-              },
-              type: "file",
-            },
-          ],
           providerMetadata: {
-            encrypted_content: "enc-123",
-            responseId: "resp-123",
+            source: "openai-output-text",
           },
-          role: "assistant",
+          text: "Generated answer",
+          type: "text",
         },
-      ])
-    );
+        {
+          providerMetadata: {
+            signature: "sig-1",
+          },
+          redacted: false,
+          text: "internal reasoning",
+          type: "reasoning",
+        },
+        {
+          data: { answer: "ok" },
+          name: "answer",
+          providerMetadata: {
+            enforcement: "strict",
+          },
+          type: "structured",
+        },
+        {
+          data: fileData,
+          filename: "report.csv",
+          mediaType: "text/csv",
+          providerMetadata: {
+            uploadId: "file-1",
+          },
+          type: "file",
+        },
+      ],
+      providerMetadata: {
+        encrypted_content: "enc-123",
+        responseId: "resp-123",
+      },
+      role: "assistant",
+    });
     expect(capturedResponse).toEqual({
       finishReason: "length",
       parts: [
@@ -639,6 +631,7 @@ describe("runner-react integration", () => {
     let iteration = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         if (iteration === 0) {
           iteration += 1;
           return {
@@ -713,37 +706,34 @@ describe("runner-react integration", () => {
         (event) => event.type === "tool.result" && event.name === "search"
       )
     ).toBe(true);
-    expect(messages).toEqual(
-      expect.arrayContaining([
+    expect(messages).toContainEqual({
+      parts: [
         {
-          parts: [
-            {
-              callId: "call-search",
-              input: { query: "docs" },
-              name: "search",
-              providerMetadata: {
-                providerCallId: "provider-call-1",
-              },
-              type: "tool_call",
-            },
-          ],
+          callId: "call-search",
+          input: { query: "docs" },
+          name: "search",
           providerMetadata: {
-            responseId: "resp-tool-1",
+            providerCallId: "provider-call-1",
           },
-          role: "assistant",
+          type: "tool_call",
         },
-        {
-          parts: [{ text: "Tool run complete", type: "text" }],
-          role: "assistant",
-        },
-      ])
-    );
+      ],
+      providerMetadata: {
+        responseId: "resp-tool-1",
+      },
+      role: "assistant",
+    });
+    expect(messages).toContainEqual({
+      parts: [{ text: "Tool run complete", type: "text" }],
+      role: "assistant",
+    });
   });
 
   test("does not publish generated assistant events before validation succeeds", async () => {
     const harness = createFakeKernelHarness();
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "stop",
           parts: [{ text: "plain text fallback", type: "text" }],
@@ -806,12 +796,13 @@ describe("runner-react integration", () => {
 
   test("streams assistant events through runtime-core before the provider finishes", async () => {
     const harness = createFakeKernelHarness();
-    let releaseStream: (() => void) | undefined;
-    const streamGate = new Promise<void>((resolve) => {
-      releaseStream = resolve;
-    });
+    const { promise: streamGate, resolve } = Promise.withResolvers<null>();
+    const releaseStream = (): void => {
+      resolve(null);
+    };
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -860,7 +851,7 @@ describe("runner-react integration", () => {
     );
     expect(handle.status().phase).toBe("running");
 
-    releaseStream?.();
+    releaseStream();
 
     const remainingEvents = await collectRemaining(iterator);
 
