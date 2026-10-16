@@ -190,6 +190,48 @@ describe("provider-bridge-ai-sdk rejections", () => {
     );
   });
 
+  test("rejects unsupported bridge settings before checking the bound model", async () => {
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel(),
+    });
+    const prompt = {
+      config: {
+        model: "different-model",
+        settings: {
+          unsupportedSetting: true,
+        },
+      },
+      messages: [
+        {
+          parts: [{ text: "Hello", type: "text" }],
+          role: "user",
+        },
+      ],
+    } satisfies Parameters<typeof bridge.generate>[0];
+    const run = async (operation: "generate" | "stream") => {
+      if (operation === "generate") {
+        await bridge.generate(prompt);
+        return;
+      }
+
+      await collectAsyncIterable(bridge.stream(prompt));
+    };
+
+    const rejections = await Promise.all([
+      captureRejection(run("generate")),
+      captureRejection(run("stream")),
+    ]);
+
+    for (const rejection of rejections) {
+      expect(rejection).toMatchObject({
+        code: "invalid_ai_sdk_bridge_config",
+        details: {
+          key: "unsupportedSetting",
+        },
+      });
+    }
+  });
+
   test("rejects streamed file parts in the baseline bridge", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
