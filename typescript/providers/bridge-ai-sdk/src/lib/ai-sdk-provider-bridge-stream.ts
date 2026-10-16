@@ -114,99 +114,44 @@ export interface StreamMappingHelpers {
  * capturing the sanitized request body and response headers up front so they
  * can be attributed on the terminal `finish` chunk's provider metadata.
  */
-export function createStreamMappingState(input: {
+export const createStreamMappingState = (input: {
   model: LanguageModelV3;
   providerToolClassLookup?: ProviderToolClassLookup;
   responseFormat?: StructuredOutputRequest;
   streamResult: AiSdkStreamResult;
-}): StreamMappingState {
-  return {
-    model: input.model,
-    ...(input.providerToolClassLookup === undefined
-      ? {}
-      : { providerToolClassLookup: input.providerToolClassLookup }),
-    requestBody:
-      input.streamResult.request?.body === undefined
-        ? undefined
-        : sanitizeMetadataValue(input.streamResult.request.body),
-    responseFormat: input.responseFormat,
-    responseHeaders:
-      input.streamResult.response?.headers === undefined
-        ? undefined
-        : sanitizeMetadataValue(input.streamResult.response.headers),
-    responseMetadata: undefined,
-    streamPartMetadata: [],
-    streamRawParts: [],
-    streamSources: [],
-    streamWarnings: [],
-    structuredChunks: [],
-    structuredDoneEmitted: false,
-    toolStates: new Map<string, StreamToolState>(),
-  };
-}
-
-/**
- * Maps one AI SDK stream part into zero or more canonical
- * `ProviderStreamChunk` values, mutating `state` as bookkeeping requires.
- *
- * Part families are tried in order — metadata, text/structured output,
- * reasoning, tool activity, terminal (`finish`/`error`) — and the first
- * handler that recognizes the part wins.
- *
- * @returns The chunks to yield for this part (often empty for bookkeeping
- *   parts such as `stream-start` or `tool-input-end`).
- * @throws TuvrenProviderError with code `unsupported_ai_sdk_stream_part` for
- *   parts outside the baseline contract (for example undeclared
- *   provider-executed tool results), or `structured_output_validation` when
- *   structured output finishes incomplete or invalid.
- */
-export function mapStreamPart(
-  part: LanguageModelV3StreamPart,
-  state: StreamMappingState,
-  helpers: StreamMappingHelpers
-): ProviderStreamChunk[] {
-  const metadataChunks = handleMetadataStreamPart(part, state);
-
-  if (metadataChunks !== undefined) {
-    return metadataChunks;
-  }
-
-  const textChunks = handleTextStreamPart(part, state, helpers);
-
-  if (textChunks !== undefined) {
-    return textChunks;
-  }
-
-  const reasoningChunks = handleReasoningStreamPart(part);
-
-  if (reasoningChunks !== undefined) {
-    return reasoningChunks;
-  }
-
-  const toolChunks = handleToolStreamPart(part, state);
-
-  if (toolChunks !== undefined) {
-    return toolChunks;
-  }
-
-  const terminalChunks = handleTerminalStreamPart(part, state, helpers);
-
-  if (terminalChunks !== undefined) {
-    return terminalChunks;
-  }
-
-  throw unsupportedStreamPartError(part.type, state.model);
-}
+}): StreamMappingState => ({
+  model: input.model,
+  ...(input.providerToolClassLookup === undefined
+    ? {}
+    : { providerToolClassLookup: input.providerToolClassLookup }),
+  requestBody:
+    input.streamResult.request?.body === undefined
+      ? undefined
+      : sanitizeMetadataValue(input.streamResult.request.body),
+  responseFormat: input.responseFormat,
+  responseHeaders:
+    input.streamResult.response?.headers === undefined
+      ? undefined
+      : sanitizeMetadataValue(input.streamResult.response.headers),
+  responseMetadata: undefined,
+  streamPartMetadata: [],
+  streamRawParts: [],
+  streamSources: [],
+  streamWarnings: [],
+  structuredChunks: [],
+  structuredDoneEmitted: false,
+  toolStates: new Map<string, StreamToolState>(),
+});
 
 /**
  * Absorbs metadata-only parts (`stream-start`, `response-metadata`, `source`,
  * `raw`) into state; they surface later on the finish chunk's provider
  * metadata. Returns `undefined` when the part is not a metadata part.
  */
-function handleMetadataStreamPart(
+const handleMetadataStreamPart = (
   part: LanguageModelV3StreamPart,
   state: StreamMappingState
-): ProviderStreamChunk[] | undefined {
+): ProviderStreamChunk[] | undefined => {
   switch (part.type) {
     case "stream-start": {
       state.streamWarnings.push(...part.warnings.map(sanitizeMetadataValue));
@@ -228,46 +173,39 @@ function handleMetadataStreamPart(
       return undefined;
     }
   }
-}
+};
 
 /**
- * Maps text parts. Plain text becomes `text_delta` chunks; when the prompt
- * requested structured output, deltas are buffered as `structured_delta`
- * chunks and `text-end` emits the validated `structured_done`. Returns
- * `undefined` when the part is not a text part.
+ * Rejects text parts arriving after structured output already completed —
+ * structured output must be a single contiguous JSON document.
  */
-function handleTextStreamPart(
-  part: LanguageModelV3StreamPart,
+const assertStructuredStreamStillOpen = (
   state: StreamMappingState,
-  helpers: StreamMappingHelpers
-): ProviderStreamChunk[] | undefined {
-  switch (part.type) {
-    case "text-start": {
-      assertStructuredStreamStillOpen(state, part.type);
-      return [];
-    }
-    case "text-delta": {
-      return createTextDeltaChunks(part, state);
-    }
-    case "text-end": {
-      const structuredChunk = createStructuredStreamDoneChunk(state, helpers);
-
-      return structuredChunk === undefined ? [] : [structuredChunk];
-    }
-    default: {
-      return undefined;
-    }
+  partType: string
+): void => {
+  if (state.responseFormat === undefined || !state.structuredDoneEmitted) {
+    return;
   }
-}
+
+  throw bridgeError(
+    "AI SDK stream emitted text after structured output completed",
+    "unsupported_ai_sdk_stream_part",
+    {
+      modelId: state.model.modelId,
+      partType,
+      provider: state.model.provider,
+    }
+  );
+};
 
 /**
  * Emits a `text_delta` chunk, or in structured-output mode buffers the delta
  * and emits a `structured_delta` chunk instead.
  */
-function createTextDeltaChunks(
+const createTextDeltaChunks = (
   part: Extract<LanguageModelV3StreamPart, { type: "text-delta" }>,
   state: StreamMappingState
-): ProviderStreamChunk[] {
+): ProviderStreamChunk[] => {
   if (state.responseFormat === undefined) {
     return [
       {
@@ -286,7 +224,108 @@ function createTextDeltaChunks(
       type: "structured_delta",
     },
   ];
-}
+};
+
+/**
+ * Emits the `structured_done` chunk once buffered structured text exists:
+ * joins the deltas, parses and validates them against the requested schema,
+ * and marks structured output complete. Returns `undefined` when structured
+ * output was not requested, already emitted, or nothing buffered yet.
+ */
+const createStructuredStreamDoneChunk = (
+  state: StreamMappingState,
+  helpers: StreamMappingHelpers
+): ProviderStreamChunk | undefined => {
+  if (
+    state.responseFormat === undefined ||
+    state.structuredDoneEmitted ||
+    state.structuredChunks.length === 0
+  ) {
+    return undefined;
+  }
+
+  state.structuredDoneEmitted = true;
+
+  return {
+    data: helpers.parseStructuredOutput(
+      state.structuredChunks.join(""),
+      state.responseFormat
+    ),
+    ...(state.responseFormat.name === undefined
+      ? {}
+      : {
+          name: state.responseFormat.name,
+        }),
+    type: "structured_done",
+  };
+};
+
+/**
+ * Maps text parts. Plain text becomes `text_delta` chunks; when the prompt
+ * requested structured output, deltas are buffered as `structured_delta`
+ * chunks and `text-end` emits the validated `structured_done`. Returns
+ * `undefined` when the part is not a text part.
+ */
+const handleTextStreamPart = (
+  part: LanguageModelV3StreamPart,
+  state: StreamMappingState,
+  helpers: StreamMappingHelpers
+): ProviderStreamChunk[] | undefined => {
+  switch (part.type) {
+    case "text-start": {
+      assertStructuredStreamStillOpen(state, part.type);
+      return [];
+    }
+    case "text-delta": {
+      return createTextDeltaChunks(part, state);
+    }
+    case "text-end": {
+      const structuredChunk = createStructuredStreamDoneChunk(state, helpers);
+
+      return structuredChunk === undefined ? [] : [structuredChunk];
+    }
+    default: {
+      return undefined;
+    }
+  }
+};
+
+/**
+ * Emits an empty `reasoning_delta` only for Anthropic redacted reasoning, so
+ * the redacted block's existence survives even though no text will stream.
+ */
+const createReasoningStartChunks = (
+  part: Extract<LanguageModelV3StreamPart, { type: "reasoning-start" }>
+): ProviderStreamChunk[] =>
+  hasAnthropicRedactedReasoningMetadata(part.providerMetadata)
+    ? [
+        {
+          text: "",
+          type: "reasoning_delta",
+        },
+      ]
+    : [];
+
+/**
+ * Maps a reasoning delta, attaching the provider's opaque reasoning
+ * signature (anthropic `signature`, google/vertex `thoughtSignature`) when
+ * present so hosts can replay it on later turns.
+ */
+const createReasoningDeltaChunk = (
+  part: Extract<LanguageModelV3StreamPart, { type: "reasoning-delta" }>
+): Extract<ProviderStreamChunk, { type: "reasoning_delta" }> => {
+  const signature = readReasoningStreamSignature(part.providerMetadata);
+
+  return {
+    ...(signature === undefined
+      ? {}
+      : {
+          signature,
+        }),
+    text: part.delta,
+    type: "reasoning_delta",
+  };
+};
 
 /**
  * Maps reasoning parts to `reasoning_delta` / `reasoning_done` chunks.
@@ -294,9 +333,9 @@ function createTextDeltaChunks(
  * block is still observable downstream. Returns `undefined` when the part is
  * not a reasoning part.
  */
-function handleReasoningStreamPart(
+const handleReasoningStreamPart = (
   part: LanguageModelV3StreamPart
-): ProviderStreamChunk[] | undefined {
+): ProviderStreamChunk[] | undefined => {
   switch (part.type) {
     case "reasoning-start": {
       return createReasoningStartChunks(part);
@@ -315,116 +354,15 @@ function handleReasoningStreamPart(
       return undefined;
     }
   }
-}
+};
 
-/**
- * Emits an empty `reasoning_delta` only for Anthropic redacted reasoning, so
- * the redacted block's existence survives even though no text will stream.
- */
-function createReasoningStartChunks(
-  part: Extract<LanguageModelV3StreamPart, { type: "reasoning-start" }>
-): ProviderStreamChunk[] {
-  return hasAnthropicRedactedReasoningMetadata(part.providerMetadata)
-    ? [
-        {
-          text: "",
-          type: "reasoning_delta",
-        },
-      ]
-    : [];
-}
-
-/**
- * Maps a reasoning delta, attaching the provider's opaque reasoning
- * signature (anthropic `signature`, google/vertex `thoughtSignature`) when
- * present so hosts can replay it on later turns.
- */
-function createReasoningDeltaChunk(
-  part: Extract<LanguageModelV3StreamPart, { type: "reasoning-delta" }>
-): Extract<ProviderStreamChunk, { type: "reasoning_delta" }> {
-  const signature = readReasoningStreamSignature(part.providerMetadata);
-
-  return {
-    ...(signature === undefined
-      ? {}
-      : {
-          signature,
-        }),
-    text: part.delta,
-    type: "reasoning_delta",
-  };
-}
-
-/**
- * Maps tool-activity parts. Client function tools flow through the
- * `tool_call_start` → `tool_call_args_delta` → `tool_call_done` chunk
- * sequence; declared provider-native/mediated tool results become
- * `provider_tool_result` chunks; undeclared provider-owned activity and
- * `file` / `tool-approval-request` parts are rejected (baseline protection,
- * KRT-BH005 / ADR-0055). Returns `undefined` when the part is not a tool part.
- */
-function handleToolStreamPart(
-  part: LanguageModelV3StreamPart,
-  state: StreamMappingState
-): ProviderStreamChunk[] | undefined {
-  switch (part.type) {
-    case "tool-input-start": {
-      return handleToolInputStartPart(part, state);
-    }
-    case "tool-input-delta": {
-      return handleToolInputDeltaPart(part, state);
-    }
-    case "tool-input-end": {
-      return handleToolInputEndPart(part, state);
-    }
-    case "tool-call": {
-      return handleToolCallStreamPart(part, state);
-    }
-    case "tool-result": {
-      // Accept for declared provider-native/mediated tools; reject undeclared (baseline protection).
-      if (state.providerToolClassLookup !== undefined) {
-        const executionClass = state.providerToolClassLookup(part.toolName);
-        if (executionClass !== undefined) {
-          return mapProviderToolResultStreamPart(part, executionClass);
-        }
-      }
-      throw unsupportedStreamPartError(part.type, state.model);
-    }
-    case "file":
-    case "tool-approval-request": {
-      throw unsupportedStreamPartError(part.type, state.model);
-    }
-    default: {
-      return undefined;
-    }
-  }
-}
-
-/**
- * Maps a declared provider-executed tool result to a `provider_tool_result`
- * chunk tagged with its execution class and `owner: "provider"` attribution
- * (AY002/AY004).
- */
-function mapProviderToolResultStreamPart(
-  part: Extract<LanguageModelV3StreamPart, { type: "tool-result" }>,
-  executionClass: "provider-native" | "provider-mediated"
-): ProviderStreamChunk[] {
-  const providerMetadata = sanitizeRecord(part.providerMetadata);
-  const chunk: Extract<ProviderStreamChunk, { type: "provider_tool_result" }> =
-    {
-      isError: part.isError,
-      name: part.toolName,
-      providerCallId: part.toolCallId,
-      providerMetadata: {
-        ...providerMetadata,
-        executionClass,
-        owner: "provider",
-      },
-      result: sanitizeMetadataValue(part.result) ?? null,
-      type: "provider_tool_result",
-    };
-  return [chunk];
-}
+/** Reads and sanitizes a tool part's provider metadata, if it is a plain object. */
+const readStreamToolPartProviderMetadata = (part: {
+  providerMetadata?: unknown;
+}): Record<string, unknown> | undefined =>
+  isPlainObject(part.providerMetadata)
+    ? sanitizeRecord(part.providerMetadata)
+    : undefined;
 
 /**
  * Seeds the per-call tool state and, for client tools, emits
@@ -432,10 +370,10 @@ function mapProviderToolResultStreamPart(
  * emit nothing here (see the inline KRT-BH005 note); undeclared
  * provider-owned tools are rejected.
  */
-function handleToolInputStartPart(
+const handleToolInputStartPart = (
   part: Extract<LanguageModelV3StreamPart, { type: "tool-input-start" }>,
   state: StreamMappingState
-): ProviderStreamChunk[] {
+): ProviderStreamChunk[] => {
   // KRT-BH005 / ADR-0055: real providers stream a provider-executed
   // (providerExecuted/dynamic) tool as tool-input-start → tool-input-delta →
   // tool-input-end → tool-call → tool-result (e.g. @ai-sdk/openai Responses
@@ -478,7 +416,7 @@ function handleToolInputStartPart(
       type: "tool_call_start",
     },
   ];
-}
+};
 
 /**
  * Buffers a tool-input delta into the correlated tool state and emits a
@@ -488,10 +426,10 @@ function handleToolInputStartPart(
  * @throws TuvrenProviderError when the delta arrives before its
  *   `tool-input-start` (no correlated state).
  */
-function handleToolInputDeltaPart(
+const handleToolInputDeltaPart = (
   part: Extract<LanguageModelV3StreamPart, { type: "tool-input-delta" }>,
   state: StreamMappingState
-): ProviderStreamChunk[] {
+): ProviderStreamChunk[] => {
   const toolState = requireToolState(
     state.toolStates,
     part.id,
@@ -516,16 +454,16 @@ function handleToolInputDeltaPart(
       type: "tool_call_args_delta",
     },
   ];
-}
+};
 
 /**
  * Marks the tool input as ended (bookkeeping only — the `tool_call_done`
  * chunk is emitted by the matching `tool-call` part or flushed at finish).
  */
-function handleToolInputEndPart(
+const handleToolInputEndPart = (
   part: Extract<LanguageModelV3StreamPart, { type: "tool-input-end" }>,
   state: StreamMappingState
-): ProviderStreamChunk[] {
+): ProviderStreamChunk[] => {
   const toolState = requireToolState(
     state.toolStates,
     part.id,
@@ -542,82 +480,7 @@ function handleToolInputEndPart(
     readStreamToolPartProviderMetadata(part)
   );
   return [];
-}
-
-/**
- * Maps a complete `tool-call` part. Declared provider-owned calls are
- * skipped (their attribution comes from the matching `tool-result`; see the
- * inline KRT-BH005 / ADR-0055 note); client calls are correlated against any
- * incremental tool-input state, then emit the missing prelude chunks and a
- * `tool_call_done` exactly once per provider call id.
- */
-function handleToolCallStreamPart(
-  part: Extract<LanguageModelV3StreamPart, { type: "tool-call" }>,
-  state: StreamMappingState
-): ProviderStreamChunk[] {
-  // KRT-BH005 / ADR-0055: a provider-executed (providerExecuted/dynamic) tool-call
-  // declared as provider-native/mediated is the provider's own executed call;
-  // skip it (the matching tool-result yields the provider_tool_result attribution
-  // — AY002/AY004) and emit no client-facing tool_call chunk. A tool-state already
-  // marked provider-owned by its tool-input-start prelude is decisive even if the
-  // tool-call part omits the flags. Undeclared provider-owned execution stays out
-  // of scope (baseline protection).
-  //
-  // The seeded-state lookup relies on the AI SDK convention that a tool's
-  // tool-input-start `id` equals its terminal tool-call `toolCallId` (the same
-  // identity the rest of the bridge correlates on, and what real providers —
-  // OpenAI Responses, Anthropic, Google, MCP — emit). If a provider both renamed
-  // the id mid-stream AND dropped the providerExecuted/dynamic flags on the
-  // terminal tool-call, neither this marker nor the flag check below would catch
-  // it; no shipped provider does either, so that doubly-hypothetical shape is out
-  // of the audited contract.
-  const seededToolState = state.toolStates.get(part.toolCallId);
-  if (seededToolState?.providerOwned === true) {
-    return [];
-  }
-  if (isProviderOwnedToolPart(part)) {
-    if (state.providerToolClassLookup?.(part.toolName) !== undefined) {
-      return [];
-    }
-    throw providerOwnedToolExecutionUnsupportedError(
-      part.toolName,
-      state.model
-    );
-  }
-  assertToolCallCorrelation(part, state);
-
-  const chunks = createToolCallPreludeChunks(part, state);
-  const existingState = state.toolStates.get(part.toolCallId);
-  const providerMetadata = mergeProviderMetadataRecords(
-    existingState?.providerMetadata,
-    readStreamToolPartProviderMetadata(part)
-  );
-
-  if (existingState?.doneEmitted === true) {
-    existingState.providerMetadata = providerMetadata;
-    return chunks;
-  }
-
-  chunks.push(
-    createToolCallDoneChunk(
-      part.toolCallId,
-      part.toolName,
-      part.input,
-      state.model,
-      providerMetadata
-    )
-  );
-  state.toolStates.set(part.toolCallId, {
-    doneEmitted: true,
-    ended: true,
-    inputBuffer: part.input,
-    name: part.toolName,
-    providerMetadata,
-    started: true,
-  });
-
-  return chunks;
-}
+};
 
 /**
  * Asserts that a complete `tool-call` part is consistent with the
@@ -628,10 +491,10 @@ function handleToolCallStreamPart(
  * @throws TuvrenProviderError with code `unsupported_ai_sdk_stream_part` on
  *   any mismatch.
  */
-function assertToolCallCorrelation(
+const assertToolCallCorrelation = (
   part: Extract<LanguageModelV3StreamPart, { type: "tool-call" }>,
   state: StreamMappingState
-): void {
+): void => {
   const existingState = state.toolStates.get(part.toolCallId);
 
   if (existingState != null) {
@@ -701,17 +564,17 @@ function assertToolCallCorrelation(
       toolName: part.toolName,
     }
   );
-}
+};
 
 /**
  * Emits the `tool_call_start` (and args delta) prelude for a complete
  * `tool-call` whose input never streamed incrementally; returns nothing when
  * the prelude was already emitted by `tool-input-start`.
  */
-function createToolCallPreludeChunks(
+const createToolCallPreludeChunks = (
   part: Extract<LanguageModelV3StreamPart, { type: "tool-call" }>,
   state: StreamMappingState
-): ProviderStreamChunk[] {
+): ProviderStreamChunk[] => {
   const existingState = state.toolStates.get(part.toolCallId);
 
   if (existingState?.started === true) {
@@ -735,7 +598,7 @@ function createToolCallPreludeChunks(
   }
 
   return chunks;
-}
+};
 
 /**
  * Builds the terminal `tool_call_done` chunk, parsing the buffered input as
@@ -744,71 +607,326 @@ function createToolCallPreludeChunks(
  * @throws TuvrenProviderError with code `invalid_ai_sdk_tool_call_input`
  *   when the accumulated input is not valid JSON.
  */
-function createToolCallDoneChunk(
+const createToolCallDoneChunk = (
   providerCallId: string,
   toolName: string,
   input: string,
   model: Pick<LanguageModelV3, "modelId" | "provider">,
   providerMetadata?: Record<string, unknown>
-): ProviderStreamChunk {
-  return {
-    input: parseJsonInput(
-      input,
-      "tool call input",
-      "invalid_ai_sdk_tool_call_input",
-      {
-        modelId: model.modelId,
-        provider: model.provider,
-        toolName,
-      }
-    ),
-    name: toolName,
-    providerCallId,
-    ...(providerMetadata === undefined
-      ? {}
-      : {
-          providerMetadata,
-        }),
-    type: "tool_call_done",
-  };
-}
-
-/** Reads and sanitizes a tool part's provider metadata, if it is a plain object. */
-function readStreamToolPartProviderMetadata(part: {
-  providerMetadata?: unknown;
-}): Record<string, unknown> | undefined {
-  return isPlainObject(part.providerMetadata)
-    ? sanitizeRecord(part.providerMetadata)
-    : undefined;
-}
+): ProviderStreamChunk => ({
+  input: parseJsonInput(
+    input,
+    "tool call input",
+    "invalid_ai_sdk_tool_call_input",
+    {
+      modelId: model.modelId,
+      provider: model.provider,
+      toolName,
+    }
+  ),
+  name: toolName,
+  providerCallId,
+  ...(providerMetadata === undefined
+    ? {}
+    : {
+        providerMetadata,
+      }),
+  type: "tool_call_done",
+});
 
 /**
- * Maps terminal parts: `finish` closes out tool calls, structured output,
- * and usage into the final chunks; `error` surfaces as an `error` chunk.
- * Returns `undefined` when the part is not terminal.
+ * Maps a complete `tool-call` part. Declared provider-owned calls are
+ * skipped (their attribution comes from the matching `tool-result`; see the
+ * inline KRT-BH005 / ADR-0055 note); client calls are correlated against any
+ * incremental tool-input state, then emit the missing prelude chunks and a
+ * `tool_call_done` exactly once per provider call id.
  */
-function handleTerminalStreamPart(
-  part: LanguageModelV3StreamPart,
-  state: StreamMappingState,
-  helpers: StreamMappingHelpers
-): ProviderStreamChunk[] | undefined {
-  switch (part.type) {
-    case "finish": {
-      return createFinishStreamChunks(part, state, helpers);
+const handleToolCallStreamPart = (
+  part: Extract<LanguageModelV3StreamPart, { type: "tool-call" }>,
+  state: StreamMappingState
+): ProviderStreamChunk[] => {
+  // KRT-BH005 / ADR-0055: a provider-executed (providerExecuted/dynamic) tool-call
+  // declared as provider-native/mediated is the provider's own executed call;
+  // skip it (the matching tool-result yields the provider_tool_result attribution
+  // — AY002/AY004) and emit no client-facing tool_call chunk. A tool-state already
+  // marked provider-owned by its tool-input-start prelude is decisive even if the
+  // tool-call part omits the flags. Undeclared provider-owned execution stays out
+  // of scope (baseline protection).
+  //
+  // The seeded-state lookup relies on the AI SDK convention that a tool's
+  // tool-input-start `id` equals its terminal tool-call `toolCallId` (the same
+  // identity the rest of the bridge correlates on, and what real providers —
+  // OpenAI Responses, Anthropic, Google, MCP — emit). If a provider both renamed
+  // the id mid-stream AND dropped the providerExecuted/dynamic flags on the
+  // terminal tool-call, neither this marker nor the flag check below would catch
+  // it; no shipped provider does either, so that doubly-hypothetical shape is out
+  // of the audited contract.
+  const seededToolState = state.toolStates.get(part.toolCallId);
+  if (seededToolState?.providerOwned === true) {
+    return [];
+  }
+  if (isProviderOwnedToolPart(part)) {
+    if (state.providerToolClassLookup?.(part.toolName) !== undefined) {
+      return [];
     }
-    case "error": {
-      return [
-        {
-          error: part.error,
-          type: "error",
-        },
-      ];
+    throw providerOwnedToolExecutionUnsupportedError(
+      part.toolName,
+      state.model
+    );
+  }
+  assertToolCallCorrelation(part, state);
+
+  const chunks = createToolCallPreludeChunks(part, state);
+  const existingState = state.toolStates.get(part.toolCallId);
+  const providerMetadata = mergeProviderMetadataRecords(
+    existingState?.providerMetadata,
+    readStreamToolPartProviderMetadata(part)
+  );
+
+  if (existingState?.doneEmitted === true) {
+    existingState.providerMetadata = providerMetadata;
+    return chunks;
+  }
+
+  chunks.push(
+    createToolCallDoneChunk(
+      part.toolCallId,
+      part.toolName,
+      part.input,
+      state.model,
+      providerMetadata
+    )
+  );
+  state.toolStates.set(part.toolCallId, {
+    doneEmitted: true,
+    ended: true,
+    inputBuffer: part.input,
+    name: part.toolName,
+    providerMetadata,
+    started: true,
+  });
+
+  return chunks;
+};
+
+/**
+ * Maps a declared provider-executed tool result to a `provider_tool_result`
+ * chunk tagged with its execution class and `owner: "provider"` attribution
+ * (AY002/AY004).
+ */
+const mapProviderToolResultStreamPart = (
+  part: Extract<LanguageModelV3StreamPart, { type: "tool-result" }>,
+  executionClass: "provider-native" | "provider-mediated"
+): ProviderStreamChunk[] => {
+  const providerMetadata = sanitizeRecord(part.providerMetadata);
+  const chunk: Extract<ProviderStreamChunk, { type: "provider_tool_result" }> =
+    {
+      isError: part.isError,
+      name: part.toolName,
+      providerCallId: part.toolCallId,
+      providerMetadata: {
+        ...providerMetadata,
+        executionClass,
+        owner: "provider",
+      },
+      result: sanitizeMetadataValue(part.result) ?? null,
+      type: "provider_tool_result",
+    };
+  return [chunk];
+};
+
+/**
+ * Maps tool-activity parts. Client function tools flow through the
+ * `tool_call_start` → `tool_call_args_delta` → `tool_call_done` chunk
+ * sequence; declared provider-native/mediated tool results become
+ * `provider_tool_result` chunks; undeclared provider-owned activity and
+ * `file` / `tool-approval-request` parts are rejected (baseline protection,
+ * KRT-BH005 / ADR-0055). Returns `undefined` when the part is not a tool part.
+ */
+const handleToolStreamPart = (
+  part: LanguageModelV3StreamPart,
+  state: StreamMappingState
+): ProviderStreamChunk[] | undefined => {
+  switch (part.type) {
+    case "tool-input-start": {
+      return handleToolInputStartPart(part, state);
+    }
+    case "tool-input-delta": {
+      return handleToolInputDeltaPart(part, state);
+    }
+    case "tool-input-end": {
+      return handleToolInputEndPart(part, state);
+    }
+    case "tool-call": {
+      return handleToolCallStreamPart(part, state);
+    }
+    case "tool-result": {
+      // Accept for declared provider-native/mediated tools; reject undeclared (baseline protection).
+      if (state.providerToolClassLookup !== undefined) {
+        const executionClass = state.providerToolClassLookup(part.toolName);
+        if (executionClass !== undefined) {
+          return mapProviderToolResultStreamPart(part, executionClass);
+        }
+      }
+      throw unsupportedStreamPartError(part.type, state.model);
+    }
+    case "file":
+    case "tool-approval-request": {
+      throw unsupportedStreamPartError(part.type, state.model);
     }
     default: {
       return undefined;
     }
   }
-}
+};
+
+/**
+ * Emits `tool_call_done` for every tool whose input ended without a
+ * corresponding complete `tool-call` part (providers that stream input
+ * deltas only), marking each as emitted so finish-time assertions pass.
+ */
+const flushCompletedToolCalls = (
+  state: StreamMappingState
+): ProviderStreamChunk[] => {
+  const chunks: ProviderStreamChunk[] = [];
+
+  for (const [providerCallId, toolState] of state.toolStates.entries()) {
+    if (toolState.doneEmitted || !toolState.ended) {
+      continue;
+    }
+
+    toolState.doneEmitted = true;
+    chunks.push(
+      createToolCallDoneChunk(
+        providerCallId,
+        toolState.name,
+        toolState.inputBuffer,
+        state.model,
+        toolState.providerMetadata
+      )
+    );
+  }
+
+  return chunks;
+};
+
+/**
+ * Asserts at finish time that every client tool call emitted its
+ * `tool_call_done`; provider-owned states are exempt (KRT-BH005).
+ *
+ * @throws TuvrenProviderError with code `unsupported_ai_sdk_stream_part`.
+ */
+const ensureToolCallsCompleted = (state: StreamMappingState): void => {
+  for (const [providerCallId, toolState] of state.toolStates.entries()) {
+    // Provider-owned tool inputs never emit a client-facing tool_call_done — they
+    // are skipped bookkeeping for the provider's own executed call (KRT-BH005), so
+    // they are not subject to the client tool-call completeness invariant.
+    if (toolState.doneEmitted || toolState.providerOwned === true) {
+      continue;
+    }
+
+    throw bridgeError(
+      "AI SDK stream finished before tool call completed",
+      "unsupported_ai_sdk_stream_part",
+      {
+        modelId: state.model.modelId,
+        provider: state.model.provider,
+        providerCallId,
+        toolName: toolState.name,
+      }
+    );
+  }
+};
+
+/**
+ * Structured output may be omitted only for a `tool-calls` finish where
+ * every client tool call completed (provider-owned states do not count —
+ * KRT-BH005); the model will produce the structured document on a later
+ * iteration after tool results return.
+ */
+const canOmitStructuredStreamOutput = (
+  state: StreamMappingState,
+  finishReason: Extract<
+    LanguageModelV3StreamPart,
+    { type: "finish" }
+  >["finishReason"]["unified"]
+): boolean => {
+  if (finishReason !== "tool-calls" || state.toolStates.size === 0) {
+    return false;
+  }
+
+  for (const toolState of state.toolStates.values()) {
+    // Provider-owned tool inputs never emit a client tool_call_done; they do not
+    // gate client tool-call completion (KRT-BH005).
+    if (toolState.providerOwned === true) {
+      continue;
+    }
+    if (!toolState.doneEmitted) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+/**
+ * Asserts at finish time that requested structured output was emitted,
+ * unless the turn legitimately ended in client tool calls instead (see
+ * {@link canOmitStructuredStreamOutput}).
+ *
+ * @throws TuvrenProviderError with code `structured_output_validation`.
+ */
+const ensureStructuredStreamCompleted = (
+  state: StreamMappingState,
+  finishReason: Extract<
+    LanguageModelV3StreamPart,
+    { type: "finish" }
+  >["finishReason"]["unified"]
+): void => {
+  if (
+    state.responseFormat === undefined ||
+    state.structuredDoneEmitted ||
+    canOmitStructuredStreamOutput(state, finishReason)
+  ) {
+    return;
+  }
+
+  throw bridgeError(
+    "AI SDK stream finished without structured output text",
+    "structured_output_validation",
+    {
+      modelId: state.model.modelId,
+      provider: state.model.provider,
+    }
+  );
+};
+
+/**
+ * Aggregates everything captured during the stream (raw parts, usage,
+ * request body, response headers/metadata, sources, per-part metadata,
+ * warnings) into the finish chunk's provider metadata. Bridge-captured
+ * extras are secret-screened inside {@link buildProviderMetadata} (ADR-0044).
+ */
+const buildStreamFinishProviderMetadata = (
+  providerMetadata: Record<string, unknown> | undefined,
+  state: StreamMappingState,
+  rawUsage: unknown
+): Record<string, unknown> | undefined =>
+  buildProviderMetadata({
+    bridgeExtras: {
+      rawParts: state.streamRawParts,
+      rawUsage,
+      requestBody: state.requestBody,
+      response: {
+        headers: state.responseHeaders,
+        metadata: state.responseMetadata,
+      },
+      sources: state.streamSources,
+      streamPartMetadata: state.streamPartMetadata,
+      warnings: state.streamWarnings,
+    },
+    providerMetadata,
+  });
 
 /**
  * Produces the end-of-stream chunk sequence for a `finish` part: flushes any
@@ -817,11 +935,11 @@ function handleTerminalStreamPart(
  * closes with a `finish` chunk carrying the normalized finish reason,
  * canonical usage, and aggregated provider metadata.
  */
-function createFinishStreamChunks(
+const createFinishStreamChunks = (
   part: Extract<LanguageModelV3StreamPart, { type: "finish" }>,
   state: StreamMappingState,
   helpers: StreamMappingHelpers
-): ProviderStreamChunk[] {
+): ProviderStreamChunk[] => {
   const chunks = flushCompletedToolCalls(state);
   const structuredChunk = createStructuredStreamDoneChunk(state, helpers);
 
@@ -863,210 +981,85 @@ function createFinishStreamChunks(
   });
 
   return chunks;
-}
+};
 
 /**
- * Emits `tool_call_done` for every tool whose input ended without a
- * corresponding complete `tool-call` part (providers that stream input
- * deltas only), marking each as emitted so finish-time assertions pass.
+ * Maps terminal parts: `finish` closes out tool calls, structured output,
+ * and usage into the final chunks; `error` surfaces as an `error` chunk.
+ * Returns `undefined` when the part is not terminal.
  */
-function flushCompletedToolCalls(
-  state: StreamMappingState
-): ProviderStreamChunk[] {
-  const chunks: ProviderStreamChunk[] = [];
-
-  for (const [providerCallId, toolState] of state.toolStates.entries()) {
-    if (toolState.doneEmitted || !toolState.ended) {
-      continue;
-    }
-
-    toolState.doneEmitted = true;
-    chunks.push(
-      createToolCallDoneChunk(
-        providerCallId,
-        toolState.name,
-        toolState.inputBuffer,
-        state.model,
-        toolState.providerMetadata
-      )
-    );
-  }
-
-  return chunks;
-}
-
-/**
- * Aggregates everything captured during the stream (raw parts, usage,
- * request body, response headers/metadata, sources, per-part metadata,
- * warnings) into the finish chunk's provider metadata. Bridge-captured
- * extras are secret-screened inside {@link buildProviderMetadata} (ADR-0044).
- */
-function buildStreamFinishProviderMetadata(
-  providerMetadata: Record<string, unknown> | undefined,
-  state: StreamMappingState,
-  rawUsage: unknown
-): Record<string, unknown> | undefined {
-  return buildProviderMetadata({
-    bridgeExtras: {
-      rawParts: state.streamRawParts,
-      rawUsage,
-      requestBody: state.requestBody,
-      response: {
-        headers: state.responseHeaders,
-        metadata: state.responseMetadata,
-      },
-      sources: state.streamSources,
-      streamPartMetadata: state.streamPartMetadata,
-      warnings: state.streamWarnings,
-    },
-    providerMetadata,
-  });
-}
-
-/**
- * Rejects text parts arriving after structured output already completed —
- * structured output must be a single contiguous JSON document.
- */
-function assertStructuredStreamStillOpen(
-  state: StreamMappingState,
-  partType: string
-): void {
-  if (state.responseFormat === undefined || !state.structuredDoneEmitted) {
-    return;
-  }
-
-  throw bridgeError(
-    "AI SDK stream emitted text after structured output completed",
-    "unsupported_ai_sdk_stream_part",
-    {
-      modelId: state.model.modelId,
-      partType,
-      provider: state.model.provider,
-    }
-  );
-}
-
-/**
- * Emits the `structured_done` chunk once buffered structured text exists:
- * joins the deltas, parses and validates them against the requested schema,
- * and marks structured output complete. Returns `undefined` when structured
- * output was not requested, already emitted, or nothing buffered yet.
- */
-function createStructuredStreamDoneChunk(
+const handleTerminalStreamPart = (
+  part: LanguageModelV3StreamPart,
   state: StreamMappingState,
   helpers: StreamMappingHelpers
-): ProviderStreamChunk | undefined {
-  if (
-    state.responseFormat === undefined ||
-    state.structuredDoneEmitted ||
-    state.structuredChunks.length === 0
-  ) {
-    return undefined;
+): ProviderStreamChunk[] | undefined => {
+  switch (part.type) {
+    case "finish": {
+      return createFinishStreamChunks(part, state, helpers);
+    }
+    case "error": {
+      return [
+        {
+          error: part.error,
+          type: "error",
+        },
+      ];
+    }
+    default: {
+      return undefined;
+    }
   }
-
-  state.structuredDoneEmitted = true;
-
-  return {
-    data: helpers.parseStructuredOutput(
-      state.structuredChunks.join(""),
-      state.responseFormat
-    ),
-    ...(state.responseFormat.name === undefined
-      ? {}
-      : {
-          name: state.responseFormat.name,
-        }),
-    type: "structured_done",
-  };
-}
+};
 
 /**
- * Asserts at finish time that requested structured output was emitted,
- * unless the turn legitimately ended in client tool calls instead (see
- * {@link canOmitStructuredStreamOutput}).
+ * Maps one AI SDK stream part into zero or more canonical
+ * `ProviderStreamChunk` values, mutating `state` as bookkeeping requires.
  *
- * @throws TuvrenProviderError with code `structured_output_validation`.
- */
-function ensureStructuredStreamCompleted(
-  state: StreamMappingState,
-  finishReason: Extract<
-    LanguageModelV3StreamPart,
-    { type: "finish" }
-  >["finishReason"]["unified"]
-): void {
-  if (
-    state.responseFormat === undefined ||
-    state.structuredDoneEmitted ||
-    canOmitStructuredStreamOutput(state, finishReason)
-  ) {
-    return;
-  }
-
-  throw bridgeError(
-    "AI SDK stream finished without structured output text",
-    "structured_output_validation",
-    {
-      modelId: state.model.modelId,
-      provider: state.model.provider,
-    }
-  );
-}
-
-/**
- * Structured output may be omitted only for a `tool-calls` finish where
- * every client tool call completed (provider-owned states do not count —
- * KRT-BH005); the model will produce the structured document on a later
- * iteration after tool results return.
- */
-function canOmitStructuredStreamOutput(
-  state: StreamMappingState,
-  finishReason: Extract<
-    LanguageModelV3StreamPart,
-    { type: "finish" }
-  >["finishReason"]["unified"]
-): boolean {
-  if (finishReason !== "tool-calls" || state.toolStates.size === 0) {
-    return false;
-  }
-
-  for (const toolState of state.toolStates.values()) {
-    // Provider-owned tool inputs never emit a client tool_call_done; they do not
-    // gate client tool-call completion (KRT-BH005).
-    if (toolState.providerOwned === true) {
-      continue;
-    }
-    if (!toolState.doneEmitted) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/**
- * Asserts at finish time that every client tool call emitted its
- * `tool_call_done`; provider-owned states are exempt (KRT-BH005).
+ * Part families are tried in order — metadata, text/structured output,
+ * reasoning, tool activity, terminal (`finish`/`error`) — and the first
+ * handler that recognizes the part wins.
  *
- * @throws TuvrenProviderError with code `unsupported_ai_sdk_stream_part`.
+ * @returns The chunks to yield for this part (often empty for bookkeeping
+ *   parts such as `stream-start` or `tool-input-end`).
+ * @throws TuvrenProviderError with code `unsupported_ai_sdk_stream_part` for
+ *   parts outside the baseline contract (for example undeclared
+ *   provider-executed tool results), or `structured_output_validation` when
+ *   structured output finishes incomplete or invalid.
  */
-function ensureToolCallsCompleted(state: StreamMappingState): void {
-  for (const [providerCallId, toolState] of state.toolStates.entries()) {
-    // Provider-owned tool inputs never emit a client-facing tool_call_done — they
-    // are skipped bookkeeping for the provider's own executed call (KRT-BH005), so
-    // they are not subject to the client tool-call completeness invariant.
-    if (toolState.doneEmitted || toolState.providerOwned === true) {
-      continue;
-    }
+export const mapStreamPart = (
+  part: LanguageModelV3StreamPart,
+  state: StreamMappingState,
+  helpers: StreamMappingHelpers
+): ProviderStreamChunk[] => {
+  const metadataChunks = handleMetadataStreamPart(part, state);
 
-    throw bridgeError(
-      "AI SDK stream finished before tool call completed",
-      "unsupported_ai_sdk_stream_part",
-      {
-        modelId: state.model.modelId,
-        provider: state.model.provider,
-        providerCallId,
-        toolName: toolState.name,
-      }
-    );
+  if (metadataChunks !== undefined) {
+    return metadataChunks;
   }
-}
+
+  const textChunks = handleTextStreamPart(part, state, helpers);
+
+  if (textChunks !== undefined) {
+    return textChunks;
+  }
+
+  const reasoningChunks = handleReasoningStreamPart(part);
+
+  if (reasoningChunks !== undefined) {
+    return reasoningChunks;
+  }
+
+  const toolChunks = handleToolStreamPart(part, state);
+
+  if (toolChunks !== undefined) {
+    return toolChunks;
+  }
+
+  const terminalChunks = handleTerminalStreamPart(part, state, helpers);
+
+  if (terminalChunks !== undefined) {
+    return terminalChunks;
+  }
+
+  throw unsupportedStreamPartError(part.type, state.model);
+};
