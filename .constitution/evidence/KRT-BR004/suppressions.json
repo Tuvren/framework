@@ -3,7 +3,7 @@
   "ticket": "KRT-BR004",
   "milestone": "M36",
   "baseline_commit": "16834aab351659788c56435de70f8969cabdfe7f",
-  "measurement_commit": "e7ade0d53167dde9506a2651f5fe7872051212cc",
+  "measurement_commit": "b65508094f74e91d999f8e29bcb24a593fcc8ae3",
   "reference_convention": "Legacy identities inherit immutable original directive, reason, and diagnostic proof by ledger path, digest, and identity. Final project facts come from the reviewed admission commits; raw reports are not duplicated.",
   "owned_paths": [
     "typescript/kernel/backends/shared",
@@ -15,8 +15,8 @@
     "admitted_projects": 4,
     "legacy_entries": 7,
     "legacy_biome_retained": 0,
-    "final_native_directive_comments": 172,
-    "final_native_rule_identities": 177,
+    "final_native_directive_comments": 185,
+    "final_native_rule_identities": 190,
     "final_biome_directives": 0,
     "final_native_diagnostics": 0,
     "final_unused_disable_diagnostics": 0
@@ -24,22 +24,31 @@
   "final_project_proof": {
     "shared": {
       "admission_commit": "860ce29350ed5d018ffc6e3f9381bbd9a9f8adc1",
-      "post_admission_source_fix_commit": "e7ade0d53167dde9506a2651f5fe7872051212cc",
+      "post_admission_source_fix_commits": [
+        "e7ade0d53167dde9506a2651f5fe7872051212cc",
+        "b65508094f74e91d999f8e29bcb24a593fcc8ae3"
+      ],
       "code_files": 18,
       "json_files": 7
     },
     "memory": {
-      "admission_commit": "e7ade0d53167dde9506a2651f5fe7872051212cc",
+      "admission_commit": "b65508094f74e91d999f8e29bcb24a593fcc8ae3",
       "code_files": 24,
       "json_files": 7
     },
     "postgres": {
       "admission_commit": "f79fd83720f7a7a788833cb38c479aee09361f74",
+      "post_admission_source_fix_commits": [
+        "b65508094f74e91d999f8e29bcb24a593fcc8ae3"
+      ],
       "code_files": 49,
       "json_files": 7
     },
     "sqlite": {
       "admission_commit": "d4504f299dba238690c810ed52d16cd288f1c69d",
+      "post_admission_source_fix_commits": [
+        "b65508094f74e91d999f8e29bcb24a593fcc8ae3"
+      ],
       "code_files": 39,
       "json_files": 9
     },
@@ -87,12 +96,19 @@
       "typescript/kernel/backends/postgres/src/lib/postgres-blob-migration.ts::no-await-in-loop::1",
       "typescript/kernel/backends/postgres/src/lib/postgres-db-lineage.ts::no-await-in-loop::1",
       "typescript/kernel/backends/postgres/src/lib/postgres-db-lineage.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/postgres/src/lib/postgres-integrity-assertions.ts::typescript/unbound-method::1",
       "typescript/kernel/backends/postgres/src/lib/postgres-legacy-snapshot-decode.ts::typescript/no-unsafe-type-assertion::1",
       "typescript/kernel/backends/postgres/src/lib/postgres-legacy-snapshot-decode.ts::typescript/no-unsafe-type-assertion::2",
       "typescript/kernel/backends/postgres/src/lib/postgres-repositories-core.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-run-invariants.ts::typescript/unbound-method::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-run-invariants.ts::typescript/unbound-method::2",
+      "typescript/kernel/backends/postgres/src/lib/postgres-run-invariants.ts::typescript/unbound-method::3",
       "typescript/kernel/backends/postgres/src/lib/postgres-schema-init.ts::no-await-in-loop::1",
       "typescript/kernel/backends/postgres/src/lib/postgres-state-persist.ts::no-await-in-loop::1",
       "typescript/kernel/backends/postgres/src/lib/postgres-state-persist.ts::typescript/no-unsafe-type-assertion::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-state-utils.ts::typescript/unbound-method::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-state-utils.ts::typescript/unbound-method::2",
+      "typescript/kernel/backends/postgres/src/lib/postgres-state-validation.ts::typescript/unbound-method::1",
       "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::1",
       "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::2",
       "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::3",
@@ -160,7 +176,6 @@
       "typescript/kernel/backends/shared/src/lib/backend-invariant-run-span.ts::typescript/unbound-method::1",
       "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::typescript/method-signature-style::1",
       "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::typescript/method-signature-style::2",
-      "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::typescript/method-signature-style::3",
       "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::1",
       "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::2",
       "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::3",
@@ -193,9 +208,16 @@
       "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts::promise-function-async::1",
       "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts::class-methods-use-this::1",
       "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts::require-await::1",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-integrity-assertions.ts::typescript/unbound-method::1",
       "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts::promise-function-async::1",
       "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts::no-await-in-loop::1",
       "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-support.ts::promise-function-async::1",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-run-invariants.ts::typescript/unbound-method::1",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-run-invariants.ts::typescript/unbound-method::2",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-run-invariants.ts::typescript/unbound-method::3",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-state-utils.ts::typescript/unbound-method::1",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-state-utils.ts::typescript/unbound-method::2",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-state-validation.ts::typescript/unbound-method::1",
       "typescript/kernel/backends/sqlite/test/backend-sqlite.invariants.test.ts::typescript/no-floating-promises::1",
       "typescript/kernel/backends/sqlite/test/backend-sqlite.phase-observer.test.ts::typescript/no-floating-promises::1",
       "typescript/kernel/backends/sqlite/test/backend-sqlite.phase-observer.test.ts::no-await-in-loop::1",
@@ -541,6 +563,15 @@
       "reason": "Validate the lineage chain serially because each node is checked against the preceding node and failures are order-sensitive."
     },
     {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-integrity-assertions.ts::typescript/unbound-method::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-integrity-assertions.ts",
+      "line": 36,
+      "rule": "typescript/unbound-method",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */",
+      "reason": "Compatibility: preserve published method variance while exporting standalone factory functions."
+    },
+    {
       "identity": "typescript/kernel/backends/postgres/src/lib/postgres-legacy-snapshot-decode.ts::typescript/no-unsafe-type-assertion::1",
       "path": "typescript/kernel/backends/postgres/src/lib/postgres-legacy-snapshot-decode.ts",
       "line": 219,
@@ -568,6 +599,33 @@
       "reason": "Validate and persist batch records in input order, stopping at the first duplicate, missing reference, or immutable conflict."
     },
     {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-run-invariants.ts::typescript/unbound-method::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-run-invariants.ts",
+      "line": 66,
+      "rule": "typescript/unbound-method",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions.",
+      "reason": "Compatibility: preserve published method variance while exporting standalone factory functions."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-run-invariants.ts::typescript/unbound-method::2",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-run-invariants.ts",
+      "line": 68,
+      "rule": "typescript/unbound-method",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */",
+      "reason": "Compatibility: preserve published method variance while exporting standalone factory functions."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-run-invariants.ts::typescript/unbound-method::3",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-run-invariants.ts",
+      "line": 76,
+      "rule": "typescript/unbound-method",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */",
+      "reason": "Compatibility: preserve published method variance while exporting standalone factory functions."
+    },
+    {
       "identity": "typescript/kernel/backends/postgres/src/lib/postgres-schema-init.ts::no-await-in-loop::1",
       "path": "typescript/kernel/backends/postgres/src/lib/postgres-schema-init.ts",
       "line": 597,
@@ -593,6 +651,33 @@
       "scope": "block",
       "live_comment": "/* oxlint-disable typescript/no-unsafe-type-assertion -- Each internally constructed row contains only values accepted by the postgres driver; keep the assertion at this driver boundary. */",
       "reason": "Each internally constructed row contains only values accepted by the postgres driver; keep the assertion at this driver boundary."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-state-utils.ts::typescript/unbound-method::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-state-utils.ts",
+      "line": 50,
+      "rule": "typescript/unbound-method",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve published method variance while extracting a standalone factory function.",
+      "reason": "Compatibility: preserve published method variance while extracting a standalone factory function."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-state-utils.ts::typescript/unbound-method::2",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-state-utils.ts",
+      "line": 53,
+      "rule": "typescript/unbound-method",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */",
+      "reason": "Compatibility: preserve published method variance while exporting standalone factory functions."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-state-validation.ts::typescript/unbound-method::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-state-validation.ts",
+      "line": 39,
+      "rule": "typescript/unbound-method",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */",
+      "reason": "Compatibility: preserve published method variance while exporting standalone factory functions."
     },
     {
       "identity": "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::1",
@@ -1191,16 +1276,7 @@
     {
       "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::typescript/method-signature-style::2",
       "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
-      "line": 114,
-      "rule": "typescript/method-signature-style",
-      "scope": "block",
-      "live_comment": "/* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */",
-      "reason": "Compatibility: preserve the published method-signature variance under strictFunctionTypes."
-    },
-    {
-      "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::typescript/method-signature-style::3",
-      "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
-      "line": 178,
+      "line": 176,
       "rule": "typescript/method-signature-style",
       "scope": "block",
       "live_comment": "/* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */",
@@ -1209,7 +1285,7 @@
     {
       "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::1",
       "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
-      "line": 251,
+      "line": 249,
       "rule": "no-await-in-loop",
       "scope": "next-line",
       "live_comment": "// oxlint-disable-next-line no-await-in-loop",
@@ -1218,7 +1294,7 @@
     {
       "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::2",
       "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
-      "line": 266,
+      "line": 264,
       "rule": "no-await-in-loop",
       "scope": "next-line",
       "live_comment": "// oxlint-disable-next-line no-await-in-loop",
@@ -1227,7 +1303,7 @@
     {
       "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::3",
       "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
-      "line": 276,
+      "line": 274,
       "rule": "no-await-in-loop",
       "scope": "next-line",
       "live_comment": "// oxlint-disable-next-line no-await-in-loop",
@@ -1236,7 +1312,7 @@
     {
       "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::4",
       "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
-      "line": 301,
+      "line": 299,
       "rule": "no-await-in-loop",
       "scope": "next-line",
       "live_comment": "// oxlint-disable-next-line no-await-in-loop",
@@ -1245,7 +1321,7 @@
     {
       "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::typescript/unbound-method::1",
       "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
-      "line": 700,
+      "line": 698,
       "rule": "typescript/unbound-method",
       "scope": "next-line",
       "live_comment": "// oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.",
@@ -1254,7 +1330,7 @@
     {
       "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::typescript/unbound-method::2",
       "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
-      "line": 702,
+      "line": 700,
       "rule": "typescript/unbound-method",
       "scope": "next-line",
       "live_comment": "// oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.",
@@ -1263,7 +1339,7 @@
     {
       "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::typescript/unbound-method::3",
       "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
-      "line": 704,
+      "line": 702,
       "rule": "typescript/unbound-method",
       "scope": "next-line",
       "live_comment": "// oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.",
@@ -1272,7 +1348,7 @@
     {
       "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::typescript/unbound-method::4",
       "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
-      "line": 706,
+      "line": 704,
       "rule": "typescript/unbound-method",
       "scope": "next-line",
       "live_comment": "// oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.",
@@ -1281,7 +1357,7 @@
     {
       "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::typescript/unbound-method::5",
       "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
-      "line": 708,
+      "line": 706,
       "rule": "typescript/unbound-method",
       "scope": "next-line",
       "live_comment": "// oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.",
@@ -1290,7 +1366,7 @@
     {
       "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::typescript/unbound-method::6",
       "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
-      "line": 710,
+      "line": 708,
       "rule": "typescript/unbound-method",
       "scope": "next-line",
       "live_comment": "// oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.",
@@ -1299,7 +1375,7 @@
     {
       "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::typescript/unbound-method::7",
       "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
-      "line": 712,
+      "line": 710,
       "rule": "typescript/unbound-method",
       "scope": "next-line",
       "live_comment": "// oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.",
@@ -1344,7 +1420,7 @@
     {
       "identity": "typescript/kernel/backends/shared/test/backend-method-signature-compatibility.test.ts::typescript/method-signature-style::1",
       "path": "typescript/kernel/backends/shared/test/backend-method-signature-compatibility.test.ts",
-      "line": 24,
+      "line": 29,
       "rule": "typescript/method-signature-style",
       "scope": "next-line",
       "live_comment": "// oxlint-disable-next-line typescript/method-signature-style -- This fixture proves the historical narrower consumer method specialization.",
@@ -1495,6 +1571,15 @@
       "reason": "queueConnectionWork requires a Promise-returning callback; every read below is synchronous better-sqlite3 work, so there is nothing to await."
     },
     {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-integrity-assertions.ts::typescript/unbound-method::1",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-integrity-assertions.ts",
+      "line": 36,
+      "rule": "typescript/unbound-method",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */",
+      "reason": "Compatibility: preserve published method variance while exporting standalone factory functions."
+    },
+    {
       "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts::promise-function-async::1",
       "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts",
       "line": 225,
@@ -1520,6 +1605,60 @@
       "scope": "block",
       "live_comment": "/* oxlint-disable promise-function-async -- Repository methods validate synchronously before returning fulfilled promises so transaction callbacks preserve their synchronous error contract. */",
       "reason": "Repository methods validate synchronously before returning fulfilled promises so transaction callbacks preserve their synchronous error contract."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-run-invariants.ts::typescript/unbound-method::1",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-run-invariants.ts",
+      "line": 63,
+      "rule": "typescript/unbound-method",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions.",
+      "reason": "Compatibility: preserve published method variance while exporting standalone factory functions."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-run-invariants.ts::typescript/unbound-method::2",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-run-invariants.ts",
+      "line": 65,
+      "rule": "typescript/unbound-method",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */",
+      "reason": "Compatibility: preserve published method variance while exporting standalone factory functions."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-run-invariants.ts::typescript/unbound-method::3",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-run-invariants.ts",
+      "line": 73,
+      "rule": "typescript/unbound-method",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */",
+      "reason": "Compatibility: preserve published method variance while exporting standalone factory functions."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-state-utils.ts::typescript/unbound-method::1",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-state-utils.ts",
+      "line": 51,
+      "rule": "typescript/unbound-method",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve published method variance while extracting a standalone factory function.",
+      "reason": "Compatibility: preserve published method variance while extracting a standalone factory function."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-state-utils.ts::typescript/unbound-method::2",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-state-utils.ts",
+      "line": 54,
+      "rule": "typescript/unbound-method",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */",
+      "reason": "Compatibility: preserve published method variance while exporting standalone factory functions."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-state-validation.ts::typescript/unbound-method::1",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-state-validation.ts",
+      "line": 39,
+      "rule": "typescript/unbound-method",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */",
+      "reason": "Compatibility: preserve published method variance while exporting standalone factory functions."
     },
     {
       "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.invariants.test.ts::typescript/no-floating-promises::1",
