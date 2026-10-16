@@ -86,7 +86,9 @@ export type PersistencePhase =
  * production path's measured bytes or behavior when no observer is supplied.
  */
 export interface PhaseObserver {
-  startPhase: (phase: PersistencePhase) => () => void;
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  startPhase(phase: PersistencePhase): () => void;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /** Shared frozen no-op end-callback every {@link NOOP_PHASE_OBSERVER} phase returns. */
@@ -119,9 +121,11 @@ export interface PhaseSample {
  */
 export interface RecordingPhaseObserver extends PhaseObserver {
   /** Clears all recorded samples so the observer can be reused across bench tiers. */
-  reset: () => void;
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  reset(): void;
   /** Every phase measurement recorded since construction or the last {@link reset}. */
   readonly samples: readonly PhaseSample[];
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**

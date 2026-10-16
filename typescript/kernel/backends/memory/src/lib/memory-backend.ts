@@ -215,6 +215,7 @@ const FAULT_INJECTION_CONTROL = Symbol(
  * {@link isolateRecordBuffers} first so those validators never touch the
  * caller's buffers (ADR-0074).
  */
+/* oxlint-disable promise-function-async -- Repository methods validate synchronously before returning fulfilled promises so escaped transaction handles preserve their synchronous error contract. */
 const createRepositories = (
   state: BackendState,
   now: () => number,
@@ -231,14 +232,14 @@ const createRepositories = (
 
   return {
     branches: {
-      async get(branchId) {
+      get(branchId) {
         assertTransactionActive();
         const branch = state.branches.get(branchId);
-        return await Promise.resolve(
+        return Promise.resolve(
           branch === undefined ? null : cloneStoredBranch(branch)
         );
       },
-      async listByThread(threadId) {
+      listByThread(threadId) {
         assertTransactionActive();
         const branches: StoredBranch[] = [];
 
@@ -249,9 +250,9 @@ const createRepositories = (
         }
 
         branches.sort(compareStoredBranch);
-        return await Promise.resolve(branches);
+        return Promise.resolve(branches);
       },
-      async set(record) {
+      set(record) {
         assertTransactionActive();
         assertStoredBranch(record, "record");
         const thread = ensureThreadExists(
@@ -329,21 +330,21 @@ const createRepositories = (
         }
 
         state.branches.set(record.branchId, cloneStoredBranch(record));
-        await Promise.resolve();
+        return Promise.resolve();
       },
     },
     now,
     objects: {
-      async get(hash) {
+      get(hash) {
         assertTransactionActive();
         const record = state.objects.get(hash);
-        return await Promise.resolve(
+        return Promise.resolve(
           record === undefined ? null : cloneStoredObject(record)
         );
       },
-      async has(hash) {
+      has(hash) {
         assertTransactionActive();
-        return await Promise.resolve(state.objects.has(hash));
+        return Promise.resolve(state.objects.has(hash));
       },
       async put(record) {
         assertTransactionActive();
@@ -361,16 +362,16 @@ const createRepositories = (
       },
     },
     observeAnnotations: {
-      async listByRun(runId) {
+      listByRun(runId) {
         assertTransactionActive();
         const records = state.observeAnnotations.get(runId) ?? [];
-        return await Promise.resolve(
+        return Promise.resolve(
           records
             .map(cloneStoredObserveAnnotation)
             .toSorted(compareStoredObserveAnnotation)
         );
       },
-      async set(record) {
+      set(record) {
         assertTransactionActive();
         const candidate = isolateRecordBuffers(record);
         assertStoredObserveAnnotation(candidate, "record");
@@ -389,14 +390,14 @@ const createRepositories = (
         // must survive as distinct records instead of being deduplicated.
         records.push(cloneStoredObserveAnnotation(candidate));
         state.observeAnnotations.set(candidate.runId, records);
-        await Promise.resolve();
+        return Promise.resolve();
       },
     },
     orderedPathChunks: {
-      async get(chunkHash) {
+      get(chunkHash) {
         assertTransactionActive();
         const record = state.orderedPathChunks.get(chunkHash);
-        return await Promise.resolve(
+        return Promise.resolve(
           record === undefined ? null : cloneStoredOrderedPathChunk(record)
         );
       },
@@ -416,14 +417,14 @@ const createRepositories = (
       },
     },
     runs: {
-      async get(runId) {
+      get(runId) {
         assertTransactionActive();
         const record = state.runs.get(runId);
-        return await Promise.resolve(
+        return Promise.resolve(
           record === undefined ? null : cloneStoredRun(record)
         );
       },
-      async listByBranch(branchId) {
+      listByBranch(branchId) {
         assertTransactionActive();
         const runs: StoredRun[] = [];
 
@@ -434,9 +435,9 @@ const createRepositories = (
         }
 
         runs.sort(compareStoredRun);
-        return await Promise.resolve(runs);
+        return Promise.resolve(runs);
       },
-      async listExpired(nowMs) {
+      listExpired(nowMs) {
         assertTransactionActive();
         const runs: StoredRun[] = [];
 
@@ -447,9 +448,9 @@ const createRepositories = (
         }
 
         runs.sort(compareStoredRun);
-        return await Promise.resolve(runs);
+        return Promise.resolve(runs);
       },
-      async set(record) {
+      set(record) {
         assertTransactionActive();
         const candidate = isolateRecordBuffers(record);
         assertStoredRun(candidate, "record");
@@ -534,18 +535,18 @@ const createRepositories = (
         }
 
         state.runs.set(candidate.runId, cloneStoredRun(candidate));
-        await Promise.resolve();
+        return Promise.resolve();
       },
     },
     schemas: {
-      async get(schemaId) {
+      get(schemaId) {
         assertTransactionActive();
         const record = state.schemas.get(schemaId);
-        return await Promise.resolve(
+        return Promise.resolve(
           record === undefined ? null : cloneStoredSchema(record)
         );
       },
-      async put(record) {
+      put(record) {
         assertTransactionActive();
         const candidate = isolateRecordBuffers(record);
         assertStoredSchema(candidate, "record");
@@ -557,30 +558,30 @@ const createRepositories = (
           areStoredSchemasEqual,
           "stored schema"
         );
-        await Promise.resolve();
+        return Promise.resolve();
       },
     },
     stagedResults: {
-      async clearRun(runId) {
+      clearRun(runId) {
         assertTransactionActive();
         state.stagedResults.delete(runId);
-        await Promise.resolve();
+        return Promise.resolve();
       },
-      async get(runId, taskId) {
+      get(runId, taskId) {
         assertTransactionActive();
         const runResults = state.stagedResults.get(runId);
         const record = runResults?.get(taskId);
 
-        return await Promise.resolve(
+        return Promise.resolve(
           record === undefined ? null : cloneStoredStagedResult(record)
         );
       },
-      async listByRun(runId) {
+      listByRun(runId) {
         assertTransactionActive();
         const runResults = state.stagedResults.get(runId);
 
         if (runResults === undefined) {
-          return await Promise.resolve([]);
+          return Promise.resolve([]);
         }
 
         const stagedResults = Array.from(
@@ -588,9 +589,9 @@ const createRepositories = (
           cloneStoredStagedResult
         );
         stagedResults.sort(compareStoredStagedResult);
-        return await Promise.resolve(stagedResults);
+        return Promise.resolve(stagedResults);
       },
-      async set(record) {
+      set(record) {
         assertTransactionActive();
         const candidate = isolateRecordBuffers(record);
         assertStoredStagedResult(candidate, "record");
@@ -625,18 +626,18 @@ const createRepositories = (
         }
 
         state.stagedResults.set(candidate.runId, runResults);
-        await Promise.resolve();
+        return Promise.resolve();
       },
     },
     threads: {
-      async get(threadId) {
+      get(threadId) {
         assertTransactionActive();
         const record = state.threads.get(threadId);
-        return await Promise.resolve(
+        return Promise.resolve(
           record === undefined ? null : cloneStoredThread(record)
         );
       },
-      async list(options) {
+      list(options) {
         assertTransactionActive();
         let threads: StoredThread[] = Array.from(
           state.threads.values(),
@@ -682,9 +683,9 @@ const createRepositories = (
           }
         }
 
-        return await Promise.resolve({ nextCursor, threads });
+        return Promise.resolve({ nextCursor, threads });
       },
-      async put(record) {
+      put(record) {
         assertTransactionActive();
         assertStoredThread(record, "record");
         ensureSchemaRecordExists(state, record.schemaId, "record.schemaId");
@@ -712,14 +713,14 @@ const createRepositories = (
           areStoredThreadsEqual,
           "stored thread"
         );
-        await Promise.resolve();
+        return Promise.resolve();
       },
     },
     turnNodes: {
-      async get(hash) {
+      get(hash) {
         assertTransactionActive();
         const record = state.turnNodes.get(hash);
-        return await Promise.resolve(
+        return Promise.resolve(
           record === undefined ? null : cloneStoredTurnNode(record)
         );
       },
@@ -768,25 +769,25 @@ const createRepositories = (
       },
     },
     turnTreePaths: {
-      async get(turnTreeHash, path) {
+      get(turnTreeHash, path) {
         assertTransactionActive();
         const treePaths = state.turnTreePaths.get(turnTreeHash);
         const record = treePaths?.get(path);
-        return await Promise.resolve(
+        return Promise.resolve(
           record === undefined ? null : cloneStoredTurnTreePath(record)
         );
       },
-      async listByTurnTree(turnTreeHash) {
+      listByTurnTree(turnTreeHash) {
         assertTransactionActive();
         const treePaths = state.turnTreePaths.get(turnTreeHash);
 
         if (treePaths === undefined) {
-          return await Promise.resolve([]);
+          return Promise.resolve([]);
         }
 
         const records = Array.from(treePaths.values(), cloneStoredTurnTreePath);
         records.sort((left, right) => left.path.localeCompare(right.path));
-        return await Promise.resolve(records);
+        return Promise.resolve(records);
       },
       async putMany(records) {
         assertTransactionActive();
@@ -845,10 +846,10 @@ const createRepositories = (
       },
     },
     turnTrees: {
-      async get(hash) {
+      get(hash) {
         assertTransactionActive();
         const record = state.turnTrees.get(hash);
-        return await Promise.resolve(
+        return Promise.resolve(
           record === undefined ? null : cloneStoredTurnTree(record)
         );
       },
@@ -873,20 +874,20 @@ const createRepositories = (
       },
     },
     turns: {
-      async get(turnId) {
+      get(turnId) {
         assertTransactionActive();
         const record = state.turns.get(turnId);
-        return await Promise.resolve(
+        return Promise.resolve(
           record === undefined ? null : cloneStoredTurn(record)
         );
       },
-      async listByThread(threadId) {
+      listByThread(threadId) {
         assertTransactionActive();
-        return await Promise.resolve(
+        return Promise.resolve(
           listTurnsByThread(state, threadId).map(cloneStoredTurn)
         );
       },
-      async set(record) {
+      set(record) {
         assertTransactionActive();
         assertStoredTurn(record, "record");
         const thread = ensureThreadExists(
@@ -965,11 +966,12 @@ const createRepositories = (
         }
 
         state.turns.set(record.turnId, cloneStoredTurn(record));
-        await Promise.resolve();
+        return Promise.resolve();
       },
     },
   };
 };
+/* oxlint-enable promise-function-async */
 
 /**
  * In-memory reference implementation of the kernel `RuntimeBackend` contract.

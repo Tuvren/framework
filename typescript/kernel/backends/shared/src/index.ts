@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript package documentation tag on the public entrypoint. */
 /**
  * Shared persistence-invariant logic for the Tuvren kernel backends.
  *
@@ -29,7 +30,9 @@
  * lineage decoders, which are injected rather than imported so this package
  * never depends on a single backend's modules.
  *
+ * @packageDocumentation
  */
+/* oxlint-enable jsdoc/check-tag-names */
 
 // Individual sub-factories/functions are exposed directly (rather than
 // composed into a single umbrella factory) so a backend shim that only needs

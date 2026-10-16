@@ -80,8 +80,10 @@ export const resolveTurnNodeLineagePosition = (
   startTurnNode: StoredTurnNode,
   index: TurnNodeLineageIndex,
   hooks: {
-    onCycle: () => never;
-    onMissingPreviousTurnNode: (missingTurnNodeHash: string) => never;
+    // oxlint-disable-next-line typescript/method-signature-style -- Compatibility: preserve the exported callback method variance under strictFunctionTypes.
+    onCycle(): never;
+    // oxlint-disable-next-line typescript/method-signature-style -- Compatibility: preserve the exported callback method variance under strictFunctionTypes.
+    onMissingPreviousTurnNode(missingTurnNodeHash: string): never;
   }
 ): TurnNodeLineagePosition => {
   const cached = index.get(startTurnNode.hash);
@@ -196,13 +198,14 @@ export interface BackendInvariantTurnNodeLineage {
    *   `<prefix>_backend_thread_lineage_mismatch` when the walk reaches a
    *   different root than `thread.rootTurnNodeHash`.
    */
-  assertTurnNodeBelongsToThread: (
+  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
+  assertTurnNodeBelongsToThread(
     state: BackendState,
     turnNodeHash: string,
     thread: StoredThread,
     label: string,
     index: TurnNodeLineageIndex
-  ) => void;
+  ): void;
   /**
    * Asserts that `descendantTurnNodeHash` is `ancestorTurnNodeHash` itself
    * or a descendant of it along `previousTurnNodeHash` lineage. Used to keep
@@ -218,13 +221,14 @@ export interface BackendInvariantTurnNodeLineage {
    *   `<prefix>_backend_turn_node_not_descendant` when the ancestor is not
    *   on the descendant's lineage.
    */
-  assertTurnNodeDescendsFrom: (
+  assertTurnNodeDescendsFrom(
     state: BackendState,
     descendantTurnNodeHash: string,
     ancestorTurnNodeHash: string,
     label: string,
     index: TurnNodeLineageIndex
-  ) => void;
+  ): void;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -236,6 +240,7 @@ export interface BackendInvariantTurnNodeLineage {
 export const createBackendInvariantTurnNodeLineage = (
   config: BackendInvariantTurnNodeLineageConfig
 ): BackendInvariantTurnNodeLineage => {
+  // oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve method-signature variance; the injected implementation is a standalone function.
   const { ensureTurnNodeExists, persistenceError } =
     createBackendInvariantRecordUtils(config);
 

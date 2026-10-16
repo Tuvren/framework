@@ -24,6 +24,7 @@ const recordUtils = createBackendInvariantRecordUtils({
   errorPrefix: "memory",
 });
 
+/* oxlint-disable typescript/unbound-method -- Compatibility: the shared API intentionally retains method variance; these returned implementations are standalone functions. */
 export const {
   areBytesEqual,
   areStoredObjectsEqual,
@@ -72,3 +73,4 @@ export const {
   putImmutableRecord,
   validateHashString,
 } = recordUtils;
+/* oxlint-enable typescript/unbound-method */
