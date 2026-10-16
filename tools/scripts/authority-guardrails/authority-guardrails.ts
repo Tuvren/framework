@@ -370,13 +370,15 @@ const runRegenerateCommand = async (
       }
 
       const reader = stream.getReader();
+      const decoder = new TextDecoder();
       try {
         while (true) {
           const chunk = await reader.read();
           if (chunk.done) {
+            outputChunks.push(decoder.decode());
             return;
           }
-          outputChunks.push(Buffer.from(chunk.value).toString("utf8"));
+          outputChunks.push(decoder.decode(chunk.value, { stream: true }));
         }
       } finally {
         reader.releaseLock();
