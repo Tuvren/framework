@@ -42,6 +42,45 @@ import {
 import type { TurnNodeRelationship } from "./sqlite-run-invariants.js";
 import type { TransactionWriteTracker } from "./sqlite-write-tracker.js";
 
+/**
+ * Walks up to `depth` steps of `previous_turn_node_hash` ancestry from
+ * `turnNodeHash` via a recursive CTE and returns the row it terminates on
+ * (the true root when `depth` matches the cached metadata's depth exactly).
+ * Returns `undefined` only if `turnNodeHash` itself does not exist.
+ */
+const selectBoundedTurnNodeLineageProofInDatabase = (
+  db: Database.Database,
+  turnNodeHash: string,
+  depth: number
+): SqliteTurnNodeLineageProofRow | undefined => {
+  return db
+    .prepare(
+      `
+        WITH RECURSIVE lineage(hash, previous_turn_node_hash, depth) AS (
+          SELECT
+            hash,
+            previous_turn_node_hash,
+            0 AS depth
+          FROM turn_nodes
+          WHERE hash = ?
+          UNION ALL
+          SELECT
+            parent.hash,
+            parent.previous_turn_node_hash,
+            lineage.depth + 1
+          FROM turn_nodes AS parent
+          JOIN lineage ON parent.hash = lineage.previous_turn_node_hash
+          WHERE lineage.depth < ?
+        )
+        SELECT hash, previous_turn_node_hash, depth
+        FROM lineage
+        ORDER BY depth DESC
+        LIMIT 1
+      `
+    )
+    .get(turnNodeHash, depth) as SqliteTurnNodeLineageProofRow | undefined;
+};
+
 // Database-backed counterpart to memory-backend-lineage.ts: the same lineage
 // invariants (thread membership, descent, span, active-run alignment, parent
 // linkage, backward-move archiving), evaluated against SQLite rows instead of
@@ -64,11 +103,11 @@ import type { TransactionWriteTracker } from "./sqlite-write-tracker.js";
  *   `sqlite_backend_turn_node_lineage_metadata_mismatch` when the recomputed
  *   proof disagrees with the stored root hash or depth.
  */
-export function validateTurnNodeLineageMetadataInDatabase(
+export const validateTurnNodeLineageMetadataInDatabase = (
   db: Database.Database,
   turnNode: StoredTurnNode,
   label = "turnNode.hash"
-): TurnNodeLineageMetadata {
+): TurnNodeLineageMetadata => {
   const actualMetadata = ensureTurnNodeLineageMetadataInDatabase(
     db,
     turnNode.hash,
@@ -104,46 +143,41 @@ export function validateTurnNodeLineageMetadataInDatabase(
   }
 
   return actualMetadata;
-}
+};
 
 /**
- * Walks up to `depth` steps of `previous_turn_node_hash` ancestry from
- * `turnNodeHash` via a recursive CTE and returns the row it terminates on
- * (the true root when `depth` matches the cached metadata's depth exactly).
- * Returns `undefined` only if `turnNodeHash` itself does not exist.
+ * Loads a turn node by hash and validates its lineage metadata in one step;
+ * the shared entry point every lineage-relationship check in this module
+ * uses to obtain a metadata row it can trust.
+ *
+ * @throws The injected persistence error when the turn node does not exist or
+ *   its lineage metadata fails validation.
  */
-function selectBoundedTurnNodeLineageProofInDatabase(
+const ensureValidatedTurnNodeLineageMetadataInDatabase = (
   db: Database.Database,
   turnNodeHash: string,
-  depth: number
-): SqliteTurnNodeLineageProofRow | undefined {
-  return db
-    .prepare(
-      `
-        WITH RECURSIVE lineage(hash, previous_turn_node_hash, depth) AS (
-          SELECT
-            hash,
-            previous_turn_node_hash,
-            0 AS depth
-          FROM turn_nodes
-          WHERE hash = ?
-          UNION ALL
-          SELECT
-            parent.hash,
-            parent.previous_turn_node_hash,
-            lineage.depth + 1
-          FROM turn_nodes AS parent
-          JOIN lineage ON parent.hash = lineage.previous_turn_node_hash
-          WHERE lineage.depth < ?
-        )
-        SELECT hash, previous_turn_node_hash, depth
-        FROM lineage
-        ORDER BY depth DESC
-        LIMIT 1
-      `
-    )
-    .get(turnNodeHash, depth) as SqliteTurnNodeLineageProofRow | undefined;
-}
+  label: string
+): TurnNodeLineageMetadata => {
+  const turnNode = ensureTurnNodeExistsInDatabase(db, turnNodeHash, label);
+  return validateTurnNodeLineageMetadataInDatabase(db, turnNode, label);
+};
+
+/**
+ * Loads and validates a turn node's lineage metadata by hash. Public
+ * counterpart of {@link insertTurnNodeLineageMetadata} used by callers that
+ * only have a hash (e.g. resolving `record.previousTurnNodeHash`) rather
+ * than a full `StoredTurnNode`.
+ */
+export const getValidatedTurnNodeLineageMetadataInDatabase = (
+  db: Database.Database,
+  turnNodeHash: string
+): TurnNodeLineageMetadata => {
+  return ensureValidatedTurnNodeLineageMetadataInDatabase(
+    db,
+    turnNodeHash,
+    "record.previousTurnNodeHash"
+  );
+};
 
 /**
  * Derives and inserts a new turn node's lineage metadata row: depth 0 rooted
@@ -152,10 +186,10 @@ function selectBoundedTurnNodeLineageProofInDatabase(
  * node row, since later lineage checks assume every stored turn node has a
  * matching `turn_node_lineage_roots` entry.
  */
-export function insertTurnNodeLineageMetadata(
+export const insertTurnNodeLineageMetadata = (
   db: Database.Database,
   record: StoredTurnNode
-): void {
+): void => {
   const previousMetadata =
     record.previousTurnNodeHash === null
       ? null
@@ -181,41 +215,7 @@ export function insertTurnNodeLineageMetadata(
       ) VALUES (?, ?, ?)
     `
   ).run(metadata.turnNodeHash, metadata.rootTurnNodeHash, metadata.depth);
-}
-
-/**
- * Loads and validates a turn node's lineage metadata by hash. Public
- * counterpart of {@link insertTurnNodeLineageMetadata} used by callers that
- * only have a hash (e.g. resolving `record.previousTurnNodeHash`) rather
- * than a full `StoredTurnNode`.
- */
-export function getValidatedTurnNodeLineageMetadataInDatabase(
-  db: Database.Database,
-  turnNodeHash: string
-): TurnNodeLineageMetadata {
-  return ensureValidatedTurnNodeLineageMetadataInDatabase(
-    db,
-    turnNodeHash,
-    "record.previousTurnNodeHash"
-  );
-}
-
-/**
- * Loads a turn node by hash and validates its lineage metadata in one step;
- * the shared entry point every lineage-relationship check in this module
- * uses to obtain a metadata row it can trust.
- *
- * @throws The injected persistence error when the turn node does not exist or
- *   its lineage metadata fails validation.
- */
-function ensureValidatedTurnNodeLineageMetadataInDatabase(
-  db: Database.Database,
-  turnNodeHash: string,
-  label: string
-): TurnNodeLineageMetadata {
-  const turnNode = ensureTurnNodeExistsInDatabase(db, turnNodeHash, label);
-  return validateTurnNodeLineageMetadataInDatabase(db, turnNode, label);
-}
+};
 
 /**
  * Asserts that a backward branch-head move (rewind) preserved history: this
@@ -229,12 +229,12 @@ function ensureValidatedTurnNodeLineageMetadataInDatabase(
  *   `sqlite_backend_backward_branch_move_missing_archive` when no matching
  *   archive branch is found.
  */
-export function assertBackwardBranchMoveIsArchivedInDatabase(
+export const assertBackwardBranchMoveIsArchivedInDatabase = (
   db: Database.Database,
   writeTracker: TransactionWriteTracker,
   previousBranch: StoredBranch,
   nextBranch: StoredBranch
-): void {
+): void => {
   let archiveBranchFound = false;
 
   for (const branch of selectBranchesByThread(db, nextBranch.threadId)) {
@@ -268,7 +268,7 @@ export function assertBackwardBranchMoveIsArchivedInDatabase(
       }
     );
   }
-}
+};
 
 /**
  * Asserts that a turn node's lineage root matches the thread's root turn
@@ -278,12 +278,12 @@ export function assertBackwardBranchMoveIsArchivedInDatabase(
  * @throws The injected persistence error with code
  *   `sqlite_backend_thread_lineage_mismatch` when the roots disagree.
  */
-export function assertTurnNodeBelongsToThreadInDatabase(
+export const assertTurnNodeBelongsToThreadInDatabase = (
   db: Database.Database,
   turnNodeHash: string,
   thread: StoredThread,
   label: string
-): void {
+): void => {
   const rootMetadata = validateTurnNodeLineageMetadataInDatabase(
     db,
     ensureTurnNodeExistsInDatabase(db, turnNodeHash, label),
@@ -302,7 +302,78 @@ export function assertTurnNodeBelongsToThreadInDatabase(
       }
     );
   }
-}
+};
+
+/**
+ * Reports whether `ancestorTurnNodeHash` lies on `descendantTurnNodeHash`'s
+ * lineage (a node is its own descendant). Rules out mismatched lineage roots
+ * or a shallower descendant by depth alone before falling back to a
+ * depth-bounded recursive CTE walk for the remaining ambiguous cases.
+ */
+const isTurnNodeDescendantOfInDatabase = (
+  db: Database.Database,
+  descendantTurnNodeHash: string,
+  ancestorTurnNodeHash: string
+): boolean => {
+  if (descendantTurnNodeHash === ancestorTurnNodeHash) {
+    return true;
+  }
+
+  const descendantMetadata = ensureValidatedTurnNodeLineageMetadataInDatabase(
+    db,
+    descendantTurnNodeHash,
+    "descendantTurnNodeHash"
+  );
+  const ancestorMetadata = ensureValidatedTurnNodeLineageMetadataInDatabase(
+    db,
+    ancestorTurnNodeHash,
+    "ancestorTurnNodeHash"
+  );
+
+  if (
+    descendantMetadata.rootTurnNodeHash !== ancestorMetadata.rootTurnNodeHash ||
+    descendantMetadata.depth < ancestorMetadata.depth
+  ) {
+    return false;
+  }
+
+  if (
+    ancestorMetadata.depth === 0 &&
+    descendantMetadata.rootTurnNodeHash === ancestorTurnNodeHash
+  ) {
+    return true;
+  }
+
+  const row = db
+    .prepare(
+      `
+        WITH RECURSIVE lineage(hash, previous_turn_node_hash, remaining_depth) AS (
+          SELECT hash, previous_turn_node_hash, ? AS remaining_depth
+          FROM turn_nodes
+          WHERE hash = ?
+          UNION ALL
+          SELECT
+            turn_nodes.hash,
+            turn_nodes.previous_turn_node_hash,
+            lineage.remaining_depth - 1
+          FROM turn_nodes
+          JOIN lineage ON turn_nodes.hash = lineage.previous_turn_node_hash
+          WHERE lineage.remaining_depth > 0
+        )
+        SELECT 1 AS found
+        FROM lineage
+        WHERE hash = ?
+        LIMIT 1
+      `
+    )
+    .get(
+      descendantMetadata.depth - ancestorMetadata.depth,
+      descendantTurnNodeHash,
+      ancestorTurnNodeHash
+    ) as { found: number } | undefined;
+
+  return row !== undefined;
+};
 
 /**
  * Asserts that `descendantTurnNodeHash` is the ancestor itself or a
@@ -313,12 +384,12 @@ export function assertTurnNodeBelongsToThreadInDatabase(
  *   `sqlite_backend_turn_node_not_descendant` when the ancestor is not on the
  *   descendant's lineage.
  */
-export function assertTurnNodeDescendsFromInDatabase(
+export const assertTurnNodeDescendsFromInDatabase = (
   db: Database.Database,
   descendantTurnNodeHash: string,
   ancestorTurnNodeHash: string,
   label: string
-): void {
+): void => {
   if (
     !isTurnNodeDescendantOfInDatabase(
       db,
@@ -335,7 +406,31 @@ export function assertTurnNodeDescendsFromInDatabase(
       }
     );
   }
-}
+};
+
+/**
+ * Loads every other turn on the same thread whose head sits at `turn`'s start
+ * node, ordered oldest-first — the candidate set
+ * {@link assertTurnParentLinkInDatabase} checks `turn.parentTurnId` against.
+ */
+const selectCandidateParentTurns = (
+  db: Database.Database,
+  turn: StoredTurn
+): StoredTurn[] => {
+  const rows = db
+    .prepare(
+      `
+        SELECT *
+        FROM turns
+        WHERE thread_id = ?
+          AND head_turn_node_hash = ?
+          AND turn_id <> ?
+        ORDER BY created_at_ms, turn_id
+      `
+    )
+    .all(turn.threadId, turn.startTurnNodeHash, turn.turnId);
+  return rows.map(decodeUnknownTurnRow);
+};
 
 /**
  * Asserts a turn's semantic-parent link is canonical: a turn whose start node
@@ -351,11 +446,11 @@ export function assertTurnNodeDescendsFromInDatabase(
  *   `sqlite_backend_turn_parent_start_turn_node_mismatch`, or
  *   `sqlite_backend_turn_parent_not_immediate_predecessor`.
  */
-export function assertTurnParentLinkInDatabase(
+export const assertTurnParentLinkInDatabase = (
   db: Database.Database,
   turn: StoredTurn,
   label: string
-): void {
+): void => {
   const candidateTurnsAtStart = selectCandidateParentTurns(db, turn);
   const sameBranchCandidateTurns = candidateTurnsAtStart.filter(
     (candidateTurn) => candidateTurn.branchId === turn.branchId
@@ -428,282 +523,7 @@ export function assertTurnParentLinkInDatabase(
       }
     );
   }
-}
-
-/**
- * Loads every other turn on the same thread whose head sits at `turn`'s start
- * node, ordered oldest-first — the candidate set
- * {@link assertTurnParentLinkInDatabase} checks `turn.parentTurnId` against.
- */
-function selectCandidateParentTurns(
-  db: Database.Database,
-  turn: StoredTurn
-): StoredTurn[] {
-  const rows = db
-    .prepare(
-      `
-        SELECT *
-        FROM turns
-        WHERE thread_id = ?
-          AND head_turn_node_hash = ?
-          AND turn_id <> ?
-        ORDER BY created_at_ms, turn_id
-      `
-    )
-    .all(turn.threadId, turn.startTurnNodeHash, turn.turnId);
-  return rows.map(decodeUnknownTurnRow);
-}
-
-/**
- * Asserts that a run's start turn node lies within its turn's span: at or
- * after the turn's start node and at or before the turn's head node on the
- * same lineage.
- *
- * @throws The injected persistence error with code
- *   `sqlite_backend_run_turn_span_mismatch`.
- */
-export function assertRunStartTurnNodeWithinTurnSpanInDatabase(
-  db: Database.Database,
-  turn: StoredTurn,
-  startTurnNodeHash: string,
-  label: string
-): void {
-  const relationshipToTurnStart = classifyTurnNodeRelationshipInDatabase(
-    db,
-    turn.startTurnNodeHash,
-    startTurnNodeHash
-  );
-
-  if (
-    relationshipToTurnStart !== "same" &&
-    relationshipToTurnStart !== "forward"
-  ) {
-    throw persistenceError(
-      `${label} must lie within the referenced turn span`,
-      "sqlite_backend_run_turn_span_mismatch",
-      {
-        startTurnNodeHash,
-        turnId: turn.turnId,
-        turnStartTurnNodeHash: turn.startTurnNodeHash,
-      }
-    );
-  }
-
-  const relationshipToTurnHead = classifyTurnNodeRelationshipInDatabase(
-    db,
-    startTurnNodeHash,
-    turn.headTurnNodeHash
-  );
-
-  if (
-    relationshipToTurnHead !== "same" &&
-    relationshipToTurnHead !== "forward"
-  ) {
-    throw persistenceError(
-      `${label} must not move past the referenced turn head`,
-      "sqlite_backend_run_turn_span_mismatch",
-      {
-        startTurnNodeHash,
-        turnHeadTurnNodeHash: turn.headTurnNodeHash,
-        turnId: turn.turnId,
-      }
-    );
-  }
-}
-
-/**
- * Asserts that a turn node recorded in a run's `createdTurnNodesCbor` lineage
- * lies within the run's turn span (between the turn's start node and head
- * node, inclusive).
- *
- * @throws The injected persistence error with code
- *   `sqlite_backend_run_created_turn_node_outside_turn_span`.
- */
-export function assertRunCreatedTurnNodeWithinTurnSpanInDatabase(
-  db: Database.Database,
-  turn: StoredTurn,
-  createdTurnNode: StoredTurnNode,
-  label: string
-): void {
-  const relationshipToTurnStart = classifyTurnNodeRelationshipInDatabase(
-    db,
-    turn.startTurnNodeHash,
-    createdTurnNode.hash
-  );
-
-  if (
-    relationshipToTurnStart !== "same" &&
-    relationshipToTurnStart !== "forward"
-  ) {
-    throw persistenceError(
-      `${label} entries must remain within the referenced turn span`,
-      "sqlite_backend_run_created_turn_node_outside_turn_span",
-      {
-        createdTurnNodeHash: createdTurnNode.hash,
-        turnId: turn.turnId,
-        turnStartTurnNodeHash: turn.startTurnNodeHash,
-      }
-    );
-  }
-
-  const relationshipToTurnHead = classifyTurnNodeRelationshipInDatabase(
-    db,
-    createdTurnNode.hash,
-    turn.headTurnNodeHash
-  );
-
-  if (
-    relationshipToTurnHead !== "same" &&
-    relationshipToTurnHead !== "forward"
-  ) {
-    throw persistenceError(
-      `${label} entries must not move beyond the referenced turn head`,
-      "sqlite_backend_run_created_turn_node_outside_turn_span",
-      {
-        createdTurnNodeHash: createdTurnNode.hash,
-        turnHeadTurnNodeHash: turn.headTurnNodeHash,
-        turnId: turn.turnId,
-      }
-    );
-  }
-}
-
-/**
- * Asserts that a run's `createdTurnNodesCbor` decodes to a canonical lineage:
- * unique hashes forming a contiguous `previousTurnNodeHash` chain that starts
- * immediately after the run's start turn node.
- *
- * @throws The injected persistence error with code
- *   `sqlite_backend_run_created_turn_nodes_duplicate` or
- *   `sqlite_backend_run_created_turn_nodes_not_contiguous`.
- */
-export function assertRunCreatedTurnNodesAreCanonicalInDatabase(
-  db: Database.Database,
-  run: StoredRun
-): void {
-  const createdTurnNodeHashes = decodeRunCreatedTurnNodeHashes(run);
-  const seenTurnNodeHashes = new Set<string>();
-  let previousTurnNodeHash = run.startTurnNodeHash;
-
-  for (const [index, turnNodeHash] of createdTurnNodeHashes.entries()) {
-    if (seenTurnNodeHashes.has(turnNodeHash)) {
-      throw persistenceError(
-        "stored runs must keep createdTurnNodesCbor unique",
-        "sqlite_backend_run_created_turn_nodes_duplicate",
-        {
-          duplicateTurnNodeHash: turnNodeHash,
-          index,
-          runId: run.runId,
-        }
-      );
-    }
-
-    const createdTurnNode = ensureTurnNodeExistsInDatabase(
-      db,
-      turnNodeHash,
-      "run.createdTurnNodesCbor"
-    );
-    const isImmediateNextTurnNode =
-      createdTurnNode.previousTurnNodeHash === previousTurnNodeHash;
-
-    if (!isImmediateNextTurnNode) {
-      throw persistenceError(
-        "stored runs must keep createdTurnNodesCbor as a canonical contiguous lineage",
-        "sqlite_backend_run_created_turn_nodes_not_contiguous",
-        {
-          createdTurnNodePreviousTurnNodeHash:
-            createdTurnNode.previousTurnNodeHash,
-          index,
-          previousTurnNodeHash,
-          runId: run.runId,
-          turnNodeHash,
-        }
-      );
-    }
-
-    seenTurnNodeHashes.add(turnNodeHash);
-    previousTurnNodeHash = turnNodeHash;
-  }
-}
-
-/**
- * Asserts that an active (running/paused) run's active turn node — the last
- * created node, or the start node when none exist — is simultaneously the
- * branch head and the turn head, so an in-flight run can never drift from
- * the lineage position the branch and turn claim.
- *
- * @throws The injected persistence error with code
- *   `sqlite_backend_active_run_branch_head_mismatch` or
- *   `sqlite_backend_active_run_turn_head_mismatch`.
- */
-export function assertActiveRunHeadAlignmentInDatabase(
-  run: StoredRun,
-  branch: StoredBranch,
-  turn: StoredTurn
-): void {
-  const activeTurnNodeHash = getRunActiveTurnNodeHash(run);
-
-  if (activeTurnNodeHash !== branch.headTurnNodeHash) {
-    throw persistenceError(
-      "stored active runs must stay aligned with the current branch head",
-      "sqlite_backend_active_run_branch_head_mismatch",
-      {
-        activeTurnNodeHash,
-        branchHeadTurnNodeHash: branch.headTurnNodeHash,
-        branchId: branch.branchId,
-        runId: run.runId,
-        status: run.status,
-      }
-    );
-  }
-
-  if (activeTurnNodeHash !== turn.headTurnNodeHash) {
-    throw persistenceError(
-      "stored active runs must stay aligned with the current turn head",
-      "sqlite_backend_active_run_turn_head_mismatch",
-      {
-        activeTurnNodeHash,
-        runId: run.runId,
-        status: run.status,
-        turnHeadTurnNodeHash: turn.headTurnNodeHash,
-        turnId: turn.turnId,
-      }
-    );
-  }
-}
-
-/**
- * Asserts that a branch head move stays on one lineage line: the new head
- * must be the same node, a descendant (forward move), or an ancestor
- * (backward move, e.g. a rewind) of the current head. Lateral jumps onto an
- * unrelated lineage are rejected.
- *
- * @throws The injected persistence error with code
- *   `sqlite_backend_branch_head_lateral_move`.
- */
-export function assertBranchHeadMoveIsLinearInDatabase(
-  db: Database.Database,
-  previousHeadTurnNodeHash: string,
-  nextHeadTurnNodeHash: string,
-  label: string
-): void {
-  const relationship = classifyTurnNodeRelationshipInDatabase(
-    db,
-    previousHeadTurnNodeHash,
-    nextHeadTurnNodeHash
-  );
-
-  if (relationship === "lateral") {
-    throw persistenceError(
-      `${label} must remain on the same thread lineage as the current branch head`,
-      "sqlite_backend_branch_head_lateral_move",
-      {
-        nextHeadTurnNodeHash,
-        previousHeadTurnNodeHash,
-      }
-    );
-  }
-}
+};
 
 /**
  * Classifies the lineage relationship from `sourceTurnNodeHash` to
@@ -715,11 +535,11 @@ export function assertBranchHeadMoveIsLinearInDatabase(
  * depths alone do not already prove it (e.g. either node sits at the shared
  * lineage root).
  */
-export function classifyTurnNodeRelationshipInDatabase(
+export const classifyTurnNodeRelationshipInDatabase = (
   db: Database.Database,
   sourceTurnNodeHash: string,
   targetTurnNodeHash: string
-): TurnNodeRelationship {
+): TurnNodeRelationship => {
   if (sourceTurnNodeHash === targetTurnNodeHash) {
     return "same";
   }
@@ -774,75 +594,255 @@ export function classifyTurnNodeRelationshipInDatabase(
   }
 
   return "lateral";
-}
+};
 
 /**
- * Reports whether `ancestorTurnNodeHash` lies on `descendantTurnNodeHash`'s
- * lineage (a node is its own descendant). Rules out mismatched lineage roots
- * or a shallower descendant by depth alone before falling back to a
- * depth-bounded recursive CTE walk for the remaining ambiguous cases.
+ * Asserts that a run's start turn node lies within its turn's span: at or
+ * after the turn's start node and at or before the turn's head node on the
+ * same lineage.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_run_turn_span_mismatch`.
  */
-function isTurnNodeDescendantOfInDatabase(
+export const assertRunStartTurnNodeWithinTurnSpanInDatabase = (
   db: Database.Database,
-  descendantTurnNodeHash: string,
-  ancestorTurnNodeHash: string
-): boolean {
-  if (descendantTurnNodeHash === ancestorTurnNodeHash) {
-    return true;
-  }
-
-  const descendantMetadata = ensureValidatedTurnNodeLineageMetadataInDatabase(
+  turn: StoredTurn,
+  startTurnNodeHash: string,
+  label: string
+): void => {
+  const relationshipToTurnStart = classifyTurnNodeRelationshipInDatabase(
     db,
-    descendantTurnNodeHash,
-    "descendantTurnNodeHash"
-  );
-  const ancestorMetadata = ensureValidatedTurnNodeLineageMetadataInDatabase(
-    db,
-    ancestorTurnNodeHash,
-    "ancestorTurnNodeHash"
+    turn.startTurnNodeHash,
+    startTurnNodeHash
   );
 
   if (
-    descendantMetadata.rootTurnNodeHash !== ancestorMetadata.rootTurnNodeHash ||
-    descendantMetadata.depth < ancestorMetadata.depth
+    relationshipToTurnStart !== "same" &&
+    relationshipToTurnStart !== "forward"
   ) {
-    return false;
+    throw persistenceError(
+      `${label} must lie within the referenced turn span`,
+      "sqlite_backend_run_turn_span_mismatch",
+      {
+        startTurnNodeHash,
+        turnId: turn.turnId,
+        turnStartTurnNodeHash: turn.startTurnNodeHash,
+      }
+    );
   }
+
+  const relationshipToTurnHead = classifyTurnNodeRelationshipInDatabase(
+    db,
+    startTurnNodeHash,
+    turn.headTurnNodeHash
+  );
 
   if (
-    ancestorMetadata.depth === 0 &&
-    descendantMetadata.rootTurnNodeHash === ancestorTurnNodeHash
+    relationshipToTurnHead !== "same" &&
+    relationshipToTurnHead !== "forward"
   ) {
-    return true;
+    throw persistenceError(
+      `${label} must not move past the referenced turn head`,
+      "sqlite_backend_run_turn_span_mismatch",
+      {
+        startTurnNodeHash,
+        turnHeadTurnNodeHash: turn.headTurnNodeHash,
+        turnId: turn.turnId,
+      }
+    );
+  }
+};
+
+/**
+ * Asserts that a turn node recorded in a run's `createdTurnNodesCbor` lineage
+ * lies within the run's turn span (between the turn's start node and head
+ * node, inclusive).
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_run_created_turn_node_outside_turn_span`.
+ */
+export const assertRunCreatedTurnNodeWithinTurnSpanInDatabase = (
+  db: Database.Database,
+  turn: StoredTurn,
+  createdTurnNode: StoredTurnNode,
+  label: string
+): void => {
+  const relationshipToTurnStart = classifyTurnNodeRelationshipInDatabase(
+    db,
+    turn.startTurnNodeHash,
+    createdTurnNode.hash
+  );
+
+  if (
+    relationshipToTurnStart !== "same" &&
+    relationshipToTurnStart !== "forward"
+  ) {
+    throw persistenceError(
+      `${label} entries must remain within the referenced turn span`,
+      "sqlite_backend_run_created_turn_node_outside_turn_span",
+      {
+        createdTurnNodeHash: createdTurnNode.hash,
+        turnId: turn.turnId,
+        turnStartTurnNodeHash: turn.startTurnNodeHash,
+      }
+    );
   }
 
-  const row = db
-    .prepare(
-      `
-        WITH RECURSIVE lineage(hash, previous_turn_node_hash, remaining_depth) AS (
-          SELECT hash, previous_turn_node_hash, ? AS remaining_depth
-          FROM turn_nodes
-          WHERE hash = ?
-          UNION ALL
-          SELECT
-            turn_nodes.hash,
-            turn_nodes.previous_turn_node_hash,
-            lineage.remaining_depth - 1
-          FROM turn_nodes
-          JOIN lineage ON turn_nodes.hash = lineage.previous_turn_node_hash
-          WHERE lineage.remaining_depth > 0
-        )
-        SELECT 1 AS found
-        FROM lineage
-        WHERE hash = ?
-        LIMIT 1
-      `
-    )
-    .get(
-      descendantMetadata.depth - ancestorMetadata.depth,
-      descendantTurnNodeHash,
-      ancestorTurnNodeHash
-    ) as { found: number } | undefined;
+  const relationshipToTurnHead = classifyTurnNodeRelationshipInDatabase(
+    db,
+    createdTurnNode.hash,
+    turn.headTurnNodeHash
+  );
 
-  return row !== undefined;
-}
+  if (
+    relationshipToTurnHead !== "same" &&
+    relationshipToTurnHead !== "forward"
+  ) {
+    throw persistenceError(
+      `${label} entries must not move beyond the referenced turn head`,
+      "sqlite_backend_run_created_turn_node_outside_turn_span",
+      {
+        createdTurnNodeHash: createdTurnNode.hash,
+        turnHeadTurnNodeHash: turn.headTurnNodeHash,
+        turnId: turn.turnId,
+      }
+    );
+  }
+};
+
+/**
+ * Asserts that a run's `createdTurnNodesCbor` decodes to a canonical lineage:
+ * unique hashes forming a contiguous `previousTurnNodeHash` chain that starts
+ * immediately after the run's start turn node.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_run_created_turn_nodes_duplicate` or
+ *   `sqlite_backend_run_created_turn_nodes_not_contiguous`.
+ */
+export const assertRunCreatedTurnNodesAreCanonicalInDatabase = (
+  db: Database.Database,
+  run: StoredRun
+): void => {
+  const createdTurnNodeHashes = decodeRunCreatedTurnNodeHashes(run);
+  const seenTurnNodeHashes = new Set<string>();
+  let previousTurnNodeHash = run.startTurnNodeHash;
+
+  for (const [index, turnNodeHash] of createdTurnNodeHashes.entries()) {
+    if (seenTurnNodeHashes.has(turnNodeHash)) {
+      throw persistenceError(
+        "stored runs must keep createdTurnNodesCbor unique",
+        "sqlite_backend_run_created_turn_nodes_duplicate",
+        {
+          duplicateTurnNodeHash: turnNodeHash,
+          index,
+          runId: run.runId,
+        }
+      );
+    }
+
+    const createdTurnNode = ensureTurnNodeExistsInDatabase(
+      db,
+      turnNodeHash,
+      "run.createdTurnNodesCbor"
+    );
+    const isImmediateNextTurnNode =
+      createdTurnNode.previousTurnNodeHash === previousTurnNodeHash;
+
+    if (!isImmediateNextTurnNode) {
+      throw persistenceError(
+        "stored runs must keep createdTurnNodesCbor as a canonical contiguous lineage",
+        "sqlite_backend_run_created_turn_nodes_not_contiguous",
+        {
+          createdTurnNodePreviousTurnNodeHash:
+            createdTurnNode.previousTurnNodeHash,
+          index,
+          previousTurnNodeHash,
+          runId: run.runId,
+          turnNodeHash,
+        }
+      );
+    }
+
+    seenTurnNodeHashes.add(turnNodeHash);
+    previousTurnNodeHash = turnNodeHash;
+  }
+};
+
+/**
+ * Asserts that an active (running/paused) run's active turn node — the last
+ * created node, or the start node when none exist — is simultaneously the
+ * branch head and the turn head, so an in-flight run can never drift from
+ * the lineage position the branch and turn claim.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_active_run_branch_head_mismatch` or
+ *   `sqlite_backend_active_run_turn_head_mismatch`.
+ */
+export const assertActiveRunHeadAlignmentInDatabase = (
+  run: StoredRun,
+  branch: StoredBranch,
+  turn: StoredTurn
+): void => {
+  const activeTurnNodeHash = getRunActiveTurnNodeHash(run);
+
+  if (activeTurnNodeHash !== branch.headTurnNodeHash) {
+    throw persistenceError(
+      "stored active runs must stay aligned with the current branch head",
+      "sqlite_backend_active_run_branch_head_mismatch",
+      {
+        activeTurnNodeHash,
+        branchHeadTurnNodeHash: branch.headTurnNodeHash,
+        branchId: branch.branchId,
+        runId: run.runId,
+        status: run.status,
+      }
+    );
+  }
+
+  if (activeTurnNodeHash !== turn.headTurnNodeHash) {
+    throw persistenceError(
+      "stored active runs must stay aligned with the current turn head",
+      "sqlite_backend_active_run_turn_head_mismatch",
+      {
+        activeTurnNodeHash,
+        runId: run.runId,
+        status: run.status,
+        turnHeadTurnNodeHash: turn.headTurnNodeHash,
+        turnId: turn.turnId,
+      }
+    );
+  }
+};
+
+/**
+ * Asserts that a branch head move stays on one lineage line: the new head
+ * must be the same node, a descendant (forward move), or an ancestor
+ * (backward move, e.g. a rewind) of the current head. Lateral jumps onto an
+ * unrelated lineage are rejected.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_branch_head_lateral_move`.
+ */
+export const assertBranchHeadMoveIsLinearInDatabase = (
+  db: Database.Database,
+  previousHeadTurnNodeHash: string,
+  nextHeadTurnNodeHash: string,
+  label: string
+): void => {
+  const relationship = classifyTurnNodeRelationshipInDatabase(
+    db,
+    previousHeadTurnNodeHash,
+    nextHeadTurnNodeHash
+  );
+
+  if (relationship === "lateral") {
+    throw persistenceError(
+      `${label} must remain on the same thread lineage as the current branch head`,
+      "sqlite_backend_branch_head_lateral_move",
+      {
+        nextHeadTurnNodeHash,
+        previousHeadTurnNodeHash,
+      }
+    );
+  }
+};

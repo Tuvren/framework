@@ -107,14 +107,16 @@ export const {
  * was adopted there because that backend has no legacy bare-join format to
  * stay compatible with.
  */
-export function keyObserveAnnotation(record: StoredObserveAnnotation): string {
+export const keyObserveAnnotation = (
+  record: StoredObserveAnnotation
+): string => {
   return [
     record.runId,
     String(record.createdAtMs),
     record.annotationHash,
     record.turnNodeHash ?? "",
   ].join("\0");
-}
+};
 
 /**
  * Computes the storage `record_key` for a new observe annotation: its
@@ -122,10 +124,10 @@ export function keyObserveAnnotation(record: StoredObserveAnnotation): string {
  * rows already sharing that identity, so repeated annotations with identical
  * logical fields still get distinct primary keys instead of colliding.
  */
-export function nextObserveAnnotationRecordKey(
+export const nextObserveAnnotationRecordKey = (
   db: Database.Database,
   record: StoredObserveAnnotation
-): string {
+): string => {
   const identityKey = keyObserveAnnotation(record);
   const row = db
     .prepare(
@@ -150,7 +152,7 @@ export function nextObserveAnnotationRecordKey(
     ) as { count: number };
 
   return `${identityKey}\0${row.count}`;
-}
+};
 
 /**
  * Unlike its `compareStoredBranch`/`compareStoredRun`/`compareStoredTurn`/
@@ -164,14 +166,14 @@ export function nextObserveAnnotationRecordKey(
  * backend-owned above), which additionally folds in `runId`/`turnNodeHash`,
  * so ordering stays deterministic even across identity-hash collisions.
  */
-export function compareStoredObserveAnnotation(
+export const compareStoredObserveAnnotation = (
   left: StoredObserveAnnotation,
   right: StoredObserveAnnotation
-): number {
+): number => {
   return compareByTimestampAndKey(
     left.createdAtMs,
     right.createdAtMs,
     keyObserveAnnotation(left),
     keyObserveAnnotation(right)
   );
-}
+};
