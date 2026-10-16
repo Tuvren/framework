@@ -54,8 +54,8 @@ const CODEGEN_VALIDATOR_IDS: readonly string[] = [
   "vocabulary-check verification",
 ];
 
-export const createCodegenPhases = (): VerificationPhase[] => {
-  return prependGeneratedPrerequisitePhase(
+export const createCodegenPhases = (): VerificationPhase[] =>
+  prependGeneratedPrerequisitePhase(
     [
       {
         id: "codegen authority validators",
@@ -98,7 +98,6 @@ export const createCodegenPhases = (): VerificationPhase[] => {
     ],
     { fresh: false }
   );
-};
 
 if (import.meta.main) {
   const results = await runVerificationPhases(createCodegenPhases());

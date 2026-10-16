@@ -15,12 +15,12 @@
  */
 
 import { access, readdir } from "node:fs/promises";
-import { relative, resolve } from "node:path";
+import path from "node:path";
 import process from "node:process";
 
 import { runCommand } from "./lib/command-runner.js";
 
-const REPO_ROOT = resolve(import.meta.dirname, "../..");
+const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 const PROTO_ROOT = "spec/interop/proto";
 const GENERATED_ROOT =
   "typescript/kernel/grpc-client/src/lib/generated/kernel-interop";
@@ -48,19 +48,18 @@ const runRequiredCommand = async (
 
 const listFiles = async (directory: string): Promise<string[]> => {
   const entries = await readdir(directory, { withFileTypes: true });
-  const files: string[] = [];
+  const files = await Promise.all(
+    entries.map(async (entry): Promise<string[]> => {
+      const entryPath = path.resolve(directory, entry.name);
 
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
+      if (entry.isDirectory()) {
+        return await listFiles(entryPath);
+      }
+      return entry.isFile() ? [path.relative(REPO_ROOT, entryPath)] : [];
+    })
+  );
 
-    if (entry.isDirectory()) {
-      files.push(...(await listFiles(entryPath)));
-    } else if (entry.isFile()) {
-      files.push(relative(REPO_ROOT, entryPath));
-    }
-  }
-
-  return files.sort();
+  return files.flat().toSorted();
 };
 
 const branchExists = async (branch: string): Promise<boolean> => {
@@ -115,40 +114,51 @@ const refreshRemoteBreakingBaseline = async (): Promise<void> => {
   }
 };
 
-const findAgainstBranchWithProtoBaseline =
-  async (): Promise<AgainstBranchSearch> => {
-    let inspectedBranchCount = 0;
-
-    for (const branch of AGAINST_BRANCH_CANDIDATES) {
-      const result = await runCommand(
-        ["git", "ls-tree", "-r", "--name-only", branch, "--", PROTO_ROOT],
-        { captureOutput: true, cwd: REPO_ROOT }
-      );
-
-      if (result.code !== 0) {
-        continue;
-      }
-
-      inspectedBranchCount += 1;
-
-      const hasProtoFile = result.stdout
-        .split("\n")
-        .some((line) => line.endsWith(".proto"));
-
-      if (hasProtoFile) {
-        return { branch, inspectedBranchCount };
-      }
-    }
-
+const inspectAgainstBranchCandidate = async (
+  index: number,
+  inspectedBranchCount: number
+): Promise<AgainstBranchSearch> => {
+  const branch = AGAINST_BRANCH_CANDIDATES[index];
+  if (branch === undefined) {
     return { branch: undefined, inspectedBranchCount };
-  };
-
-const assertGeneratedBindings = async (): Promise<void> => {
-  for (const generatedFile of REQUIRED_GENERATED_FILES) {
-    await access(resolve(REPO_ROOT, generatedFile));
   }
 
-  const generatedFiles = await listFiles(resolve(REPO_ROOT, GENERATED_ROOT));
+  const result = await runCommand(
+    ["git", "ls-tree", "-r", "--name-only", branch, "--", PROTO_ROOT],
+    { captureOutput: true, cwd: REPO_ROOT }
+  );
+  if (result.code !== 0) {
+    return await inspectAgainstBranchCandidate(index + 1, inspectedBranchCount);
+  }
+
+  const nextInspectedBranchCount = inspectedBranchCount + 1;
+  const hasProtoFile = result.stdout
+    .split("\n")
+    .some((line) => line.endsWith(".proto"));
+  if (hasProtoFile) {
+    return { branch, inspectedBranchCount: nextInspectedBranchCount };
+  }
+
+  return await inspectAgainstBranchCandidate(
+    index + 1,
+    nextInspectedBranchCount
+  );
+};
+
+const findAgainstBranchWithProtoBaseline =
+  async (): Promise<AgainstBranchSearch> =>
+    await inspectAgainstBranchCandidate(0, 0);
+
+const assertGeneratedBindings = async (): Promise<void> => {
+  await Promise.all(
+    REQUIRED_GENERATED_FILES.map(async (generatedFile) => {
+      await access(path.resolve(REPO_ROOT, generatedFile));
+    })
+  );
+
+  const generatedFiles = await listFiles(
+    path.resolve(REPO_ROOT, GENERATED_ROOT)
+  );
 
   // Keep generation exact: extra files usually mean a plugin option changed or
   // a new proto authority was added without updating the consumer placement.

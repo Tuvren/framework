@@ -36,7 +36,7 @@ import { WORKSPACE_TEST_PROJECTS } from "./verify.js";
 
 // Token match, not substring: "cargo" must appear as a standalone command
 // word so e.g. a wrapper named cargo-shim.ts cannot satisfy the check.
-const CARGO_COMMAND_TOKEN = /(^|\s)cargo(\s|$)/;
+const CARGO_COMMAND_TOKEN = /(?:^|\s)cargo(?:\s|$)/u;
 
 const EXCLUDED_TEST_PROJECTS: ReadonlyMap<string, string> = new Map([
   [

@@ -11,7 +11,6 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
 import { runJsonSourceCheck } from "./json-source-check.js";
@@ -27,12 +26,19 @@ import {
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 
-const withScratch = <T>(run: (directory: string) => Promise<T>): Promise<T> => {
+const withScratch = async <T>(
+  run: (directory: string) => Promise<T> | T
+): Promise<T> => {
   const directory = mkdtempSync(path.join(tmpdir(), "json-integrity-"));
-  return run(directory).finally(() => {
+  try {
+    return await run(directory);
+  } finally {
     rmSync(directory, { force: true, recursive: true });
-  });
+  }
 };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const write = (directory: string, relative: string, source: string): string => {
   const file = path.join(directory, relative);
@@ -51,8 +57,8 @@ describe("native JSON source integrity", () => {
         '{\n  // formatted, but not strict JSON\n  "a": 1\n}\n'
       );
       const result = await validateJsonSources([malformed, commented]);
-      expect(result.issues.map((issue) => issue.file).sort()).toEqual(
-        [commented, malformed].sort()
+      expect(result.issues.map((issue) => issue.file).toSorted()).toEqual(
+        [commented, malformed].toSorted()
       );
     });
   });
@@ -66,7 +72,8 @@ describe("native JSON source integrity", () => {
         write(directory, ".vscode/settings.json", '{/* ok */"a": 1,}\n'),
       ];
       expect(files.every((file) => isJsoncProfile(file))).toBe(true);
-      expect((await validateJsonSources(files)).issues).toEqual([]);
+      const result = await validateJsonSources(files);
+      expect(result.issues).toEqual([]);
     });
   });
 
@@ -107,10 +114,10 @@ describe("native JSON source integrity", () => {
 
       expect(isJsoncProfile(strictVariant)).toBe(false);
       expect(isJsoncProfile(established)).toBe(true);
-      expect((await validateJsonSources([strictVariant])).issues).toHaveLength(
-        1
-      );
-      expect((await validateJsonSources([established])).issues).toEqual([]);
+      const strictResult = await validateJsonSources([strictVariant]);
+      expect(strictResult.issues).toHaveLength(1);
+      const establishedResult = await validateJsonSources([established]);
+      expect(establishedResult.issues).toEqual([]);
     });
   });
 
@@ -137,7 +144,8 @@ describe("native JSON source integrity", () => {
         "separate.json",
         '{"left":{"a":1},"right":{"a":2}}\n'
       );
-      expect((await validateJsonSources([file])).issues).toEqual([]);
+      const result = await validateJsonSources([file]);
+      expect(result.issues).toEqual([]);
     });
   });
 
@@ -146,7 +154,8 @@ describe("native JSON source integrity", () => {
       const file = write(directory, "source.json", '{"a":1}\n');
       const before = readFileSync(file, "utf-8");
       const entriesBefore = readdirSync(directory);
-      expect((await validateJsonSources([file])).issues).toEqual([]);
+      const result = await validateJsonSources([file]);
+      expect(result.issues).toEqual([]);
       expect(readFileSync(file, "utf-8")).toBe(before);
       expect(readdirSync(directory)).toEqual(entriesBefore);
     });
@@ -155,14 +164,20 @@ describe("native JSON source integrity", () => {
   test("source integrity does not replace authority schema validation", async () => {
     await withScratch(async (directory) => {
       const file = write(directory, "authority-packet.json", "{}\n");
-      expect((await validateJsonSources([file])).issues).toEqual([]);
+      const result = await validateJsonSources([file]);
+      expect(result.issues).toEqual([]);
 
-      const schema = JSON.parse(
+      const schema: unknown = JSON.parse(
         readFileSync(
           path.join(REPO_ROOT, "tools/schemas/authority-packet.schema.json"),
           "utf-8"
         )
-      ) as AnySchema;
+      );
+      if (!(typeof schema === "boolean" || isRecord(schema))) {
+        throw new TypeError(
+          "authority packet schema must be an object or boolean"
+        );
+      }
       const validate = new Ajv2020({ allErrors: true, strict: false }).compile(
         schema
       );
@@ -196,13 +211,14 @@ describe("JSON inventory", () => {
       expect(
         existsSync(path.join(directory, "tools/scripts/lib/biome-inventory.ts"))
       ).toBe(false);
-      expect(
-        (await runCommandProcess(["git", "init"], { cwd: directory })).code
-      ).toBe(0);
-      expect(
-        (await runCommandProcess(["git", "add", "--", "."], { cwd: directory }))
-          .code
-      ).toBe(0);
+      const initResult = await runCommandProcess(["git", "init"], {
+        cwd: directory,
+      });
+      expect(initResult.code).toBe(0);
+      const addResult = await runCommandProcess(["git", "add", "--", "."], {
+        cwd: directory,
+      });
+      expect(addResult.code).toBe(0);
 
       const result = await runJsonSourceCheck({
         formatIgnorePatterns: [],
@@ -239,11 +255,11 @@ describe("JSON inventory", () => {
 
   test("includes untracked files, subtracts deletions and accounts for protected files", async () => {
     const commands: string[][] = [];
-    const runCommand = (
+    const runCommand = async (
       command: readonly string[]
     ): Promise<RunCommandResult> => {
       commands.push([...command]);
-      return Promise.resolve({
+      return await Promise.resolve({
         code: 0,
         stderr: "",
         stdout: command.includes("--deleted")
@@ -344,16 +360,15 @@ describe("JSON inventory", () => {
     await withScratch(async (directory) => {
       const filename = String.raw`literal\name.json`;
       write(directory, filename, '{"literal":true}\n');
-      expect(
-        (await runCommandProcess(["git", "init"], { cwd: directory })).code
-      ).toBe(0);
-      expect(
-        (
-          await runCommandProcess(["git", "add", "--", filename], {
-            cwd: directory,
-          })
-        ).code
-      ).toBe(0);
+      const initResult = await runCommandProcess(["git", "init"], {
+        cwd: directory,
+      });
+      expect(initResult.code).toBe(0);
+      const addResult = await runCommandProcess(
+        ["git", "add", "--", filename],
+        { cwd: directory }
+      );
+      expect(addResult.code).toBe(0);
 
       const result = await runJsonSourceCheck({
         formatIgnorePatterns: [],
@@ -367,16 +382,20 @@ describe("JSON inventory", () => {
     });
   });
 
-  test("empty requested scopes and empty native selections fail", async () => {
+  test("empty requested scopes and empty native selections fail", () => {
     expect(() => selectJsonInventory([], [], [], [])).toThrow(
       "at least one JSON scope is required"
     );
-    await expect(
+    expect(
       runJsonSourceCheck({
         formatIgnorePatterns: [],
         repoRoot: "/repo",
-        runCommand: () =>
-          Promise.resolve({ code: 0, stderr: "", stdout: "source.ts\0" }),
+        runCommand: async () =>
+          await Promise.resolve({
+            code: 0,
+            stderr: "",
+            stdout: "source.ts\0",
+          }),
         scopes: ["scope"],
         sourceIgnorePatterns: [],
       })

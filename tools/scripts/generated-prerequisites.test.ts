@@ -51,9 +51,8 @@ const createScratchDirectory = (): string => {
   return directory;
 };
 
-const isUnknownRecord = (value: unknown): value is Record<string, unknown> => {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-};
+const isUnknownRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
 
 const requireObject = (
   value: unknown,

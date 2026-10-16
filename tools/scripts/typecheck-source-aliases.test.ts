@@ -78,17 +78,15 @@ const isHiddenOutput = (fileName: string): boolean => {
 
 // Read-only mirror of `ts.sys` that pretends the three testkit build-output
 // trees do not exist. Nothing on disk is modified or deleted.
-const hidingModuleResolutionHost = (): ts.ModuleResolutionHost => {
-  return {
-    directoryExists: (directory) => ts.sys.directoryExists(directory),
-    fileExists: (fileName) =>
-      !isHiddenOutput(fileName) && ts.sys.fileExists(fileName),
-    getCurrentDirectory: () => REPO_ROOT,
-    readFile: (fileName) =>
-      isHiddenOutput(fileName) ? undefined : ts.sys.readFile(fileName),
-    realpath: (fileName) => ts.sys.realpath?.(fileName) ?? fileName,
-  };
-};
+const hidingModuleResolutionHost = (): ts.ModuleResolutionHost => ({
+  directoryExists: (directory) => ts.sys.directoryExists(directory),
+  fileExists: (fileName) =>
+    !isHiddenOutput(fileName) && ts.sys.fileExists(fileName),
+  getCurrentDirectory: () => REPO_ROOT,
+  readFile: (fileName) =>
+    isHiddenOutput(fileName) ? undefined : ts.sys.readFile(fileName),
+  realpath: (fileName) => ts.sys.realpath?.(fileName) ?? fileName,
+});
 
 const parseConfig = (relative: string): ts.ParsedCommandLine => {
   const host: ts.ParseConfigFileHost = {
@@ -114,8 +112,9 @@ const withoutSelfAlias = (
   options: ts.CompilerOptions,
   packageName: string
 ): ts.CompilerOptions => {
-  const paths = { ...options.paths };
-  delete paths[packageName];
+  const paths = Object.fromEntries(
+    Object.entries(options.paths ?? {}).filter(([name]) => name !== packageName)
+  );
   return { ...options, paths };
 };
 
@@ -136,9 +135,8 @@ const unresolvedDiagnostics = (
     .filter((diagnostic) => diagnostic.code === UNRESOLVED_MODULE_CODE);
 };
 
-const sourceFor = (testkit: TestkitCase): string => {
-  return path.join(path.dirname(path.join(REPO_ROOT, testkit.config)), "src");
-};
+const sourceFor = (testkit: TestkitCase): string =>
+  path.join(path.dirname(path.join(REPO_ROOT, testkit.config)), "src");
 
 describe("testkit source-only self aliases", () => {
   for (const testkit of TESTKITS) {
