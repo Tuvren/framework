@@ -15,33 +15,6 @@ scope:
   tech_spec_patchable: []
 estimated_diff_lines: 14500
 estimate_source: planned
-decisions:
-  - id: OD-10
-    question: Should M24 retain four targeted native promise exceptions where reviewed rewrites change observer, rejection, or cleanup behavior?
-    blocks: [KRT-BZ004]
-    options:
-      - name: Approve four targeted exceptions
-        pros:
-          - Preserves the existing synchronous observer attachment, rejection identity, listener cleanup, and detached cleanup behavior.
-        cons:
-          - Retains three narrow native comments covering four diagnostics until Stage 3 aligns the policy.
-      - name: Require executable rewrites
-        pros:
-          - Avoids adding native exception comments.
-        cons:
-          - Reviewed alternatives change scheduling, setup-error handling, or cleanup behavior.
-    recommendation: Approve four targeted exceptions
-    closure: ruling
-    ruler: user
-    status: closed
-    asked:
-      date: '2026-10-16'
-      in: EPIC-BZ
-    ruling:
-      ref: call_149247781fd74efbaf9afc4cd2a7de01 item0
-      date: '2026-10-16'
-      summary: Approved only the reviewed three-comment patch for four promise-style diagnostics; no executable behavior or broader policy waiver.
-      chosen: Approve four targeted exceptions
 tickets:
   - id: KRT-BZ001
     title: Apply safe fixes and preserve types per directory
@@ -157,13 +130,15 @@ closeout:
   routed_upstream: []
   follow_ups:
     - "Stage 3 alignment should review the code_decisions routed by reconciliation, especially the four narrowly approved native promise exceptions."
-    - "EPIC-CB suppression aggregation should consume .constitution/evidence/KRT-BZ004/suppressions.json and follow its pinned inheritance references to KRT-BZ002."
-    - "A later constitution/tooling improvement should simplify routine contract-test evidence conventions without weakening acceptance proof."
+    - EPIC-CB suppression aggregation should consume .constitution/evidence/KRT-BZ004/suppressions.json and follow its pinned inheritance references to KRT-BZ002.
+    - A later constitution/tooling improvement should simplify routine contract-test evidence conventions without weakening acceptance proof.
   code_decisions:
     - summary: "Private cloneJsonValue performs the existing object-clone sequence directly to break mutual recursion with cloneJsonObject while preserving public signatures, enumeration, validation, errors and mutation isolation."
       kind: pattern
-      paths: [typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-utils.ts, typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge.test.ts]
-      commit: 770155e
+      paths:
+        - typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-utils.ts
+        - typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge.test.ts
+      commit: "770155e"
     - summary: "React stream waiting inlines identical abort-listener removal at the abort callback to break a private initialization cycle; later deferred construction uses Promise.withResolvers while retaining the same callbacks and setup-error forwarding."
       kind: pattern
       paths: [typescript/runners/react/src/lib/react-runner-stream-support.ts]
@@ -174,14 +149,38 @@ closeout:
       commit: 2d1399d
     - summary: "Sequential React stream work uses reviewed async iterators and next-only adapters without automatic return(); terminal pulls use a private sentinel so every completed pull reaches the abort guard before validation while explicit provider cleanup remains authoritative."
       kind: pattern
-      paths: [typescript/runners/react/src/lib/react-runner-stream.ts, typescript/runners/react/bench/react-stream.bench.ts, typescript/runners/react/test/react-runner-stream-failures.test.ts, typescript/runners/react/test/react-runner-test-helpers.ts]
+      paths:
+        - typescript/runners/react/src/lib/react-runner-stream.ts
+        - typescript/runners/react/bench/react-stream.bench.ts
+        - typescript/runners/react/test/react-runner-stream-failures.test.ts
+        - typescript/runners/react/test/react-runner-test-helpers.ts
       commit: a3b0dbf
     - summary: "Three user-approved native comments cover exactly four promise-style diagnostics whose reviewed executable alternatives changed synchronous observer, rejection or detached-cleanup behavior; the ruling is OD-10 and no broader waiver exists."
       kind: convention
       paths: [typescript/runners/react/src/lib/react-runner-stream-support.ts]
       commit: 995ab20
-    - summary: "The final suppression handoff preserves complete identities and dispositions while inheriting duplicated historical proof fields by identity from the pinned KRT-BZ002 ledger and referencing shared final project proofs."
+    - summary: The final suppression handoff preserves complete identities and dispositions while inheriting duplicated historical proof fields by identity from the pinned KRT-BZ002 ledger and referencing shared final project proofs.
       kind: convention
-      paths: [.constitution/evidence/KRT-BZ004/suppressions.json]
+      paths: [".constitution/evidence/KRT-BZ004/suppressions.json"]
       commit: 9574c54
   settled: []
+  actuals:
+    diff_lines: 23483
+    files_touched: 105
+    milestones: 54
+    review_rounds: 0
+    per_ticket:
+      - id: KRT-BZ001
+        diff_lines: 932
+        review_rounds: 0
+      - id: KRT-BZ002
+        diff_lines: 4023
+        review_rounds: 0
+      - id: KRT-BZ003
+        diff_lines: 14280
+        review_rounds: 0
+      - id: KRT-BZ004
+        diff_lines: 4248
+        review_rounds: 0
+    merged_commit: cb79e1c
+    measured_at: 2026-10-16

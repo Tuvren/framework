@@ -152,7 +152,7 @@ tickets:
     description: "ADR-0070 and SPK-KRT-OD006. Treat the measured 144-directive inventory as an identification baseline, not a quota. Re-run live retained-Biome and Oxlint diagnostics across the owned paths. For every baseline identity and any drift discovered at execution, record its original reason, equivalent native rule, retained-checker disposition, and native-admission disposition. While Biome owns a path, preserve each needed original Biome directive and its reason. Remove a directive before admission only after a behavior-preserving code fix proves that the retained Biome diagnostic no longer fires. Do not add Biome directives. Record a native counterpart only when the equivalent native rule actually fires and the original reason remains valid. The measured tools/scripts/api-freeze-gate.ts fixture passes retained Biome with the original directives on its two TypeScript flag-membership checks. Replacing only those directives with Oxlint comments makes retained Biome exit 1 with two noBitwiseOperators diagnostics. Preserve those original directives until CB's whole-tools admission, record their measured native counterparts, and keep the bitmask API operations unchanged. Do not create suppressions to reproduce the historical 82-live/62-dead classification. Provide the per-directive disposition ledger for CB aggregation."
     acceptance:
       mode: contract_test
-      evidence: Assert every baseline directive identity in the owned paths, plus any measured drift, has a ledger entry backed by live retained-Biome and Oxlint diagnostics. Each entry records the original reason, retained-checker disposition, and native-admission disposition. While Biome owns the path, prove each needed original directive remains and the full lint gate passes. Prove any early deletion follows a behavior-preserving code fix and a fresh retained-Biome run where the diagnostic no longer fires. Prove each planned native counterpart matches an actually firing equivalent rule and preserves the original reason. For tools/scripts/api-freeze-gate.ts, retain the two original noBitwiseOperators directives and their reasons, preserve the TypeScript flag-membership operations, and record the fixture's original exit 0 and migrated exit 1 with two retained-Biome diagnostics. Add no Biome directive, manufacture no suppression to meet a historical count, and emit the ledger CB will aggregate.
+      evidence: "Assert every baseline directive identity in the owned paths, plus any measured drift, has a ledger entry backed by live retained-Biome and Oxlint diagnostics. Each entry records the original reason, retained-checker disposition, and native-admission disposition. While Biome owns the path, prove each needed original directive remains and the full lint gate passes. Prove any early deletion follows a behavior-preserving code fix and a fresh retained-Biome run where the diagnostic no longer fires. Prove each planned native counterpart matches an actually firing equivalent rule and preserves the original reason. For tools/scripts/api-freeze-gate.ts, retain the two original noBitwiseOperators directives and their reasons, preserve the TypeScript flag-membership operations, and record the fixture's original exit 0 and migrated exit 1 with two retained-Biome diagnostics. Add no Biome directive, manufacture no suppression to meet a historical count, and emit the ledger CB will aggregate."
     flows: []
     certainty: settled
     status: done
@@ -282,15 +282,43 @@ closeout:
   candidate_terms: []
   routed_upstream: []
   follow_ups:
-    - "Stage 3 alignment should review the code_decisions routed by reconciliation."
-    - "EPIC-CB should consume .constitution/evidence/KRT-BV004/suppressions.json as the final BV disposition ledger while retaining KRT-BV002 as historical measurement proof."
+    - Stage 3 alignment should review the code_decisions routed by reconciliation.
+    - EPIC-CB should consume .constitution/evidence/KRT-BV004/suppressions.json as the final BV disposition ledger while retaining KRT-BV002 as historical measurement proof.
   code_decisions:
     - summary: "Small recursive async iterators replace await-in-loop while preserving serial filesystem, validation, runner and publication side effects plus first-failure ordering."
       kind: pattern
-      paths: [tools/scripts/docs-authority-freeze-gate.ts, tools/scripts/compatibility-report.ts, tools/scripts/portability-gate.ts, tools/scripts/repl-host-interop-smoke.ts, tools/scripts/publish-registry.ts]
+      paths:
+        - tools/scripts/docs-authority-freeze-gate.ts
+        - tools/scripts/compatibility-report.ts
+        - tools/scripts/portability-gate.ts
+        - tools/scripts/repl-host-interop-smoke.ts
+        - tools/scripts/publish-registry.ts
       commit: 8accce7
-    - summary: "Tooling JSON and dynamic module inputs remain unknown until complete guards or compiled schemas validate the fields each gate consumes."
+    - summary: Tooling JSON and dynamic module inputs remain unknown until complete guards or compiled schemas validate the fields each gate consumes.
       kind: pattern
-      paths: [tools/scripts/docs-authority-freeze-gate.ts, tools/scripts/compatibility-report.ts, tools/scripts/oxc-project-discovery.test.ts]
+      paths:
+        - tools/scripts/docs-authority-freeze-gate.ts
+        - tools/scripts/compatibility-report.ts
+        - tools/scripts/oxc-project-discovery.test.ts
       commit: 3db51a2
   settled: []
+  actuals:
+    diff_lines: 6150
+    files_touched: 48
+    milestones: 9
+    review_rounds: 0
+    per_ticket:
+      - id: KRT-BV001
+        diff_lines: 745
+        review_rounds: 0
+      - id: KRT-BV002
+        diff_lines: 1645
+        review_rounds: 0
+      - id: KRT-BV003
+        diff_lines: 3279
+        review_rounds: 0
+      - id: KRT-BV004
+        diff_lines: 481
+        review_rounds: 0
+    merged_commit: cb79e1c
+    measured_at: 2026-10-16

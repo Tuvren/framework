@@ -1,4 +1,31 @@
 entries:
+  - version: v0.48.1
+    date: 2026-10-16
+    changed:
+      - "Completed EPIC-BR: all four TypeScript kernel backends now pass the unchanged shipped native preset, use canonical Oxlint plus JSON lint targets, and have left Biome coverage with reviewed suppression dispositions."
+      - "EPIC-BR Kernel backend lint ratchet archived: 4 tickets, 24 points, 15474 diff lines, 0 review rounds"
+      - "Completed EPIC-BV: the owned repository scripts preserve their CLI, generated-output and failure-order behavior under the shipped native preset, with final readiness measured while Biome retains tools/scripts ownership."
+      - "EPIC-BV Repository script gate lint ratchet archived: 4 tickets, 24 points, 6150 diff lines, 0 review rounds"
+      - "Completed EPIC-BZ: all five provider/React projects use canonical native lint targets, ordering and runtime behavior remain covered, and the final suppression handoff accounts for all 19 legacy identities plus four explicitly approved native exceptions."
+      - "EPIC-BZ Provider and runner lint ratchet archived: 4 tickets, 24 points, 23483 diff lines, 0 review rounds"
+      - "Epic CR completes five tickets (28 points): measured crash-head characterization, durable recovery-plan derivation, resume-only-missing execution with original identity, shared conformance and framework authority promotion, and real approval-resume identity proof."
+      - "EPIC-CR Resume an interrupted tool batch on cold recovery with original call identity archived: 5 tickets, 28 points, 4874 diff lines, 0 review rounds"
+    added:
+      - "Follow-up from EPIC-BR: Simplify the repository-wide lint-migration evidence policy so future contract-test epics retain final acceptance proof without routine per-milestone raw diagnostic bundles."
+      - "Follow-up from EPIC-BV: Stage 3 alignment should review the code_decisions routed by reconciliation."
+      - "Follow-up from EPIC-BV: EPIC-CB should consume .constitution/evidence/KRT-BV004/suppressions.json as the final BV disposition ledger while retaining KRT-BV002 as historical measurement proof."
+      - "Follow-up from EPIC-BZ: Stage 3 alignment should review the code_decisions routed by reconciliation, especially the four narrowly approved native promise exceptions."
+      - "Follow-up from EPIC-BZ: EPIC-CB suppression aggregation should consume .constitution/evidence/KRT-BZ004/suppressions.json and follow its pinned inheritance references to KRT-BZ002."
+      - "Follow-up from EPIC-BZ: A later constitution/tooling improvement should simplify routine contract-test evidence conventions without weakening acceptance proof."
+      - "Follow-up from EPIC-CR: Keep CPU-heavy wave verification serialized through the global lock with `NX_DAEMON=false VERIFY_SERIAL=1 NX_PARALLEL=1`; the measured schedule resolved unchanged host-repl five-second subprocess timeouts without changing tests or cache policy."
+      - "Follow-up from EPIC-CR: Preserve the M7 generator-only scope exception when reviewing history: the two Epic AF reports are derived freshness artifacts, not manually authored TechSpec content."
+      - "Follow-up from EPIC-CR: Simplify constitution evidence policy after the wave so acceptance proof and digest provenance remain while duplicate logs, indexes, and narrative are removed."
+    by: reconcile
+    fast_lane_through: cb79e1ced8c68e0c23f8e76a4e5e4430a93c5d10
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.6
   - version: v0.48.0
     date: 2026-10-14
     by: stage

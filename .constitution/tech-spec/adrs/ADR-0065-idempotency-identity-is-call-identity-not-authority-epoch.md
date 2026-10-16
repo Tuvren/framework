@@ -2,8 +2,13 @@
 id: ADR-0065
 status: accepted
 date: 2026-07-21
-certainty: assumed
-assumption: "Migrated; the decision's ruling reference was not found in the status line."
+certainty: settled
+evidence:
+  kind: measurement
+  ref: evidence/KRT-CR005
+  version: cc9e605
+  date: 2026-10-15
+  note: "Runtime recovery, approval resume, promoted conformance, and the reviewed ADR patch close both named implementation obligations without claiming external deduplication."
 ---
 ### ADR-0065 The Idempotency Identity Is the Logical Call Identity, Not the Execution Attempt
 

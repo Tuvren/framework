@@ -2,8 +2,13 @@
 id: ADR-0052
 status: accepted
 date: 2026-06-17
-certainty: assumed
-assumption: "Migrated; the decision's ruling reference was not found in the status line."
+certainty: settled
+evidence:
+  kind: measurement
+  ref: evidence/KRT-CR003
+  version: cc9e605
+  date: 2026-10-15
+  note: "Cold recovery tests and shared conformance distinguish replacement-owner missing-call redispatch from the live fenced owner's no-retry rule."
 ---
 ### ADR-0052 Side-Effect-Once Under Preemption via an Idempotency Envelope
 

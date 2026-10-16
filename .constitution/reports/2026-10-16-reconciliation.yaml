@@ -1,0 +1,77 @@
+date: 2026-10-16
+commit: cb79e1c
+epics: [BR, BV, BZ, CR]
+routed:
+  - stage: tech-spec
+    item: "code decision (convention): Retain one measured line-scoped unicorn/no-useless-undefined directive where TypeScript 6 declaration compilation requires the explicit Promise.withResolvers<undefined> completion value; the rule fires without the directive, and executable behavior is unchanged. [typescript/kernel/backends/memory/src/lib/memory-backend-scope-store.ts] at d67b06190b73d37a19f907e768a7d564a8cba032"
+    from: BR
+  - stage: tech-spec
+    item: "code decision (pattern): Small recursive async iterators replace await-in-loop while preserving serial filesystem, validation, runner and publication side effects plus first-failure ordering. [tools/scripts/docs-authority-freeze-gate.ts, tools/scripts/compatibility-report.ts, tools/scripts/portability-gate.ts, tools/scripts/repl-host-interop-smoke.ts, tools/scripts/publish-registry.ts] at 8accce7"
+    from: BV
+  - stage: tech-spec
+    item: "code decision (pattern): Tooling JSON and dynamic module inputs remain unknown until complete guards or compiled schemas validate the fields each gate consumes. [tools/scripts/docs-authority-freeze-gate.ts, tools/scripts/compatibility-report.ts, tools/scripts/oxc-project-discovery.test.ts] at 3db51a2"
+    from: BV
+  - stage: tasks
+    item: decision OD-10 added closed with the ruling EPIC-BZ carried
+    from: BZ
+  - stage: tech-spec
+    item: "code decision (pattern): Private cloneJsonValue performs the existing object-clone sequence directly to break mutual recursion with cloneJsonObject while preserving public signatures, enumeration, validation, errors and mutation isolation. [typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-utils.ts, typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge.test.ts] at 770155e"
+    from: BZ
+  - stage: tech-spec
+    item: "code decision (pattern): React stream waiting inlines identical abort-listener removal at the abort callback to break a private initialization cycle; later deferred construction uses Promise.withResolvers while retaining the same callbacks and setup-error forwarding. [typescript/runners/react/src/lib/react-runner-stream-support.ts] at 995ab20"
+    from: BZ
+  - stage: tech-spec
+    item: "code decision (pattern): Mock HTTP request promises remain reachable in a module Set until response close, bridging Node's void request-listener contract without floating promises while preserving response and error order. [typescript/providers/testkit/src/lib/mock-mcp-server.ts] at 2d1399d"
+    from: BZ
+  - stage: tech-spec
+    item: "code decision (pattern): Sequential React stream work uses reviewed async iterators and next-only adapters without automatic return(); terminal pulls use a private sentinel so every completed pull reaches the abort guard before validation while explicit provider cleanup remains authoritative. [typescript/runners/react/src/lib/react-runner-stream.ts, typescript/runners/react/bench/react-stream.bench.ts, typescript/runners/react/test/react-runner-stream-failures.test.ts, typescript/runners/react/test/react-runner-test-helpers.ts] at a3b0dbf"
+    from: BZ
+  - stage: tech-spec
+    item: "code decision (convention): Three user-approved native comments cover exactly four promise-style diagnostics whose reviewed executable alternatives changed synchronous observer, rejection or detached-cleanup behavior; the ruling is OD-10 and no broader waiver exists. [typescript/runners/react/src/lib/react-runner-stream-support.ts] at 995ab20"
+    from: BZ
+  - stage: tech-spec
+    item: "code decision (convention): The final suppression handoff preserves complete identities and dispositions while inheriting duplicated historical proof fields by identity from the pinned KRT-BZ002 ledger and referencing shared final project proofs. [.constitution/evidence/KRT-BZ004/suppressions.json] at 9574c54"
+    from: BZ
+  - stage: prd
+    item: "Align the Idempotency Envelope glossary definition, which still narrates the retired run/call/fencing tuple, with the ruled `(turnId, callId)` identity."
+    from: CR
+  - stage: architecture
+    item: Align the resilience model and flow-preemption-idempotent-side-effect cold-crash wording with the implemented reactive-checkpoint and resume-only-missing behavior.
+    from: CR
+  - stage: tech-spec
+    item: "Route the stale `(runId, callId, fencingToken)` narrative in spec/kernel/authority-packet.json to its authority owner; framework authority and ADR-0065 use `(turnId, callId)`."
+    from: CR
+  - stage: tech-spec
+    item: "Reconcile kernel specification §5.6's empty-staging no-checkpoint narrative with measured TypeScript event-only checkpoint behavior. The framework specification now states only the recovery behavior it can prove and does not use Markdown alone as the cross-implementation oracle."
+    from: CR
+  - stage: tech-spec
+    item: "code decision (contract_shape): Represent an interrupted iteration as an internal `InterruptedIterationRecoveryPlan` with re-infer, resume-tool-batch, and completed-tool-batch dispositions derived only from decoded durable messages and their object hashes. [typescript/runtime/src/lib/runtime-core-recovery-plan.ts, typescript/runtime/src/lib/runtime-core-recovery.ts, typescript/runtime/src/lib/runtime-core-expired-recovery.ts] at 7a5790e"
+    from: CR
+  - stage: tech-spec
+    item: "code decision (pattern): Consume a recovered tool-batch plan once before model invocation, rebuild manifest counters from recovered history, and incorporate only recovered object hashes absent from the committed head before normal policy, approval, checkpoint, and loop continuation. [typescript/runtime/src/lib/runtime-core-startup.ts, typescript/runtime/src/lib/runtime-core-loop.ts, typescript/runtime/src/lib/runtime-core-iteration.ts] at 7a5790e"
+    from: CR
+  - stage: tech-spec
+    item: "code decision (contract_shape): Expose recovery conformance as observation-only adapter data: original and resumed dispatch contexts, runner timing, runtime events, and durable messages are graded exclusively by the shared plan. [typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts, spec/conformance/engine/plans/runtime-api-lifecycle-extended.json, spec/conformance/engine/scenarios/runtime-api-scenarios.json] at 4dc97b0"
+    from: CR
+  - stage: tech-spec
+    item: "code decision (pattern): Persist interrupted-batch metadata in the runtime-owned `turn.lineage` record and stage each `aroundTool` state snapshot before its durable result so repeated recovery and approval resume preserve dispatch eligibility, execution mode, extension state, and original ordering without changing the kernel protocol. [typescript/runtime/src/lib/runtime-core-interrupted-metadata.ts, typescript/runtime/src/lib/runtime-core-recovery-plan.ts, typescript/runtime/src/lib/runtime-core-response.ts, typescript/runtime/src/lib/runtime-core-tool-resume.ts, typescript/runtime/src/lib/tool-execution.ts, typescript/runtime/src/lib/tool-execution-helpers.ts] at c9e1313"
+    from: CR
+  - stage: tech-spec
+    item: "code decision (pattern): Finalize recovered and approval-resumed tool batches through one current-assistant-batch projection so checkpoints, manifests, hooks, pause context, and returned tool results share original call order and the complete durable result set while preserving durable Turn boundaries. [typescript/runtime/src/lib/runtime-core-tool-batch-finalization.ts, typescript/runtime/src/lib/runtime-core-iteration.ts, typescript/runtime/src/lib/runtime-core-tool-resume.ts] at d6c8bf6"
+    from: CR
+proposed_decisions: []
+candidate_terms: []
+stale_owners:
+  - ".constitution/spikes/SPK-KRT-CR001.md: KRT-CR001"
+  - ".constitution/evidence/KRT-BV003/manifest.yaml: KRT-BV003"
+  - ".constitution/evidence/KRT-BR002/manifest.yaml: KRT-BR002"
+  - ".constitution/evidence/KRT-CR002/manifest.yaml: KRT-CR002"
+  - ".constitution/evidence/KRT-BV002/manifest.yaml: KRT-BV002"
+  - ".constitution/evidence/KRT-CR005/manifest.yaml: KRT-CR005"
+  - ".constitution/evidence/KRT-CR003/manifest.yaml: KRT-CR003"
+  - ".constitution/evidence/KRT-BV004/manifest.yaml: KRT-BV004"
+  - ".constitution/evidence/KRT-BZ002/manifest.yaml: KRT-BZ002"
+  - ".constitution/evidence/KRT-BZ004/manifest.yaml: KRT-BZ004"
+  - ".constitution/evidence/KRT-CR006/manifest.yaml: KRT-CR006"
+  - ".constitution/evidence/KRT-CR001/manifest.yaml: KRT-CR001"
+  - ".constitution/evidence/KRT-BR004/manifest.yaml: KRT-BR004"

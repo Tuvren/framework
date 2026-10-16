@@ -276,3 +276,29 @@ decisions:
       date: 2026-10-13
       in: EPIC-BU
     proposed_by: EPIC-BU @ 5508fea
+  - id: OD-10
+    question: "Should M24 retain four targeted native promise exceptions where reviewed rewrites change observer, rejection, or cleanup behavior?"
+    blocks: [KRT-BZ004]
+    options:
+      - name: Approve four targeted exceptions
+        pros:
+          - "Preserves the existing synchronous observer attachment, rejection identity, listener cleanup, and detached cleanup behavior."
+        cons:
+          - Retains three narrow native comments covering four diagnostics until Stage 3 aligns the policy.
+      - name: Require executable rewrites
+        pros: [Avoids adding native exception comments.]
+        cons:
+          - "Reviewed alternatives change scheduling, setup-error handling, or cleanup behavior."
+    recommendation: Approve four targeted exceptions
+    closure: ruling
+    ruler: user
+    status: closed
+    asked:
+      date: 2026-10-16
+      in: EPIC-BZ
+    ruling:
+      ref: call_149247781fd74efbaf9afc4cd2a7de01 item0
+      date: 2026-10-16
+      summary: "Approved only the reviewed three-comment patch for four promise-style diagnostics; no executable behavior or broader policy waiver."
+      chosen: Approve four targeted exceptions
+    proposed_by: EPIC-BZ @ cb79e1c

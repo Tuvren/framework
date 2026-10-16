@@ -1,4 +1,12 @@
 entries:
+  - version: v0.47.6
+    date: 2026-10-16
+    by: reconcile
+    changed:
+      - "Execution preserved serial tooling side effects through bounded async recursion, validated untrusted JSON before use, and produced the two-entry no-bitwise suppression handoff for EPIC-CB's whole-tools admission."
+      - "Epic CR closes ADR-0065's cold-recovery and approval-resume identity obligations and clarifies ADR-0052's live-owner fencing rule versus replacement-owner missing-call recovery."
+      - ".constitution/tech-spec/adrs/ADR-0065-idempotency-identity-is-call-identity-not-authority-epoch.md: Close the cold-recovery call-identity and approval-resume Turn-threading obligations with KRT-CR003, KRT-CR005, and KRT-CR006 evidence while preserving the external-system deduplication boundary. (cc9e605, EPIC-CR)"
+      - ".constitution/tech-spec/adrs/ADR-0052-side-effect-once-under-preemption-idempotency-envelope.md: Clarify that a fenced live owner must not retry in-flight nonRetryable work, while a cold replacement owner redispatches every call without a durable result using the original logical-call key. (cc9e605, EPIC-CR)"
   - version: v0.47.5
     date: 2026-10-11
     by: reconcile

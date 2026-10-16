@@ -102,7 +102,6 @@ tickets:
     flows: []
     certainty: settled
     status: done
-
 closeout:
   tickets_completed: [KRT-BR001, KRT-BR002, KRT-BR003, KRT-BR004]
   tickets_deferred: []
@@ -115,7 +114,7 @@ closeout:
   candidate_terms: []
   routed_upstream: []
   follow_ups:
-    - "Simplify the repository-wide lint-migration evidence policy so future contract-test epics retain final acceptance proof without routine per-milestone raw diagnostic bundles."
+    - Simplify the repository-wide lint-migration evidence policy so future contract-test epics retain final acceptance proof without routine per-milestone raw diagnostic bundles.
   code_decisions:
     - summary: "Retain one measured line-scoped unicorn/no-useless-undefined directive where TypeScript 6 declaration compilation requires the explicit Promise.withResolvers<undefined> completion value; the rule fires without the directive, and executable behavior is unchanged."
       kind: convention
@@ -123,3 +122,23 @@ closeout:
         - typescript/kernel/backends/memory/src/lib/memory-backend-scope-store.ts
       commit: d67b06190b73d37a19f907e768a7d564a8cba032
   settled: []
+  actuals:
+    diff_lines: 15474
+    files_touched: 224
+    milestones: 19
+    review_rounds: 0
+    per_ticket:
+      - id: KRT-BR001
+        diff_lines: 2211
+        review_rounds: 0
+      - id: KRT-BR002
+        diff_lines: 1263
+        review_rounds: 0
+      - id: KRT-BR003
+        diff_lines: 12000
+        review_rounds: 0
+      - id: KRT-BR004
+        diff_lines: 0
+        review_rounds: 0
+    merged_commit: cb79e1c
+    measured_at: 2026-10-16
