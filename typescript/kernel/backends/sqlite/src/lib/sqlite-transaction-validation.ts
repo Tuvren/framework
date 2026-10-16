@@ -82,6 +82,584 @@ import { validateTurnTreePathInvariants } from "./sqlite-state-validation.js";
 import type { TransactionWriteTracker } from "./sqlite-write-tracker.js";
 
 /**
+ * Re-checks one written thread's schema/genesis/uniqueness invariants
+ * directly against the database.
+ */
+const validateThreadInDatabase = (
+  db: Database.Database,
+  threadId: string
+): void => {
+  const thread = selectThread(db, threadId);
+
+  if (thread === null) {
+    return;
+  }
+
+  const rootTurnNode = ensureTurnNodeExistsInDatabase(
+    db,
+    thread.rootTurnNodeHash,
+    "thread.rootTurnNodeHash"
+  );
+  validateTurnNodeLineageMetadataInDatabase(db, rootTurnNode);
+
+  if (rootTurnNode.schemaId !== thread.schemaId) {
+    throw persistenceError(
+      "stored threads must use the schema of their root turn node",
+      "sqlite_backend_thread_schema_mismatch",
+      {
+        rootTurnNodeHash: thread.rootTurnNodeHash,
+        threadId: thread.threadId,
+        threadSchemaId: thread.schemaId,
+        turnNodeSchemaId: rootTurnNode.schemaId,
+      }
+    );
+  }
+
+  if (rootTurnNode.previousTurnNodeHash !== null) {
+    throw persistenceError(
+      "stored thread roots must be genesis turn nodes",
+      "sqlite_backend_thread_root_not_genesis",
+      {
+        previousTurnNodeHash: rootTurnNode.previousTurnNodeHash,
+        rootTurnNodeHash: rootTurnNode.hash,
+        threadId: thread.threadId,
+      }
+    );
+  }
+
+  const duplicateRootThread = db
+    .prepare(
+      `
+        SELECT thread_id
+        FROM threads
+        WHERE root_turn_node_hash = ? AND thread_id <> ?
+        LIMIT 1
+      `
+    )
+    .get(thread.rootTurnNodeHash, thread.threadId) as
+    | { thread_id: string }
+    | undefined;
+
+  if (duplicateRootThread !== undefined) {
+    throw persistenceError(
+      "stored thread roots must be unique across threads",
+      "sqlite_backend_thread_root_not_unique",
+      {
+        existingOwnerThreadId: duplicateRootThread.thread_id,
+        rootTurnNodeHash: thread.rootTurnNodeHash,
+        threadId: thread.threadId,
+      }
+    );
+  }
+};
+
+/**
+ * Re-checks one written archive branch's source-thread match, pre-transaction
+ * source existence, preserved head, and paired backward move directly
+ * against the database.
+ */
+const validateArchiveBranchInDatabase = (
+  db: Database.Database,
+  writeTracker: TransactionWriteTracker,
+  branch: StoredBranch
+): void => {
+  if (branch.archivedFromBranchId === undefined) {
+    return;
+  }
+
+  const sourceBranch = ensureBranchExistsInDatabase(
+    db,
+    branch.archivedFromBranchId,
+    "branch.archivedFromBranchId"
+  );
+
+  if (sourceBranch.threadId !== branch.threadId) {
+    throw persistenceError(
+      "stored branches must archive only from branches in the same thread",
+      "sqlite_backend_branch_archive_thread_mismatch",
+      {
+        archivedFromBranchId: sourceBranch.branchId,
+        branchId: branch.branchId,
+        branchThreadId: branch.threadId,
+        sourceThreadId: sourceBranch.threadId,
+      }
+    );
+  }
+
+  const trackedArchive = writeTracker.branchWrites.get(branch.branchId);
+
+  if (trackedArchive?.before !== null) {
+    return;
+  }
+
+  const trackedSource = writeTracker.branchWrites.get(
+    branch.archivedFromBranchId
+  );
+  const sourceBranchBeforeTransaction =
+    trackedSource?.before ??
+    writeTracker.captureBranchBaseline(db, branch.archivedFromBranchId);
+
+  if (sourceBranchBeforeTransaction === null) {
+    throw persistenceError(
+      "new archive branches must reference a source branch that existed before the transaction",
+      "sqlite_backend_branch_archive_source_missing_before_transaction",
+      {
+        archivedFromBranchId: branch.archivedFromBranchId,
+        branchId: branch.branchId,
+      }
+    );
+  }
+
+  if (
+    branch.headTurnNodeHash !== sourceBranchBeforeTransaction.headTurnNodeHash
+  ) {
+    throw persistenceError(
+      "new archive branches must preserve the pre-rollback source branch head",
+      "sqlite_backend_branch_archive_head_mismatch",
+      {
+        archiveHeadTurnNodeHash: branch.headTurnNodeHash,
+        archivedFromBranchId: branch.archivedFromBranchId,
+        sourceHeadTurnNodeHash: sourceBranchBeforeTransaction.headTurnNodeHash,
+      }
+    );
+  }
+
+  if (
+    classifyTurnNodeRelationshipInDatabase(
+      db,
+      sourceBranchBeforeTransaction.headTurnNodeHash,
+      sourceBranch.headTurnNodeHash
+    ) !== "backward"
+  ) {
+    throw persistenceError(
+      "new archive branches must be paired with a backward move on their source branch",
+      "sqlite_backend_branch_archive_without_backward_move",
+      {
+        archivedFromBranchId: branch.archivedFromBranchId,
+        branchId: branch.branchId,
+        sourceBranchHeadTurnNodeHash: sourceBranch.headTurnNodeHash,
+        sourceBranchPreviousHeadTurnNodeHash:
+          sourceBranchBeforeTransaction.headTurnNodeHash,
+      }
+    );
+  }
+};
+
+/**
+ * Re-checks one written branch's thread-lineage, archive, and backward-move
+ * invariants directly against the database.
+ */
+const validateBranchInDatabase = (
+  db: Database.Database,
+  writeTracker: TransactionWriteTracker,
+  branchId: string
+): void => {
+  const branch = selectBranch(db, branchId);
+
+  if (branch === null) {
+    return;
+  }
+
+  const thread = ensureThreadExistsInDatabase(
+    db,
+    branch.threadId,
+    "branch.threadId"
+  );
+  assertTurnNodeBelongsToThreadInDatabase(
+    db,
+    branch.headTurnNodeHash,
+    thread,
+    "branch.headTurnNodeHash"
+  );
+
+  if (branch.archivedFromBranchId !== undefined) {
+    validateArchiveBranchInDatabase(db, writeTracker, branch);
+  }
+
+  const trackedBranch = writeTracker.branchWrites.get(branch.branchId);
+
+  if (trackedBranch?.before === null || trackedBranch?.before === undefined) {
+    return;
+  }
+
+  const headMoveDirection = classifyTurnNodeRelationshipInDatabase(
+    db,
+    trackedBranch.before.headTurnNodeHash,
+    branch.headTurnNodeHash
+  );
+
+  if (headMoveDirection === "backward") {
+    assertBackwardBranchMoveIsArchivedInDatabase(
+      db,
+      writeTracker,
+      trackedBranch.before,
+      branch
+    );
+  }
+};
+
+/**
+ * Re-checks one written turn node's schema match, lineage metadata, and
+ * consumed-staged-result references directly against the database.
+ */
+const validateTurnNodeInDatabase = (
+  db: Database.Database,
+  turnNodeHash: string
+): void => {
+  const turnNode = selectTurnNode(db, turnNodeHash);
+
+  if (turnNode === null) {
+    return;
+  }
+
+  const turnTree = ensureTurnTreeExistsInDatabase(
+    db,
+    turnNode.turnTreeHash,
+    "turnNode.turnTreeHash"
+  );
+
+  if (turnTree.schemaId !== turnNode.schemaId) {
+    throw persistenceError(
+      "stored turn nodes must use the schema of their referenced turn tree",
+      "sqlite_backend_turn_node_schema_mismatch",
+      {
+        turnNodeHash: turnNode.hash,
+        turnNodeSchemaId: turnNode.schemaId,
+        turnTreeHash: turnTree.hash,
+        turnTreeSchemaId: turnTree.schemaId,
+      }
+    );
+  }
+
+  validateTurnNodeLineageMetadataInDatabase(db, turnNode);
+
+  for (const objectHash of decodeTurnNodeConsumedStagedResultObjectHashes(
+    turnNode
+  )) {
+    ensureObjectExistsInDatabase(
+      db,
+      objectHash,
+      "turnNode.consumedStagedResultsCbor"
+    );
+  }
+};
+
+/**
+ * Re-checks one written turn's branch/thread consistency, lineage
+ * membership, descent, and parent link directly against the database.
+ */
+const validateTurnInDatabase = (
+  db: Database.Database,
+  turnId: string
+): void => {
+  const turn = selectTurn(db, turnId);
+
+  if (turn === null) {
+    return;
+  }
+
+  const thread = ensureThreadExistsInDatabase(
+    db,
+    turn.threadId,
+    "turn.threadId"
+  );
+  const branch = ensureBranchExistsInDatabase(
+    db,
+    turn.branchId,
+    "turn.branchId"
+  );
+
+  if (branch.threadId !== thread.threadId) {
+    throw persistenceError(
+      "stored turns must reference a branch on the same thread",
+      "sqlite_backend_turn_branch_thread_mismatch",
+      {
+        branchId: branch.branchId,
+        branchThreadId: branch.threadId,
+        threadId: thread.threadId,
+        turnId: turn.turnId,
+      }
+    );
+  }
+
+  assertTurnNodeBelongsToThreadInDatabase(
+    db,
+    turn.startTurnNodeHash,
+    thread,
+    "turn.startTurnNodeHash"
+  );
+  assertTurnNodeBelongsToThreadInDatabase(
+    db,
+    turn.headTurnNodeHash,
+    thread,
+    "turn.headTurnNodeHash"
+  );
+  assertTurnNodeDescendsFromInDatabase(
+    db,
+    turn.headTurnNodeHash,
+    turn.startTurnNodeHash,
+    "turn.headTurnNodeHash"
+  );
+  assertTurnParentLinkInDatabase(db, turn, "turn.parentTurnId");
+};
+
+/**
+ * Re-checks one written run's referential and schema consistency, turn-span
+ * containment of its start and created turn nodes, canonical lineage, and
+ * (when active) head alignment, directly against the database.
+ */
+const validateRunInDatabase = (db: Database.Database, runId: string): void => {
+  const run = selectRun(db, runId);
+
+  if (run === null) {
+    return;
+  }
+
+  const branch = ensureBranchExistsInDatabase(db, run.branchId, "run.branchId");
+  const turn = ensureTurnExistsInDatabase(db, run.turnId, "run.turnId");
+  const startTurnNode = ensureTurnNodeExistsInDatabase(
+    db,
+    run.startTurnNodeHash,
+    "run.startTurnNodeHash"
+  );
+  const thread = ensureThreadExistsInDatabase(
+    db,
+    turn.threadId,
+    "turn.threadId"
+  );
+
+  if (turn.branchId !== branch.branchId) {
+    throw persistenceError(
+      "stored runs must reference a turn on the same branch",
+      "sqlite_backend_run_branch_mismatch",
+      {
+        branchId: branch.branchId,
+        runId: run.runId,
+        turnBranchId: turn.branchId,
+        turnId: turn.turnId,
+      }
+    );
+  }
+
+  assertTurnNodeBelongsToThreadInDatabase(
+    db,
+    run.startTurnNodeHash,
+    thread,
+    "run.startTurnNodeHash"
+  );
+
+  if (startTurnNode.schemaId !== run.schemaId) {
+    throw persistenceError(
+      "stored runs must use the schema of their start turn node",
+      "sqlite_backend_run_schema_mismatch",
+      {
+        runId: run.runId,
+        runSchemaId: run.schemaId,
+        startTurnNodeHash: startTurnNode.hash,
+        turnNodeSchemaId: startTurnNode.schemaId,
+      }
+    );
+  }
+
+  assertRunStartTurnNodeWithinTurnSpanInDatabase(
+    db,
+    turn,
+    run.startTurnNodeHash,
+    "run.startTurnNodeHash"
+  );
+
+  for (const turnNodeHash of decodeRunCreatedTurnNodeHashes(run)) {
+    const createdTurnNode = ensureTurnNodeExistsInDatabase(
+      db,
+      turnNodeHash,
+      "run.createdTurnNodesCbor"
+    );
+    assertTurnNodeBelongsToThreadInDatabase(
+      db,
+      turnNodeHash,
+      thread,
+      "run.createdTurnNodesCbor"
+    );
+    assertRunCreatedTurnNodeWithinTurnSpanInDatabase(
+      db,
+      turn,
+      createdTurnNode,
+      "run.createdTurnNodesCbor"
+    );
+  }
+
+  assertRunCreatedTurnNodesAreCanonicalInDatabase(db, run);
+
+  if (run.status === "running" || run.status === "paused") {
+    assertActiveRunHeadAlignmentInDatabase(run, branch, turn);
+  }
+};
+
+/**
+ * Re-validates every turn and run whose lineage position depends on a turn
+ * whose head hash just changed — the child turns branching from it and the
+ * runs it hosts.
+ */
+const validateTurnDependentsInDatabase = (
+  db: Database.Database,
+  turnId: string
+): void => {
+  for (const dependentTurn of selectTurnsByParentTurnId(db, turnId)) {
+    validateTurnInDatabase(db, dependentTurn.turnId);
+  }
+
+  for (const run of selectRunsByTurn(db, turnId)) {
+    validateRunInDatabase(db, run.runId);
+  }
+};
+
+/** Asserts a non-`running` run retains no staged results. */
+const validateStagedResultsForRunInDatabase = (
+  db: Database.Database,
+  runId: string
+): void => {
+  const run = ensureRunExistsInDatabase(db, runId, "stagedResults.runId");
+  const stagedResultCount = countStagedResultsByRun(db, runId);
+
+  if (run.status !== "running" && stagedResultCount > 0) {
+    throw persistenceError(
+      "stored terminal or paused runs must not retain staged results",
+      "sqlite_backend_run_has_terminal_staged_results",
+      {
+        runId: run.runId,
+        stagedResultCount,
+        status: run.status,
+      }
+    );
+  }
+};
+
+/**
+ * Asserts a branch has at most one active run and that every active run on
+ * it is head-aligned.
+ */
+const validateActiveRunsForBranchInDatabase = (
+  db: Database.Database,
+  branchId: string
+): void => {
+  const branch = selectBranch(db, branchId);
+
+  if (branch === null) {
+    return;
+  }
+
+  const activeRuns = selectActiveRunsByBranch(db, branch.branchId);
+
+  if (activeRuns.length > 1) {
+    throw persistenceError(
+      "stored branches must not have more than one active run",
+      "sqlite_backend_multiple_active_runs",
+      {
+        activeRunCount: activeRuns.length,
+        branchId: branch.branchId,
+      }
+    );
+  }
+
+  for (const run of activeRuns) {
+    const turn = ensureTurnExistsInDatabase(db, run.turnId, "run.turnId");
+    assertActiveRunHeadAlignmentInDatabase(run, branch, turn);
+  }
+};
+
+/**
+ * Re-validates a written turn tree's path collection by projecting just the
+ * relevant rows (schema, turn tree, its stored paths, and any referenced
+ * chunks) into a minimal `BackendState` and delegating to
+ * `validateTurnTreePathInvariants`. The lineage/run-related helpers in that
+ * shared validator are stubbed to throw, since this code path never
+ * exercises them (turn trees do not reference turns or runs).
+ */
+const validateTurnTreePathsInDatabase = (
+  db: Database.Database,
+  turnTreeHash: string
+): void => {
+  const turnTree = selectTurnTree(db, turnTreeHash);
+
+  if (turnTree === null) {
+    return;
+  }
+
+  const state = createEmptyState();
+  const schemaRecord = ensureSchemaExistsInDatabase(
+    db,
+    turnTree.schemaId,
+    "turnTree.schemaId"
+  );
+  const storedPaths = selectTurnTreePathsByTurnTree(db, turnTree.hash);
+  const pathMap = new Map<
+    string,
+    ReturnType<typeof selectTurnTreePathsByTurnTree>[number]
+  >();
+
+  state.schemas.set(schemaRecord.schemaId, schemaRecord);
+  state.turnTrees.set(turnTree.hash, turnTree);
+
+  for (const storedPath of storedPaths) {
+    pathMap.set(storedPath.path, storedPath);
+
+    if (storedPath.collectionKind !== "ordered") {
+      continue;
+    }
+
+    if (storedPath.orderedEncoding !== "chunked") {
+      continue;
+    }
+
+    for (const chunkHash of decodeHashStringArray(
+      storedPath.orderedChunkListCbor,
+      "storedPath.orderedChunkListCbor"
+    )) {
+      const chunk = ensureOrderedPathChunkExistsInDatabase(
+        db,
+        chunkHash,
+        "storedPath.orderedChunkListCbor"
+      );
+      state.orderedPathChunks.set(chunk.chunkHash, chunk);
+    }
+  }
+
+  if (pathMap.size > 0) {
+    state.turnTreePaths.set(turnTree.hash, pathMap);
+  }
+
+  validateTurnTreePathInvariants(state, {
+    assertActiveRunHeadAlignment,
+    assertBackwardBranchMoveIsArchived,
+    assertChunkedTurnTreePathChunkLayout,
+    assertRunCreatedTurnNodeWithinTurnSpan: (
+      _state,
+      _turn,
+      _turnNode,
+      _label
+    ) => {
+      throw new Error("unexpected direct call");
+    },
+    assertRunCreatedTurnNodesAreCanonical: (_state, _run) => {
+      throw new Error("unexpected direct call");
+    },
+    assertRunStartTurnNodeWithinTurnSpan: (
+      _state,
+      _turn,
+      _startTurnNodeHash,
+      _label
+    ) => {
+      throw new Error("unexpected direct call");
+    },
+    assertTurnParentLink,
+    classifyTurnNodeRelationship,
+    decodeRunCreatedTurnNodeHashes,
+    decodeTurnNodeConsumedStagedResultObjectHashes,
+    validateHashString,
+  });
+};
+
+/**
  * Pre-commit gate: re-validates every record family the transaction's write
  * tracker recorded, directly against the database (targeted SQL lookups and
  * lineage-index checks rather than a full state reload). Covers threads,
@@ -92,10 +670,10 @@ import type { TransactionWriteTracker } from "./sqlite-write-tracker.js";
  * @throws TuvrenPersistenceError with a `sqlite_backend_*` code on the first
  *   violated invariant; the caller must roll the transaction back.
  */
-export function validateTransactionWriteSet(
+export const validateTransactionWriteSet = (
   db: Database.Database,
   writeTracker: TransactionWriteTracker
-): void {
+): void => {
   for (const threadId of writeTracker.threadIds) {
     validateThreadInDatabase(db, threadId);
   }
@@ -131,7 +709,31 @@ export function validateTransactionWriteSet(
   for (const branchId of writeTracker.branchIdsForActiveRunValidation) {
     validateActiveRunsForBranchInDatabase(db, branchId);
   }
-}
+};
+
+/**
+ * Inserts a keyed record into a loaded-record map, throwing
+ * `sqlite_backend_duplicate_loaded_record` if the key is already present —
+ * used to catch a corrupted database with duplicate rows a primary key
+ * should have prevented.
+ */
+const setUniqueLoadedRecord = <T>(
+  records: Map<string, T>,
+  key: string,
+  value: T,
+  recordType: string,
+  details: Record<string, string>
+): void => {
+  if (records.has(key)) {
+    throw persistenceError(
+      `sqlite backend found duplicate ${recordType} rows while loading persisted state`,
+      "sqlite_backend_duplicate_loaded_record",
+      { key, recordType, ...details }
+    );
+  }
+
+  records.set(key, value);
+};
 
 /**
  * Verifies the derived `turn_node_lineage_roots` index agrees exactly with
@@ -142,10 +744,10 @@ export function validateTransactionWriteSet(
  * @throws TuvrenPersistenceError with a `sqlite_backend_*` code describing
  *   the first index/lineage divergence.
  */
-export function validateTurnNodeLineageRootIndex(
+export const validateTurnNodeLineageRootIndex = (
   db: Database.Database,
   state: BackendState
-): void {
+): void => {
   const actualMetadataByTurnNodeHash = new Map<
     string,
     TurnNodeLineageMetadata
@@ -250,603 +852,4 @@ export function validateTurnNodeLineageRootIndex(
       );
     }
   }
-}
-
-/**
- * Re-checks one written thread's schema/genesis/uniqueness invariants
- * directly against the database.
- */
-function validateThreadInDatabase(
-  db: Database.Database,
-  threadId: string
-): void {
-  const thread = selectThread(db, threadId);
-
-  if (thread === null) {
-    return;
-  }
-
-  const rootTurnNode = ensureTurnNodeExistsInDatabase(
-    db,
-    thread.rootTurnNodeHash,
-    "thread.rootTurnNodeHash"
-  );
-  validateTurnNodeLineageMetadataInDatabase(db, rootTurnNode);
-
-  if (rootTurnNode.schemaId !== thread.schemaId) {
-    throw persistenceError(
-      "stored threads must use the schema of their root turn node",
-      "sqlite_backend_thread_schema_mismatch",
-      {
-        rootTurnNodeHash: thread.rootTurnNodeHash,
-        threadId: thread.threadId,
-        threadSchemaId: thread.schemaId,
-        turnNodeSchemaId: rootTurnNode.schemaId,
-      }
-    );
-  }
-
-  if (rootTurnNode.previousTurnNodeHash !== null) {
-    throw persistenceError(
-      "stored thread roots must be genesis turn nodes",
-      "sqlite_backend_thread_root_not_genesis",
-      {
-        previousTurnNodeHash: rootTurnNode.previousTurnNodeHash,
-        rootTurnNodeHash: rootTurnNode.hash,
-        threadId: thread.threadId,
-      }
-    );
-  }
-
-  const duplicateRootThread = db
-    .prepare(
-      `
-        SELECT thread_id
-        FROM threads
-        WHERE root_turn_node_hash = ? AND thread_id <> ?
-        LIMIT 1
-      `
-    )
-    .get(thread.rootTurnNodeHash, thread.threadId) as
-    | { thread_id: string }
-    | undefined;
-
-  if (duplicateRootThread !== undefined) {
-    throw persistenceError(
-      "stored thread roots must be unique across threads",
-      "sqlite_backend_thread_root_not_unique",
-      {
-        existingOwnerThreadId: duplicateRootThread.thread_id,
-        rootTurnNodeHash: thread.rootTurnNodeHash,
-        threadId: thread.threadId,
-      }
-    );
-  }
-}
-
-/**
- * Re-checks one written branch's thread-lineage, archive, and backward-move
- * invariants directly against the database.
- */
-function validateBranchInDatabase(
-  db: Database.Database,
-  writeTracker: TransactionWriteTracker,
-  branchId: string
-): void {
-  const branch = selectBranch(db, branchId);
-
-  if (branch === null) {
-    return;
-  }
-
-  const thread = ensureThreadExistsInDatabase(
-    db,
-    branch.threadId,
-    "branch.threadId"
-  );
-  assertTurnNodeBelongsToThreadInDatabase(
-    db,
-    branch.headTurnNodeHash,
-    thread,
-    "branch.headTurnNodeHash"
-  );
-
-  if (branch.archivedFromBranchId !== undefined) {
-    validateArchiveBranchInDatabase(db, writeTracker, branch);
-  }
-
-  const trackedBranch = writeTracker.branchWrites.get(branch.branchId);
-
-  if (trackedBranch?.before === null || trackedBranch?.before === undefined) {
-    return;
-  }
-
-  const headMoveDirection = classifyTurnNodeRelationshipInDatabase(
-    db,
-    trackedBranch.before.headTurnNodeHash,
-    branch.headTurnNodeHash
-  );
-
-  if (headMoveDirection === "backward") {
-    assertBackwardBranchMoveIsArchivedInDatabase(
-      db,
-      writeTracker,
-      trackedBranch.before,
-      branch
-    );
-  }
-}
-
-/**
- * Re-checks one written archive branch's source-thread match, pre-transaction
- * source existence, preserved head, and paired backward move directly
- * against the database.
- */
-function validateArchiveBranchInDatabase(
-  db: Database.Database,
-  writeTracker: TransactionWriteTracker,
-  branch: StoredBranch
-): void {
-  if (branch.archivedFromBranchId === undefined) {
-    return;
-  }
-
-  const sourceBranch = ensureBranchExistsInDatabase(
-    db,
-    branch.archivedFromBranchId,
-    "branch.archivedFromBranchId"
-  );
-
-  if (sourceBranch.threadId !== branch.threadId) {
-    throw persistenceError(
-      "stored branches must archive only from branches in the same thread",
-      "sqlite_backend_branch_archive_thread_mismatch",
-      {
-        archivedFromBranchId: sourceBranch.branchId,
-        branchId: branch.branchId,
-        branchThreadId: branch.threadId,
-        sourceThreadId: sourceBranch.threadId,
-      }
-    );
-  }
-
-  const trackedArchive = writeTracker.branchWrites.get(branch.branchId);
-
-  if (trackedArchive?.before !== null) {
-    return;
-  }
-
-  const trackedSource = writeTracker.branchWrites.get(
-    branch.archivedFromBranchId
-  );
-  const sourceBranchBeforeTransaction =
-    trackedSource?.before ??
-    writeTracker.captureBranchBaseline(db, branch.archivedFromBranchId);
-
-  if (sourceBranchBeforeTransaction === null) {
-    throw persistenceError(
-      "new archive branches must reference a source branch that existed before the transaction",
-      "sqlite_backend_branch_archive_source_missing_before_transaction",
-      {
-        archivedFromBranchId: branch.archivedFromBranchId,
-        branchId: branch.branchId,
-      }
-    );
-  }
-
-  if (
-    branch.headTurnNodeHash !== sourceBranchBeforeTransaction.headTurnNodeHash
-  ) {
-    throw persistenceError(
-      "new archive branches must preserve the pre-rollback source branch head",
-      "sqlite_backend_branch_archive_head_mismatch",
-      {
-        archiveHeadTurnNodeHash: branch.headTurnNodeHash,
-        archivedFromBranchId: branch.archivedFromBranchId,
-        sourceHeadTurnNodeHash: sourceBranchBeforeTransaction.headTurnNodeHash,
-      }
-    );
-  }
-
-  if (
-    classifyTurnNodeRelationshipInDatabase(
-      db,
-      sourceBranchBeforeTransaction.headTurnNodeHash,
-      sourceBranch.headTurnNodeHash
-    ) !== "backward"
-  ) {
-    throw persistenceError(
-      "new archive branches must be paired with a backward move on their source branch",
-      "sqlite_backend_branch_archive_without_backward_move",
-      {
-        archivedFromBranchId: branch.archivedFromBranchId,
-        branchId: branch.branchId,
-        sourceBranchHeadTurnNodeHash: sourceBranch.headTurnNodeHash,
-        sourceBranchPreviousHeadTurnNodeHash:
-          sourceBranchBeforeTransaction.headTurnNodeHash,
-      }
-    );
-  }
-}
-
-/**
- * Re-checks one written turn node's schema match, lineage metadata, and
- * consumed-staged-result references directly against the database.
- */
-function validateTurnNodeInDatabase(
-  db: Database.Database,
-  turnNodeHash: string
-): void {
-  const turnNode = selectTurnNode(db, turnNodeHash);
-
-  if (turnNode === null) {
-    return;
-  }
-
-  const turnTree = ensureTurnTreeExistsInDatabase(
-    db,
-    turnNode.turnTreeHash,
-    "turnNode.turnTreeHash"
-  );
-
-  if (turnTree.schemaId !== turnNode.schemaId) {
-    throw persistenceError(
-      "stored turn nodes must use the schema of their referenced turn tree",
-      "sqlite_backend_turn_node_schema_mismatch",
-      {
-        turnNodeHash: turnNode.hash,
-        turnNodeSchemaId: turnNode.schemaId,
-        turnTreeHash: turnTree.hash,
-        turnTreeSchemaId: turnTree.schemaId,
-      }
-    );
-  }
-
-  validateTurnNodeLineageMetadataInDatabase(db, turnNode);
-
-  for (const objectHash of decodeTurnNodeConsumedStagedResultObjectHashes(
-    turnNode
-  )) {
-    ensureObjectExistsInDatabase(
-      db,
-      objectHash,
-      "turnNode.consumedStagedResultsCbor"
-    );
-  }
-}
-
-/**
- * Re-checks one written turn's branch/thread consistency, lineage
- * membership, descent, and parent link directly against the database.
- */
-function validateTurnInDatabase(db: Database.Database, turnId: string): void {
-  const turn = selectTurn(db, turnId);
-
-  if (turn === null) {
-    return;
-  }
-
-  const thread = ensureThreadExistsInDatabase(
-    db,
-    turn.threadId,
-    "turn.threadId"
-  );
-  const branch = ensureBranchExistsInDatabase(
-    db,
-    turn.branchId,
-    "turn.branchId"
-  );
-
-  if (branch.threadId !== thread.threadId) {
-    throw persistenceError(
-      "stored turns must reference a branch on the same thread",
-      "sqlite_backend_turn_branch_thread_mismatch",
-      {
-        branchId: branch.branchId,
-        branchThreadId: branch.threadId,
-        threadId: thread.threadId,
-        turnId: turn.turnId,
-      }
-    );
-  }
-
-  assertTurnNodeBelongsToThreadInDatabase(
-    db,
-    turn.startTurnNodeHash,
-    thread,
-    "turn.startTurnNodeHash"
-  );
-  assertTurnNodeBelongsToThreadInDatabase(
-    db,
-    turn.headTurnNodeHash,
-    thread,
-    "turn.headTurnNodeHash"
-  );
-  assertTurnNodeDescendsFromInDatabase(
-    db,
-    turn.headTurnNodeHash,
-    turn.startTurnNodeHash,
-    "turn.headTurnNodeHash"
-  );
-  assertTurnParentLinkInDatabase(db, turn, "turn.parentTurnId");
-}
-
-/**
- * Re-validates every turn and run whose lineage position depends on a turn
- * whose head hash just changed — the child turns branching from it and the
- * runs it hosts.
- */
-function validateTurnDependentsInDatabase(
-  db: Database.Database,
-  turnId: string
-): void {
-  for (const dependentTurn of selectTurnsByParentTurnId(db, turnId)) {
-    validateTurnInDatabase(db, dependentTurn.turnId);
-  }
-
-  for (const run of selectRunsByTurn(db, turnId)) {
-    validateRunInDatabase(db, run.runId);
-  }
-}
-
-/**
- * Re-checks one written run's referential and schema consistency, turn-span
- * containment of its start and created turn nodes, canonical lineage, and
- * (when active) head alignment, directly against the database.
- */
-function validateRunInDatabase(db: Database.Database, runId: string): void {
-  const run = selectRun(db, runId);
-
-  if (run === null) {
-    return;
-  }
-
-  const branch = ensureBranchExistsInDatabase(db, run.branchId, "run.branchId");
-  const turn = ensureTurnExistsInDatabase(db, run.turnId, "run.turnId");
-  const startTurnNode = ensureTurnNodeExistsInDatabase(
-    db,
-    run.startTurnNodeHash,
-    "run.startTurnNodeHash"
-  );
-  const thread = ensureThreadExistsInDatabase(
-    db,
-    turn.threadId,
-    "turn.threadId"
-  );
-
-  if (turn.branchId !== branch.branchId) {
-    throw persistenceError(
-      "stored runs must reference a turn on the same branch",
-      "sqlite_backend_run_branch_mismatch",
-      {
-        branchId: branch.branchId,
-        runId: run.runId,
-        turnBranchId: turn.branchId,
-        turnId: turn.turnId,
-      }
-    );
-  }
-
-  assertTurnNodeBelongsToThreadInDatabase(
-    db,
-    run.startTurnNodeHash,
-    thread,
-    "run.startTurnNodeHash"
-  );
-
-  if (startTurnNode.schemaId !== run.schemaId) {
-    throw persistenceError(
-      "stored runs must use the schema of their start turn node",
-      "sqlite_backend_run_schema_mismatch",
-      {
-        runId: run.runId,
-        runSchemaId: run.schemaId,
-        startTurnNodeHash: startTurnNode.hash,
-        turnNodeSchemaId: startTurnNode.schemaId,
-      }
-    );
-  }
-
-  assertRunStartTurnNodeWithinTurnSpanInDatabase(
-    db,
-    turn,
-    run.startTurnNodeHash,
-    "run.startTurnNodeHash"
-  );
-
-  for (const turnNodeHash of decodeRunCreatedTurnNodeHashes(run)) {
-    const createdTurnNode = ensureTurnNodeExistsInDatabase(
-      db,
-      turnNodeHash,
-      "run.createdTurnNodesCbor"
-    );
-    assertTurnNodeBelongsToThreadInDatabase(
-      db,
-      turnNodeHash,
-      thread,
-      "run.createdTurnNodesCbor"
-    );
-    assertRunCreatedTurnNodeWithinTurnSpanInDatabase(
-      db,
-      turn,
-      createdTurnNode,
-      "run.createdTurnNodesCbor"
-    );
-  }
-
-  assertRunCreatedTurnNodesAreCanonicalInDatabase(db, run);
-
-  if (run.status === "running" || run.status === "paused") {
-    assertActiveRunHeadAlignmentInDatabase(run, branch, turn);
-  }
-}
-
-/** Asserts a non-`running` run retains no staged results. */
-function validateStagedResultsForRunInDatabase(
-  db: Database.Database,
-  runId: string
-): void {
-  const run = ensureRunExistsInDatabase(db, runId, "stagedResults.runId");
-  const stagedResultCount = countStagedResultsByRun(db, runId);
-
-  if (run.status !== "running" && stagedResultCount > 0) {
-    throw persistenceError(
-      "stored terminal or paused runs must not retain staged results",
-      "sqlite_backend_run_has_terminal_staged_results",
-      {
-        runId: run.runId,
-        stagedResultCount,
-        status: run.status,
-      }
-    );
-  }
-}
-
-/**
- * Asserts a branch has at most one active run and that every active run on
- * it is head-aligned.
- */
-function validateActiveRunsForBranchInDatabase(
-  db: Database.Database,
-  branchId: string
-): void {
-  const branch = selectBranch(db, branchId);
-
-  if (branch === null) {
-    return;
-  }
-
-  const activeRuns = selectActiveRunsByBranch(db, branch.branchId);
-
-  if (activeRuns.length > 1) {
-    throw persistenceError(
-      "stored branches must not have more than one active run",
-      "sqlite_backend_multiple_active_runs",
-      {
-        activeRunCount: activeRuns.length,
-        branchId: branch.branchId,
-      }
-    );
-  }
-
-  for (const run of activeRuns) {
-    const turn = ensureTurnExistsInDatabase(db, run.turnId, "run.turnId");
-    assertActiveRunHeadAlignmentInDatabase(run, branch, turn);
-  }
-}
-
-/**
- * Re-validates a written turn tree's path collection by projecting just the
- * relevant rows (schema, turn tree, its stored paths, and any referenced
- * chunks) into a minimal `BackendState` and delegating to
- * `validateTurnTreePathInvariants`. The lineage/run-related helpers in that
- * shared validator are stubbed to throw, since this code path never
- * exercises them (turn trees do not reference turns or runs).
- */
-function validateTurnTreePathsInDatabase(
-  db: Database.Database,
-  turnTreeHash: string
-): void {
-  const turnTree = selectTurnTree(db, turnTreeHash);
-
-  if (turnTree === null) {
-    return;
-  }
-
-  const state = createEmptyState();
-  const schemaRecord = ensureSchemaExistsInDatabase(
-    db,
-    turnTree.schemaId,
-    "turnTree.schemaId"
-  );
-  const storedPaths = selectTurnTreePathsByTurnTree(db, turnTree.hash);
-  const pathMap = new Map<
-    string,
-    ReturnType<typeof selectTurnTreePathsByTurnTree>[number]
-  >();
-
-  state.schemas.set(schemaRecord.schemaId, schemaRecord);
-  state.turnTrees.set(turnTree.hash, turnTree);
-
-  for (const storedPath of storedPaths) {
-    pathMap.set(storedPath.path, storedPath);
-
-    if (storedPath.collectionKind !== "ordered") {
-      continue;
-    }
-
-    if (storedPath.orderedEncoding !== "chunked") {
-      continue;
-    }
-
-    for (const chunkHash of decodeHashStringArray(
-      storedPath.orderedChunkListCbor,
-      "storedPath.orderedChunkListCbor"
-    )) {
-      const chunk = ensureOrderedPathChunkExistsInDatabase(
-        db,
-        chunkHash,
-        "storedPath.orderedChunkListCbor"
-      );
-      state.orderedPathChunks.set(chunk.chunkHash, chunk);
-    }
-  }
-
-  if (pathMap.size > 0) {
-    state.turnTreePaths.set(turnTree.hash, pathMap);
-  }
-
-  validateTurnTreePathInvariants(state, {
-    assertActiveRunHeadAlignment,
-    assertBackwardBranchMoveIsArchived,
-    assertChunkedTurnTreePathChunkLayout,
-    assertRunCreatedTurnNodeWithinTurnSpan: (
-      _state,
-      _turn,
-      _turnNode,
-      _label
-    ) => {
-      throw new Error("unexpected direct call");
-    },
-    assertRunCreatedTurnNodesAreCanonical: (_state, _run) => {
-      throw new Error("unexpected direct call");
-    },
-    assertRunStartTurnNodeWithinTurnSpan: (
-      _state,
-      _turn,
-      _startTurnNodeHash,
-      _label
-    ) => {
-      throw new Error("unexpected direct call");
-    },
-    assertTurnParentLink,
-    classifyTurnNodeRelationship,
-    decodeRunCreatedTurnNodeHashes,
-    decodeTurnNodeConsumedStagedResultObjectHashes,
-    validateHashString,
-  });
-}
-
-/**
- * Inserts a keyed record into a loaded-record map, throwing
- * `sqlite_backend_duplicate_loaded_record` if the key is already present —
- * used to catch a corrupted database with duplicate rows a primary key
- * should have prevented.
- */
-function setUniqueLoadedRecord<T>(
-  records: Map<string, T>,
-  key: string,
-  value: T,
-  recordType: string,
-  details: Record<string, string>
-): void {
-  if (records.has(key)) {
-    throw persistenceError(
-      `sqlite backend found duplicate ${recordType} rows while loading persisted state`,
-      "sqlite_backend_duplicate_loaded_record",
-      { key, recordType, ...details }
-    );
-  }
-
-  records.set(key, value);
-}
+};
