@@ -224,14 +224,16 @@ closeout:
         - spec/conformance/engine/plans/runtime-api-lifecycle-extended.json
         - spec/conformance/engine/scenarios/runtime-api-scenarios.json
       commit: 4dc97b0
-    - summary: "Persist an internal interrupted-batch descriptor and per-result `aroundTool` state snapshot before the durable result so repeated recovery preserves dispatch eligibility, execution mode, extension state, and original ordering without changing the kernel protocol."
+    - summary: "Persist interrupted-batch metadata in the runtime-owned `turn.lineage` record and stage each `aroundTool` state snapshot before its durable result so repeated recovery and approval resume preserve dispatch eligibility, execution mode, extension state, and original ordering without changing the kernel protocol."
       kind: pattern
       paths:
         - typescript/runtime/src/lib/runtime-core-interrupted-metadata.ts
         - typescript/runtime/src/lib/runtime-core-recovery-plan.ts
+        - typescript/runtime/src/lib/runtime-core-response.ts
+        - typescript/runtime/src/lib/runtime-core-tool-resume.ts
         - typescript/runtime/src/lib/tool-execution.ts
         - typescript/runtime/src/lib/tool-execution-helpers.ts
-      commit: cd14fae
+      commit: c9e1313
   settled:
     - record: tech-spec/adrs/ADR-0065-idempotency-identity-is-call-identity-not-authority-epoch.md
       evidence:
