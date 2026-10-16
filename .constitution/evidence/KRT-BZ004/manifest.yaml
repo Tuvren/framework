@@ -2,8 +2,8 @@ owner: KRT-BZ004
 mode: contract_test
 produced:
   date: '2026-10-15'
-  commit: 2f72146c8e593364b8f71a4077a224a8d254d8a6
-  command: 'KRT-BZ001 captures plus KRT-BZ003 M8-M14 frozen-candidate equivalence, clone behavior, initialization, structural, diagnostic, build, test, typecheck, and conformance proof'
+  commit: 51bda238e92374718cbd00b1e33ac09255fe5203
+  command: 'KRT-BZ001 captures plus KRT-BZ003 M8-M15 frozen-candidate equivalence, clone behavior, initialization, structural, diagnostic, build, test, typecheck, and conformance proof'
 files:
   - path: M1-raw-diagnostics.tar.gz
     sha256: 0c6905b1398eafb2f298810df123198d5df7af6cbc2996936556c8a6d2e8bae6
@@ -109,4 +109,12 @@ files:
     sha256: 2d5a304fe7a1515c47c5ecda9668f1149f76c8b207130be60a0378dc56a8d176
     bytes: 3346
     role: measurement
-pass_criteria: 'KRT-BZ001 captures remain parseable. M8-M13 preserve initialization and reviewed clone behavior. M14 is byte-equal to the final utils candidate, clears the final 26 utils ordering diagnostics with non-target rules exact-equal, preserves the M13 private recursion repair and public behavior, and passes build/tests/typecheck plus workspace and provider conformance.'
+  - path: M15-proof.tar.gz
+    sha256: d6a28b60735c0e61af31e979f740ebcb21747111f3a5ac7f2d245f1074a0f1db
+    bytes: 14401
+    role: measurement
+  - path: M15-proof-index.json
+    sha256: 6a505700dac85bdcb84aead4d11621b1f6d9b25373f27f0c34b5bc70a545c84b
+    bytes: 3725
+    role: measurement
+pass_criteria: 'KRT-BZ001 captures remain parseable. M8-M14 preserve initialization and reviewed clone behavior. M15 is byte-equal to the final stream candidate, clears all 57 stream ordering diagnostics with non-target rules exact-equal, preserves 27 helper contracts and focused error/event ordering, and passes build/tests/typecheck plus workspace and provider conformance.'
