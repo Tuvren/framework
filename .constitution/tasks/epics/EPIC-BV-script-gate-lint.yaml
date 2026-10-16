@@ -267,3 +267,30 @@ tickets:
     flows: []
     certainty: settled
     status: done
+closeout:
+  tickets_completed: [KRT-BV001, KRT-BV002, KRT-BV003, KRT-BV004]
+  tickets_deferred: []
+  points_completed: 24
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-BV: the owned repository scripts preserve their CLI, generated-output and failure-order behavior under the shipped native preset, with final readiness measured while Biome retains tools/scripts ownership."
+    - directory: tech-spec
+      type: changed
+      text: "Execution preserved serial tooling side effects through bounded async recursion, validated untrusted JSON before use, and produced the two-entry no-bitwise suppression handoff for EPIC-CB's whole-tools admission."
+  candidate_terms: []
+  routed_upstream: []
+  follow_ups:
+    - "Stage 3 alignment should review the code_decisions routed by reconciliation."
+    - "EPIC-CB should consume .constitution/evidence/KRT-BV004/suppressions.json as the final BV disposition ledger while retaining KRT-BV002 as historical measurement proof."
+  code_decisions:
+    - summary: "Small recursive async iterators replace await-in-loop while preserving serial filesystem, validation, runner and publication side effects plus first-failure ordering."
+      kind: pattern
+      paths: [tools/scripts/docs-authority-freeze-gate.ts, tools/scripts/compatibility-report.ts, tools/scripts/portability-gate.ts, tools/scripts/repl-host-interop-smoke.ts, tools/scripts/publish-registry.ts]
+      commit: 8accce7
+    - summary: "Tooling JSON and dynamic module inputs remain unknown until complete guards or compiled schemas validate the fields each gate consumes."
+      kind: pattern
+      paths: [tools/scripts/docs-authority-freeze-gate.ts, tools/scripts/compatibility-report.ts, tools/scripts/oxc-project-discovery.test.ts]
+      commit: 3db51a2
+  settled: []
