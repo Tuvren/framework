@@ -58,6 +58,50 @@ export interface NormalizedAroundModelResult {
   state?: Record<string, unknown>;
 }
 
+const asRecord = (value: unknown): Record<string, unknown> => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(Object.entries(value));
+};
+
+const cloneValue = <T>(value: T): T => structuredClone(value);
+
+const cloneRecord = (value: unknown): Record<string, unknown> =>
+  asRecord(cloneValue(value));
+
+/**
+ * Assembles a `TuvrenPrompt` snapshot, omitting `tools` and the optional
+ * provider-tool/continuity fields entirely when they are empty/unset rather
+ * than serializing them as empty arrays or `undefined` properties.
+ */
+const createPromptSnapshot = (input: {
+  config: TuvrenModelConfig;
+  messages: TuvrenMessage[];
+  providerContinuity?: TuvrenPrompt["providerContinuity"];
+  providerMediatedTools?: TuvrenPrompt["providerMediatedTools"];
+  providerNativeTools?: TuvrenPrompt["providerNativeTools"];
+  responseFormat: TuvrenPrompt["responseFormat"];
+  tools: RenderedToolDefinition[];
+}): TuvrenPrompt => ({
+  config: input.config,
+  messages: input.messages,
+  responseFormat: input.responseFormat,
+  tools: input.tools.length === 0 ? undefined : input.tools,
+  ...(input.providerNativeTools !== undefined &&
+  input.providerNativeTools.length > 0
+    ? { providerNativeTools: input.providerNativeTools }
+    : {}),
+  ...(input.providerMediatedTools !== undefined &&
+  input.providerMediatedTools.length > 0
+    ? { providerMediatedTools: input.providerMediatedTools }
+    : {}),
+  ...(input.providerContinuity === undefined
+    ? {}
+    : { providerContinuity: input.providerContinuity }),
+});
+
 /**
  * Builds an `AroundModelContext` by deep-cloning every field, so extension
  * handlers cannot mutate the runner's own state through the context they
@@ -65,7 +109,7 @@ export interface NormalizedAroundModelResult {
  * caller-prepared and are cloned again here for isolation between wrapper
  * invocations.
  */
-export function createAroundModelContextSnapshot(input: {
+export const createAroundModelContextSnapshot = (input: {
   config: TuvrenModelConfig;
   emit: AroundModelContext["emit"];
   extensionState: Record<string, unknown>;
@@ -75,7 +119,7 @@ export function createAroundModelContextSnapshot(input: {
   prompt: TuvrenPrompt;
   sharedExports: Record<string, Record<string, unknown>>;
   tools: RenderedToolDefinition[];
-}): AroundModelContext {
+}): AroundModelContext => {
   const config = cloneValue(input.config);
   const messages = cloneValue(input.messages);
   const tools = cloneValue(input.tools);
@@ -100,7 +144,186 @@ export function createAroundModelContextSnapshot(input: {
     sharedExports: cloneValue(input.sharedExports),
     tools,
   };
-}
+};
+
+/**
+ * Clones the named extension's private state slice from the manifest, for
+ * exposing as `AroundModelContext.extensionState`.
+ */
+export const createExtensionStateSnapshot = (
+  manifest: Readonly<ContextManifest>,
+  extensionName: string
+): Record<string, unknown> => cloneRecord(manifest.extensions[extensionName]);
+
+/**
+ * Builds the leading system messages for the prompt: one per extension whose
+ * `systemPrompt` contribution resolves to a defined string (string literals
+ * pass through as-is; functions are called with the extension's state
+ * snapshot, iteration count, manifest, and shared exports), followed by
+ * `AgentConfig.systemPrompt` last. A throwing or `undefined`-returning
+ * contribution is silently skipped — system-prompt contributions are
+ * best-effort and must never abort the turn.
+ */
+const collectSystemMessages = (
+  extensions: readonly TuvrenExtension[],
+  basePrompt: string | undefined,
+  manifest: Readonly<ContextManifest>,
+  iterationCount: number,
+  sharedExports: Record<string, Record<string, unknown>>
+): TuvrenMessage[] => {
+  const messages: TuvrenMessage[] = [];
+
+  for (const extension of extensions) {
+    const contribution = extension.systemPrompt;
+
+    if (contribution === undefined) {
+      continue;
+    }
+
+    try {
+      const prompt =
+        typeof contribution === "string"
+          ? contribution
+          : contribution.call(extension, {
+              extensionState: createExtensionStateSnapshot(
+                manifest,
+                extension.name
+              ),
+              iterationCount,
+              manifest: cloneValue(manifest),
+              sharedExports: cloneValue(sharedExports),
+            });
+
+      if (prompt !== undefined) {
+        messages.push({
+          content: prompt,
+          role: "system",
+        });
+      }
+    } catch {
+      // System-prompt contributions are best-effort and must not abort the turn.
+    }
+  }
+
+  if (basePrompt !== undefined) {
+    messages.push({
+      content: basePrompt,
+      role: "system",
+    });
+  }
+
+  return messages;
+};
+
+/**
+ * Builds the cross-extension visible-state view: for every extension that
+ * declares `exports`, copies only the named keys from its manifest state
+ * slice. Extensions without `exports` (or with an empty list) contribute
+ * nothing, keeping their state private.
+ */
+const buildSharedExports = (
+  extensions: readonly TuvrenExtension[],
+  manifest: Readonly<ContextManifest>
+): Record<string, Record<string, unknown>> => {
+  const sharedExports: Record<string, Record<string, unknown>> = {};
+
+  for (const extension of extensions) {
+    if (extension.exports === undefined || extension.exports.length === 0) {
+      continue;
+    }
+
+    const sourceState = asRecord(manifest.extensions[extension.name]);
+    const visibleState: Record<string, unknown> = {};
+
+    for (const key of extension.exports) {
+      if (key in sourceState) {
+        visibleState[key] = cloneValue(sourceState[key]);
+      }
+    }
+
+    sharedExports[extension.name] = visibleState;
+  }
+
+  return sharedExports;
+};
+
+/**
+ * Derives the provider-facing `TuvrenModelConfig` from `AgentConfig.model`:
+ * a string model id becomes `{ model }`, a concrete provider becomes
+ * `{ provider: model.id }`, and an unset model yields an empty config.
+ */
+const toPromptConfig = (model: AgentConfig["model"]): TuvrenModelConfig => {
+  if (typeof model === "string") {
+    return {
+      model,
+    };
+  }
+
+  if (model !== undefined) {
+    return {
+      provider: model.id,
+    };
+  }
+
+  return {};
+};
+
+// ---------------------------------------------------------------------------
+// Provider-native / provider-mediated binding registration + policy (AY002/AY004)
+// ---------------------------------------------------------------------------
+
+/**
+ * Filters `AgentConfig.providerNativeTools`/`providerMediatedTools` through
+ * the invocation-time capability policy engine, when one is configured
+ * (ADR-0046 §4.21). A tool is admitted when there is no policy engine, or
+ * when the engine's `evaluateInvocation` decision for its binding admits it;
+ * denied tools are dropped from the prompt entirely rather than surfaced to
+ * the model. Bindings are constructed inline (rather than via the shared
+ * resolver factory in `@tuvren/runtime`) to avoid a circular package
+ * dependency from this runner into the runtime host.
+ */
+const admitProviderTools = <
+  T extends ProviderNativeToolDeclaration | ProviderMediatedToolConfig,
+>(
+  tools: T[] | undefined,
+  executionClass: "provider-native" | "provider-mediated",
+  config: AgentConfig
+): T[] => {
+  if (tools === undefined || tools.length === 0) {
+    return [];
+  }
+
+  const admitted: T[] = [];
+
+  for (const tool of tools) {
+    const capabilityId =
+      (tool as { capabilityId?: string }).capabilityId ?? tool.name;
+
+    // Invocation-time policy check per ADR-0046 §4.21. When no engine is
+    // configured, all provider tools are admitted. Construct the binding
+    // inline — the resolver factory lives in @tuvren/runtime which would
+    // create a circular dependency here.
+    if (config.capabilityPolicyEngine !== undefined) {
+      const binding: Binding = {
+        capabilityId,
+        endpoint: { id: "provider-runtime", kind: "provider-runtime" },
+        executionClass,
+      };
+      const decision = config.capabilityPolicyEngine.evaluateInvocation(
+        binding,
+        // Context dimensions land in Epic BB; baseline engine is context-insensitive.
+        { modelId: "", permissions: [], providerId: "" }
+      );
+      if (!decision.admitted) {
+        continue;
+      }
+    }
+
+    admitted.push(tool);
+  }
+
+  return admitted;
+};
 
 /**
  * Assembles the {@link PreparedPromptState} for one iteration: collects
@@ -108,13 +331,13 @@ export function createAroundModelContextSnapshot(input: {
  * the provider-facing model config, and admits provider-native/mediated
  * tools through invocation-time capability policy (ADR-0046 §4.21).
  */
-export function preparePromptState(input: {
+export const preparePromptState = (input: {
   config: Readonly<AgentConfig>;
   iterationCount: number;
   manifest: Readonly<ContextManifest>;
   messages: readonly TuvrenMessage[];
   tools: RenderedToolDefinition[];
-}): PreparedPromptState {
+}): PreparedPromptState => {
   const extensions = input.config.extensions ?? [];
   const sharedExports = buildSharedExports(extensions, input.manifest);
   const systemMessages = collectSystemMessages(
@@ -163,7 +386,50 @@ export function preparePromptState(input: {
     sharedExports,
     tools,
   };
-}
+};
+
+const surfacesMatch = (left: unknown, right: unknown): boolean =>
+  isDeepStrictEqual(left, right);
+
+/**
+ * Picks which of a wrapper's two possible edits to one surface (direct
+ * context field vs. nested `prompt` field) to honor for `next()`, given the
+ * surface's value before and after the wrapper ran on both paths.
+ *
+ * Only the `prompt` value changed: use it. Only the direct value changed:
+ * use it. Both changed and agree: use either (the direct value). Both
+ * changed and disagree: prefer the `prompt` edit — it is the surface
+ * `callProvider` actually reads. Neither changed: use the (unchanged) direct
+ * value.
+ */
+const resolveAroundModelSurface = <T>(input: {
+  basePromptValue: T;
+  baseValue: T;
+  nextPromptValue: T;
+  nextValue: T;
+}): T => {
+  const promptChanged = !surfacesMatch(
+    input.basePromptValue,
+    input.nextPromptValue
+  );
+  const valueChanged = !surfacesMatch(input.baseValue, input.nextValue);
+
+  if (promptChanged && !valueChanged) {
+    return cloneValue(input.nextPromptValue);
+  }
+
+  if (valueChanged && !promptChanged) {
+    return cloneValue(input.nextValue);
+  }
+
+  if (promptChanged && valueChanged) {
+    return surfacesMatch(input.nextPromptValue, input.nextValue)
+      ? cloneValue(input.nextValue)
+      : cloneValue(input.nextPromptValue);
+  }
+
+  return cloneValue(input.nextValue);
+};
 
 /**
  * Reconciles the context a wrapper passes to `next()` with the context it
@@ -177,10 +443,10 @@ export function preparePromptState(input: {
  * the reconciled context stays fully cloned and internally consistent
  * (`prompt` rebuilt from the resolved `config`/`messages`/`tools`).
  */
-export function normalizeNextAroundModelContext(
+export const normalizeNextAroundModelContext = (
   currentContext: AroundModelContext,
   nextContext: AroundModelContext
-): AroundModelContext {
+): AroundModelContext => {
   const resolvedConfig = resolveAroundModelSurface({
     basePromptValue: currentContext.prompt.config ?? {},
     baseValue: currentContext.config,
@@ -224,7 +490,7 @@ export function normalizeNextAroundModelContext(
     sharedExports: currentContext.sharedExports,
     tools: resolvedTools,
   });
-}
+};
 
 /**
  * Normalizes an `aroundModel` handler's return value into
@@ -232,9 +498,9 @@ export function normalizeNextAroundModelContext(
  * unwrapped (with `state` cloned when present); a bare response is wrapped
  * with no `state`.
  */
-export function normalizeAroundModelResult(
+export const normalizeAroundModelResult = (
   result: AroundModelResult
-): NormalizedAroundModelResult {
+): NormalizedAroundModelResult => {
   if ("response" in result) {
     return {
       response: result.response,
@@ -245,278 +511,4 @@ export function normalizeAroundModelResult(
   return {
     response: result,
   };
-}
-
-/**
- * Clones the named extension's private state slice from the manifest, for
- * exposing as `AroundModelContext.extensionState`.
- */
-export function createExtensionStateSnapshot(
-  manifest: Readonly<ContextManifest>,
-  extensionName: string
-): Record<string, unknown> {
-  return cloneRecord(manifest.extensions[extensionName]);
-}
-
-/**
- * Builds the leading system messages for the prompt: one per extension whose
- * `systemPrompt` contribution resolves to a defined string (string literals
- * pass through as-is; functions are called with the extension's state
- * snapshot, iteration count, manifest, and shared exports), followed by
- * `AgentConfig.systemPrompt` last. A throwing or `undefined`-returning
- * contribution is silently skipped — system-prompt contributions are
- * best-effort and must never abort the turn.
- */
-function collectSystemMessages(
-  extensions: readonly TuvrenExtension[],
-  basePrompt: string | undefined,
-  manifest: Readonly<ContextManifest>,
-  iterationCount: number,
-  sharedExports: Record<string, Record<string, unknown>>
-): TuvrenMessage[] {
-  const messages: TuvrenMessage[] = [];
-
-  for (const extension of extensions) {
-    const contribution = extension.systemPrompt;
-
-    if (contribution === undefined) {
-      continue;
-    }
-
-    try {
-      const prompt =
-        typeof contribution === "string"
-          ? contribution
-          : contribution.call(extension, {
-              extensionState: createExtensionStateSnapshot(
-                manifest,
-                extension.name
-              ),
-              iterationCount,
-              manifest: cloneValue(manifest),
-              sharedExports: cloneValue(sharedExports),
-            });
-
-      if (prompt !== undefined) {
-        messages.push({
-          content: prompt,
-          role: "system",
-        });
-      }
-    } catch {
-      // System-prompt contributions are best-effort and must not abort the turn.
-    }
-  }
-
-  if (basePrompt !== undefined) {
-    messages.push({
-      content: basePrompt,
-      role: "system",
-    });
-  }
-
-  return messages;
-}
-
-/**
- * Builds the cross-extension visible-state view: for every extension that
- * declares `exports`, copies only the named keys from its manifest state
- * slice. Extensions without `exports` (or with an empty list) contribute
- * nothing, keeping their state private.
- */
-function buildSharedExports(
-  extensions: readonly TuvrenExtension[],
-  manifest: Readonly<ContextManifest>
-): Record<string, Record<string, unknown>> {
-  const sharedExports: Record<string, Record<string, unknown>> = {};
-
-  for (const extension of extensions) {
-    if (extension.exports === undefined || extension.exports.length === 0) {
-      continue;
-    }
-
-    const sourceState = asRecord(manifest.extensions[extension.name]);
-    const visibleState: Record<string, unknown> = {};
-
-    for (const key of extension.exports) {
-      if (key in sourceState) {
-        visibleState[key] = cloneValue(sourceState[key]);
-      }
-    }
-
-    sharedExports[extension.name] = visibleState;
-  }
-
-  return sharedExports;
-}
-
-/**
- * Derives the provider-facing `TuvrenModelConfig` from `AgentConfig.model`:
- * a string model id becomes `{ model }`, a concrete provider becomes
- * `{ provider: model.id }`, and an unset model yields an empty config.
- */
-function toPromptConfig(model: AgentConfig["model"]): TuvrenModelConfig {
-  if (typeof model === "string") {
-    return {
-      model,
-    };
-  }
-
-  if (model !== undefined) {
-    return {
-      provider: model.id,
-    };
-  }
-
-  return {};
-}
-
-function cloneRecord(value: unknown): Record<string, unknown> {
-  return asRecord(cloneValue(value));
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    return {};
-  }
-
-  return Object.fromEntries(Object.entries(value));
-}
-
-function cloneValue<T>(value: T): T {
-  return structuredClone(value);
-}
-
-/**
- * Assembles a `TuvrenPrompt` snapshot, omitting `tools` and the optional
- * provider-tool/continuity fields entirely when they are empty/unset rather
- * than serializing them as empty arrays or `undefined` properties.
- */
-function createPromptSnapshot(input: {
-  config: TuvrenModelConfig;
-  messages: TuvrenMessage[];
-  providerContinuity?: TuvrenPrompt["providerContinuity"];
-  providerMediatedTools?: TuvrenPrompt["providerMediatedTools"];
-  providerNativeTools?: TuvrenPrompt["providerNativeTools"];
-  responseFormat: TuvrenPrompt["responseFormat"];
-  tools: RenderedToolDefinition[];
-}): TuvrenPrompt {
-  return {
-    config: input.config,
-    messages: input.messages,
-    responseFormat: input.responseFormat,
-    tools: input.tools.length === 0 ? undefined : input.tools,
-    ...(input.providerNativeTools !== undefined &&
-    input.providerNativeTools.length > 0
-      ? { providerNativeTools: input.providerNativeTools }
-      : {}),
-    ...(input.providerMediatedTools !== undefined &&
-    input.providerMediatedTools.length > 0
-      ? { providerMediatedTools: input.providerMediatedTools }
-      : {}),
-    ...(input.providerContinuity === undefined
-      ? {}
-      : { providerContinuity: input.providerContinuity }),
-  };
-}
-
-/**
- * Picks which of a wrapper's two possible edits to one surface (direct
- * context field vs. nested `prompt` field) to honor for `next()`, given the
- * surface's value before and after the wrapper ran on both paths.
- *
- * Only the `prompt` value changed: use it. Only the direct value changed:
- * use it. Both changed and agree: use either (the direct value). Both
- * changed and disagree: prefer the `prompt` edit — it is the surface
- * `callProvider` actually reads. Neither changed: use the (unchanged) direct
- * value.
- */
-function resolveAroundModelSurface<T>(input: {
-  basePromptValue: T;
-  baseValue: T;
-  nextPromptValue: T;
-  nextValue: T;
-}): T {
-  const promptChanged = !surfacesMatch(
-    input.basePromptValue,
-    input.nextPromptValue
-  );
-  const valueChanged = !surfacesMatch(input.baseValue, input.nextValue);
-
-  if (promptChanged && !valueChanged) {
-    return cloneValue(input.nextPromptValue);
-  }
-
-  if (valueChanged && !promptChanged) {
-    return cloneValue(input.nextValue);
-  }
-
-  if (promptChanged && valueChanged) {
-    return surfacesMatch(input.nextPromptValue, input.nextValue)
-      ? cloneValue(input.nextValue)
-      : cloneValue(input.nextPromptValue);
-  }
-
-  return cloneValue(input.nextValue);
-}
-
-function surfacesMatch(left: unknown, right: unknown): boolean {
-  return isDeepStrictEqual(left, right);
-}
-
-// ---------------------------------------------------------------------------
-// Provider-native / provider-mediated binding registration + policy (AY002/AY004)
-// ---------------------------------------------------------------------------
-
-/**
- * Filters `AgentConfig.providerNativeTools`/`providerMediatedTools` through
- * the invocation-time capability policy engine, when one is configured
- * (ADR-0046 §4.21). A tool is admitted when there is no policy engine, or
- * when the engine's `evaluateInvocation` decision for its binding admits it;
- * denied tools are dropped from the prompt entirely rather than surfaced to
- * the model. Bindings are constructed inline (rather than via the shared
- * resolver factory in `@tuvren/runtime`) to avoid a circular package
- * dependency from this runner into the runtime host.
- */
-function admitProviderTools<
-  T extends ProviderNativeToolDeclaration | ProviderMediatedToolConfig,
->(
-  tools: T[] | undefined,
-  executionClass: "provider-native" | "provider-mediated",
-  config: AgentConfig
-): T[] {
-  if (tools === undefined || tools.length === 0) {
-    return [];
-  }
-
-  const admitted: T[] = [];
-
-  for (const tool of tools) {
-    const capabilityId =
-      (tool as { capabilityId?: string }).capabilityId ?? tool.name;
-
-    // Invocation-time policy check per ADR-0046 §4.21. When no engine is
-    // configured, all provider tools are admitted. Construct the binding
-    // inline — the resolver factory lives in @tuvren/runtime which would
-    // create a circular dependency here.
-    if (config.capabilityPolicyEngine !== undefined) {
-      const binding: Binding = {
-        capabilityId,
-        endpoint: { id: "provider-runtime", kind: "provider-runtime" },
-        executionClass,
-      };
-      const decision = config.capabilityPolicyEngine.evaluateInvocation(
-        binding,
-        // Context dimensions land in Epic BB; baseline engine is context-insensitive.
-        { modelId: "", permissions: [], providerId: "" }
-      );
-      if (!decision.admitted) {
-        continue;
-      }
-    }
-
-    admitted.push(tool);
-  }
-
-  return admitted;
-}
+};
