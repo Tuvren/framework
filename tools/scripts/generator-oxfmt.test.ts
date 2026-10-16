@@ -10,6 +10,14 @@ import { isDeepStrictEqual } from "node:util";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 
+const stdio = (relativePath: string): string => {
+  return path.join(REPO_ROOT, relativePath);
+};
+
+const read = (relativePath: string): string => {
+  return readFileSync(stdio(relativePath), "utf-8");
+};
+
 const FORMAT_CALLER_SOURCES = [
   "tools/scripts/conformance/format-generated-json.ts",
   "tools/scripts/telemetry-codegen.ts",
@@ -148,14 +156,6 @@ const DIRECT_TYPESPEC_TARGETS = new Set(
   ARTIFACT_TARGETS.slice(0, 6).map((target) => target.file)
 );
 
-function stdio(relativePath: string): string {
-  return path.join(REPO_ROOT, relativePath);
-}
-
-function read(relativePath: string): string {
-  return readFileSync(stdio(relativePath), "utf-8");
-}
-
 interface ProjectTarget {
   inputs?: string[];
   options?: { command?: string };
@@ -165,10 +165,10 @@ interface ProjectManifest {
   targets?: Record<string, ProjectTarget>;
 }
 
-function readTarget(
+const readTarget = (
   relativePath: string,
   targetName: string
-): { command: string; inputs: string[] } {
+): { command: string; inputs: string[] } => {
   const manifest = JSON.parse(read(relativePath)) as ProjectManifest;
   const target = manifest.targets?.[targetName];
   const command = target?.options?.command;
@@ -178,22 +178,22 @@ function readTarget(
   }
 
   return { command, inputs: target?.inputs ?? [] };
-}
+};
 
-function missingInputs(
+const missingInputs = (
   inputs: readonly string[],
   preserved: readonly string[]
-): string[] {
+): string[] => {
   return preserved.filter((value) => !inputs.includes(value));
-}
+};
 
-function runGenerator(args: readonly string[]): SpawnSyncReturns<string> {
+const runGenerator = (args: readonly string[]): SpawnSyncReturns<string> => {
   return spawnSync(process.execPath, [KERNEL_PLAN_SCRIPT, ...args], {
     cwd: REPO_ROOT,
     encoding: "utf-8",
     maxBuffer: 64 * 1024 * 1024,
   });
-}
+};
 
 describe("generator formatter callers", () => {
   test("no caller invokes Biome and every caller invokes Oxfmt", () => {
@@ -206,9 +206,9 @@ describe("generator formatter callers", () => {
 
   test("telemetry formatting excludes Markdown but keeps a matched JSON path", () => {
     const contents = read("tools/scripts/telemetry-codegen.ts");
-    const start = contents.indexOf("async function formatGeneratedOutputs");
+    const start = contents.indexOf("const formatGeneratedOutputs = async");
     expect(start).toBeGreaterThan(-1);
-    const end = contents.indexOf("\n}\n", start);
+    const end = contents.indexOf("\n};\n", start);
     expect(end).toBeGreaterThan(start);
     const body = contents.slice(start, end);
 
@@ -255,7 +255,7 @@ describe("artifact target configuration", () => {
 });
 
 describe("preserved input controls", () => {
-  function targetFor(file: string): ArtifactTarget {
+  const targetFor = (file: string): ArtifactTarget => {
     const target = ARTIFACT_TARGETS.find(
       (candidate) => candidate.file === file
     );
@@ -263,9 +263,9 @@ describe("preserved input controls", () => {
       throw new Error(`${file} is not a declared artifact target`);
     }
     return target;
-  }
+  };
 
-  function removalControl(file: string, removed: string): void {
+  const removalControl = (file: string, removed: string): void => {
     const target = targetFor(file);
     const { inputs } = readTarget(target.file, target.target);
 
@@ -276,7 +276,7 @@ describe("preserved input controls", () => {
         target.preservedInputs
       )
     ).toEqual([removed]);
-  }
+  };
 
   test("removing a core artifact input fails the check", () => {
     removalControl(

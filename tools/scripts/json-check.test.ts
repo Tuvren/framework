@@ -25,20 +25,20 @@ const CLI_FIXTURE_SOURCES = [
   "tools/scripts/lib/json-source-integrity.ts",
 ] as const;
 
-function withScratch<T>(run: (directory: string) => Promise<T>): Promise<T> {
+const withScratch = <T>(run: (directory: string) => Promise<T>): Promise<T> => {
   const directory = mkdtempSync(path.join(tmpdir(), "json-check-"));
   return run(directory).finally(() => {
     rmSync(directory, { force: true, recursive: true });
   });
-}
+};
 
-function write(directory: string, relative: string, source: string): void {
+const write = (directory: string, relative: string, source: string): void => {
   const file = path.join(directory, relative);
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, source);
-}
+};
 
-function prepareCliFixture(directory: string): void {
+const prepareCliFixture = (directory: string): void => {
   for (const relative of CLI_FIXTURE_SOURCES) {
     const destination = path.join(directory, relative);
     mkdirSync(path.dirname(destination), { recursive: true });
@@ -56,21 +56,21 @@ function prepareCliFixture(directory: string): void {
   if (initialized.status !== 0) {
     throw new Error(`git init failed: ${initialized.stderr}`);
   }
-}
+};
 
-function runCli(directory: string): SpawnSyncReturns<string> {
+const runCli = (directory: string): SpawnSyncReturns<string> => {
   return spawnSync(
     process.execPath,
     ["tools/scripts/json-check.ts", "--json-only", "project"],
     { cwd: directory, encoding: "utf-8" }
   );
-}
+};
 
-function discoveryAndFormatRunner(
+const discoveryAndFormatRunner = (
   candidates: readonly string[],
   formatCode: number,
   commands: string[][]
-): (command: readonly string[]) => Promise<RunCommandResult> {
+): ((command: readonly string[]) => Promise<RunCommandResult>) => {
   return (command): Promise<RunCommandResult> => {
     commands.push([...command]);
     if (command[0] === "git") {
@@ -84,7 +84,7 @@ function discoveryAndFormatRunner(
     }
     return Promise.resolve({ code: formatCode, stderr: "", stdout: "" });
   };
-}
+};
 
 describe("native JSON format gate", () => {
   test("a mixed project validates JSON and passes exact files to Oxfmt", async () => {

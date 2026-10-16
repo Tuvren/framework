@@ -68,89 +68,14 @@ const JSON_OUTPUT_PATH = resolve(
 );
 const NEWLINE_PATTERN = /\r?\n/u;
 
-if (import.meta.main) {
-  await main();
-}
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
 
-async function main(): Promise<void> {
-  await ensureWeaverIsAvailable();
-  await runWeaverRegistryCheck();
-  const generatorPlan = await readGeneratorPlan();
-  const typescriptOutputPath = resolve(
-    REPO_ROOT,
-    generatorPlan.typescript.outputPath
-  );
-  const rustOutputPath = resolve(REPO_ROOT, generatorPlan.rust.outputPath);
-
-  const temporaryDirectory = await mkdtemp(
-    resolve(tmpdir(), "tuvren-telemetry-")
-  );
-
-  try {
-    const resolvedRegistry = await generateResolvedWeaverRegistry(
-      temporaryDirectory,
-      await readRegistrySchemaUrl()
-    );
-
-    await mkdir(dirname(MARKDOWN_OUTPUT_PATH), { recursive: true });
-    await mkdir(dirname(JSON_OUTPUT_PATH), { recursive: true });
-    await mkdir(dirname(typescriptOutputPath), { recursive: true });
-    await mkdir(dirname(rustOutputPath), { recursive: true });
-
-    await writeFile(
-      MARKDOWN_OUTPUT_PATH,
-      renderTelemetryMarkdown(resolvedRegistry)
-    );
-    await writeFile(
-      JSON_OUTPUT_PATH,
-      `${JSON.stringify(
-        {
-          attributes: resolvedRegistry.attributes,
-          registryUrl: resolvedRegistry.registryUrl,
-          schemaUrl: resolvedRegistry.schemaUrl,
-        },
-        null,
-        2
-      )}\n`
-    );
-    await writeFile(
-      typescriptOutputPath,
-      renderTelemetryTypescript(resolvedRegistry)
-    );
-    await writeRustTelemetryOutput(
-      generatorPlan.rust,
-      rustOutputPath,
-      resolvedRegistry
-    );
-    // Rust telemetry can still be disabled by the generator plan, so rustfmt
-    // only runs when this invocation actually wrote the Rust target file.
-    await formatGeneratedOutputs(
-      typescriptOutputPath,
-      generatorPlan.rust.enabled ? rustOutputPath : undefined
-    );
-  } finally {
-    await rm(temporaryDirectory, { force: true, recursive: true });
-  }
-}
-
-async function readGeneratorPlan(): Promise<TelemetryGeneratorPlan> {
-  const planText = await readFile(GENERATOR_PLAN_PATH, "utf-8");
-  const plan = JSON.parse(planText);
-
-  if (!isRecord(plan)) {
-    throw new Error("telemetry generator plan must be an object");
-  }
-
-  return {
-    rust: readGeneratorTarget(plan.rust, "rust"),
-    typescript: readGeneratorTarget(plan.typescript, "typescript"),
-  };
-}
-
-function readGeneratorTarget(
+const readGeneratorTarget = (
   value: unknown,
   label: string
-): TelemetryGeneratorTarget {
+): TelemetryGeneratorTarget => {
   if (
     !isRecord(value) ||
     typeof value.outputPath !== "string" ||
@@ -164,23 +89,23 @@ function readGeneratorTarget(
     outputPath: value.outputPath,
     templatePath: value.templatePath,
   };
-}
+};
 
-async function writeRustTelemetryOutput(
-  rustTarget: TelemetryGeneratorTarget,
-  rustOutputPath: string,
-  resolvedRegistry: ResolvedTelemetryRegistry
-): Promise<void> {
-  await readFile(resolve(REPO_ROOT, rustTarget.templatePath), "utf-8");
+const readGeneratorPlan = async (): Promise<TelemetryGeneratorPlan> => {
+  const planText = await readFile(GENERATOR_PLAN_PATH, "utf-8");
+  const plan = JSON.parse(planText);
 
-  if (!rustTarget.enabled) {
-    return;
+  if (!isRecord(plan)) {
+    throw new Error("telemetry generator plan must be an object");
   }
 
-  await writeFile(rustOutputPath, renderTelemetryRust(resolvedRegistry));
-}
+  return {
+    rust: readGeneratorTarget(plan.rust, "rust"),
+    typescript: readGeneratorTarget(plan.typescript, "typescript"),
+  };
+};
 
-async function ensureWeaverIsAvailable(): Promise<void> {
+const ensureWeaverIsAvailable = async (): Promise<void> => {
   let result: RunCommandResult;
 
   try {
@@ -201,9 +126,9 @@ async function ensureWeaverIsAvailable(): Promise<void> {
   throw new Error(
     "weaver is required on PATH; activate the repo environment with direnv before running telemetry code generation"
   );
-}
+};
 
-async function runWeaverRegistryCheck(): Promise<void> {
+const runWeaverRegistryCheck = async (): Promise<void> => {
   const result = await runCommand(
     ["weaver", "registry", "check", "-r", SEMCONV_REGISTRY_PATH, "--future"],
     {
@@ -217,12 +142,86 @@ async function runWeaverRegistryCheck(): Promise<void> {
       result.stderr || result.stdout || "weaver registry check failed"
     );
   }
-}
+};
 
-async function generateResolvedWeaverRegistry(
+const normalizeResolvedTelemetryAttribute = (
+  value: unknown
+): ResolvedTelemetryAttribute => {
+  if (
+    !isRecord(value) ||
+    typeof value.name !== "string" ||
+    typeof value.type !== "string" ||
+    typeof value.brief !== "string" ||
+    typeof value.stability !== "string" ||
+    !Array.isArray(value.examples) ||
+    !value.examples.every((example) => typeof example === "string")
+  ) {
+    throw new Error("resolved telemetry attribute is incomplete");
+  }
+
+  return {
+    brief: value.brief,
+    examples: value.examples,
+    key: value.name,
+    stability: value.stability,
+    type: value.type,
+  };
+};
+
+const collectResolvedTelemetryAttributes = (
+  groups: unknown
+): ResolvedTelemetryAttribute[] => {
+  if (!Array.isArray(groups)) {
+    throw new Error("resolved telemetry registry groups must be an array");
+  }
+
+  const attributes: ResolvedTelemetryAttribute[] = [];
+
+  for (const group of groups) {
+    if (!(isRecord(group) && Array.isArray(group.attributes))) {
+      continue;
+    }
+
+    for (const attribute of group.attributes) {
+      if (!isRecord(attribute)) {
+        continue;
+      }
+
+      attributes.push(normalizeResolvedTelemetryAttribute(attribute));
+    }
+  }
+
+  return attributes;
+};
+
+export const parseResolvedTelemetryRegistry = (
+  jsonText: string,
+  schemaUrl: string
+): ResolvedTelemetryRegistry => {
+  const parsedRegistry = JSON.parse(jsonText);
+
+  if (!isRecord(parsedRegistry)) {
+    throw new Error("resolved telemetry registry must be an object");
+  }
+
+  if (
+    typeof parsedRegistry.registry_url !== "string" ||
+    parsedRegistry.registry_url.length === 0
+  ) {
+    throw new Error("resolved telemetry registry is missing registry_url");
+  }
+
+  return {
+    attributes: collectResolvedTelemetryAttributes(parsedRegistry.groups),
+    registryUrl: parsedRegistry.registry_url,
+    schemaUrl,
+  };
+};
+
+const generateResolvedWeaverRegistry = async (
   outputDirectory: string,
   schemaUrl: string
-): Promise<ResolvedTelemetryRegistry> {
+): Promise<ResolvedTelemetryRegistry> => {
   // Upstream Weaver deprecated `registry resolve` in favor of `registry
   // generate` and `registry package`. This repo stays on the supported
   // `registry generate` family with a repo-owned target that emits the
@@ -258,9 +257,9 @@ async function generateResolvedWeaverRegistry(
   );
 
   return parseResolvedTelemetryRegistry(resolvedJson, schemaUrl);
-}
+};
 
-async function readRegistrySchemaUrl(): Promise<string> {
+const readRegistrySchemaUrl = async (): Promise<string> => {
   const manifestText = await readFile(REGISTRY_MANIFEST_PATH, "utf-8");
 
   for (const line of manifestText.split(NEWLINE_PATTERN)) {
@@ -276,137 +275,11 @@ async function readRegistrySchemaUrl(): Promise<string> {
   }
 
   throw new Error("manifest.yaml must define a non-empty schema_url");
-}
+};
 
-async function formatGeneratedOutputs(
-  typescriptOutputPath: string,
-  rustOutputPath: string | undefined
-): Promise<void> {
-  // ADR-0070 / KRT-BP003: telemetry generated outputs are normalized through
-  // Oxfmt. Markdown is excluded (the formatter config ignores it), and the
-  // `generated` TypeScript helper is ignored by the shipped preset, so the
-  // JSON artifact is kept in the invocation as a guaranteed match. Without a
-  // matched path Oxfmt exits 2 on an all-ignored set.
-  const result = await runCommand(
-    [
-      "bunx",
-      "--bun",
-      "oxfmt",
-      "--write",
-      JSON_OUTPUT_PATH,
-      typescriptOutputPath,
-    ],
-    {
-      captureOutput: true,
-      cwd: REPO_ROOT,
-    }
-  );
-
-  if (result.code !== 0) {
-    throw new Error(
-      result.stderr ||
-        result.stdout ||
-        "formatting generated telemetry outputs failed"
-    );
-  }
-
-  if (rustOutputPath == null) {
-    return;
-  }
-
-  const rustfmtResult = await runCommand(["rustfmt", rustOutputPath], {
-    captureOutput: true,
-    cwd: REPO_ROOT,
-  });
-
-  if (rustfmtResult.code !== 0) {
-    throw new Error(
-      rustfmtResult.stderr ||
-        rustfmtResult.stdout ||
-        "formatting generated Rust telemetry output failed"
-    );
-  }
-}
-
-export function parseResolvedTelemetryRegistry(
-  jsonText: string,
-  schemaUrl: string
-): ResolvedTelemetryRegistry {
-  const parsedRegistry = JSON.parse(jsonText);
-
-  if (!isRecord(parsedRegistry)) {
-    throw new Error("resolved telemetry registry must be an object");
-  }
-
-  if (
-    typeof parsedRegistry.registry_url !== "string" ||
-    parsedRegistry.registry_url.length === 0
-  ) {
-    throw new Error("resolved telemetry registry is missing registry_url");
-  }
-
-  return {
-    attributes: collectResolvedTelemetryAttributes(parsedRegistry.groups),
-    registryUrl: parsedRegistry.registry_url,
-    schemaUrl,
-  };
-}
-
-function normalizeResolvedTelemetryAttribute(
-  value: unknown
-): ResolvedTelemetryAttribute {
-  if (
-    !isRecord(value) ||
-    typeof value.name !== "string" ||
-    typeof value.type !== "string" ||
-    typeof value.brief !== "string" ||
-    typeof value.stability !== "string" ||
-    !Array.isArray(value.examples) ||
-    !value.examples.every((example) => typeof example === "string")
-  ) {
-    throw new Error("resolved telemetry attribute is incomplete");
-  }
-
-  return {
-    brief: value.brief,
-    examples: value.examples,
-    key: value.name,
-    stability: value.stability,
-    type: value.type,
-  };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function collectResolvedTelemetryAttributes(
-  groups: unknown
-): ResolvedTelemetryAttribute[] {
-  if (!Array.isArray(groups)) {
-    throw new Error("resolved telemetry registry groups must be an array");
-  }
-
-  const attributes: ResolvedTelemetryAttribute[] = [];
-
-  for (const group of groups) {
-    if (!(isRecord(group) && Array.isArray(group.attributes))) {
-      continue;
-    }
-
-    for (const attribute of group.attributes) {
-      if (!isRecord(attribute)) {
-        continue;
-      }
-
-      attributes.push(normalizeResolvedTelemetryAttribute(attribute));
-    }
-  }
-
-  return attributes;
-}
-
-function renderTelemetryMarkdown(registry: ResolvedTelemetryRegistry): string {
+const renderTelemetryMarkdown = (
+  registry: ResolvedTelemetryRegistry
+): string => {
   const tableRows = registry.attributes
     .map(
       (attribute) =>
@@ -427,11 +300,11 @@ Generated from \`spec/telemetry/semconv/tuvren-runtime.yaml\` via \`weaver\`.
 | --- | --- | --- | --- | --- |
 ${tableRows}
 `;
-}
+};
 
-function renderTelemetryTypescript(
+const renderTelemetryTypescript = (
   registry: ResolvedTelemetryRegistry
-): string {
+): string => {
   const attributeEntries = registry.attributes
     .map(
       (attribute) =>
@@ -493,9 +366,9 @@ export const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS: readonly TuvrenRuntimeTele
 ${attributeKeys}
   ]);
 `;
-}
+};
 
-function renderTelemetryRust(registry: ResolvedTelemetryRegistry): string {
+const renderTelemetryRust = (registry: ResolvedTelemetryRegistry): string => {
   const attributeEntries = registry.attributes
     .map(
       (attribute) =>
@@ -552,4 +425,133 @@ pub const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS: &[&str] = &[
 ${attributeKeys}
 ];
 `;
+};
+
+const writeRustTelemetryOutput = async (
+  rustTarget: TelemetryGeneratorTarget,
+  rustOutputPath: string,
+  resolvedRegistry: ResolvedTelemetryRegistry
+): Promise<void> => {
+  await readFile(resolve(REPO_ROOT, rustTarget.templatePath), "utf-8");
+
+  if (!rustTarget.enabled) {
+    return;
+  }
+
+  await writeFile(rustOutputPath, renderTelemetryRust(resolvedRegistry));
+};
+
+const formatGeneratedOutputs = async (
+  typescriptOutputPath: string,
+  rustOutputPath: string | undefined
+): Promise<void> => {
+  // ADR-0070 / KRT-BP003: telemetry generated outputs are normalized through
+  // Oxfmt. Markdown is excluded (the formatter config ignores it), and the
+  // `generated` TypeScript helper is ignored by the shipped preset, so the
+  // JSON artifact is kept in the invocation as a guaranteed match. Without a
+  // matched path Oxfmt exits 2 on an all-ignored set.
+  const result = await runCommand(
+    [
+      "bunx",
+      "--bun",
+      "oxfmt",
+      "--write",
+      JSON_OUTPUT_PATH,
+      typescriptOutputPath,
+    ],
+    {
+      captureOutput: true,
+      cwd: REPO_ROOT,
+    }
+  );
+
+  if (result.code !== 0) {
+    throw new Error(
+      result.stderr ||
+        result.stdout ||
+        "formatting generated telemetry outputs failed"
+    );
+  }
+
+  if (rustOutputPath == null) {
+    return;
+  }
+
+  const rustfmtResult = await runCommand(["rustfmt", rustOutputPath], {
+    captureOutput: true,
+    cwd: REPO_ROOT,
+  });
+
+  if (rustfmtResult.code !== 0) {
+    throw new Error(
+      rustfmtResult.stderr ||
+        rustfmtResult.stdout ||
+        "formatting generated Rust telemetry output failed"
+    );
+  }
+};
+
+const main = async (): Promise<void> => {
+  await ensureWeaverIsAvailable();
+  await runWeaverRegistryCheck();
+  const generatorPlan = await readGeneratorPlan();
+  const typescriptOutputPath = resolve(
+    REPO_ROOT,
+    generatorPlan.typescript.outputPath
+  );
+  const rustOutputPath = resolve(REPO_ROOT, generatorPlan.rust.outputPath);
+
+  const temporaryDirectory = await mkdtemp(
+    resolve(tmpdir(), "tuvren-telemetry-")
+  );
+
+  try {
+    const resolvedRegistry = await generateResolvedWeaverRegistry(
+      temporaryDirectory,
+      await readRegistrySchemaUrl()
+    );
+
+    await mkdir(dirname(MARKDOWN_OUTPUT_PATH), { recursive: true });
+    await mkdir(dirname(JSON_OUTPUT_PATH), { recursive: true });
+    await mkdir(dirname(typescriptOutputPath), { recursive: true });
+    await mkdir(dirname(rustOutputPath), { recursive: true });
+
+    await writeFile(
+      MARKDOWN_OUTPUT_PATH,
+      renderTelemetryMarkdown(resolvedRegistry)
+    );
+    await writeFile(
+      JSON_OUTPUT_PATH,
+      `${JSON.stringify(
+        {
+          attributes: resolvedRegistry.attributes,
+          registryUrl: resolvedRegistry.registryUrl,
+          schemaUrl: resolvedRegistry.schemaUrl,
+        },
+        null,
+        2
+      )}\n`
+    );
+    await writeFile(
+      typescriptOutputPath,
+      renderTelemetryTypescript(resolvedRegistry)
+    );
+    await writeRustTelemetryOutput(
+      generatorPlan.rust,
+      rustOutputPath,
+      resolvedRegistry
+    );
+    // Rust telemetry can still be disabled by the generator plan, so rustfmt
+    // only runs when this invocation actually wrote the Rust target file.
+    await formatGeneratedOutputs(
+      typescriptOutputPath,
+      generatorPlan.rust.enabled ? rustOutputPath : undefined
+    );
+  } finally {
+    await rm(temporaryDirectory, { force: true, recursive: true });
+  }
+};
+
+if (import.meta.main) {
+  await main();
 }

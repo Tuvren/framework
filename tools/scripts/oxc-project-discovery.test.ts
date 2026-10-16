@@ -89,30 +89,30 @@ interface ParsedProject {
   fileNames: Set<string>;
 }
 
-function parseJson<T>(text: string): T {
+const parseJson = <T>(text: string): T => {
   return JSON.parse(text) as T;
-}
+};
 
-function readProjectTsConfig(relativePath: string): ProjectTsConfig {
+const readProjectTsConfig = (relativePath: string): ProjectTsConfig => {
   return parseJson<ProjectTsConfig>(
     readFileSync(path.join(REPO_ROOT, relativePath), "utf-8")
   );
-}
+};
 
-function referencesTypecheck(config: ProjectTsConfig): boolean {
+const referencesTypecheck = (config: ProjectTsConfig): boolean => {
   return (config.references ?? []).some(
     (reference) => reference.path === "./tsconfig.typecheck.json"
   );
-}
+};
 
 // M9a readers. The package-root proof starts from `JSON.parse` as `unknown` and
 // narrows each field it reads, so a malformed or reshaped config fails loudly
 // instead of being cast into the expected interface.
-function isRecord(value: unknown): value is Record<string, unknown> {
+const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+};
 
-function readConfigDocument(relativePath: string): Record<string, unknown> {
+const readConfigDocument = (relativePath: string): Record<string, unknown> => {
   const parsed: unknown = JSON.parse(
     readFileSync(path.join(REPO_ROOT, relativePath), "utf-8")
   );
@@ -120,9 +120,9 @@ function readConfigDocument(relativePath: string): Record<string, unknown> {
     throw new Error(`${relativePath} is not a JSON object`);
   }
   return parsed;
-}
+};
 
-function referencedPaths(config: Record<string, unknown>): string[] {
+const referencedPaths = (config: Record<string, unknown>): string[] => {
   if (!Array.isArray(config.references)) {
     return [];
   }
@@ -133,34 +133,34 @@ function referencedPaths(config: Record<string, unknown>): string[] {
     }
   }
   return paths;
-}
+};
 
-function includedPatterns(config: Record<string, unknown>): string[] {
+const includedPatterns = (config: Record<string, unknown>): string[] => {
   if (!Array.isArray(config.include)) {
     return [];
   }
   return config.include.filter(
     (entry): entry is string => typeof entry === "string"
   );
-}
+};
 
-function compilerFlag(
+const compilerFlag = (
   config: Record<string, unknown>,
   key: string
-): boolean | undefined {
+): boolean | undefined => {
   const { compilerOptions } = config;
   if (!isRecord(compilerOptions)) {
     return undefined;
   }
   const value = compilerOptions[key];
   return typeof value === "boolean" ? value : undefined;
-}
+};
 
 // The membership proof must read the compiler's parsed file set, including the
 // inherited `include`/`exclude` rules, rather than the raw include strings. The
 // host is `ts.sys` plus the one method the API requires for unrecoverable
 // config diagnostics.
-function parseProjectFiles(relativeConfigPath: string): ParsedProject {
+const parseProjectFiles = (relativeConfigPath: string): ParsedProject => {
   const configPath = path.join(REPO_ROOT, relativeConfigPath);
   const host: ts.ParseConfigFileHost = {
     ...ts.sys,
@@ -188,9 +188,9 @@ function parseProjectFiles(relativeConfigPath: string): ParsedProject {
       )}`
   );
   return { errors, fileNames };
-}
+};
 
-function collectTypeScriptFiles(directory: string): string[] {
+const collectTypeScriptFiles = (directory: string): string[] => {
   const files: string[] = [];
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const absolute = path.join(directory, entry.name);
@@ -201,11 +201,11 @@ function collectTypeScriptFiles(directory: string): string[] {
     }
   }
   return files;
-}
+};
 
-function hasTypeScriptFiles(directory: string): boolean {
+const hasTypeScriptFiles = (directory: string): boolean => {
   return collectTypeScriptFiles(directory).length > 0;
-}
+};
 
 describe("type-aware project discovery", () => {
   test("certification wrappers expose their typecheck config through a root reference", () => {

@@ -27,19 +27,19 @@ import {
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 
-function withScratch<T>(run: (directory: string) => Promise<T>): Promise<T> {
+const withScratch = <T>(run: (directory: string) => Promise<T>): Promise<T> => {
   const directory = mkdtempSync(path.join(tmpdir(), "json-integrity-"));
   return run(directory).finally(() => {
     rmSync(directory, { force: true, recursive: true });
   });
-}
+};
 
-function write(directory: string, relative: string, source: string): string {
+const write = (directory: string, relative: string, source: string): string => {
   const file = path.join(directory, relative);
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, source);
   return file;
-}
+};
 
 describe("native JSON source integrity", () => {
   test("rejects malformed and comment-bearing strict JSON", async () => {

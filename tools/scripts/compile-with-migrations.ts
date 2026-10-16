@@ -34,7 +34,7 @@ import { copyFileSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import process from "node:process";
 
-function readFlag(name: string): string | undefined {
+const readFlag = (name: string): string | undefined => {
   const index = process.argv.indexOf(`--${name}`);
 
   if (index === -1) {
@@ -48,7 +48,7 @@ function readFlag(name: string): string | undefined {
   }
 
   return value;
-}
+};
 
 const tsconfig = readFlag("tsconfig");
 const outDir = readFlag("out");
