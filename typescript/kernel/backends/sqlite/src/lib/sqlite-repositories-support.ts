@@ -177,6 +177,7 @@ const assertSafeThreadListLimit = (limit: number | undefined): void => {
  * writes still record touched keys on `context.writeTracker` where later
  * pre-commit validation depends on them (staged results, threads).
  */
+/* oxlint-disable promise-function-async -- Repository methods validate synchronously before returning fulfilled promises so transaction callbacks preserve their synchronous error contract. */
 export const createSupportRepositories = (
   context: SupportRepositoryContext,
   helpers: SupportRepositoryHelpers
@@ -427,50 +428,6 @@ export const createSupportRepositories = (
           record === null ? null : helpers.cloneStoredThread(record)
         );
       },
-      put(record) {
-        assertTransactionActive();
-        assertStoredThread(record, "record");
-        helpers.ensureSchemaExistsInDatabase(
-          db,
-          record.schemaId,
-          "record.schemaId"
-        );
-        helpers.ensureTurnNodeExistsInDatabase(
-          db,
-          record.rootTurnNodeHash,
-          "record.rootTurnNodeHash"
-        );
-        const existing = helpers.selectThread(db, record.threadId);
-
-        if (existing !== null) {
-          helpers.ensureImmutableRecordMatch(
-            existing,
-            record,
-            helpers.areStoredThreadsEqual,
-            "stored thread"
-          );
-          return Promise.resolve();
-        }
-
-        db.prepare(
-          `
-            INSERT INTO threads (
-              thread_id,
-              schema_id,
-              root_turn_node_hash,
-              created_at_ms
-            ) VALUES (?, ?, ?, ?)
-          `
-        ).run(
-          record.threadId,
-          record.schemaId,
-          record.rootTurnNodeHash,
-          record.createdAtMs
-        );
-        writeTracker.recordThreadPut(record);
-
-        return Promise.resolve();
-      },
       // Keyset (not OFFSET) pagination: the cursor carries the last page's
       // (createdAtMs, threadId) so the WHERE clause resumes strictly after
       // it, keeping pagination stable under concurrent inserts. Requests one
@@ -526,10 +483,10 @@ export const createSupportRepositories = (
           .all(...params);
 
         let threads: StoredThread[] = rows.map((row) => ({
-          threadId: row.thread_id,
-          schemaId: row.schema_id,
+          createdAtMs: row.created_at_ms,
           rootTurnNodeHash: row.root_turn_node_hash,
-          createdAtMs: row.created_at_ms as StoredThread["createdAtMs"],
+          schemaId: row.schema_id,
+          threadId: row.thread_id,
         }));
 
         let nextCursor: ListThreadsCursorPayload | undefined;
@@ -538,17 +495,62 @@ export const createSupportRepositories = (
           const last = threads.at(-1);
           if (last !== undefined) {
             nextCursor = {
-              v: 1,
-              kind: "list-threads",
-              lastThreadId: last.threadId,
-              lastCreatedAtMs: last.createdAtMs,
               filter: options?.filter,
+              kind: "list-threads",
+              lastCreatedAtMs: last.createdAtMs,
+              lastThreadId: last.threadId,
+              v: 1,
             };
           }
         }
 
-        return Promise.resolve({ threads, nextCursor });
+        return Promise.resolve({ nextCursor, threads });
+      },
+      put(record) {
+        assertTransactionActive();
+        assertStoredThread(record, "record");
+        helpers.ensureSchemaExistsInDatabase(
+          db,
+          record.schemaId,
+          "record.schemaId"
+        );
+        helpers.ensureTurnNodeExistsInDatabase(
+          db,
+          record.rootTurnNodeHash,
+          "record.rootTurnNodeHash"
+        );
+        const existing = helpers.selectThread(db, record.threadId);
+
+        if (existing !== null) {
+          helpers.ensureImmutableRecordMatch(
+            existing,
+            record,
+            helpers.areStoredThreadsEqual,
+            "stored thread"
+          );
+          return Promise.resolve();
+        }
+
+        db.prepare(
+          `
+            INSERT INTO threads (
+              thread_id,
+              schema_id,
+              root_turn_node_hash,
+              created_at_ms
+            ) VALUES (?, ?, ?, ?)
+          `
+        ).run(
+          record.threadId,
+          record.schemaId,
+          record.rootTurnNodeHash,
+          record.createdAtMs
+        );
+        writeTracker.recordThreadPut(record);
+
+        return Promise.resolve();
       },
     },
   };
 };
+/* oxlint-enable promise-function-async */

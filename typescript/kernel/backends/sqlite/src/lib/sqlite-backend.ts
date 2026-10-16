@@ -17,7 +17,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
-import { dirname, format, parse } from "node:path";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { NOOP_PHASE_OBSERVER } from "@tuvren/backend-shared";
@@ -198,9 +198,9 @@ interface MutableRepositories extends KrakenBackendTx {
  * after `COMMIT` but before the transaction resolves.
  */
 interface BackendFaultHooks {
-  afterCommitBeforeAck?(): Promise<void>;
-  beforeCommit?(): Promise<void>;
-  midCommit?(commit: () => Promise<void>): Promise<void>;
+  afterCommitBeforeAck?: () => Promise<void>;
+  beforeCommit?: () => Promise<void>;
+  midCommit?: (commit: () => Promise<void>) => Promise<void>;
 }
 
 /**
@@ -209,8 +209,8 @@ interface BackendFaultHooks {
  * part of the public backend contract.
  */
 interface BackendFaultInjectionControl {
-  setFaultHooks(hooks: BackendFaultHooks | null): void;
-  supportsFaultPoint(point: string): boolean;
+  setFaultHooks: (hooks: BackendFaultHooks | null) => void;
+  supportsFaultPoint: (point: string) => boolean;
 }
 
 /** Construction options for {@link createSqliteBackend}. */
@@ -273,7 +273,7 @@ const RECLAMATION_DELETE_BATCH_SIZE = 500;
 
 /** Creates the database file's parent directory when it does not exist yet. */
 const ensureDatabaseDirectory = (databasePath: string): void => {
-  mkdirSync(dirname(databasePath), { recursive: true });
+  mkdirSync(path.dirname(databasePath), { recursive: true });
 };
 
 /**
@@ -282,7 +282,7 @@ const ensureDatabaseDirectory = (databasePath: string): void => {
  * persistent backend baseline, so transient databases are a construction
  * error, not a supported mode.
  *
- * @throws TuvrenPersistenceError
+ * @throws {TuvrenPersistenceError}
  *   `sqlite_backend_requires_persistent_database_path`.
  */
 const assertPersistentDatabasePath = (databasePath: string): void => {
@@ -350,7 +350,7 @@ const normalizePersistentDatabasePath = (databasePath: string): string => {
  * foreign keys on, busy timeout set, and WAL journal mode (required — the
  * open fails if WAL cannot be enabled).
  *
- * @throws TuvrenPersistenceError `sqlite_backend_requires_wal_mode`.
+ * @throws {TuvrenPersistenceError} `sqlite_backend_requires_wal_mode`.
  */
 const configureDatabase = (db: Database.Database): void => {
   db.pragma("foreign_keys = ON");
@@ -397,9 +397,8 @@ const openConfiguredDatabase = (
  * far beyond any realistic number of distinct scopes per host while keeping the
  * derived filename short. Do not shorten it without reassessing that budget.
  */
-const scopeFileSlug = (scope: Scope): string => {
-  return createHash("sha256").update(scope, "utf-8").digest("hex").slice(0, 32);
-};
+const scopeFileSlug = (scope: Scope): string =>
+  createHash("sha256").update(scope, "utf-8").digest("hex").slice(0, 32);
 
 /**
  * Derives the concrete per-Scope database file from the host-supplied base path
@@ -418,8 +417,8 @@ const resolveScopedDatabasePath = (
     return normalizedDatabasePath;
   }
 
-  const parsed = parse(normalizedDatabasePath);
-  return format({
+  const parsed = path.parse(normalizedDatabasePath);
+  return path.format({
     dir: parsed.dir,
     ext: parsed.ext,
     name: `${parsed.name}.scope-${scopeFileSlug(scope)}`,
@@ -567,17 +566,15 @@ interface ReclamationSurvivorKeys {
 /** Captures the pre-sweep key sets for {@link applyReclamationDeletions}. */
 const captureReclamationKeys = (
   state: BackendState
-): ReclamationSurvivorKeys => {
-  return {
-    branches: new Set(state.branches.keys()),
-    objects: new Set(state.objects.keys()),
-    orderedPathChunks: new Set(state.orderedPathChunks.keys()),
-    runs: new Set(state.runs.keys()),
-    turnNodes: new Set(state.turnNodes.keys()),
-    turnTrees: new Set(state.turnTrees.keys()),
-    turns: new Set(state.turns.keys()),
-  };
-};
+): ReclamationSurvivorKeys => ({
+  branches: new Set(state.branches.keys()),
+  objects: new Set(state.objects.keys()),
+  orderedPathChunks: new Set(state.orderedPathChunks.keys()),
+  runs: new Set(state.runs.keys()),
+  turnNodes: new Set(state.turnNodes.keys()),
+  turnTrees: new Set(state.turnTrees.keys()),
+  turns: new Set(state.turns.keys()),
+});
 
 /** Keys present before the sweep but absent from the swept draft. */
 const reclaimedKeys = (
@@ -669,9 +666,7 @@ const applyReclamationDeletions = (
 };
 
 /** Copies a `Uint8Array` into the `Buffer` form better-sqlite3 binds. */
-const bufferFromBytes = (bytes: Uint8Array): Buffer => {
-  return Buffer.from(bytes);
-};
+const bufferFromBytes = (bytes: Uint8Array): Buffer => Buffer.from(bytes);
 
 /**
  * Inserts a content-addressed ordered-path chunk row, or verifies byte-level
@@ -714,11 +709,10 @@ const insertOrderedPathChunk = (
  * Encodes a hash array as deterministic CBOR, validating every element first
  * so only well-formed hash strings are ever persisted.
  */
-const encodeHashStringArray = (hashes: string[]): Uint8Array => {
-  return encodeDeterministicKernelRecord(
+const encodeHashStringArray = (hashes: string[]): Uint8Array =>
+  encodeDeterministicKernelRecord(
     hashes.map((hash) => validateHashString(hash))
   );
-};
 
 /**
  * Normalizes an incoming turn-tree path record to its canonical stored
@@ -731,7 +725,7 @@ const encodeHashStringArray = (hashes: string[]): Uint8Array => {
  *
  * @param now - Clock used to stamp `createdAtMs` on newly materialized
  *   chunks; an existing chunk keeps its original timestamp.
- * @throws TuvrenPersistenceError
+ * @throws {TuvrenPersistenceError}
  *   `sqlite_backend_chunked_turn_tree_path_below_threshold`,
  *   `sqlite_backend_missing_ordered_path_chunk_reference`, or
  *   `sqlite_backend_chunked_turn_tree_path_count_mismatch`.
@@ -798,6 +792,7 @@ const normalizeStoredTurnTreePathInDatabase = async (
   );
   const chunkHashes: string[] = [];
 
+  /* oxlint-disable no-await-in-loop -- Hash and insert chunks in encoded order to preserve deterministic statement order, timestamps, and first-failure behavior. */
   for (
     let index = 0;
     index < orderedHashes.length;
@@ -820,6 +815,7 @@ const normalizeStoredTurnTreePathInDatabase = async (
     insertOrderedPathChunk(db, chunkRecord);
     chunkHashes.push(chunkHash);
   }
+  /* oxlint-enable no-await-in-loop */
 
   return {
     collectionKind: "ordered",
@@ -968,6 +964,7 @@ const createRepositories = (
  * `COMMIT`; any failure rolls the transaction back and surfaces a normalized
  * backend error.
  */
+/* oxlint-disable promise-function-async -- Public backend methods and hook thunks preserve synchronous precondition and engine throws before returning promises. */
 class SqliteBackend implements KrakenBackend {
   readonly [FAULT_INJECTION_CONTROL]: BackendFaultInjectionControl = {
     setFaultHooks: (hooks) => {
@@ -992,7 +989,7 @@ class SqliteBackend implements KrakenBackend {
    */
   private readonly scopedDatabasePath: string;
   private readonly transactionContext = new AsyncLocalStorage<boolean>();
-  private transactionQueue: Promise<void> = Promise.resolve();
+  private transactionQueue: Promise<null> = Promise.resolve(null);
 
   constructor(options: SqliteBackendOptions) {
     this.now = options.now ?? Date.now;
@@ -1008,6 +1005,8 @@ class SqliteBackend implements KrakenBackend {
   }
 
   /** Reports the SQLite backend's static capability set. */
+  // The runtime interface requires an instance method even though this backend reports a fixed capability bitmask.
+  // oxlint-disable-next-line class-methods-use-this
   capabilities(): BackendCapability {
     return SQLITE_BACKEND_CAPABILITIES;
   }
@@ -1019,18 +1018,15 @@ class SqliteBackend implements KrakenBackend {
    */
   private async queueConnectionWork<T>(work: () => Promise<T>): Promise<T> {
     const priorTransaction = this.transactionQueue;
-    let releaseQueue: (() => void) | undefined;
-
-    this.transactionQueue = new Promise<void>((resolve) => {
-      releaseQueue = resolve;
-    });
+    const { promise, resolve: releaseQueue } = Promise.withResolvers<null>();
+    this.transactionQueue = promise;
 
     await priorTransaction;
 
     try {
       return await work();
     } finally {
-      releaseQueue?.();
+      releaseQueue(null);
     }
   }
 
@@ -1057,6 +1053,7 @@ class SqliteBackend implements KrakenBackend {
    */
   health(): Promise<{ ok: true } | { ok: false; reason: string }> {
     return this.queueConnectionWork(
+      /* oxlint-disable require-await -- queueConnectionWork requires a Promise-returning callback; every read below is synchronous better-sqlite3 work, so there is nothing to await. */
       // biome-ignore lint/suspicious/useAwait: queueConnectionWork requires a Promise-returning callback; every read below is synchronous better-sqlite3 work, so there is nothing to await.
       async () => {
         try {
@@ -1076,6 +1073,7 @@ class SqliteBackend implements KrakenBackend {
           };
         }
       }
+      /* oxlint-enable require-await */
     );
   }
 
@@ -1133,7 +1131,7 @@ class SqliteBackend implements KrakenBackend {
    * file plus its WAL/SHM sidecars. The backend is unusable afterward,
    * exactly like {@link close}; other Scopes' sibling files are untouched.
    *
-   * @throws TuvrenPersistenceError `sqlite_backend_nested_transaction` when
+   * @throws {TuvrenPersistenceError} `sqlite_backend_nested_transaction` when
    *   called from inside a transaction.
    */
   purgeScope(): Promise<void> {
@@ -1170,7 +1168,7 @@ class SqliteBackend implements KrakenBackend {
    * Repository handles are invalidated once the transaction settles;
    * retaining one raises `sqlite_backend_inactive_transaction_handle`.
    *
-   * @throws TuvrenPersistenceError `sqlite_backend_nested_transaction` when
+   * @throws {TuvrenPersistenceError} `sqlite_backend_nested_transaction` when
    *   called from inside another transaction on this backend.
    */
   transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {
@@ -1284,7 +1282,7 @@ class SqliteBackend implements KrakenBackend {
    * @param options - `nowMs` overrides the backend clock for leaseless-run
    *   expiry evaluation.
    * @returns Counts of released and retained records.
-   * @throws TuvrenPersistenceError `sqlite_backend_nested_transaction` when
+   * @throws {TuvrenPersistenceError} `sqlite_backend_nested_transaction` when
    *   called from inside a transaction.
    */
   reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
@@ -1350,6 +1348,7 @@ class SqliteBackend implements KrakenBackend {
     });
   }
 }
+/* oxlint-enable promise-function-async */
 
 /**
  * Creates the official SQLite-backed persistent kernel backend.
@@ -1361,11 +1360,9 @@ class SqliteBackend implements KrakenBackend {
 export const createSqliteBackend = (
   options: SqliteBackendOptions
 ): KrakenBackend & {
-  close(): Promise<void>;
-  fsck(): Promise<{ ok: true } | { ok: false; reason: string }>;
-} => {
-  return new SqliteBackend(options);
-};
+  close: () => Promise<void>;
+  fsck: () => Promise<{ ok: true } | { ok: false; reason: string }>;
+} => new SqliteBackend(options);
 
 /**
  * Validates, normalizes, and inserts (or immutably re-verifies) a single

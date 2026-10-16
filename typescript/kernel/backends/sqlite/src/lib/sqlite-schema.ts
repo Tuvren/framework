@@ -914,18 +914,17 @@ export const RUN_LIVENESS_INDEX_DEFINITIONS = {
 >;
 
 /** Lists the directory's `.sql` migration files in application (name) order. */
-export const listMigrationFiles = (migrationDirectory: string): string[] => {
-  return readdirSync(migrationDirectory)
+export const listMigrationFiles = (migrationDirectory: string): string[] =>
+  readdirSync(migrationDirectory)
     .filter((fileName) => fileName.endsWith(".sql"))
-    .sort((left, right) => left.localeCompare(right));
-};
+    .toSorted((left, right) => left.localeCompare(right));
 
 /**
  * Locates the package's migrations directory across layouts (built `dist/`,
  * source checkout, and test execution), accepting only a candidate that
  * actually contains SQL files.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `sqlite_backend_missing_migrations_directory` when no candidate
  *   qualifies.
  */

@@ -1,3 +1,4 @@
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript package documentation tag on the public entrypoint. */
 /**
  * Copyright 2026 Oscar Yáñez Cisterna (@SkrOYC)
  *
@@ -31,3 +32,4 @@
 export type { SqliteBackendOptions } from "./lib/sqlite-backend.js";
 // biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 export { createSqliteBackend } from "./lib/sqlite-backend.js";
+/* oxlint-enable jsdoc/check-tag-names */

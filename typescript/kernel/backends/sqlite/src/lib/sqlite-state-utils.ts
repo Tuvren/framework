@@ -107,16 +107,13 @@ export const {
  * was adopted there because that backend has no legacy bare-join format to
  * stay compatible with.
  */
-export const keyObserveAnnotation = (
-  record: StoredObserveAnnotation
-): string => {
-  return [
+export const keyObserveAnnotation = (record: StoredObserveAnnotation): string =>
+  [
     record.runId,
     String(record.createdAtMs),
     record.annotationHash,
     record.turnNodeHash ?? "",
   ].join("\0");
-};
 
 /**
  * Computes the storage `record_key` for a new observe annotation: its
@@ -130,7 +127,10 @@ export const nextObserveAnnotationRecordKey = (
 ): string => {
   const identityKey = keyObserveAnnotation(record);
   const row = db
-    .prepare(
+    .prepare<
+      [string, number, string, string | null, string | null],
+      { count: number }
+    >(
       `
         SELECT COUNT(*) AS count
         FROM observe_annotations
@@ -149,15 +149,15 @@ export const nextObserveAnnotationRecordKey = (
       record.annotationHash,
       record.turnNodeHash,
       record.turnNodeHash
-    ) as { count: number };
+    );
 
-  return `${identityKey}\0${row.count}`;
+  return `${identityKey}\0${row?.count ?? 0}`;
 };
 
 /**
  * Unlike its `compareStoredBranch`/`compareStoredRun`/`compareStoredTurn`/
  * `compareStoredStagedResult` siblings above (all sourced verbatim from
- * @tuvren/backend-shared), this comparator does not delegate to the shared
+ * `@tuvren/backend-shared`), this comparator does not delegate to the shared
  * factory: the shared factory's `compareStoredObserveAnnotation` breaks
  * same-timestamp ties on `annotationHash` alone, but two annotations can
  * legitimately share an `annotationHash` (the same content hashed twice)
@@ -169,11 +169,10 @@ export const nextObserveAnnotationRecordKey = (
 export const compareStoredObserveAnnotation = (
   left: StoredObserveAnnotation,
   right: StoredObserveAnnotation
-): number => {
-  return compareByTimestampAndKey(
+): number =>
+  compareByTimestampAndKey(
     left.createdAtMs,
     right.createdAtMs,
     keyObserveAnnotation(left),
     keyObserveAnnotation(right)
   );
-};

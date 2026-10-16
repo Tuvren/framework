@@ -227,31 +227,26 @@ export interface SqliteStagedResultRow {
 }
 
 /** Creates an empty state projection with every record family initialized. */
-export const createEmptyState = (): BackendState => {
-  return {
-    branches: new Map(),
-    objects: new Map(),
-    observeAnnotations: new Map(),
-    orderedPathChunks: new Map(),
-    runs: new Map(),
-    schemas: new Map(),
-    stagedResults: new Map(),
-    threads: new Map(),
-    turnNodes: new Map(),
-    turnTreePaths: new Map(),
-    turnTrees: new Map(),
-    turns: new Map(),
-  };
-};
+export const createEmptyState = (): BackendState => ({
+  branches: new Map(),
+  objects: new Map(),
+  observeAnnotations: new Map(),
+  orderedPathChunks: new Map(),
+  runs: new Map(),
+  schemas: new Map(),
+  stagedResults: new Map(),
+  threads: new Map(),
+  turnNodes: new Map(),
+  turnTreePaths: new Map(),
+  turnTrees: new Map(),
+  turns: new Map(),
+});
 
 /** Copies raw bytes so callers never alias a row buffer. */
-export const cloneBytes = (bytes: Uint8Array): Uint8Array => {
-  return Uint8Array.from(bytes);
-};
+export const cloneBytes = (bytes: Uint8Array): Uint8Array =>
+  Uint8Array.from(bytes);
 
-const toUint8Array = (bytes: Uint8Array): Uint8Array => {
-  return Buffer.from(bytes);
-};
+const toUint8Array = (bytes: Uint8Array): Uint8Array => Buffer.from(bytes);
 
 /** Decodes and shape-asserts an `objects` row into a `StoredObject`. */
 export const decodeObjectRow = (row: SqliteObjectRow): StoredObject => {
@@ -292,14 +287,12 @@ export const decodeSchemaRow = (row: SqliteSchemaRow): StoredSchema => {
 };
 
 /** Decodes a `turn_trees` row into a `StoredTurnTree`. */
-export const decodeTurnTreeRow = (row: SqliteTurnTreeRow): StoredTurnTree => {
-  return {
-    createdAtMs: row.created_at_ms,
-    hash: row.hash,
-    manifestCbor: cloneEncodedBytes(toUint8Array(row.manifest_cbor)),
-    schemaId: row.schema_id,
-  };
-};
+export const decodeTurnTreeRow = (row: SqliteTurnTreeRow): StoredTurnTree => ({
+  createdAtMs: row.created_at_ms,
+  hash: row.hash,
+  manifestCbor: cloneEncodedBytes(toUint8Array(row.manifest_cbor)),
+  schemaId: row.schema_id,
+});
 
 const decodeStoredNonNegativeInteger = (
   value: number | null,
@@ -323,7 +316,7 @@ const decodeStoredNonNegativeInteger = (
  * variant (`single`, ordered `flat`, or ordered `chunked`), rejecting rows
  * whose variant columns are inconsistent.
  *
- * @throws TuvrenPersistenceError `sqlite_backend_invalid_turn_tree_path_row`.
+ * @throws {TuvrenPersistenceError} `sqlite_backend_invalid_turn_tree_path_row`.
  */
 export const decodeTurnTreePathRow = (
   row: SqliteTurnTreePathRow
@@ -392,7 +385,7 @@ export const decodeTurnTreePathRow = (
  * Decodes deterministic-CBOR bytes into a `HashString[]`, validating every
  * element.
  *
- * @throws TuvrenPersistenceError `sqlite_backend_invalid_hash_array_payload`.
+ * @throws {TuvrenPersistenceError} `sqlite_backend_invalid_hash_array_payload`.
  */
 export const decodeHashStringArray = (
   bytes: Uint8Array,
@@ -422,7 +415,7 @@ export const decodeHashStringArray = (
  * Decodes an `ordered_path_chunks` row, verifying `item_count` matches the
  * decoded `items_cbor` cardinality.
  *
- * @throws TuvrenPersistenceError
+ * @throws {TuvrenPersistenceError}
  *   `sqlite_backend_ordered_path_chunk_item_count_mismatch` or
  *   `sqlite_backend_invalid_ordered_path_chunk_row`.
  */
@@ -559,7 +552,7 @@ const decodeStoredRunStatus = (
  * optional columns (lease fields, pending signals, preemption reason) to
  * absent properties.
  *
- * @throws TuvrenPersistenceError `sqlite_backend_invalid_run_status`.
+ * @throws {TuvrenPersistenceError} `sqlite_backend_invalid_run_status`.
  */
 export const decodeRunRow = (row: SqliteRunRow): StoredRun => {
   const status = decodeStoredRunStatus(row.status, row.run_id);
@@ -614,7 +607,7 @@ export const decodeRunRow = (row: SqliteRunRow): StoredRun => {
  * Decodes and shape-asserts a `staged_results` row, enforcing that
  * `interrupt_payload_cbor` is present exactly when status is `interrupted`.
  *
- * @throws TuvrenPersistenceError `sqlite_backend_invalid_staged_result_row`.
+ * @throws {TuvrenPersistenceError} `sqlite_backend_invalid_staged_result_row`.
  */
 export const decodeStagedResultRow = (
   row: SqliteStagedResultRow
@@ -699,8 +692,8 @@ export const loadState = (db: Database.Database): BackendState => {
   const state = createEmptyState();
 
   for (const row of db
-    .prepare("SELECT * FROM objects")
-    .all() as SqliteObjectRow[]) {
+    .prepare<[], SqliteObjectRow>("SELECT * FROM objects")
+    .all()) {
     const record = decodeObjectRow(row);
     setUniqueLoadedRecord(state.objects, record.hash, record, "object", {
       hash: record.hash,
@@ -708,8 +701,8 @@ export const loadState = (db: Database.Database): BackendState => {
   }
 
   for (const row of db
-    .prepare("SELECT * FROM schemas")
-    .all() as SqliteSchemaRow[]) {
+    .prepare<[], SqliteSchemaRow>("SELECT * FROM schemas")
+    .all()) {
     const record = decodeSchemaRow(row);
     setUniqueLoadedRecord(state.schemas, record.schemaId, record, "schema", {
       schemaId: record.schemaId,
@@ -717,8 +710,8 @@ export const loadState = (db: Database.Database): BackendState => {
   }
 
   for (const row of db
-    .prepare("SELECT * FROM turn_trees")
-    .all() as SqliteTurnTreeRow[]) {
+    .prepare<[], SqliteTurnTreeRow>("SELECT * FROM turn_trees")
+    .all()) {
     const record = decodeTurnTreeRow(row);
     setUniqueLoadedRecord(state.turnTrees, record.hash, record, "turn tree", {
       hash: record.hash,
@@ -726,8 +719,8 @@ export const loadState = (db: Database.Database): BackendState => {
   }
 
   for (const row of db
-    .prepare("SELECT * FROM ordered_path_chunks")
-    .all() as SqliteOrderedPathChunkRow[]) {
+    .prepare<[], SqliteOrderedPathChunkRow>("SELECT * FROM ordered_path_chunks")
+    .all()) {
     const record = decodeOrderedPathChunkRow(row);
     setUniqueLoadedRecord(
       state.orderedPathChunks,
@@ -739,8 +732,8 @@ export const loadState = (db: Database.Database): BackendState => {
   }
 
   for (const row of db
-    .prepare("SELECT * FROM turn_tree_paths")
-    .all() as SqliteTurnTreePathRow[]) {
+    .prepare<[], SqliteTurnTreePathRow>("SELECT * FROM turn_tree_paths")
+    .all()) {
     const record = decodeTurnTreePathRow(row);
     const treePaths =
       state.turnTreePaths.get(record.turnTreeHash) ??
@@ -753,8 +746,8 @@ export const loadState = (db: Database.Database): BackendState => {
   }
 
   for (const row of db
-    .prepare("SELECT * FROM turn_nodes")
-    .all() as SqliteTurnNodeRow[]) {
+    .prepare<[], SqliteTurnNodeRow>("SELECT * FROM turn_nodes")
+    .all()) {
     const record = decodeTurnNodeRow(row);
     setUniqueLoadedRecord(state.turnNodes, record.hash, record, "turn node", {
       hash: record.hash,
@@ -762,8 +755,8 @@ export const loadState = (db: Database.Database): BackendState => {
   }
 
   for (const row of db
-    .prepare("SELECT * FROM threads")
-    .all() as SqliteThreadRow[]) {
+    .prepare<[], SqliteThreadRow>("SELECT * FROM threads")
+    .all()) {
     const record = decodeThreadRow(row);
     setUniqueLoadedRecord(state.threads, record.threadId, record, "thread", {
       threadId: record.threadId,
@@ -771,8 +764,8 @@ export const loadState = (db: Database.Database): BackendState => {
   }
 
   for (const row of db
-    .prepare("SELECT * FROM branches")
-    .all() as SqliteBranchRow[]) {
+    .prepare<[], SqliteBranchRow>("SELECT * FROM branches")
+    .all()) {
     const record = decodeBranchRow(row);
     setUniqueLoadedRecord(state.branches, record.branchId, record, "branch", {
       branchId: record.branchId,
@@ -780,15 +773,15 @@ export const loadState = (db: Database.Database): BackendState => {
   }
 
   for (const row of db
-    .prepare("SELECT * FROM turns")
-    .all() as SqliteTurnRow[]) {
+    .prepare<[], SqliteTurnRow>("SELECT * FROM turns")
+    .all()) {
     const record = decodeTurnRow(row);
     setUniqueLoadedRecord(state.turns, record.turnId, record, "turn", {
       turnId: record.turnId,
     });
   }
 
-  for (const row of db.prepare("SELECT * FROM runs").all() as SqliteRunRow[]) {
+  for (const row of db.prepare<[], SqliteRunRow>("SELECT * FROM runs").all()) {
     const record = decodeRunRow(row);
     setUniqueLoadedRecord(state.runs, record.runId, record, "run", {
       runId: record.runId,
@@ -796,8 +789,10 @@ export const loadState = (db: Database.Database): BackendState => {
   }
 
   for (const row of db
-    .prepare("SELECT * FROM observe_annotations")
-    .all() as SqliteObserveAnnotationRow[]) {
+    .prepare<[], SqliteObserveAnnotationRow>(
+      "SELECT * FROM observe_annotations"
+    )
+    .all()) {
     const record = decodeObserveAnnotationRow(row);
     const records = state.observeAnnotations.get(record.runId) ?? [];
     records.push(record);
@@ -805,8 +800,8 @@ export const loadState = (db: Database.Database): BackendState => {
   }
 
   for (const row of db
-    .prepare("SELECT * FROM staged_results")
-    .all() as SqliteStagedResultRow[]) {
+    .prepare<[], SqliteStagedResultRow>("SELECT * FROM staged_results")
+    .all()) {
     const record = decodeStagedResultRow(row);
     const stagedResults =
       state.stagedResults.get(record.runId) ??
@@ -904,15 +899,14 @@ const readSqliteNumberColumn = (
   );
 };
 
-const isUnknownRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
+const isUnknownRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 /**
  * Decodes a `turns` row arriving as `unknown` (e.g. from a dynamic query),
  * validating each column's type before delegating to {@link decodeTurnRow}.
  *
- * @throws TuvrenPersistenceError `sqlite_backend_invalid_turn_row`.
+ * @throws {TuvrenPersistenceError} `sqlite_backend_invalid_turn_row`.
  */
 export const decodeUnknownTurnRow = (row: unknown): StoredTurn => {
   const label = "stored turn query row";

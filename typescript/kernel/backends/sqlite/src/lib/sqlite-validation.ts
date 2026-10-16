@@ -89,29 +89,27 @@ interface SqliteTableInfoPragmaRow {
 }
 
 /** Reads the applied-migration ledger (`backend_sqlite_migrations`), name-ordered. */
-export const loadAppliedMigrationNames = (db: Database.Database): string[] => {
-  return (
-    db
-      .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
-      .all() as SqliteMigrationRow[]
-  ).map((row) => row.name);
-};
+export const loadAppliedMigrationNames = (db: Database.Database): string[] =>
+  db
+    .prepare<[], SqliteMigrationRow>(
+      "SELECT name FROM backend_sqlite_migrations ORDER BY name"
+    )
+    .all()
+    .map((row) => row.name);
 
 /** Lists `sqlite_master` object names of the given `type`, name-ordered. */
 const loadSqliteMasterNames = (
   db: Database.Database,
   type: "index" | "table"
-): Set<string> => {
-  return new Set(
-    (
-      db
-        .prepare(
-          `SELECT name FROM sqlite_master WHERE type = '${type}' ORDER BY name`
-        )
-        .all() as { name: string }[]
-    ).map((row) => row.name)
+): Set<string> =>
+  new Set(
+    db
+      .prepare<[], { name: string }>(
+        `SELECT name FROM sqlite_master WHERE type = '${type}' ORDER BY name`
+      )
+      .all()
+      .map((row) => row.name)
   );
-};
 
 // Per-migration validators below come in two flavors, both called from
 // validateMigrationState: `*SchemaPresence` checks only that a migration's
@@ -200,8 +198,8 @@ const validatePendingSignalsAndAnnotationsSchemaPresence = (
   persistenceError: SqlitePersistenceErrorFactory
 ): void => {
   const tableInfo = db
-    .prepare("PRAGMA table_info(runs)")
-    .all() as SqliteTableInfoPragmaRow[];
+    .prepare<[], SqliteTableInfoPragmaRow>("PRAGMA table_info(runs)")
+    .all();
   const columns = new Map(tableInfo.map((column) => [column.name, column]));
 
   for (const columnName of PRE_PENDING_RUN_COLUMN_NAMES) {
@@ -255,11 +253,9 @@ const groupForeignKeyRows = (
   }
 
   return [...groupedRows.entries()]
-    .sort((left, right) => left[0] - right[0])
+    .toSorted((left, right) => left[0] - right[0])
     .map(([, group]) => {
-      const sortedGroup = [...group].sort(
-        (left, right) => left.seq - right.seq
-      );
+      const sortedGroup = group.toSorted((left, right) => left.seq - right.seq);
       const [firstRow] = sortedGroup;
       if (firstRow === undefined) {
         throw new Error("expected at least one foreign key row");
@@ -302,8 +298,8 @@ const areExpectedColumnsEqual = (
 const compareExpectedForeignKeys = (
   left: ExpectedSqliteForeignKeySchema,
   right: ExpectedSqliteForeignKeySchema
-): number => {
-  return [
+): number =>
+  [
     left.referencedTable,
     left.columns.join("\u0000"),
     left.referencedColumns.join("\u0000"),
@@ -316,7 +312,6 @@ const compareExpectedForeignKeys = (
         right.referencedColumns.join("\u0000"),
       ].join("\u0001")
     );
-};
 
 /** Order-sensitive equality of two string arrays. */
 const areStringArraysEqual = (
@@ -345,8 +340,8 @@ const areExpectedForeignKeysEqual = (
     return false;
   }
 
-  const normalizedLeft = [...left].sort(compareExpectedForeignKeys);
-  const normalizedRight = [...right].sort(compareExpectedForeignKeys);
+  const normalizedLeft = left.toSorted(compareExpectedForeignKeys);
+  const normalizedRight = right.toSorted(compareExpectedForeignKeys);
 
   for (const [index, leftForeignKey] of normalizedLeft.entries()) {
     const rightForeignKey = normalizedRight[index];
@@ -370,7 +365,7 @@ const areExpectedForeignKeysEqual = (
  * Validates one table's live column shape (via `PRAGMA table_info`) and
  * foreign keys (via `PRAGMA foreign_key_list`) against `expectedSchema`.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `sqlite_backend_applied_migration_schema_mismatch` on the first
  *   mismatch.
  */
@@ -382,8 +377,8 @@ const validateSqliteTableSchema = (
   persistenceError: SqlitePersistenceErrorFactory
 ): void => {
   const tableInfo = db
-    .prepare(`PRAGMA table_info(${tableName})`)
-    .all() as SqliteTableInfoPragmaRow[];
+    .prepare<[], SqliteTableInfoPragmaRow>(`PRAGMA table_info(${tableName})`)
+    .all();
   const actualColumns = tableInfo.map((column) => ({
     name: column.name,
     notNull: column.notnull === 1,
@@ -409,8 +404,10 @@ const validateSqliteTableSchema = (
   }
 
   const foreignKeyRows = db
-    .prepare(`PRAGMA foreign_key_list(${tableName})`)
-    .all() as SqliteForeignKeyPragmaRow[];
+    .prepare<[], SqliteForeignKeyPragmaRow>(
+      `PRAGMA foreign_key_list(${tableName})`
+    )
+    .all();
   const actualForeignKeys = groupForeignKeyRows(foreignKeyRows);
   if (
     !areExpectedForeignKeysEqual(actualForeignKeys, expectedSchema.foreignKeys)
@@ -444,15 +441,12 @@ const areExpectedIndexDefinitionsEqual = (
     tableName: string;
     unique: boolean;
   }
-): boolean => {
-  return (
-    left.origin === right.origin &&
-    left.partial === right.partial &&
-    left.tableName === right.tableName &&
-    left.unique === right.unique &&
-    areStringArraysEqual(left.columns, right.columns)
-  );
-};
+): boolean =>
+  left.origin === right.origin &&
+  left.partial === right.partial &&
+  left.tableName === right.tableName &&
+  left.unique === right.unique &&
+  areStringArraysEqual(left.columns, right.columns);
 
 /**
  * Validates one index's live definition (via `PRAGMA index_list` and
@@ -460,7 +454,7 @@ const areExpectedIndexDefinitionsEqual = (
  * be a complete (non-partial), user-created (`origin: "c"`) index over
  * exactly the expected columns in order, with the expected uniqueness.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `sqlite_backend_applied_migration_index_missing` when the index does
  *   not exist, or `sqlite_backend_applied_migration_index_mismatch` when its
  *   definition differs.
@@ -472,11 +466,12 @@ const validateSqliteIndexSchema = (
   expectedSchema: ExpectedSqliteIndexSchema,
   persistenceError: SqlitePersistenceErrorFactory
 ): void => {
-  const indexEntry = (
-    db
-      .prepare(`PRAGMA index_list(${expectedSchema.tableName})`)
-      .all() as SqliteIndexListPragmaRow[]
-  ).find((entry) => entry.name === indexName);
+  const indexEntry = db
+    .prepare<[], SqliteIndexListPragmaRow>(
+      `PRAGMA index_list(${expectedSchema.tableName})`
+    )
+    .all()
+    .find((entry) => entry.name === indexName);
 
   if (indexEntry === undefined) {
     throw persistenceError(
@@ -490,12 +485,10 @@ const validateSqliteIndexSchema = (
   }
 
   const actualIndex = {
-    columns: (
-      db
-        .prepare(`PRAGMA index_info(${indexName})`)
-        .all() as SqliteIndexInfoPragmaRow[]
-    )
-      .sort((left, right) => left.seqno - right.seqno)
+    columns: db
+      .prepare<[], SqliteIndexInfoPragmaRow>(`PRAGMA index_info(${indexName})`)
+      .all()
+      .toSorted((left, right) => left.seqno - right.seqno)
       .map((column) => column.name),
     origin: indexEntry.origin,
     partial: indexEntry.partial === 1,
@@ -675,8 +668,8 @@ const validateRunLivenessSchemaPresence = (
   persistenceError: SqlitePersistenceErrorFactory
 ): void => {
   const tableInfo = db
-    .prepare("PRAGMA table_info(runs)")
-    .all() as SqliteTableInfoPragmaRow[];
+    .prepare<[], SqliteTableInfoPragmaRow>("PRAGMA table_info(runs)")
+    .all();
   const columns = new Map(tableInfo.map((column) => [column.name, column]));
 
   for (const columnName of RUN_LIVENESS_RUN_COLUMN_NAMES) {
@@ -719,7 +712,7 @@ const validateRunLivenessSchemaPresence = (
  * matching the expected shape for that migration generation (older ledgers
  * are checked against the pre-migration table definitions, not the newest).
  *
- * @throws The injected persistence error with a `sqlite_backend_*` code on
+ * @throws {TuvrenPersistenceError} The injected persistence error with a `sqlite_backend_*` code on
  *   the first posture mismatch (e.g. `sqlite_backend_unknown_applied_migration`).
  */
 export const validateMigrationState = (

@@ -222,6 +222,7 @@ interface CoreRepositoryHelpers {
  * `context.writeTracker` so `validateTransactionWriteSet` can re-check
  * exactly the affected records before commit.
  */
+/* oxlint-disable promise-function-async -- Repository methods validate synchronously before returning fulfilled promises so transaction callbacks preserve their synchronous error contract. */
 export const createCoreRepositories = (
   context: CoreRepositoryContext,
   helpers: CoreRepositoryHelpers
@@ -535,6 +536,7 @@ export const createCoreRepositories = (
         assertTransactionActive();
         const seenCompositeKeys = new Set<string>();
 
+        /* oxlint-disable no-await-in-loop -- Validate and persist batch entries in input order so duplicate handling, timestamps, statements, and first failures remain deterministic. */
         for (const record of records) {
           const compositeKey = `${record.turnTreeHash}:${record.path}`;
           if (seenCompositeKeys.has(compositeKey)) {
@@ -618,6 +620,7 @@ export const createCoreRepositories = (
           );
           writeTracker.recordTurnTreePathWrite(record.turnTreeHash);
         }
+        /* oxlint-enable no-await-in-loop */
       },
     },
     turnTrees: {
@@ -785,3 +788,4 @@ export const createCoreRepositories = (
     },
   };
 };
+/* oxlint-enable promise-function-async */

@@ -52,9 +52,9 @@ const selectBoundedTurnNodeLineageProofInDatabase = (
   db: Database.Database,
   turnNodeHash: string,
   depth: number
-): SqliteTurnNodeLineageProofRow | undefined => {
-  return db
-    .prepare(
+): SqliteTurnNodeLineageProofRow | undefined =>
+  db
+    .prepare<[string, number], SqliteTurnNodeLineageProofRow>(
       `
         WITH RECURSIVE lineage(hash, previous_turn_node_hash, depth) AS (
           SELECT
@@ -78,8 +78,7 @@ const selectBoundedTurnNodeLineageProofInDatabase = (
         LIMIT 1
       `
     )
-    .get(turnNodeHash, depth) as SqliteTurnNodeLineageProofRow | undefined;
-};
+    .get(turnNodeHash, depth);
 
 // Database-backed counterpart to memory-backend-lineage.ts: the same lineage
 // invariants (thread membership, descent, span, active-run alignment, parent
@@ -99,7 +98,7 @@ const selectBoundedTurnNodeLineageProofInDatabase = (
  * module: they read `turn_node_lineage_roots` for O(1) comparisons only
  * after (or via) this check, instead of re-walking the full chain each time.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `sqlite_backend_turn_node_lineage_metadata_mismatch` when the recomputed
  *   proof disagrees with the stored root hash or depth.
  */
@@ -150,7 +149,7 @@ export const validateTurnNodeLineageMetadataInDatabase = (
  * the shared entry point every lineage-relationship check in this module
  * uses to obtain a metadata row it can trust.
  *
- * @throws The injected persistence error when the turn node does not exist or
+ * @throws {TuvrenPersistenceError} The injected persistence error when the turn node does not exist or
  *   its lineage metadata fails validation.
  */
 const ensureValidatedTurnNodeLineageMetadataInDatabase = (
@@ -171,13 +170,12 @@ const ensureValidatedTurnNodeLineageMetadataInDatabase = (
 export const getValidatedTurnNodeLineageMetadataInDatabase = (
   db: Database.Database,
   turnNodeHash: string
-): TurnNodeLineageMetadata => {
-  return ensureValidatedTurnNodeLineageMetadataInDatabase(
+): TurnNodeLineageMetadata =>
+  ensureValidatedTurnNodeLineageMetadataInDatabase(
     db,
     turnNodeHash,
     "record.previousTurnNodeHash"
   );
-};
 
 /**
  * Derives and inserts a new turn node's lineage metadata row: depth 0 rooted
@@ -225,7 +223,7 @@ export const insertTurnNodeLineageMetadata = (
  * `writeTracker.branchWrites` (falling back to a freshly captured baseline)
  * to identify branches this transaction newly created.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `sqlite_backend_backward_branch_move_missing_archive` when no matching
  *   archive branch is found.
  */
@@ -275,7 +273,7 @@ export const assertBackwardBranchMoveIsArchivedInDatabase = (
  * node — i.e. the node genuinely belongs to the thread rather than merely
  * existing in the database.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `sqlite_backend_thread_lineage_mismatch` when the roots disagree.
  */
 export const assertTurnNodeBelongsToThreadInDatabase = (
@@ -345,7 +343,7 @@ const isTurnNodeDescendantOfInDatabase = (
   }
 
   const row = db
-    .prepare(
+    .prepare<[number, string, string], { found: number }>(
       `
         WITH RECURSIVE lineage(hash, previous_turn_node_hash, remaining_depth) AS (
           SELECT hash, previous_turn_node_hash, ? AS remaining_depth
@@ -370,7 +368,7 @@ const isTurnNodeDescendantOfInDatabase = (
       descendantMetadata.depth - ancestorMetadata.depth,
       descendantTurnNodeHash,
       ancestorTurnNodeHash
-    ) as { found: number } | undefined;
+    );
 
   return row !== undefined;
 };
@@ -380,7 +378,7 @@ const isTurnNodeDescendantOfInDatabase = (
  * descendant of it along the `previousTurnNodeHash` chain. Used to keep turn
  * heads append-only: a turn's new head must extend its previous head.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `sqlite_backend_turn_node_not_descendant` when the ancestor is not on the
  *   descendant's lineage.
  */
@@ -440,7 +438,7 @@ const selectCandidateParentTurns = (
  * parent shares the branch it must be the immediately previous semantic turn,
  * not an earlier one.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `sqlite_backend_turn_parent_required`,
  *   `sqlite_backend_turn_parent_thread_mismatch`,
  *   `sqlite_backend_turn_parent_start_turn_node_mismatch`, or
@@ -601,7 +599,7 @@ export const classifyTurnNodeRelationshipInDatabase = (
  * after the turn's start node and at or before the turn's head node on the
  * same lineage.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `sqlite_backend_run_turn_span_mismatch`.
  */
 export const assertRunStartTurnNodeWithinTurnSpanInDatabase = (
@@ -658,7 +656,7 @@ export const assertRunStartTurnNodeWithinTurnSpanInDatabase = (
  * lies within the run's turn span (between the turn's start node and head
  * node, inclusive).
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `sqlite_backend_run_created_turn_node_outside_turn_span`.
  */
 export const assertRunCreatedTurnNodeWithinTurnSpanInDatabase = (
@@ -715,7 +713,7 @@ export const assertRunCreatedTurnNodeWithinTurnSpanInDatabase = (
  * unique hashes forming a contiguous `previousTurnNodeHash` chain that starts
  * immediately after the run's start turn node.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `sqlite_backend_run_created_turn_nodes_duplicate` or
  *   `sqlite_backend_run_created_turn_nodes_not_contiguous`.
  */
@@ -774,7 +772,7 @@ export const assertRunCreatedTurnNodesAreCanonicalInDatabase = (
  * branch head and the turn head, so an in-flight run can never drift from
  * the lineage position the branch and turn claim.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `sqlite_backend_active_run_branch_head_mismatch` or
  *   `sqlite_backend_active_run_turn_head_mismatch`.
  */
@@ -820,7 +818,7 @@ export const assertActiveRunHeadAlignmentInDatabase = (
  * (backward move, e.g. a rewind) of the current head. Lateral jumps onto an
  * unrelated lineage are rejected.
  *
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `sqlite_backend_branch_head_lateral_move`.
  */
 export const assertBranchHeadMoveIsLinearInDatabase = (
