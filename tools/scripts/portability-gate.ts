@@ -139,393 +139,14 @@ const EXECUTABLE_VERIFICATION_KINDS: ReadonlySet<string> = new Set([
   "vocabulary-check",
 ]);
 
-await main();
-
-async function main(): Promise<void> {
-  const inventoryLoad = await loadInventoryManifest();
-
-  if (inventoryLoad.failures.length > 0) {
-    console.error("portability gate failed:");
-    for (const failure of inventoryLoad.failures) {
-      console.error(`  [${failure.rule}] ${failure.message}`);
-    }
-    process.exitCode = 1;
-    return;
-  }
-
-  const inventory = inventoryLoad.manifest;
-
-  if (inventory === undefined) {
-    console.error(
-      "portability gate failed: inventory manifest could not be loaded"
-    );
-    process.exitCode = 1;
-    return;
-  }
-
-  const failures = await runPortabilityGate(inventory);
-
-  if (failures.length > 0) {
-    console.error("portability gate failed:");
-    for (const failure of failures) {
-      console.error(`  [${failure.rule}] ${failure.message}`);
-    }
-    process.exitCode = 1;
-    return;
-  }
-
-  console.log(
-    `portability gate passed (${inventory.expectedPackets.length} packets, ${inventory.standingExceptions.length} standing exceptions, ${inventory.requiredAuthoritativeSources.length} required sources)`
-  );
-}
-
-async function runPortabilityGate(
-  inventory: PortabilityInventoryManifest
-): Promise<PortabilityGateFailure[]> {
-  const failures: PortabilityGateFailure[] = [];
-  const onDiskManifests = await loadAllManifests();
-  const adapterManifests = await loadAllAdapterManifests();
-  const expectedPacketIds = new Set(
-    inventory.expectedPackets.map((entry) => entry.packetId)
-  );
-  const expectedPaths = new Set(
-    inventory.expectedPackets.map((entry) => entry.packetPath)
-  );
-
-  failures.push(
-    ...checkInventoryExists(),
-    ...(await checkInventoryMdJsonConsistency(inventory))
-  );
-  failures.push(
-    ...checkExpectedTopologyIsUnique(inventory),
-    ...checkExpectedPacketsPresent(
-      inventory,
-      expectedPacketIds,
-      onDiskManifests
-    )
-  );
-  failures.push(
-    ...checkNoUnexpectedPackets(
-      expectedPaths,
-      expectedPacketIds,
-      onDiskManifests
-    ),
-    ...checkPacketIdUniqueness(onDiskManifests)
-  );
-  failures.push(
-    ...checkExecutableVerification(onDiskManifests),
-    ...checkStandingExceptions(inventory, onDiskManifests)
-  );
-  failures.push(
-    ...checkRequiredSources(inventory, onDiskManifests),
-    ...checkAdapterCoverage(onDiskManifests, adapterManifests)
-  );
-  failures.push(
-    ...(await checkPlanApplicabilityHasAdapter(
-      onDiskManifests,
-      adapterManifests
-    )),
-    ...(await checkAdapterCapabilityCoveredByPlan(adapterManifests))
-  );
-
-  return failures;
-}
-
-interface InventoryLoadResult {
-  failures: PortabilityGateFailure[];
-  manifest: PortabilityInventoryManifest | undefined;
-}
-
-async function loadInventoryManifest(): Promise<InventoryLoadResult> {
-  if (!existsSync(INVENTORY_MANIFEST_PATH)) {
-    return {
-      failures: [
-        {
-          message: `machine-readable inventory companion missing at ${relative(REPO_ROOT, INVENTORY_MANIFEST_PATH)}; this JSON is the gate's source of truth and must accompany the human inventory MD`,
-          rule: "inventory-manifest",
-        },
-      ],
-      manifest: undefined,
-    };
-  }
-
-  let parsed: unknown;
-
-  try {
-    parsed = JSON.parse(await readFile(INVENTORY_MANIFEST_PATH, "utf-8"));
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    return {
-      failures: [
-        {
-          message: `inventory manifest at ${relative(REPO_ROOT, INVENTORY_MANIFEST_PATH)} is not parseable JSON: ${detail}`,
-          rule: "inventory-manifest",
-        },
-      ],
-      manifest: undefined,
-    };
-  }
-
-  const validation = validateInventoryManifestShape(parsed);
-
-  if (validation.failures.length > 0) {
-    return { failures: validation.failures, manifest: undefined };
-  }
-
-  return { failures: [], manifest: validation.manifest };
-}
-
-interface InventoryShapeValidation {
-  failures: PortabilityGateFailure[];
-  manifest: PortabilityInventoryManifest | undefined;
-}
-
-function validateInventoryManifestShape(
-  raw: unknown
-): InventoryShapeValidation {
-  const failures: PortabilityGateFailure[] = [];
-
-  if (!isRecord(raw)) {
-    return {
-      failures: [
-        {
-          message:
-            "inventory manifest must be a JSON object with manifestId, manifestVersion, expectedPackets, standingExceptions, and requiredAuthoritativeSources",
-          rule: "inventory-manifest",
-        },
-      ],
-      manifest: undefined,
-    };
-  }
-
-  if (raw.manifestId !== INVENTORY_MANIFEST_ID) {
-    failures.push({
-      message: `inventory manifest manifestId must equal "${INVENTORY_MANIFEST_ID}"; got ${JSON.stringify(raw.manifestId)}`,
-      rule: "inventory-manifest",
-    });
-  }
-
-  if (typeof raw.manifestVersion !== "string") {
-    failures.push({
-      message: "inventory manifest manifestVersion must be a string",
-      rule: "inventory-manifest",
-    });
-  }
-
-  const expectedPackets = validateExpectedPackets(raw.expectedPackets);
-  failures.push(...expectedPackets.failures);
-
-  const standingExceptions = validateStandingExceptions(raw.standingExceptions);
-  failures.push(...standingExceptions.failures);
-
-  const requiredSources = validateRequiredSources(
-    raw.requiredAuthoritativeSources
-  );
-  failures.push(...requiredSources.failures);
-
-  if (failures.length > 0) {
-    return { failures, manifest: undefined };
-  }
-
-  return {
-    failures,
-    manifest: {
-      expectedPackets: expectedPackets.entries,
-      manifestId: raw.manifestId as string,
-      manifestVersion: raw.manifestVersion as string,
-      requiredAuthoritativeSources: requiredSources.entries,
-      standingExceptions: standingExceptions.entries,
-    },
-  };
-}
-
-function validateExpectedPackets(value: unknown): {
-  entries: InventoryExpectedPacket[];
-  failures: PortabilityGateFailure[];
-} {
-  const failures: PortabilityGateFailure[] = [];
-  const entries: InventoryExpectedPacket[] = [];
-
-  if (!Array.isArray(value)) {
-    failures.push({
-      message: "inventory manifest expectedPackets must be an array",
-      rule: "inventory-manifest",
-    });
-    return { entries, failures };
-  }
-
-  for (const [index, entry] of value.entries()) {
-    if (!isRecord(entry)) {
-      failures.push({
-        message: `expectedPackets[${index}] must be an object`,
-        rule: "inventory-manifest",
-      });
-      continue;
-    }
-
-    if (typeof entry.packetId !== "string") {
-      failures.push({
-        message: `expectedPackets[${index}].packetId must be a string`,
-        rule: "inventory-manifest",
-      });
-      continue;
-    }
-
-    if (typeof entry.packetPath !== "string") {
-      failures.push({
-        message: `expectedPackets[${index}].packetPath must be a string`,
-        rule: "inventory-manifest",
-      });
-      continue;
-    }
-
-    if (
-      typeof entry.classification !== "string" ||
-      !ALLOWED_CLASSIFICATIONS.has(entry.classification)
-    ) {
-      failures.push({
-        message: `expectedPackets[${index}].classification must be one of ${[...ALLOWED_CLASSIFICATIONS].join(", ")}`,
-        rule: "inventory-manifest",
-      });
-      continue;
-    }
-
-    entries.push({
-      classification: entry.classification as
-        | "portable"
-        | "interop"
-        | "telemetry",
-      inventorySection:
-        typeof entry.inventorySection === "string"
-          ? entry.inventorySection
-          : undefined,
-      packetId: entry.packetId,
-      packetPath: entry.packetPath,
-    });
-  }
-
-  return { entries, failures };
-}
-
-function validateStandingExceptions(value: unknown): {
-  entries: InventoryStandingException[];
-  failures: PortabilityGateFailure[];
-} {
-  const failures: PortabilityGateFailure[] = [];
-  const entries: InventoryStandingException[] = [];
-
-  if (!Array.isArray(value)) {
-    failures.push({
-      message: "inventory manifest standingExceptions must be an array",
-      rule: "inventory-manifest",
-    });
-    return { entries, failures };
-  }
-
-  for (const [index, entry] of value.entries()) {
-    if (!isRecord(entry)) {
-      failures.push({
-        message: `standingExceptions[${index}] must be an object`,
-        rule: "inventory-manifest",
-      });
-      continue;
-    }
-
-    if (typeof entry.label !== "string") {
-      failures.push({
-        message: `standingExceptions[${index}].label must be a string`,
-        rule: "inventory-manifest",
-      });
-      continue;
-    }
-
-    if (
-      !(
-        Array.isArray(entry.forbiddenSurfaceNames) &&
-        entry.forbiddenSurfaceNames.every((name) => typeof name === "string")
-      )
-    ) {
-      failures.push({
-        message: `standingExceptions[${index}].forbiddenSurfaceNames must be a non-empty array of strings`,
-        rule: "inventory-manifest",
-      });
-      continue;
-    }
-
-    entries.push({
-      forbiddenSurfaceNames: entry.forbiddenSurfaceNames,
-      inventorySection:
-        typeof entry.inventorySection === "string"
-          ? entry.inventorySection
-          : undefined,
-      label: entry.label,
-    });
-  }
-
-  return { entries, failures };
-}
-
-function validateRequiredSources(value: unknown): {
-  entries: InventoryRequiredSource[];
-  failures: PortabilityGateFailure[];
-} {
-  const failures: PortabilityGateFailure[] = [];
-  const entries: InventoryRequiredSource[] = [];
-
-  if (!Array.isArray(value)) {
-    failures.push({
-      message:
-        "inventory manifest requiredAuthoritativeSources must be an array",
-      rule: "inventory-manifest",
-    });
-    return { entries, failures };
-  }
-
-  for (const [index, entry] of value.entries()) {
-    if (!isRecord(entry)) {
-      failures.push({
-        message: `requiredAuthoritativeSources[${index}] must be an object`,
-        rule: "inventory-manifest",
-      });
-      continue;
-    }
-
-    if (
-      typeof entry.packetId !== "string" ||
-      typeof entry.sourcePath !== "string" ||
-      typeof entry.rationale !== "string" ||
-      typeof entry.sourceFormat !== "string"
-    ) {
-      failures.push({
-        message: `requiredAuthoritativeSources[${index}] must declare string packetId, sourcePath, rationale, and sourceFormat`,
-        rule: "inventory-manifest",
-      });
-      continue;
-    }
-
-    entries.push({
-      inventorySection:
-        typeof entry.inventorySection === "string"
-          ? entry.inventorySection
-          : undefined,
-      packetId: entry.packetId,
-      rationale: entry.rationale,
-      sourceFormat: entry.sourceFormat,
-      sourcePath: entry.sourcePath,
-    });
-  }
-
-  return { entries, failures };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
+const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null;
-}
+};
 
-function checkAdapterCoverage(
+const checkAdapterCoverage = (
   onDisk: ReadonlyMap<string, AuthorityPacketManifest>,
   adapterManifests: ReadonlyMap<string, AdapterManifest>
-): PortabilityGateFailure[] {
+): PortabilityGateFailure[] => {
   // A packet that declares `conformancePlans` must be referenced by *every*
   // adapter manifest of the matching boundary, not just one. The shared
   // runner discovers plans per adapter manifest (`tools/conformance/harness/
@@ -583,11 +204,11 @@ function checkAdapterCoverage(
   }
 
   return failures;
-}
+};
 
-function checkExpectedTopologyIsUnique(
+const checkExpectedTopologyIsUnique = (
   inventory: PortabilityInventoryManifest
-): PortabilityGateFailure[] {
+): PortabilityGateFailure[] => {
   // The inventory manifest is the gate's source of truth, so a typo or
   // copy-paste mistake that duplicates a packetId or packetPath would silently
   // narrow what we enforce. Catch that here rather than letting it propagate.
@@ -616,64 +237,12 @@ function checkExpectedTopologyIsUnique(
   }
 
   return failures;
-}
+};
 
-async function loadAllManifests(): Promise<
-  Map<string, AuthorityPacketManifest>
-> {
-  const manifests = new Map<string, AuthorityPacketManifest>();
-  const paths = await findFilesByName(SPEC_ROOT, MANIFEST_FILE_NAME);
-
-  for (const manifestPath of paths) {
-    const manifest = JSON.parse(
-      await readFile(manifestPath, "utf-8")
-    ) as AuthorityPacketManifest;
-    manifests.set(relative(REPO_ROOT, manifestPath), manifest);
-  }
-
-  return manifests;
-}
-
-async function loadAllAdapterManifests(): Promise<
-  Map<string, AdapterManifest>
-> {
-  const manifests = new Map<string, AdapterManifest>();
-  const adapterRoots = [
-    TYPESCRIPT_ROOT,
-    RUST_ROOT,
-    GO_ROOT,
-    PYTHON_ROOT,
-    DART_ROOT,
-  ].filter((root) => existsSync(root));
-  const paths = (
-    await Promise.all(
-      adapterRoots.map(async (root) =>
-        findFiles(root, (name) => ADAPTER_MANIFEST_NAME_PATTERN.test(name))
-      )
-    )
-  ).flat();
-
-  for (const manifestPath of paths) {
-    const manifest = JSON.parse(
-      await readFile(manifestPath, "utf-8")
-    ) as AdapterManifest;
-    manifests.set(relative(REPO_ROOT, manifestPath), manifest);
-  }
-
-  return manifests;
-}
-
-async function findFilesByName(
-  directory: string,
-  fileName: string
-): Promise<string[]> {
-  return await findFiles(directory, (name) => name === fileName);
-}
-
-async function findFiles(
+const findFiles = async (
   directory: string,
   matches: (fileName: string) => boolean
-): Promise<string[]> {
+): Promise<string[]> => {
   if (!existsSync(directory)) {
     return [];
   }
@@ -695,9 +264,9 @@ async function findFiles(
   }
 
   return paths.sort();
-}
+};
 
-function checkInventoryExists(): PortabilityGateFailure[] {
+const checkInventoryExists = (): PortabilityGateFailure[] => {
   if (existsSync(INVENTORY_PATH)) {
     return [];
   }
@@ -708,11 +277,11 @@ function checkInventoryExists(): PortabilityGateFailure[] {
       rule: "inventory-presence",
     },
   ];
-}
+};
 
-async function checkInventoryMdJsonConsistency(
+const checkInventoryMdJsonConsistency = async (
   inventory: PortabilityInventoryManifest
-): Promise<PortabilityGateFailure[]> {
+): Promise<PortabilityGateFailure[]> => {
   // The previous version of this gate only checked that the human MD inventory
   // existed on disk. That made the JSON sidecar the gate's source of truth but
   // left the MD free to silently drift — a reviewer could rename a packet or
@@ -786,12 +355,571 @@ async function checkInventoryMdJsonConsistency(
   }
 
   return failures;
-}
+};
 
-async function checkPlanApplicabilityHasAdapter(
+const toStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((entry): entry is string => typeof entry === "string");
+};
+
+const isAdapterCapability = (
+  adapter: AdapterManifest,
+  capability: string
+): boolean => {
+  return adapter.capabilities?.includes(capability) ?? false;
+};
+
+const checkExpectedPacketsPresent = (
+  inventory: PortabilityInventoryManifest,
+  expectedPacketIds: ReadonlySet<string>,
+  onDisk: ReadonlyMap<string, AuthorityPacketManifest>
+): PortabilityGateFailure[] => {
+  const failures: PortabilityGateFailure[] = [];
+  const seenPacketIds = new Set(
+    [...onDisk.values()].map((manifest) => manifest.packetId)
+  );
+
+  for (const expected of inventory.expectedPackets) {
+    const manifest = onDisk.get(expected.packetPath);
+
+    if (manifest === undefined) {
+      failures.push({
+        message: `expected packet ${expected.packetId} missing at ${expected.packetPath}`,
+        rule: "expected-packet-present",
+      });
+      continue;
+    }
+
+    if (manifest.packetId !== expected.packetId) {
+      failures.push({
+        message: `packet at ${expected.packetPath} declares packetId ${manifest.packetId}; inventory expects ${expected.packetId}`,
+        rule: "expected-packet-present",
+      });
+    }
+  }
+
+  for (const expected of expectedPacketIds) {
+    if (!seenPacketIds.has(expected)) {
+      failures.push({
+        message: `inventory expects packetId ${expected} but no on-disk packet declares it`,
+        rule: "expected-packet-present",
+      });
+    }
+  }
+
+  return failures;
+};
+
+const checkNoUnexpectedPackets = (
+  expectedPaths: ReadonlySet<string>,
+  expectedPacketIds: ReadonlySet<string>,
+  onDisk: ReadonlyMap<string, AuthorityPacketManifest>
+): PortabilityGateFailure[] => {
+  const failures: PortabilityGateFailure[] = [];
+
+  for (const [path, manifest] of onDisk.entries()) {
+    // The path check is the primary guard: it catches an extra
+    // authority-packet.json planted at any location that the inventory does
+    // not name, even when that file reuses an already-expected packetId.
+    // The packetId check then catches any new manifest that lands at an
+    // expected-looking path but declares a fresh portable surface the
+    // inventory has not promoted.
+    if (!expectedPaths.has(path)) {
+      failures.push({
+        message: `authority-packet.json at ${path} is not listed in EXPECTED_PACKET_TOPOLOGY; revise the AL inventory and the expected-topology table together before adding new cross-implementation surfaces (declared packetId: ${manifest.packetId})`,
+        rule: "no-unexpected-packets",
+      });
+      continue;
+    }
+
+    if (!expectedPacketIds.has(manifest.packetId)) {
+      failures.push({
+        message: `packet ${manifest.packetId} at ${path} is not listed in the AL inventory's expected topology; revise the inventory and EXPECTED_PACKET_TOPOLOGY together before adding new cross-implementation surfaces`,
+        rule: "no-unexpected-packets",
+      });
+    }
+  }
+
+  return failures;
+};
+
+const checkPacketIdUniqueness = (
+  onDisk: ReadonlyMap<string, AuthorityPacketManifest>
+): PortabilityGateFailure[] => {
+  // Two manifests at different paths must not share the same packetId, or
+  // tooling that resolves a packet by id would silently pick whichever file
+  // wins the directory walk. This guard catches that even when both paths
+  // happen to be in `expectedPaths` (e.g., a copy-paste at one expected
+  // location of another expected packet's id).
+  const failures: PortabilityGateFailure[] = [];
+  const pathsByPacketId = new Map<string, string[]>();
+
+  for (const [path, manifest] of onDisk.entries()) {
+    const existing = pathsByPacketId.get(manifest.packetId);
+
+    if (existing === undefined) {
+      pathsByPacketId.set(manifest.packetId, [path]);
+    } else {
+      existing.push(path);
+    }
+  }
+
+  for (const [packetId, paths] of pathsByPacketId.entries()) {
+    if (paths.length > 1) {
+      failures.push({
+        message: `packetId ${packetId} is declared at multiple paths: ${paths.sort().join(", ")}`,
+        rule: "packet-id-uniqueness",
+      });
+    }
+  }
+
+  return failures;
+};
+
+const checkExecutableVerification = (
+  onDisk: ReadonlyMap<string, AuthorityPacketManifest>
+): PortabilityGateFailure[] => {
+  const failures: PortabilityGateFailure[] = [];
+
+  for (const [path, manifest] of onDisk.entries()) {
+    const executable = manifest.verificationPaths.some((verificationPath) =>
+      EXECUTABLE_VERIFICATION_KINDS.has(verificationPath.kind)
+    );
+
+    if (!executable) {
+      failures.push({
+        message: `packet ${manifest.packetId} at ${path} has no executable verification path; portable packets require schema-validation, openapi-validation, conformance-plan, interop-smoke, or vocabulary-check`,
+        rule: "executable-verification",
+      });
+    }
+  }
+
+  return failures;
+};
+
+const checkStandingExceptions = (
+  inventory: PortabilityInventoryManifest,
+  onDisk: ReadonlyMap<string, AuthorityPacketManifest>
+): PortabilityGateFailure[] => {
+  const failures: PortabilityGateFailure[] = [];
+
+  for (const exception of inventory.standingExceptions) {
+    const forbidden = new Set(exception.forbiddenSurfaceNames);
+
+    for (const [path, manifest] of onDisk.entries()) {
+      if (forbidden.has(manifest.surface)) {
+        failures.push({
+          message: `packet ${manifest.packetId} at ${path} owns surface "${manifest.surface}" which is the Epic AL standing exception ${exception.label}; standing exceptions may not be promoted to portable authority without an explicit Tasks.md/TechSpec revision`,
+          rule: "standing-exceptions-unchanged",
+        });
+      }
+    }
+  }
+
+  return failures;
+};
+
+const checkRequiredSources = (
+  inventory: PortabilityInventoryManifest,
+  onDisk: ReadonlyMap<string, AuthorityPacketManifest>
+): PortabilityGateFailure[] => {
+  const failures: PortabilityGateFailure[] = [];
+  const manifestsByPacketId = new Map<string, AuthorityPacketManifest>();
+
+  for (const manifest of onDisk.values()) {
+    manifestsByPacketId.set(manifest.packetId, manifest);
+  }
+
+  for (const required of inventory.requiredAuthoritativeSources) {
+    if (!existsSync(resolve(REPO_ROOT, required.sourcePath))) {
+      failures.push({
+        message: `${required.rationale}: required source ${required.sourcePath} is missing on disk`,
+        rule: "required-sources",
+      });
+      continue;
+    }
+
+    const manifest = manifestsByPacketId.get(required.packetId);
+
+    if (manifest === undefined) {
+      failures.push({
+        message: `${required.rationale}: packet ${required.packetId} is not present on disk; cannot verify source registration`,
+        rule: "required-sources",
+      });
+      continue;
+    }
+
+    const declaredSource = manifest.authoritativeSources.find(
+      (source) => source.path === required.sourcePath
+    );
+
+    if (declaredSource === undefined) {
+      failures.push({
+        message: `${required.rationale}: ${required.sourcePath} exists on disk but is not declared under ${required.packetId}.authoritativeSources`,
+        rule: "required-sources",
+      });
+      continue;
+    }
+
+    // Verifying the source-registration format catches the case where a
+    // packet author registers a required source under the wrong format
+    // (e.g. tagging the kernel CDDL grammar as `text` instead of `cddl`,
+    // or the SSE TypeSpec as `typespec` after a refactor that should have
+    // moved it to a new format). Tooling that walks
+    // `authoritativeSources[*].format` would silently skip the
+    // mis-registered source, so the portability claim could pass while
+    // the named authority no longer routes through its declared
+    // verification path.
+    if (declaredSource.format !== required.sourceFormat) {
+      failures.push({
+        message: `${required.rationale}: ${required.sourcePath} is registered under ${required.packetId}.authoritativeSources with format "${declaredSource.format}"; inventory requires format "${required.sourceFormat}"`,
+        rule: "required-sources",
+      });
+    }
+  }
+
+  return failures;
+};
+
+const validateExpectedPackets = (
+  value: unknown
+): {
+  entries: InventoryExpectedPacket[];
+  failures: PortabilityGateFailure[];
+} => {
+  const failures: PortabilityGateFailure[] = [];
+  const entries: InventoryExpectedPacket[] = [];
+
+  if (!Array.isArray(value)) {
+    failures.push({
+      message: "inventory manifest expectedPackets must be an array",
+      rule: "inventory-manifest",
+    });
+    return { entries, failures };
+  }
+
+  for (const [index, entry] of value.entries()) {
+    if (!isRecord(entry)) {
+      failures.push({
+        message: `expectedPackets[${index}] must be an object`,
+        rule: "inventory-manifest",
+      });
+      continue;
+    }
+
+    if (typeof entry.packetId !== "string") {
+      failures.push({
+        message: `expectedPackets[${index}].packetId must be a string`,
+        rule: "inventory-manifest",
+      });
+      continue;
+    }
+
+    if (typeof entry.packetPath !== "string") {
+      failures.push({
+        message: `expectedPackets[${index}].packetPath must be a string`,
+        rule: "inventory-manifest",
+      });
+      continue;
+    }
+
+    if (
+      typeof entry.classification !== "string" ||
+      !ALLOWED_CLASSIFICATIONS.has(entry.classification)
+    ) {
+      failures.push({
+        message: `expectedPackets[${index}].classification must be one of ${[...ALLOWED_CLASSIFICATIONS].join(", ")}`,
+        rule: "inventory-manifest",
+      });
+      continue;
+    }
+
+    entries.push({
+      classification: entry.classification as
+        | "portable"
+        | "interop"
+        | "telemetry",
+      inventorySection:
+        typeof entry.inventorySection === "string"
+          ? entry.inventorySection
+          : undefined,
+      packetId: entry.packetId,
+      packetPath: entry.packetPath,
+    });
+  }
+
+  return { entries, failures };
+};
+
+const validateStandingExceptions = (
+  value: unknown
+): {
+  entries: InventoryStandingException[];
+  failures: PortabilityGateFailure[];
+} => {
+  const failures: PortabilityGateFailure[] = [];
+  const entries: InventoryStandingException[] = [];
+
+  if (!Array.isArray(value)) {
+    failures.push({
+      message: "inventory manifest standingExceptions must be an array",
+      rule: "inventory-manifest",
+    });
+    return { entries, failures };
+  }
+
+  for (const [index, entry] of value.entries()) {
+    if (!isRecord(entry)) {
+      failures.push({
+        message: `standingExceptions[${index}] must be an object`,
+        rule: "inventory-manifest",
+      });
+      continue;
+    }
+
+    if (typeof entry.label !== "string") {
+      failures.push({
+        message: `standingExceptions[${index}].label must be a string`,
+        rule: "inventory-manifest",
+      });
+      continue;
+    }
+
+    if (
+      !(
+        Array.isArray(entry.forbiddenSurfaceNames) &&
+        entry.forbiddenSurfaceNames.every((name) => typeof name === "string")
+      )
+    ) {
+      failures.push({
+        message: `standingExceptions[${index}].forbiddenSurfaceNames must be a non-empty array of strings`,
+        rule: "inventory-manifest",
+      });
+      continue;
+    }
+
+    entries.push({
+      forbiddenSurfaceNames: entry.forbiddenSurfaceNames,
+      inventorySection:
+        typeof entry.inventorySection === "string"
+          ? entry.inventorySection
+          : undefined,
+      label: entry.label,
+    });
+  }
+
+  return { entries, failures };
+};
+
+const validateRequiredSources = (
+  value: unknown
+): {
+  entries: InventoryRequiredSource[];
+  failures: PortabilityGateFailure[];
+} => {
+  const failures: PortabilityGateFailure[] = [];
+  const entries: InventoryRequiredSource[] = [];
+
+  if (!Array.isArray(value)) {
+    failures.push({
+      message:
+        "inventory manifest requiredAuthoritativeSources must be an array",
+      rule: "inventory-manifest",
+    });
+    return { entries, failures };
+  }
+
+  for (const [index, entry] of value.entries()) {
+    if (!isRecord(entry)) {
+      failures.push({
+        message: `requiredAuthoritativeSources[${index}] must be an object`,
+        rule: "inventory-manifest",
+      });
+      continue;
+    }
+
+    if (
+      typeof entry.packetId !== "string" ||
+      typeof entry.sourcePath !== "string" ||
+      typeof entry.rationale !== "string" ||
+      typeof entry.sourceFormat !== "string"
+    ) {
+      failures.push({
+        message: `requiredAuthoritativeSources[${index}] must declare string packetId, sourcePath, rationale, and sourceFormat`,
+        rule: "inventory-manifest",
+      });
+      continue;
+    }
+
+    entries.push({
+      inventorySection:
+        typeof entry.inventorySection === "string"
+          ? entry.inventorySection
+          : undefined,
+      packetId: entry.packetId,
+      rationale: entry.rationale,
+      sourceFormat: entry.sourceFormat,
+      sourcePath: entry.sourcePath,
+    });
+  }
+
+  return { entries, failures };
+};
+
+const loadAllAdapterManifests = async (): Promise<
+  Map<string, AdapterManifest>
+> => {
+  const manifests = new Map<string, AdapterManifest>();
+  const adapterRoots = [
+    TYPESCRIPT_ROOT,
+    RUST_ROOT,
+    GO_ROOT,
+    PYTHON_ROOT,
+    DART_ROOT,
+  ].filter((root) => existsSync(root));
+  const paths = (
+    await Promise.all(
+      adapterRoots.map(async (root) =>
+        findFiles(root, (name) => ADAPTER_MANIFEST_NAME_PATTERN.test(name))
+      )
+    )
+  ).flat();
+
+  for (const manifestPath of paths) {
+    const manifest = JSON.parse(
+      await readFile(manifestPath, "utf-8")
+    ) as AdapterManifest;
+    manifests.set(relative(REPO_ROOT, manifestPath), manifest);
+  }
+
+  return manifests;
+};
+
+const findFilesByName = async (
+  directory: string,
+  fileName: string
+): Promise<string[]> => {
+  return await findFiles(directory, (name) => name === fileName);
+};
+
+const readPlanApplicabilityCapabilities = async (
+  planPath: string
+): Promise<readonly string[]> => {
+  // Returns the union of plan-level applicability capabilities and every
+  // check-level `capabilities` array. The shared runner decides applicability
+  // from that exact union (`tools/conformance/harness/run.ts:663-665`), so an
+  // earlier gate version that only read `plan.applicability.capabilities`
+  // would miss check-scoped capability gaps — a check tagged with a
+  // capability no adapter advertises would run as `nonApplicable` forever
+  // and the portability claim would silently regress without the gate
+  // flagging it.
+  const absolutePath = resolve(REPO_ROOT, planPath);
+
+  if (!existsSync(absolutePath)) {
+    return [];
+  }
+
+  const plan = JSON.parse(await readFile(absolutePath, "utf-8")) as {
+    applicability?: { capabilities?: unknown };
+    checks?: { capabilities?: unknown }[];
+  };
+  const collected = new Set<string>();
+
+  for (const capability of toStringArray(plan.applicability?.capabilities)) {
+    collected.add(capability);
+  }
+
+  for (const check of plan.checks ?? []) {
+    for (const capability of toStringArray(check.capabilities)) {
+      collected.add(capability);
+    }
+  }
+
+  return [...collected];
+};
+
+const validateInventoryManifestShape = (
+  raw: unknown
+): InventoryShapeValidation => {
+  const failures: PortabilityGateFailure[] = [];
+
+  if (!isRecord(raw)) {
+    return {
+      failures: [
+        {
+          message:
+            "inventory manifest must be a JSON object with manifestId, manifestVersion, expectedPackets, standingExceptions, and requiredAuthoritativeSources",
+          rule: "inventory-manifest",
+        },
+      ],
+      manifest: undefined,
+    };
+  }
+
+  if (raw.manifestId !== INVENTORY_MANIFEST_ID) {
+    failures.push({
+      message: `inventory manifest manifestId must equal "${INVENTORY_MANIFEST_ID}"; got ${JSON.stringify(raw.manifestId)}`,
+      rule: "inventory-manifest",
+    });
+  }
+
+  if (typeof raw.manifestVersion !== "string") {
+    failures.push({
+      message: "inventory manifest manifestVersion must be a string",
+      rule: "inventory-manifest",
+    });
+  }
+
+  const expectedPackets = validateExpectedPackets(raw.expectedPackets);
+  failures.push(...expectedPackets.failures);
+
+  const standingExceptions = validateStandingExceptions(raw.standingExceptions);
+  failures.push(...standingExceptions.failures);
+
+  const requiredSources = validateRequiredSources(
+    raw.requiredAuthoritativeSources
+  );
+  failures.push(...requiredSources.failures);
+
+  if (failures.length > 0) {
+    return { failures, manifest: undefined };
+  }
+
+  return {
+    failures,
+    manifest: {
+      expectedPackets: expectedPackets.entries,
+      manifestId: raw.manifestId as string,
+      manifestVersion: raw.manifestVersion as string,
+      requiredAuthoritativeSources: requiredSources.entries,
+      standingExceptions: standingExceptions.entries,
+    },
+  };
+};
+
+const loadAllManifests = async (): Promise<
+  Map<string, AuthorityPacketManifest>
+> => {
+  const manifests = new Map<string, AuthorityPacketManifest>();
+  const paths = await findFilesByName(SPEC_ROOT, MANIFEST_FILE_NAME);
+
+  for (const manifestPath of paths) {
+    const manifest = JSON.parse(
+      await readFile(manifestPath, "utf-8")
+    ) as AuthorityPacketManifest;
+    manifests.set(relative(REPO_ROOT, manifestPath), manifest);
+  }
+
+  return manifests;
+};
+
+const checkPlanApplicabilityHasAdapter = async (
   onDisk: ReadonlyMap<string, AuthorityPacketManifest>,
   adapterManifests: ReadonlyMap<string, AdapterManifest>
-): Promise<PortabilityGateFailure[]> {
+): Promise<PortabilityGateFailure[]> => {
   // A conformance plan that names capabilities under `applicability.capabilities`
   // is only reachable as applicable evidence when at least one adapter in the
   // packet's boundary advertises every one of those capabilities. If no
@@ -850,55 +978,72 @@ async function checkPlanApplicabilityHasAdapter(
   }
 
   return failures;
-}
+};
 
-async function readPlanApplicabilityCapabilities(
-  planPath: string
-): Promise<readonly string[]> {
-  // Returns the union of plan-level applicability capabilities and every
-  // check-level `capabilities` array. The shared runner decides applicability
-  // from that exact union (`tools/conformance/harness/run.ts:663-665`), so an
-  // earlier gate version that only read `plan.applicability.capabilities`
-  // would miss check-scoped capability gaps — a check tagged with a
-  // capability no adapter advertises would run as `nonApplicable` forever
-  // and the portability claim would silently regress without the gate
-  // flagging it.
-  const absolutePath = resolve(REPO_ROOT, planPath);
-
-  if (!existsSync(absolutePath)) {
-    return [];
+const loadInventoryManifest = async (): Promise<InventoryLoadResult> => {
+  if (!existsSync(INVENTORY_MANIFEST_PATH)) {
+    return {
+      failures: [
+        {
+          message: `machine-readable inventory companion missing at ${relative(REPO_ROOT, INVENTORY_MANIFEST_PATH)}; this JSON is the gate's source of truth and must accompany the human inventory MD`,
+          rule: "inventory-manifest",
+        },
+      ],
+      manifest: undefined,
+    };
   }
 
-  const plan = JSON.parse(await readFile(absolutePath, "utf-8")) as {
-    applicability?: { capabilities?: unknown };
-    checks?: { capabilities?: unknown }[];
-  };
-  const collected = new Set<string>();
+  let parsed: unknown;
 
-  for (const capability of toStringArray(plan.applicability?.capabilities)) {
-    collected.add(capability);
+  try {
+    parsed = JSON.parse(await readFile(INVENTORY_MANIFEST_PATH, "utf-8"));
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    return {
+      failures: [
+        {
+          message: `inventory manifest at ${relative(REPO_ROOT, INVENTORY_MANIFEST_PATH)} is not parseable JSON: ${detail}`,
+          rule: "inventory-manifest",
+        },
+      ],
+      manifest: undefined,
+    };
   }
 
-  for (const check of plan.checks ?? []) {
-    for (const capability of toStringArray(check.capabilities)) {
-      collected.add(capability);
+  const validation = validateInventoryManifestShape(parsed);
+
+  if (validation.failures.length > 0) {
+    return { failures: validation.failures, manifest: undefined };
+  }
+
+  return { failures: [], manifest: validation.manifest };
+};
+
+const collectAllPlanCapabilities = async (): Promise<Set<string>> => {
+  // Walk every authority packet's `conformancePlans` rather than relying on
+  // a directory naming convention. That keeps the coverage inventory aligned
+  // with what `tools/conformance/plan-compiler/index.ts` actually compiles —
+  // a plan file outside a packet's reach wouldn't be measured by any lane,
+  // so its capabilities don't count as coverage either.
+  const capabilities = new Set<string>();
+  const packets = await loadAllManifests();
+
+  for (const manifest of packets.values()) {
+    for (const plan of manifest.conformancePlans ?? []) {
+      for (const capability of await readPlanApplicabilityCapabilities(
+        plan.path
+      )) {
+        capabilities.add(capability);
+      }
     }
   }
 
-  return [...collected];
-}
+  return capabilities;
+};
 
-function toStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.filter((entry): entry is string => typeof entry === "string");
-}
-
-async function checkAdapterCapabilityCoveredByPlan(
+const checkAdapterCapabilityCoveredByPlan = async (
   adapterManifests: ReadonlyMap<string, AdapterManifest>
-): Promise<PortabilityGateFailure[]> {
+): Promise<PortabilityGateFailure[]> => {
   // Every adapter-advertised capability must appear in at least one plan
   // check (either plan-level applicability or check-level capabilities)
   // anywhere in the workspace. Wave 5 briefly let
@@ -931,245 +1076,106 @@ async function checkAdapterCapabilityCoveredByPlan(
   }
 
   return failures;
-}
+};
 
-async function collectAllPlanCapabilities(): Promise<Set<string>> {
-  // Walk every authority packet's `conformancePlans` rather than relying on
-  // a directory naming convention. That keeps the coverage inventory aligned
-  // with what `tools/conformance/plan-compiler/index.ts` actually compiles —
-  // a plan file outside a packet's reach wouldn't be measured by any lane,
-  // so its capabilities don't count as coverage either.
-  const capabilities = new Set<string>();
-  const packets = await loadAllManifests();
-
-  for (const manifest of packets.values()) {
-    for (const plan of manifest.conformancePlans ?? []) {
-      for (const capability of await readPlanApplicabilityCapabilities(
-        plan.path
-      )) {
-        capabilities.add(capability);
-      }
-    }
-  }
-
-  return capabilities;
-}
-
-function isAdapterCapability(
-  adapter: AdapterManifest,
-  capability: string
-): boolean {
-  return adapter.capabilities?.includes(capability) ?? false;
-}
-
-function checkExpectedPacketsPresent(
-  inventory: PortabilityInventoryManifest,
-  expectedPacketIds: ReadonlySet<string>,
-  onDisk: ReadonlyMap<string, AuthorityPacketManifest>
-): PortabilityGateFailure[] {
+const runPortabilityGate = async (
+  inventory: PortabilityInventoryManifest
+): Promise<PortabilityGateFailure[]> => {
   const failures: PortabilityGateFailure[] = [];
-  const seenPacketIds = new Set(
-    [...onDisk.values()].map((manifest) => manifest.packetId)
+  const onDiskManifests = await loadAllManifests();
+  const adapterManifests = await loadAllAdapterManifests();
+  const expectedPacketIds = new Set(
+    inventory.expectedPackets.map((entry) => entry.packetId)
+  );
+  const expectedPaths = new Set(
+    inventory.expectedPackets.map((entry) => entry.packetPath)
   );
 
-  for (const expected of inventory.expectedPackets) {
-    const manifest = onDisk.get(expected.packetPath);
-
-    if (manifest === undefined) {
-      failures.push({
-        message: `expected packet ${expected.packetId} missing at ${expected.packetPath}`,
-        rule: "expected-packet-present",
-      });
-      continue;
-    }
-
-    if (manifest.packetId !== expected.packetId) {
-      failures.push({
-        message: `packet at ${expected.packetPath} declares packetId ${manifest.packetId}; inventory expects ${expected.packetId}`,
-        rule: "expected-packet-present",
-      });
-    }
-  }
-
-  for (const expected of expectedPacketIds) {
-    if (!seenPacketIds.has(expected)) {
-      failures.push({
-        message: `inventory expects packetId ${expected} but no on-disk packet declares it`,
-        rule: "expected-packet-present",
-      });
-    }
-  }
-
-  return failures;
-}
-
-function checkNoUnexpectedPackets(
-  expectedPaths: ReadonlySet<string>,
-  expectedPacketIds: ReadonlySet<string>,
-  onDisk: ReadonlyMap<string, AuthorityPacketManifest>
-): PortabilityGateFailure[] {
-  const failures: PortabilityGateFailure[] = [];
-
-  for (const [path, manifest] of onDisk.entries()) {
-    // The path check is the primary guard: it catches an extra
-    // authority-packet.json planted at any location that the inventory does
-    // not name, even when that file reuses an already-expected packetId.
-    // The packetId check then catches any new manifest that lands at an
-    // expected-looking path but declares a fresh portable surface the
-    // inventory has not promoted.
-    if (!expectedPaths.has(path)) {
-      failures.push({
-        message: `authority-packet.json at ${path} is not listed in EXPECTED_PACKET_TOPOLOGY; revise the AL inventory and the expected-topology table together before adding new cross-implementation surfaces (declared packetId: ${manifest.packetId})`,
-        rule: "no-unexpected-packets",
-      });
-      continue;
-    }
-
-    if (!expectedPacketIds.has(manifest.packetId)) {
-      failures.push({
-        message: `packet ${manifest.packetId} at ${path} is not listed in the AL inventory's expected topology; revise the inventory and EXPECTED_PACKET_TOPOLOGY together before adding new cross-implementation surfaces`,
-        rule: "no-unexpected-packets",
-      });
-    }
-  }
+  failures.push(
+    ...checkInventoryExists(),
+    ...(await checkInventoryMdJsonConsistency(inventory))
+  );
+  failures.push(
+    ...checkExpectedTopologyIsUnique(inventory),
+    ...checkExpectedPacketsPresent(
+      inventory,
+      expectedPacketIds,
+      onDiskManifests
+    )
+  );
+  failures.push(
+    ...checkNoUnexpectedPackets(
+      expectedPaths,
+      expectedPacketIds,
+      onDiskManifests
+    ),
+    ...checkPacketIdUniqueness(onDiskManifests)
+  );
+  failures.push(
+    ...checkExecutableVerification(onDiskManifests),
+    ...checkStandingExceptions(inventory, onDiskManifests)
+  );
+  failures.push(
+    ...checkRequiredSources(inventory, onDiskManifests),
+    ...checkAdapterCoverage(onDiskManifests, adapterManifests)
+  );
+  failures.push(
+    ...(await checkPlanApplicabilityHasAdapter(
+      onDiskManifests,
+      adapterManifests
+    )),
+    ...(await checkAdapterCapabilityCoveredByPlan(adapterManifests))
+  );
 
   return failures;
-}
+};
 
-function checkPacketIdUniqueness(
-  onDisk: ReadonlyMap<string, AuthorityPacketManifest>
-): PortabilityGateFailure[] {
-  // Two manifests at different paths must not share the same packetId, or
-  // tooling that resolves a packet by id would silently pick whichever file
-  // wins the directory walk. This guard catches that even when both paths
-  // happen to be in `expectedPaths` (e.g., a copy-paste at one expected
-  // location of another expected packet's id).
-  const failures: PortabilityGateFailure[] = [];
-  const pathsByPacketId = new Map<string, string[]>();
+const main = async (): Promise<void> => {
+  const inventoryLoad = await loadInventoryManifest();
 
-  for (const [path, manifest] of onDisk.entries()) {
-    const existing = pathsByPacketId.get(manifest.packetId);
-
-    if (existing === undefined) {
-      pathsByPacketId.set(manifest.packetId, [path]);
-    } else {
-      existing.push(path);
+  if (inventoryLoad.failures.length > 0) {
+    console.error("portability gate failed:");
+    for (const failure of inventoryLoad.failures) {
+      console.error(`  [${failure.rule}] ${failure.message}`);
     }
+    process.exitCode = 1;
+    return;
   }
 
-  for (const [packetId, paths] of pathsByPacketId.entries()) {
-    if (paths.length > 1) {
-      failures.push({
-        message: `packetId ${packetId} is declared at multiple paths: ${paths.sort().join(", ")}`,
-        rule: "packet-id-uniqueness",
-      });
-    }
-  }
+  const inventory = inventoryLoad.manifest;
 
-  return failures;
-}
-
-function checkExecutableVerification(
-  onDisk: ReadonlyMap<string, AuthorityPacketManifest>
-): PortabilityGateFailure[] {
-  const failures: PortabilityGateFailure[] = [];
-
-  for (const [path, manifest] of onDisk.entries()) {
-    const executable = manifest.verificationPaths.some((verificationPath) =>
-      EXECUTABLE_VERIFICATION_KINDS.has(verificationPath.kind)
+  if (inventory === undefined) {
+    console.error(
+      "portability gate failed: inventory manifest could not be loaded"
     );
-
-    if (!executable) {
-      failures.push({
-        message: `packet ${manifest.packetId} at ${path} has no executable verification path; portable packets require schema-validation, openapi-validation, conformance-plan, interop-smoke, or vocabulary-check`,
-        rule: "executable-verification",
-      });
-    }
+    process.exitCode = 1;
+    return;
   }
 
-  return failures;
+  const failures = await runPortabilityGate(inventory);
+
+  if (failures.length > 0) {
+    console.error("portability gate failed:");
+    for (const failure of failures) {
+      console.error(`  [${failure.rule}] ${failure.message}`);
+    }
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log(
+    `portability gate passed (${inventory.expectedPackets.length} packets, ${inventory.standingExceptions.length} standing exceptions, ${inventory.requiredAuthoritativeSources.length} required sources)`
+  );
+};
+
+await main();
+
+interface InventoryLoadResult {
+  failures: PortabilityGateFailure[];
+  manifest: PortabilityInventoryManifest | undefined;
 }
 
-function checkStandingExceptions(
-  inventory: PortabilityInventoryManifest,
-  onDisk: ReadonlyMap<string, AuthorityPacketManifest>
-): PortabilityGateFailure[] {
-  const failures: PortabilityGateFailure[] = [];
-
-  for (const exception of inventory.standingExceptions) {
-    const forbidden = new Set(exception.forbiddenSurfaceNames);
-
-    for (const [path, manifest] of onDisk.entries()) {
-      if (forbidden.has(manifest.surface)) {
-        failures.push({
-          message: `packet ${manifest.packetId} at ${path} owns surface "${manifest.surface}" which is the Epic AL standing exception ${exception.label}; standing exceptions may not be promoted to portable authority without an explicit Tasks.md/TechSpec revision`,
-          rule: "standing-exceptions-unchanged",
-        });
-      }
-    }
-  }
-
-  return failures;
-}
-
-function checkRequiredSources(
-  inventory: PortabilityInventoryManifest,
-  onDisk: ReadonlyMap<string, AuthorityPacketManifest>
-): PortabilityGateFailure[] {
-  const failures: PortabilityGateFailure[] = [];
-  const manifestsByPacketId = new Map<string, AuthorityPacketManifest>();
-
-  for (const manifest of onDisk.values()) {
-    manifestsByPacketId.set(manifest.packetId, manifest);
-  }
-
-  for (const required of inventory.requiredAuthoritativeSources) {
-    if (!existsSync(resolve(REPO_ROOT, required.sourcePath))) {
-      failures.push({
-        message: `${required.rationale}: required source ${required.sourcePath} is missing on disk`,
-        rule: "required-sources",
-      });
-      continue;
-    }
-
-    const manifest = manifestsByPacketId.get(required.packetId);
-
-    if (manifest === undefined) {
-      failures.push({
-        message: `${required.rationale}: packet ${required.packetId} is not present on disk; cannot verify source registration`,
-        rule: "required-sources",
-      });
-      continue;
-    }
-
-    const declaredSource = manifest.authoritativeSources.find(
-      (source) => source.path === required.sourcePath
-    );
-
-    if (declaredSource === undefined) {
-      failures.push({
-        message: `${required.rationale}: ${required.sourcePath} exists on disk but is not declared under ${required.packetId}.authoritativeSources`,
-        rule: "required-sources",
-      });
-      continue;
-    }
-
-    // Verifying the source-registration format catches the case where a
-    // packet author registers a required source under the wrong format
-    // (e.g. tagging the kernel CDDL grammar as `text` instead of `cddl`,
-    // or the SSE TypeSpec as `typespec` after a refactor that should have
-    // moved it to a new format). Tooling that walks
-    // `authoritativeSources[*].format` would silently skip the
-    // mis-registered source, so the portability claim could pass while
-    // the named authority no longer routes through its declared
-    // verification path.
-    if (declaredSource.format !== required.sourceFormat) {
-      failures.push({
-        message: `${required.rationale}: ${required.sourcePath} is registered under ${required.packetId}.authoritativeSources with format "${declaredSource.format}"; inventory requires format "${required.sourceFormat}"`,
-        rule: "required-sources",
-      });
-    }
-  }
-
-  return failures;
+interface InventoryShapeValidation {
+  failures: PortabilityGateFailure[];
+  manifest: PortabilityInventoryManifest | undefined;
 }
