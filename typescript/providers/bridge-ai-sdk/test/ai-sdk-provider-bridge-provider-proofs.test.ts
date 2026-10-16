@@ -56,6 +56,22 @@ import {
 
 type EventRecord = Record<string, unknown>;
 
+const isEventRecord = (value: unknown): value is EventRecord =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readEventRecord = (value: unknown): EventRecord => {
+  if (!isEventRecord(value)) {
+    throw new TypeError("expected an event record");
+  }
+  return value;
+};
+
+const readEventRecords = (values: readonly unknown[]): EventRecord[] =>
+  values.map((value) => readEventRecord(value));
+
+const readOptionalEventRecords = (value: unknown): EventRecord[] =>
+  Array.isArray(value) ? readEventRecords(value) : [];
+
 const filterEventsByType = (
   events: EventRecord[],
   type: string
@@ -70,7 +86,7 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate() {
+        doGenerate() {
           return createGenerateResult({
             content: [
               {
@@ -108,28 +124,23 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
       threadId: thread.threadId,
     });
 
-    const events = (await collectAsyncIterable(
-      handle.events()
-    )) as unknown as EventRecord[];
+    const events = readEventRecords(
+      await collectAsyncIterable(handle.events())
+    );
 
     // Turn must complete successfully
-    const turnEnd = filterEventsByType(events, "turn.end")[0] as
-      | EventRecord
-      | undefined;
+    const [turnEnd] = filterEventsByType(events, "turn.end");
     expect(turnEnd).toBeDefined();
     expect(turnEnd?.status).toBe("completed");
 
     // tool.result event with provider-native attribution
     const toolResults = filterEventsByType(events, "tool.result");
     const providerResult = toolResults.find(
-      (e) =>
-        typeof e.attribution === "object" &&
-        e.attribution !== null &&
-        (e.attribution as EventRecord).owner === "provider"
+      (e) => isEventRecord(e.attribution) && e.attribution.owner === "provider"
     );
     expect(providerResult).toBeDefined();
 
-    const attr = providerResult?.attribution as EventRecord;
+    const attr = readEventRecord(providerResult?.attribution);
     expect(attr.owner).toBe("provider");
     expect(attr.executionClass).toBe("provider-native");
     expect(providerResult?.name).toBe("code_execution");
@@ -138,7 +149,7 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
     });
 
     // Observation limits: canAudit/canCancel/canRetry/canResume all false
-    const obs = attr.observation as EventRecord;
+    const obs = readEventRecord(attr.observation);
     expect(obs.canAudit).toBe(false);
     expect(obs.canCancel).toBe(false);
     expect(obs.canRetry).toBe(false);
@@ -153,7 +164,7 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate() {
+        doGenerate() {
           return createGenerateResult({
             content: [
               {
@@ -193,16 +204,17 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
     const messages = await harness.readBranchMessages(thread.branchId);
 
     // Pre-staged tool message appears in durable history as a tool-role message
-    const toolMessages = (messages as EventRecord[]).filter(
+    const toolMessages = readEventRecords(messages).filter(
       (m) => m.role === "tool"
     );
     expect(toolMessages.length).toBeGreaterThan(0);
-    const toolParts =
-      (toolMessages[0]?.parts as EventRecord[] | undefined) ?? [];
-    const part = toolParts[0] as EventRecord | undefined;
+    const toolParts = readOptionalEventRecords(toolMessages[0]?.parts);
+    const [part] = toolParts;
     expect(part?.name).toBe("code_execution");
     expect(part?.type).toBe("tool_result");
-    const meta = part?.providerMetadata as EventRecord | undefined;
+    const meta = isEventRecord(part?.providerMetadata)
+      ? part.providerMetadata
+      : undefined;
     expect(meta?.owner).toBe("provider");
     expect(meta?.executionClass).toBe("provider-native");
   });
@@ -215,7 +227,7 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate() {
+        doGenerate() {
           return createGenerateResult({
             content: [
               {
@@ -277,7 +289,7 @@ describe("KRT-AY006 — provider-native execution class proof (stream path)", ()
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doStream() {
+        doStream() {
           return {
             stream: streamFromParts([
               {
@@ -315,25 +327,20 @@ describe("KRT-AY006 — provider-native execution class proof (stream path)", ()
       threadId: thread.threadId,
     });
 
-    const events = (await collectAsyncIterable(
-      handle.events()
-    )) as unknown as EventRecord[];
+    const events = readEventRecords(
+      await collectAsyncIterable(handle.events())
+    );
 
-    const turnEnd = filterEventsByType(events, "turn.end")[0] as
-      | EventRecord
-      | undefined;
+    const [turnEnd] = filterEventsByType(events, "turn.end");
     expect(turnEnd?.status).toBe("completed");
 
     const toolResults = filterEventsByType(events, "tool.result");
     const providerResult = toolResults.find(
-      (e) =>
-        typeof e.attribution === "object" &&
-        e.attribution !== null &&
-        (e.attribution as EventRecord).owner === "provider"
+      (e) => isEventRecord(e.attribution) && e.attribution.owner === "provider"
     );
     expect(providerResult).toBeDefined();
 
-    const attr = providerResult?.attribution as EventRecord;
+    const attr = readEventRecord(providerResult?.attribution);
     expect(attr.owner).toBe("provider");
     expect(attr.executionClass).toBe("provider-native");
     expect(providerResult?.name).toBe("code_execution");
@@ -350,7 +357,7 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate() {
+        doGenerate() {
           return createGenerateResult({
             content: [
               {
@@ -392,32 +399,27 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
       threadId: thread.threadId,
     });
 
-    const events = (await collectAsyncIterable(
-      handle.events()
-    )) as unknown as EventRecord[];
+    const events = readEventRecords(
+      await collectAsyncIterable(handle.events())
+    );
 
-    const turnEnd = filterEventsByType(events, "turn.end")[0] as
-      | EventRecord
-      | undefined;
+    const [turnEnd] = filterEventsByType(events, "turn.end");
     expect(turnEnd).toBeDefined();
     expect(turnEnd?.status).toBe("completed");
 
     const toolResults = filterEventsByType(events, "tool.result");
     const providerResult = toolResults.find(
-      (e) =>
-        typeof e.attribution === "object" &&
-        e.attribution !== null &&
-        (e.attribution as EventRecord).owner === "provider"
+      (e) => isEventRecord(e.attribution) && e.attribution.owner === "provider"
     );
     expect(providerResult).toBeDefined();
 
-    const attr = providerResult?.attribution as EventRecord;
+    const attr = readEventRecord(providerResult?.attribution);
     expect(attr.owner).toBe("provider");
     expect(attr.executionClass).toBe("provider-mediated");
     expect(providerResult?.name).toBe("mcp_tool");
 
     // Observation limits same as native: all false
-    const obs = attr.observation as EventRecord;
+    const obs = readEventRecord(attr.observation);
     expect(obs.canAudit).toBe(false);
     expect(obs.canCancel).toBe(false);
     expect(obs.canRetry).toBe(false);
@@ -432,7 +434,7 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate() {
+        doGenerate() {
           return createGenerateResult({
             content: [
               {
@@ -494,7 +496,7 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate() {
+        doGenerate() {
           return createGenerateResult({
             content: [
               {
@@ -539,12 +541,14 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
     await collectAsyncIterable(handle.events());
     const messages = await harness.readBranchMessages(thread.branchId);
 
-    const toolMessages = (messages as EventRecord[]).filter(
+    const toolMessages = readEventRecords(messages).filter(
       (m) => m.role === "tool"
     );
     expect(toolMessages.length).toBeGreaterThan(0);
-    const parts = (toolMessages[0]?.parts as EventRecord[] | undefined) ?? [];
-    const meta = parts[0]?.providerMetadata as EventRecord | undefined;
+    const parts = readOptionalEventRecords(toolMessages[0]?.parts);
+    const meta = isEventRecord(parts[0]?.providerMetadata)
+      ? parts[0].providerMetadata
+      : undefined;
     expect(meta?.owner).toBe("provider");
     expect(meta?.executionClass).toBe("provider-mediated");
   });
@@ -559,7 +563,7 @@ describe("KRT-AY006 — provider-mediated execution class proof (stream path)", 
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doStream() {
+        doStream() {
           return {
             stream: streamFromParts([
               {
@@ -603,25 +607,20 @@ describe("KRT-AY006 — provider-mediated execution class proof (stream path)", 
       threadId: thread.threadId,
     });
 
-    const events = (await collectAsyncIterable(
-      handle.events()
-    )) as unknown as EventRecord[];
+    const events = readEventRecords(
+      await collectAsyncIterable(handle.events())
+    );
 
-    const turnEnd = filterEventsByType(events, "turn.end")[0] as
-      | EventRecord
-      | undefined;
+    const [turnEnd] = filterEventsByType(events, "turn.end");
     expect(turnEnd?.status).toBe("completed");
 
     const toolResults = filterEventsByType(events, "tool.result");
     const providerResult = toolResults.find(
-      (e) =>
-        typeof e.attribution === "object" &&
-        e.attribution !== null &&
-        (e.attribution as EventRecord).owner === "provider"
+      (e) => isEventRecord(e.attribution) && e.attribution.owner === "provider"
     );
     expect(providerResult).toBeDefined();
 
-    const attr = providerResult?.attribution as EventRecord;
+    const attr = readEventRecord(providerResult?.attribution);
     expect(attr.executionClass).toBe("provider-mediated");
     expect(attr.owner).toBe("provider");
     expect(filterEventsByType(events, "tool.audit")).toHaveLength(0);

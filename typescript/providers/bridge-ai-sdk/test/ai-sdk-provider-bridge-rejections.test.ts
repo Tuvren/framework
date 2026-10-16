@@ -27,6 +27,7 @@ import {
   createGenerateResult,
   createMockModel,
   createUsage,
+  captureRejection,
   streamFromParts,
 } from "./ai-sdk-provider-bridge-test-helpers.ts";
 
@@ -36,11 +37,11 @@ describe("provider-bridge-ai-sdk rejections", () => {
     let streamCalls = 0;
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate() {
+        doGenerate() {
           generateCalls += 1;
           return createGenerateResult();
         },
-        async doStream() {
+        doStream() {
           streamCalls += 1;
           return {
             stream: streamFromParts([]),
@@ -142,7 +143,7 @@ describe("provider-bridge-ai-sdk rejections", () => {
       }),
     });
 
-    await expect(
+    const rejection = await captureRejection(
       bridge.generate({
         messages: [
           {
@@ -151,7 +152,8 @@ describe("provider-bridge-ai-sdk rejections", () => {
           },
         ],
       })
-    ).rejects.toBeInstanceOf(TuvrenProviderError);
+    );
+    expect(rejection).toBeInstanceOf(TuvrenProviderError);
   });
 
   test("rejects non-JSON default provider options", () => {
@@ -172,7 +174,7 @@ describe("provider-bridge-ai-sdk rejections", () => {
       model: createMockModel(),
     });
 
-    await expect(
+    const rejection = await captureRejection(
       bridge.generate({
         config: {
           provider: "different-provider",
@@ -184,7 +186,8 @@ describe("provider-bridge-ai-sdk rejections", () => {
           },
         ],
       })
-    ).rejects.toThrow(
+    );
+    expect(rejection.message).toContain(
       "TuvrenPrompt.config.provider does not match the bound AI SDK provider"
     );
   });
@@ -207,7 +210,7 @@ describe("provider-bridge-ai-sdk rejections", () => {
       }),
     });
 
-    await expect(
+    const rejection = await captureRejection(
       collectAsyncIterable(
         bridge.stream({
           messages: [
@@ -218,7 +221,10 @@ describe("provider-bridge-ai-sdk rejections", () => {
           ],
         })
       )
-    ).rejects.toThrow('AI SDK stream part "file" is out of scope');
+    );
+    expect(rejection.message).toContain(
+      'AI SDK stream part "file" is out of scope'
+    );
   });
 
   test("rejects streamed provider tool results in the baseline bridge", async () => {
@@ -242,7 +248,7 @@ describe("provider-bridge-ai-sdk rejections", () => {
       }),
     });
 
-    await expect(
+    const rejection = await captureRejection(
       collectAsyncIterable(
         bridge.stream({
           messages: [
@@ -253,7 +259,10 @@ describe("provider-bridge-ai-sdk rejections", () => {
           ],
         })
       )
-    ).rejects.toThrow('AI SDK stream part "tool-result" is out of scope');
+    );
+    expect(rejection.message).toContain(
+      'AI SDK stream part "tool-result" is out of scope'
+    );
   });
 
   test("rejects streamed provider approval requests in the baseline bridge", async () => {
@@ -325,7 +334,7 @@ describe("provider-bridge-ai-sdk rejections", () => {
       }),
     });
 
-    await expect(
+    const rejection = await captureRejection(
       collectAsyncIterable(
         bridge.stream({
           messages: [
@@ -336,7 +345,10 @@ describe("provider-bridge-ai-sdk rejections", () => {
           ],
         })
       )
-    ).rejects.toThrow("AI SDK stream finished before tool call completed");
+    );
+    expect(rejection.message).toContain(
+      "AI SDK stream finished before tool call completed"
+    );
   });
 
   test("rejects provider-executed streamed tool inputs in the baseline bridge", async () => {
@@ -402,7 +414,7 @@ describe("provider-bridge-ai-sdk rejections", () => {
       }),
     });
 
-    await expect(
+    const rejection = await captureRejection(
       collectAsyncIterable(
         bridge.stream({
           messages: [
@@ -413,7 +425,8 @@ describe("provider-bridge-ai-sdk rejections", () => {
           ],
         })
       )
-    ).rejects.toThrow(
+    );
+    expect(rejection.message).toContain(
       "provider-owned tool execution is out of scope for the baseline AI SDK bridge"
     );
   });
@@ -451,7 +464,7 @@ describe("provider-bridge-ai-sdk rejections", () => {
       }),
     });
 
-    await expect(
+    const rejection = await captureRejection(
       collectAsyncIterable(
         bridge.stream({
           messages: [
@@ -462,7 +475,8 @@ describe("provider-bridge-ai-sdk rejections", () => {
           ],
         })
       )
-    ).rejects.toThrow(
+    );
+    expect(rejection.message).toContain(
       "AI SDK stream emitted a complete tool-call with a mismatched incremental tool-input id"
     );
   });
@@ -500,7 +514,7 @@ describe("provider-bridge-ai-sdk rejections", () => {
       }),
     });
 
-    await expect(
+    const rejection = await captureRejection(
       collectAsyncIterable(
         bridge.stream({
           messages: [
@@ -511,7 +525,8 @@ describe("provider-bridge-ai-sdk rejections", () => {
           ],
         })
       )
-    ).rejects.toThrow(
+    );
+    expect(rejection.message).toContain(
       "AI SDK stream emitted a complete tool-call that conflicts with the incremental tool-input state"
     );
   });

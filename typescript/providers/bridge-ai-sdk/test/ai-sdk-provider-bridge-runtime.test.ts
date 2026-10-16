@@ -141,24 +141,22 @@ describe("provider-bridge-ai-sdk runtime", () => {
     const events = await collectAsyncIterable(handle.events());
     const committedMessages = await harness.readBranchMessages(thread.branchId);
 
-    expect(events.map((event) => event.type)).toEqual(
-      expect.arrayContaining([
-        "message.done",
-        "message.start",
-        "text.delta",
-        "text.done",
-        "turn.end",
-        "turn.start",
-      ])
-    );
-    expect(committedMessages).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          parts: [{ text: "Hello from bridge", type: "text" }],
-          role: "assistant",
-        }),
-      ])
-    );
+    const eventTypes = events.map((event) => event.type);
+    for (const expectedEventType of [
+      "message.done",
+      "message.start",
+      "text.delta",
+      "text.done",
+      "turn.end",
+      "turn.start",
+    ] as const) {
+      expect(eventTypes).toContain(expectedEventType);
+    }
+    const expectedMessage: unknown = expect.objectContaining({
+      parts: [{ text: "Hello from bridge", type: "text" }],
+      role: "assistant",
+    });
+    expect(committedMessages).toContainEqual(expectedMessage);
   });
 
   test("preserves streamed reasoning signatures on canonical assistant history", async () => {
@@ -221,25 +219,20 @@ describe("provider-bridge-ai-sdk runtime", () => {
     await collectAsyncIterable(handle.events());
     const committedMessages = await harness.readBranchMessages(thread.branchId);
 
-    expect(committedMessages).toEqual(
-      expect.arrayContaining([
+    const expectedMessage: unknown = expect.objectContaining({
+      parts: [
         expect.objectContaining({
-          parts: [
-            expect.objectContaining({
-              providerMetadata: {
-                anthropic: {
-                  signature: "sig-stream",
-                },
-              },
-              redacted: false,
-              text: "Thinking",
-              type: "reasoning",
-            }),
-          ],
-          role: "assistant",
+          providerMetadata: {
+            anthropic: { signature: "sig-stream" },
+          },
+          redacted: false,
+          text: "Thinking",
+          type: "reasoning",
         }),
-      ])
-    );
+      ],
+      role: "assistant",
+    });
+    expect(committedMessages).toContainEqual(expectedMessage);
   });
 
   test("preserves streamed Anthropic redacted thinking on canonical assistant history", async () => {
@@ -297,24 +290,19 @@ describe("provider-bridge-ai-sdk runtime", () => {
     await collectAsyncIterable(handle.events());
     const committedMessages = await harness.readBranchMessages(thread.branchId);
 
-    expect(committedMessages).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          parts: [
-            {
-              providerMetadata: {
-                anthropic: {
-                  redactedData: "redacted-stream",
-                },
-              },
-              redacted: true,
-              text: "",
-              type: "reasoning",
-            },
-          ],
-          role: "assistant",
-        }),
-      ])
-    );
+    const expectedMessage: unknown = expect.objectContaining({
+      parts: [
+        {
+          providerMetadata: {
+            anthropic: { redactedData: "redacted-stream" },
+          },
+          redacted: true,
+          text: "",
+          type: "reasoning",
+        },
+      ],
+      role: "assistant",
+    });
+    expect(committedMessages).toContainEqual(expectedMessage);
   });
 });

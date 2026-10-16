@@ -30,6 +30,7 @@ import {
   bridgeError,
   cloneFileData,
   cloneJsonSchema,
+  cloneJsonValue,
   cloneMetadataValue,
   isJsonValue,
   isPlainObject,
@@ -56,10 +57,22 @@ type TuvrenToolDefinition = NonNullable<TuvrenPrompt["tools"]>[number];
  * through with replay `providerOptions`, and `structured` parts are
  * serialized to a `text` content entry.
  *
- * @throws TuvrenProviderError with code `unsupported_ai_sdk_prompt_part` for
+ * @throws {TuvrenProviderError} With code `unsupported_ai_sdk_prompt_part` for
  *   any other part type.
  */
 const mapUserPart = (part: TuvrenPromptPart) => {
+  if (
+    part.type !== "text" &&
+    part.type !== "file" &&
+    part.type !== "structured"
+  ) {
+    throw bridgeError(
+      "user messages only support text, file, and structured parts in the AI SDK bridge baseline",
+      "unsupported_ai_sdk_prompt_part",
+      { partType: part.type, role: "user" }
+    );
+  }
+
   switch (part.type) {
     case "text": {
       const providerOptions = mapPromptProviderOptions(part.providerMetadata);
@@ -120,7 +133,6 @@ const mapUserPart = (part: TuvrenPromptPart) => {
         "user messages only support text, file, and structured parts in the AI SDK bridge baseline",
         "unsupported_ai_sdk_prompt_part",
         {
-          partType: part.type,
           role: "user",
         }
       );
@@ -186,7 +198,9 @@ const propagateParallelToolCallThoughtSignatures = (
     return parts;
   }
 
-  return parts.map((part) => {
+  const normalizePart = (
+    part: Extract<TuvrenMessage, { role: "assistant" }>["parts"][number]
+  ): Extract<TuvrenMessage, { role: "assistant" }>["parts"][number] => {
     if (part.type !== "tool_call") {
       return part;
     }
@@ -207,7 +221,7 @@ const propagateParallelToolCallThoughtSignatures = (
     return {
       ...part,
       providerMetadata: {
-        ...(providerMetadata === undefined ? {} : providerMetadata),
+        ...providerMetadata,
         [googleNamespace]: mergePromptProviderNamespace(
           providerMetadata?.[googleNamespace],
           {
@@ -216,7 +230,10 @@ const propagateParallelToolCallThoughtSignatures = (
         ),
       },
     };
-  }) as Extract<TuvrenMessage, { role: "assistant" }>["parts"];
+  };
+
+  const [firstPart, ...remainingParts] = parts;
+  return [normalizePart(firstPart), ...remainingParts.map(normalizePart)];
 };
 
 /**
@@ -225,24 +242,23 @@ const propagateParallelToolCallThoughtSignatures = (
  * outputs become `json`/`error-json` (cloned defensively), tagged by
  * `part.isError`.
  *
- * @throws TuvrenProviderError with code `invalid_ai_sdk_tool_result_output`
+ * @throws {TuvrenProviderError} With code `invalid_ai_sdk_tool_result_output`
  *   when the output is neither a string nor JSON-serializable.
  */
 const mapToolResultOutput = (
   part: Extract<TuvrenPromptPart, { type: "tool_result" }>
 ) => {
   if (typeof part.output === "string") {
-    return {
-      type: part.isError === true ? "error-text" : "text",
-      value: part.output,
-    } as const;
+    return part.isError === true
+      ? { type: "error-text" as const, value: part.output }
+      : { type: "text" as const, value: part.output };
   }
 
   if (isJsonValue(part.output)) {
-    return {
-      type: part.isError === true ? "error-json" : "json",
-      value: cloneMetadataValue(part.output),
-    } as const;
+    const value = cloneJsonValue(part.output);
+    return part.isError === true
+      ? { type: "error-json" as const, value }
+      : { type: "json" as const, value };
   }
 
   throw bridgeError(
@@ -288,7 +304,7 @@ const mapToolResultPart = (
  * {@link mapToolResultPart}; and `structured` is serialized to a `text`
  * entry.
  *
- * @throws TuvrenProviderError with code `unsupported_ai_sdk_prompt_part` for
+ * @throws {TuvrenProviderError} With code `unsupported_ai_sdk_prompt_part` for
  *   any other part type.
  */
 const mapAssistantPart = (activeProvider: string, part: TuvrenPromptPart) => {
@@ -435,7 +451,7 @@ const mapAssistantParts = (
  * `assistant` parts route through {@link mapAssistantParts} for replay
  * handling.
  *
- * @throws TuvrenProviderError with code `unsupported_ai_sdk_prompt_part` for
+ * @throws {TuvrenProviderError} With code `unsupported_ai_sdk_prompt_part` for
  *   an unrecognized message role.
  */
 const mapPromptMessage = (
@@ -508,7 +524,7 @@ export const mapToolDefinition = (
  * Maps provider-native declarations to `LanguageModelV3ProviderTool` entries
  * (AY002).
  *
- * @throws Error when a declaration id is not in `{provider}.{tool}` format.
+ * @throws {Error} When a declaration id is not in `{provider}.{tool}` format.
  */
 export const mapProviderNativeToolDeclarations = (
   declarations: ProviderNativeToolDeclaration[]
@@ -519,9 +535,15 @@ export const mapProviderNativeToolDeclarations = (
         `ProviderNativeToolDeclaration.id must be in "{provider}.{tool}" format, got: ${decl.id}`
       );
     }
+    const separatorIndex = decl.id.indexOf(".");
+    const id: `${string}.${string}` = `${decl.id.slice(
+      0,
+      separatorIndex
+    )}.${decl.id.slice(separatorIndex + 1)}`;
+
     return {
       args: decl.args ?? {},
-      id: decl.id as `${string}.${string}`,
+      id,
       name: decl.name,
       type: "provider",
     };
@@ -532,7 +554,7 @@ export const mapProviderNativeToolDeclarations = (
  * tool (AY004), threading the endpoint as `server_url` plus any
  * provider-specific options.
  *
- * @throws Error when a config's `mediationType` is not `"mcp"`.
+ * @throws {Error} When a config's `mediationType` is not `"mcp"`.
  */
 export const mapProviderMediatedToolConfigs = (
   configs: ProviderMediatedToolConfig[]
@@ -540,13 +562,13 @@ export const mapProviderMediatedToolConfigs = (
   configs.map((config) => {
     if (config.mediationType !== "mcp") {
       throw new Error(
-        `Unsupported mediationType "${config.mediationType}": only "mcp" is supported`
+        `Unsupported mediationType ${JSON.stringify(config.mediationType)}: only "mcp" is supported`
       );
     }
     return {
       args: {
         server_url: config.endpoint,
-        ...(config.providerOptions === undefined ? {} : config.providerOptions),
+        ...config.providerOptions,
       },
       id: "openai.mcp",
       name: config.name,

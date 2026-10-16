@@ -63,9 +63,11 @@ describe("provider-bridge-ai-sdk secret screening (KRT-BK004)", () => {
       messages: [{ parts: [{ text: "hi", type: "text" }], role: "user" }],
     });
 
-    const aiSdkBridge = response.providerMetadata?.aiSdkBridge as
-      | Record<string, unknown>
-      | undefined;
+    const aiSdkBridgeValue = response.providerMetadata?.aiSdkBridge;
+    const aiSdkBridge =
+      typeof aiSdkBridgeValue === "object" && aiSdkBridgeValue !== null
+        ? aiSdkBridgeValue
+        : undefined;
     expect(aiSdkBridge).toBeDefined();
     const serialized = JSON.stringify(aiSdkBridge);
     // The raw credential-shaped substring must never survive into the built

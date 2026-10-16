@@ -85,7 +85,7 @@ export interface StreamMappingState {
  * generate path (defined once in `ai-sdk-provider-bridge.ts`).
  */
 export interface StreamMappingHelpers {
-  mapFinishReason(
+  mapFinishReason: (
     reason: Pick<
       LanguageModelV3GenerateResult["finishReason"],
       "raw" | "unified"
@@ -93,8 +93,8 @@ export interface StreamMappingHelpers {
     options: {
       hasToolCalls?: boolean;
     }
-  ): TuvrenModelResponse["finishReason"];
-  mapUsage(usage: LanguageModelV3GenerateResult["usage"]): {
+  ) => TuvrenModelResponse["finishReason"];
+  mapUsage: (usage: LanguageModelV3GenerateResult["usage"]) => {
     canonical?:
       | {
           inputTokens: number;
@@ -103,10 +103,10 @@ export interface StreamMappingHelpers {
       | undefined;
     rawUsage: unknown;
   };
-  parseStructuredOutput(
+  parseStructuredOutput: (
     serialized: string,
     responseFormat: StructuredOutputRequest
-  ): unknown;
+  ) => unknown;
 }
 
 /**
@@ -152,27 +152,27 @@ const handleMetadataStreamPart = (
   part: LanguageModelV3StreamPart,
   state: StreamMappingState
 ): ProviderStreamChunk[] | undefined => {
-  switch (part.type) {
-    case "stream-start": {
-      state.streamWarnings.push(...part.warnings.map(sanitizeMetadataValue));
-      return [];
-    }
-    case "response-metadata": {
-      state.responseMetadata = sanitizeResponseMetadata(part);
-      return [];
-    }
-    case "source": {
-      state.streamSources.push(sanitizeMetadataValue(part));
-      return [];
-    }
-    case "raw": {
-      state.streamRawParts.push(sanitizeMetadataValue(part.rawValue));
-      return [];
-    }
-    default: {
-      return undefined;
-    }
+  if (part.type === "stream-start") {
+    state.streamWarnings.push(...part.warnings.map(sanitizeMetadataValue));
+    return [];
   }
+
+  if (part.type === "response-metadata") {
+    state.responseMetadata = sanitizeResponseMetadata(part);
+    return [];
+  }
+
+  if (part.type === "source") {
+    state.streamSources.push(sanitizeMetadataValue(part));
+    return [];
+  }
+
+  if (part.type === "raw") {
+    state.streamRawParts.push(sanitizeMetadataValue(part.rawValue));
+    return [];
+  }
+
+  return undefined;
 };
 
 /**
@@ -271,23 +271,21 @@ const handleTextStreamPart = (
   state: StreamMappingState,
   helpers: StreamMappingHelpers
 ): ProviderStreamChunk[] | undefined => {
-  switch (part.type) {
-    case "text-start": {
-      assertStructuredStreamStillOpen(state, part.type);
-      return [];
-    }
-    case "text-delta": {
-      return createTextDeltaChunks(part, state);
-    }
-    case "text-end": {
-      const structuredChunk = createStructuredStreamDoneChunk(state, helpers);
-
-      return structuredChunk === undefined ? [] : [structuredChunk];
-    }
-    default: {
-      return undefined;
-    }
+  if (part.type === "text-start") {
+    assertStructuredStreamStillOpen(state, part.type);
+    return [];
   }
+
+  if (part.type === "text-delta") {
+    return createTextDeltaChunks(part, state);
+  }
+
+  if (part.type === "text-end") {
+    const structuredChunk = createStructuredStreamDoneChunk(state, helpers);
+    return structuredChunk === undefined ? [] : [structuredChunk];
+  }
+
+  return undefined;
 };
 
 /**
@@ -336,24 +334,19 @@ const createReasoningDeltaChunk = (
 const handleReasoningStreamPart = (
   part: LanguageModelV3StreamPart
 ): ProviderStreamChunk[] | undefined => {
-  switch (part.type) {
-    case "reasoning-start": {
-      return createReasoningStartChunks(part);
-    }
-    case "reasoning-delta": {
-      return [createReasoningDeltaChunk(part)];
-    }
-    case "reasoning-end": {
-      return [
-        {
-          type: "reasoning_done",
-        },
-      ];
-    }
-    default: {
-      return undefined;
-    }
+  if (part.type === "reasoning-start") {
+    return createReasoningStartChunks(part);
   }
+
+  if (part.type === "reasoning-delta") {
+    return [createReasoningDeltaChunk(part)];
+  }
+
+  if (part.type === "reasoning-end") {
+    return [{ type: "reasoning_done" }];
+  }
+
+  return undefined;
 };
 
 /** Reads and sanitizes a tool part's provider metadata, if it is a plain object. */
@@ -423,7 +416,7 @@ const handleToolInputStartPart = (
  * `tool_call_args_delta` chunk; provider-owned tool input never surfaces
  * (KRT-BH005).
  *
- * @throws TuvrenProviderError when the delta arrives before its
+ * @throws {TuvrenProviderError} When the delta arrives before its
  *   `tool-input-start` (no correlated state).
  */
 const handleToolInputDeltaPart = (
@@ -488,7 +481,7 @@ const handleToolInputEndPart = (
  * buffered input, and a matching-content state under a different id (single
  * or ambiguous) is rejected as a correlation error.
  *
- * @throws TuvrenProviderError with code `unsupported_ai_sdk_stream_part` on
+ * @throws {TuvrenProviderError} With code `unsupported_ai_sdk_stream_part` on
  *   any mismatch.
  */
 const assertToolCallCorrelation = (
@@ -497,7 +490,7 @@ const assertToolCallCorrelation = (
 ): void => {
   const existingState = state.toolStates.get(part.toolCallId);
 
-  if (existingState != null) {
+  if (existingState !== undefined) {
     if (
       existingState.name === part.toolName &&
       existingState.inputBuffer === part.input
@@ -604,7 +597,7 @@ const createToolCallPreludeChunks = (
  * Builds the terminal `tool_call_done` chunk, parsing the buffered input as
  * JSON.
  *
- * @throws TuvrenProviderError with code `invalid_ai_sdk_tool_call_input`
+ * @throws {TuvrenProviderError} With code `invalid_ai_sdk_tool_call_input`
  *   when the accumulated input is not valid JSON.
  */
 const createToolCallDoneChunk = (
@@ -747,37 +740,38 @@ const handleToolStreamPart = (
   part: LanguageModelV3StreamPart,
   state: StreamMappingState
 ): ProviderStreamChunk[] | undefined => {
-  switch (part.type) {
-    case "tool-input-start": {
-      return handleToolInputStartPart(part, state);
-    }
-    case "tool-input-delta": {
-      return handleToolInputDeltaPart(part, state);
-    }
-    case "tool-input-end": {
-      return handleToolInputEndPart(part, state);
-    }
-    case "tool-call": {
-      return handleToolCallStreamPart(part, state);
-    }
-    case "tool-result": {
-      // Accept for declared provider-native/mediated tools; reject undeclared (baseline protection).
-      if (state.providerToolClassLookup !== undefined) {
-        const executionClass = state.providerToolClassLookup(part.toolName);
-        if (executionClass !== undefined) {
-          return mapProviderToolResultStreamPart(part, executionClass);
-        }
-      }
-      throw unsupportedStreamPartError(part.type, state.model);
-    }
-    case "file":
-    case "tool-approval-request": {
-      throw unsupportedStreamPartError(part.type, state.model);
-    }
-    default: {
-      return undefined;
-    }
+  if (part.type === "tool-input-start") {
+    return handleToolInputStartPart(part, state);
   }
+
+  if (part.type === "tool-input-delta") {
+    return handleToolInputDeltaPart(part, state);
+  }
+
+  if (part.type === "tool-input-end") {
+    return handleToolInputEndPart(part, state);
+  }
+
+  if (part.type === "tool-call") {
+    return handleToolCallStreamPart(part, state);
+  }
+
+  if (part.type === "tool-result") {
+    // Accept for declared provider-native/mediated tools; reject undeclared (baseline protection).
+    if (state.providerToolClassLookup !== undefined) {
+      const executionClass = state.providerToolClassLookup(part.toolName);
+      if (executionClass !== undefined) {
+        return mapProviderToolResultStreamPart(part, executionClass);
+      }
+    }
+    throw unsupportedStreamPartError(part.type, state.model);
+  }
+
+  if (part.type === "file" || part.type === "tool-approval-request") {
+    throw unsupportedStreamPartError(part.type, state.model);
+  }
+
+  return undefined;
 };
 
 /**
@@ -814,7 +808,7 @@ const flushCompletedToolCalls = (
  * Asserts at finish time that every client tool call emitted its
  * `tool_call_done`; provider-owned states are exempt (KRT-BH005).
  *
- * @throws TuvrenProviderError with code `unsupported_ai_sdk_stream_part`.
+ * @throws {TuvrenProviderError} With code `unsupported_ai_sdk_stream_part`.
  */
 const ensureToolCallsCompleted = (state: StreamMappingState): void => {
   for (const [providerCallId, toolState] of state.toolStates.entries()) {
@@ -874,7 +868,7 @@ const canOmitStructuredStreamOutput = (
  * unless the turn legitimately ended in client tool calls instead (see
  * {@link canOmitStructuredStreamOutput}).
  *
- * @throws TuvrenProviderError with code `structured_output_validation`.
+ * @throws {TuvrenProviderError} With code `structured_output_validation`.
  */
 const ensureStructuredStreamCompleted = (
   state: StreamMappingState,
@@ -993,22 +987,15 @@ const handleTerminalStreamPart = (
   state: StreamMappingState,
   helpers: StreamMappingHelpers
 ): ProviderStreamChunk[] | undefined => {
-  switch (part.type) {
-    case "finish": {
-      return createFinishStreamChunks(part, state, helpers);
-    }
-    case "error": {
-      return [
-        {
-          error: part.error,
-          type: "error",
-        },
-      ];
-    }
-    default: {
-      return undefined;
-    }
+  if (part.type === "finish") {
+    return createFinishStreamChunks(part, state, helpers);
   }
+
+  if (part.type === "error") {
+    return [{ error: part.error, type: "error" }];
+  }
+
+  return undefined;
 };
 
 /**
@@ -1021,7 +1008,7 @@ const handleTerminalStreamPart = (
  *
  * @returns The chunks to yield for this part (often empty for bookkeeping
  *   parts such as `stream-start` or `tool-input-end`).
- * @throws TuvrenProviderError with code `unsupported_ai_sdk_stream_part` for
+ * @throws {TuvrenProviderError} With code `unsupported_ai_sdk_stream_part` for
  *   parts outside the baseline contract (for example undeclared
  *   provider-executed tool results), or `structured_output_validation` when
  *   structured output finishes incomplete or invalid.
