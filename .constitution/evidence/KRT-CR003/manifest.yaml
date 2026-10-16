@@ -2,7 +2,7 @@ owner: KRT-CR003
 mode: gherkin
 produced:
   date: 2026-10-15
-  commit: f0fc636
+  commit: c9e1313
   command: LC_ALL=C flock /tmp/tuvren-wave-1-verification.lock direnv exec . env PGHOST=/run/user/1000/devenv-3ea1e50/postgres PGPORT=5432 bun run proving-host:scenario-sqlite-pinned; LC_ALL=C flock /tmp/tuvren-wave-1-verification.lock direnv exec . env PGHOST=/run/user/1000/devenv-3ea1e50/postgres PGPORT=5432 VERIFY_SERIAL=1 NX_PARALLEL=1 bun run check
 files:
   - path: live-probe.log
@@ -10,7 +10,7 @@ files:
     bytes: 32
     role: log
   - path: verification-summary.md
-    sha256: 7f99bed477ceeedb2d01b7d9bdd6eb45a9a5ee2a1fc75c3c62a407b16dd64ac3
-    bytes: 2434
+    sha256: 4561f7dd575351512a2d0d37b2be90422318b1856a94351ebc7affaa02122002
+    bytes: 2528
     role: measurement
 pass_criteria: Recovery skips the runner for the interrupted iteration, dispatches exactly the missing original calls with stable identity through normal policy and approval handling, does not duplicate the assistant message, checkpoints recovered and new results, preserves no-assistant re-inference, the SQLite recipe emits the required line, and the full serial repository gate exits 0.
