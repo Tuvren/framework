@@ -33,9 +33,9 @@ const TEST_SCHEMA = {
 } satisfies TurnTreeSchema;
 
 const UNSUPPORTED_RECLAMATION_PATTERN =
-  /maintenance\.reclamation is not supported by this backend/;
+  /maintenance\.reclamation is not supported by this backend/u;
 
-const openBackends: { close(): Promise<void> }[] = [];
+const openBackends: { close: () => Promise<void> }[] = [];
 
 const createReclamationKernel = async () => {
   let clock = 0;
@@ -60,10 +60,12 @@ const createReclamationKernel = async () => {
 
 after(async () => {
   for (const backend of openBackends) {
+    // oxlint-disable-next-line no-await-in-loop -- Close backends serially to preserve teardown and first-failure order.
     await backend.close();
   }
 });
 
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("createSqliteBackend maintenance.reclamation", () => {
   test("reclaims unreferenced objects and archived branches after a rollback", async () => {
     const { kernel, schemaId, thread } = await createReclamationKernel();
@@ -147,7 +149,7 @@ describe("createSqliteBackend maintenance.reclamation", () => {
   test("rejects reclamation on a backend that does not advertise the capability", async () => {
     const nonReclaimingBackend: RuntimeBackend = {
       capabilities: () => ({ "thread.enumeration": true }),
-      health: () => Promise.resolve({ ok: true }),
+      health: async () => await Promise.resolve({ ok: true }),
       transact: () => {
         throw new Error("transact must not be reached when reclaim is gated");
       },

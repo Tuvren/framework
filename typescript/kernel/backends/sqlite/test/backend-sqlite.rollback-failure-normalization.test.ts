@@ -49,21 +49,23 @@ import {
 
 const SIMULATED_ROLLBACK_FAILURE_PATTERN = /simulated rollback failure/u;
 
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("@tuvren/backend-sqlite transact rollback-failure normalization (KRT-BK009)", () => {
   test("normalizes an error thrown by ROLLBACK itself instead of letting it escape unnormalized", async () => {
     const databasePath = createTempDatabasePath();
     const backend = createSqliteBackend({ databasePath });
 
+    /* oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test intentionally replaces the backend's private database executor to force a rollback failure. */
     const internal = backend as unknown as {
       db: { exec: (sql: string) => unknown };
     };
     const originalExec = internal.db.exec.bind(internal.db);
     internal.db.exec = (sql: string) => {
       if (sql === "ROLLBACK") {
-        const rollbackFailure = new Error(
-          "simulated rollback failure (KRT-BK009 test)"
-        ) as Error & { code: string };
-        rollbackFailure.code = "SQLITE_ERROR";
+        const rollbackFailure = Object.assign(
+          new Error("simulated rollback failure (KRT-BK009 test)"),
+          { code: "SQLITE_ERROR" }
+        );
         throw rollbackFailure;
       }
       return originalExec(sql);

@@ -38,10 +38,11 @@ const TEST_SCHEMA = {
   schemaId: "schema_sqlite_purge",
 } satisfies TurnTreeSchema;
 
-const openBackends: { close(): Promise<void> }[] = [];
+const openBackends: { close: () => Promise<void> }[] = [];
 
 after(async () => {
   for (const backend of openBackends) {
+    // oxlint-disable-next-line no-await-in-loop -- Close backends serially to preserve teardown and first-failure order.
     await backend.close();
   }
 });
@@ -57,6 +58,7 @@ const seedThread = async (
   return threadId;
 };
 
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("createSqliteBackend purgeScope", () => {
   test("drops the bound scope's database file while a co-tenant scope's sibling file survives", async () => {
     // Tenant A binds the default Scope (its file is the base path verbatim);

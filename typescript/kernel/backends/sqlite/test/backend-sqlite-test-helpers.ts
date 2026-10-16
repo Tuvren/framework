@@ -24,7 +24,7 @@ import {
   symlinkSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import path from "node:path";
 import { after } from "node:test";
 
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
@@ -40,6 +40,8 @@ import {
 import Database from "better-sqlite3";
 
 import { createSqliteBackend } from "../src/index.js";
+
+const { dirname, join, resolve } = path;
 
 export const NESTED_TRANSACTION_ERROR_PATTERN = /must not be nested/u;
 export const MIGRATION_CONFLICT_ERROR_PATTERN =
@@ -127,8 +129,8 @@ interface ExplainQueryPlanRow {
   detail: string;
 }
 
-const getCompiledSqliteRuntimePath = (): string => {
-  return join(
+const getCompiledSqliteRuntimePath = (): string =>
+  join(
     process.cwd(),
     ".tmp-tests",
     "typescript",
@@ -139,7 +141,6 @@ const getCompiledSqliteRuntimePath = (): string => {
     "lib",
     "sqlite-backend.js"
   );
-};
 
 export const copyCompiledSqliteRuntimeBundle = (
   targetRuntimePath: string
@@ -174,22 +175,20 @@ export const copyCompiledSqliteRuntimeBundle = (
   }
 };
 
-export const getBaselineMigrationSql = (): string => {
-  return readFileSync(
+export const getBaselineMigrationSql = (): string =>
+  readFileSync(
     join(process.cwd(), "migrations", "0001_initial_schema.sql"),
     "utf-8"
   );
-};
 
-export const getTargetedValidationMigrationSql = (): string => {
-  return readFileSync(
+export const getTargetedValidationMigrationSql = (): string =>
+  readFileSync(
     join(process.cwd(), "migrations", "0002_targeted_validation_indexes.sql"),
     "utf-8"
   );
-};
 
-export const getPendingSignalsAndAnnotationsMigrationSql = (): string => {
-  return readFileSync(
+export const getPendingSignalsAndAnnotationsMigrationSql = (): string =>
+  readFileSync(
     join(
       process.cwd(),
       "migrations",
@@ -197,13 +196,12 @@ export const getPendingSignalsAndAnnotationsMigrationSql = (): string => {
     ),
     "utf-8"
   );
-};
 
 export const copyCurrentPackageMigrations = (targetDirectory: string): void => {
   const migrationsDirectory = join(process.cwd(), "migrations");
   const migrationFiles = readdirSync(migrationsDirectory)
     .filter((fileName) => fileName.endsWith(".sql"))
-    .sort((left, right) => left.localeCompare(right));
+    .toSorted((left, right) => left.localeCompare(right));
 
   for (const fileName of migrationFiles) {
     copyFileSync(
@@ -217,13 +215,11 @@ const explainQueryPlanDetails = (
   db: Database.Database,
   sql: string,
   parameters: readonly unknown[] = []
-): string[] => {
-  return (
-    db
-      .prepare(`EXPLAIN QUERY PLAN ${sql}`)
-      .all(...parameters) as ExplainQueryPlanRow[]
-  ).map((row) => row.detail);
-};
+): string[] =>
+  db
+    .prepare<unknown[], ExplainQueryPlanRow>(`EXPLAIN QUERY PLAN ${sql}`)
+    .all(...parameters)
+    .map((row) => row.detail);
 
 export const assertPlanUsesIndex = (
   db: Database.Database,

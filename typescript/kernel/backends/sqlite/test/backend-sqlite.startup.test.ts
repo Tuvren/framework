@@ -16,7 +16,7 @@
 
 import { deepStrictEqual, strictEqual, throws } from "node:assert/strict";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import path from "node:path";
 import { describe, test } from "node:test";
 import { pathToFileURL } from "node:url";
 
@@ -42,6 +42,9 @@ import {
   UNKNOWN_MIGRATION_ERROR_PATTERN,
 } from "./backend-sqlite-test-helpers.js";
 
+const { join } = path;
+
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("@tuvren/backend-sqlite startup", () => {
   test("advertises non-support for the shared lease clock", () => {
     // The single-file embedded backend is a single writer with no cross-owner
@@ -60,19 +63,24 @@ describe("@tuvren/backend-sqlite startup", () => {
     deepStrictEqual(await backend.health(), { ok: true });
 
     const probe = new Database(databasePath, { readonly: true });
-    const journalMode = probe.pragma("journal_mode", {
+    const journalMode: unknown = probe.pragma("journal_mode", {
       simple: true,
-    }) as string;
+    });
     const migrationRows = probe
-      .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
-      .all() as { name: string }[];
+      .prepare<[], { name: string }>(
+        "SELECT name FROM backend_sqlite_migrations ORDER BY name"
+      )
+      .all();
     const objectsTable = probe
-      .prepare(
+      .prepare<[], { name: string }>(
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'objects'"
       )
-      .get() as { name: string } | undefined;
+      .get();
     probe.close();
 
+    if (typeof journalMode !== "string") {
+      throw new TypeError("expected SQLite journal_mode to be a string");
+    }
     strictEqual(journalMode.toLowerCase(), "wal");
     deepStrictEqual(migrationRows, [
       { name: "0001_initial_schema.sql" },
@@ -87,8 +95,10 @@ describe("@tuvren/backend-sqlite startup", () => {
     createSqliteBackend({ databasePath });
     const secondProbe = new Database(databasePath, { readonly: true });
     const reappliedRows = secondProbe
-      .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
-      .all() as { name: string }[];
+      .prepare<[], { name: string }>(
+        "SELECT name FROM backend_sqlite_migrations ORDER BY name"
+      )
+      .all();
     secondProbe.close();
 
     deepStrictEqual(reappliedRows, migrationRows);
@@ -170,8 +180,10 @@ describe("@tuvren/backend-sqlite startup", () => {
 
       const probe = new Database(databasePath, { readonly: true });
       const migrationRows = probe
-        .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
-        .all() as { name: string }[];
+        .prepare<[], { name: string }>(
+          "SELECT name FROM backend_sqlite_migrations ORDER BY name"
+        )
+        .all();
       probe.close();
 
       deepStrictEqual(migrationRows, [
@@ -278,6 +290,7 @@ describe("@tuvren/backend-sqlite startup", () => {
     copyCompiledSqliteRuntimeBundle(runtimePath);
     copyCurrentPackageMigrations(fakeMigrationsDirectory);
 
+    /* oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The copied runtime is loaded from a unique file URL so this distribution test must describe its expected public entrypoint. */
     const runtimeModule = (await import(pathToFileURL(runtimePath).href)) as {
       createSqliteBackend: typeof createSqliteBackend;
     };
@@ -312,6 +325,7 @@ describe("@tuvren/backend-sqlite startup", () => {
       "utf-8"
     );
 
+    /* oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The copied runtime is loaded from a unique file URL so this distribution test must describe its expected public entrypoint. */
     const runtimeModule = (await import(pathToFileURL(runtimePath).href)) as {
       createSqliteBackend: typeof createSqliteBackend;
     };
@@ -343,6 +357,7 @@ describe("@tuvren/backend-sqlite startup", () => {
       "utf-8"
     );
 
+    /* oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The copied runtime is loaded from a unique file URL so this distribution test must describe its expected public entrypoint. */
     const runtimeModule = (await import(pathToFileURL(runtimePath).href)) as {
       createSqliteBackend: typeof createSqliteBackend;
     };

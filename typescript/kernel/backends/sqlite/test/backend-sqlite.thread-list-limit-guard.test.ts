@@ -85,18 +85,20 @@ const seedThread = async (
   });
 };
 
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("@tuvren/backend-sqlite threads.list LIMIT guard (KRT-BK006)", () => {
   test("rejects a negative limit before touching the database", async () => {
     const databasePath = createTempDatabasePath();
     const backend = createSqliteBackend({ databasePath });
 
-    await backend.transact((tx) => {
+    await backend.transact(async (tx) => {
       const { list } = tx.threads;
       ok(list);
       throws(() => {
+        // oxlint-disable-next-line typescript/no-floating-promises -- The invalid limit throws synchronously before the promise-capable repository call can start.
         list({ limit: -1 });
       }, TuvrenPersistenceError);
-      return Promise.resolve();
+      await Promise.resolve();
     });
 
     await backend.close();
@@ -106,13 +108,14 @@ describe("@tuvren/backend-sqlite threads.list LIMIT guard (KRT-BK006)", () => {
     const databasePath = createTempDatabasePath();
     const backend = createSqliteBackend({ databasePath });
 
-    await backend.transact((tx) => {
+    await backend.transact(async (tx) => {
       const { list } = tx.threads;
       ok(list);
       throws(() => {
+        // oxlint-disable-next-line typescript/no-floating-promises -- The invalid limit throws synchronously before the promise-capable repository call can start.
         list({ limit: 1.5 });
       }, TuvrenPersistenceError);
-      return Promise.resolve();
+      await Promise.resolve();
     });
 
     await backend.close();
@@ -122,13 +125,14 @@ describe("@tuvren/backend-sqlite threads.list LIMIT guard (KRT-BK006)", () => {
     const databasePath = createTempDatabasePath();
     const backend = createSqliteBackend({ databasePath });
 
-    await backend.transact((tx) => {
+    await backend.transact(async (tx) => {
       const { list } = tx.threads;
       ok(list);
       throws(() => {
+        // oxlint-disable-next-line typescript/no-floating-promises -- The invalid limit throws synchronously before the promise-capable repository call can start.
         list({ limit: Number.MAX_SAFE_INTEGER + 1 });
       }, TuvrenPersistenceError);
-      return Promise.resolve();
+      await Promise.resolve();
     });
 
     await backend.close();
@@ -138,17 +142,18 @@ describe("@tuvren/backend-sqlite threads.list LIMIT guard (KRT-BK006)", () => {
     const databasePath = createTempDatabasePath();
     const backend = createSqliteBackend({ databasePath });
 
-    await backend.transact((tx) => {
+    await backend.transact(async (tx) => {
       const { list } = tx.threads;
       ok(list);
       try {
+        // oxlint-disable-next-line typescript/no-floating-promises -- The invalid limit throws synchronously before the promise-capable repository call can start.
         list({ limit: -5 });
         throw new Error("expected list() to throw");
       } catch (error) {
         ok(error instanceof TuvrenPersistenceError);
         strictEqual(error.code, "sqlite_backend_invalid_list_limit");
       }
-      return Promise.resolve();
+      await Promise.resolve();
     });
 
     await backend.close();

@@ -98,6 +98,7 @@ const VALIDATION_HELPERS = {
   validateHashString,
 };
 
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("@tuvren/backend-sqlite invariants", () => {
   test("fsck() rejects an observe annotation whose run is missing", async () => {
     const seeded = await seedCorruptionDatabase();
@@ -239,9 +240,9 @@ describe("@tuvren/backend-sqlite invariants", () => {
     probe.close();
 
     let callbackRan = false;
-    await backend.transact(() => {
+    await backend.transact(async () => {
       callbackRan = true;
-      return Promise.resolve();
+      await Promise.resolve();
     });
     strictEqual(callbackRan, true);
   });
@@ -525,9 +526,9 @@ describe("@tuvren/backend-sqlite invariants", () => {
 
     // The corruption does not block the hot transaction path either.
     let callbackRan = false;
-    await backend.transact(() => {
+    await backend.transact(async () => {
       callbackRan = true;
-      return Promise.resolve();
+      await Promise.resolve();
     });
     strictEqual(callbackRan, true);
 
@@ -638,9 +639,9 @@ describe("@tuvren/backend-sqlite invariants", () => {
       await delay(20);
       order.push("first:end");
     });
-    const secondTransaction = backend.transact(() => {
+    const secondTransaction = backend.transact(async () => {
       order.push("second:start", "second:end");
-      return Promise.resolve();
+      await Promise.resolve();
     });
 
     await Promise.all([firstTransaction, secondTransaction]);
@@ -667,18 +668,18 @@ describe("@tuvren/backend-sqlite invariants", () => {
     });
     const escapedTransactions: KrakenBackendTx[] = [];
 
-    await backend.transact((tx) => {
+    await backend.transact(async (tx) => {
       escapedTransactions.push(tx);
-      return Promise.resolve();
+      await Promise.resolve();
     });
 
-    const txHandle = escapedTransactions[0];
+    const [txHandle] = escapedTransactions;
     if (txHandle === undefined) {
       throw new Error("expected escaped transaction handle");
     }
 
     await rejects(
-      async () => txHandle.objects.has("0".repeat(64)),
+      async () => await txHandle.objects.has("0".repeat(64)),
       TuvrenPersistenceError
     );
   });
@@ -760,11 +761,9 @@ describe("@tuvren/backend-sqlite validateCommittedState turn node lineage invari
     state.threads.set(thread.threadId, thread);
     state.branches.set(branch.branchId, branch);
 
-    throws(
-      () =>
-        validateCommittedState(state, createEmptyState(), VALIDATION_HELPERS),
-      CYCLIC_LINEAGE_ERROR_PATTERN
-    );
+    throws(() => {
+      validateCommittedState(state, createEmptyState(), VALIDATION_HELPERS);
+    }, CYCLIC_LINEAGE_ERROR_PATTERN);
   });
 
   test("rejects a branch head whose turn node lineage reaches a different thread's root", async () => {
@@ -824,10 +823,8 @@ describe("@tuvren/backend-sqlite validateCommittedState turn node lineage invari
     state.threads.set(thread.threadId, thread);
     state.branches.set(branch.branchId, branch);
 
-    throws(
-      () =>
-        validateCommittedState(state, createEmptyState(), VALIDATION_HELPERS),
-      THREAD_LINEAGE_MISMATCH_ERROR_PATTERN
-    );
+    throws(() => {
+      validateCommittedState(state, createEmptyState(), VALIDATION_HELPERS);
+    }, THREAD_LINEAGE_MISMATCH_ERROR_PATTERN);
   });
 });

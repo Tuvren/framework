@@ -16,7 +16,7 @@
 
 import { deepStrictEqual, ok, strictEqual, throws } from "node:assert/strict";
 import { readdirSync } from "node:fs";
-import { basename, dirname } from "node:path";
+import path from "node:path";
 import { describe, test } from "node:test";
 
 import type {
@@ -35,6 +35,8 @@ import {
 
 import { createSqliteBackend } from "../src/index.js";
 import { createTempDatabasePath } from "./backend-sqlite-test-helpers.js";
+
+const { basename, dirname } = path;
 
 // Strips the trailing filename extension so a derived scope sibling can be
 // matched against the verbatim database file stem.
@@ -150,6 +152,7 @@ const seedBranchWithMessage = async (
   };
 };
 
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("@tuvren/backend-sqlite scope isolation (KRT-BE004)", () => {
   test("content stored under one scope is not retrievable or existence-checkable through another scope sharing a base path", async () => {
     const databasePath = createTempDatabasePath();
@@ -296,7 +299,10 @@ describe("@tuvren/backend-sqlite scope isolation (KRT-BE004)", () => {
     // sibling, so isolation rests on two physical databases, not one shared file.
     const verbatimName = basename(databasePath);
     const verbatimStem = verbatimName.replace(TRAILING_EXTENSION, "");
-    const siblingPattern = new RegExp(`^${verbatimStem}\\.scope-[0-9a-f]+`);
+    const siblingPattern = new RegExp(
+      `^${verbatimStem}\\.scope-[0-9a-f]+`,
+      "u"
+    );
     const directoryEntries = readdirSync(dirname(databasePath));
     ok(directoryEntries.includes(verbatimName));
     ok(directoryEntries.some((name) => siblingPattern.test(name)));
@@ -335,31 +341,23 @@ describe("@tuvren/backend-sqlite scope isolation (KRT-BE004)", () => {
 
     // Scope A observes its own complete record set.
     await scopeA.transact(async (tx) => {
-      strictEqual(
-        (await tx.threads.get(seeded.threadId))?.threadId,
-        "thread_a"
-      );
-      strictEqual(
-        (await tx.branches.get(seeded.branchId))?.branchId,
-        "branch_a"
-      );
-      deepStrictEqual(
-        (await tx.branches.listByThread(seeded.threadId)).map(
-          (b) => b.branchId
-        ),
-        ["branch_a"]
-      );
-      strictEqual(
-        (await tx.turnNodes.get(seeded.headTurnNodeHash))?.hash,
-        seeded.headTurnNodeHash
-      );
-      strictEqual(
-        (await tx.turnTrees.get(seeded.turnTreeHash))?.hash,
+      const thread = await tx.threads.get(seeded.threadId);
+      const branch = await tx.branches.get(seeded.branchId);
+      const branches = await tx.branches.listByThread(seeded.threadId);
+      const headTurnNode = await tx.turnNodes.get(seeded.headTurnNodeHash);
+      const turnTree = await tx.turnTrees.get(seeded.turnTreeHash);
+      const turnTreePaths = await tx.turnTreePaths.listByTurnTree(
         seeded.turnTreeHash
       );
-      ok(
-        (await tx.turnTreePaths.listByTurnTree(seeded.turnTreeHash)).length > 0
+      strictEqual(thread?.threadId, "thread_a");
+      strictEqual(branch?.branchId, "branch_a");
+      deepStrictEqual(
+        branches.map((item) => item.branchId),
+        ["branch_a"]
       );
+      strictEqual(headTurnNode?.hash, seeded.headTurnNodeHash);
+      strictEqual(turnTree?.hash, seeded.turnTreeHash);
+      ok(turnTreePaths.length > 0);
       strictEqual(await tx.objects.has(seeded.messageHash), true);
     });
 
