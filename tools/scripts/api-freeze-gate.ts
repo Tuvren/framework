@@ -93,10 +93,10 @@ const CORE_AUTHORITY_PACKET = path.join(
 const WHOLLY_EXPERIMENTAL_ENTRYPOINTS = ["@tuvren/core/capabilities"] as const;
 const AUTHORITY_DECLARATION_MARKER =
   "the /capabilities subpath is declared wholly experimental";
-const DIST_PREFIX_PATTERN = /^\.\/dist\//;
-const DECLARATION_SUFFIX_PATTERN = /\.d\.ts$/;
-const WHITESPACE_RUN_PATTERN = /\s+/g;
-const WELL_KNOWN_SYMBOL_ID_PATTERN = /^(__@[^@]+)@\d+$/;
+const DIST_PREFIX_PATTERN = /^\.\/dist\//u;
+const DECLARATION_SUFFIX_PATTERN = /\.d\.ts$/u;
+const WHITESPACE_RUN_PATTERN = /\s+/gu;
+const WELL_KNOWN_SYMBOL_ID_PATTERN = /^(?<name>__@[^@]+)@\d+$/u;
 
 export interface SnapshotFile {
   $description: string;
@@ -136,6 +136,9 @@ interface EntrypointTarget {
   specifier: string;
 }
 
+const isUnknownRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 const hasSymbolFlag = (symbol: ts.Symbol, flag: ts.SymbolFlags): boolean =>
   // biome-ignore lint/suspicious/noBitwiseOperators: ts.SymbolFlags is a bitflag enum; masking is the API's membership test.
   (symbol.flags & flag) !== 0;
@@ -160,19 +163,30 @@ const assertAuthorityDeclaration = async (): Promise<void> => {
 const resolveEntrypointTargets = async (): Promise<EntrypointTarget[]> => {
   const targets: EntrypointTarget[] = [];
 
-  const coreManifest = JSON.parse(
+  const coreManifest: unknown = JSON.parse(
     await readFile(
       path.join(REPO_ROOT, CORE_PACKAGE_DIR, "package.json"),
       "utf-8"
     )
-  ) as { exports?: Record<string, unknown>; name: string };
+  );
+  if (
+    !isUnknownRecord(coreManifest) ||
+    typeof coreManifest.name !== "string" ||
+    (coreManifest.exports !== undefined &&
+      !isUnknownRecord(coreManifest.exports))
+  ) {
+    throw new TypeError(
+      `[api-freeze-gate] ${CORE_PACKAGE_DIR}/package.json has an invalid name or exports map`
+    );
+  }
 
   for (const key of Object.keys(coreManifest.exports ?? {})) {
     if (key === "./package.json") {
       continue;
     }
 
-    const subpath = key === "." ? "" : key.slice(1); // "./errors" -> "/errors"
+    // "./errors" becomes "/errors".
+    const subpath = key === "." ? "" : key.slice(1);
     targets.push({
       sourceFile: path.join(
         REPO_ROOT,
@@ -197,7 +211,7 @@ const resolveEntrypointTargets = async (): Promise<EntrypointTarget[]> => {
 /**
  * Read the `@experimental` TSDoc release tag wherever it is placed: on the
  * declaration itself, or on the enclosing statement (the barrel re-export
- * placement KRT-BJ006 landed — a `/** @experimental *​/` ahead of an
+ * placement KRT-BJ006 landed — an `@experimental` doc comment ahead of an
  * `export type { X } from ...` statement attaches to the ExportDeclaration,
  * while the symbol's declaration node is the inner ExportSpecifier).
  */
@@ -249,7 +263,7 @@ const typeIsDeclaredInRepo = (type: ts.Type): boolean => {
  * checker allocation order, not API surface.
  */
 const normalizeMemberName = (name: string): string =>
-  name.replace(WELL_KNOWN_SYMBOL_ID_PATTERN, "$1");
+  name.replace(WELL_KNOWN_SYMBOL_ID_PATTERN, "$<name>");
 
 /**
  * Deterministic structural text for a value export's type: every call and
@@ -294,7 +308,7 @@ const structuralTypeText = (
             ts.TypeFormatFlags.NoTruncation
           )}`
       )
-      .sort();
+      .toSorted();
 
     parts.push(...properties);
   }
@@ -319,7 +333,7 @@ const describeExport = (
 
   const declarations = resolved.getDeclarations() ?? [];
   const isValue = hasSymbolFlag(resolved, ts.SymbolFlags.Value);
-  const location = declarations[0];
+  const [location] = declarations;
 
   let signature: string;
 
@@ -363,7 +377,7 @@ const describeExport = (
           .replace(WHITESPACE_RUN_PATTERN, " ")
           .trim()
       )
-      .sort()
+      .toSorted()
       .join(" | ");
   }
 
@@ -378,7 +392,7 @@ const sortRecord = <T>(record: Record<string, T>): Record<string, T> =>
   // Codepoint order, not localeCompare: the canonical snapshot order must not
   // depend on the regenerating machine's system locale.
   Object.fromEntries(
-    Object.entries(record).sort(([a], [b]) => (a < b ? -1 : 1))
+    Object.entries(record).toSorted(([a], [b]) => (a < b ? -1 : 1))
   );
 
 const extractSurface = (
@@ -388,7 +402,6 @@ const extractSurface = (
   const program = ts.createProgram(
     targets.map((target) => target.sourceFile),
     {
-      baseUrl: REPO_ROOT,
       module: ts.ModuleKind.NodeNext,
       moduleResolution: ts.ModuleResolutionKind.NodeNext,
       paths: workspacePaths,
@@ -446,26 +459,33 @@ const buildWorkspaceSourcePaths = async (): Promise<
   Record<string, string[]>
 > => {
   const paths: Record<string, string[]> = {};
-
-  for (const absoluteManifestPath of await walkPackageManifests(
+  const absoluteManifestPaths = await walkPackageManifests(
     path.join(REPO_ROOT, "typescript")
-  )) {
-    const manifestPath = path.relative(REPO_ROOT, absoluteManifestPath);
-    const manifest = JSON.parse(
-      await readFile(absoluteManifestPath, "utf-8")
-    ) as { exports?: Record<string, { types?: string }>; name?: string };
+  );
+  const manifests = await Promise.all(
+    absoluteManifestPaths.map(async (absoluteManifestPath) => ({
+      absoluteManifestPath,
+      value: JSON.parse(
+        await readFile(absoluteManifestPath, "utf-8")
+      ) as unknown,
+    }))
+  );
 
+  for (const { absoluteManifestPath, value } of manifests) {
+    const manifestPath = path.relative(REPO_ROOT, absoluteManifestPath);
     if (
-      !manifest.name?.startsWith("@tuvren/") ||
-      manifest.exports === undefined
+      !isUnknownRecord(value) ||
+      typeof value.name !== "string" ||
+      !value.name.startsWith("@tuvren/") ||
+      !isUnknownRecord(value.exports)
     ) {
       continue;
     }
 
     const packageDir = path.dirname(manifestPath);
 
-    for (const [key, entry] of Object.entries(manifest.exports)) {
-      const types = entry?.types;
+    for (const [key, entry] of Object.entries(value.exports)) {
+      const types = isUnknownRecord(entry) ? entry.types : undefined;
 
       if (typeof types !== "string" || !types.startsWith("./dist/")) {
         continue;
@@ -475,16 +495,13 @@ const buildWorkspaceSourcePaths = async (): Promise<
         .replace(DIST_PREFIX_PATTERN, "src/")
         .replace(DECLARATION_SUFFIX_PATTERN, ".ts");
       const specifier =
-        key === "." ? manifest.name : `${manifest.name}/${key.slice(2)}`;
-      paths[specifier] = [path.join(packageDir, sourceRelative)];
+        key === "." ? value.name : `${value.name}/${key.slice(2)}`;
+      paths[specifier] = [path.join(REPO_ROOT, packageDir, sourceRelative)];
     }
   }
 
   return paths;
 };
-
-const isUnknownRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === "string");

@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
-import { relative, resolve } from "node:path";
+import nodePath from "node:path";
+
+import { spawn } from "bun";
 
 import { parseRegenerateCommandArgv } from "../lib/regenerate-command-argv.js";
+
+const { relative, resolve } = nodePath;
 
 interface AuthorityPacketManifest {
   authoritativeSources: {
@@ -124,6 +127,22 @@ const GENERIC_RUNNER_LITERAL_ALLOWLIST = new Set([
   "paused",
 ]);
 
+const forEachSequential = async <T>(
+  values: Iterable<T>,
+  operation: (value: T) => Promise<void>
+): Promise<void> => {
+  const iterator = values[Symbol.iterator]();
+  const visitNext = async (): Promise<void> => {
+    const next = iterator.next();
+    if (next.done === true) {
+      return;
+    }
+    await operation(next.value);
+    await visitNext();
+  };
+  await visitNext();
+};
+
 const findFiles = async (
   directory: string,
   nameOrSuffix: string
@@ -131,12 +150,12 @@ const findFiles = async (
   const entries = await readdir(directory, { withFileTypes: true });
   const paths: string[] = [];
 
-  for (const entry of entries) {
+  await forEachSequential(entries, async (entry) => {
     const entryPath = resolve(directory, entry.name);
 
     if (entry.isDirectory()) {
       paths.push(...(await findFiles(entryPath, nameOrSuffix)));
-      continue;
+      return;
     }
 
     if (
@@ -145,7 +164,7 @@ const findFiles = async (
     ) {
       paths.push(entryPath);
     }
-  }
+  });
 
   return paths;
 };
@@ -172,13 +191,13 @@ const loadAuthorityPackets = async (): Promise<AuthorityPacketManifest[]> => {
   }
   const manifests: AuthorityPacketManifest[] = [];
 
-  for (const manifestPath of manifestPaths) {
+  await forEachSequential(manifestPaths, async (manifestPath) => {
     const value: unknown = JSON.parse(await readFile(manifestPath, "utf-8"));
 
     if (isAuthorityPacketManifest(value)) {
       manifests.push(value);
     }
-  }
+  });
 
   return manifests;
 };
@@ -267,12 +286,12 @@ const collectSnapshotEntries = async (
   const entries = await readdir(currentPath, { withFileTypes: true });
   const snapshots: FileSnapshot[] = [];
 
-  for (const entry of entries) {
+  await forEachSequential(entries, async (entry) => {
     const entryPath = resolve(currentPath, entry.name);
 
     if (entry.isDirectory()) {
       snapshots.push(...(await collectSnapshotEntries(rootPath, entryPath)));
-      continue;
+      return;
     }
 
     if (entry.isFile()) {
@@ -281,7 +300,7 @@ const collectSnapshotEntries = async (
         relativePath: relative(rootPath, entryPath),
       });
     }
-  }
+  });
 
   return snapshots;
 };
@@ -299,65 +318,64 @@ const snapshotPath = async (path: string): Promise<FileSnapshot[]> => {
   }
 
   const entries = await collectSnapshotEntries(path, path);
-  return entries.sort((left, right) =>
+  return entries.toSorted((left, right) =>
     left.relativePath.localeCompare(right.relativePath)
   );
 };
 
-const runRegenerateCommand = (
+const runRegenerateCommand = async (
   command: string
-): Promise<{ message: string; ok: boolean }> =>
-  new Promise((resolvePromise) => {
-    // A manifest-owned regenerateCommand is untrusted input (any pull request
-    // can edit a checked-in authority-packet.json), so it is parsed into an
-    // argv array and rejected loud rather than handed to a shell. See
-    // ../lib/regenerate-command-argv.ts for the metacharacter denylist and
-    // command-prefix allowlist this enforces.
-    let argv: string[];
+): Promise<{ message: string; ok: boolean }> => {
+  // A manifest-owned regenerateCommand is untrusted input (any pull request
+  // can edit a checked-in authority-packet.json), so it is parsed into an
+  // argv array and rejected loud rather than handed to a shell. See
+  // ../lib/regenerate-command-argv.ts for the metacharacter denylist and
+  // command-prefix allowlist this enforces.
+  let argv: string[];
 
-    try {
-      argv = parseRegenerateCommandArgv(command);
-    } catch (error) {
-      resolvePromise({
-        message: error instanceof Error ? error.message : String(error),
-        ok: false,
-      });
-      return;
-    }
+  try {
+    argv = parseRegenerateCommandArgv(command);
+  } catch (error) {
+    return {
+      message: error instanceof Error ? error.message : String(error),
+      ok: false,
+    };
+  }
 
-    const [executable, ...args] = argv;
+  const [executable, ...args] = argv;
 
-    if (executable === undefined) {
-      resolvePromise({
-        message: `regenerateCommand "${command}" produced an empty argv`,
-        ok: false,
-      });
-      return;
-    }
+  if (executable === undefined) {
+    return {
+      message: `regenerateCommand "${command}" produced an empty argv`,
+      ok: false,
+    };
+  }
 
-    // Freshness checks intentionally execute the manifest-owned command instead
-    // of duplicating generator knowledge in this guardrail.
-    const child = spawn(executable, args, {
+  // Freshness checks intentionally execute the manifest-owned command instead
+  // of duplicating generator knowledge in this guardrail.
+  try {
+    const subprocess = spawn([executable, ...args], {
       cwd: REPO_ROOT,
-      shell: false,
-      stdio: ["ignore", "pipe", "pipe"],
+      stderr: "pipe",
+      stdin: "ignore",
+      stdout: "pipe",
     });
-    const output: string[] = [];
-
-    child.stdout.setEncoding("utf-8");
-    child.stderr.setEncoding("utf-8");
-    child.stdout.on("data", (chunk: string) => output.push(chunk));
-    child.stderr.on("data", (chunk: string) => output.push(chunk));
-    child.on("error", (error) => {
-      resolvePromise({ message: error.message, ok: false });
-    });
-    child.on("close", (code) => {
-      resolvePromise({
-        message: output.join("").trim().slice(-1000),
-        ok: code === 0,
-      });
-    });
-  });
+    const [exitCode, stderr, stdout] = await Promise.all([
+      subprocess.exited,
+      new Response(subprocess.stderr).text(),
+      new Response(subprocess.stdout).text(),
+    ]);
+    return {
+      message: `${stdout}${stderr}`.trim().slice(-1000),
+      ok: exitCode === 0,
+    };
+  } catch (error) {
+    return {
+      message: error instanceof Error ? error.message : String(error),
+      ok: false,
+    };
+  }
+};
 
 const snapshotsAreEqual = (
   left: readonly FileSnapshot[],
@@ -385,9 +403,9 @@ const checkFreshnessForCommand = async (
   const failures: GuardrailFailure[] = [];
   const beforeSnapshots = new Map<string, FileSnapshot[]>();
 
-  for (const check of checks) {
+  await forEachSequential(checks, async (check) => {
     beforeSnapshots.set(check.artifact, await snapshotPath(check.artifactPath));
-  }
+  });
 
   const result = await runRegenerateCommand(command);
 
@@ -401,7 +419,7 @@ const checkFreshnessForCommand = async (
     return failures;
   }
 
-  for (const check of checks) {
+  await forEachSequential(checks, async (check) => {
     const after = await snapshotPath(check.artifactPath);
     const before = beforeSnapshots.get(check.artifact) ?? [];
 
@@ -411,7 +429,7 @@ const checkFreshnessForCommand = async (
         message: `${packetId} generated artifact drifted after ${command}: ${check.artifact}`,
       });
     }
-  }
+  });
 
   return failures;
 };
@@ -421,15 +439,22 @@ const checkFreshnessDrift = async (
 ): Promise<GuardrailFailure[]> => {
   const failures: GuardrailFailure[] = [];
 
-  for (const manifest of manifests) {
+  await forEachSequential(manifests, async (manifest) => {
     const checksByCommand = groupFreshnessChecksByCommand(manifest);
 
-    for (const [command, checks] of checksByCommand.entries()) {
-      failures.push(
-        ...(await checkFreshnessForCommand(manifest.packetId, command, checks))
-      );
-    }
-  }
+    await forEachSequential(
+      checksByCommand.entries(),
+      async ([command, checks]) => {
+        failures.push(
+          ...(await checkFreshnessForCommand(
+            manifest.packetId,
+            command,
+            checks
+          ))
+        );
+      }
+    );
+  });
 
   return failures;
 };
@@ -465,7 +490,7 @@ const checkForbiddenAuthorityEvidence = async (
   const evidencePaths = await findFiles(COMPATIBILITY_EVIDENCE_ROOT, ".json");
   const failures: GuardrailFailure[] = [];
 
-  for (const evidencePath of evidencePaths) {
+  await forEachSequential(evidencePaths, async (evidencePath) => {
     const evidenceText = await readFile(evidencePath, "utf-8");
     failures.push(
       ...collectForbiddenAuthorityEvidenceFailures(
@@ -474,7 +499,7 @@ const checkForbiddenAuthorityEvidence = async (
         manifests
       )
     );
-  }
+  });
 
   return failures;
 };
@@ -499,7 +524,7 @@ const checkRootTypescriptFixtures = async (): Promise<GuardrailFailure[]> => {
   const sourcePaths = await findSourceFiles(ROOT_TESTS_ROOT);
   const failures: GuardrailFailure[] = [];
 
-  for (const sourcePath of sourcePaths) {
+  await forEachSequential(sourcePaths, async (sourcePath) => {
     const source = await readFile(sourcePath, "utf-8");
     const sourceLabel = relative(REPO_ROOT, sourcePath);
 
@@ -509,7 +534,7 @@ const checkRootTypescriptFixtures = async (): Promise<GuardrailFailure[]> => {
         message: `${sourceLabel} imports a Tuvren TypeScript package; root tests must not own reusable contract or conformance fixtures`,
       });
     }
-  }
+  });
 
   return failures;
 };
@@ -593,11 +618,11 @@ const collectConformanceSourceRoots = async (
   const entries = await readdir(directory, { withFileTypes: true });
   const roots: string[] = [];
 
-  for (const entry of entries) {
+  await forEachSequential(entries, async (entry) => {
     const entryPath = resolve(directory, entry.name);
 
     if (!entry.isDirectory()) {
-      continue;
+      return;
     }
 
     if (
@@ -608,12 +633,12 @@ const collectConformanceSourceRoots = async (
 
       if (packageRoots !== null) {
         roots.push(...packageRoots);
-        continue;
+        return;
       }
     }
 
     roots.push(...(await collectConformanceSourceRoots(entryPath)));
-  }
+  });
 
   return roots;
 };
@@ -637,14 +662,15 @@ const findConformanceSourceRoots = async (): Promise<string[]> => {
     }
   }
 
-  const roots = (
-    await Promise.all(
-      fixedLanguageRoots.map((root) => collectConformanceSourceRoots(root))
+  const collectedRoots = await Promise.all(
+    fixedLanguageRoots.map(
+      async (root) => await collectConformanceSourceRoots(root)
     )
-  ).flat();
+  );
+  const roots = collectedRoots.flat();
   return roots
     .map((root) => relative(REPO_ROOT, root))
-    .sort((left, right) => left.localeCompare(right));
+    .toSorted((left, right) => left.localeCompare(right));
 };
 
 const collectTypescriptOwnedConformanceFailures = (
@@ -671,10 +697,10 @@ const checkTypescriptOwnedConformanceSources = async (): Promise<
   const failures: GuardrailFailure[] = [];
   const conformanceSourceRoots = await findConformanceSourceRoots();
 
-  for (const runnerRoot of conformanceSourceRoots) {
+  await forEachSequential(conformanceSourceRoots, async (runnerRoot) => {
     const sourcePaths = await findSourceFiles(resolve(REPO_ROOT, runnerRoot));
 
-    for (const sourcePath of sourcePaths) {
+    await forEachSequential(sourcePaths, async (sourcePath) => {
       const source = await readFile(sourcePath, "utf-8");
       failures.push(
         ...collectTypescriptOwnedConformanceFailures(
@@ -682,8 +708,8 @@ const checkTypescriptOwnedConformanceSources = async (): Promise<
           relative(REPO_ROOT, sourcePath)
         )
       );
-    }
-  }
+    });
+  });
 
   return failures;
 };
@@ -714,7 +740,7 @@ const checkTypescriptOwnedFrameworkFixtures = async (): Promise<
   );
   const failures: GuardrailFailure[] = [];
 
-  for (const sourcePath of sourcePaths) {
+  await forEachSequential(sourcePaths, async (sourcePath) => {
     const source = await readFile(sourcePath, "utf-8");
     failures.push(
       ...collectTypescriptOwnedFrameworkFixtureFailures(
@@ -722,7 +748,7 @@ const checkTypescriptOwnedFrameworkFixtures = async (): Promise<
         relative(REPO_ROOT, sourcePath)
       )
     );
-  }
+  });
 
   return failures;
 };
@@ -1010,16 +1036,16 @@ const checkPlanEvidenceOracleShapes = async (
 ): Promise<GuardrailFailure[]> => {
   const failures: GuardrailFailure[] = [];
 
-  for (const manifest of manifests) {
-    for (const plan of manifest.conformancePlans ?? []) {
+  await forEachSequential(manifests, async (manifest) => {
+    await forEachSequential(manifest.conformancePlans ?? [], async (plan) => {
       const planValue: unknown = JSON.parse(
         await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
       );
       failures.push(
         ...collectPlanEvidenceOracleShapeFailures(planValue, plan.path)
       );
-    }
-  }
+    });
+  });
 
   return failures;
 };
@@ -1044,15 +1070,15 @@ const collectPlanCheckIds = async (
 ): Promise<Set<string>> => {
   const planCheckIds = new Set<string>();
 
-  for (const manifest of manifests) {
-    for (const plan of manifest.conformancePlans ?? []) {
+  await forEachSequential(manifests, async (manifest) => {
+    await forEachSequential(manifest.conformancePlans ?? [], async (plan) => {
       const planValue: unknown = JSON.parse(
         await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
       );
 
       collectCheckIdsFromPlanValue(planValue, planCheckIds);
-    }
-  }
+    });
+  });
 
   return planCheckIds;
 };
@@ -1087,15 +1113,15 @@ const collectPlanOperationNames = async (
 ): Promise<Set<string>> => {
   const operationNames = new Set<string>();
 
-  for (const manifest of manifests) {
-    for (const plan of manifest.conformancePlans ?? []) {
+  await forEachSequential(manifests, async (manifest) => {
+    await forEachSequential(manifest.conformancePlans ?? [], async (plan) => {
       const planValue: unknown = JSON.parse(
         await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
       );
 
       collectOperationNamesFromPlanValue(planValue, operationNames);
-    }
-  }
+    });
+  });
 
   return operationNames;
 };
@@ -1167,15 +1193,15 @@ const collectPlanAssertionLiterals = async (
 ): Promise<Set<string>> => {
   const literals = new Set<string>();
 
-  for (const manifest of manifests) {
-    for (const plan of manifest.conformancePlans ?? []) {
+  await forEachSequential(manifests, async (manifest) => {
+    await forEachSequential(manifest.conformancePlans ?? [], async (plan) => {
       const planValue: unknown = JSON.parse(
         await readFile(resolve(REPO_ROOT, plan.path), "utf-8")
       );
 
       collectAssertionLiteralsFromPlanValue(planValue, literals);
-    }
-  }
+    });
+  });
 
   return literals;
 };
@@ -1351,10 +1377,10 @@ const checkRunnerOracleLiterals = async (
   const planAssertionLiterals = await collectPlanAssertionLiterals(manifests);
   const conformanceSourceRoots = await findConformanceSourceRoots();
 
-  for (const runnerRoot of conformanceSourceRoots) {
+  await forEachSequential(conformanceSourceRoots, async (runnerRoot) => {
     const sourcePaths = await findSourceFiles(resolve(REPO_ROOT, runnerRoot));
 
-    for (const sourcePath of sourcePaths) {
+    await forEachSequential(sourcePaths, async (sourcePath) => {
       failures.push(
         ...(await checkRunnerSourceFile(
           sourcePath,
@@ -1363,8 +1389,8 @@ const checkRunnerOracleLiterals = async (
           planAssertionLiterals
         ))
       );
-    }
-  }
+    });
+  });
 
   return failures;
 };
@@ -1374,19 +1400,19 @@ const checkForbiddenVocabulary = async (
 ): Promise<GuardrailFailure[]> => {
   const failures: GuardrailFailure[] = [];
 
-  for (const manifest of manifests) {
-    for (const source of manifest.authoritativeSources) {
+  await forEachSequential(manifests, async (manifest) => {
+    await forEachSequential(manifest.authoritativeSources, async (source) => {
       if (
         source.format !== "typespec" &&
         source.format !== "conformance-plan"
       ) {
-        continue;
+        return;
       }
 
       const sourcePath = resolve(REPO_ROOT, source.path);
 
       if (!existsSync(sourcePath)) {
-        continue;
+        return;
       }
 
       const sourceText = await readFile(sourcePath, "utf-8");
@@ -1399,8 +1425,8 @@ const checkForbiddenVocabulary = async (
           });
         }
       }
-    }
-  }
+    });
+  });
 
   return failures;
 };
