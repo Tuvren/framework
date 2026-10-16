@@ -15,7 +15,7 @@
  */
 
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import pathModule from "node:path";
 import process from "node:process";
 
 const MATRIX_PATH =
@@ -24,6 +24,22 @@ const PLAN_JSON_PATH =
   ".constitution/reports/epic-af-conformance-gap-plan.json";
 const PLAN_MD_PATH = ".constitution/reports/epic-af-conformance-gap-plan.md";
 const SPEC_ROOT = "spec";
+
+const forEachSequential = async <T>(
+  values: Iterable<T>,
+  operation: (value: T) => Promise<void>
+): Promise<void> => {
+  const iterator = values[Symbol.iterator]();
+  const visitNext = async (): Promise<void> => {
+    const next = iterator.next();
+    if (next.done === true) {
+      return;
+    }
+    await operation(next.value);
+    await visitNext();
+  };
+  await visitNext();
+};
 
 type MatrixClassification =
   | "authority-backed-conformance-covered"
@@ -458,13 +474,13 @@ const checkGeneratedArtifacts = async (
 ): Promise<void> => {
   const drifted: string[] = [];
 
-  for (const artifact of artifacts) {
+  await forEachSequential(artifacts, async (artifact) => {
     const current = await readFile(artifact.path, "utf-8");
 
     if (current !== artifact.content) {
       drifted.push(artifact.path);
     }
-  }
+  });
 
   if (drifted.length > 0) {
     throw new Error(
@@ -558,12 +574,12 @@ const findConformancePlanPaths = async (
   const entries = await readdir(directory, { withFileTypes: true });
   const paths: string[] = [];
 
-  for (const entry of entries) {
-    const entryPath = join(directory, entry.name);
+  await forEachSequential(entries, async (entry) => {
+    const entryPath = pathModule.join(directory, entry.name);
 
     if (entry.isDirectory()) {
       paths.push(...(await findConformancePlanPaths(entryPath)));
-      continue;
+      return;
     }
 
     if (
@@ -573,9 +589,9 @@ const findConformancePlanPaths = async (
     ) {
       paths.push(entryPath);
     }
-  }
+  });
 
-  return paths.sort();
+  return paths.toSorted();
 };
 
 const inlineList = (values: readonly string[]): string => {
@@ -601,40 +617,31 @@ const renderMarkdown = (plan: GapPlan): string => {
   ];
 
   for (const surface of plan.surfaces) {
-    lines.push(`### ${surface.surface}`, "");
     lines.push(
+      `### ${surface.surface}`,
+      "",
       `- Disposition: \`${surface.disposition}\``,
-      `- Delivery ticket: \`${surface.deliveryTicket}\``
-    );
-    lines.push(
+      `- Delivery ticket: \`${surface.deliveryTicket}\``,
       `- Matrix follow-up tickets: ${inlineList(surface.matrixFollowUpTickets)}`,
-      `- Claim IDs: ${inlineList(surface.claimIds)}`
-    );
-    lines.push(
+      `- Claim IDs: ${inlineList(surface.claimIds)}`,
       `- Authority packet: \`${surface.authorityPacket}\``,
-      `- Conformance plan: \`${surface.conformancePlan}\``
-    );
-    lines.push(
+      `- Conformance plan: \`${surface.conformancePlan}\``,
       `- Fixture or scenario: \`${surface.fixture}\``,
-      `- Adapter operation: \`${surface.adapterOperation}\``
-    );
-    lines.push(
+      `- Adapter operation: \`${surface.adapterOperation}\``,
       `- Capability requirement: \`${surface.capabilityRequirement}\``,
-      `- Required evidence: ${inlineList(surface.requiredEvidence)}`
-    );
-    lines.push(
+      `- Required evidence: ${inlineList(surface.requiredEvidence)}`,
       `- Planned check IDs: ${inlineList(surface.checkIds)}`,
-      `- Evidence update: ${surface.evidenceUpdate}`
+      `- Evidence update: ${surface.evidenceUpdate}`,
+      `- Rationale: ${surface.rationale}`,
+      ""
     );
-    lines.push(`- Rationale: ${surface.rationale}`, "");
   }
 
-  lines.push("## Guardrails", "");
   lines.push(
+    "## Guardrails",
+    "",
     "- Runner and adapter code must not receive expected event sequences, expected phase traces, or pass/fail decisions from this plan.",
-    "- Every promoted check must declare required evidence in its conformance plan and must be backed by adapter observations only."
-  );
-  lines.push(
+    "- Every promoted check must declare required evidence in its conformance plan and must be backed by adapter observations only.",
     "- Unsupported implementations remain non-applicable through capability selection; no AF check may target an implementation ID or language directly.",
     "- Excluded implementation-local surfaces stay out of shared conformance until a later TechSpec/Tasks revision promotes them explicitly."
   );
@@ -656,12 +663,12 @@ const writeGeneratedFile = async (
   path: string,
   content: string
 ): Promise<void> => {
-  await mkdir(dirname(path), { recursive: true });
+  await mkdir(pathModule.dirname(path), { recursive: true });
   await writeFile(path, content);
 };
 
 const uniqueSorted = <T extends string>(values: readonly T[]): T[] =>
-  [...new Set(values)].sort();
+  [...new Set(values)].toSorted();
 
 const checkPromotedCheckIdsAreImplemented = (
   plan: GapPlan,
@@ -707,9 +714,9 @@ const createPlannedSurfaces = (
   }
 
   return [...grouped.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
+    .toSorted(([left], [right]) => left.localeCompare(right))
     .map(([surface, surfaceEntries]) => {
-      const first = surfaceEntries[0];
+      const [first] = surfaceEntries;
       if (first === undefined) {
         throw new Error(`Epic AF gap plan found empty surface ${surface}`);
       }
@@ -777,11 +784,11 @@ const readImplementedCheckEvidence = async (): Promise<
     );
   }
 
-  for (const planPath of planPaths) {
+  await forEachSequential(planPaths, async (planPath) => {
     const plan = JSON.parse(await readFile(planPath, "utf-8")) as unknown;
 
     if (!(isRecord(plan) && Array.isArray(plan.checks))) {
-      continue;
+      return;
     }
 
     for (const check of plan.checks) {
@@ -789,7 +796,7 @@ const readImplementedCheckEvidence = async (): Promise<
         checks.set(check.checkId, readEvidencePaths(check));
       }
     }
-  }
+  });
 
   return checks;
 };
@@ -809,48 +816,35 @@ const renderJsonValue = (
   }
 
   if (Array.isArray(value)) {
-    return renderJsonArray(value, depth, inlinePrefixLength);
+    if (value.length === 0) {
+      return "[]";
+    }
+
+    const inline = `[${value
+      .map((entry) => renderJsonValue(entry, depth, inlinePrefixLength))
+      .join(", ")}]`;
+    if (
+      value.every(isJsonPrimitive) &&
+      inlinePrefixLength + inline.length <= 90
+    ) {
+      return inline;
+    }
+
+    const childIndent = "  ".repeat(depth + 1);
+    const currentIndent = "  ".repeat(depth);
+    const lines = value.map(
+      (entry) => `${childIndent}${renderJsonValue(entry, depth + 1, 0)}`
+    );
+
+    return `[\n${lines.join(",\n")}\n${currentIndent}]`;
   }
 
   if (!isRecord(value)) {
-    throw new Error(`cannot render unsupported JSON value ${String(value)}`);
+    throw new Error(
+      `cannot render unsupported JSON value of type ${typeof value}`
+    );
   }
 
-  return renderJsonObject(value, depth);
-};
-
-const renderJsonArray = (
-  values: readonly unknown[],
-  depth: number,
-  inlinePrefixLength: number
-): string => {
-  if (values.length === 0) {
-    return "[]";
-  }
-
-  const inline = `[${values
-    .map((value) => renderJsonValue(value, depth, inlinePrefixLength))
-    .join(", ")}]`;
-  if (
-    values.every(isJsonPrimitive) &&
-    inlinePrefixLength + inline.length <= 90
-  ) {
-    return inline;
-  }
-
-  const childIndent = "  ".repeat(depth + 1);
-  const currentIndent = "  ".repeat(depth);
-  const lines = values.map(
-    (value) => `${childIndent}${renderJsonValue(value, depth + 1, 0)}`
-  );
-
-  return `[\n${lines.join(",\n")}\n${currentIndent}]`;
-};
-
-const renderJsonObject = (
-  value: Record<string, unknown>,
-  depth: number
-): string => {
   const entries = Object.entries(value);
 
   if (entries.length === 0) {
@@ -940,9 +934,9 @@ const main = async (): Promise<void> => {
     return;
   }
 
-  for (const artifact of artifacts) {
+  await forEachSequential(artifacts, async (artifact) => {
     await writeGeneratedFile(artifact.path, artifact.content);
-  }
+  });
 };
 
 try {

@@ -177,35 +177,43 @@ const checks: ImportCheck[] = PORTABLE_PACKAGE_SURFACES.flatMap((surface) => {
   ];
 });
 
-const spawnCommandCaptured = (
+const spawnCommandCaptured = async (
   executable: string,
   args: readonly string[],
   cwd: string
 ): Promise<{ code: number; output: string }> => {
-  return new Promise((resolve) => {
-    const child = spawn(executable, args, {
-      cwd,
-      env: process.env,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+  const { promise, resolve } = Promise.withResolvers<{
+    code: number;
+    output: string;
+  }>();
+  const child = spawn(executable, args, {
+    cwd,
+    env: process.env,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
 
-    const chunks: Buffer[] = [];
-    child.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
-    child.stderr.on("data", (chunk: Buffer) => chunks.push(chunk));
+  const chunks: Buffer[] = [];
+  child.stdout.on("data", (chunk: Buffer) => {
+    chunks.push(chunk);
+  });
+  child.stderr.on("data", (chunk: Buffer) => {
+    chunks.push(chunk);
+  });
 
-    // A spawn failure (e.g. missing runtime binary) is reported through the
-    // same collect-all failure path as a failing import, so the remaining
-    // checks still run to completion instead of the pool rejecting mid-run.
-    child.once("error", (error) => {
-      resolve({ code: 1, output: `${String(error)}\n` });
-    });
-    child.once("close", (code) => {
-      resolve({
-        code: code ?? 1,
-        output: Buffer.concat(chunks).toString("utf-8"),
-      });
+  // A spawn failure (e.g. missing runtime binary) is reported through the
+  // same collect-all failure path as a failing import, so the remaining
+  // checks still run to completion instead of the pool rejecting mid-run.
+  child.once("error", (error) => {
+    resolve({ code: 1, output: `${String(error)}\n` });
+  });
+  child.once("close", (code) => {
+    resolve({
+      code: code ?? 1,
+      output: Buffer.concat(chunks).toString("utf-8"),
     });
   });
+
+  return await promise;
 };
 
 const runImportCheck = async (
@@ -239,21 +247,24 @@ const runImportChecks = async (
   let nextIndex = 0;
 
   const worker = async (): Promise<void> => {
-    while (true) {
-      const index = nextIndex;
-      nextIndex += 1;
+    const index = nextIndex;
+    nextIndex += 1;
 
-      if (index >= allChecks.length) {
-        return;
-      }
-
-      const check = allChecks[index] as ImportCheck;
-      const message = await runImportCheck(check);
-
-      if (message !== undefined) {
-        failed.push(message);
-      }
+    if (index >= allChecks.length) {
+      return;
     }
+
+    const check = allChecks[index];
+    if (check === undefined) {
+      return;
+    }
+    const message = await runImportCheck(check);
+
+    if (message !== undefined) {
+      failed.push(message);
+    }
+
+    await worker();
   };
 
   await Promise.all(

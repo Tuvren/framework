@@ -57,7 +57,7 @@
 
 import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { relative, resolve } from "node:path";
+import path from "node:path";
 
 import ts from "typescript";
 
@@ -72,8 +72,8 @@ interface FoundSpecifier {
   specifier: string;
 }
 
-const REPO_ROOT = resolve(import.meta.dirname, "../..");
-const HOST_ROOT = resolve(REPO_ROOT, "typescript/host");
+const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
+const HOST_ROOT = path.resolve(REPO_ROOT, "typescript/host");
 
 // Engine-tier specifiers a host must never import directly (ADR-0057 §3,
 // ADR-0059 §3). A specifier violates the boundary when it equals one of these
@@ -100,6 +100,22 @@ const SKIP_DIRECTORY_NAMES: ReadonlySet<string> = new Set([
   "coverage",
 ]);
 
+const forEachSequential = async <T>(
+  values: Iterable<T>,
+  operation: (value: T) => Promise<void>
+): Promise<void> => {
+  const iterator = values[Symbol.iterator]();
+  const visitNext = async (): Promise<void> => {
+    const next = iterator.next();
+    if (next.done === true) {
+      return;
+    }
+    await operation(next.value);
+    await visitNext();
+  };
+  await visitNext();
+};
+
 const staticSpecifier = (
   node: ts.Expression | undefined
 ): { node: ts.Node; text: string } | undefined => {
@@ -112,20 +128,17 @@ const staticSpecifier = (
   return undefined;
 };
 
-const scriptKindFor = (fileName: string): ts.ScriptKind => {
-  return fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
-};
+const scriptKindFor = (fileName: string): ts.ScriptKind =>
+  fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
 
-const isForbidden = (specifier: string): boolean => {
-  return FORBIDDEN_SPECIFIERS.some(
+const isForbidden = (specifier: string): boolean =>
+  FORBIDDEN_SPECIFIERS.some(
     (forbidden) =>
       specifier === forbidden || specifier.startsWith(`${forbidden}/`)
   );
-};
 
-const isScannable = (fileName: string): boolean => {
-  return SCANNABLE_EXTENSIONS.some((extension) => fileName.endsWith(extension));
-};
+const isScannable = (fileName: string): boolean =>
+  SCANNABLE_EXTENSIONS.some((extension) => fileName.endsWith(extension));
 
 // Resolve the module specifier a node imports, or `undefined` if the node is
 // not an import position (or its specifier is not statically known — e.g. a
@@ -161,26 +174,26 @@ const findScannableFiles = async (directory: string): Promise<string[]> => {
   const entries = await readdir(directory, { withFileTypes: true });
   const paths: string[] = [];
 
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
+  await forEachSequential(entries, async (entry) => {
+    const entryPath = path.resolve(directory, entry.name);
 
     if (entry.isDirectory()) {
       if (
         SKIP_DIRECTORY_NAMES.has(entry.name) ||
         entry.name.startsWith(".tmp")
       ) {
-        continue;
+        return;
       }
       paths.push(...(await findScannableFiles(entryPath)));
-      continue;
+      return;
     }
 
     if (entry.isFile() && isScannable(entry.name)) {
       paths.push(entryPath);
     }
-  }
+  });
 
-  return paths.sort();
+  return paths.toSorted();
 };
 
 const extractForbiddenImports = (
@@ -217,7 +230,7 @@ const extractForbiddenImports = (
 const main = async (): Promise<void> => {
   if (!existsSync(HOST_ROOT)) {
     console.error(
-      `host import boundary gate failed: host root not found at ${relative(REPO_ROOT, HOST_ROOT)}`
+      `host import boundary gate failed: host root not found at ${path.relative(REPO_ROOT, HOST_ROOT)}`
     );
     process.exitCode = 1;
     return;
@@ -227,7 +240,7 @@ const main = async (): Promise<void> => {
 
   if (files.length === 0) {
     console.error(
-      `host import boundary gate failed: no host source files found under ${relative(REPO_ROOT, HOST_ROOT)}`
+      `host import boundary gate failed: no host source files found under ${path.relative(REPO_ROOT, HOST_ROOT)}`
     );
     process.exitCode = 1;
     return;
@@ -235,9 +248,9 @@ const main = async (): Promise<void> => {
 
   const violations: HostBoundaryViolation[] = [];
 
-  for (const filePath of files) {
+  await forEachSequential(files, async (filePath) => {
     const content = await readFile(filePath, "utf-8");
-    const relativePath = relative(REPO_ROOT, filePath);
+    const relativePath = path.relative(REPO_ROOT, filePath);
 
     for (const found of extractForbiddenImports(content, filePath)) {
       violations.push({
@@ -246,7 +259,7 @@ const main = async (): Promise<void> => {
         specifier: found.specifier,
       });
     }
-  }
+  });
 
   if (violations.length > 0) {
     console.error(
@@ -265,7 +278,7 @@ const main = async (): Promise<void> => {
   }
 
   console.log(
-    `host import boundary gate passed (${files.length} host source files scanned under ${relative(REPO_ROOT, HOST_ROOT)})`
+    `host import boundary gate passed (${files.length} host source files scanned under ${path.relative(REPO_ROOT, HOST_ROOT)})`
   );
 };
 
