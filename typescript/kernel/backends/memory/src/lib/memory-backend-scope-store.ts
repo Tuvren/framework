@@ -98,6 +98,7 @@ export class MemoryScopeStore {
     try {
       return await work();
     } finally {
+      // oxlint-disable-next-line unicorn/no-useless-undefined -- Promise.withResolvers<undefined> requires an explicit completion value in declaration builds.
       releaseQueue(undefined);
 
       // Only retire the queue slot if it still holds the entry this call
