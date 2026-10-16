@@ -36,9 +36,11 @@ const stateValidation = createBackendInvariantStateValidation({
   errorPrefix: "postgres",
 });
 
+/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */
 export const {
   resolveStoredTurnTreePathValue,
   validateCommittedState,
   validateLoadedState,
   validateTurnTreePathInvariants,
 } = stateValidation;
+/* oxlint-enable typescript/unbound-method */

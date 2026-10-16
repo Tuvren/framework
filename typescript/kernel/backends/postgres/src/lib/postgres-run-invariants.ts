@@ -63,13 +63,17 @@ const runSpan = createBackendInvariantRunSpan({
   errorPrefix: "postgres",
 });
 
+// oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions.
 export const { assertMonotonicUpdatedAtMs, assertRunUpdateIsLegal } = runLogic;
+/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */
 export const {
   assertImmutableBytes,
   assertImmutableField,
   assertImmutableOptionalField,
   validateHashString,
 } = recordUtils;
+/* oxlint-enable typescript/unbound-method */
+/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */
 export const {
   assertActiveRunHeadAlignment,
   assertRunCreatedTurnNodesAreCanonical,
@@ -78,6 +82,7 @@ export const {
   classifyTurnNodeRelationship,
   decodeTurnNodeConsumedStagedResultObjectHashes,
 } = runSpan;
+/* oxlint-enable typescript/unbound-method */
 
 /**
  * A run's active turn node: the most recently created node in its
