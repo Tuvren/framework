@@ -56,12 +56,10 @@ import {
 
 type EventRecord = Record<string, unknown>;
 
-function filterEventsByType(
+const filterEventsByType = (
   events: EventRecord[],
   type: string
-): EventRecord[] {
-  return events.filter((e) => e.type === type);
-}
+): EventRecord[] => events.filter((e) => e.type === type);
 
 // ---------------------------------------------------------------------------
 // KRT-AY006 — Provider-native proof: Anthropic code_execution pattern
