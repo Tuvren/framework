@@ -710,8 +710,8 @@
     },
     {
       "path": "suppressions.json",
-      "sha256": "4cb60052e9b8c957a0e7998d6bcc48b14f241c29c0ba06bf74bf4b5ece7b1389",
-      "bytes": 135087,
+      "sha256": "a6979c0ba02074a64ae5dabee0e35e39822523d31a38b3da758df09ea377f7dd",
+      "bytes": 144437,
       "role": "measurement"
     }
   ],
