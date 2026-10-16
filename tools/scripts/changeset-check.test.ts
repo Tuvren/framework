@@ -393,6 +393,17 @@ describe("changeset-check", () => {
     );
   });
 
+  test("reports current changeset errors in filename order", async () => {
+    const fixture = await createFixture();
+    await fixture.publicChange("export const changed = true;\n");
+    await fixture.writeChangesetContents("b.md", "invalid frontmatter\n");
+    await fixture.writeChangesetContents("a.md", "invalid frontmatter\n");
+
+    await expect(check(fixture)).rejects.toThrow(
+      ".changeset/a.md has invalid frontmatter"
+    );
+  });
+
   test("does not let unrelated or empty changesets cover a public package", async () => {
     const fixture = await createFixture();
     await fixture.publicChange("export const changed = true;\n");
@@ -703,6 +714,25 @@ describe("changeset-check", () => {
     await fixture.commit("make package private");
 
     expect(check(fixture)).resolves.toBeUndefined();
+  });
+
+  test("reports historical changeset errors in filename order", async () => {
+    const fixture = await createFixture();
+    await run("git", ["checkout", "master"], fixture.root);
+    await fixture.writeChangesetContents("b.md", "invalid frontmatter\n");
+    await fixture.writeChangesetContents("a.md", "invalid frontmatter\n");
+    await fixture.commit("record malformed historical intent");
+    await run("git", ["branch", "-f", "feature", "master"], fixture.root);
+    await run("git", ["checkout", "feature"], fixture.root);
+    await rm(path.join(fixture.root, ".changeset/a.md"));
+    await rm(path.join(fixture.root, ".changeset/b.md"));
+    await fixture.publicChange("export const later = true;\n");
+    await fixture.writeChangeset("public.md", '"@tuvren/public-a": patch');
+    await fixture.commit("remove malformed historical intent");
+
+    await expect(check(fixture)).rejects.toThrow(
+      ".changeset/a.md has invalid frontmatter"
+    );
   });
 
   test("exempts removal of a historical private-only intent", async () => {

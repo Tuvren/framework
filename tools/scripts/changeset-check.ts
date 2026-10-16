@@ -528,27 +528,29 @@ const readPendingChangesetsAtRevision = async (
     rootDirectory,
     revision
   );
-  return await Promise.all(
-    paths.map(async (relativePath) => {
-      const contents = await runCommand(
-        "git",
-        ["show", `${revision}:${relativePath}`],
-        rootDirectory
-      );
+  const pendingChangesets: PendingChangeset[] = [];
 
-      if (contents.exitCode !== 0) {
-        throw new Error(`cannot read base changeset ${relativePath}`);
-      }
+  await forEachSequential(paths, async (relativePath) => {
+    const contents = await runCommand(
+      "git",
+      ["show", `${revision}:${relativePath}`],
+      rootDirectory
+    );
 
-      // Historical notes establish prior intent. Parse their native syntax and
-      // release types without applying the current workspace membership check.
-      const parsed = await parseChangesetContents(
-        contents.stdout,
-        relativePath.slice(`${CHANGESET_DIRECTORY}/`.length)
-      );
-      return { ...parsed, relativePath };
-    })
-  );
+    if (contents.exitCode !== 0) {
+      throw new Error(`cannot read base changeset ${relativePath}`);
+    }
+
+    // Historical notes establish prior intent. Parse their native syntax and
+    // release types without applying the current workspace membership check.
+    const parsed = await parseChangesetContents(
+      contents.stdout,
+      relativePath.slice(`${CHANGESET_DIRECTORY}/`.length)
+    );
+    pendingChangesets.push({ ...parsed, relativePath });
+  });
+
+  return pendingChangesets;
 };
 
 const parseChangeset = async (
@@ -571,16 +573,18 @@ const readPendingChangesets = async (
   workspaceNames: ReadonlySet<string>
 ): Promise<PendingChangeset[]> => {
   const paths = await readPendingChangesetPaths(rootDirectory);
-  return await Promise.all(
-    paths.map(
-      async (relativePath) =>
-        await parseChangeset(
-          path.join(rootDirectory, relativePath),
-          relativePath.slice(`${CHANGESET_DIRECTORY}/`.length),
-          workspaceNames
-        )
-    )
-  );
+  const pendingChangesets: PendingChangeset[] = [];
+
+  await forEachSequential(paths, async (relativePath) => {
+    const pendingChangeset = await parseChangeset(
+      path.join(rootDirectory, relativePath),
+      relativePath.slice(`${CHANGESET_DIRECTORY}/`.length),
+      workspaceNames
+    );
+    pendingChangesets.push(pendingChangeset);
+  });
+
+  return pendingChangesets;
 };
 
 const changesetHasNewOrUpdatedIntent = (
