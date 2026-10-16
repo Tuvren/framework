@@ -1,0 +1,162 @@
+{
+  "milestone": "M16",
+  "ticket": "KRT-BZ003",
+  "scope": {
+    "root": "typescript/providers/bridge-ai-sdk/test",
+    "files": [
+      "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts",
+      "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-test-helpers.ts"
+    ],
+    "numstat": [
+      {
+        "file": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts",
+        "added": 2,
+        "removed": 4
+      },
+      {
+        "file": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-test-helpers.ts",
+        "added": 75,
+        "removed": 82
+      }
+    ],
+    "added": 77,
+    "removed": 86,
+    "changedLines": 163,
+    "stopThreshold": 1500
+  },
+  "diagnostics": {
+    "syntactic": {
+      "before": {
+        "total": 41,
+        "target": 10,
+        "other": 31,
+        "rules": {
+          "eslint(func-style)": 6,
+          "eslint(no-use-before-define)": 4,
+          "eslint(sort-keys)": 2,
+          "eslint(require-await)": 29
+        }
+      },
+      "after": {
+        "total": 31,
+        "target": 0,
+        "other": 31,
+        "rules": {
+          "eslint(sort-keys)": 2,
+          "eslint(require-await)": 29
+        }
+      },
+      "nonTargetStable": true
+    },
+    "type-aware": {
+      "before": {
+        "total": 111,
+        "target": 10,
+        "other": 101,
+        "rules": {
+          "eslint(func-style)": 6,
+          "eslint(no-use-before-define)": 4,
+          "eslint(sort-keys)": 2,
+          "eslint(require-await)": 29,
+          "typescript(await-thenable)": 14,
+          "typescript(no-confusing-void-expression)": 14,
+          "typescript(no-unsafe-type-assertion)": 34,
+          "typescript(no-unsafe-argument)": 6,
+          "typescript(no-unsafe-assignment)": 1,
+          "typescript(promise-function-async)": 1
+        }
+      },
+      "after": {
+        "total": 101,
+        "target": 0,
+        "other": 101,
+        "rules": {
+          "eslint(require-await)": 29,
+          "eslint(sort-keys)": 2,
+          "typescript(await-thenable)": 14,
+          "typescript(no-confusing-void-expression)": 14,
+          "typescript(no-unsafe-type-assertion)": 34,
+          "typescript(no-unsafe-argument)": 6,
+          "typescript(no-unsafe-assignment)": 1,
+          "typescript(promise-function-async)": 1
+        }
+      },
+      "nonTargetStable": true
+    }
+  },
+  "ast": {
+    "files": [
+      {
+        "file": "ai-sdk-provider-bridge-test-helpers.ts",
+        "functions": 5,
+        "conversions": 5,
+        "bodyDifferences": [],
+        "signatureDifferences": [],
+        "exportOrAsyncDifferences": [],
+        "docDifferences": [],
+        "nonCallableStatementsEqual": true,
+        "laterReferences": []
+      },
+      {
+        "file": "ai-sdk-provider-bridge-provider-proofs.test.ts",
+        "functions": 1,
+        "conversions": 1,
+        "bodyDifferences": [],
+        "signatureDifferences": [],
+        "exportOrAsyncDifferences": [],
+        "docDifferences": [],
+        "nonCallableStatementsEqual": true,
+        "laterReferences": []
+      }
+    ],
+    "totalFunctions": 6,
+    "remainingFunctionDeclarations": 0,
+    "testRegistrations": 82,
+    "testRegistrationAndBodiesEqual": true,
+    "firstErrorAndEventOrderingPreservedByExactTestStatementEquality": true,
+    "biomeComments": 4,
+    "biomeCommentsAndReasonsExact": true
+  },
+  "behavior": {
+    "bridgePackageTests": {
+      "passed": 67,
+      "failed": 0
+    },
+    "testRegistrationCount": 82,
+    "firstErrorAndEventOrderingPreserved": true
+  },
+  "gates": {
+    "formatter-write-final": "pass",
+    "diff-check-final": "pass",
+    "formatter-final": "pass",
+    "bridge-typecheck-final": "pass",
+    "bridge-test-final": "pass",
+    "bridge-lint-final": "pass",
+    "ast-registration-proof": "pass",
+    "socket": "pass",
+    "formatter-broad": "pass",
+    "changeset": "pass",
+    "constitution": "pass",
+    "workspace-typecheck": "pass",
+    "workspace-conformance": "pass",
+    "provider-testkit-conformance": "pass",
+    "provider-certification-conformance": "pass"
+  },
+  "isolation": {
+    "laneBefore": "## epic/bz-provider-runner-lint",
+    "laneAfter": "## epic/bz-provider-runner-lint\n M typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts\n M typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-test-helpers.ts",
+    "mainBefore": "## master...origin/master",
+    "mainAfter": "## master...origin/master",
+    "changedPaths": [
+      "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts",
+      "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-test-helpers.ts"
+    ],
+    "unchangedExistingChangeset": true,
+    "unexpectedWork": false
+  },
+  "environment": {
+    "postgresSocket": "/run/user/1000/devenv-3ea1e50/postgres",
+    "outerGlobalLock": "/tmp/tuvren-wave-1-verification.lock",
+    "metadataElevation": true
+  }
+}
