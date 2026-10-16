@@ -45,10 +45,11 @@ const TEST_SCHEMA = {
 } satisfies TurnTreeSchema;
 
 const THRESHOLD = 32;
-const openBackends: { close(): Promise<void> }[] = [];
+const openBackends: { close: () => Promise<void> }[] = [];
 
 after(async () => {
   for (const backend of openBackends) {
+    // oxlint-disable-next-line no-await-in-loop -- Close backends serially to preserve teardown and first-failure order.
     await backend.close();
   }
 });
@@ -57,12 +58,14 @@ const seededHashes = async (count: number, seed: string): Promise<string[]> => {
   const hashes: string[] = [];
 
   for (let index = 0; index < count; index += 1) {
+    // oxlint-disable-next-line no-await-in-loop -- Derive fixture hashes serially to retain deterministic input and failure order.
     hashes.push(await hashKernelRecord(`${seed}-${index}`));
   }
 
   return hashes;
 };
 
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("createSqliteBackend chunk-aware TurnTree caller writes (KRT-BK008)", () => {
   test("resolves the expected manifest after growing an ordered path past the ADR-0011 chunking threshold", async () => {
     const backend = createSqliteBackend({
@@ -86,6 +89,7 @@ describe("createSqliteBackend chunk-aware TurnTree caller writes (KRT-BK008)", (
     let treeHash = rootNode.turnTreeHash;
 
     for (const [index, hash] of hashes.entries()) {
+      // oxlint-disable-next-line no-await-in-loop -- Each incorporation depends on the preceding tree hash.
       treeHash = await kernel.tree.incorporate(treeHash, [
         {
           objectHash: hash,
@@ -100,8 +104,8 @@ describe("createSqliteBackend chunk-aware TurnTree caller writes (KRT-BK008)", (
     const resolved = await kernel.tree.resolve(treeHash, "messages");
     deepStrictEqual(resolved, hashes);
 
-    const storedPath = await backend.transact(async (tx) =>
-      tx.turnTreePaths.get(treeHash, "messages")
+    const storedPath = await backend.transact(
+      async (tx) => await tx.turnTreePaths.get(treeHash, "messages")
     );
     strictEqual(storedPath?.collectionKind, "ordered");
 
@@ -133,6 +137,7 @@ describe("createSqliteBackend chunk-aware TurnTree caller writes (KRT-BK008)", (
     let treeHash = rootNode.turnTreeHash;
 
     for (const [index, hash] of hashes.entries()) {
+      // oxlint-disable-next-line no-await-in-loop -- Each incorporation depends on the preceding tree hash.
       treeHash = await kernel.tree.incorporate(treeHash, [
         {
           objectHash: hash,
@@ -144,8 +149,8 @@ describe("createSqliteBackend chunk-aware TurnTree caller writes (KRT-BK008)", (
       ]);
     }
 
-    const storedPath = await backend.transact(async (tx) =>
-      tx.turnTreePaths.get(treeHash, "messages")
+    const storedPath = await backend.transact(
+      async (tx) => await tx.turnTreePaths.get(treeHash, "messages")
     );
     strictEqual(storedPath?.collectionKind, "ordered");
 

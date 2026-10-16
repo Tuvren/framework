@@ -36,6 +36,7 @@ import {
   TURN_TREE_PATH_ROW_ERROR_PATTERN,
 } from "./backend-sqlite-test-helpers.js";
 
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("@tuvren/backend-sqlite record validation", () => {
   test("rejects stored run rows with invalid status values", async () => {
     const seeded = await seedCorruptionDatabase();

@@ -50,9 +50,8 @@ import Database from "better-sqlite3";
 import { createSqliteBackend } from "../src/index.js";
 import { createTempDatabasePath } from "./backend-sqlite-test-helpers.js";
 
-const fixedReclaimClock = (): number => {
-  return 1_700_000_100_000;
-};
+const fixedNow = (): number => 1_700_000_000_000;
+const fixedReclaimClock = (): number => 1_700_000_100_000;
 
 /** Converts Buffer columns to hex strings so `deepStrictEqual` compares raw bytes exactly. */
 const normalizeRow = (
@@ -77,18 +76,20 @@ const readTableRows = (
 
   try {
     const rows = db
-      .prepare(`SELECT * FROM ${table} ORDER BY ${orderColumn}`)
+      .prepare<[], Record<string, unknown>>(
+        `SELECT * FROM ${table} ORDER BY ${orderColumn}`
+      )
       .all();
 
-    return rows.map((row) => normalizeRow(row as Record<string, unknown>));
+    return rows.map((row) => normalizeRow(row));
   } finally {
     db.close();
   }
 };
 
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("@tuvren/backend-sqlite phase observer seam (issue #108)", () => {
   test("omitting phaseObserver, NOOP_PHASE_OBSERVER, and an active RecordingPhaseObserver all persist identical rows for an equivalent transact()+fsck() flow", async () => {
-    const fixedNow = () => 1_700_000_000_000;
     const schema = createCanonicalKernelTestSchema();
     const schemaRecord = createStoredSchemaRecord(schema, 1);
     const objectRecord = await createStoredObjectRecord(
@@ -124,6 +125,7 @@ describe("@tuvren/backend-sqlite phase observer seam (issue #108)", () => {
         explicitNoopBackend,
         recordingBackend,
       ]) {
+        /* oxlint-disable no-await-in-loop -- Seed and verify the three separate databases serially to preserve setup and first-failure order. */
         await backend.transact(async (tx) => {
           await tx.schemas.put(schemaRecord);
           await tx.objects.put(objectRecord);

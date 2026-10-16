@@ -25,6 +25,7 @@ import {
 import { createSqliteBackend } from "../src/index.js";
 import { createTempDatabasePath } from "./backend-sqlite-test-helpers.js";
 
+/* oxlint-disable typescript/no-misused-promises, typescript/strict-void-return -- The shared testkit accepts the Node test registration functions; their promise-capable return type is deliberately ignored by the registration contract. */
 registerBackendConformanceSuite({
   createBackend: () =>
     createSqliteBackend({ databasePath: createTempDatabasePath() }),
@@ -45,3 +46,4 @@ registerBackendRecoverySuite({
   suiteName: "@tuvren/backend-sqlite shared recovery",
   testApi: { describe, test },
 });
+/* oxlint-enable typescript/no-misused-promises, typescript/strict-void-return */

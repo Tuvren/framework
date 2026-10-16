@@ -53,6 +53,7 @@ import { createTempDatabasePath } from "./backend-sqlite-test-helpers.js";
  * after a normal, in-process rollback.
  */
 
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("@tuvren/backend-sqlite WAL locking (KRT-BK011)", () => {
   test("a concurrent raw-connection write is blocked by SQLITE_BUSY while transact() holds BEGIN IMMEDIATE open, and succeeds once it commits", async () => {
     const databasePath = createTempDatabasePath();
@@ -73,28 +74,18 @@ describe("@tuvren/backend-sqlite WAL locking (KRT-BK011)", () => {
     );
     setupConnection.close();
 
-    let markWorkStarted: () => void = () => {
-      // Replaced by the promise resolver below.
-    };
-    const workStarted = new Promise<void>((resolve) => {
-      markWorkStarted = resolve;
-    });
-    let releaseWork: () => void = () => {
-      // Replaced by the promise resolver below.
-    };
-    const workHeld = new Promise<void>((resolve) => {
-      releaseWork = resolve;
-    });
+    const workStarted = Promise.withResolvers<null>();
+    const workHeld = Promise.withResolvers<null>();
 
     // By the time `work` starts executing, `SqliteBackend.transact` has
     // already run `BEGIN IMMEDIATE` (it executes before `work` is invoked), so
     // the write lock is genuinely held the instant this callback body starts.
     const transactPromise = backend.transact(async () => {
-      markWorkStarted();
-      await workHeld;
+      workStarted.resolve(null);
+      await workHeld.promise;
     });
 
-    await workStarted;
+    await workStarted.promise;
 
     // While the transaction is held open, a second, independent connection's
     // write attempt must fail fast with a SQLITE_BUSY-class error rather than
@@ -103,13 +94,21 @@ describe("@tuvren/backend-sqlite WAL locking (KRT-BK011)", () => {
     const probe = new Database(databasePath);
     probe.pragma("busy_timeout = 50");
 
-    let busyError: (Error & { code?: string }) | undefined;
+    let busyError: Error | undefined;
+    let busyErrorCode: string | undefined;
     try {
       probe
         .prepare("INSERT INTO krt_bk011_wal_probe (id, value) VALUES (1, 1)")
         .run();
     } catch (error) {
-      busyError = error as Error & { code?: string };
+      if (!(error instanceof Error)) {
+        throw error;
+      }
+      busyError = error;
+      busyErrorCode =
+        "code" in error && typeof error.code === "string"
+          ? error.code
+          : undefined;
     }
 
     ok(
@@ -117,12 +116,12 @@ describe("@tuvren/backend-sqlite WAL locking (KRT-BK011)", () => {
       "expected the concurrent raw-connection write to be blocked while transact() holds BEGIN IMMEDIATE open"
     );
     ok(
-      (busyError?.code ?? "").startsWith("SQLITE_BUSY"),
-      `expected a SQLITE_BUSY-class error code, received "${busyError?.code}"`
+      (busyErrorCode ?? "").startsWith("SQLITE_BUSY"),
+      `expected a SQLITE_BUSY-class error code, received "${busyErrorCode}"`
     );
 
     // Release the held-open transaction and let it commit.
-    releaseWork();
+    workHeld.resolve(null);
     await transactPromise;
 
     // The lock was genuinely released, not left stuck: the same raw connection
@@ -172,8 +171,8 @@ describe("@tuvren/backend-sqlite WAL locking (KRT-BK011)", () => {
     // now-closed instance's in-memory view.
     const reopened = createSqliteBackend({ databasePath });
     deepStrictEqual(await reopened.health(), { ok: true });
-    const seenByReopenedInstance = await reopened.transact((tx) =>
-      tx.schemas.get(schema.schemaId)
+    const seenByReopenedInstance = await reopened.transact(
+      async (tx) => await tx.schemas.get(schema.schemaId)
     );
     strictEqual(seenByReopenedInstance, null);
 
@@ -181,8 +180,8 @@ describe("@tuvren/backend-sqlite WAL locking (KRT-BK011)", () => {
     await reopened.transact(async (tx) => {
       await tx.schemas.put(schemaRecord);
     });
-    const committedAfterReopen = await reopened.transact((tx) =>
-      tx.schemas.get(schema.schemaId)
+    const committedAfterReopen = await reopened.transact(
+      async (tx) => await tx.schemas.get(schema.schemaId)
     );
     deepStrictEqual(committedAfterReopen, schemaRecord);
 

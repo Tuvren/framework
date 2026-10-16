@@ -17,10 +17,12 @@
 import { equal, ok } from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import path from "node:path";
 import { describe, mock, test } from "node:test";
 
 import type { assertReclamationSurvivorInvariants as AssertReclamationSurvivorInvariants } from "../src/lib/sqlite-reclamation-validation.js";
+
+const { join } = path;
 
 /**
  * Issue #108 M6 review debt: `sqlite-reclamation-validation.test.ts` proves
@@ -74,6 +76,7 @@ import type { assertReclamationSurvivorInvariants as AssertReclamationSurvivorIn
  * import to this file without re-verifying the spy still intercepts; it
  * will silently stop working otherwise.
  */
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("createSqliteBackend reclaim() invariant-check wiring guard (issue #108 M6)", () => {
   test("invokes assertReclamationSurvivorInvariants exactly once per reclaim() call", async () => {
     const reclamationValidationUrl = new URL(
@@ -81,6 +84,7 @@ describe("createSqliteBackend reclaim() invariant-check wiring guard (issue #108
       import.meta.url
     ).href;
 
+    /* oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The module URL must stay dynamic so node:test can install the mock before linking this private seam. */
     const real = (await import(reclamationValidationUrl)) as {
       assertReclamationSurvivorInvariants: typeof AssertReclamationSurvivorInvariants;
     };
@@ -92,7 +96,7 @@ describe("createSqliteBackend reclaim() invariant-check wiring guard (issue #108
           state: Parameters<typeof AssertReclamationSurvivorInvariants>[0]
         ) => {
           callCount += 1;
-          return real.assertReclamationSurvivorInvariants(state);
+          real.assertReclamationSurvivorInvariants(state);
         },
       },
     });
@@ -102,8 +106,7 @@ describe("createSqliteBackend reclaim() invariant-check wiring guard (issue #108
     );
 
     try {
-      const { createSqliteBackend } =
-        (await import("../src/index.js")) as typeof import("../src/index.js");
+      const { createSqliteBackend } = await import("../src/index.js");
 
       const databasePath = join(tempDirectory, "kraken.db");
       const backend = createSqliteBackend({ databasePath });

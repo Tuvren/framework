@@ -68,21 +68,17 @@ const shapeOf = (
   cause: unknown;
   code: string | undefined;
   message: string;
-} => {
-  return { cause: error.cause, code: error.code, message: error.message };
-};
+} => ({ cause: error.cause, code: error.code, message: error.message });
 
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("@tuvren/backend-sqlite normalizeBackendError idempotency (KRT-BK009)", () => {
   test("is idempotent for a raw SQLITE_-coded engine error", () => {
-    const raw = new Error("no such table: turn_trees") as Error & {
-      code: string;
-    };
-    raw.code = "SQLITE_CONSTRAINT";
+    const raw = Object.assign(new Error("no such table: turn_trees"), {
+      code: "SQLITE_CONSTRAINT",
+    });
 
-    const single = normalizeBackendError(raw) as TuvrenPersistenceError;
-    const double = normalizeBackendError(
-      normalizeBackendError(raw)
-    ) as TuvrenPersistenceError;
+    const single = normalizeBackendError(raw);
+    const double = normalizeBackendError(normalizeBackendError(raw));
 
     ok(single instanceof TuvrenPersistenceError);
     ok(double instanceof TuvrenPersistenceError);
@@ -109,10 +105,8 @@ describe("@tuvren/backend-sqlite normalizeBackendError idempotency (KRT-BK009)",
   test("is idempotent for a non-Error throw", () => {
     const raw = { unexpected: "payload" };
 
-    const single = normalizeBackendError(raw) as TuvrenPersistenceError;
-    const double = normalizeBackendError(
-      normalizeBackendError(raw)
-    ) as TuvrenPersistenceError;
+    const single = normalizeBackendError(raw);
+    const double = normalizeBackendError(normalizeBackendError(raw));
 
     ok(single instanceof TuvrenPersistenceError);
     ok(double instanceof TuvrenPersistenceError);
@@ -186,8 +180,8 @@ describe("@tuvren/backend-sqlite transact rollback normalization (KRT-BK009)", (
     strictEqual(health.ok, true);
 
     // The rolled-back write must not be observable.
-    const afterRollback = await backend.transact((tx) =>
-      tx.schemas.get(schema.schemaId)
+    const afterRollback = await backend.transact(
+      async (tx) => await tx.schemas.get(schema.schemaId)
     );
     strictEqual(afterRollback, null);
 
@@ -197,8 +191,8 @@ describe("@tuvren/backend-sqlite transact rollback normalization (KRT-BK009)", (
     await backend.transact(async (tx) => {
       await tx.schemas.put(schemaRecord);
     });
-    const afterSecondTransact = await backend.transact((tx) =>
-      tx.schemas.get(schema.schemaId)
+    const afterSecondTransact = await backend.transact(
+      async (tx) => await tx.schemas.get(schema.schemaId)
     );
     deepStrictEqual(afterSecondTransact, schemaRecord);
 

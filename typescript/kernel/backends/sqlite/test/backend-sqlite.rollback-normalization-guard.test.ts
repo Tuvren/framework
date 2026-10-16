@@ -17,10 +17,12 @@
 import { rejects, strictEqual } from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import path from "node:path";
 import { describe, mock, test } from "node:test";
 
 import type { normalizeBackendError as NormalizeBackendError } from "../src/lib/sqlite-errors.js";
+
+const { join } = path;
 
 /**
  * KRT-BK009 structural regression guard: the shape/cause assertions in
@@ -43,6 +45,7 @@ import type { normalizeBackendError as NormalizeBackendError } from "../src/lib/
  * Do not add a static workspace import to this file without re-verifying the
  * spy still intercepts; it will silently stop working otherwise.
  */
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("@tuvren/backend-sqlite transact rollback normalization call-count guard (KRT-BK009)", () => {
   test("invokes normalizeBackendError exactly once on the transact rollback path", async () => {
     const sqliteErrorsUrl = new URL(
@@ -50,6 +53,7 @@ describe("@tuvren/backend-sqlite transact rollback normalization call-count guar
       import.meta.url
     ).href;
 
+    /* oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The module URL must stay dynamic so node:test can install the mock before linking this private seam. */
     const real = (await import(sqliteErrorsUrl)) as {
       getErrorMessage: (error: unknown) => string;
       normalizeBackendError: typeof NormalizeBackendError;
@@ -78,8 +82,7 @@ describe("@tuvren/backend-sqlite transact rollback normalization call-count guar
     );
 
     try {
-      const { createSqliteBackend } =
-        (await import("../src/index.js")) as typeof import("../src/index.js");
+      const { createSqliteBackend } = await import("../src/index.js");
 
       const databasePath = join(tempDirectory, "kraken.db");
       const backend = createSqliteBackend({ databasePath });

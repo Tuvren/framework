@@ -207,11 +207,14 @@ const buildBaseFixture = async (): Promise<BaseFixture> => {
   };
 };
 
+/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */
 describe("assertReclamationSurvivorInvariants (issue #108 M6)", () => {
   test("accepts a fully consistent post-sweep state", async () => {
     const { state } = await buildBaseFixture();
 
-    doesNotThrow(() => assertReclamationSurvivorInvariants(state));
+    doesNotThrow(() => {
+      assertReclamationSurvivorInvariants(state);
+    });
   });
 
   test("rejects a surviving branch whose head turn node a defective sweep deleted", async () => {
@@ -219,7 +222,10 @@ describe("assertReclamationSurvivorInvariants (issue #108 M6)", () => {
     state.turnNodes.delete(grandchildNode.hash);
 
     throws(
-      () => assertReclamationSurvivorInvariants(state),
+      () => {
+        assertReclamationSurvivorInvariants(state);
+      },
+      /* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */
       (error: unknown) =>
         error instanceof TuvrenPersistenceError &&
         error.code === "sqlite_backend_missing_turn_node_reference"
@@ -235,7 +241,10 @@ describe("assertReclamationSurvivorInvariants (issue #108 M6)", () => {
     state.turnNodes.delete(childNode.hash);
 
     throws(
-      () => assertReclamationSurvivorInvariants(state),
+      () => {
+        assertReclamationSurvivorInvariants(state);
+      },
+      /* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */
       (error: unknown) =>
         error instanceof TuvrenPersistenceError &&
         error.code === "sqlite_backend_missing_turn_node_reference"
@@ -247,7 +256,10 @@ describe("assertReclamationSurvivorInvariants (issue #108 M6)", () => {
     state.objects.delete(object.hash);
 
     throws(
-      () => assertReclamationSurvivorInvariants(state),
+      () => {
+        assertReclamationSurvivorInvariants(state);
+      },
+      /* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */
       (error: unknown) =>
         error instanceof TuvrenPersistenceError &&
         error.code === "sqlite_backend_missing_object_reference"
@@ -272,7 +284,10 @@ describe("assertReclamationSurvivorInvariants (issue #108 M6)", () => {
     state.turnNodes.delete(grandchildNode.hash);
 
     throws(
-      () => assertReclamationSurvivorInvariants(state),
+      () => {
+        assertReclamationSurvivorInvariants(state);
+      },
+      /* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */
       (error: unknown) =>
         error instanceof TuvrenPersistenceError &&
         error.code === "sqlite_backend_missing_turn_node_reference"
@@ -284,7 +299,10 @@ describe("assertReclamationSurvivorInvariants (issue #108 M6)", () => {
     state.runs.delete(run.runId);
 
     throws(
-      () => assertReclamationSurvivorInvariants(state),
+      () => {
+        assertReclamationSurvivorInvariants(state);
+      },
+      /* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */
       (error: unknown) =>
         error instanceof TuvrenPersistenceError &&
         error.code === "sqlite_backend_missing_run_reference"
@@ -304,7 +322,10 @@ describe("assertReclamationSurvivorInvariants (issue #108 M6)", () => {
     state.objects.delete(object.hash);
 
     throws(
-      () => assertReclamationSurvivorInvariants(state),
+      () => {
+        assertReclamationSurvivorInvariants(state);
+      },
+      /* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */
       (error: unknown) =>
         error instanceof TuvrenPersistenceError &&
         error.code === "sqlite_backend_missing_object_reference"
@@ -335,12 +356,17 @@ describe("assertReclamationSurvivorInvariants (issue #108 M6)", () => {
     });
 
     // Sanity: the fixture is consistent before the corruption below.
-    doesNotThrow(() => assertReclamationSurvivorInvariants(state));
+    doesNotThrow(() => {
+      assertReclamationSurvivorInvariants(state);
+    });
 
     state.orderedPathChunks.delete(chunk.chunkHash);
 
     throws(
-      () => assertReclamationSurvivorInvariants(state),
+      () => {
+        assertReclamationSurvivorInvariants(state);
+      },
+      /* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */
       (error: unknown) =>
         error instanceof TuvrenPersistenceError &&
         error.code === "sqlite_backend_missing_ordered_path_chunk_reference"
@@ -364,12 +390,17 @@ describe("assertReclamationSurvivorInvariants (issue #108 M6)", () => {
     });
 
     // Sanity: the fixture is consistent before the corruption below.
-    doesNotThrow(() => assertReclamationSurvivorInvariants(state));
+    doesNotThrow(() => {
+      assertReclamationSurvivorInvariants(state);
+    });
 
     state.objects.delete(messageObject.hash);
 
     throws(
-      () => assertReclamationSurvivorInvariants(state),
+      () => {
+        assertReclamationSurvivorInvariants(state);
+      },
+      /* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */
       (error: unknown) =>
         error instanceof TuvrenPersistenceError &&
         error.code === "sqlite_backend_missing_object_reference"
