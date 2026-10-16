@@ -70,6 +70,85 @@ interface BenchmarkResult {
   name: string;
 }
 
+const now = (): number => 1;
+
+const createRuntimePort = (): RunnerRuntimePort => {
+  const events: TuvrenStreamEvent[] = [];
+
+  return {
+    emit(event) {
+      const clonedEvent = structuredClone(event);
+      assertTuvrenStreamEvent(clonedEvent, "stream event");
+      events.push(clonedEvent);
+    },
+    now,
+  };
+};
+
+const createStreamingProvider = (chunkCount: number): TuvrenProvider => ({
+  generate() {
+    return Promise.reject(
+      new Error("generate should not be called by stream benchmark")
+    );
+  },
+  id: "bench-provider",
+  async *stream() {
+    await Promise.resolve();
+
+    for (let index = 0; index < chunkCount; index += 1) {
+      yield {
+        text: `chunk-${index}-`,
+        type: "text_delta",
+      } satisfies ProviderStreamChunk;
+    }
+
+    yield {
+      finishReason: "stop",
+      providerMetadata: {
+        traceId: "bench-trace",
+      },
+      type: "finish",
+      usage: {
+        inputTokens: 10,
+        outputTokens: chunkCount,
+      },
+    } satisfies ProviderStreamChunk;
+  },
+});
+
+const createGenerateProvider = (): TuvrenProvider => {
+  const response: TuvrenModelResponse = {
+    finishReason: "stop",
+    parts: [
+      {
+        text: "Buffered response body",
+        type: "text",
+      },
+      {
+        data: {
+          items: Array.from({ length: 16 }, (_, index) => ({
+            index,
+            value: `value-${index}`,
+          })),
+        },
+        name: "bench_data",
+        type: "structured",
+      },
+    ],
+  };
+
+  return {
+    generate() {
+      return Promise.resolve(response);
+    },
+    id: "bench-provider",
+    async *stream() {
+      await Promise.resolve();
+      yield* [];
+    },
+  };
+};
+
 const cases: BenchmarkCase[] = [
   {
     iterations: 220,
@@ -105,22 +184,11 @@ const cases: BenchmarkCase[] = [
   },
 ];
 
-await main();
+const nanoseconds = (): number => bunRuntime.Bun.nanoseconds();
 
-async function main(): Promise<void> {
-  process.stdout.write("react runner stream benchmark\n");
-
-  for (const benchmarkCase of cases) {
-    const result = await measure(benchmarkCase);
-    process.stdout.write(
-      `${result.name}: best ${formatNs(result.bestNs)} total, ${formatNs(
-        result.bestNs / result.iterations
-      )}/iter; avg ${formatNs(result.averageNs)} total\n`
-    );
-  }
-}
-
-async function measure(benchmarkCase: BenchmarkCase): Promise<BenchmarkResult> {
+const measure = async (
+  benchmarkCase: BenchmarkCase
+): Promise<BenchmarkResult> => {
   await benchmarkCase.run(
     Math.min(WARMUP_ITERATIONS, benchmarkCase.iterations)
   );
@@ -143,92 +211,9 @@ async function measure(benchmarkCase: BenchmarkCase): Promise<BenchmarkResult> {
     iterations: benchmarkCase.iterations,
     name: benchmarkCase.name,
   };
-}
+};
 
-function createRuntimePort(): RunnerRuntimePort {
-  const events: TuvrenStreamEvent[] = [];
-
-  return {
-    emit(event) {
-      const clonedEvent = structuredClone(event);
-      assertTuvrenStreamEvent(clonedEvent, "stream event");
-      events.push(clonedEvent);
-    },
-    now,
-  };
-}
-
-function createStreamingProvider(chunkCount: number): TuvrenProvider {
-  return {
-    generate() {
-      return Promise.reject(
-        new Error("generate should not be called by stream benchmark")
-      );
-    },
-    id: "bench-provider",
-    async *stream() {
-      await Promise.resolve();
-
-      for (let index = 0; index < chunkCount; index += 1) {
-        yield {
-          text: `chunk-${index}-`,
-          type: "text_delta",
-        } satisfies ProviderStreamChunk;
-      }
-
-      yield {
-        finishReason: "stop",
-        providerMetadata: {
-          traceId: "bench-trace",
-        },
-        type: "finish",
-        usage: {
-          inputTokens: 10,
-          outputTokens: chunkCount,
-        },
-      } satisfies ProviderStreamChunk;
-    },
-  };
-}
-
-function createGenerateProvider(): TuvrenProvider {
-  const response: TuvrenModelResponse = {
-    finishReason: "stop",
-    parts: [
-      {
-        text: "Buffered response body",
-        type: "text",
-      },
-      {
-        data: {
-          items: Array.from({ length: 16 }, (_, index) => ({
-            index,
-            value: `value-${index}`,
-          })),
-        },
-        name: "bench_data",
-        type: "structured",
-      },
-    ],
-  };
-
-  return {
-    generate() {
-      return Promise.resolve(response);
-    },
-    id: "bench-provider",
-    async *stream() {
-      await Promise.resolve();
-      yield* [];
-    },
-  };
-}
-
-function now(): number {
-  return 1;
-}
-
-function formatNs(value: number): string {
+const formatNs = (value: number): string => {
   if (value >= 1_000_000) {
     return `${(value / 1_000_000).toFixed(2)}ms`;
   }
@@ -238,8 +223,19 @@ function formatNs(value: number): string {
   }
 
   return `${value.toFixed(0)}ns`;
-}
+};
 
-function nanoseconds(): number {
-  return bunRuntime.Bun.nanoseconds();
-}
+const main = async (): Promise<void> => {
+  process.stdout.write("react runner stream benchmark\n");
+
+  for (const benchmarkCase of cases) {
+    const result = await measure(benchmarkCase);
+    process.stdout.write(
+      `${result.name}: best ${formatNs(result.bestNs)} total, ${formatNs(
+        result.bestNs / result.iterations
+      )}/iter; avg ${formatNs(result.averageNs)} total\n`
+    );
+  }
+};
+
+await main();

@@ -47,6 +47,391 @@ type AccumulatedPart =
     }
   | { kind: "tool_call"; state: PendingToolCall };
 
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/** True when `providerMetadata.anthropic.redactedData` is present, marking a reasoning part as redacted. */
+const hasAnthropicRedactedData = (
+  providerMetadata: Record<string, unknown> | undefined
+): boolean => {
+  if (!isPlainObject(providerMetadata)) {
+    return false;
+  }
+
+  const anthropicMetadata = providerMetadata.anthropic;
+
+  return (
+    isPlainObject(anthropicMetadata) &&
+    typeof anthropicMetadata.redactedData === "string"
+  );
+};
+
+/**
+ * Finalizes a reasoning part, pairing it with the next queued provider
+ * metadata entry when the part has a signature or is empty (redacted
+ * reasoning carries no text but does carry provider metadata). An
+ * empty/unsigned/metadata-less reasoning part is dropped when `partial`, and
+ * otherwise indicates a malformed provider stream.
+ *
+ * @throws TuvrenProviderError with code `react_runner_invalid_provider_stream`
+ *   for a non-partial finalization of an empty reasoning part with no
+ *   signature or provider metadata (redacted reasoning must carry metadata).
+ */
+const finalizeReasoningPart = (
+  part: Extract<AccumulatedPart, { kind: "reasoning" }>,
+  partial: boolean,
+  pendingReasoningProviderMetadata: Record<string, unknown>[]
+):
+  | Extract<TuvrenModelResponse["parts"][number], { type: "reasoning" }>
+  | undefined => {
+  const providerMetadata =
+    part.signature !== undefined || part.text.length === 0
+      ? pendingReasoningProviderMetadata.shift()
+      : undefined;
+
+  if (
+    part.text.length === 0 &&
+    part.signature === undefined &&
+    providerMetadata === undefined
+  ) {
+    if (partial) {
+      return undefined;
+    }
+
+    throw new TuvrenProviderError(
+      "provider stream produced empty reasoning without redacted metadata",
+      {
+        code: "react_runner_invalid_provider_stream",
+      }
+    );
+  }
+
+  return {
+    providerMetadata:
+      providerMetadata ??
+      (part.signature === undefined
+        ? undefined
+        : {
+            signature: part.signature,
+          }),
+    redacted: hasAnthropicRedactedData(providerMetadata),
+    text: part.text,
+    type: "reasoning",
+  };
+};
+
+/**
+ * Parses a raw JSON buffer to its final value; an empty buffer parses to
+ * `null` (a structured/tool-call chunk sequence with no delta content).
+ *
+ * @throws TuvrenProviderError with code `react_runner_invalid_provider_stream`
+ *   when `value` is non-empty and not valid JSON.
+ */
+const parseStructuredValue = (value: string): unknown => {
+  if (value.length === 0) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch (error: unknown) {
+    throw new TuvrenProviderError("provider returned invalid structured JSON", {
+      cause: error,
+      code: "react_runner_invalid_provider_stream",
+      details: {
+        value,
+      },
+    });
+  }
+};
+
+/** Best-effort JSON parse: returns `undefined` for empty or invalid input instead of throwing. */
+const parsePartialStructuredValue = (value: string): unknown => {
+  if (value.length === 0) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * Resolves a structured-output part's data: the already-completed `data`
+ * when set, otherwise the raw delta buffer parsed strictly (`partial`
+ * falsy/undefined, throwing on invalid JSON) or best-effort (`partial: true`,
+ * returning `undefined` on invalid/incomplete JSON instead of throwing).
+ */
+const parsePartialStructuredPart = (
+  part: Extract<AccumulatedPart, { kind: "structured" }>,
+  partial?: boolean
+): unknown => {
+  if (part.data !== undefined) {
+    return part.data;
+  }
+
+  if (partial === true) {
+    return parsePartialStructuredValue(part.delta);
+  }
+
+  return parseStructuredValue(part.delta);
+};
+
+/**
+ * Finalizes a structured-output part.
+ *
+ * @returns `undefined` when `partial` and the buffered raw JSON has not
+ *   parsed yet (see {@link parsePartialStructuredPart}).
+ */
+const finalizeStructuredPart = (
+  part: Extract<AccumulatedPart, { kind: "structured" }>,
+  partial: boolean
+):
+  | Extract<TuvrenModelResponse["parts"][number], { type: "structured" }>
+  | undefined => {
+  const data = parsePartialStructuredPart(part, partial);
+
+  return data === undefined
+    ? undefined
+    : {
+        data,
+        name: part.name,
+        type: "structured",
+      };
+};
+
+const cloneValue = <T>(value: T): T => structuredClone(value);
+
+/** Stamps the internal `providerCallId` onto a tool call's provider metadata for correlation. */
+const buildToolCallProviderMetadata = (
+  providerCallId: string,
+  providerMetadata: Record<string, unknown> | undefined
+): Record<string, unknown> => ({
+  ...(providerMetadata === undefined ? {} : cloneValue(providerMetadata)),
+  providerCallId,
+});
+
+/** Tool-call analog of {@link parsePartialStructuredPart}, over a pending tool call's args buffer. */
+const parsePartialToolCallInput = (
+  state: PendingToolCall,
+  partial?: boolean
+): unknown => {
+  if (state.input !== undefined) {
+    return state.input;
+  }
+
+  if (partial === true) {
+    return parsePartialStructuredValue(state.argsDelta);
+  }
+
+  return parseStructuredValue(state.argsDelta);
+};
+
+/**
+ * Finalizes a tool-call part.
+ *
+ * @returns `undefined` when `partial` and the buffered raw args JSON has not
+ *   parsed yet (see {@link parsePartialToolCallInput}).
+ */
+const finalizeToolCallPart = (
+  part: Extract<AccumulatedPart, { kind: "tool_call" }>,
+  partial: boolean
+):
+  | Extract<TuvrenModelResponse["parts"][number], { type: "tool_call" }>
+  | undefined => {
+  const input = parsePartialToolCallInput(part.state, partial);
+
+  return input === undefined
+    ? undefined
+    : {
+        callId: part.state.callId,
+        input,
+        name: part.state.name,
+        providerMetadata: buildToolCallProviderMetadata(
+          part.state.providerCallId,
+          part.state.providerMetadata
+        ),
+        type: "tool_call",
+      };
+};
+
+/**
+ * Converts one accumulated part into its final `TuvrenModelResponse` part
+ * shape, or `undefined` when a partial finalization has nothing usable yet
+ * (see {@link finalizeStructuredPart}, {@link finalizeToolCallPart}).
+ *
+ * @throws TuvrenRuntimeError with code `react_runner_invalid_model_response`
+ *   for an unrecognized accumulated part kind (defensive; should be
+ *   unreachable given {@link AccumulatedPart}'s closed union).
+ */
+const finalizeAccumulatedPart = (input: {
+  part: AccumulatedPart;
+  partial: boolean;
+  pendingReasoningProviderMetadata: Record<string, unknown>[];
+}): TuvrenModelResponse["parts"][number] | undefined => {
+  switch (input.part.kind) {
+    case "text": {
+      return {
+        text: input.part.text,
+        type: "text",
+      };
+    }
+    case "reasoning": {
+      return finalizeReasoningPart(
+        input.part,
+        input.partial,
+        input.pendingReasoningProviderMetadata
+      );
+    }
+    case "structured": {
+      return finalizeStructuredPart(input.part, input.partial);
+    }
+    case "tool_call": {
+      return finalizeToolCallPart(input.part, input.partial);
+    }
+    default: {
+      throw new TuvrenRuntimeError("unsupported accumulated content part", {
+        code: "react_runner_invalid_model_response",
+      });
+    }
+  }
+};
+
+/**
+ * Merges two provider-metadata records recursively, per provider namespace,
+ * so a later chunk's metadata cannot erase keys an earlier chunk already
+ * contributed under the same namespace. Provider namespaces such as
+ * google/vertex can accrete continuity tokens across multiple stream chunks,
+ * which motivates deep rather than shallow merging.
+ */
+const mergeProviderMetadata = (
+  current: Record<string, unknown> | undefined,
+  next: Record<string, unknown> | undefined
+): Record<string, unknown> | undefined => {
+  if (!isPlainObject(next)) {
+    return current === undefined ? undefined : cloneValue(current);
+  }
+
+  if (!isPlainObject(current)) {
+    return cloneValue(next);
+  }
+
+  const merged = cloneValue(current);
+
+  for (const [providerName, providerValue] of Object.entries(next)) {
+    const currentProviderValue = merged[providerName];
+
+    // Provider namespaces such as google/vertex can accrete continuity tokens
+    // across multiple stream chunks. Merge nested objects recursively so later
+    // chunks cannot erase earlier keys that still matter for replay.
+    merged[providerName] =
+      isPlainObject(currentProviderValue) && isPlainObject(providerValue)
+        ? mergeProviderMetadata(currentProviderValue, providerValue)
+        : cloneValue(providerValue);
+  }
+
+  return merged;
+};
+
+/**
+ * Extracts per-reasoning-block provider metadata from the AI SDK bridge's
+ * `streamPartMetadata` array (an interop shim for providers bridged through
+ * the Vercel AI SDK), keyed by the bridge's own reasoning block id and
+ * merged across `reasoning-start`/`-delta`/`-end` entries, in first-seen
+ * order. Returns an empty array when no bridge metadata is present.
+ */
+const collectReasoningProviderMetadata = (
+  providerMetadata: Record<string, unknown> | undefined
+): Record<string, unknown>[] => {
+  const aiSdkBridge = isPlainObject(providerMetadata?.aiSdkBridge)
+    ? providerMetadata.aiSdkBridge
+    : undefined;
+  const streamPartMetadata = Array.isArray(aiSdkBridge?.streamPartMetadata)
+    ? aiSdkBridge.streamPartMetadata
+    : [];
+  const reasoningMetadataById = new Map<string, Record<string, unknown>>();
+  const reasoningMetadataInOrder: Record<string, unknown>[] = [];
+
+  for (const entry of streamPartMetadata) {
+    if (
+      !isPlainObject(entry) ||
+      (entry.type !== "reasoning-start" &&
+        entry.type !== "reasoning-delta" &&
+        entry.type !== "reasoning-end") ||
+      typeof entry.id !== "string"
+    ) {
+      continue;
+    }
+
+    const entryProviderMetadata = isPlainObject(entry.providerMetadata)
+      ? entry.providerMetadata
+      : undefined;
+
+    if (entryProviderMetadata === undefined) {
+      continue;
+    }
+
+    let reasoningMetadata = reasoningMetadataById.get(entry.id);
+
+    if (reasoningMetadata === undefined) {
+      reasoningMetadata = {};
+      reasoningMetadataById.set(entry.id, reasoningMetadata);
+      reasoningMetadataInOrder.push(reasoningMetadata);
+    }
+
+    for (const [providerName, providerValue] of Object.entries(
+      entryProviderMetadata
+    )) {
+      reasoningMetadata[providerName] = cloneValue(providerValue);
+    }
+  }
+
+  return reasoningMetadataInOrder;
+};
+
+/**
+ * Serializes a value for a synthesized delta event
+ * ({@link createBufferedAssistantSequence}'s single-shot delta+done pairs),
+ * falling back to the literal string `"null"` for values `JSON.stringify`
+ * itself returns `undefined` for (e.g. a bare `undefined` input).
+ */
+export const serializeAssistantDeltaValue = (value: unknown): string =>
+  JSON.stringify(value) ?? "null";
+
+/** Extracts a message/stack pair from an unknown thrown value for error `details`. */
+const normalizeUnknownError = (
+  error: unknown
+): {
+  message: string;
+  stack?: string;
+} => {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      stack: error.stack,
+    };
+  }
+
+  return {
+    message: String(error),
+  };
+};
+
+/** Wraps a non-`TuvrenProviderError` stream failure as a `react_runner_provider_failure` provider error. */
+const toProviderError = (error: unknown): TuvrenProviderError => {
+  if (error instanceof TuvrenProviderError) {
+    return error;
+  }
+
+  return new TuvrenProviderError("provider stream failed", {
+    cause: error,
+    code: "react_runner_provider_failure",
+    details: normalizeUnknownError(error),
+  });
+};
+
 /**
  * Absorbs `ProviderStreamChunk`s from a provider stream and does two jobs at
  * once (framework spec §6.2 "Two Parallel Outputs"):
@@ -912,271 +1297,12 @@ export class StreamAccumulator {
   }
 }
 
-/**
- * Converts one accumulated part into its final `TuvrenModelResponse` part
- * shape, or `undefined` when a partial finalization has nothing usable yet
- * (see {@link finalizeStructuredPart}, {@link finalizeToolCallPart}).
- *
- * @throws TuvrenRuntimeError with code `react_runner_invalid_model_response`
- *   for an unrecognized accumulated part kind (defensive; should be
- *   unreachable given {@link AccumulatedPart}'s closed union).
- */
-function finalizeAccumulatedPart(input: {
-  part: AccumulatedPart;
-  partial: boolean;
-  pendingReasoningProviderMetadata: Record<string, unknown>[];
-}): TuvrenModelResponse["parts"][number] | undefined {
-  switch (input.part.kind) {
-    case "text": {
-      return {
-        text: input.part.text,
-        type: "text",
-      };
-    }
-    case "reasoning": {
-      return finalizeReasoningPart(
-        input.part,
-        input.partial,
-        input.pendingReasoningProviderMetadata
-      );
-    }
-    case "structured": {
-      return finalizeStructuredPart(input.part, input.partial);
-    }
-    case "tool_call": {
-      return finalizeToolCallPart(input.part, input.partial);
-    }
-    default: {
-      throw new TuvrenRuntimeError("unsupported accumulated content part", {
-        code: "react_runner_invalid_model_response",
-      });
-    }
-  }
-}
-
-/**
- * Finalizes a reasoning part, pairing it with the next queued provider
- * metadata entry when the part has a signature or is empty (redacted
- * reasoning carries no text but does carry provider metadata). An
- * empty/unsigned/metadata-less reasoning part is dropped when `partial`, and
- * otherwise indicates a malformed provider stream.
- *
- * @throws TuvrenProviderError with code `react_runner_invalid_provider_stream`
- *   for a non-partial finalization of an empty reasoning part with no
- *   signature or provider metadata (redacted reasoning must carry metadata).
- */
-function finalizeReasoningPart(
-  part: Extract<AccumulatedPart, { kind: "reasoning" }>,
-  partial: boolean,
-  pendingReasoningProviderMetadata: Record<string, unknown>[]
-):
-  | Extract<TuvrenModelResponse["parts"][number], { type: "reasoning" }>
-  | undefined {
-  const providerMetadata =
-    part.signature !== undefined || part.text.length === 0
-      ? pendingReasoningProviderMetadata.shift()
-      : undefined;
-
-  if (
-    part.text.length === 0 &&
-    part.signature === undefined &&
-    providerMetadata === undefined
-  ) {
-    if (partial) {
-      return undefined;
-    }
-
-    throw new TuvrenProviderError(
-      "provider stream produced empty reasoning without redacted metadata",
-      {
-        code: "react_runner_invalid_provider_stream",
-      }
-    );
-  }
-
-  return {
-    providerMetadata:
-      providerMetadata ??
-      (part.signature === undefined
-        ? undefined
-        : {
-            signature: part.signature,
-          }),
-    redacted: hasAnthropicRedactedData(providerMetadata),
-    text: part.text,
-    type: "reasoning",
-  };
-}
-
-/**
- * Finalizes a structured-output part.
- *
- * @returns `undefined` when `partial` and the buffered raw JSON has not
- *   parsed yet (see {@link parsePartialStructuredPart}).
- */
-function finalizeStructuredPart(
-  part: Extract<AccumulatedPart, { kind: "structured" }>,
-  partial: boolean
-):
-  | Extract<TuvrenModelResponse["parts"][number], { type: "structured" }>
-  | undefined {
-  const data = parsePartialStructuredPart(part, partial);
-
-  return data === undefined
-    ? undefined
-    : {
-        data,
-        name: part.name,
-        type: "structured",
-      };
-}
-
-/**
- * Finalizes a tool-call part.
- *
- * @returns `undefined` when `partial` and the buffered raw args JSON has not
- *   parsed yet (see {@link parsePartialToolCallInput}).
- */
-function finalizeToolCallPart(
-  part: Extract<AccumulatedPart, { kind: "tool_call" }>,
-  partial: boolean
-):
-  | Extract<TuvrenModelResponse["parts"][number], { type: "tool_call" }>
-  | undefined {
-  const input = parsePartialToolCallInput(part.state, partial);
-
-  return input === undefined
-    ? undefined
-    : {
-        callId: part.state.callId,
-        input,
-        name: part.state.name,
-        providerMetadata: buildToolCallProviderMetadata(
-          part.state.providerCallId,
-          part.state.providerMetadata
-        ),
-        type: "tool_call",
-      };
-}
-
-/** Stamps the internal `providerCallId` onto a tool call's provider metadata for correlation. */
-function buildToolCallProviderMetadata(
-  providerCallId: string,
-  providerMetadata: Record<string, unknown> | undefined
-): Record<string, unknown> {
-  return {
-    ...(providerMetadata === undefined ? {} : cloneValue(providerMetadata)),
-    providerCallId,
-  };
-}
-
-/**
- * Merges two provider-metadata records recursively, per provider namespace,
- * so a later chunk's metadata cannot erase keys an earlier chunk already
- * contributed under the same namespace. Provider namespaces such as
- * google/vertex can accrete continuity tokens across multiple stream chunks,
- * which motivates deep rather than shallow merging.
- */
-function mergeProviderMetadata(
-  current: Record<string, unknown> | undefined,
-  next: Record<string, unknown> | undefined
-): Record<string, unknown> | undefined {
-  if (!isPlainObject(next)) {
-    return current === undefined ? undefined : cloneValue(current);
-  }
-
-  if (!isPlainObject(current)) {
-    return cloneValue(next);
-  }
-
-  const merged = cloneValue(current);
-
-  for (const [providerName, providerValue] of Object.entries(next)) {
-    const currentProviderValue = merged[providerName];
-
-    // Provider namespaces such as google/vertex can accrete continuity tokens
-    // across multiple stream chunks. Merge nested objects recursively so later
-    // chunks cannot erase earlier keys that still matter for replay.
-    merged[providerName] =
-      isPlainObject(currentProviderValue) && isPlainObject(providerValue)
-        ? mergeProviderMetadata(currentProviderValue, providerValue)
-        : cloneValue(providerValue);
-  }
-
-  return merged;
-}
-
-/**
- * Extracts per-reasoning-block provider metadata from the AI SDK bridge's
- * `streamPartMetadata` array (an interop shim for providers bridged through
- * the Vercel AI SDK), keyed by the bridge's own reasoning block id and
- * merged across `reasoning-start`/`-delta`/`-end` entries, in first-seen
- * order. Returns an empty array when no bridge metadata is present.
- */
-function collectReasoningProviderMetadata(
-  providerMetadata: Record<string, unknown> | undefined
-): Record<string, unknown>[] {
-  const aiSdkBridge = isPlainObject(providerMetadata?.aiSdkBridge)
-    ? providerMetadata.aiSdkBridge
-    : undefined;
-  const streamPartMetadata = Array.isArray(aiSdkBridge?.streamPartMetadata)
-    ? aiSdkBridge.streamPartMetadata
-    : [];
-  const reasoningMetadataById = new Map<string, Record<string, unknown>>();
-  const reasoningMetadataInOrder: Record<string, unknown>[] = [];
-
-  for (const entry of streamPartMetadata) {
-    if (
-      !isPlainObject(entry) ||
-      (entry.type !== "reasoning-start" &&
-        entry.type !== "reasoning-delta" &&
-        entry.type !== "reasoning-end") ||
-      typeof entry.id !== "string"
-    ) {
-      continue;
-    }
-
-    const entryProviderMetadata = isPlainObject(entry.providerMetadata)
-      ? entry.providerMetadata
-      : undefined;
-
-    if (entryProviderMetadata === undefined) {
-      continue;
-    }
-
-    let reasoningMetadata = reasoningMetadataById.get(entry.id);
-
-    if (reasoningMetadata === undefined) {
-      reasoningMetadata = {};
-      reasoningMetadataById.set(entry.id, reasoningMetadata);
-      reasoningMetadataInOrder.push(reasoningMetadata);
-    }
-
-    for (const [providerName, providerValue] of Object.entries(
-      entryProviderMetadata
-    )) {
-      reasoningMetadata[providerName] = cloneValue(providerValue);
-    }
-  }
-
-  return reasoningMetadataInOrder;
-}
-
-/** True when `providerMetadata.anthropic.redactedData` is present, marking a reasoning part as redacted. */
-function hasAnthropicRedactedData(
-  providerMetadata: Record<string, unknown> | undefined
-): boolean {
-  if (!isPlainObject(providerMetadata)) {
-    return false;
-  }
-
-  const anthropicMetadata = providerMetadata.anthropic;
-
-  return (
-    isPlainObject(anthropicMetadata) &&
-    typeof anthropicMetadata.redactedData === "string"
-  );
-}
+/** Fires `promise` without awaiting it, swallowing any rejection. */
+const detachCleanup = (promise: PromiseLike<unknown>): void => {
+  Promise.resolve(promise).catch(() => {
+    // Cleanup errors must not mask the provider/cancellation outcome already in flight.
+  });
+};
 
 /**
  * Best-effort closes a provider stream iterator (calls `iterator.return()`
@@ -1184,9 +1310,9 @@ function hasAnthropicRedactedData(
  * propagating cleanup failures — the original outcome already in flight
  * takes priority.
  */
-export function closeProviderIterator(
+export const closeProviderIterator = (
   iterator: AsyncIterator<ProviderStreamChunk>
-): void {
+): void => {
   if (iterator.return === undefined) {
     return;
   }
@@ -1196,99 +1322,26 @@ export function closeProviderIterator(
   } catch {
     // Cleanup errors must not mask the provider/cancellation outcome already in flight.
   }
-}
+};
 
-/** Fires `promise` without awaiting it, swallowing any rejection. */
-function detachCleanup(promise: PromiseLike<unknown>): void {
-  Promise.resolve(promise).catch(() => {
-    // Cleanup errors must not mask the provider/cancellation outcome already in flight.
+/** Builds the canonical cancellation error, carrying `signal.reason` as `details`. */
+const createExecutionCancelledError = (
+  signal: AbortSignal | undefined
+): TuvrenRuntimeError =>
+  new TuvrenRuntimeError("execution cancelled", {
+    code: "react_runner_execution_cancelled",
+    details: normalizeUnknownError(signal?.reason),
   });
-}
 
 /**
- * Parses a raw JSON buffer to its final value; an empty buffer parses to
- * `null` (a structured/tool-call chunk sequence with no delta content).
- *
- * @throws TuvrenProviderError with code `react_runner_invalid_provider_stream`
- *   when `value` is non-empty and not valid JSON.
+ * @throws A `TuvrenRuntimeError` with code `react_runner_execution_cancelled`
+ *   when `signal` is already aborted; a no-op otherwise.
  */
-function parseStructuredValue(value: string): unknown {
-  if (value.length === 0) {
-    return null;
+export const throwIfAborted = (signal: AbortSignal | undefined): void => {
+  if (signal?.aborted === true) {
+    throw createExecutionCancelledError(signal);
   }
-
-  try {
-    return JSON.parse(value);
-  } catch (error: unknown) {
-    throw new TuvrenProviderError("provider returned invalid structured JSON", {
-      cause: error,
-      code: "react_runner_invalid_provider_stream",
-      details: {
-        value,
-      },
-    });
-  }
-}
-
-/**
- * Resolves a structured-output part's data: the already-completed `data`
- * when set, otherwise the raw delta buffer parsed strictly (`partial`
- * falsy/undefined, throwing on invalid JSON) or best-effort (`partial: true`,
- * returning `undefined` on invalid/incomplete JSON instead of throwing).
- */
-function parsePartialStructuredPart(
-  part: Extract<AccumulatedPart, { kind: "structured" }>,
-  partial?: boolean
-): unknown {
-  if (part.data !== undefined) {
-    return part.data;
-  }
-
-  if (partial === true) {
-    return parsePartialStructuredValue(part.delta);
-  }
-
-  return parseStructuredValue(part.delta);
-}
-
-/** Tool-call analog of {@link parsePartialStructuredPart}, over a pending tool call's args buffer. */
-function parsePartialToolCallInput(
-  state: PendingToolCall,
-  partial?: boolean
-): unknown {
-  if (state.input !== undefined) {
-    return state.input;
-  }
-
-  if (partial === true) {
-    return parsePartialStructuredValue(state.argsDelta);
-  }
-
-  return parseStructuredValue(state.argsDelta);
-}
-
-/** Best-effort JSON parse: returns `undefined` for empty or invalid input instead of throwing. */
-function parsePartialStructuredValue(value: string): unknown {
-  if (value.length === 0) {
-    return undefined;
-  }
-
-  try {
-    return JSON.parse(value);
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * Serializes a value for a synthesized delta event
- * ({@link createBufferedAssistantSequence}'s single-shot delta+done pairs),
- * falling back to the literal string `"null"` for values `JSON.stringify`
- * itself returns `undefined` for (e.g. a bare `undefined` input).
- */
-export function serializeAssistantDeltaValue(value: unknown): string {
-  return JSON.stringify(value) ?? "null";
-}
+};
 
 /**
  * Races `operation` against `signal` aborting, rejecting with a cancellation
@@ -1299,10 +1352,10 @@ export function serializeAssistantDeltaValue(value: unknown): string {
  * @throws The cancellation error if `signal` is already aborted, aborts
  *   during the wait, or is found aborted right as `operation` resolves.
  */
-export async function waitForAbortable<T>(
+export const waitForAbortable = async <T>(
   operation: Promise<T>,
   signal: AbortSignal | undefined
-): Promise<T> {
+): Promise<T> => {
   throwIfAborted(signal);
 
   if (signal === undefined) {
@@ -1310,12 +1363,12 @@ export async function waitForAbortable<T>(
   }
 
   return await new Promise<T>((resolve, reject) => {
+    const onAbort = (): void => {
+      signal.removeEventListener("abort", onAbort);
+      reject(createExecutionCancelledError(signal));
+    };
     const cleanup = (): void => {
       signal.removeEventListener("abort", onAbort);
-    };
-    const onAbort = (): void => {
-      cleanup();
-      reject(createExecutionCancelledError(signal));
     };
 
     signal.addEventListener("abort", onAbort, { once: true });
@@ -1336,75 +1389,15 @@ export async function waitForAbortable<T>(
       }
     );
   });
-}
-
-/**
- * @throws A `TuvrenRuntimeError` with code `react_runner_execution_cancelled`
- *   when `signal` is already aborted; a no-op otherwise.
- */
-export function throwIfAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted === true) {
-    throw createExecutionCancelledError(signal);
-  }
-}
-
-/** Builds the canonical cancellation error, carrying `signal.reason` as `details`. */
-function createExecutionCancelledError(
-  signal: AbortSignal | undefined
-): TuvrenRuntimeError {
-  return new TuvrenRuntimeError("execution cancelled", {
-    code: "react_runner_execution_cancelled",
-    details: normalizeUnknownError(signal?.reason),
-  });
-}
-
-/** True for the cancellation error produced by {@link createExecutionCancelledError}. */
-export function isExecutionCancelledError(error: unknown): boolean {
-  return isRuntimeErrorWithCode(error, "react_runner_execution_cancelled");
-}
-
-/** Wraps a non-`TuvrenProviderError` stream failure as a `react_runner_provider_failure` provider error. */
-function toProviderError(error: unknown): TuvrenProviderError {
-  if (error instanceof TuvrenProviderError) {
-    return error;
-  }
-
-  return new TuvrenProviderError("provider stream failed", {
-    cause: error,
-    code: "react_runner_provider_failure",
-    details: normalizeUnknownError(error),
-  });
-}
+};
 
 /** True when `error` is a `TuvrenRuntimeError` with the exact given `code`. */
-function isRuntimeErrorWithCode(
+const isRuntimeErrorWithCode = (
   error: unknown,
   code: string
-): error is TuvrenRuntimeError {
-  return error instanceof TuvrenRuntimeError && error.code === code;
-}
+): error is TuvrenRuntimeError =>
+  error instanceof TuvrenRuntimeError && error.code === code;
 
-/** Extracts a message/stack pair from an unknown thrown value for error `details`. */
-function normalizeUnknownError(error: unknown): {
-  message: string;
-  stack?: string;
-} {
-  if (error instanceof Error) {
-    return {
-      message: error.message,
-      stack: error.stack,
-    };
-  }
-
-  return {
-    message: String(error),
-  };
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function cloneValue<T>(value: T): T {
-  return structuredClone(value);
-}
+/** True for the cancellation error produced by {@link createExecutionCancelledError}. */
+export const isExecutionCancelledError = (error: unknown): boolean =>
+  isRuntimeErrorWithCode(error, "react_runner_execution_cancelled");
