@@ -79,7 +79,7 @@ const LOCAL_SOURCE_DIRS = ["bench", "smoke", "src", "test"] as const;
 
 interface ProjectTsConfig {
   compilerOptions: Record<string, unknown>;
-  files: unknown[];
+  files: unknown;
   include: unknown;
   references: { path: unknown }[];
 }
@@ -106,7 +106,7 @@ const readProjectTsConfig = (relativePath: string): ProjectTsConfig => {
     compilerOptions: isRecord(parsed.compilerOptions)
       ? parsed.compilerOptions
       : {},
-    files: Array.isArray(parsed.files) ? parsed.files : [],
+    files: parsed.files,
     include: parsed.include,
     references: Array.isArray(parsed.references)
       ? parsed.references
