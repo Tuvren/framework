@@ -35,6 +35,7 @@ describe("runner-react streamed mapping", () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -91,7 +92,7 @@ describe("runner-react streamed mapping", () => {
       throw new Error("expected an assistant message");
     }
 
-    const firstPart = firstMessage.parts[0];
+    const [firstPart] = firstMessage.parts;
 
     if (firstPart?.type !== "tool_call") {
       throw new Error("expected a tool call");
@@ -131,13 +132,14 @@ describe("runner-react streamed mapping", () => {
 
   test("emits streamed assistant events before the provider stream finishes", async () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
-    let releaseStream: (() => void) | undefined;
     let settled = false;
-    const streamGate = new Promise<void>((resolve) => {
-      releaseStream = resolve;
-    });
+    const { promise: streamGate, resolve } = Promise.withResolvers<null>();
+    const releaseStream = (): void => {
+      resolve(null);
+    };
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -181,7 +183,7 @@ describe("runner-react streamed mapping", () => {
       "text.delta",
     ]);
 
-    releaseStream?.();
+    releaseStream();
 
     const result = await execution;
 
@@ -195,6 +197,7 @@ describe("runner-react streamed mapping", () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -274,6 +277,7 @@ describe("runner-react streamed mapping", () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -328,6 +332,16 @@ describe("runner-react streamed mapping", () => {
     expect(result.resolution).toEqual({
       type: "continue_iteration",
     });
+    const toolCall = result.messages
+      ?.flatMap((message) => ("parts" in message ? message.parts : []))
+      .find((part) => part.type === "tool_call");
+
+    if (toolCall?.type !== "tool_call") {
+      throw new Error("expected a tool call");
+    }
+
+    expect(typeof toolCall.callId).toBe("string");
+
     expect(result.messages).toEqual([
       {
         parts: [
@@ -338,7 +352,7 @@ describe("runner-react streamed mapping", () => {
             type: "reasoning",
           },
           {
-            callId: expect.any(String),
+            callId: toolCall.callId,
             input: {
               location: "London",
               unit: "celsius",
@@ -368,6 +382,7 @@ describe("runner-react streamed mapping", () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -426,6 +441,16 @@ describe("runner-react streamed mapping", () => {
     expect(result.resolution).toEqual({
       type: "continue_iteration",
     });
+    const toolCall = result.messages
+      ?.flatMap((message) => ("parts" in message ? message.parts : []))
+      .find((part) => part.type === "tool_call");
+
+    if (toolCall?.type !== "tool_call") {
+      throw new Error("expected a tool call");
+    }
+
+    expect(typeof toolCall.callId).toBe("string");
+
     expect(result.messages).toEqual([
       {
         parts: [
@@ -441,7 +466,7 @@ describe("runner-react streamed mapping", () => {
             type: "text",
           },
           {
-            callId: expect.any(String),
+            callId: toolCall.callId,
             input: {
               location: "London",
               unit: "celsius",
@@ -473,6 +498,7 @@ describe("runner-react streamed mapping", () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -545,6 +571,7 @@ describe("runner-react streamed mapping", () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -615,6 +642,7 @@ describe("runner-react streamed mapping", () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -679,6 +707,7 @@ describe("runner-react streamed mapping", () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -728,6 +757,7 @@ describe("runner-react streamed mapping", () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",

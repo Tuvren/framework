@@ -111,6 +111,7 @@ const createCachingProvider = (options: {
   const capturedPrompts: TuvrenMessage[][] = [];
   const provider: TuvrenProvider = {
     async generate(prompt: TuvrenPrompt) {
+      await Promise.resolve();
       capturedPrompts.push(structuredClone(prompt.messages));
       return {
         finishReason: "stop",
@@ -169,10 +170,16 @@ const runTurn = async (
 const lastAssistantMessage = (
   messages: unknown[]
 ): Extract<TuvrenMessage, { role: "assistant" }> => {
-  const assistant = [...(messages as TuvrenMessage[])]
-    .reverse()
-    .find((message) => message.role === "assistant");
-  if (assistant === undefined || assistant.role !== "assistant") {
+  const assistant = messages
+    .toReversed()
+    .find(
+      (message): message is Extract<TuvrenMessage, { role: "assistant" }> =>
+        typeof message === "object" &&
+        message !== null &&
+        "role" in message &&
+        message.role === "assistant"
+    );
+  if (assistant === undefined) {
     throw new Error("expected a durable assistant message");
   }
   return assistant;

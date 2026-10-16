@@ -131,13 +131,13 @@ export interface ReActRunnerOptions {
   /**
    * Strategy for calling the model each iteration.
    *
-   * @defaultValue `"stream"`
+   * Defaults to `"stream"`.
    */
   providerCallMode?: ReActRunnerProviderCallModeResolver;
   /**
    * Execution mode reported for tool-call batches.
    *
-   * @defaultValue `"parallel"`
+   * Defaults to `"parallel"`.
    */
   toolExecutionMode?: ReActRunnerToolExecutionModeResolver;
 }
@@ -192,7 +192,7 @@ const cloneValue = <T>(value: T): T => structuredClone(value);
  * loop policy is configured), then validates the result's shape and its
  * consistency with whether the response requested tool calls.
  *
- * @throws TuvrenRuntimeError with code `invalid_loop_policy` when
+ * @throws {TuvrenRuntimeError} With code `invalid_loop_policy` when
  *   `evaluate()` returns a malformed `IterationDecision`, or when the
  *   response requests tool calls but the decision does not set both
  *   `continue` and `executeTools` (tool-call responses must continue the
@@ -322,7 +322,7 @@ const buildPrestagedProviderToolMessage = (
  * cancelled resolution. Any other empty-parts response is a provider
  * contract violation.
  *
- * @throws TuvrenRuntimeError with code `react_runner_empty_response` when the
+ * @throws {TuvrenRuntimeError} With code `react_runner_empty_response` when the
  *   response has no parts, is not cancelled, and carries no provider tool
  *   results to fall back on.
  */
@@ -398,7 +398,7 @@ const isConcreteProvider = (value: unknown): value is TuvrenProvider => {
 /**
  * Narrows `config.model` to a concrete `TuvrenProvider`.
  *
- * @throws TuvrenValidationError with code `react_runner_missing_provider`
+ * @throws {TuvrenValidationError} With code `react_runner_missing_provider`
  *   when `model` is a string model id or otherwise not a provider — the ReAct
  *   runner requires the host to have already resolved a concrete provider.
  */
@@ -421,7 +421,7 @@ const resolveProvider = (model: AgentConfig["model"]): TuvrenProvider => {
 /**
  * Evaluates {@link ReActRunnerProviderCallModeResolver} for the current call.
  *
- * @throws TuvrenRuntimeError with code
+ * @throws {TuvrenRuntimeError} With code
  *   `react_runner_invalid_provider_call_mode` when the resolver (or fixed
  *   value) does not produce `"generate"` or `"stream"`.
  */
@@ -498,7 +498,7 @@ const createProviderPrompt = (aroundContext: AroundModelContext) => ({
  * provider call, wrapping its result as a {@link ModelExecutionOutcome} with
  * a single buffered assistant sequence.
  *
- * @throws TuvrenValidationError when `config.model` is not a concrete
+ * @throws {TuvrenValidationError} When `config.model` is not a concrete
  *   `TuvrenProvider` (see {@link resolveProvider}).
  */
 const callProvider = async (
@@ -516,13 +516,13 @@ const callProvider = async (
   const sequence =
     providerCallMode === "generate"
       ? await executeGenerateCall({
-          now: context.runtime.now,
+          now: () => context.runtime.now(),
           prompt,
           provider,
           signal: context.signal,
         })
       : await executeStreamCall({
-          now: context.runtime.now,
+          now: () => context.runtime.now(),
           prompt,
           provider,
           runtime: context.runtime,
@@ -573,7 +573,7 @@ const createAroundModelContext = (
  * Evaluates {@link ReActRunnerToolExecutionModeResolver} for the current
  * response.
  *
- * @throws TuvrenRuntimeError with code
+ * @throws {TuvrenRuntimeError} With code
  *   `react_runner_invalid_tool_execution_mode` when the resolver (or fixed
  *   value) does not produce `"parallel"` or `"sequential"`.
  */
@@ -627,7 +627,7 @@ const getStructuredOutputSchemaDialect = (
  * declared dialect) uses the default `Ajv`, draft/2019-09 uses `Ajv2019`,
  * and draft/2020-12 uses `Ajv2020`.
  *
- * @throws TuvrenProviderError with code `structured_output_validation` and
+ * @throws {TuvrenProviderError} With code `structured_output_validation` and
  *   `details.reason: "unsupported_schema_dialect"` for any other declared
  *   `$schema`.
  */
@@ -664,7 +664,7 @@ const createStructuredOutputAjv = (
  * Compiles `schema` with an Ajv instance selected for its declared JSON
  * Schema dialect (see {@link createStructuredOutputAjv}).
  *
- * @throws TuvrenProviderError with code `structured_output_validation` and
+ * @throws {TuvrenProviderError} With code `structured_output_validation` and
  *   `details.reason: "schema_compilation_failed"` when Ajv rejects the
  *   schema.
  */
@@ -699,7 +699,7 @@ const hasRequestedToolCalls = (response: TuvrenModelResponse): boolean =>
  *
  * @param request - The active `responseFormat`, or `undefined` to skip
  *   validation entirely.
- * @throws TuvrenProviderError with code `structured_output_validation` when no
+ * @throws {TuvrenProviderError} With code `structured_output_validation` when no
  *   `structured` part is present (and no tool calls were requested) or when a
  *   `structured` part fails schema validation.
  */
@@ -751,7 +751,7 @@ const normalizeExecutionError = (error: unknown): Error => {
 /**
  * Clones `parts` into the assistant message's non-empty parts tuple.
  *
- * @throws TuvrenRuntimeError with code `react_runner_empty_response` when
+ * @throws {TuvrenRuntimeError} With code `react_runner_empty_response` when
  *   `parts` is empty; callers only reach this after already confirming
  *   `response.parts.length > 0`, so this guards against future misuse.
  */
@@ -772,24 +772,35 @@ const toNonEmptyParts = (
   return [firstPart, ...remainingParts];
 };
 
-const stripUndefinedDeep = <T>(value: T): T => {
-  if (value instanceof Uint8Array) {
-    return new Uint8Array(value) as T;
-  }
-
+const removeUndefinedDeep = (value: unknown): void => {
   if (Array.isArray(value)) {
-    return value.map((item) => stripUndefinedDeep(item)) as T;
+    for (const item of value) {
+      removeUndefinedDeep(item);
+    }
+    return;
   }
 
-  if (value !== null && typeof value === "object") {
-    const entries = Object.entries(value).flatMap(([key, item]) =>
-      item === undefined ? [] : [[key, stripUndefinedDeep(item)]]
-    );
-
-    return Object.fromEntries(entries) as T;
+  if (
+    value === null ||
+    typeof value !== "object" ||
+    value instanceof Uint8Array
+  ) {
+    return;
   }
 
-  return value;
+  for (const [key, item] of Object.entries(value)) {
+    if (item === undefined) {
+      Reflect.deleteProperty(value, key);
+    } else {
+      removeUndefinedDeep(item);
+    }
+  }
+};
+
+const stripUndefinedDeep = <T>(value: T): T => {
+  const clone = cloneValue(value);
+  removeUndefinedDeep(clone);
+  return clone;
 };
 
 /**
@@ -814,8 +825,8 @@ const stripUndefinedDeep = <T>(value: T): T => {
  * assembled, so a later validation failure cannot leave a live stream
  * inconsistent with the returned durable message.
  *
- * @throws TuvrenProviderError when the response's finish reason is `"error"`.
- * @throws TuvrenRuntimeError when the response contains `tool_result` parts
+ * @throws {TuvrenProviderError} When the response's finish reason is `"error"`.
+ * @throws {TuvrenRuntimeError} When the response contains `tool_result` parts
  *   or (via {@link buildEmptyPartsResult}) an unsupported empty response.
  */
 const executeIteration = async (
@@ -983,10 +994,10 @@ const executeIteration = async (
  * `context.messages`, then requires at least one decision and requires every
  * decision's `callId` to be among those pending calls.
  *
- * @throws TuvrenRuntimeError with code
+ * @throws {TuvrenRuntimeError} With code
  *   `runner_resume_missing_approval_decision` when `context.approval.decisions`
  *   is empty.
- * @throws TuvrenRuntimeError with code `runner_resume_unknown_approval_call`
+ * @throws {TuvrenRuntimeError} With code `runner_resume_unknown_approval_call`
  *   when a decision's `callId` does not match any pending assistant tool call.
  */
 const validateResumeApprovalContext = (context: RunnerResumeContext): void => {

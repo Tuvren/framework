@@ -34,12 +34,22 @@ import {
   textSignal,
 } from "./react-runner-test-helpers.ts";
 
+const isUnknownArray = (value: unknown): value is unknown[] =>
+  Array.isArray(value);
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const eventTypeEquals = (actual: string, expected: string): boolean =>
+  actual === expected;
+
 describe("runner-react integration streamed runtime", () => {
   test("executes end to end through runtime-core for streamed tool calls with host-selected sequential mode", async () => {
     const harness = createFakeKernelHarness();
     let iteration = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -107,7 +117,35 @@ describe("runner-react integration streamed runtime", () => {
     });
 
     const events = await collectEvents(handle.events());
-    const messages = await harness.readBranchMessages(thread.branchId);
+    const messages: unknown = await harness.readBranchMessages(thread.branchId);
+    if (!isUnknownArray(messages)) {
+      throw new TypeError("expected durable branch messages");
+    }
+    const toolCallMessage = messages.find((message) => {
+      if (!(isRecord(message) && isUnknownArray(message.parts))) {
+        return false;
+      }
+      const [part] = message.parts;
+      return (
+        message.role === "assistant" &&
+        isRecord(part) &&
+        typeof part.callId === "string" &&
+        part.name === "search" &&
+        part.type === "tool_call"
+      );
+    });
+    const textMessage = messages.find((message) => {
+      if (!(isRecord(message) && isUnknownArray(message.parts))) {
+        return false;
+      }
+      const [part] = message.parts;
+      return (
+        message.role === "assistant" &&
+        isRecord(part) &&
+        part.text === "Tool run complete" &&
+        part.type === "text"
+      );
+    });
 
     expect(
       events.some(
@@ -134,31 +172,26 @@ describe("runner-react integration streamed runtime", () => {
       )
     ).toBe(true);
     expect(handle.status().phase).toBe("completed");
-    expect(messages).toEqual(
-      expect.arrayContaining([
+    expect(toolCallMessage).toMatchObject({
+      parts: [
         {
-          parts: [
-            {
-              callId: expect.any(String),
-              input: { query: "docs" },
-              name: "search",
-              providerMetadata: {
-                google: {
-                  thoughtSignature: "tool-thought-1",
-                },
-                providerCallId: "provider-call-1",
-              },
-              type: "tool_call",
+          input: { query: "docs" },
+          name: "search",
+          providerMetadata: {
+            google: {
+              thoughtSignature: "tool-thought-1",
             },
-          ],
-          role: "assistant",
+            providerCallId: "provider-call-1",
+          },
+          type: "tool_call",
         },
-        {
-          parts: [{ text: "Tool run complete", type: "text" }],
-          role: "assistant",
-        },
-      ])
-    );
+      ],
+      role: "assistant",
+    });
+    expect(textMessage).toEqual({
+      parts: [{ text: "Tool run complete", type: "text" }],
+      role: "assistant",
+    });
   });
 
   test("executes end to end through runtime-core for streamed tool calls without provider args deltas", async () => {
@@ -166,6 +199,7 @@ describe("runner-react integration streamed runtime", () => {
     let iteration = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -239,6 +273,7 @@ describe("runner-react integration streamed runtime", () => {
     const harness = createFakeKernelHarness();
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -303,6 +338,7 @@ describe("runner-react integration streamed runtime", () => {
     const harness = createFakeKernelHarness();
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -352,23 +388,30 @@ describe("runner-react integration streamed runtime", () => {
     );
     expect(sseFrames.some((frame) => frame.event === "text.delta")).toBe(true);
     expect(
-      aguiEvents.some((event) => event.type === "TEXT_MESSAGE_START")
+      aguiEvents.some((event) =>
+        eventTypeEquals(event.type, "TEXT_MESSAGE_START")
+      )
     ).toBe(true);
     expect(
-      aguiEvents.some((event) => event.type === "TEXT_MESSAGE_CONTENT")
+      aguiEvents.some((event) =>
+        eventTypeEquals(event.type, "TEXT_MESSAGE_CONTENT")
+      )
     ).toBe(true);
-    expect(aguiEvents.some((event) => event.type === "TEXT_MESSAGE_END")).toBe(
-      true
-    );
-    expect(aguiEvents.some((event) => event.type === "RUN_FINISHED")).toBe(
-      true
-    );
+    expect(
+      aguiEvents.some((event) =>
+        eventTypeEquals(event.type, "TEXT_MESSAGE_END")
+      )
+    ).toBe(true);
+    expect(
+      aguiEvents.some((event) => eventTypeEquals(event.type, "RUN_FINISHED"))
+    ).toBe(true);
   });
 
   test("flushes provider-backed failed text streams before adapter RUN_ERROR", async () => {
     const harness = createFakeKernelHarness();
     const provider = {
       async generate() {
+        await Promise.resolve();
         throw new Error("generate should not be called");
       },
       id: "provider",
@@ -411,11 +454,11 @@ describe("runner-react integration streamed runtime", () => {
       collectEvents(toSseFrames(sseBranch)),
       collectEvents(toAgUiEvents(aguiBranch)),
     ]);
-    const textEndIndex = aguiEvents.findIndex(
-      (event) => event.type === "TEXT_MESSAGE_END"
+    const textEndIndex = aguiEvents.findIndex((event) =>
+      eventTypeEquals(event.type, "TEXT_MESSAGE_END")
     );
-    const runErrorIndex = aguiEvents.findIndex(
-      (event) => event.type === "RUN_ERROR"
+    const runErrorIndex = aguiEvents.findIndex((event) =>
+      eventTypeEquals(event.type, "RUN_ERROR")
     );
 
     expect(handle.status().phase).toBe("failed");

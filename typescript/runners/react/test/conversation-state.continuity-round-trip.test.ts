@@ -84,6 +84,7 @@ const createRecordingProvider = (): {
   let call = 0;
   const provider: TuvrenProvider = {
     async generate(prompt: TuvrenPrompt) {
+      await Promise.resolve();
       capturedPrompts.push(structuredClone(prompt.messages));
       call += 1;
       if (call === 1) {
@@ -118,6 +119,17 @@ const buildRuntime = (provider: TuvrenProvider) => {
   return { harness, provider, runtime };
 };
 
+const isUnknownArray = (value: unknown): value is unknown[] =>
+  Array.isArray(value);
+
+const isAssistantRecord = (
+  message: unknown
+): message is { providerMetadata?: unknown; role: "assistant" } =>
+  typeof message === "object" &&
+  message !== null &&
+  "role" in message &&
+  message.role === "assistant";
+
 const runTurn = async (
   runtime: ReturnType<typeof buildRuntime>,
   ids: { branchId: string; threadId: string },
@@ -133,13 +145,9 @@ const runTurn = async (
   expect(result.status).toBe("completed");
 };
 
-const lastAssistantContinuity = (
-  messages: TuvrenMessage[]
-): Record<string, unknown> | undefined => {
-  const assistant = [...messages]
-    .reverse()
-    .find((message) => message.role === "assistant");
-  return assistant && "providerMetadata" in assistant
+const lastAssistantContinuity = (messages: unknown[]): unknown => {
+  const assistant = messages.toReversed().find(isAssistantRecord);
+  return assistant !== undefined && "providerMetadata" in assistant
     ? assistant.providerMetadata
     : undefined;
 };
@@ -156,16 +164,19 @@ describe("KRT-BH003 multi-turn continuity round-trip", () => {
 
     // (1) Extracted into lineage: the continuity token was persisted onto the
     // durable assistant message, readable purely from the DAG.
-    const durableAfterTurn1 = (await runtime.harness.readBranchMessages(
+    const durableAfterTurn1: unknown = await runtime.harness.readBranchMessages(
       ids.branchId
-    )) as TuvrenMessage[];
+    );
+    if (!isUnknownArray(durableAfterTurn1)) {
+      throw new TypeError("expected durable branch messages");
+    }
     expect(lastAssistantContinuity(durableAfterTurn1)).toEqual(CONTINUITY);
 
     // Turn 2 — same branch; head-state is rebuilt from the DAG.
     await runTurn(runtime, ids, "second question");
 
     expect(capturedPrompts).toHaveLength(2);
-    const secondRequest = capturedPrompts[1];
+    const [, secondRequest] = capturedPrompts;
     if (secondRequest === undefined) {
       throw new Error("expected a second provider request");
     }

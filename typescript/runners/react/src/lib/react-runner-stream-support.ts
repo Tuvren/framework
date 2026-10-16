@@ -73,7 +73,7 @@ const hasAnthropicRedactedData = (
  * empty/unsigned/metadata-less reasoning part is dropped when `partial`, and
  * otherwise indicates a malformed provider stream.
  *
- * @throws TuvrenProviderError with code `react_runner_invalid_provider_stream`
+ * @throws {TuvrenProviderError} With code `react_runner_invalid_provider_stream`
  *   for a non-partial finalization of an empty reasoning part with no
  *   signature or provider metadata (redacted reasoning must carry metadata).
  */
@@ -124,7 +124,7 @@ const finalizeReasoningPart = (
  * Parses a raw JSON buffer to its final value; an empty buffer parses to
  * `null` (a structured/tool-call chunk sequence with no delta content).
  *
- * @throws TuvrenProviderError with code `react_runner_invalid_provider_stream`
+ * @throws {TuvrenProviderError} With code `react_runner_invalid_provider_stream`
  *   when `value` is non-empty and not valid JSON.
  */
 const parseStructuredValue = (value: string): unknown => {
@@ -262,7 +262,7 @@ const finalizeToolCallPart = (
  * shape, or `undefined` when a partial finalization has nothing usable yet
  * (see {@link finalizeStructuredPart}, {@link finalizeToolCallPart}).
  *
- * @throws TuvrenRuntimeError with code `react_runner_invalid_model_response`
+ * @throws {TuvrenRuntimeError} With code `react_runner_invalid_model_response`
  *   for an unrecognized accumulated part kind (defensive; should be
  *   unreachable given {@link AccumulatedPart}'s closed union).
  */
@@ -483,10 +483,10 @@ export class StreamAccumulator {
    * {@link StreamAccumulator.messageDoneEmitted | messageDoneEmitted}) and
    * asserts every structured/tool-call part completed before it.
    *
-   * @throws TuvrenProviderError when the chunk is an `"error"` chunk, or (via
+   * @throws {TuvrenProviderError} When the chunk is an `"error"` chunk, or (via
    *   {@link assertCompletedProviderParts}) when `"finish"` arrives with an
    *   incomplete structured or tool-call part.
-   * @throws TuvrenRuntimeError with code
+   * @throws {TuvrenRuntimeError} With code
    *   `react_runner_invalid_provider_stream` when an args-delta or done chunk
    *   references a `providerCallId` that was never started.
    */
@@ -621,7 +621,7 @@ export class StreamAccumulator {
    *   reason, or `"tool_call"`/`"stop"` inferred from the finalized parts.
    * @param options.partial - Finalizes best-effort from incomplete state
    *   instead of requiring completion.
-   * @throws TuvrenProviderError (via {@link assertCompletedProviderParts})
+   * @throws {TuvrenProviderError} Via {@link assertCompletedProviderParts}
    *   when called non-partial with an incomplete structured or tool-call part.
    */
   finalize(options?: {
@@ -705,7 +705,7 @@ export class StreamAccumulator {
   }
 
   /**
-   * @throws TuvrenProviderError with code
+   * @throws {TuvrenProviderError} With code
    *   `react_runner_invalid_provider_stream` if any accumulated structured or
    *   tool-call part has not been marked done — the provider stream ended
    *   (or finished) with dangling content.
@@ -736,6 +736,10 @@ export class StreamAccumulator {
               }
             );
           }
+          break;
+        }
+        case "reasoning":
+        case "text": {
           break;
         }
         default: {
@@ -910,7 +914,7 @@ export class StreamAccumulator {
   }
 
   /**
-   * @throws TuvrenRuntimeError with code
+   * @throws {TuvrenRuntimeError} With code
    *   `react_runner_invalid_provider_stream` if no tool call was started for
    *   `providerCallId` (via {@link requireToolCall}).
    */
@@ -922,7 +926,7 @@ export class StreamAccumulator {
    * Marks a pending tool call done, storing its final `input` and merging in
    * `providerMetadata` (see {@link mergeProviderMetadata}).
    *
-   * @throws TuvrenRuntimeError with code
+   * @throws {TuvrenRuntimeError} With code
    *   `react_runner_invalid_provider_stream` if no tool call was started for
    *   `providerCallId`.
    */
@@ -1031,6 +1035,10 @@ export class StreamAccumulator {
           timestamp: this.now(),
           type: "text.done",
         };
+      }
+      case "structured":
+      case "tool_call": {
+        return undefined;
       }
       default: {
         return undefined;
@@ -1176,6 +1184,10 @@ export class StreamAccumulator {
         case "tool_call": {
           return !part.state.done;
         }
+        case "reasoning":
+        case "text": {
+          return false;
+        }
         default: {
           return false;
         }
@@ -1274,7 +1286,7 @@ export class StreamAccumulator {
   }
 
   /**
-   * @throws TuvrenRuntimeError with code
+   * @throws {TuvrenRuntimeError} With code
    *   `react_runner_invalid_provider_stream` when no tool call was started
    *   for `providerCallId` — args/done chunks must always follow a `start`.
    */
@@ -1299,6 +1311,7 @@ export class StreamAccumulator {
 
 /** Fires `promise` without awaiting it, swallowing any rejection. */
 const detachCleanup = (promise: PromiseLike<unknown>): void => {
+  // oxlint-disable-next-line promise/prefer-await-to-then -- Preserve detached cleanup and existing promise observation; cleanup rejection must not replace the provider or cancellation outcome already in flight.
   Promise.resolve(promise).catch(() => {
     // Cleanup errors must not mask the provider/cancellation outcome already in flight.
   });
@@ -1334,7 +1347,7 @@ const createExecutionCancelledError = (
   });
 
 /**
- * @throws A `TuvrenRuntimeError` with code `react_runner_execution_cancelled`
+ * @throws {TuvrenRuntimeError} With code `react_runner_execution_cancelled`
  *   when `signal` is already aborted; a no-op otherwise.
  */
 export const throwIfAborted = (signal: AbortSignal | undefined): void => {
@@ -1349,7 +1362,7 @@ export const throwIfAborted = (signal: AbortSignal | undefined): void => {
  * — even if `operation` was already about to resolve — rather than waiting
  * for `operation` to settle on its own.
  *
- * @throws The cancellation error if `signal` is already aborted, aborts
+ * @throws {TuvrenRuntimeError} The cancellation error if `signal` is already aborted, aborts
  *   during the wait, or is found aborted right as `operation` resolves.
  */
 export const waitForAbortable = async <T>(
@@ -1362,16 +1375,18 @@ export const waitForAbortable = async <T>(
     return await operation;
   }
 
-  return await new Promise<T>((resolve, reject) => {
-    const onAbort = (): void => {
-      signal.removeEventListener("abort", onAbort);
-      reject(createExecutionCancelledError(signal));
-    };
-    const cleanup = (): void => {
-      signal.removeEventListener("abort", onAbort);
-    };
+  const { promise, reject, resolve } = Promise.withResolvers<T>();
+  const onAbort = (): void => {
+    signal.removeEventListener("abort", onAbort);
+    reject(createExecutionCancelledError(signal));
+  };
+  const cleanup = (): void => {
+    signal.removeEventListener("abort", onAbort);
+  };
 
+  try {
     signal.addEventListener("abort", onAbort, { once: true });
+    // oxlint-disable-next-line promise/prefer-catch, promise/prefer-await-to-then -- Both handlers must attach in the same synchronous setup step so thrown observer setup, settlement ordering, and abort-listener cleanup remain unchanged.
     operation.then(
       (value) => {
         cleanup();
@@ -1383,12 +1398,17 @@ export const waitForAbortable = async <T>(
 
         resolve(value);
       },
+      // oxlint-disable-next-line promise/prefer-await-to-callbacks -- The paired rejection callback preserves same-turn observer registration and removes the abort listener before forwarding the original rejection.
       (error: unknown) => {
         cleanup();
         reject(error);
       }
     );
-  });
+  } catch (error: unknown) {
+    reject(error);
+  }
+
+  return await promise;
 };
 
 /** True when `error` is a `TuvrenRuntimeError` with the exact given `code`. */

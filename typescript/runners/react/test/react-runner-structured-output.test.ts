@@ -56,9 +56,11 @@ describe("runner-react structured output", () => {
 
   test("fails hard when config.model is an object that is not a provider", async () => {
     const runner = createReActRunner().create();
-    const config: RunnerExecutionContext["config"] = JSON.parse(
-      '{"model":{"id":"provider"},"name":"primary"}'
-    );
+    const config: RunnerExecutionContext["config"] = {
+      model: "gpt-test",
+      name: "primary",
+    };
+    Reflect.set(config, "model", { id: "provider" });
 
     const result = await runner.execute(
       createRunnerExecutionContext({
@@ -83,6 +85,7 @@ describe("runner-react structured output", () => {
   test("fails hard when structured output violates the requested schema", async () => {
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "stop",
           parts: [
@@ -138,6 +141,7 @@ describe("runner-react structured output", () => {
   test("validates draft 2020-12 structured output using the declared schema dialect", async () => {
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "stop",
           parts: [
@@ -198,6 +202,7 @@ describe("runner-react structured output", () => {
     let generateCalls = 0;
     const provider = {
       async generate() {
+        await Promise.resolve();
         generateCalls += 1;
         return {
           finishReason: "stop",
@@ -273,6 +278,7 @@ describe("runner-react structured output", () => {
   test("validates draft 2019-09 structured output using the declared schema dialect", async () => {
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "stop",
           parts: [
@@ -331,6 +337,7 @@ describe("runner-react structured output", () => {
   test("fails hard when structured output declares an unsupported schema dialect", async () => {
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "stop",
           parts: [
@@ -388,6 +395,7 @@ describe("runner-react structured output", () => {
   test("fails hard when a structured response request ends with plain text only", async () => {
     const provider = {
       async generate() {
+        await Promise.resolve();
         return {
           finishReason: "stop",
           parts: [{ text: "plain text fallback", type: "text" }],

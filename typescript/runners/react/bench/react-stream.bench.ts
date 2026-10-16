@@ -33,7 +33,7 @@ import {
 const SAMPLE_COUNT = 5;
 const WARMUP_ITERATIONS = 10;
 const bunRuntime = globalThis as typeof globalThis & {
-  Bun: { nanoseconds(): number };
+  Bun: { nanoseconds: () => number };
 };
 const PROMPT_FIXTURE: TuvrenPrompt = {
   messages: [
@@ -60,7 +60,7 @@ const PROMPT_FIXTURE: TuvrenPrompt = {
 interface BenchmarkCase {
   iterations: number;
   name: string;
-  run(iterations: number): Promise<void> | void;
+  run: (iterations: number) => Promise<void> | void;
 }
 
 interface BenchmarkResult {
@@ -71,6 +71,20 @@ interface BenchmarkResult {
 }
 
 const now = (): number => 1;
+
+const indexes = async function* indexes(count: number): AsyncGenerator<number> {
+  await Promise.resolve();
+
+  for (let index = 0; index < count; index += 1) {
+    yield index;
+  }
+};
+
+const sequentially = async function* sequentially<T>(
+  values: Iterable<T>
+): AsyncGenerator<T> {
+  yield* values;
+};
 
 const createRuntimePort = (): RunnerRuntimePort => {
   const events: TuvrenStreamEvent[] = [];
@@ -86,8 +100,8 @@ const createRuntimePort = (): RunnerRuntimePort => {
 };
 
 const createStreamingProvider = (chunkCount: number): TuvrenProvider => ({
-  generate() {
-    return Promise.reject(
+  async generate() {
+    return await Promise.reject(
       new Error("generate should not be called by stream benchmark")
     );
   },
@@ -138,8 +152,8 @@ const createGenerateProvider = (): TuvrenProvider => {
   };
 
   return {
-    generate() {
-      return Promise.resolve(response);
+    async generate() {
+      return await Promise.resolve(response);
     },
     id: "bench-provider",
     async *stream() {
@@ -154,7 +168,7 @@ const cases: BenchmarkCase[] = [
     iterations: 220,
     name: "react stream publication with shared-core clone simulation",
     async run(iterations) {
-      for (let index = 0; index < iterations; index += 1) {
+      for await (const _index of indexes(iterations)) {
         const runtime = createRuntimePort();
         await executeStreamCall({
           now,
@@ -171,7 +185,7 @@ const cases: BenchmarkCase[] = [
     async run(iterations) {
       const provider = createGenerateProvider();
 
-      for (let index = 0; index < iterations; index += 1) {
+      for await (const _index of indexes(iterations)) {
         const runtime = createRuntimePort();
         const sequence = await executeGenerateCall({
           now,
@@ -195,7 +209,7 @@ const measure = async (
 
   const samples: number[] = [];
 
-  for (let sampleIndex = 0; sampleIndex < SAMPLE_COUNT; sampleIndex += 1) {
+  for await (const _sampleIndex of indexes(SAMPLE_COUNT)) {
     const startedAt = nanoseconds();
     await benchmarkCase.run(benchmarkCase.iterations);
     samples.push(nanoseconds() - startedAt);
@@ -228,7 +242,7 @@ const formatNs = (value: number): string => {
 const main = async (): Promise<void> => {
   process.stdout.write("react runner stream benchmark\n");
 
-  for (const benchmarkCase of cases) {
+  for await (const benchmarkCase of sequentially(cases)) {
     const result = await measure(benchmarkCase);
     process.stdout.write(
       `${result.name}: best ${formatNs(result.bestNs)} total, ${formatNs(

@@ -468,7 +468,9 @@ export const normalizeNextAroundModelContext = (
 
   return createAroundModelContextSnapshot({
     config: resolvedConfig,
-    emit: currentContext.emit,
+    emit: (event) => {
+      currentContext.emit(event);
+    },
     extensionState: currentContext.extensionState,
     iterationCount: currentContext.iterationCount,
     manifest: currentContext.manifest,

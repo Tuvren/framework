@@ -46,7 +46,7 @@ const isCustomSchema = (
   inputSchema: TuvrenToolDefinition["inputSchema"]
 ): inputSchema is Extract<
   TuvrenToolDefinition["inputSchema"],
-  { toJSONSchema(): unknown }
+  { toJSONSchema: () => unknown }
 > =>
   inputSchema !== null &&
   typeof inputSchema === "object" &&
@@ -200,9 +200,11 @@ export const textSignal = (text: string): InputSignal => ({
 });
 
 export const wait = async (milliseconds: number): Promise<void> => {
-  await new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
-  });
+  const { promise, resolve } = Promise.withResolvers<null>();
+  setTimeout(() => {
+    resolve(null);
+  }, milliseconds);
+  await promise;
 };
 
 export const collectEvents = async <T>(
@@ -217,20 +219,31 @@ export const collectEvents = async <T>(
   return collected;
 };
 
+const nextOnly = <T>(iterator: AsyncIterator<T>): AsyncIterable<T> => ({
+  [Symbol.asyncIterator]: () => ({
+    next: async () => await iterator.next(),
+  }),
+});
+
+const fixedPollAttempts =
+  async function* fixedPollAttempts(): AsyncGenerator<null> {
+    await Promise.resolve();
+
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      yield null;
+    }
+  };
+
 export const collectRemaining = async <T>(
   iterator: AsyncIterator<T>
 ): Promise<T[]> => {
   const collected: T[] = [];
 
-  while (true) {
-    const result = await iterator.next();
-
-    if (result.done) {
-      return collected;
-    }
-
-    collected.push(result.value);
+  for await (const value of nextOnly(iterator)) {
+    collected.push(value);
   }
+
+  return collected;
 };
 
 export const collectUntil = async <T>(
@@ -239,30 +252,28 @@ export const collectUntil = async <T>(
 ): Promise<T[]> => {
   const collected: T[] = [];
 
-  while (true) {
-    const result = await iterator.next();
+  for await (const value of nextOnly(iterator)) {
+    collected.push(value);
 
-    if (result.done) {
-      return collected;
-    }
-
-    collected.push(result.value);
-
-    if (predicate(result.value)) {
+    if (predicate(value)) {
       return collected;
     }
   }
+
+  return collected;
 };
 
 export const waitFor = async (predicate: () => boolean): Promise<void> => {
-  for (let attempt = 0; attempt < 50; attempt += 1) {
+  for await (const _attempt of fixedPollAttempts()) {
     if (predicate()) {
       return;
     }
 
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 1);
-    });
+    const { promise, resolve } = Promise.withResolvers<null>();
+    setTimeout(() => {
+      resolve(null);
+    }, 1);
+    await promise;
   }
 
   throw new Error("condition was not met before timeout");

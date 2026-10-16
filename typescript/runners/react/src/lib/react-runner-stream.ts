@@ -22,6 +22,7 @@ import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { RunnerRuntimePort } from "@tuvren/core/runner";
 import type {
+  ProviderStreamChunk,
   TuvrenModelResponse,
   TuvrenPrompt,
   TuvrenProvider,
@@ -90,7 +91,7 @@ const cloneProviderPrompt = (
  * their delta+done pair, matching the shape a live stream would have
  * produced.
  *
- * @throws TuvrenRuntimeError with code `react_runner_invalid_model_response`
+ * @throws {TuvrenRuntimeError} With code `react_runner_invalid_model_response`
  *   if `response.parts` contains a `tool_result` part — provider responses
  *   must never contain one.
  */
@@ -104,18 +105,20 @@ const synthesizeAssistantEvents = (
   for (const part of response.parts) {
     switch (part.type) {
       case "text": {
-        events.push({
-          delta: part.text,
-          messageId,
-          timestamp: now(),
-          type: "text.delta",
-        });
-        events.push({
-          messageId,
-          text: part.text,
-          timestamp: now(),
-          type: "text.done",
-        });
+        events.push(
+          {
+            delta: part.text,
+            messageId,
+            timestamp: now(),
+            type: "text.delta",
+          },
+          {
+            messageId,
+            text: part.text,
+            timestamp: now(),
+            type: "text.done",
+          }
+        );
         break;
       }
       case "reasoning": {
@@ -136,19 +139,21 @@ const synthesizeAssistantEvents = (
         break;
       }
       case "structured": {
-        events.push({
-          delta: serializeAssistantDeltaValue(part.data),
-          messageId,
-          timestamp: now(),
-          type: "structured.delta",
-        });
-        events.push({
-          data: cloneValue(part.data),
-          messageId,
-          name: part.name,
-          timestamp: now(),
-          type: "structured.done",
-        });
+        events.push(
+          {
+            delta: serializeAssistantDeltaValue(part.data),
+            messageId,
+            timestamp: now(),
+            type: "structured.delta",
+          },
+          {
+            data: cloneValue(part.data),
+            messageId,
+            name: part.name,
+            timestamp: now(),
+            type: "structured.done",
+          }
+        );
         break;
       }
       case "file": {
@@ -166,27 +171,29 @@ const synthesizeAssistantEvents = (
         break;
       }
       case "tool_call": {
-        events.push({
-          callId: part.callId,
-          messageId,
-          name: part.name,
-          timestamp: now(),
-          type: "tool_call.start",
-        });
-        events.push({
-          callId: part.callId,
-          delta: JSON.stringify(part.input) ?? "null",
-          timestamp: now(),
-          type: "tool_call.args_delta",
-        });
-        events.push({
-          callId: part.callId,
-          input: cloneValue(part.input),
-          name: part.name,
-          providerMetadata: cloneValue(part.providerMetadata),
-          timestamp: now(),
-          type: "tool_call.done",
-        });
+        events.push(
+          {
+            callId: part.callId,
+            messageId,
+            name: part.name,
+            timestamp: now(),
+            type: "tool_call.start",
+          },
+          {
+            callId: part.callId,
+            delta: JSON.stringify(part.input) ?? "null",
+            timestamp: now(),
+            type: "tool_call.args_delta",
+          },
+          {
+            callId: part.callId,
+            input: cloneValue(part.input),
+            name: part.name,
+            providerMetadata: cloneValue(part.providerMetadata),
+            timestamp: now(),
+            type: "tool_call.done",
+          }
+        );
         break;
       }
       case "tool_result": {
@@ -251,7 +258,7 @@ export const createBufferedAssistantSequence = (
  * {@link BufferedAssistantSequence} whose synthesized events are not yet
  * published (published by the caller once the iteration result is finalized).
  *
- * @throws A cancellation error (see {@link throwIfAborted}) if `signal` is
+ * @throws {TuvrenRuntimeError} A cancellation error (see {@link throwIfAborted}) if `signal` is
  *   already aborted before or after the call, or aborts during it.
  */
 export const executeGenerateCall = async (input: {
@@ -280,13 +287,19 @@ const appendAndEmit = async (
   await runtime.emit(event);
 };
 
+const sequentially = async function* sequentially<T>(
+  values: Iterable<T>
+): AsyncGenerator<T> {
+  yield* values;
+};
+
 /** Applies {@link appendAndEmit} to each event in order. */
 const appendAllAndEmit = async (
   events: TuvrenStreamEvent[],
   emittedEvents: readonly TuvrenStreamEvent[],
   runtime: RunnerRuntimePort
 ): Promise<void> => {
-  for (const event of emittedEvents) {
+  for await (const event of sequentially(emittedEvents)) {
     await appendAndEmit(events, event, runtime);
   }
 };
@@ -307,7 +320,7 @@ const appendAllAndEmit = async (
  * @returns A sequence whose `published` is always `true` — its events were
  *   already emitted live during the call, unlike
  *   {@link createBufferedAssistantSequence}'s synthesized sequences.
- * @throws Any error the provider stream raises, other than cooperative
+ * @throws {Error} Any error the provider stream raises, other than cooperative
  *   cancellation (which is handled and returned instead of thrown).
  */
 export const executeStreamCall = async (input: {
@@ -332,20 +345,19 @@ export const executeStreamCall = async (input: {
     input.runtime
   );
 
-  const iterator = input.provider
-    .stream(cloneProviderPrompt(input.prompt, input.signal))
-    [Symbol.asyncIterator]();
+  const stream = input.provider.stream(
+    cloneProviderPrompt(input.prompt, input.signal)
+  );
+  const iterator = stream[Symbol.asyncIterator]();
+  const abortableChunks: AsyncIterable<ProviderStreamChunk> = {
+    [Symbol.asyncIterator]: () => ({
+      next: async () => await waitForAbortable(iterator.next(), input.signal),
+    }),
+  };
 
   try {
-    while (true) {
-      const iteration = await waitForAbortable(iterator.next(), input.signal);
+    for await (const chunk of abortableChunks) {
       throwIfAborted(input.signal);
-
-      if (iteration.done === true) {
-        break;
-      }
-
-      const chunk = iteration.value;
       assertProviderStreamChunk(chunk, "provider stream chunk");
       await appendAllAndEmit(events, accumulator.absorb(chunk), input.runtime);
     }
@@ -403,7 +415,7 @@ const publishBufferedAssistantSequence = async (
     return;
   }
 
-  for (const event of sequence.events) {
+  for await (const event of sequentially(sequence.events)) {
     await runtime.emit(event);
   }
 
@@ -420,7 +432,7 @@ export const flushBufferedAssistantSequences = async (
   sequences: readonly BufferedAssistantSequence[],
   runtime: RunnerRuntimePort
 ): Promise<void> => {
-  for (const sequence of sequences) {
+  for await (const sequence of sequentially(sequences)) {
     await publishBufferedAssistantSequence(sequence, runtime);
   }
 };

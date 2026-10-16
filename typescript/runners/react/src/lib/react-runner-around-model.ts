@@ -140,20 +140,31 @@ const cloneAssistantSequences = (
     response: cloneValue(sequence.response),
   }));
 
-const stripUndefinedDeep = <T>(value: T): T => {
+const removeUndefinedDeep = (value: unknown): void => {
   if (Array.isArray(value)) {
-    return value.map((entry) => stripUndefinedDeep(entry)) as T;
+    for (const entry of value) {
+      removeUndefinedDeep(entry);
+    }
+    return;
   }
 
-  if (value !== null && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([, entry]) => entry !== undefined)
-        .map(([key, entry]) => [key, stripUndefinedDeep(entry)])
-    ) as T;
+  if (value === null || typeof value !== "object") {
+    return;
   }
 
-  return value;
+  for (const [key, entry] of Object.entries(value)) {
+    if (entry === undefined) {
+      Reflect.deleteProperty(value, key);
+    } else {
+      removeUndefinedDeep(entry);
+    }
+  }
+};
+
+const stripUndefinedDeep = <T>(value: T): T => {
+  const clone = cloneValue(value);
+  removeUndefinedDeep(clone);
+  return clone;
 };
 
 /** Structural equality for two responses, ignoring `undefined`-valued fields. */
@@ -391,7 +402,7 @@ const resolveAroundModelCancellation = (
  * reuses the last `next()` outcome's response verbatim, since that is the
  * last known-good state.
  *
- * @throws TuvrenRuntimeError with code
+ * @throws {TuvrenRuntimeError} With code
  *   `react_runner_invalid_around_model_recovery` if called with no prior
  *   `next()` outcome (should be unreachable given the caller's guard).
  */
@@ -502,7 +513,7 @@ const resolveAroundModelResponseFormat = (
  * is unconstrained — the wrapper may still transform that one response
  * (post-stream replacement).
  *
- * @throws TuvrenRuntimeError with code
+ * @throws {TuvrenRuntimeError} With code
  *   `react_runner_invalid_around_model_retry` when the returned response
  *   differs from the last `next()` outcome's response after two or more
  *   `next()` calls.
@@ -572,12 +583,12 @@ const validateAroundModelRetryDurability = (
  * @returns The outcome from the outermost wrapper (or the terminal call).
  */
 export const runAroundModelChain = async (input: {
-  callProvider(
+  callProvider: (
     aroundContext: AroundModelContext
-  ): Promise<ModelExecutionOutcome>;
+  ) => Promise<ModelExecutionOutcome>;
   context: RunnerExecutionContext;
   initialContext: AroundModelContext;
-  normalizeExecutionError(error: unknown): Error;
+  normalizeExecutionError: (error: unknown) => Error;
 }): Promise<ModelExecutionOutcome> => {
   const handlers = (input.context.config.extensions ?? []).filter(
     (
@@ -599,7 +610,9 @@ export const runAroundModelChain = async (input: {
     const nextOutcomes: ModelExecutionOutcome[] = [];
     const extensionContext = createAroundModelContextSnapshot({
       config: currentContext.config,
-      emit: currentContext.emit,
+      emit: (event) => {
+        currentContext.emit(event);
+      },
       extensionState: createExtensionStateSnapshot(
         currentContext.manifest,
         extension.name
@@ -635,12 +648,13 @@ export const runAroundModelChain = async (input: {
         input.context,
         extension.name,
         error,
-        input.normalizeExecutionError
+        (normalizationError) =>
+          input.normalizeExecutionError(normalizationError)
       );
       return createPostNextAroundModelFallbackOutcome(
         extension.name,
         nextOutcomes,
-        input.context.runtime.now
+        () => input.context.runtime.now()
       );
     }
 
@@ -655,7 +669,7 @@ export const runAroundModelChain = async (input: {
       assistantSequences: finalizeAroundModelSequences(
         result,
         nextOutcomes,
-        input.context.runtime.now
+        () => input.context.runtime.now()
       ),
       cancelled: resolveAroundModelCancellation(result, nextOutcomes),
       response: result.response,
