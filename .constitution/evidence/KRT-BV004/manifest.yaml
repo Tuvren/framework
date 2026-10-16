@@ -1,0 +1,43 @@
+{
+  "owner": "KRT-BV004",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-16",
+    "commit": "3db51a293ea97fafaf4f0c77cd860c1e8daaf347",
+    "command": "M26 verification commands from .codex/plans/EPIC-BV.md with normal Nx cache and NX_DAEMON=false"
+  },
+  "result": "pass",
+  "files": [
+    {
+      "path": "suppressions.json",
+      "sha256": "de19a3d14a6092c0afc905d1ab26908efa12d5130d765e2dc7565850ac0b6149",
+      "bytes": 8983,
+      "role": "measurement"
+    },
+    {
+      "path": "readiness.json",
+      "sha256": "294b1bc3dbbcf7c10ac76d0a697bdbd07a7fa24e789fad6f86256aff289b5099",
+      "bytes": 3295,
+      "role": "measurement"
+    },
+    {
+      "path": "oxlint-type-aware.json",
+      "sha256": "7cb4cda0b5577271c22dd6d2fec4a6190db37cbf04df63ab518397eb05658f8a",
+      "bytes": 1182,
+      "role": "measurement"
+    },
+    {
+      "path": "oxlint-debug.txt",
+      "sha256": "70a147e6454ca9a0e652490e1e722e0837bba0ba26e92dcf75d47116ad72da14",
+      "bytes": 1518,
+      "role": "measurement"
+    },
+    {
+      "path": "json-source-check.txt",
+      "sha256": "bc5342ec02921954cf358a4962802e846677a6c07396135392c541a21740d49e",
+      "bytes": 2095,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "The full BV-owned code and JSON selections are exact; the unchanged shipped 474-rule policy runs type-aware without project or unused-directive errors; native output contains only the two measured no-bitwise counterparts; both original Biome directives, reasons and bitmask operations remain; the retained Biome source passes and the comments-only fixture fails with exactly two noBitwiseOperators diagnostics; normal lint and all named M26 gates pass; bv.json remains unchanged."
+}

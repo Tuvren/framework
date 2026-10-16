@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BV004",
+  "milestone": "M26",
+  "result": "pass",
+  "verified_commit": "3db51a293ea97fafaf4f0c77cd860c1e8daaf347",
+  "guards": {
+    "absolute_repository_root": "/home/oscar/GitHub/Tuvren/framework/.codex/worktrees/EPIC-BV",
+    "branch": "epic/bv-script-gate-lint",
+    "clean_after": true,
+    "clean_before": true,
+    "no_services_started_or_stopped": true,
+    "nx_daemon": false,
+    "nx_skip_cache": false,
+    "outer_lock": "/tmp/tuvren-wave-1-verification.lock",
+    "tools_scripts_nx_project_absent": true
+  },
+  "selection": {
+    "bv_operands": 36,
+    "code_files": 38,
+    "debug_equals_fresh_json_inventory_code_selection": true,
+    "json_files": [
+      "tools/scripts/authority-guardrails/__fixtures__/forbidden-authority-evidence/evidence.json",
+      "tools/scripts/authority-guardrails/__fixtures__/freshness-drift/authority-packet.json"
+    ],
+    "json_files_count": 2,
+    "json_issues": 0
+  },
+  "rule_and_config_parity": {
+    "complete_effective_policy_equality": true,
+    "effective_policy_fields_equal": [
+      "categories",
+      "env",
+      "globals",
+      "overrides",
+      "plugins",
+      "rules",
+      "settings"
+    ],
+    "enabled_non_type_aware_rules": 419,
+    "enabled_rules": 474,
+    "enabled_type_aware_rules": 55,
+    "installed_rules": 871,
+    "only_policy_difference": ".constitution/** ignore addition",
+    "raw_shipped_config_equality": true
+  },
+  "diagnostics": {
+    "biome_actual_source_diagnostics": 0,
+    "biome_actual_source_exit_code": 0,
+    "biome_comments_only_categories": {
+      "lint/suspicious/noBitwiseOperators": 2
+    },
+    "biome_comments_only_diagnostics": 2,
+    "biome_comments_only_exit_code": 1,
+    "candidate_oxlint_comments_diagnostics": 0,
+    "candidate_oxlint_comments_exit_code": 0,
+    "native_codes": {
+      "eslint(no-bitwise)": 2
+    },
+    "native_diagnostics": 2,
+    "native_exit_code": 1,
+    "native_lines": [
+      144,
+      238
+    ],
+    "native_number_of_files": 38,
+    "native_number_of_rules": 474,
+    "no_project_resolution_errors": true,
+    "no_unused_directive_errors": true,
+    "original_reasons_preserved": true,
+    "retained_directives": 2,
+    "retained_operations_unchanged": true
+  },
+  "gates": {
+    "standard9": 0,
+    "format:check": 0,
+    "lint": 0,
+    "docs:authority-freeze:check": 0,
+    "compatibility:check": 0,
+    "codegen": 0,
+    "api-freeze:check": 0,
+    "portability:check": 0,
+    "host-boundary:check": 0,
+    "docs:af-gap-plan:check": 0,
+    "root:typecheck": 0,
+    "tools:typecheck": 0
+  },
+  "bv_json": {
+    "sha256": "9863df0486e5c7b4ea9a82479cca1de90ebe7b440c0dfdf4ecef1ba188010871",
+    "unchanged": true
+  },
+  "comparison_artifacts": {
+    "json-source-check.txt": {
+      "bytes": 2095,
+      "sha256": "bc5342ec02921954cf358a4962802e846677a6c07396135392c541a21740d49e"
+    },
+    "oxlint-debug.txt": {
+      "bytes": 1518,
+      "sha256": "70a147e6454ca9a0e652490e1e722e0837bba0ba26e92dcf75d47116ad72da14"
+    },
+    "oxlint-type-aware.json": {
+      "bytes": 1182,
+      "sha256": "7cb4cda0b5577271c22dd6d2fec4a6190db37cbf04df63ab518397eb05658f8a"
+    },
+    "suppressions.json": {
+      "bytes": 8983,
+      "sha256": "de19a3d14a6092c0afc905d1ab26908efa12d5130d765e2dc7565850ac0b6149"
+    }
+  }
+}
