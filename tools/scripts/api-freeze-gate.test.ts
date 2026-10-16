@@ -37,9 +37,9 @@ const EXPECTED_LEDGER_ENTRY: SnapshotLedgerEntry = {
   recordedAt: "2026-10-01T00:00:00.000Z",
 };
 
-async function createScratchFormatterConfig(
+const createScratchFormatterConfig = async (
   directory: string
-): Promise<string> {
+): Promise<string> => {
   const configPath = path.join(directory, ".oxfmtrc.json");
   const config = {
     ...oxfmtConfig,
@@ -52,15 +52,15 @@ async function createScratchFormatterConfig(
   };
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
   return configPath;
-}
+};
 
-function requireSnapshot<T>(value: T | undefined): T {
+const requireSnapshot = <T>(value: T | undefined): T => {
   if (value === undefined) {
     throw new Error("expected the API snapshot to exist");
   }
 
   return value;
-}
+};
 
 describe("API freeze snapshot writer", () => {
   test("appends through the production writer while preserving the complete snapshot", async () => {

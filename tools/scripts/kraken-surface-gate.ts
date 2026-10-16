@@ -43,7 +43,27 @@ interface Violation {
   packageName: string;
 }
 
-function resolveWorkspaceDirs(): string[] {
+const SUBPATH_PREFIX = /^\.\//;
+const TYPE_PREFIX = /^\s*type\s+/;
+const RENAMED_EXPORT = /\bas\s+([A-Za-z_$][\w$]*)\s*$/;
+const WHITESPACE = /\s+/;
+const NAMED_EXPORT_BLOCK = /export\s+(?:type\s+)?\{([^}]*)\}/g;
+// Single-name declaration forms only; `const`/`let`/`var` go through the
+// declarator scanner below because one statement can bind several names
+// (`export const a = 1, KrakenB = 2;`). `const\s+enum` stays here so the
+// capture lands on the enum's name; `namespace`/`module` bind a public
+// namespace name just like a class or enum does.
+const DECLARATION_EXPORT =
+  /export\s+(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?(?:const\s+enum|function\*?|class|interface|type|enum|namespace|module)\s+([A-Za-z_$][\w$]*)/g;
+const VARIABLE_EXPORT = /export\s+(?:declare\s+)?(?:const|let|var)\s+/g;
+const CONST_ENUM_TAIL = /^enum\s/;
+const LEADING_IDENTIFIER = /^\s*([A-Za-z_$][\w$]*)/;
+// Any `export *` form is unverifiable name-by-name — including the ES2020
+// namespace re-export `export * as Ns from`, which would otherwise slip a
+// (possibly Kraken*-named) namespace binding past both extraction branches.
+const WILDCARD_EXPORT = /export\s+\*/;
+
+const resolveWorkspaceDirs = (): string[] => {
   const dirs: string[] = [];
 
   for (const glob of WORKSPACE_GLOBS) {
@@ -66,16 +86,16 @@ function resolveWorkspaceDirs(): string[] {
   }
 
   return dirs;
-}
+};
 
 // Maps a package.json exports entry to its source-layout counterpart.
-function sourceCandidatesForExport(subpath: string): string[] {
+const sourceCandidatesForExport = (subpath: string): string[] => {
   const relative =
     subpath === "." ? "index" : subpath.replace(SUBPATH_PREFIX, "");
   return [`src/${relative}.ts`, `src/${relative}/index.ts`];
-}
+};
 
-function collectEntryFiles(packageDir: string): string[] {
+const collectEntryFiles = (packageDir: string): string[] => {
   const manifest = JSON.parse(
     readFileSync(join(packageDir, "package.json"), "utf-8")
   );
@@ -131,29 +151,9 @@ function collectEntryFiles(packageDir: string): string[] {
   }
 
   return entries;
-}
+};
 
-const SUBPATH_PREFIX = /^\.\//;
-const TYPE_PREFIX = /^\s*type\s+/;
-const RENAMED_EXPORT = /\bas\s+([A-Za-z_$][\w$]*)\s*$/;
-const WHITESPACE = /\s+/;
-const NAMED_EXPORT_BLOCK = /export\s+(?:type\s+)?\{([^}]*)\}/g;
-// Single-name declaration forms only; `const`/`let`/`var` go through the
-// declarator scanner below because one statement can bind several names
-// (`export const a = 1, KrakenB = 2;`). `const\s+enum` stays here so the
-// capture lands on the enum's name; `namespace`/`module` bind a public
-// namespace name just like a class or enum does.
-const DECLARATION_EXPORT =
-  /export\s+(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?(?:const\s+enum|function\*?|class|interface|type|enum|namespace|module)\s+([A-Za-z_$][\w$]*)/g;
-const VARIABLE_EXPORT = /export\s+(?:declare\s+)?(?:const|let|var)\s+/g;
-const CONST_ENUM_TAIL = /^enum\s/;
-const LEADING_IDENTIFIER = /^\s*([A-Za-z_$][\w$]*)/;
-// Any `export *` form is unverifiable name-by-name — including the ES2020
-// namespace re-export `export * as Ns from`, which would otherwise slip a
-// (possibly Kraken*-named) namespace binding past both extraction branches.
-const WILDCARD_EXPORT = /export\s+\*/;
-
-function skipStringLiteral(source: string, start: number): number {
+const skipStringLiteral = (source: string, start: number): number => {
   const quote = source[start];
   let index = start + 1;
 
@@ -170,13 +170,13 @@ function skipStringLiteral(source: string, start: number): number {
   }
 
   return index;
-}
+};
 
 // Splits the declarator list of an `export const/let/var` statement at
 // top-level commas (commas inside initializer parens/brackets/braces or
 // string literals do not separate declarators), stopping at the top-level
 // semicolon that ends the statement.
-function splitTopLevelDeclarators(source: string, start: number): string[] {
+const splitTopLevelDeclarators = (source: string, start: number): string[] => {
   const segments: string[] = [];
   let depth = 0;
   let segmentStart = start;
@@ -206,9 +206,9 @@ function splitTopLevelDeclarators(source: string, start: number): string[] {
 
   segments.push(source.slice(segmentStart, index));
   return segments;
-}
+};
 
-function variableExportNames(source: string, entry: string): string[] {
+const variableExportNames = (source: string, entry: string): string[] => {
   const names: string[] = [];
 
   for (const match of source.matchAll(VARIABLE_EXPORT)) {
@@ -236,9 +236,9 @@ function variableExportNames(source: string, entry: string): string[] {
   }
 
   return names;
-}
+};
 
-function exportedNames(source: string, entry: string): string[] {
+const exportedNames = (source: string, entry: string): string[] => {
   const names: string[] = [];
 
   for (const match of source.matchAll(NAMED_EXPORT_BLOCK)) {
@@ -267,7 +267,7 @@ function exportedNames(source: string, entry: string): string[] {
   names.push(...variableExportNames(source, entry));
 
   return names;
-}
+};
 
 const violations: Violation[] = [];
 let scannedEntries = 0;
