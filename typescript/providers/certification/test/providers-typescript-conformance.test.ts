@@ -16,7 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import nodePath from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { AnySchema } from "ajv";
@@ -104,7 +104,7 @@ const readSuiteManifest = (url: URL): SuiteManifest => {
     throw new Error(`${url.pathname} must be a valid suite manifest`);
   }
 
-  const fixture = value.fixtures[0];
+  const fixture: unknown = value.fixtures.at(0);
 
   if (
     !isRecord(fixture) ||
@@ -150,11 +150,14 @@ const readValidatedSingleFixtureSuite = (
     },
   ]);
 
-  const manifestDirectory = dirname(fileURLToPath(manifestUrl));
+  const manifestDirectory = nodePath.dirname(fileURLToPath(manifestUrl));
   const schema = readJsonSchema(
-    join(manifestDirectory, manifest.fixtureSchemaPath)
+    nodePath.join(manifestDirectory, manifest.fixtureSchemaPath)
   );
-  const fixturePath = join(manifestDirectory, manifest.fixtures[0].path);
+  const fixturePath = nodePath.join(
+    manifestDirectory,
+    manifest.fixtures[0].path
+  );
   const fixture = readJsonObject(fixturePath);
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   const validate = ajv.compile(schema);

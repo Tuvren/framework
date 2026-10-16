@@ -26,7 +26,7 @@ import {
   verifyProviderStream,
 } from "../src/index.ts";
 
-const CANCELLED_MESSAGE = /cancelled/;
+const CANCELLED_MESSAGE = /cancelled/u;
 
 describe("@tuvren/provider-testkit", () => {
   test("verifies provider generate and stream behavior through provider-api contracts", async () => {

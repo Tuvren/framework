@@ -26,8 +26,10 @@ describe("@tuvren/provider-testkit package exports", () => {
   test("exposes provider testkit helpers", async () => {
     const provider = createStaticTuvrenProvider();
 
-    await expect(
-      collectProviderStream(provider.stream(providerTestkitFixtures.prompt))
-    ).resolves.toHaveLength(2);
+    const chunks = await collectProviderStream(
+      provider.stream(providerTestkitFixtures.prompt)
+    );
+
+    expect(chunks).toHaveLength(2);
   });
 });
