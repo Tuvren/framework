@@ -75,6 +75,11 @@ tickets:
     flows: []
     certainty: settled
     status: done
+    deviations:
+      - files: [typescript/kernel/backends/memory]
+        justification: "Resolved workflow deviation: the M11 worker used a relative patch path and wrote 12 memory files in the main checkout; the wave lead preserved both patches, restored only the confirmed main paths, and verified the BR commit unchanged. The same worker also called services:up and started a second BR-local PostgreSQL instance; the wave lead stopped only that instance and kept the shared service ready."
+      - files: [typescript/kernel/backends/sqlite]
+        justification: "Resolved scheduling deviation: the initial M20 syntactic discovery capture ran outside the global verification lock after a locked wrapper produced no file. A locked rerun replaced it, and no implementation or acceptance claim used the unguarded result."
   - id: KRT-BR004
     title: Clear remaining rules and switch clean project targets
     type: Chore
@@ -96,4 +101,25 @@ tickets:
       evidence: "Assert the type-aware backend runs every installed, enabled, as-shipped type-aware rule with complete equality of rules, options, severities, environment, globals, plugins, settings, and categories and with no local override or project-resolution error. Treat 55 type-aware rules in the measured 474-rule installed preset, alongside 419 non-type-aware rules, as pinned historical evidence rather than a future quota. Assert each admitted target has the exact canonical command shape and workspace cwd; actual --debug=files and native JSON selections are complete and nonempty, source-integrity coverage remains independent of formatter ignores, fresh JSON-only code absence is checked outside cached results, and explicit project inputs name the checker helpers when they override defaults. For each admitted path, reconcile the ledger against fresh diagnostics and record whether the legacy directive has a measured native counterpart. When no equivalent native diagnostic fires, record the no-counterpart disposition. When one fires, preserve the original reason for the justified native counterpart or prove the actual native issue is fixed. Prove the same commit removes legacy Biome directives and switches lint coverage. No admitted path contains a biome-ignore comment after the commit. Paths outside this admission retain needed original directives and Biome coverage. Scoped tests and the full lint gate pass; admitted paths are absent from tools/biome-coverage/br.json, while every remaining entry retains Biome lint coverage. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: planned
+    status: done
+
+closeout:
+  tickets_completed: [KRT-BR001, KRT-BR002, KRT-BR003, KRT-BR004]
+  tickets_deferred: []
+  points_completed: 24
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-BR: all four TypeScript kernel backends now pass the unchanged shipped native preset, use canonical Oxlint plus JSON lint targets, and have left Biome coverage with reviewed suppression dispositions."
+  candidate_terms: []
+  routed_upstream: []
+  follow_ups:
+    - "Simplify the repository-wide lint-migration evidence policy so future contract-test epics retain final acceptance proof without routine per-milestone raw diagnostic bundles."
+  code_decisions:
+    - summary: "Retain one measured line-scoped unicorn/no-useless-undefined directive where TypeScript 6 declaration compilation requires the explicit Promise.withResolvers<undefined> completion value; the rule fires without the directive, and executable behavior is unchanged."
+      kind: convention
+      paths:
+        - typescript/kernel/backends/memory/src/lib/memory-backend-scope-store.ts
+      commit: d67b06190b73d37a19f907e768a7d564a8cba032
+  settled: []
