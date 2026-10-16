@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 // This package is intentionally a focused import home over the shared runtime
 // contract family. It now tracks the matching `@tuvren/core/provider` subpath
 // instead of the broad root facade so the dependency shape stays as narrow as
