@@ -575,4 +575,46 @@ describe("provider-bridge-ai-sdk", () => {
       },
     ]);
   });
+
+  test("isolates nested default provider options from caller mutation", async () => {
+    let capturedOptions: LanguageModelV3CallOptions | undefined;
+    const defaultProviderOptions = {
+      openai: {
+        feature: {
+          enabled: true,
+          entries: [{ label: "original" }, null],
+        },
+      },
+    };
+    const bridge = createAiSdkProviderBridge({
+      defaultProviderOptions,
+      model: createMockModel({
+        doGenerate(options) {
+          capturedOptions = options;
+          return Promise.resolve(createGenerateResult());
+        },
+      }),
+    });
+
+    defaultProviderOptions.openai.feature.enabled = false;
+    defaultProviderOptions.openai.feature.entries[0] = { label: "mutated" };
+    defaultProviderOptions.openai.feature.entries.push({ label: "late" });
+
+    await bridge.generate({
+      messages: [{ parts: [{ text: "hello", type: "text" }], role: "user" }],
+    });
+
+    expect(capturedOptions?.providerOptions).toEqual({
+      openai: {
+        feature: {
+          enabled: true,
+          entries: [{ label: "original" }, null],
+        },
+      },
+    });
+    expect(capturedOptions?.providerOptions).not.toBe(defaultProviderOptions);
+    expect(capturedOptions?.providerOptions?.openai).not.toBe(
+      defaultProviderOptions.openai
+    );
+  });
 });
