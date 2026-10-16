@@ -20,90 +20,45 @@ import type {
   LanguageModelV3StreamPart,
 } from "@ai-sdk/provider";
 
-export function createMockModel(
-  overrides: Partial<LanguageModelV3> & {
-    doGenerate?: LanguageModelV3["doGenerate"];
-    doStream?: LanguageModelV3["doStream"];
-  } = {}
-): LanguageModelV3 {
-  return {
-    async doGenerate() {
-      await Promise.resolve();
-      return createGenerateResult({
-        content: [
-          {
-            text: "default",
-            type: "text",
-          },
-        ],
-      });
-    },
-    async doStream() {
-      await Promise.resolve();
-      return {
-        stream: streamFromParts([
-          {
-            finishReason: {
-              raw: "stop",
-              unified: "stop",
-            },
-            type: "finish",
-            usage: createUsage(1, 1),
-          },
-        ]),
-      };
-    },
-    modelId: "mock-model",
+export const createUsage = (inputTokens: number, outputTokens: number) => ({
+  inputTokens: {
+    cacheRead: 1,
+    cacheWrite: 0,
+    noCache: inputTokens - 1,
+    total: inputTokens,
+  },
+  outputTokens: {
+    reasoning: outputTokens > 2 ? 2 : 0,
+    text: outputTokens > 2 ? outputTokens - 2 : outputTokens,
+    total: outputTokens,
+  },
+  raw: {
     provider: "mock-provider",
-    specificationVersion: "v3",
-    supportedUrls: {},
-    ...overrides,
-  };
-}
+  },
+});
 
-export function createGenerateResult(
+export const createGenerateResult = (
   overrides: Partial<LanguageModelV3GenerateResult> = {}
-): LanguageModelV3GenerateResult {
-  return {
-    content: [
-      {
-        text: "default",
-        type: "text",
-      },
-    ],
-    finishReason: {
-      raw: "stop",
-      unified: "stop",
+): LanguageModelV3GenerateResult => ({
+  content: [
+    {
+      text: "default",
+      type: "text",
     },
-    usage: createUsage(1, 1),
-    warnings: [],
-    ...overrides,
-  };
-}
+  ],
+  finishReason: {
+    raw: "stop",
+    unified: "stop",
+  },
+  usage: createUsage(1, 1),
+  warnings: [],
+  ...overrides,
+});
 
-export function createUsage(inputTokens: number, outputTokens: number) {
-  return {
-    inputTokens: {
-      cacheRead: 1,
-      cacheWrite: 0,
-      noCache: inputTokens - 1,
-      total: inputTokens,
-    },
-    outputTokens: {
-      reasoning: outputTokens > 2 ? 2 : 0,
-      text: outputTokens > 2 ? outputTokens - 2 : outputTokens,
-      total: outputTokens,
-    },
-    raw: {
-      provider: "mock-provider",
-    },
-  };
-}
-
-export function streamFromParts(
+export const streamFromParts = (
   parts: LanguageModelV3StreamPart[]
-): ReadableStream<LanguageModelV3StreamPart> {
-  return new ReadableStream<LanguageModelV3StreamPart>({
+): ReadableStream<LanguageModelV3StreamPart> =>
+  new ReadableStream<LanguageModelV3StreamPart>({
     start(controller) {
       for (const part of parts) {
         controller.enqueue(part);
@@ -112,11 +67,49 @@ export function streamFromParts(
       controller.close();
     },
   });
-}
 
-export async function collectAsyncIterable<T>(
+export const createMockModel = (
+  overrides: Partial<LanguageModelV3> & {
+    doGenerate?: LanguageModelV3["doGenerate"];
+    doStream?: LanguageModelV3["doStream"];
+  } = {}
+): LanguageModelV3 => ({
+  async doGenerate() {
+    await Promise.resolve();
+    return createGenerateResult({
+      content: [
+        {
+          text: "default",
+          type: "text",
+        },
+      ],
+    });
+  },
+  async doStream() {
+    await Promise.resolve();
+    return {
+      stream: streamFromParts([
+        {
+          finishReason: {
+            raw: "stop",
+            unified: "stop",
+          },
+          type: "finish",
+          usage: createUsage(1, 1),
+        },
+      ]),
+    };
+  },
+  modelId: "mock-model",
+  provider: "mock-provider",
+  specificationVersion: "v3",
+  supportedUrls: {},
+  ...overrides,
+});
+
+export const collectAsyncIterable = async <T>(
   iterable: AsyncIterable<T>
-): Promise<T[]> {
+): Promise<T[]> => {
   const values: T[] = [];
 
   for await (const value of iterable) {
@@ -124,4 +117,4 @@ export async function collectAsyncIterable<T>(
   }
 
   return values;
-}
+};
