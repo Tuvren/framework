@@ -124,6 +124,43 @@ const GENERIC_RUNNER_LITERAL_ALLOWLIST = new Set([
   "paused",
 ]);
 
+const findFiles = async (
+  directory: string,
+  nameOrSuffix: string
+): Promise<string[]> => {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const paths: string[] = [];
+
+  for (const entry of entries) {
+    const entryPath = resolve(directory, entry.name);
+
+    if (entry.isDirectory()) {
+      paths.push(...(await findFiles(entryPath, nameOrSuffix)));
+      continue;
+    }
+
+    if (
+      entry.isFile() &&
+      (entry.name === nameOrSuffix || entry.name.endsWith(nameOrSuffix))
+    ) {
+      paths.push(entryPath);
+    }
+  }
+
+  return paths;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isAuthorityPacketManifest = (
+  value: unknown
+): value is AuthorityPacketManifest =>
+  isRecord(value) &&
+  typeof value.packetId === "string" &&
+  Array.isArray(value.authoritativeSources) &&
+  Array.isArray(value.forbiddenAuthoritySources);
+
 const loadAuthorityPackets = async (): Promise<AuthorityPacketManifest[]> => {
   // No existsSync guard on the root: a missing spec/ (sparse checkout,
   // wrong cwd) must fail this gate loudly, never pass it vacuously.
@@ -221,6 +258,123 @@ const groupFreshnessChecksByCommand = (
   }
 
   return checksByCommand;
+};
+
+const collectSnapshotEntries = async (
+  rootPath: string,
+  currentPath: string
+): Promise<FileSnapshot[]> => {
+  const entries = await readdir(currentPath, { withFileTypes: true });
+  const snapshots: FileSnapshot[] = [];
+
+  for (const entry of entries) {
+    const entryPath = resolve(currentPath, entry.name);
+
+    if (entry.isDirectory()) {
+      snapshots.push(...(await collectSnapshotEntries(rootPath, entryPath)));
+      continue;
+    }
+
+    if (entry.isFile()) {
+      snapshots.push({
+        content: await readFile(entryPath, "utf-8"),
+        relativePath: relative(rootPath, entryPath),
+      });
+    }
+  }
+
+  return snapshots;
+};
+
+const snapshotPath = async (path: string): Promise<FileSnapshot[]> => {
+  const stats = await stat(path);
+
+  if (stats.isFile()) {
+    return [
+      {
+        content: await readFile(path, "utf-8"),
+        relativePath: relative(path, path),
+      },
+    ];
+  }
+
+  const entries = await collectSnapshotEntries(path, path);
+  return entries.sort((left, right) =>
+    left.relativePath.localeCompare(right.relativePath)
+  );
+};
+
+const runRegenerateCommand = (
+  command: string
+): Promise<{ message: string; ok: boolean }> =>
+  new Promise((resolvePromise) => {
+    // A manifest-owned regenerateCommand is untrusted input (any pull request
+    // can edit a checked-in authority-packet.json), so it is parsed into an
+    // argv array and rejected loud rather than handed to a shell. See
+    // ../lib/regenerate-command-argv.ts for the metacharacter denylist and
+    // command-prefix allowlist this enforces.
+    let argv: string[];
+
+    try {
+      argv = parseRegenerateCommandArgv(command);
+    } catch (error) {
+      resolvePromise({
+        message: error instanceof Error ? error.message : String(error),
+        ok: false,
+      });
+      return;
+    }
+
+    const [executable, ...args] = argv;
+
+    if (executable === undefined) {
+      resolvePromise({
+        message: `regenerateCommand "${command}" produced an empty argv`,
+        ok: false,
+      });
+      return;
+    }
+
+    // Freshness checks intentionally execute the manifest-owned command instead
+    // of duplicating generator knowledge in this guardrail.
+    const child = spawn(executable, args, {
+      cwd: REPO_ROOT,
+      shell: false,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const output: string[] = [];
+
+    child.stdout.setEncoding("utf-8");
+    child.stderr.setEncoding("utf-8");
+    child.stdout.on("data", (chunk: string) => output.push(chunk));
+    child.stderr.on("data", (chunk: string) => output.push(chunk));
+    child.on("error", (error) => {
+      resolvePromise({ message: error.message, ok: false });
+    });
+    child.on("close", (code) => {
+      resolvePromise({
+        message: output.join("").trim().slice(-1000),
+        ok: code === 0,
+      });
+    });
+  });
+
+const snapshotsAreEqual = (
+  left: readonly FileSnapshot[],
+  right: readonly FileSnapshot[]
+): boolean => {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((entry, index) => {
+    const other = right[index];
+    return (
+      other !== undefined &&
+      entry.relativePath === other.relativePath &&
+      entry.content === other.content
+    );
+  });
 };
 
 const checkFreshnessForCommand = async (
@@ -325,6 +479,22 @@ const checkForbiddenAuthorityEvidence = async (
   return failures;
 };
 
+const findSourceFiles = async (directory: string): Promise<string[]> => {
+  if (!existsSync(directory)) {
+    return [];
+  }
+
+  const paths = [
+    ...(await findFiles(directory, ".rs")),
+    ...(await findFiles(directory, ".ts")),
+    ...(await findFiles(directory, ".tsx")),
+    ...(await findFiles(directory, ".go")),
+    ...(await findFiles(directory, ".py")),
+    ...(await findFiles(directory, ".dart")),
+  ];
+  return paths.filter((path) => !path.endsWith(".d.ts"));
+};
+
 const checkRootTypescriptFixtures = async (): Promise<GuardrailFailure[]> => {
   const sourcePaths = await findSourceFiles(ROOT_TESTS_ROOT);
   const failures: GuardrailFailure[] = [];
@@ -342,6 +512,139 @@ const checkRootTypescriptFixtures = async (): Promise<GuardrailFailure[]> => {
   }
 
   return failures;
+};
+
+// Repository structure allows two certification-wrapper naming styles (see
+// CLAUDE.md's Structure section): a bare `certification` directory nested
+// under `<lang>/` or `<lang>/<area>/` (typescript/kernel/certification), a
+// suffixed `certification*` variant for multiple backends nested the same
+// way (typescript/kernel/certification-postgres), and a hyphen-prefixed flat
+// variant used by Rust/Go/Python crates and modules that cannot nest an
+// `<area>/` directory under a single package root (rust/kernel-certification,
+// go/kernel-certification, python/kernel-certification). The suffix matches
+// are deliberately permissive-toward-scanning: a false positive only adds a
+// scan root (stricter, never looser), so an unrelated future directory that
+// happens to end in `-certification` costs a harmless extra scan rather than
+// an enforcement gap.
+const isCertificationDirName = (name: string): boolean =>
+  name === "certification" ||
+  name.startsWith("certification-") ||
+  name.endsWith("-certification");
+
+// Same two naming styles apply to conformance-adapter hosts: a bare
+// `conformance-adapter` directory nested under `<lang>/` or `<lang>/<area>/`
+// (typescript/kernel/conformance-adapter), or a hyphen-prefixed flat variant
+// (rust/kernel-conformance-adapter, go/kernel-conformance-adapter,
+// python/kernel-conformance-adapter).
+const isConformanceAdapterDirName = (name: string): boolean =>
+  name === "conformance-adapter" || name.endsWith("-conformance-adapter");
+
+// Resolves a certification/conformance-adapter package directory to its
+// language-convention scan roots, or null when the directory matches no
+// known package layout (letting the caller keep recursing).
+const packageSourceRootsFor = (entryPath: string): string[] | null => {
+  if (existsSync(resolve(entryPath, "src"))) {
+    // TypeScript, Rust, and Python adapters/certification wrappers keep
+    // their sources under a `src/` subdirectory.
+    return [resolve(entryPath, "src")];
+  }
+
+  if (existsSync(resolve(entryPath, "go.mod"))) {
+    // Go adapters/certification wrappers use a flat layout: *.go files
+    // live directly at the module root, marked by go.mod, with no
+    // `src/` subdirectory.
+    return [entryPath];
+  }
+
+  if (existsSync(resolve(entryPath, "pubspec.yaml"))) {
+    // Dart adapters/certification wrappers keep sources under lib/,
+    // bin/, test/, example/, and tool/ (Dart's own package convention),
+    // marked by pubspec.yaml. Scan those subdirectories explicitly
+    // instead of the package root so the generated .dart_tool/ cache can
+    // never leak generated sources into the guardrail scan.
+    const sourceRoots = ["lib", "bin", "test", "example", "tool"]
+      .map((sourceDir) => resolve(entryPath, sourceDir))
+      .filter((sourcePath) => existsSync(sourcePath));
+
+    if (sourceRoots.length === 0) {
+      // A pubspec.yaml package with none of the conventional source
+      // subdirectories is a broken/unexpected layout, not a signal to
+      // silently exclude it from the forbidden-token scan: throw here
+      // for the same reason findConformanceSourceRoots throws on a
+      // missing language root above.
+      throw new Error(
+        `authority-guardrails conformance-source scan found a pubspec.yaml package at ${relative(REPO_ROOT, entryPath)} with none of lib/, bin/, test/, example/, or tool/ — a package with no recognized source directory is a broken layout, not a signal to silently narrow the scan`
+      );
+    }
+
+    return sourceRoots;
+  }
+
+  return null;
+};
+
+const collectConformanceSourceRoots = async (
+  directory: string
+): Promise<string[]> => {
+  if (!existsSync(directory)) {
+    return [];
+  }
+
+  const entries = await readdir(directory, { withFileTypes: true });
+  const roots: string[] = [];
+
+  for (const entry of entries) {
+    const entryPath = resolve(directory, entry.name);
+
+    if (!entry.isDirectory()) {
+      continue;
+    }
+
+    if (
+      isCertificationDirName(entry.name) ||
+      isConformanceAdapterDirName(entry.name)
+    ) {
+      const packageRoots = packageSourceRootsFor(entryPath);
+
+      if (packageRoots !== null) {
+        roots.push(...packageRoots);
+        continue;
+      }
+    }
+
+    roots.push(...(await collectConformanceSourceRoots(entryPath)));
+  }
+
+  return roots;
+};
+
+const findConformanceSourceRoots = async (): Promise<string[]> => {
+  // Every language root always exists post-cutover; a missing one is a
+  // broken checkout and must throw, not silently narrow the scan.
+  const fixedLanguageRoots = [
+    TYPESCRIPT_ROOT,
+    RUST_ROOT,
+    GO_ROOT,
+    PYTHON_ROOT,
+    DART_ROOT,
+  ];
+
+  for (const root of fixedLanguageRoots) {
+    if (!existsSync(root)) {
+      throw new Error(
+        `authority-guardrails conformance-source scan expected language root ${relative(REPO_ROOT, root)} to exist — a missing root is a broken checkout, not a signal to silently narrow the scan`
+      );
+    }
+  }
+
+  const roots = (
+    await Promise.all(
+      fixedLanguageRoots.map((root) => collectConformanceSourceRoots(root))
+    )
+  ).flat();
+  return roots
+    .map((root) => relative(REPO_ROOT, root))
+    .sort((left, right) => left.localeCompare(right));
 };
 
 const collectTypescriptOwnedConformanceFailures = (
@@ -423,6 +726,11 @@ const checkTypescriptOwnedFrameworkFixtures = async (): Promise<
 
   return failures;
 };
+
+const isBooleanOraclePath = (path: string): boolean =>
+  path === "$.callables" ||
+  path.startsWith("$.callables.") ||
+  path.startsWith("callables.");
 
 const collectEvidencePathOracleFailures = (
   check: Record<string, unknown>,
@@ -872,82 +1180,111 @@ const collectPlanAssertionLiterals = async (
   return literals;
 };
 
-const checkRunnerOracleLiterals = async (
-  manifests: readonly AuthorityPacketManifest[]
-): Promise<GuardrailFailure[]> => {
+const collectForbiddenRunnerOrAdapterTokenFailures = (
+  source: string,
+  sourceLabel: string
+): GuardrailFailure[] =>
+  FORBIDDEN_RUNNER_OR_ADAPTER_TOKENS.filter((token) =>
+    source.includes(token)
+  ).map((token) => ({
+    check: "runner-or-adapter-authority",
+    message: `${sourceLabel} embeds ${token}; runner and adapter roots must not own check-scoped grading, required-evidence, or compatibility evidence semantics`,
+  }));
+
+const collectRunnerCheckIdFailures = (
+  source: string,
+  sourceLabel: string,
+  planCheckIds: ReadonlySet<string>
+): GuardrailFailure[] => {
   const failures: GuardrailFailure[] = [];
-  const planCheckIds = await collectPlanCheckIds(manifests);
-  const planOperationNames = await collectPlanOperationNames(manifests);
-  const planAssertionLiterals = await collectPlanAssertionLiterals(manifests);
-  const conformanceSourceRoots = await findConformanceSourceRoots();
 
-  for (const runnerRoot of conformanceSourceRoots) {
-    const sourcePaths = await findSourceFiles(resolve(REPO_ROOT, runnerRoot));
-
-    for (const sourcePath of sourcePaths) {
-      failures.push(
-        ...(await checkRunnerSourceFile(
-          sourcePath,
-          planCheckIds,
-          planOperationNames,
-          planAssertionLiterals
-        ))
-      );
+  for (const checkId of planCheckIds) {
+    if (source.includes(checkId)) {
+      failures.push({
+        check: "runner-oracle",
+        message: `${sourceLabel} embeds conformance-plan check id ${checkId}; runner source must load plan data instead`,
+      });
     }
   }
 
   return failures;
 };
 
-const main = async (): Promise<void> => {
-  const manifests = await loadAuthorityPackets();
-  const failures = [
-    ...checkFreshnessDeclarations(manifests),
-    ...(await checkFreshnessDrift(manifests)),
-    ...(await checkForbiddenAuthorityEvidence(manifests)),
-    ...(await checkRootTypescriptFixtures()),
-    ...(await checkTypescriptOwnedConformanceSources()),
-    ...(await checkTypescriptOwnedFrameworkFixtures()),
-    ...(await checkPlanEvidenceOracleShapes(manifests)),
-    ...(await checkRunnerOracleLiterals(manifests)),
-    ...(await checkForbiddenVocabulary(manifests)),
-    ...(await runFixtureSelfTests()),
-  ];
+const collectRunnerAssertionLiteralFailures = (
+  source: string,
+  sourceLabel: string,
+  planAssertionLiterals: ReadonlySet<string>
+): GuardrailFailure[] => {
+  const failures: GuardrailFailure[] = [];
 
-  if (failures.length > 0) {
-    for (const failure of failures) {
-      console.error(`${failure.check}: ${failure.message}`);
+  for (const literal of planAssertionLiterals) {
+    if (source.includes(JSON.stringify(literal))) {
+      failures.push({
+        check: "runner-oracle",
+        message: `${sourceLabel} embeds conformance-plan assertion literal ${literal}; runner source must load semantic expectations from plans`,
+      });
     }
-    process.exitCode = 1;
-    return;
   }
 
-  console.log("authority guardrails passed");
+  return failures;
 };
 
-async function checkRunnerSourceFile(
-  sourcePath: string,
-  planCheckIds: ReadonlySet<string>,
-  planOperationNames: ReadonlySet<string>,
-  planAssertionLiterals: ReadonlySet<string>
-): Promise<GuardrailFailure[]> {
-  const source = await readFile(sourcePath, "utf-8");
-  return checkRunnerSourceText(
-    source,
-    relative(REPO_ROOT, sourcePath),
-    planCheckIds,
-    planOperationNames,
-    planAssertionLiterals
-  );
-}
+const isAllowedOperationRoutingLine = (
+  line: string,
+  quotedOperation: string,
+  twoLinesBefore: string,
+  previousLine: string,
+  nextLine: string
+): boolean =>
+  line.includes(`case ${quotedOperation}:`) ||
+  line.includes(`${quotedOperation} =>`) ||
+  line.includes(`${quotedOperation}:`) ||
+  line.includes(`readOperationScenario(input, ${quotedOperation})`) ||
+  (line.includes(quotedOperation) &&
+    (previousLine.includes("readOperationScenario(") ||
+      twoLinesBefore.includes("readOperationScenario(")) &&
+    nextLine.includes(")"));
 
-function checkRunnerSourceText(
+const collectRunnerOperationLiteralFailures = (
+  source: string,
+  sourceLabel: string,
+  planOperationNames: ReadonlySet<string>
+): GuardrailFailure[] => {
+  const failures: GuardrailFailure[] = [];
+  const lines = source.split("\n");
+
+  for (const operationName of planOperationNames) {
+    const quotedOperation = JSON.stringify(operationName);
+
+    for (const [index, line] of lines.entries()) {
+      if (
+        line.includes(quotedOperation) &&
+        !isAllowedOperationRoutingLine(
+          line,
+          quotedOperation,
+          lines[index - 2] ?? "",
+          lines[index - 1] ?? "",
+          lines[index + 1] ?? ""
+        )
+      ) {
+        failures.push({
+          check: "runner-oracle",
+          message: `${sourceLabel}:${index + 1} embeds promoted operation ${operationName} outside generic routing/scenario validation`,
+        });
+      }
+    }
+  }
+
+  return failures;
+};
+
+const checkRunnerSourceText = (
   source: string,
   sourceLabel: string,
   planCheckIds: ReadonlySet<string>,
   planOperationNames: ReadonlySet<string>,
   planAssertionLiterals: ReadonlySet<string>
-): GuardrailFailure[] {
+): GuardrailFailure[] => {
   const failures: GuardrailFailure[] = [
     ...collectForbiddenRunnerOrAdapterTokenFailures(source, sourceLabel),
     ...collectRunnerCheckIdFailures(source, sourceLabel, planCheckIds),
@@ -987,119 +1324,88 @@ function checkRunnerSourceText(
   }
 
   return failures;
-}
+};
 
-function collectForbiddenRunnerOrAdapterTokenFailures(
-  source: string,
-  sourceLabel: string
-): GuardrailFailure[] {
-  return FORBIDDEN_RUNNER_OR_ADAPTER_TOKENS.filter((token) =>
-    source.includes(token)
-  ).map((token) => ({
-    check: "runner-or-adapter-authority",
-    message: `${sourceLabel} embeds ${token}; runner and adapter roots must not own check-scoped grading, required-evidence, or compatibility evidence semantics`,
-  }));
-}
-
-function collectRunnerCheckIdFailures(
-  source: string,
-  sourceLabel: string,
-  planCheckIds: ReadonlySet<string>
-): GuardrailFailure[] {
-  const failures: GuardrailFailure[] = [];
-
-  for (const checkId of planCheckIds) {
-    if (source.includes(checkId)) {
-      failures.push({
-        check: "runner-oracle",
-        message: `${sourceLabel} embeds conformance-plan check id ${checkId}; runner source must load plan data instead`,
-      });
-    }
-  }
-
-  return failures;
-}
-
-function collectRunnerAssertionLiteralFailures(
-  source: string,
-  sourceLabel: string,
+const checkRunnerSourceFile = async (
+  sourcePath: string,
+  planCheckIds: ReadonlySet<string>,
+  planOperationNames: ReadonlySet<string>,
   planAssertionLiterals: ReadonlySet<string>
-): GuardrailFailure[] {
-  const failures: GuardrailFailure[] = [];
+): Promise<GuardrailFailure[]> => {
+  const source = await readFile(sourcePath, "utf-8");
+  return checkRunnerSourceText(
+    source,
+    relative(REPO_ROOT, sourcePath),
+    planCheckIds,
+    planOperationNames,
+    planAssertionLiterals
+  );
+};
 
-  for (const literal of planAssertionLiterals) {
-    if (source.includes(JSON.stringify(literal))) {
-      failures.push({
-        check: "runner-oracle",
-        message: `${sourceLabel} embeds conformance-plan assertion literal ${literal}; runner source must load semantic expectations from plans`,
-      });
+const checkRunnerOracleLiterals = async (
+  manifests: readonly AuthorityPacketManifest[]
+): Promise<GuardrailFailure[]> => {
+  const failures: GuardrailFailure[] = [];
+  const planCheckIds = await collectPlanCheckIds(manifests);
+  const planOperationNames = await collectPlanOperationNames(manifests);
+  const planAssertionLiterals = await collectPlanAssertionLiterals(manifests);
+  const conformanceSourceRoots = await findConformanceSourceRoots();
+
+  for (const runnerRoot of conformanceSourceRoots) {
+    const sourcePaths = await findSourceFiles(resolve(REPO_ROOT, runnerRoot));
+
+    for (const sourcePath of sourcePaths) {
+      failures.push(
+        ...(await checkRunnerSourceFile(
+          sourcePath,
+          planCheckIds,
+          planOperationNames,
+          planAssertionLiterals
+        ))
+      );
     }
   }
 
   return failures;
-}
+};
 
-function collectRunnerOperationLiteralFailures(
-  source: string,
-  sourceLabel: string,
-  planOperationNames: ReadonlySet<string>
-): GuardrailFailure[] {
+const checkForbiddenVocabulary = async (
+  manifests: readonly AuthorityPacketManifest[]
+): Promise<GuardrailFailure[]> => {
   const failures: GuardrailFailure[] = [];
-  const lines = source.split("\n");
 
-  for (const operationName of planOperationNames) {
-    const quotedOperation = JSON.stringify(operationName);
-
-    for (const [index, line] of lines.entries()) {
+  for (const manifest of manifests) {
+    for (const source of manifest.authoritativeSources) {
       if (
-        line.includes(quotedOperation) &&
-        !isAllowedOperationRoutingLine(
-          line,
-          quotedOperation,
-          lines[index - 2] ?? "",
-          lines[index - 1] ?? "",
-          lines[index + 1] ?? ""
-        )
+        source.format !== "typespec" &&
+        source.format !== "conformance-plan"
       ) {
-        failures.push({
-          check: "runner-oracle",
-          message: `${sourceLabel}:${index + 1} embeds promoted operation ${operationName} outside generic routing/scenario validation`,
-        });
+        continue;
+      }
+
+      const sourcePath = resolve(REPO_ROOT, source.path);
+
+      if (!existsSync(sourcePath)) {
+        continue;
+      }
+
+      const sourceText = await readFile(sourcePath, "utf-8");
+
+      for (const pattern of FORBIDDEN_VOCABULARY_PATTERNS) {
+        if (pattern.test(sourceText)) {
+          failures.push({
+            check: "forbidden-vocabulary",
+            message: `${manifest.packetId} authority source ${source.path} contains implementation vocabulary ${pattern.source}`,
+          });
+        }
       }
     }
   }
 
   return failures;
-}
+};
 
-function isAllowedOperationRoutingLine(
-  line: string,
-  quotedOperation: string,
-  twoLinesBefore: string,
-  previousLine: string,
-  nextLine: string
-): boolean {
-  return (
-    line.includes(`case ${quotedOperation}:`) ||
-    line.includes(`${quotedOperation} =>`) ||
-    line.includes(`${quotedOperation}:`) ||
-    line.includes(`readOperationScenario(input, ${quotedOperation})`) ||
-    (line.includes(quotedOperation) &&
-      (previousLine.includes("readOperationScenario(") ||
-        twoLinesBefore.includes("readOperationScenario(")) &&
-      nextLine.includes(")"))
-  );
-}
-
-function isBooleanOraclePath(path: string): boolean {
-  return (
-    path === "$.callables" ||
-    path.startsWith("$.callables.") ||
-    path.startsWith("callables.")
-  );
-}
-
-async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
+const runFixtureSelfTests = async (): Promise<GuardrailFailure[]> => {
   const failures: GuardrailFailure[] = [];
 
   const freshnessFixture: unknown = JSON.parse(
@@ -1456,357 +1762,33 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
   }
 
   return failures;
-}
+};
 
-async function checkForbiddenVocabulary(
-  manifests: readonly AuthorityPacketManifest[]
-): Promise<GuardrailFailure[]> {
-  const failures: GuardrailFailure[] = [];
-
-  for (const manifest of manifests) {
-    for (const source of manifest.authoritativeSources) {
-      if (
-        source.format !== "typespec" &&
-        source.format !== "conformance-plan"
-      ) {
-        continue;
-      }
-
-      const sourcePath = resolve(REPO_ROOT, source.path);
-
-      if (!existsSync(sourcePath)) {
-        continue;
-      }
-
-      const sourceText = await readFile(sourcePath, "utf-8");
-
-      for (const pattern of FORBIDDEN_VOCABULARY_PATTERNS) {
-        if (pattern.test(sourceText)) {
-          failures.push({
-            check: "forbidden-vocabulary",
-            message: `${manifest.packetId} authority source ${source.path} contains implementation vocabulary ${pattern.source}`,
-          });
-        }
-      }
-    }
-  }
-
-  return failures;
-}
-
-async function findFiles(
-  directory: string,
-  nameOrSuffix: string
-): Promise<string[]> {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const paths: string[] = [];
-
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      paths.push(...(await findFiles(entryPath, nameOrSuffix)));
-      continue;
-    }
-
-    if (
-      entry.isFile() &&
-      (entry.name === nameOrSuffix || entry.name.endsWith(nameOrSuffix))
-    ) {
-      paths.push(entryPath);
-    }
-  }
-
-  return paths;
-}
-
-async function findSourceFiles(directory: string): Promise<string[]> {
-  if (!existsSync(directory)) {
-    return [];
-  }
-
-  const paths = [
-    ...(await findFiles(directory, ".rs")),
-    ...(await findFiles(directory, ".ts")),
-    ...(await findFiles(directory, ".tsx")),
-    ...(await findFiles(directory, ".go")),
-    ...(await findFiles(directory, ".py")),
-    ...(await findFiles(directory, ".dart")),
-  ];
-  return paths.filter((path) => !path.endsWith(".d.ts"));
-}
-
-async function findConformanceSourceRoots(): Promise<string[]> {
-  // Every language root always exists post-cutover; a missing one is a
-  // broken checkout and must throw, not silently narrow the scan.
-  const fixedLanguageRoots = [
-    TYPESCRIPT_ROOT,
-    RUST_ROOT,
-    GO_ROOT,
-    PYTHON_ROOT,
-    DART_ROOT,
+const main = async (): Promise<void> => {
+  const manifests = await loadAuthorityPackets();
+  const failures = [
+    ...checkFreshnessDeclarations(manifests),
+    ...(await checkFreshnessDrift(manifests)),
+    ...(await checkForbiddenAuthorityEvidence(manifests)),
+    ...(await checkRootTypescriptFixtures()),
+    ...(await checkTypescriptOwnedConformanceSources()),
+    ...(await checkTypescriptOwnedFrameworkFixtures()),
+    ...(await checkPlanEvidenceOracleShapes(manifests)),
+    ...(await checkRunnerOracleLiterals(manifests)),
+    ...(await checkForbiddenVocabulary(manifests)),
+    ...(await runFixtureSelfTests()),
   ];
 
-  for (const root of fixedLanguageRoots) {
-    if (!existsSync(root)) {
-      throw new Error(
-        `authority-guardrails conformance-source scan expected language root ${relative(REPO_ROOT, root)} to exist — a missing root is a broken checkout, not a signal to silently narrow the scan`
-      );
+  if (failures.length > 0) {
+    for (const failure of failures) {
+      console.error(`${failure.check}: ${failure.message}`);
     }
+    process.exitCode = 1;
+    return;
   }
 
-  const roots = (
-    await Promise.all(
-      fixedLanguageRoots.map((root) => collectConformanceSourceRoots(root))
-    )
-  ).flat();
-  return roots
-    .map((root) => relative(REPO_ROOT, root))
-    .sort((left, right) => left.localeCompare(right));
-}
-
-// Repository structure allows two certification-wrapper naming styles (see
-// CLAUDE.md's Structure section): a bare `certification` directory nested
-// under `<lang>/` or `<lang>/<area>/` (typescript/kernel/certification), a
-// suffixed `certification*` variant for multiple backends nested the same
-// way (typescript/kernel/certification-postgres), and a hyphen-prefixed flat
-// variant used by Rust/Go/Python crates and modules that cannot nest an
-// `<area>/` directory under a single package root (rust/kernel-certification,
-// go/kernel-certification, python/kernel-certification). The suffix matches
-// are deliberately permissive-toward-scanning: a false positive only adds a
-// scan root (stricter, never looser), so an unrelated future directory that
-// happens to end in `-certification` costs a harmless extra scan rather than
-// an enforcement gap.
-function isCertificationDirName(name: string): boolean {
-  return (
-    name === "certification" ||
-    name.startsWith("certification-") ||
-    name.endsWith("-certification")
-  );
-}
-
-// Same two naming styles apply to conformance-adapter hosts: a bare
-// `conformance-adapter` directory nested under `<lang>/` or `<lang>/<area>/`
-// (typescript/kernel/conformance-adapter), or a hyphen-prefixed flat variant
-// (rust/kernel-conformance-adapter, go/kernel-conformance-adapter,
-// python/kernel-conformance-adapter).
-function isConformanceAdapterDirName(name: string): boolean {
-  return (
-    name === "conformance-adapter" || name.endsWith("-conformance-adapter")
-  );
-}
-
-// Resolves a certification/conformance-adapter package directory to its
-// language-convention scan roots, or null when the directory matches no
-// known package layout (letting the caller keep recursing).
-function packageSourceRootsFor(entryPath: string): string[] | null {
-  if (existsSync(resolve(entryPath, "src"))) {
-    // TypeScript, Rust, and Python adapters/certification wrappers keep
-    // their sources under a `src/` subdirectory.
-    return [resolve(entryPath, "src")];
-  }
-
-  if (existsSync(resolve(entryPath, "go.mod"))) {
-    // Go adapters/certification wrappers use a flat layout: *.go files
-    // live directly at the module root, marked by go.mod, with no
-    // `src/` subdirectory.
-    return [entryPath];
-  }
-
-  if (existsSync(resolve(entryPath, "pubspec.yaml"))) {
-    // Dart adapters/certification wrappers keep sources under lib/,
-    // bin/, test/, example/, and tool/ (Dart's own package convention),
-    // marked by pubspec.yaml. Scan those subdirectories explicitly
-    // instead of the package root so the generated .dart_tool/ cache can
-    // never leak generated sources into the guardrail scan.
-    const sourceRoots = ["lib", "bin", "test", "example", "tool"]
-      .map((sourceDir) => resolve(entryPath, sourceDir))
-      .filter((sourcePath) => existsSync(sourcePath));
-
-    if (sourceRoots.length === 0) {
-      // A pubspec.yaml package with none of the conventional source
-      // subdirectories is a broken/unexpected layout, not a signal to
-      // silently exclude it from the forbidden-token scan: throw here
-      // for the same reason findConformanceSourceRoots throws on a
-      // missing language root above.
-      throw new Error(
-        `authority-guardrails conformance-source scan found a pubspec.yaml package at ${relative(REPO_ROOT, entryPath)} with none of lib/, bin/, test/, example/, or tool/ — a package with no recognized source directory is a broken layout, not a signal to silently narrow the scan`
-      );
-    }
-
-    return sourceRoots;
-  }
-
-  return null;
-}
-
-async function collectConformanceSourceRoots(
-  directory: string
-): Promise<string[]> {
-  if (!existsSync(directory)) {
-    return [];
-  }
-
-  const entries = await readdir(directory, { withFileTypes: true });
-  const roots: string[] = [];
-
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
-
-    if (!entry.isDirectory()) {
-      continue;
-    }
-
-    if (
-      isCertificationDirName(entry.name) ||
-      isConformanceAdapterDirName(entry.name)
-    ) {
-      const packageRoots = packageSourceRootsFor(entryPath);
-
-      if (packageRoots !== null) {
-        roots.push(...packageRoots);
-        continue;
-      }
-    }
-
-    roots.push(...(await collectConformanceSourceRoots(entryPath)));
-  }
-
-  return roots;
-}
-
-async function snapshotPath(path: string): Promise<FileSnapshot[]> {
-  const stats = await stat(path);
-
-  if (stats.isFile()) {
-    return [
-      {
-        content: await readFile(path, "utf-8"),
-        relativePath: relative(path, path),
-      },
-    ];
-  }
-
-  const entries = await collectSnapshotEntries(path, path);
-  return entries.sort((left, right) =>
-    left.relativePath.localeCompare(right.relativePath)
-  );
-}
-
-async function collectSnapshotEntries(
-  rootPath: string,
-  currentPath: string
-): Promise<FileSnapshot[]> {
-  const entries = await readdir(currentPath, { withFileTypes: true });
-  const snapshots: FileSnapshot[] = [];
-
-  for (const entry of entries) {
-    const entryPath = resolve(currentPath, entry.name);
-
-    if (entry.isDirectory()) {
-      snapshots.push(...(await collectSnapshotEntries(rootPath, entryPath)));
-      continue;
-    }
-
-    if (entry.isFile()) {
-      snapshots.push({
-        content: await readFile(entryPath, "utf-8"),
-        relativePath: relative(rootPath, entryPath),
-      });
-    }
-  }
-
-  return snapshots;
-}
-
-function snapshotsAreEqual(
-  left: readonly FileSnapshot[],
-  right: readonly FileSnapshot[]
-): boolean {
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  return left.every((entry, index) => {
-    const other = right[index];
-    return (
-      other !== undefined &&
-      entry.relativePath === other.relativePath &&
-      entry.content === other.content
-    );
-  });
-}
-
-function runRegenerateCommand(
-  command: string
-): Promise<{ message: string; ok: boolean }> {
-  return new Promise((resolvePromise) => {
-    // A manifest-owned regenerateCommand is untrusted input (any pull request
-    // can edit a checked-in authority-packet.json), so it is parsed into an
-    // argv array and rejected loud rather than handed to a shell. See
-    // ../lib/regenerate-command-argv.ts for the metacharacter denylist and
-    // command-prefix allowlist this enforces.
-    let argv: string[];
-
-    try {
-      argv = parseRegenerateCommandArgv(command);
-    } catch (error) {
-      resolvePromise({
-        message: error instanceof Error ? error.message : String(error),
-        ok: false,
-      });
-      return;
-    }
-
-    const [executable, ...args] = argv;
-
-    if (executable === undefined) {
-      resolvePromise({
-        message: `regenerateCommand "${command}" produced an empty argv`,
-        ok: false,
-      });
-      return;
-    }
-
-    // Freshness checks intentionally execute the manifest-owned command instead
-    // of duplicating generator knowledge in this guardrail.
-    const child = spawn(executable, args, {
-      cwd: REPO_ROOT,
-      shell: false,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    const output: string[] = [];
-
-    child.stdout.setEncoding("utf-8");
-    child.stderr.setEncoding("utf-8");
-    child.stdout.on("data", (chunk: string) => output.push(chunk));
-    child.stderr.on("data", (chunk: string) => output.push(chunk));
-    child.on("error", (error) => {
-      resolvePromise({ message: error.message, ok: false });
-    });
-    child.on("close", (code) => {
-      resolvePromise({
-        message: output.join("").trim().slice(-1000),
-        ok: code === 0,
-      });
-    });
-  });
-}
-
-function isAuthorityPacketManifest(
-  value: unknown
-): value is AuthorityPacketManifest {
-  return (
-    isRecord(value) &&
-    typeof value.packetId === "string" &&
-    Array.isArray(value.authoritativeSources) &&
-    Array.isArray(value.forbiddenAuthoritySources)
-  );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
+  console.log("authority guardrails passed");
+};
 
 if (import.meta.main) {
   await main();
