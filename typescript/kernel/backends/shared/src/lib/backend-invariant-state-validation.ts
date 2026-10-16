@@ -111,55 +111,53 @@ export interface BackendInvariantStateValidationConfig extends BackendInvariantR
  * itself exported.
  */
 export interface ValidationHelpers {
-  /* oxlint-disable typescript/method-signature-style -- Compatibility: preserve the published method-signature variance under strictFunctionTypes. */
-  assertActiveRunHeadAlignment(
+  assertActiveRunHeadAlignment: (
     run: StoredRun,
     branch: StoredBranch,
     turn: StoredTurn
-  ): void;
-  assertBackwardBranchMoveIsArchived(
+  ) => void;
+  assertBackwardBranchMoveIsArchived: (
     state: BackendState,
     baseState: BackendState,
     previousBranch: StoredBranch,
     branch: StoredBranch
-  ): void;
-  assertChunkedTurnTreePathChunkLayout(
+  ) => void;
+  assertChunkedTurnTreePathChunkLayout: (
     chunk: StoredOrderedPathChunk,
     index: number,
     chunkCount: number
-  ): void;
-  assertRunCreatedTurnNodesAreCanonical(
+  ) => void;
+  assertRunCreatedTurnNodesAreCanonical: (
     state: BackendState,
     run: StoredRun
-  ): void;
-  assertRunCreatedTurnNodeWithinTurnSpan(
+  ) => void;
+  assertRunCreatedTurnNodeWithinTurnSpan: (
     state: BackendState,
     turn: StoredTurn,
     createdTurnNode: StoredTurnNode,
     label: string
-  ): void;
-  assertRunStartTurnNodeWithinTurnSpan(
+  ) => void;
+  assertRunStartTurnNodeWithinTurnSpan: (
     state: BackendState,
     turn: StoredTurn,
     startTurnNodeHash: string,
     label: string
-  ): void;
-  assertTurnParentLink(
+  ) => void;
+  assertTurnParentLink: (
     state: BackendState,
     turn: StoredTurn,
     label: string
-  ): void;
-  classifyTurnNodeRelationship(
+  ) => void;
+  classifyTurnNodeRelationship: (
     state: BackendState,
     fromTurnNodeHash: string,
     toTurnNodeHash: string
-  ): "backward" | "forward" | "same" | "lateral";
-  decodeRunCreatedTurnNodeHashes(run: StoredRun): string[];
-  decodeTurnNodeConsumedStagedResultObjectHashes(
+  ) => "backward" | "forward" | "same" | "lateral";
+  decodeRunCreatedTurnNodeHashes: (run: StoredRun) => string[];
+  decodeTurnNodeConsumedStagedResultObjectHashes: (
     turnNode: StoredTurnNode
-  ): string[];
-  validateHashString(hash: string): string;
-  /* oxlint-enable typescript/method-signature-style */
+  ) => string[];
+  validateHashString: (hash: string) => string;
 }
 
 /**

@@ -47,8 +47,10 @@ const recordUtils = createBackendInvariantRecordUtils({
 // Kept private: this backend never exported `compareByTimestampAndKey`
 // itself, only used it (previously via its own local copy) to implement
 // `compareStoredObserveAnnotation` below.
+// oxlint-disable-next-line typescript/unbound-method -- Compatibility: preserve published method variance while extracting a standalone factory function.
 const { compareByTimestampAndKey } = recordUtils;
 
+/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */
 export const {
   areBytesEqual,
   areStoredObjectsEqual,
@@ -85,6 +87,7 @@ export const {
   ensureTurnNodeExists,
   ensureTurnTreeExists,
 } = recordUtils;
+/* oxlint-enable typescript/unbound-method */
 
 /**
  * Separator between the identity fields of an observe annotation key and

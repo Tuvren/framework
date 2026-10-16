@@ -33,6 +33,7 @@ const integrityAssertions = createBackendInvariantIntegrityAssertions({
   getRunActiveTurnNodeHash,
 });
 
+/* oxlint-disable typescript/unbound-method -- Compatibility: preserve published method variance while exporting standalone factory functions. */
 export const {
   assertBackwardBranchMoveIsArchived,
   assertChunkedTurnTreePathChunkLayout,
@@ -41,3 +42,4 @@ export const {
   listTurnsByThread,
   ORDERED_PATH_CHUNK_SIZE,
 } = integrityAssertions;
+/* oxlint-enable typescript/unbound-method */
