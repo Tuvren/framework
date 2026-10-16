@@ -23,10 +23,10 @@ import {
   rm,
   writeFile,
 } from "node:fs/promises";
-import { relative, resolve } from "node:path";
+import path from "node:path";
 import process from "node:process";
 
-import type { AnySchema } from "ajv";
+import type { Schema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
 import { runCommand } from "./lib/command-runner.js";
@@ -181,16 +181,57 @@ interface InteropRunner {
   reportLabel: string;
 }
 
-const REPO_ROOT = resolve(import.meta.dirname, "../..");
-const COMPATIBILITY_MATRIX_PATH = resolve(
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isInteropTelemetryAttribute = (
+  value: unknown
+): value is string | string[] | null =>
+  value === null ||
+  typeof value === "string" ||
+  (Array.isArray(value) &&
+    value.every((entry): entry is string => typeof entry === "string"));
+
+const isInteropTelemetryAttributes = (
+  value: unknown
+): value is Record<string, string | string[] | null> =>
+  isRecord(value) && Object.values(value).every(isInteropTelemetryAttribute);
+
+const readStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((entry): entry is string => typeof entry === "string");
+};
+
+const forEachSequential = async <T>(
+  values: readonly T[],
+  operation: (value: T, index: number) => Promise<void>,
+  index = 0
+): Promise<void> => {
+  const value = values[index];
+  if (value === undefined) {
+    return;
+  }
+
+  await operation(value, index);
+  await forEachSequential(values, operation, index + 1);
+};
+
+const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
+const COMPATIBILITY_MATRIX_PATH = path.resolve(
   REPO_ROOT,
   "reports/compatibility/compatibility-matrix.json"
 );
-const COMPATIBILITY_SCHEMA_PATH = resolve(
+const COMPATIBILITY_SCHEMA_PATH = path.resolve(
   REPO_ROOT,
   "reports/compatibility/compatibility-matrix.schema.json"
 );
-const EVIDENCE_DIRECTORY = resolve(REPO_ROOT, "reports/compatibility/evidence");
+const EVIDENCE_DIRECTORY = path.resolve(
+  REPO_ROOT,
+  "reports/compatibility/evidence"
+);
 // The physical directory runner evidence is written to during a regeneration
 // pass. Defaults to EVIDENCE_DIRECTORY (matches --check's read path and any
 // direct invocation), but main() points it at a scratch directory for the
@@ -482,13 +523,26 @@ const formatEvidenceJson = (evidence: object): string => {
  * pairs are not certification-fleet members.
  */
 const assertConformanceRunnerParity = async (): Promise<void> => {
-  const manifestPath = resolve(
+  const manifestPath = path.resolve(
     REPO_ROOT,
     "tools/conformance/certification/certified-projects.json"
   );
-  const manifest: { projects: string[] } = JSON.parse(
-    await readFile(manifestPath, "utf-8")
-  );
+  const manifest: unknown = JSON.parse(await readFile(manifestPath, "utf-8"));
+
+  if (
+    !(
+      isRecord(manifest) &&
+      Array.isArray(manifest.projects) &&
+      manifest.projects.every(
+        (project): project is string => typeof project === "string"
+      )
+    )
+  ) {
+    throw new Error(
+      "certification manifest must contain a projects string array"
+    );
+  }
+
   const manifestProjects = new Set(manifest.projects);
   const runnerProjects = new Set(
     CONFORMANCE_RUNNERS.map((runner) => runner.project)
@@ -581,20 +635,10 @@ const assertCompatibilityResultCheckIds = (
   throw new Error(`${label} must contain check ids for applicable checks`);
 };
 
-const assertCompatibilityMatrix: (
-  value: CompatibilityMatrix
-) => asserts value is CompatibilityMatrix = (value) => {
-  if (
-    !Number.isSafeInteger(value.generatedAtMs) ||
-    value.generatedAtMs < 0 ||
-    value.sourceRevision.length === 0
-  ) {
-    throw new Error(
-      "compatibility matrix must contain a generatedAtMs timestamp and sourceRevision"
-    );
-  }
-
-  for (const suite of value.suites) {
+const assertCompatibilitySuites = (
+  suites: readonly CompatibilitySuite[]
+): void => {
+  for (const suite of suites) {
     if (
       suite.boundary.length === 0 ||
       suite.suiteId.length === 0 ||
@@ -605,8 +649,12 @@ const assertCompatibilityMatrix: (
       );
     }
   }
+};
 
-  for (const implementation of value.implementations) {
+const assertCompatibilityImplementations = (
+  implementations: readonly CompatibilityImplementation[]
+): void => {
+  for (const implementation of implementations) {
     if (
       implementation.implementationId.length === 0 ||
       implementation.language.length === 0 ||
@@ -638,8 +686,12 @@ const assertCompatibilityMatrix: (
       );
     }
   }
+};
 
-  for (const interopResult of value.interop) {
+const assertCompatibilityInterop = (
+  interop: readonly CompatibilityInteropResult[]
+): void => {
+  for (const interopResult of interop) {
     if (
       interopResult.evidencePath.length === 0 ||
       interopResult.pairId.length === 0 ||
@@ -662,12 +714,29 @@ const assertCompatibilityMatrix: (
   }
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null;
+const assertCompatibilityMatrix: (
+  value: CompatibilityMatrix
+) => asserts value is CompatibilityMatrix = (value) => {
+  if (
+    !Number.isSafeInteger(value.generatedAtMs) ||
+    value.generatedAtMs < 0 ||
+    value.sourceRevision.length === 0
+  ) {
+    throw new Error(
+      "compatibility matrix must contain a generatedAtMs timestamp and sourceRevision"
+    );
+  }
+
+  assertCompatibilitySuites(value.suites);
+  assertCompatibilityImplementations(value.implementations);
+  assertCompatibilityInterop(value.interop);
 };
 
-const readJsonSchema = (value: unknown): AnySchema => {
-  if (typeof value === "boolean" || isRecord(value)) {
+const readJsonSchema = (value: unknown): Schema => {
+  if (
+    typeof value === "boolean" ||
+    (isRecord(value) && (value.$async === undefined || value.$async === false))
+  ) {
     return value;
   }
 
@@ -675,17 +744,17 @@ const readJsonSchema = (value: unknown): AnySchema => {
 };
 
 const assertCompatibilityMatrixSchema = async (
-  value: CompatibilityMatrix
-): Promise<void> => {
+  value: unknown
+): Promise<CompatibilityMatrix> => {
   const schemaText = await readFile(COMPATIBILITY_SCHEMA_PATH, "utf-8");
   const parsedSchema = readJsonSchema(JSON.parse(schemaText));
-  const validate = ajv.compile(parsedSchema);
+  const validate = ajv.compile<CompatibilityMatrix>(parsedSchema);
 
   // The checked-in schema is the machine contract for compatibility evidence,
   // so codegen validates against it directly instead of relying only on the
   // narrower TypeScript assertions above.
   if (validate(value)) {
-    return;
+    return value;
   }
 
   throw new Error(
@@ -696,8 +765,8 @@ const assertCompatibilityMatrixSchema = async (
 const readAdapterManifest = async (
   adapterManifestPath: string
 ): Promise<Record<string, unknown>> => {
-  const manifest = JSON.parse(
-    await readFile(resolve(REPO_ROOT, adapterManifestPath), "utf-8")
+  const manifest: unknown = JSON.parse(
+    await readFile(path.resolve(REPO_ROOT, adapterManifestPath), "utf-8")
   );
 
   if (!isRecord(manifest)) {
@@ -732,29 +801,26 @@ const createSuiteKey = (
   boundary: string,
   suiteId: string,
   suiteVersion: string
-): string => {
-  return `${boundary}:${suiteId}@${suiteVersion}`;
-};
+): string => `${boundary}:${suiteId}@${suiteVersion}`;
 
 const readSuiteManifest = async (
   manifestPath: string
-): Promise<ConformanceSuiteManifest> => {
-  return await readConformanceSuiteManifest(resolve(REPO_ROOT, manifestPath));
-};
+): Promise<ConformanceSuiteManifest> =>
+  await readConformanceSuiteManifest(path.resolve(REPO_ROOT, manifestPath));
 
 const readLiveCompatibilitySuites = async (): Promise<CompatibilitySuite[]> => {
   const suitesByKey = new Map<string, CompatibilitySuite>();
 
-  for (const runner of CONFORMANCE_RUNNERS) {
+  await forEachSequential(CONFORMANCE_RUNNERS, async (runner) => {
     const manifest = await readAdapterManifest(runner.adapterManifestPath);
     const suite = readAdapterSuite(manifest, runner.adapterManifestPath);
     suitesByKey.set(
       createSuiteKey(suite.boundary, suite.suiteId, suite.suiteVersion),
       suite
     );
-  }
+  });
 
-  for (const runner of INTEROP_RUNNERS) {
+  await forEachSequential(INTEROP_RUNNERS, async (runner) => {
     const suiteManifest = await readSuiteManifest(runner.manifestPath);
     const suite = {
       boundary: suiteManifest.boundary,
@@ -765,7 +831,7 @@ const readLiveCompatibilitySuites = async (): Promise<CompatibilitySuite[]> => {
       createSuiteKey(suite.boundary, suite.suiteId, suite.suiteVersion),
       suite
     );
-  }
+  });
 
   return [...suitesByKey.values()];
 };
@@ -819,44 +885,38 @@ const checkLiveSuiteTopology = async (
   }
 };
 
-const readStringArray = (value: unknown): string[] => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.filter((entry): entry is string => typeof entry === "string");
-};
-
 const hasRequiredCapabilities = (
   requiredCapabilities: unknown,
   capabilities: ReadonlySet<string>
-): boolean => {
-  return readStringArray(requiredCapabilities).every((capability) =>
+): boolean =>
+  readStringArray(requiredCapabilities).every((capability) =>
     capabilities.has(capability)
   );
-};
 
 const readLivePlanChecks = (
   planJson: string,
   capabilities: ReadonlySet<string>
 ): { allCheckIds: string[]; applicableCheckIds: string[] } => {
-  const plan = JSON.parse(planJson) as {
-    applicability?: { capabilities?: unknown };
-    checks?: { capabilities?: unknown; checkId?: unknown }[];
-  };
-  const allCheckIds = (plan.checks ?? [])
+  const plan: unknown = JSON.parse(planJson);
+  if (!isRecord(plan)) {
+    throw new Error("conformance plan must contain a JSON object");
+  }
+
+  const applicability = isRecord(plan.applicability)
+    ? plan.applicability
+    : undefined;
+  const checks = Array.isArray(plan.checks) ? plan.checks.filter(isRecord) : [];
+  const allCheckIds = checks
     .map((check) => check.checkId)
     .filter((checkId): checkId is string => typeof checkId === "string");
 
-  if (
-    !hasRequiredCapabilities(plan.applicability?.capabilities, capabilities)
-  ) {
+  if (!hasRequiredCapabilities(applicability?.capabilities, capabilities)) {
     return { allCheckIds, applicableCheckIds: [] };
   }
 
   const applicableCheckIds: string[] = [];
 
-  for (const check of plan.checks ?? []) {
+  for (const check of checks) {
     if (typeof check.checkId !== "string") {
       continue;
     }
@@ -883,22 +943,28 @@ const readLiveConformanceRunner = async (
   const allCheckIds: string[] = [];
   const seenPlanPaths = new Set<string>();
 
-  for (const packetPath of packetPaths) {
-    const packetManifest = JSON.parse(
-      await readFile(resolve(REPO_ROOT, packetPath), "utf-8")
-    ) as {
-      conformancePlans?: { path?: unknown }[];
-    };
+  await forEachSequential(packetPaths, async (packetPath) => {
+    const packetManifest: unknown = JSON.parse(
+      await readFile(path.resolve(REPO_ROOT, packetPath), "utf-8")
+    );
 
-    for (const plan of packetManifest.conformancePlans ?? []) {
+    if (!isRecord(packetManifest)) {
+      throw new Error(`${packetPath} must contain a JSON object`);
+    }
+
+    const conformancePlans = Array.isArray(packetManifest.conformancePlans)
+      ? packetManifest.conformancePlans.filter(isRecord)
+      : [];
+
+    await forEachSequential(conformancePlans, async (plan) => {
       if (typeof plan.path !== "string") {
-        continue;
+        return;
       }
 
-      const planPath = resolve(REPO_ROOT, plan.path);
+      const planPath = path.resolve(REPO_ROOT, plan.path);
 
       if (seenPlanPaths.has(planPath)) {
-        continue;
+        return;
       }
 
       seenPlanPaths.add(planPath);
@@ -907,8 +973,8 @@ const readLiveConformanceRunner = async (
       const planChecks = readLivePlanChecks(planJson, capabilities);
       applicableCheckIds.push(...planChecks.applicableCheckIds);
       allCheckIds.push(...planChecks.allCheckIds);
-    }
-  }
+    });
+  });
 
   const applicableCheckIdSet = new Set(applicableCheckIds);
 
@@ -1062,8 +1128,8 @@ const checkImplementationEvidenceFile = async (
   liveRunner: LiveConformanceRunner,
   failures: string[]
 ): Promise<void> => {
-  const absolutePath = resolve(REPO_ROOT, evidencePath);
-  const evidence = JSON.parse(await readFile(absolutePath, "utf-8"));
+  const absolutePath = path.resolve(REPO_ROOT, evidencePath);
+  const evidence: unknown = JSON.parse(await readFile(absolutePath, "utf-8"));
 
   if (!isRecord(evidence)) {
     failures.push(`${evidencePath} must contain a JSON object`);
@@ -1167,8 +1233,8 @@ const checkImplementationEvidence = async (
     }))
   );
 
-  for (const implementation of implementations) {
-    for (const result of implementation.results) {
+  await forEachSequential(implementations, async (implementation) => {
+    await forEachSequential(implementation.results, async (result) => {
       const liveEntry = liveEntries.find(
         (entry) =>
           entry.runner.implementationId === implementation.implementationId &&
@@ -1180,7 +1246,7 @@ const checkImplementationEvidence = async (
         failures.push(
           `compatibility matrix implementation ${implementation.implementationId} ${result.suiteId}@${result.suiteVersion} is not present in live runner topology`
         );
-        continue;
+        return;
       }
 
       matrixEvidencePaths.add(result.evidencePath);
@@ -1207,17 +1273,15 @@ const checkImplementationEvidence = async (
         liveEntry.liveRunner,
         failures
       );
-    }
-  }
+    });
+  });
 };
 
 const createCompatibilityRunnerKey = (
   implementationId: string,
   suiteId: string,
   suiteVersion: string
-): string => {
-  return `${implementationId}:${suiteId}@${suiteVersion}`;
-};
+): string => `${implementationId}:${suiteId}@${suiteVersion}`;
 
 const checkConformanceRunnerInventory = async (
   implementations: readonly CompatibilityImplementation[],
@@ -1235,7 +1299,7 @@ const checkConformanceRunnerInventory = async (
     )
   );
 
-  for (const runner of CONFORMANCE_RUNNERS) {
+  await forEachSequential(CONFORMANCE_RUNNERS, async (runner) => {
     const liveRunner = await readLiveConformanceRunner(runner);
     const runnerKey = createCompatibilityRunnerKey(
       runner.implementationId,
@@ -1248,7 +1312,7 @@ const checkConformanceRunnerInventory = async (
         `compatibility matrix is missing live implementation ${runner.implementationId} for ${liveRunner.suite.suiteId}@${liveRunner.suite.suiteVersion}`
       );
     }
-  }
+  });
 };
 
 const checkInteropRunnerInventory = (
@@ -1273,7 +1337,7 @@ const readLiveInteropRunner = async (
 
   return {
     checkIds: suiteManifest.checks
-      .filter((check) => check.interopPairs?.includes(runner.pairId))
+      .filter((check) => check.interopPairs?.includes(runner.pairId) === true)
       .map((check) => check.checkId),
     suite: {
       boundary: suiteManifest.boundary,
@@ -1285,14 +1349,13 @@ const readLiveInteropRunner = async (
 
 const readLiveInteropRunners = async (): Promise<
   { liveRunner: LiveInteropRunner; runner: InteropRunner }[]
-> => {
-  return await Promise.all(
+> =>
+  await Promise.all(
     INTEROP_RUNNERS.map(async (runner) => ({
       liveRunner: await readLiveInteropRunner(runner),
       runner,
     }))
   );
-};
 
 const compareLiveInteropResult = (
   liveRunner: LiveInteropRunner,
@@ -1327,8 +1390,8 @@ const checkInteropEvidenceFile = async (
   liveRunner: LiveInteropRunner,
   failures: string[]
 ): Promise<void> => {
-  const absolutePath = resolve(REPO_ROOT, evidencePath);
-  const evidence = JSON.parse(await readFile(absolutePath, "utf-8"));
+  const absolutePath = path.resolve(REPO_ROOT, evidencePath);
+  const evidence: unknown = JSON.parse(await readFile(absolutePath, "utf-8"));
 
   if (!isRecord(evidence)) {
     failures.push(`${evidencePath} must contain a JSON object`);
@@ -1414,11 +1477,11 @@ const checkInteropEvidenceFile = async (
 };
 
 const checkCompatibilityEvidence = async (): Promise<void> => {
-  const matrix = JSON.parse(
+  const parsedMatrix: unknown = JSON.parse(
     await readFile(COMPATIBILITY_MATRIX_PATH, "utf-8")
-  ) as CompatibilityMatrix;
+  );
+  const matrix = await assertCompatibilityMatrixSchema(parsedMatrix);
   assertCompatibilityMatrix(matrix);
-  await assertCompatibilityMatrixSchema(matrix);
 
   const matrixEvidencePaths = new Set<string>();
   const failures: string[] = [];
@@ -1434,7 +1497,7 @@ const checkCompatibilityEvidence = async (): Promise<void> => {
 
   const liveInteropEntries = await readLiveInteropRunners();
 
-  for (const result of matrix.interop) {
+  await forEachSequential(matrix.interop, async (result) => {
     const liveEntry = liveInteropEntries.find(
       (entry) => entry.runner.pairId === result.pairId
     );
@@ -1443,7 +1506,7 @@ const checkCompatibilityEvidence = async (): Promise<void> => {
       failures.push(
         `compatibility matrix interop pair ${result.pairId} is not present in live runner topology`
       );
-      continue;
+      return;
     }
 
     matrixEvidencePaths.add(result.evidencePath);
@@ -1461,7 +1524,7 @@ const checkCompatibilityEvidence = async (): Promise<void> => {
       liveEntry.liveRunner,
       failures
     );
-  }
+  });
 
   const evidenceEntries = await readdir(EVIDENCE_DIRECTORY);
 
@@ -1470,9 +1533,9 @@ const checkCompatibilityEvidence = async (): Promise<void> => {
       continue;
     }
 
-    const evidencePath = relative(
+    const evidencePath = path.relative(
       REPO_ROOT,
-      resolve(EVIDENCE_DIRECTORY, entry)
+      path.resolve(EVIDENCE_DIRECTORY, entry)
     );
 
     if (!matrixEvidencePaths.has(evidencePath)) {
@@ -1496,31 +1559,34 @@ const checkCompatibilityEvidence = async (): Promise<void> => {
 
 const resetHermeticBuildBoundary = async (): Promise<void> => {
   await Promise.all(
-    HERMETIC_BUILD_OUTPUT_DIRECTORIES.map(
-      async (directoryPath) =>
-        await rm(resolve(REPO_ROOT, directoryPath), {
-          force: true,
-          recursive: true,
-        })
-    )
+    HERMETIC_BUILD_OUTPUT_DIRECTORIES.map(async (directoryPath) => {
+      await rm(path.resolve(REPO_ROOT, directoryPath), {
+        force: true,
+        recursive: true,
+      });
+    })
   );
 };
 
-const createConformanceRunnerKey = (runner: ConformanceRunner): string => {
-  return `${runner.project}:${runner.implementationId}`;
-};
+const createConformanceRunnerKey = (runner: ConformanceRunner): string =>
+  `${runner.project}:${runner.implementationId}`;
 
 const collectPlanCapabilities = (planJson: string, sink: Set<string>): void => {
-  const plan = JSON.parse(planJson) as {
-    applicability?: { capabilities?: unknown };
-    checks?: { capabilities?: unknown }[];
-  };
+  const plan: unknown = JSON.parse(planJson);
+  if (!isRecord(plan)) {
+    throw new Error("conformance plan must contain a JSON object");
+  }
 
-  for (const capability of readStringArray(plan.applicability?.capabilities)) {
+  const applicability = isRecord(plan.applicability)
+    ? plan.applicability
+    : undefined;
+  const checks = Array.isArray(plan.checks) ? plan.checks.filter(isRecord) : [];
+
+  for (const capability of readStringArray(applicability?.capabilities)) {
     sink.add(capability);
   }
 
-  for (const check of plan.checks ?? []) {
+  for (const check of checks) {
     for (const capability of readStringArray(check.capabilities)) {
       sink.add(capability);
     }
@@ -1530,10 +1596,19 @@ const collectPlanCapabilities = (planJson: string, sink: Set<string>): void => {
 const computeExpectedCapabilitiesFromTopology = async (
   adapterManifestPathRelative: string
 ): Promise<ReadonlySet<string>> => {
-  const adapterManifestPath = resolve(REPO_ROOT, adapterManifestPathRelative);
-  const adapterManifest = JSON.parse(
+  const adapterManifestPath = path.resolve(
+    REPO_ROOT,
+    adapterManifestPathRelative
+  );
+  const adapterManifest: unknown = JSON.parse(
     await readFile(adapterManifestPath, "utf-8")
-  ) as { authorityPackets?: unknown };
+  );
+
+  if (!isRecord(adapterManifest)) {
+    throw new Error(
+      `${adapterManifestPathRelative} must contain a JSON object`
+    );
+  }
 
   const packetPaths = readStringArray(adapterManifest.authorityPackets);
   const capabilities = new Set<string>();
@@ -1551,24 +1626,30 @@ const computeExpectedCapabilitiesFromTopology = async (
   // `adapter-capability-covered-by-plan` rule, which forces either the
   // capability to be removed from the adapter manifest or a plan check to
   // exercise it.
-  for (const packetPath of packetPaths) {
-    const packetManifest = JSON.parse(
-      await readFile(resolve(REPO_ROOT, packetPath), "utf-8")
-    ) as {
-      conformancePlans?: { path?: unknown }[];
-    };
+  await forEachSequential(packetPaths, async (packetPath) => {
+    const packetManifest: unknown = JSON.parse(
+      await readFile(path.resolve(REPO_ROOT, packetPath), "utf-8")
+    );
 
-    for (const plan of packetManifest.conformancePlans ?? []) {
+    if (!isRecord(packetManifest)) {
+      throw new Error(`${packetPath} must contain a JSON object`);
+    }
+
+    const conformancePlans = Array.isArray(packetManifest.conformancePlans)
+      ? packetManifest.conformancePlans.filter(isRecord)
+      : [];
+
+    await forEachSequential(conformancePlans, async (plan) => {
       if (typeof plan.path !== "string") {
-        continue;
+        return;
       }
 
       collectPlanCapabilities(
-        await readFile(resolve(REPO_ROOT, plan.path), "utf-8"),
+        await readFile(path.resolve(REPO_ROOT, plan.path), "utf-8"),
         capabilities
       );
-    }
-  }
+    });
+  });
 
   return capabilities;
 };
@@ -1578,9 +1659,11 @@ const createFallbackCheckResults = (
   applicabilityKey: "implementations" | "interopPairs",
   applicabilityId: string,
   message: string
-): ConformanceCheckResult[] => {
-  return suiteManifest.checks
-    .filter((check) => check[applicabilityKey]?.includes(applicabilityId))
+): ConformanceCheckResult[] =>
+  suiteManifest.checks
+    .filter(
+      (check) => check[applicabilityKey]?.includes(applicabilityId) === true
+    )
     .map((check) =>
       createCheckResult(
         check.checkId,
@@ -1592,7 +1675,6 @@ const createFallbackCheckResults = (
         }
       )
     );
-};
 
 const extractTrailingJsonObject = (stdout: string): string => {
   const prefixedJsonLines = stdout
@@ -1665,7 +1747,7 @@ const readConformanceEvidence = (
   }
 
   try {
-    const parsed = JSON.parse(extractTrailingJsonObject(stdout));
+    const parsed: unknown = JSON.parse(extractTrailingJsonObject(stdout));
     assertConformanceEvidence(parsed, "runner evidence");
     return parsed;
   } catch {
@@ -1743,7 +1825,7 @@ const classifyConformanceReportStatus = (
   // under that topology automatically reshapes what `full_pass` means
   // without a parallel manual list in this file. See
   // `computeExpectedCapabilitiesFromTopology` for the derivation.
-  const declaredCapabilities = new Set(evidence.capabilities ?? []);
+  const declaredCapabilities = new Set(evidence.capabilities);
   const hasFullCapabilitySet = [...expectedCapabilities].every((capability) =>
     declaredCapabilities.has(capability)
   );
@@ -1751,13 +1833,12 @@ const classifyConformanceReportStatus = (
   return hasFullCapabilitySet ? "full_pass" : "capability_subset_pass";
 };
 
-const sanitizeEvidenceCommand = (command: readonly string[]): string[] => {
-  return command.map((part, index) =>
+const sanitizeEvidenceCommand = (command: readonly string[]): string[] =>
+  command.map((part, index) =>
     index > 0 && command[index - 1] === "--adapter"
       ? "[adapter-manifest]"
       : part
   );
-};
 
 const runConformanceTarget = async (
   runner: ConformanceRunner,
@@ -1769,18 +1850,21 @@ const runConformanceTarget = async (
 }> => {
   // The compatibility matrix is meant to be measured evidence, not replayed
   // cached console output, so each conformance lane is forced to execute.
-  for (const prerequisiteCommand of runner.prerequisiteCommands ?? []) {
-    const prerequisiteResult = await runCommand(prerequisiteCommand, {
-      captureOutput: true,
-      cwd: REPO_ROOT,
-    });
+  await forEachSequential(
+    runner.prerequisiteCommands ?? [],
+    async (prerequisiteCommand) => {
+      const prerequisiteResult = await runCommand(prerequisiteCommand, {
+        captureOutput: true,
+        cwd: REPO_ROOT,
+      });
 
-    if (prerequisiteResult.code !== 0) {
-      throw new Error(
-        `compatibility prerequisite failed for ${runner.implementationId}: ${prerequisiteCommand.join(" ")}`
-      );
+      if (prerequisiteResult.code !== 0) {
+        throw new Error(
+          `compatibility prerequisite failed for ${runner.implementationId}: ${prerequisiteCommand.join(" ")}`
+        );
+      }
     }
-  }
+  );
 
   const command = [
     ...(runner.command ?? [
@@ -1802,10 +1886,13 @@ const runConformanceTarget = async (
   // path always reflects the final EVIDENCE_DIRECTORY location so the
   // compatibility matrix references where the file will live once
   // swapEvidenceDirectoryIntoPlace runs.
-  const evidenceFilePath = resolve(evidenceWriteDirectory, evidenceFileName);
-  const relativeEvidencePath = relative(
+  const evidenceFilePath = path.resolve(
+    evidenceWriteDirectory,
+    evidenceFileName
+  );
+  const relativeEvidencePath = path.relative(
     REPO_ROOT,
-    resolve(EVIDENCE_DIRECTORY, evidenceFileName)
+    path.resolve(EVIDENCE_DIRECTORY, evidenceFileName)
   );
   const fallbackCheckResults =
     suiteManifest === undefined
@@ -1826,19 +1913,18 @@ const runConformanceTarget = async (
       `${commandResult.stderr}\n${commandResult.stdout}`.trim()
     );
   const evidencePayload =
-    parsedEvidence === undefined
-      ? createFallbackEvidence(
-          suiteManifest ?? {
-            boundary: "unknown",
-            checks: [],
-            suiteId: runner.project,
-            suiteVersion: "0.0.0",
-          },
-          runner.implementationId,
-          runner.language,
-          fallbackCheckResults
-        )
-      : parsedEvidence;
+    parsedEvidence ??
+    createFallbackEvidence(
+      suiteManifest ?? {
+        boundary: "unknown",
+        checks: [],
+        suiteId: runner.project,
+        suiteVersion: "0.0.0",
+      },
+      runner.implementationId,
+      runner.language,
+      fallbackCheckResults
+    );
   const status: CompatibilityResultStatus = computeCompatibilityResultStatus(
     commandResult.code,
     evidencePayload
@@ -2031,8 +2117,7 @@ const extractJsonObjectCandidates = (stdout: string): string[] => {
       escaped,
       inString,
     });
-    escaped = stringState.escaped;
-    inString = stringState.inString;
+    ({ escaped, inString } = stringState);
 
     if (stringState.handled) {
       continue;
@@ -2046,16 +2131,14 @@ const extractJsonObjectCandidates = (stdout: string): string[] => {
       startIndex,
       stdout,
     });
-    depth = braceState.depth;
-    startIndex = braceState.startIndex;
+    ({ depth, startIndex } = braceState);
   }
 
   return candidates;
 };
 
-const readExpectedInteropScenarios = (value: unknown[]): string[] => {
-  return value.filter((entry): entry is string => typeof entry === "string");
-};
+const readExpectedInteropScenarios = (value: unknown[]): string[] =>
+  value.filter((entry): entry is string => typeof entry === "string");
 
 const readInteropScenarioEntry = (
   value: unknown
@@ -2066,7 +2149,7 @@ const readInteropScenarioEntry = (
     !isRecord(value.checks) ||
     !isRecord(value.telemetry) ||
     !Array.isArray(value.telemetry.observedKeys) ||
-    !isRecord(value.telemetry.attributes) ||
+    !isInteropTelemetryAttributes(value.telemetry.attributes) ||
     typeof value.telemetry.schemaUrl !== "string"
   ) {
     return undefined;
@@ -2082,10 +2165,7 @@ const readInteropScenarioEntry = (
     checks,
     scenario: value.scenario,
     telemetry: {
-      attributes: value.telemetry.attributes as Record<
-        string,
-        string | string[] | null
-      >,
+      attributes: value.telemetry.attributes,
       observedKeys: value.telemetry.observedKeys.filter(
         (entry): entry is string => typeof entry === "string"
       ),
@@ -2142,7 +2222,7 @@ const parseInteropScenarioReportCandidate = (
 const readInteropScenarioReport = (
   stdout: string
 ): InteropScenarioReport | undefined => {
-  for (const candidate of extractJsonObjectCandidates(stdout).reverse()) {
+  for (const candidate of extractJsonObjectCandidates(stdout).toReversed()) {
     const report = parseInteropScenarioReportCandidate(candidate);
 
     if (report !== undefined) {
@@ -2251,7 +2331,7 @@ const readInteropTelemetrySummary = (
       return undefined;
     }
 
-    schemaUrl = scenarioReport.schemaUrl;
+    ({ schemaUrl } = scenarioReport);
 
     for (const key of scenarioReport.observedKeys) {
       observedKeys.add(key);
@@ -2269,7 +2349,7 @@ const readInteropTelemetrySummary = (
   }
 
   return {
-    observedKeys: [...observedKeys].sort(),
+    observedKeys: [...observedKeys].toSorted(),
     scenarios,
     schemaUrl,
   };
@@ -2285,7 +2365,7 @@ const createInteropCheckResults = (
   );
 
   return suiteManifest.checks
-    .filter((check) => check.interopPairs?.includes(pairId))
+    .filter((check) => check.interopPairs?.includes(pairId) === true)
     .map((check) => {
       // One named interop check may intentionally aggregate more than one
       // scenario report. We keep that fan-in explicit here so the checked-in
@@ -2364,10 +2444,13 @@ const runInteropTarget = async (
   const evidenceFileName = `${suiteManifest.suiteId}.${runner.pairId}.json`;
   // See runConformanceTarget's evidenceFilePath comment: written under the
   // scratch write directory, recorded against the final EVIDENCE_DIRECTORY.
-  const evidenceFilePath = resolve(evidenceWriteDirectory, evidenceFileName);
-  const relativeEvidencePath = relative(
+  const evidenceFilePath = path.resolve(
+    evidenceWriteDirectory,
+    evidenceFileName
+  );
+  const relativeEvidencePath = path.relative(
     REPO_ROOT,
-    resolve(EVIDENCE_DIRECTORY, evidenceFileName)
+    path.resolve(EVIDENCE_DIRECTORY, evidenceFileName)
   );
   const fallbackCheckResults = createFallbackCheckResults(
     suiteManifest,
@@ -2426,7 +2509,6 @@ const runInteropTarget = async (
       status = "fail";
       reportStatus = "unexpected_fail";
       evidence.status = status;
-      evidence.reportStatus = reportStatus;
     } else {
       evidence.checkResults = createInteropCheckResults(
         suiteManifest,
@@ -2441,13 +2523,13 @@ const runInteropTarget = async (
         status = "fail";
         reportStatus = "unexpected_fail";
         evidence.status = status;
-        evidence.reportStatus = reportStatus;
       } else {
         reportStatus = "full_pass";
-        evidence.reportStatus = reportStatus;
       }
     }
   }
+
+  evidence.reportStatus = reportStatus;
 
   await writeFile(evidenceFilePath, formatEvidenceJson(evidence));
 
@@ -2475,7 +2557,7 @@ const runAllRunners = async (
   const interop: CompatibilityInteropResult[] = [];
   let hasFailure = false;
 
-  for (const runner of CONFORMANCE_RUNNERS) {
+  await forEachSequential(CONFORMANCE_RUNNERS, async (runner) => {
     const suiteManifest =
       runner.manifestPath === undefined
         ? undefined
@@ -2519,9 +2601,9 @@ const runAllRunners = async (
     if (result.matrixResult.status === "fail") {
       hasFailure = true;
     }
-  }
+  });
 
-  for (const runner of INTEROP_RUNNERS) {
+  await forEachSequential(INTEROP_RUNNERS, async (runner) => {
     const suiteManifest = await readSuiteManifest(runner.manifestPath);
     const suiteKey = createSuiteKey(
       suiteManifest.boundary,
@@ -2544,7 +2626,7 @@ const runAllRunners = async (
     if (result.matrixResult.status === "fail") {
       hasFailure = true;
     }
-  }
+  });
 
   return { hasFailure, implementations, interop, suites };
 };
@@ -2645,12 +2727,12 @@ const main = async (): Promise<void> => {
   // packets and plans.
   const expectedCapabilitiesByRunner = new Map<string, ReadonlySet<string>>();
 
-  for (const runner of CONFORMANCE_RUNNERS) {
+  await forEachSequential(CONFORMANCE_RUNNERS, async (runner) => {
     expectedCapabilitiesByRunner.set(
       createConformanceRunnerKey(runner),
       await computeExpectedCapabilitiesFromTopology(runner.adapterManifestPath)
     );
-  }
+  });
 
   let runnerResults: RunnerResults;
   try {
