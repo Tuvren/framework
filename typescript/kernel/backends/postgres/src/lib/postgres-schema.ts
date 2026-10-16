@@ -186,14 +186,14 @@ export const RELATIONAL_REQUIRED_COLUMNS = [
 ] as const;
 
 /** Produces the canonical structural signature used by the column roster. */
-export function relationalColumnSignature(
+export const relationalColumnSignature = (
   tableName: string,
   columnName: string,
   dataType: string,
   nullable: boolean
-): string {
+): string => {
   return `${tableName}.${columnName}:${dataType}:${nullable ? "nullable" : "required"}`;
-}
+};
 
 /**
  * Structural signatures of every foreign key created by the relational DDL.
@@ -230,14 +230,14 @@ export const RELATIONAL_REQUIRED_FOREIGN_KEYS = [
 ] as const;
 
 /** Produces the canonical structural signature used by the FK roster. */
-export function relationalForeignKeySignature(
+export const relationalForeignKeySignature = (
   sourceTable: string,
   sourceColumns: readonly string[],
   targetTable: string,
   targetColumns: readonly string[]
-): string {
+): string => {
   return `${sourceTable}(${sourceColumns.join(",")})->${targetTable}(${targetColumns.join(",")})`;
-}
+};
 
 /** Legacy blob table retired by the open-time migrator (issue #110). */
 export const LEGACY_SNAPSHOTS_TABLE = "backend_postgres_snapshots";
@@ -252,11 +252,11 @@ export type RelationalTableName =
   | typeof MIGRATIONS_TABLE;
 
 /** Lists the directory's `.sql` migration files in application (name) order. */
-export function listMigrationFiles(migrationDirectory: string): string[] {
+export const listMigrationFiles = (migrationDirectory: string): string[] => {
   return readdirSync(migrationDirectory)
     .filter((fileName) => fileName.endsWith(".sql"))
     .sort((left, right) => left.localeCompare(right));
-}
+};
 
 /**
  * Locates the package's migrations directory across layouts (built `dist/`,
@@ -267,9 +267,9 @@ export function listMigrationFiles(migrationDirectory: string): string[] {
  *   `postgres_backend_missing_migrations_directory` when no candidate
  *   qualifies.
  */
-export function resolveMigrationDirectory(
+export const resolveMigrationDirectory = (
   persistenceError: PostgresPersistenceErrorFactory
-): string {
+): string => {
   const candidates = [
     fileURLToPath(new URL("postgres-migrations", import.meta.url)),
     fileURLToPath(new URL("migrations", import.meta.url)),
@@ -293,12 +293,12 @@ export function resolveMigrationDirectory(
     "postgres backend could not locate its migrations directory",
     "postgres_backend_missing_migrations_directory"
   );
-}
+};
 
 /** Reads a migration file's SQL body from the resolved migrations directory. */
-export function readMigrationSql(
+export const readMigrationSql = (
   migrationDirectory: string,
   migrationName: string
-): string {
+): string => {
   return readFileSync(`${migrationDirectory}/${migrationName}`, "utf-8");
-}
+};

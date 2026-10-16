@@ -51,11 +51,11 @@ interface LegacySnapshotBlobRow {
  * all-or-nothing: any failure rolls back the enclosing schema-init
  * transaction, leaving the legacy table intact for the next attempt.
  */
-export async function explodeLegacyBlobSnapshots(
+export const explodeLegacyBlobSnapshots = async (
   tx: Tx,
   schemaName: string,
   phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER
-): Promise<void> {
+): Promise<void> => {
   const snapshotsTable = qualifyIdentifier(schemaName, LEGACY_SNAPSHOTS_TABLE);
   const endMigration = phaseObserver.startPhase("blob-migration");
 
@@ -158,4 +158,4 @@ export async function explodeLegacyBlobSnapshots(
   } finally {
     endMigration();
   }
-}
+};
