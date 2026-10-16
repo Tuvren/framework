@@ -86,14 +86,8 @@ describe("@tuvren/backend-postgres pool contention (KRT-BK011)", () => {
     );
 
     const sequence: string[] = [];
-    let markXHoldingRowLock: () => void = () => undefined;
-    const xHoldingRowLock = new Promise<void>((resolve) => {
-      markXHoldingRowLock = resolve;
-    });
-    let releaseXHold: () => void = () => undefined;
-    const xHold = new Promise<void>((resolve) => {
-      releaseXHold = resolve;
-    });
+    const xHoldingRowLock = Promise.withResolvers<null>();
+    const xHold = Promise.withResolvers<null>();
 
     try {
       // By the time `work` starts executing, `PostgresBackend.transact` has
@@ -101,13 +95,13 @@ describe("@tuvren/backend-postgres pool contention (KRT-BK011)", () => {
       // the lock is genuinely held the instant this callback body starts.
       const xPromise = backendX.transact(async (tx) => {
         sequence.push("x-holding-row-lock");
-        markXHoldingRowLock();
+        xHoldingRowLock.resolve(null);
         await tx.objects.put(recordX);
-        await xHold;
+        await xHold.promise;
         sequence.push("x-about-to-commit");
       });
 
-      await xHoldingRowLock;
+      await xHoldingRowLock.promise;
 
       const yPromise = backendY.transact(async (tx) => {
         sequence.push("y-work-ran-after-x-committed");
@@ -133,7 +127,7 @@ describe("@tuvren/backend-postgres pool contention (KRT-BK011)", () => {
         // Always release X's held-open transaction, even if the assertion
         // above throws -- otherwise X's FOR UPDATE lock stays open and
         // afterAll's DROP SCHEMA ... CASCADE teardown hangs on it.
-        releaseXHold();
+        xHold.resolve(null);
       }
 
       await xPromise;
@@ -168,30 +162,37 @@ describe("@tuvren/backend-postgres pool contention (KRT-BK011)", () => {
     const backend = createPostgresBackend(options);
 
     const records = await Promise.all(
-      [1, 2, 3, 4, 5].map((seed) =>
-        createStoredObjectRecord(new Uint8Array([seed, seed, seed]), seed)
+      [1, 2, 3, 4, 5].map(
+        async (seed) =>
+          await createStoredObjectRecord(
+            new Uint8Array([seed, seed, seed]),
+            seed
+          )
       )
     );
 
     const hashes = await Promise.all(
-      records.map((record) =>
-        backend.transact(async (tx) => {
-          await tx.objects.put(record);
-          return record.hash;
-        })
+      records.map(
+        async (record) =>
+          await backend.transact(async (tx) => {
+            await tx.objects.put(record);
+            return record.hash;
+          })
       )
     );
 
-    expect([...hashes].sort()).toEqual(
-      records.map((record) => record.hash).sort()
+    expect([...hashes].toSorted()).toEqual(
+      records.map((record) => record.hash).toSorted()
     );
 
     await backend.transact(async (tx) => {
+      /* oxlint-disable no-await-in-loop -- Verify records serially through the transaction-bound repository and preserve assertion order. */
       for (const record of records) {
         expect(await tx.objects.has(record.hash)).toBe(true);
         const stored = await tx.objects.get(record.hash);
         expect(stored?.hash).toBe(record.hash);
       }
+      /* oxlint-enable no-await-in-loop */
     });
 
     await closeBackend(backend);
@@ -220,14 +221,8 @@ describe("@tuvren/backend-postgres pool contention (KRT-BK011)", () => {
       1
     );
 
-    let markAHoldingLock: () => void = () => undefined;
-    const aHoldingLock = new Promise<void>((resolve) => {
-      markAHoldingLock = resolve;
-    });
-    let releaseAHold: () => void = () => undefined;
-    const aHold = new Promise<void>((resolve) => {
-      releaseAHold = resolve;
-    });
+    const aHoldingLock = Promise.withResolvers<null>();
+    const aHold = Promise.withResolvers<null>();
 
     try {
       // By the time `work` starts executing, backendA's `transact` has
@@ -235,11 +230,11 @@ describe("@tuvren/backend-postgres pool contention (KRT-BK011)", () => {
       // lock is genuinely held for the whole `aHold` wait below.
       const aPromise = backendA.transact(async (tx) => {
         await tx.objects.put(recordA);
-        markAHoldingLock();
-        await aHold;
+        aHoldingLock.resolve(null);
+        await aHold.promise;
       });
 
-      await aHoldingLock;
+      await aHoldingLock.promise;
 
       const startedAt = Date.now();
       let caughtError: unknown;
@@ -255,10 +250,13 @@ describe("@tuvren/backend-postgres pool contention (KRT-BK011)", () => {
       // Release the holder and let it finish committing before asserting,
       // so a failed assertion below cannot leave backendA's transaction
       // open and hang the afterAll teardown's DROP SCHEMA.
-      releaseAHold();
+      aHold.resolve(null);
       await aPromise;
 
       expect(caughtError).toBeInstanceOf(Error);
+      if (!(caughtError instanceof Error)) {
+        throw new TypeError("expected a normalized lock timeout error");
+      }
 
       // Bounded: the wait must actually reach close to the 5000ms
       // lock_timeout (some scheduling slack allowed) and must not degrade
@@ -266,17 +264,14 @@ describe("@tuvren/backend-postgres pool contention (KRT-BK011)", () => {
       expect(elapsedMs).toBeGreaterThanOrEqual(4500);
       expect(elapsedMs).toBeLessThan(20_000);
 
-      const normalizedError = caughtError as Error & {
-        code?: string;
-        details?: unknown;
-      };
-      expect(normalizedError.code).toBe("postgres_backend_engine_error");
-      const details = normalizedError.details as
-        | { postgresCode?: string }
-        | undefined;
+      expect(Reflect.get(caughtError, "code")).toBe(
+        "postgres_backend_engine_error"
+      );
+      const details: unknown =
+        "details" in caughtError ? caughtError.details : undefined;
       // 55P03 is PostgreSQL's `lock_not_available` SQLSTATE, raised when a
       // statement bound by `lock_timeout` cannot acquire its lock in time.
-      expect(details?.postgresCode).toBe("55P03");
+      expect(details).toMatchObject({ postgresCode: "55P03" });
 
       // The holder's write is durable: the bounded wait on the second
       // instance did not disturb or roll back the first instance's commit.

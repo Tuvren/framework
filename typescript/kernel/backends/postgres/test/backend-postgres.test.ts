@@ -127,12 +127,18 @@ describe("@tuvren/backend-postgres", () => {
       readonly sql: Sql;
     }
 
+    // The retry regression deliberately patches the backend's private SQL
+    // driver seam; the runtime contract does not expose it.
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- This test alone reaches the private SQL driver to inject one bootstrap failure. */
     const backend = createPostgresBackend(
       createPostgresTestBackendOptions()
     ) as TestablePostgresBackend;
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
     const originalBegin = backend.sql.begin.bind(backend.sql);
     let attempts = 0;
 
+    // Preserve the driver's overload set after replacing only its implementation.
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- Preserve the driver's overload set after replacing only its implementation. */
     backend.sql.begin = (async (...args: Parameters<Sql["begin"]>) => {
       attempts += 1;
 
@@ -142,6 +148,7 @@ describe("@tuvren/backend-postgres", () => {
 
       return await originalBegin(...args);
     }) as Sql["begin"];
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
 
     try {
       expect(await backend.health()).toEqual({
@@ -228,9 +235,9 @@ describe("@tuvren/backend-postgres validateCommittedState turn node lineage inva
     state.threads.set(thread.threadId, thread);
     state.branches.set(branch.branchId, branch);
 
-    expect(() => assertCommittedState(state)).toThrow(
-      "must not traverse a cyclic turn node lineage"
-    );
+    expect(() => {
+      assertCommittedState(state);
+    }).toThrow("must not traverse a cyclic turn node lineage");
   });
 
   test("rejects a branch head whose turn node lineage reaches a different thread's root", async () => {
@@ -290,8 +297,8 @@ describe("@tuvren/backend-postgres validateCommittedState turn node lineage inva
     state.threads.set(thread.threadId, thread);
     state.branches.set(branch.branchId, branch);
 
-    expect(() => assertCommittedState(state)).toThrow(
-      "must belong to the referenced thread by lineage walk"
-    );
+    expect(() => {
+      assertCommittedState(state);
+    }).toThrow("must belong to the referenced thread by lineage walk");
   });
 });

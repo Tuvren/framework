@@ -26,6 +26,21 @@ const firstModules = [
 
 const firstModule = process.env.TUVREN_BACKEND_POSTGRES_FIRST_MODULE;
 
+interface FaultInjectionControl {
+  setFaultHooks: (...hooks: never[]) => unknown;
+  supportsFaultPoint: (faultPoint: string) => boolean;
+}
+
+const isFaultInjectionControl = (
+  value: unknown
+): value is FaultInjectionControl =>
+  typeof value === "object" &&
+  value !== null &&
+  "setFaultHooks" in value &&
+  typeof value.setFaultHooks === "function" &&
+  "supportsFaultPoint" in value &&
+  typeof value.supportsFaultPoint === "function";
+
 if (firstModule === undefined) {
   for (const modulePath of firstModules) {
     test(`preserves PostgreSQL factory behavior when ${modulePath} initializes first`, () => {
@@ -101,21 +116,14 @@ if (firstModule === undefined) {
       expect(symbols.map((symbol) => symbol.description)).toEqual([
         "tuvren.kernel.testkit.fault-injection-control",
       ]);
-      const faultSymbol = symbols[0];
+      const [faultSymbol] = symbols;
       if (faultSymbol === undefined) {
         throw new TypeError(
           "expected the eager fault-injection control symbol"
         );
       }
       const faultControl: unknown = Reflect.get(backend, faultSymbol);
-      if (
-        typeof faultControl !== "object" ||
-        faultControl === null ||
-        !("setFaultHooks" in faultControl) ||
-        typeof faultControl.setFaultHooks !== "function" ||
-        !("supportsFaultPoint" in faultControl) ||
-        typeof faultControl.supportsFaultPoint !== "function"
-      ) {
+      if (!isFaultInjectionControl(faultControl)) {
         throw new TypeError(
           "expected the eager fault-injection control surface"
         );

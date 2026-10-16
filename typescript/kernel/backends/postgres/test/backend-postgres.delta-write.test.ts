@@ -78,11 +78,14 @@ const seedObjects = async (
   batchSize: number
 ): Promise<void> => {
   const records = await Promise.all(
-    Array.from({ length: count }, (_, index) =>
-      createStoredObjectRecord(objectBytesForIndex(index), 1)
+    Array.from(
+      { length: count },
+      async (_, index) =>
+        await createStoredObjectRecord(objectBytesForIndex(index), 1)
     )
   );
 
+  /* oxlint-disable no-await-in-loop -- Seed each bounded transaction and its records serially to preserve transaction order and the first database failure. */
   for (let start = 0; start < records.length; start += batchSize) {
     const batch = records.slice(start, start + batchSize);
     await backend.transact(async (tx) => {
@@ -91,6 +94,7 @@ const seedObjects = async (
       }
     });
   }
+  /* oxlint-enable no-await-in-loop */
 };
 
 // Reads the `xmin` (transaction id) that wrote `hash`'s row in `objects`.
@@ -105,7 +109,7 @@ const readObjectRowTransactionId = async (
     `SELECT xmin::text AS tx FROM ${objectsTable} WHERE scope = $1 AND hash = $2`,
     [scope, hash]
   );
-  const row = rows[0];
+  const [row] = rows;
 
   if (row === undefined) {
     throw new Error(`expected an objects row for hash ${hash}`);
@@ -126,6 +130,7 @@ const countRowsWrittenByTransaction = async (
 ): Promise<Record<string, number>> => {
   const countsByTable: Record<string, number> = {};
 
+  /* oxlint-disable no-await-in-loop -- Query the shared table roster serially so counts and the first database failure remain deterministic. */
   for (const table of RELATIONAL_REQUIRED_TABLES) {
     const qualified = `${quoteIdentifier(schemaName)}.${quoteIdentifier(table)}`;
     const rows = await admin.unsafe<{ n: string }[]>(
@@ -134,13 +139,13 @@ const countRowsWrittenByTransaction = async (
     );
     countsByTable[table] = Number(rows[0]?.n ?? "0");
   }
+  /* oxlint-enable no-await-in-loop */
 
   return countsByTable;
 };
 
-const totalRows = (countsByTable: Record<string, number>): number => {
-  return Object.values(countsByTable).reduce((sum, count) => sum + count, 0);
-};
+const totalRows = (countsByTable: Record<string, number>): number =>
+  Object.values(countsByTable).reduce((sum, count) => sum + count, 0);
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();

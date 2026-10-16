@@ -90,9 +90,11 @@ const createMonotonicClock = (start: number): (() => number) => {
 
 const seededHashes = async (count: number, seed: string): Promise<string[]> => {
   const hashes: string[] = [];
+  /* oxlint-disable no-await-in-loop -- Derive fixture hashes serially to retain deterministic input and failure order. */
   for (let index = 0; index < count; index += 1) {
     hashes.push(await hashKernelRecord(`${seed}-${index}`));
   }
+  /* oxlint-enable no-await-in-loop */
   return hashes;
 };
 
@@ -117,20 +119,16 @@ const countNestedValues = <K, V>(outer: Map<K, Map<string, V>>): number => {
 // `encodeSnapshot`'s exact field mapping but strips that marker via a plain
 // `Uint8Array.from` copy first, so it can build a legacy snapshot blob
 // spanning every record family for this test's seed data.
-const plainBytes = (bytes: Uint8Array): Uint8Array => {
-  return Uint8Array.from(bytes);
-};
+const plainBytes = (bytes: Uint8Array): Uint8Array => Uint8Array.from(bytes);
 
-const toPlainStoredRun = (record: StoredRun): StoredRun => {
-  return {
-    ...record,
-    createdTurnNodesCbor: plainBytes(record.createdTurnNodesCbor),
-    stepSequenceCbor: plainBytes(record.stepSequenceCbor),
-    ...(record.pendingSignalsCbor === undefined
-      ? {}
-      : { pendingSignalsCbor: plainBytes(record.pendingSignalsCbor) }),
-  };
-};
+const toPlainStoredRun = (record: StoredRun): StoredRun => ({
+  ...record,
+  createdTurnNodesCbor: plainBytes(record.createdTurnNodesCbor),
+  stepSequenceCbor: plainBytes(record.stepSequenceCbor),
+  ...(record.pendingSignalsCbor === undefined
+    ? {}
+    : { pendingSignalsCbor: plainBytes(record.pendingSignalsCbor) }),
+});
 
 const toPlainStoredStagedResult = (
   record: StoredStagedResult
@@ -162,32 +160,34 @@ const toPlainStoredTurnTreePath = (
   };
 };
 
-const toPlainStoredTurnNode = (record: StoredTurnNode): StoredTurnNode => {
-  return {
-    ...record,
-    consumedStagedResultsCbor: plainBytes(record.consumedStagedResultsCbor),
-  };
-};
+const toPlainStoredTurnNode = (record: StoredTurnNode): StoredTurnNode => ({
+  ...record,
+  consumedStagedResultsCbor: plainBytes(record.consumedStagedResultsCbor),
+});
 
-const toPlainStoredSchema = (record: StoredSchema): StoredSchema => {
-  return { ...record, schemaCbor: plainBytes(record.schemaCbor) };
-};
+const toPlainStoredSchema = (record: StoredSchema): StoredSchema => ({
+  ...record,
+  schemaCbor: plainBytes(record.schemaCbor),
+});
 
-const toPlainStoredTurnTree = (record: StoredTurnTree): StoredTurnTree => {
-  return { ...record, manifestCbor: plainBytes(record.manifestCbor) };
-};
+const toPlainStoredTurnTree = (record: StoredTurnTree): StoredTurnTree => ({
+  ...record,
+  manifestCbor: plainBytes(record.manifestCbor),
+});
 
 const toPlainStoredOrderedPathChunk = (
   record: StoredOrderedPathChunk
-): StoredOrderedPathChunk => {
-  return { ...record, itemsCbor: plainBytes(record.itemsCbor) };
-};
+): StoredOrderedPathChunk => ({
+  ...record,
+  itemsCbor: plainBytes(record.itemsCbor),
+});
 
 const toPlainStoredObserveAnnotation = (
   record: StoredObserveAnnotation
-): StoredObserveAnnotation => {
-  return { ...record, annotationCbor: plainBytes(record.annotationCbor) };
-};
+): StoredObserveAnnotation => ({
+  ...record,
+  annotationCbor: plainBytes(record.annotationCbor),
+});
 
 const encodeLegacySnapshotForTest = (state: BackendState): Uint8Array => {
   const snapshot = {
@@ -220,7 +220,10 @@ const encodeLegacySnapshotForTest = (state: BackendState): Uint8Array => {
     version: CURRENT_SNAPSHOT_VERSION,
   } satisfies Record<string, unknown>;
 
+  // The projection above contains only the protocol's recursively validated
+  // deterministic record values.
   return encodeDeterministicKernelRecord(
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     snapshot as unknown as Parameters<typeof encodeDeterministicKernelRecord>[0]
   );
 };
@@ -279,6 +282,7 @@ const seedLegacySnapshotSchema = async (
        VALUES ('0001_initial_schema.sql', $1), ('0002_scope_partition.sql', $1)`,
       [Date.now()]
     );
+    /* oxlint-disable no-await-in-loop -- Seed legacy rows serially to preserve insertion order and the first database failure. */
     for (const row of rows) {
       await seedAdmin.unsafe(
         `INSERT INTO ${snapshotsTable} (
@@ -293,6 +297,7 @@ const seedLegacySnapshotSchema = async (
         ]
       );
     }
+    /* oxlint-enable no-await-in-loop */
   } finally {
     await seedAdmin.end({ timeout: 0 });
   }
@@ -307,6 +312,9 @@ afterAll(async () => {
 });
 
 describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR-0067)", () => {
+  // Keep the complete end-to-end fixture and its ordered assertions together;
+  // splitting the scenario would obscure the one migrated state it validates.
+  // oxlint-disable-next-line complexity
   test("migrates a legacy blob snapshot spanning every record family, including duplicate observe-annotation identity and chunked ordered paths, without data loss", async () => {
     // --- Build a realistic multi-family scope through a real kernel over a
     // real backend, touching every persisted record family. ---
@@ -348,6 +356,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
     // (previousTurnNodeHash links), giving a parent chain of lineage depth 3.
     let lastTurnNodeHash = thread.rootTurnNodeHash;
     const stepIds = ["step_1", "step_2", "step_3"];
+    /* oxlint-disable no-await-in-loop -- Each checkpoint depends on the preceding durable turn-node lineage. */
     for (const [index, stepId] of stepIds.entries()) {
       const eventHash = await kernel.store.put(
         new Uint8Array([10 + index, 20 + index, 30 + index]),
@@ -379,6 +388,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
       }
       lastTurnNodeHash = completed.turnNodeHash;
     }
+    /* oxlint-enable no-await-in-loop */
 
     // staged_results across all three statuses, including an interrupted one
     // carrying a resume payload.
@@ -420,6 +430,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
       CHUNK_THRESHOLD + 2,
       "migration-chunk"
     );
+    /* oxlint-disable no-await-in-loop -- Each tree incorporation depends on the preceding tree hash. */
     for (const [index, hash] of chunkHashes.entries()) {
       chunkedTreeHash = await kernel.tree.incorporate(chunkedTreeHash, [
         {
@@ -431,8 +442,9 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
         },
       ]);
     }
-    const chunkedPath = await sourceBackend.transact(async (tx) =>
-      tx.turnTreePaths.get(chunkedTreeHash, "messages")
+    /* oxlint-enable no-await-in-loop */
+    const chunkedPath = await sourceBackend.transact(
+      async (tx) => await tx.turnTreePaths.get(chunkedTreeHash, "messages")
     );
     if (
       chunkedPath?.collectionKind !== "ordered" ||
@@ -552,14 +564,16 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
         ["turn_tree_paths", countNestedValues(state.turnTreePaths)],
       ];
 
+      /* oxlint-disable no-await-in-loop -- Compare table counts serially so assertion and database failure order stays deterministic. */
       for (const [table, expectedCount] of simpleFamilyCounts) {
         const qualifiedTable = qualifyIdentifier(targetSchemaName, table);
         const rows = await verify.unsafe<{ count: number }[]>(
           `SELECT COUNT(*)::int AS count FROM ${qualifiedTable} WHERE scope = $1`,
           [DEFAULT_SCOPE]
         );
-        expect(Number(rows[0]?.count ?? -1)).toBe(expectedCount);
+        expect(rows[0]?.count ?? -1).toBe(expectedCount);
       }
+      /* oxlint-enable no-await-in-loop */
 
       // observe_annotations: total count, plus the duplicate-identity pair
       // specifically (distinct record_keys, no NUL byte, matching content).
@@ -628,9 +642,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
       expect(runRow[0]?.status).toBe(expectedRun.status);
       expect(runRow[0]?.branch_id).toBe(expectedRun.branchId);
       expect(runRow[0]?.schema_id).toBe(expectedRun.schemaId);
-      expect(Number(runRow[0]?.current_step_index)).toBe(
-        expectedRun.currentStepIndex
-      );
+      expect(runRow[0]?.current_step_index).toBe(expectedRun.currentStepIndex);
 
       const threadRow = await verify.unsafe<
         { root_turn_node_hash: string; schema_id: string }[]
@@ -709,7 +721,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
         {
           byte_length: number;
           bytes: Uint8Array;
-          created_at_ms: number;
+          created_at_ms: string;
           media_type: string;
         }[]
       >(
@@ -719,7 +731,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
         [DEFAULT_SCOPE, sampleObjectHash]
       );
       expect(objectRow[0]?.media_type).toBe(sampleObject.mediaType);
-      expect(Number(objectRow[0]?.byte_length)).toBe(sampleObject.byteLength);
+      expect(objectRow[0]?.byte_length).toBe(sampleObject.byteLength);
       expect(Number(objectRow[0]?.created_at_ms)).toBe(
         sampleObject.createdAtMs
       );
@@ -743,7 +755,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
           WHERE scope = $1 AND chunk_hash = $2`,
         [DEFAULT_SCOPE, sampleChunkHash]
       );
-      expect(Number(chunkRow[0]?.item_count)).toBe(sampleChunk.itemCount);
+      expect(chunkRow[0]?.item_count).toBe(sampleChunk.itemCount);
       expect(
         areBytesEqual(
           new Uint8Array(chunkRow[0]?.items_cbor ?? []),
@@ -760,9 +772,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
         [DEFAULT_SCOPE, chunkedTreeHash]
       );
       expect(chunkedPathRow[0]?.ordered_encoding).toBe("chunked");
-      expect(Number(chunkedPathRow[0]?.ordered_count)).toBe(
-        CHUNK_THRESHOLD + 2
-      );
+      expect(chunkedPathRow[0]?.ordered_count).toBe(CHUNK_THRESHOLD + 2);
 
       const stagedRow = await verify.unsafe<
         { interrupt_payload_cbor: Uint8Array | null; status: string }[]
@@ -903,6 +913,7 @@ describe("@tuvren/backend-postgres blob->row migration multi-scope coverage", ()
           ["schemas", stateAlpha.schemas.size, stateBeta.schemas.size],
         ];
 
+        /* oxlint-disable no-await-in-loop -- Compare both scopes table-by-table to preserve deterministic leak diagnostics. */
         for (const [
           table,
           expectedAlphaCount,
@@ -913,14 +924,15 @@ describe("@tuvren/backend-postgres blob->row migration multi-scope coverage", ()
             `SELECT COUNT(*)::int AS count FROM ${qualifiedTable} WHERE scope = $1`,
             [scopeAlpha]
           );
-          expect(Number(alphaRows[0]?.count ?? -1)).toBe(expectedAlphaCount);
+          expect(alphaRows[0]?.count ?? -1).toBe(expectedAlphaCount);
 
           const betaRows = await verify.unsafe<{ count: number }[]>(
             `SELECT COUNT(*)::int AS count FROM ${qualifiedTable} WHERE scope = $1`,
             [scopeBeta]
           );
-          expect(Number(betaRows[0]?.count ?? -1)).toBe(expectedBetaCount);
+          expect(betaRows[0]?.count ?? -1).toBe(expectedBetaCount);
         }
+        /* oxlint-enable no-await-in-loop */
 
         // Distinguishing record per scope, plus an explicit cross-scope
         // leakage check: scope alpha's rows carry scope alpha's thread id,
@@ -947,14 +959,14 @@ describe("@tuvren/backend-postgres blob->row migration multi-scope coverage", ()
             WHERE scope = $1 AND thread_id = $2`,
           [scopeAlpha, "thread_multi_beta"]
         );
-        expect(Number(crossLeakAlpha[0]?.count ?? -1)).toBe(0);
+        expect(crossLeakAlpha[0]?.count ?? -1).toBe(0);
 
         const crossLeakBeta = await verify.unsafe<{ count: number }[]>(
           `SELECT COUNT(*)::int AS count FROM ${threadsTable}
             WHERE scope = $1 AND thread_id = $2`,
           [scopeBeta, "thread_multi_alpha"]
         );
-        expect(Number(crossLeakBeta[0]?.count ?? -1)).toBe(0);
+        expect(crossLeakBeta[0]?.count ?? -1).toBe(0);
       } finally {
         await verify.end({ timeout: 0 });
       }
@@ -984,20 +996,21 @@ describe("@tuvren/backend-postgres blob->row migration typed diagnosis", () => {
     try {
       let caughtError: unknown;
       try {
-        await migrated.transact(async () => undefined);
+        await migrated.transact(async () => {
+          /* trigger initialization only */
+        });
       } catch (error: unknown) {
         caughtError = error;
       }
 
       expect(caughtError).toBeInstanceOf(Error);
-      const normalizedError = caughtError as Error & {
-        code?: string;
-        details?: unknown;
-      };
-      expect(normalizedError.code).toBe(
+      if (!(caughtError instanceof Error)) {
+        throw new TypeError("expected an unsupported-version migration error");
+      }
+      expect(Reflect.get(caughtError, "code")).toBe(
         "postgres_backend_blob_migration_version_unsupported"
       );
-      expect(normalizedError.details).toEqual({
+      expect(Reflect.get(caughtError, "details")).toEqual({
         actualVersion: unsupportedVersion,
         expectedVersion: CURRENT_SNAPSHOT_VERSION,
         scope,
@@ -1023,25 +1036,25 @@ describe("@tuvren/backend-postgres blob->row migration typed diagnosis", () => {
     try {
       let caughtError: unknown;
       try {
-        await migrated.transact(async () => undefined);
+        await migrated.transact(async () => {
+          /* trigger initialization only */
+        });
       } catch (error: unknown) {
         caughtError = error;
       }
 
       expect(caughtError).toBeInstanceOf(Error);
-      const normalizedError = caughtError as Error & {
-        code?: string;
-        details?: unknown;
-        cause?: unknown;
-      };
-      expect(normalizedError.code).toBe(
+      if (!(caughtError instanceof Error)) {
+        throw new TypeError("expected a migration decode error");
+      }
+      expect(Reflect.get(caughtError, "code")).toBe(
         "postgres_backend_blob_migration_decode_failed"
       );
-      expect(normalizedError.details).toEqual({
+      expect(Reflect.get(caughtError, "details")).toEqual({
         schemaVersion: CURRENT_SNAPSHOT_VERSION,
         scope,
       });
-      expect(normalizedError.cause).toBeDefined();
+      expect(Reflect.get(caughtError, "cause")).toBeDefined();
     } finally {
       await migrated.destroy({ dropSchema: true });
     }
@@ -1070,20 +1083,21 @@ describe("@tuvren/backend-postgres blob->row migration typed diagnosis", () => {
     try {
       let caughtError: unknown;
       try {
-        await migrated.transact(async () => undefined);
+        await migrated.transact(async () => {
+          /* trigger initialization only */
+        });
       } catch (error: unknown) {
         caughtError = error;
       }
 
       expect(caughtError).toBeInstanceOf(Error);
-      const normalizedError = caughtError as Error & {
-        code?: string;
-        details?: unknown;
-      };
-      expect(normalizedError.code).toBe(
+      if (!(caughtError instanceof Error)) {
+        throw new TypeError("expected an ambiguous-row migration error");
+      }
+      expect(Reflect.get(caughtError, "code")).toBe(
         "postgres_backend_blob_migration_ambiguous_rows"
       );
-      expect(normalizedError.details).toEqual({
+      expect(Reflect.get(caughtError, "details")).toEqual({
         rowCount: 2,
         scope,
       });
@@ -1130,21 +1144,22 @@ describe("@tuvren/backend-postgres blob->row migration typed diagnosis", () => {
     try {
       let caughtError: unknown;
       try {
-        await migrated.transact(async () => undefined);
+        await migrated.transact(async () => {
+          /* trigger initialization only */
+        });
       } catch (error: unknown) {
         caughtError = error;
       }
 
       expect(caughtError).toBeInstanceOf(Error);
-      const normalizedError = caughtError as Error & {
-        code?: string;
-        details?: unknown;
-      };
-      expect(normalizedError.code).toBe("postgres_backend_unstorable_text");
-      expect(normalizedError.code).not.toBe(
-        "postgres_backend_blob_migration_insert_failed"
-      );
-      expect(normalizedError.details).toEqual({
+      if (!(caughtError instanceof Error)) {
+        throw new TypeError("expected an unstorable-text migration error");
+      }
+      const code: unknown =
+        "code" in caughtError ? caughtError.code : undefined;
+      expect(code).toBe("postgres_backend_unstorable_text");
+      expect(code).not.toBe("postgres_backend_blob_migration_insert_failed");
+      expect(Reflect.get(caughtError, "details")).toEqual({
         chunkOffset: 0,
         chunkRows: 1,
         table: qualifyIdentifier(targetSchemaName, "objects"),
@@ -1210,8 +1225,8 @@ describe("@tuvren/backend-postgres observe annotation duplicate identity (live w
         await tx.observeAnnotations.set(record);
       });
 
-      const readBack = await backend.transact(async (tx) =>
-        tx.observeAnnotations.listByRun(runId)
+      const readBack = await backend.transact(
+        async (tx) => await tx.observeAnnotations.listByRun(runId)
       );
       expect(readBack.length).toBe(2);
       for (const annotation of readBack) {

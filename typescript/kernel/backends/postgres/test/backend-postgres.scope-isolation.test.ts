@@ -448,24 +448,22 @@ describe("@tuvren/backend-postgres scope isolation (KRT-BE005)", () => {
 
     // Scope A observes its own complete record set.
     await scopeA.transact(async (tx) => {
-      expect((await tx.threads.get(seeded.threadId))?.threadId).toBe(
-        "thread_a"
-      );
-      expect((await tx.branches.get(seeded.branchId))?.branchId).toBe(
-        "branch_a"
-      );
-      expect(
-        (await tx.branches.listByThread(seeded.threadId)).map((b) => b.branchId)
-      ).toEqual(["branch_a"]);
-      expect((await tx.turnNodes.get(seeded.headTurnNodeHash))?.hash).toBe(
-        seeded.headTurnNodeHash
-      );
-      expect((await tx.turnTrees.get(seeded.turnTreeHash))?.hash).toBe(
+      const storedThread = await tx.threads.get(seeded.threadId);
+      const storedBranch = await tx.branches.get(seeded.branchId);
+      const threadBranches = await tx.branches.listByThread(seeded.threadId);
+      const storedNode = await tx.turnNodes.get(seeded.headTurnNodeHash);
+      const storedTree = await tx.turnTrees.get(seeded.turnTreeHash);
+      const storedPaths = await tx.turnTreePaths.listByTurnTree(
         seeded.turnTreeHash
       );
-      expect(
-        (await tx.turnTreePaths.listByTurnTree(seeded.turnTreeHash)).length
-      ).toBeGreaterThan(0);
+      expect(storedThread?.threadId).toBe("thread_a");
+      expect(storedBranch?.branchId).toBe("branch_a");
+      expect(threadBranches.map((branch) => branch.branchId)).toEqual([
+        "branch_a",
+      ]);
+      expect(storedNode?.hash).toBe(seeded.headTurnNodeHash);
+      expect(storedTree?.hash).toBe(seeded.turnTreeHash);
+      expect(storedPaths.length).toBeGreaterThan(0);
       expect(await tx.objects.has(seeded.messageHash)).toBe(true);
     });
 

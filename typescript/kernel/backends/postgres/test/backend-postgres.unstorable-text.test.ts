@@ -90,12 +90,12 @@ const TEST_SCHEMA = {
   schemaId: "schema_postgres_unstorable_text",
 } satisfies TurnTreeSchema;
 
-interface CodedError {
-  code?: string;
-}
-
 const readErrorCode = (error: unknown): string | undefined => {
-  return (error as CodedError | undefined)?.code;
+  if (!(error instanceof Error)) {
+    return undefined;
+  }
+  const code: unknown = "code" in error ? error.code : undefined;
+  return typeof code === "string" ? code : undefined;
 };
 
 beforeAll(async () => {
@@ -138,7 +138,9 @@ describe("@tuvren/backend-postgres NUL-identifier boundary validation", () => {
 
       let caughtError: unknown;
       try {
-        await backend.transact((tx) => tx.threads.get("thread\uD800"));
+        await backend.transact(
+          async (tx) => await tx.threads.get("thread\uD800")
+        );
       } catch (error: unknown) {
         caughtError = error;
       }
@@ -434,8 +436,8 @@ describe("@tuvren/backend-postgres btree index-row-size boundary validation", ()
         await tx.observeAnnotations.set(record);
       });
 
-      const readBack = await backend.transact((tx) =>
-        tx.observeAnnotations.listByRun(runId)
+      const readBack = await backend.transact(
+        async (tx) => await tx.observeAnnotations.listByRun(runId)
       );
       expect(readBack.length).toBe(1);
       expect(readBack[0]?.annotationHash).toBe(annotationHash);

@@ -74,25 +74,27 @@ describe("@tuvren/backend-postgres schema-initialization error normalization", (
     try {
       let caughtError: unknown;
       try {
-        await backend.transact(async () => undefined);
+        await backend.transact(async () => {
+          /* trigger initialization only */
+        });
       } catch (error: unknown) {
         caughtError = error;
       }
 
       expect(caughtError).toBeInstanceOf(Error);
-      const normalizedError = caughtError as Error & {
-        code?: string;
-        details?: unknown;
-      };
+      if (!(caughtError instanceof Error)) {
+        throw new TypeError("expected a normalized initialization error");
+      }
       // Not just "is an Error": the raw driver error carries only
       // `code: "42P07"` with no `postgres_backend_*` code at all. Asserting
       // the normalized code proves the failure was actually wrapped, rather
       // than a raw PostgresError happening to also be an Error instance.
-      expect(normalizedError.code).toBe("postgres_backend_engine_error");
-      const details = normalizedError.details as
-        | { postgresCode?: string }
-        | undefined;
-      expect(details?.postgresCode).toBe("42P07");
+      expect(Reflect.get(caughtError, "code")).toBe(
+        "postgres_backend_engine_error"
+      );
+      expect(Reflect.get(caughtError, "details")).toMatchObject({
+        postgresCode: "42P07",
+      });
     } finally {
       await backend.destroy({ dropSchema: true });
     }

@@ -33,6 +33,8 @@ import { normalizeSchemaName } from "../src/lib/postgres-backend-persistence.js"
 
 describe("@tuvren/backend-postgres normalizeSchemaName default", () => {
   test('defaults an unset schemaName to the backend-owned "tuvren_kernel", not "public"', () => {
+    // The public helper requires its optional value as an explicit argument.
+    // oxlint-disable-next-line unicorn/no-useless-undefined
     expect(normalizeSchemaName(undefined)).toBe("tuvren_kernel");
   });
 

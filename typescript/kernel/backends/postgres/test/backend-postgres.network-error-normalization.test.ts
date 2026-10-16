@@ -77,7 +77,9 @@ describe("@tuvren/backend-postgres connection error normalization", () => {
     try {
       let caughtError: unknown;
       try {
-        await backend.transact(async () => undefined);
+        await backend.transact(async () => {
+          /* trigger connection only */
+        });
       } catch (error: unknown) {
         caughtError = error;
       }
@@ -88,10 +90,24 @@ describe("@tuvren/backend-postgres connection error normalization", () => {
       }
 
       expect(caughtError.code).toBe("postgres_backend_connection_error");
-      expect(caughtError.details).toEqual({
-        message: expect.any(String),
-        networkCode: "ENOTFOUND",
-      });
+      const { details } = caughtError;
+      if (
+        typeof details !== "object" ||
+        details === null ||
+        Array.isArray(details)
+      ) {
+        throw new TypeError("expected object-shaped connection error details");
+      }
+      const message: unknown =
+        "message" in details ? details.message : undefined;
+      const networkCode: unknown =
+        "networkCode" in details ? details.networkCode : undefined;
+      expect(typeof message).toBe("string");
+      expect(networkCode).toBe("ENOTFOUND");
+      expect(Object.keys(details).toSorted()).toEqual([
+        "message",
+        "networkCode",
+      ]);
       expect(caughtError.details).not.toHaveProperty("postgresCode");
     } finally {
       await backend.close();

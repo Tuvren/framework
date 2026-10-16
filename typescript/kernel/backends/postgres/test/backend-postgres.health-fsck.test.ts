@@ -118,7 +118,7 @@ describe("@tuvren/backend-postgres health()/fsck() split (ADR-0067 relational pe
 
       const fsck = await backend.fsck();
       expect(fsck.ok).toBe(false);
-      expect(fsck.ok === false ? fsck.reason : undefined).toMatch(
+      expect(fsck.ok ? undefined : fsck.reason).toMatch(
         BRANCH_HEAD_MISALIGNMENT_ERROR_PATTERN
       );
     } finally {
@@ -163,7 +163,7 @@ describe("@tuvren/backend-postgres health()/fsck() split (ADR-0067 relational pe
       simulatedNowMs += 60_001;
       const health = await backend.health();
       expect(health.ok).toBe(false);
-      expect(health.ok === false ? health.reason : undefined).toMatch(
+      expect(health.ok ? undefined : health.reason).toMatch(
         RELATIONAL_INDEXES_MISSING_ERROR_PATTERN
       );
     } finally {
