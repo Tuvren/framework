@@ -62,13 +62,15 @@ interface ShapeableError {
   message: string;
 }
 
-function shapeOf(error: ShapeableError): {
+const shapeOf = (
+  error: ShapeableError
+): {
   cause: unknown;
   code: string | undefined;
   message: string;
-} {
+} => {
   return { cause: error.cause, code: error.code, message: error.message };
-}
+};
 
 describe("@tuvren/backend-sqlite normalizeBackendError idempotency (KRT-BK009)", () => {
   test("is idempotent for a raw SQLITE_-coded engine error", () => {

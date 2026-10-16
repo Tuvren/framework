@@ -46,16 +46,16 @@ after(async () => {
   }
 });
 
-async function seedThread(
+const seedThread = async (
   backend: ReturnType<typeof createSqliteBackend>,
   threadId: string,
   branchId: string
-): Promise<string> {
+): Promise<string> => {
   const kernel = createRuntimeKernel({ backend });
   const schemaId = await kernel.schema.register(TEST_SCHEMA);
   await kernel.thread.create(threadId, schemaId, branchId);
   return threadId;
-}
+};
 
 describe("createSqliteBackend purgeScope", () => {
   test("drops the bound scope's database file while a co-tenant scope's sibling file survives", async () => {

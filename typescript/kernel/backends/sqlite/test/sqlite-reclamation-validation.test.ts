@@ -73,7 +73,7 @@ interface BaseFixture {
  * to the same object. Every test below starts from a fresh copy of this and
  * corrupts exactly one reference.
  */
-async function buildBaseFixture(): Promise<BaseFixture> {
+const buildBaseFixture = async (): Promise<BaseFixture> => {
   const object = await createStoredObjectRecord(
     new Uint8Array([1, 2, 3]),
     1000
@@ -205,7 +205,7 @@ async function buildBaseFixture(): Promise<BaseFixture> {
     turn,
     turnTreePath,
   };
-}
+};
 
 describe("assertReclamationSurvivorInvariants (issue #108 M6)", () => {
   test("accepts a fully consistent post-sweep state", async () => {

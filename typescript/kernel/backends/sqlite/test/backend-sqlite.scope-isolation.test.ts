@@ -42,11 +42,11 @@ const TRAILING_EXTENSION = /\.[^.]*$/u;
 
 // Seeds a minimal thread (schema + genesis turn tree/node + thread) so
 // enumeration isolation can be asserted via threads.list.
-async function seedThread(
+const seedThread = async (
   backend: RuntimeBackend,
   threadId: string,
   base: number
-): Promise<string> {
+): Promise<string> => {
   const schema = createCanonicalKernelTestSchema();
   const schemaRecord = createStoredSchemaRecord(schema, base);
   const manifest = { "context.manifest": null, messages: [] as string[] };
@@ -77,7 +77,7 @@ async function seedThread(
   });
 
   return threadId;
-}
+};
 
 // The full record set the Durable-Read Surface composes over (KRT-BE006): a
 // branch and its genesis turn node, turn tree, ordered message path, and the
@@ -90,12 +90,12 @@ interface SeededBranch {
   turnTreeHash: string;
 }
 
-async function seedBranchWithMessage(
+const seedBranchWithMessage = async (
   backend: RuntimeBackend,
   threadId: string,
   branchId: string,
   base: number
-): Promise<SeededBranch> {
+): Promise<SeededBranch> => {
   const schema = createCanonicalKernelTestSchema();
   const schemaRecord = createStoredSchemaRecord(schema, base);
   const messageObject = await createStoredObjectRecord(
@@ -148,7 +148,7 @@ async function seedBranchWithMessage(
     threadId,
     turnTreeHash: turnTree.hash,
   };
-}
+};
 
 describe("@tuvren/backend-sqlite scope isolation (KRT-BE004)", () => {
   test("content stored under one scope is not retrievable or existence-checkable through another scope sharing a base path", async () => {

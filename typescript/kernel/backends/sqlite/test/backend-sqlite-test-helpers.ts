@@ -84,30 +84,30 @@ export const TURN_ROW_ERROR_PATTERN = /updatedAtMs/u;
 
 const tempDirectories = new Set<string>();
 
-export function createTempDirectory(prefix = "kraken-sqlite-"): string {
+export const createTempDirectory = (prefix = "kraken-sqlite-"): string => {
   const tempDirectory = mkdtempSync(join(tmpdir(), prefix));
   tempDirectories.add(tempDirectory);
   return tempDirectory;
-}
+};
 
-export function createTempDatabasePath(): string {
+export const createTempDatabasePath = (): string => {
   const tempDirectory = createTempDirectory();
   return join(tempDirectory, "kraken.db");
-}
+};
 
-export function createWorkspaceTempDirectory(prefix: string): string {
+export const createWorkspaceTempDirectory = (prefix: string): string => {
   const tempDirectory = mkdtempSync(join(process.cwd(), prefix));
   tempDirectories.add(tempDirectory);
   return tempDirectory;
-}
+};
 
-export function linkWorkspaceNodeModules(targetDirectory: string): void {
+export const linkWorkspaceNodeModules = (targetDirectory: string): void => {
   symlinkSync(
     resolve(process.cwd(), "../../../../../node_modules"),
     join(targetDirectory, "node_modules"),
     "dir"
   );
-}
+};
 
 export interface CorruptionSeed {
   databasePath: string;
@@ -127,7 +127,7 @@ interface ExplainQueryPlanRow {
   detail: string;
 }
 
-function getCompiledSqliteRuntimePath(): string {
+const getCompiledSqliteRuntimePath = (): string => {
   return join(
     process.cwd(),
     ".tmp-tests",
@@ -139,11 +139,11 @@ function getCompiledSqliteRuntimePath(): string {
     "lib",
     "sqlite-backend.js"
   );
-}
+};
 
-export function copyCompiledSqliteRuntimeBundle(
+export const copyCompiledSqliteRuntimeBundle = (
   targetRuntimePath: string
-): void {
+): void => {
   const compiledRuntimePath = getCompiledSqliteRuntimePath();
   const compiledRuntimeDirectory = dirname(compiledRuntimePath);
   const targetRuntimeDirectory = dirname(targetRuntimePath);
@@ -172,23 +172,23 @@ export function copyCompiledSqliteRuntimeBundle(
       join(targetRuntimeDirectory, fileName)
     );
   }
-}
+};
 
-export function getBaselineMigrationSql(): string {
+export const getBaselineMigrationSql = (): string => {
   return readFileSync(
     join(process.cwd(), "migrations", "0001_initial_schema.sql"),
     "utf-8"
   );
-}
+};
 
-export function getTargetedValidationMigrationSql(): string {
+export const getTargetedValidationMigrationSql = (): string => {
   return readFileSync(
     join(process.cwd(), "migrations", "0002_targeted_validation_indexes.sql"),
     "utf-8"
   );
-}
+};
 
-export function getPendingSignalsAndAnnotationsMigrationSql(): string {
+export const getPendingSignalsAndAnnotationsMigrationSql = (): string => {
   return readFileSync(
     join(
       process.cwd(),
@@ -197,9 +197,9 @@ export function getPendingSignalsAndAnnotationsMigrationSql(): string {
     ),
     "utf-8"
   );
-}
+};
 
-export function copyCurrentPackageMigrations(targetDirectory: string): void {
+export const copyCurrentPackageMigrations = (targetDirectory: string): void => {
   const migrationsDirectory = join(process.cwd(), "migrations");
   const migrationFiles = readdirSync(migrationsDirectory)
     .filter((fileName) => fileName.endsWith(".sql"))
@@ -211,37 +211,37 @@ export function copyCurrentPackageMigrations(targetDirectory: string): void {
       join(targetDirectory, fileName)
     );
   }
-}
+};
 
-function explainQueryPlanDetails(
+const explainQueryPlanDetails = (
   db: Database.Database,
   sql: string,
   parameters: readonly unknown[] = []
-): string[] {
+): string[] => {
   return (
     db
       .prepare(`EXPLAIN QUERY PLAN ${sql}`)
       .all(...parameters) as ExplainQueryPlanRow[]
   ).map((row) => row.detail);
-}
+};
 
-export function assertPlanUsesIndex(
+export const assertPlanUsesIndex = (
   db: Database.Database,
   sql: string,
   indexName: string,
   parameters: readonly unknown[] = []
-): void {
+): void => {
   const details = explainQueryPlanDetails(db, sql, parameters);
   strictEqual(
     details.some((detail) => detail.includes(indexName)),
     true,
     details.join("\n")
   );
-}
+};
 
-export async function seedCorruptionDatabase(
+export const seedCorruptionDatabase = async (
   options: { messageCount?: number } = {}
-): Promise<CorruptionSeed> {
+): Promise<CorruptionSeed> => {
   const databasePath = createTempDatabasePath();
   const backend = createSqliteBackend({ databasePath });
   const messageCount = options.messageCount ?? 0;
@@ -341,83 +341,84 @@ export async function seedCorruptionDatabase(
     runStartTurnNodeHash: run.startTurnNodeHash,
     turnTreeHash: turnTree.hash,
   };
-}
+};
 
-export async function seedLineageMembershipCorruptionDatabase(): Promise<LineageMembershipCorruptionSeed> {
-  const seeded = await seedCorruptionDatabase();
-  const backend = createSqliteBackend({ databasePath: seeded.databasePath });
-  const schema = createCanonicalKernelTestSchema();
-  const foreignTurnTree = await createStoredTurnTreeRecord(
-    schema,
-    {
-      "context.manifest": null,
-      messages: [createHashFromIndex(999)],
-    },
-    12
-  );
-  const foreignRootTurnNode = await createStoredTurnNodeRecord({
-    consumedStagedResults: [],
-    createdAtMs: 13,
-    eventHash: null,
-    previousTurnNodeHash: null,
-    schemaId: "schema_main",
-    turnTreeHash: foreignTurnTree.hash,
-  });
-  const foreignThreadId = "thread_lineage_membership";
-  const foreignBranchId = "branch_lineage_membership";
-
-  await backend.transact(async (tx) => {
-    await tx.turnTrees.put(foreignTurnTree);
-    await tx.turnTreePaths.putMany(
-      createCanonicalTurnTreePaths(foreignTurnTree, {
+export const seedLineageMembershipCorruptionDatabase =
+  async (): Promise<LineageMembershipCorruptionSeed> => {
+    const seeded = await seedCorruptionDatabase();
+    const backend = createSqliteBackend({ databasePath: seeded.databasePath });
+    const schema = createCanonicalKernelTestSchema();
+    const foreignTurnTree = await createStoredTurnTreeRecord(
+      schema,
+      {
         "context.manifest": null,
         messages: [createHashFromIndex(999)],
-      })
+      },
+      12
     );
-    await tx.turnNodes.put(foreignRootTurnNode);
-    await tx.threads.put({
-      createdAtMs: 14,
-      rootTurnNodeHash: foreignRootTurnNode.hash,
+    const foreignRootTurnNode = await createStoredTurnNodeRecord({
+      consumedStagedResults: [],
+      createdAtMs: 13,
+      eventHash: null,
+      previousTurnNodeHash: null,
       schemaId: "schema_main",
-      threadId: foreignThreadId,
+      turnTreeHash: foreignTurnTree.hash,
     });
-    await tx.branches.set({
-      branchId: foreignBranchId,
-      createdAtMs: 15,
-      headTurnNodeHash: foreignRootTurnNode.hash,
-      threadId: foreignThreadId,
-      updatedAtMs: 15,
-    });
-    await tx.turns.set({
-      branchId: foreignBranchId,
-      createdAtMs: 16,
-      headTurnNodeHash: foreignRootTurnNode.hash,
-      parentTurnId: null,
-      startTurnNodeHash: foreignRootTurnNode.hash,
-      threadId: foreignThreadId,
-      turnId: "turn_lineage_membership",
-      updatedAtMs: 16,
-    });
-  });
+    const foreignThreadId = "thread_lineage_membership";
+    const foreignBranchId = "branch_lineage_membership";
 
-  const probe = new Database(seeded.databasePath);
-  probe
-    .prepare(
-      `
+    await backend.transact(async (tx) => {
+      await tx.turnTrees.put(foreignTurnTree);
+      await tx.turnTreePaths.putMany(
+        createCanonicalTurnTreePaths(foreignTurnTree, {
+          "context.manifest": null,
+          messages: [createHashFromIndex(999)],
+        })
+      );
+      await tx.turnNodes.put(foreignRootTurnNode);
+      await tx.threads.put({
+        createdAtMs: 14,
+        rootTurnNodeHash: foreignRootTurnNode.hash,
+        schemaId: "schema_main",
+        threadId: foreignThreadId,
+      });
+      await tx.branches.set({
+        branchId: foreignBranchId,
+        createdAtMs: 15,
+        headTurnNodeHash: foreignRootTurnNode.hash,
+        threadId: foreignThreadId,
+        updatedAtMs: 15,
+      });
+      await tx.turns.set({
+        branchId: foreignBranchId,
+        createdAtMs: 16,
+        headTurnNodeHash: foreignRootTurnNode.hash,
+        parentTurnId: null,
+        startTurnNodeHash: foreignRootTurnNode.hash,
+        threadId: foreignThreadId,
+        turnId: "turn_lineage_membership",
+        updatedAtMs: 16,
+      });
+    });
+
+    const probe = new Database(seeded.databasePath);
+    probe
+      .prepare(
+        `
         UPDATE turn_node_lineage_roots
         SET root_turn_node_hash = ?
         WHERE turn_node_hash = ?
       `
-    )
-    .run(foreignRootTurnNode.hash, seeded.runStartTurnNodeHash);
-  probe.close();
+      )
+      .run(foreignRootTurnNode.hash, seeded.runStartTurnNodeHash);
+    probe.close();
 
-  return {
-    ...seeded,
-    foreignBranchId,
-    foreignThreadId,
+    return {
+      ...seeded,
+      foreignBranchId,
+      foreignThreadId,
+    };
   };
-}
 
 /**
  * Asserts that `fsck()` (issue #108 M5 — the maintenance validation that
@@ -427,10 +428,10 @@ export async function seedLineageMembershipCorruptionDatabase(): Promise<Lineage
  * corruption is invisible to the lightweight `health()` probe by design; use
  * this helper (not `health()`) for that class of corruption assertion.
  */
-export async function expectCorruptedStateRejection(
+export const expectCorruptedStateRejection = async (
   databasePath: string,
   pattern: RegExp
-): Promise<void> {
+): Promise<void> => {
   const backend = createSqliteBackend({ databasePath });
   const fsck = await backend.fsck();
   deepStrictEqual(fsck.ok, false);
@@ -438,7 +439,7 @@ export async function expectCorruptedStateRejection(
     throw new Error("expected unhealthy status");
   }
   strictEqual(pattern.test(fsck.reason), true);
-}
+};
 
 after(() => {
   for (const tempDirectory of tempDirectories) {
