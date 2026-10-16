@@ -1,0 +1,55 @@
+{
+  "milestone": "M17",
+  "ticket": "KRT-BZ003",
+  "producingCommit": "6ff9e48221174b247d0339e02533e8f3bc57e6e5",
+  "scope": {
+    "files": [
+      "typescript/runners/react/src/lib/react-runner-stream-support.ts",
+      "typescript/runners/react/bench/react-stream.bench.ts"
+    ],
+    "additions": 520,
+    "deletions": 531,
+    "changedLines": 1051
+  },
+  "diagnostics": {
+    "syntactic": {
+      "before": 126,
+      "after": 22,
+      "targetBefore": 104,
+      "targetAfter": 0
+    },
+    "typeAware": {
+      "before": 132,
+      "after": 28,
+      "targetBefore": 104,
+      "targetAfter": 0
+    },
+    "nonTargetRulesAndCountsStable": true
+  },
+  "equivalence": {
+    "convertedDeclarations": 32,
+    "signaturesBodiesExportsAsyncCommentsAndNonfunctionOrderPreserved": true,
+    "deliberateRepair": "waitForAbortable onAbort directly removes the same listener before rejection, breaking the private cleanup/onAbort initialization cycle",
+    "raceScenarios": 7,
+    "raceResultsAndListenerTracesPreserved": true
+  },
+  "verification": {
+    "formatter": "pass",
+    "retainedBiome": "pass",
+    "runnerLint": "pass",
+    "runnerTypecheck": "pass",
+    "runnerTests": "pass: 82/82",
+    "runnerBuild": "pass",
+    "repositoryTypecheck": "pass",
+    "repositoryConformance": "pass",
+    "providerTestkitConformance": "pass",
+    "providerCertificationConformance": "pass: 60/60",
+    "changeset": "pass",
+    "constitution": "pass: 0 errors, existing TS-004 warning"
+  },
+  "isolation": {
+    "exactFrozenCandidate": true,
+    "mainCheckoutClean": true,
+    "unexpectedPaths": []
+  }
+}

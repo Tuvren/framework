@@ -2,8 +2,8 @@ owner: KRT-BZ004
 mode: contract_test
 produced:
   date: '2026-10-15'
-  commit: fbfdec981bcd90f517f042af073468163bf0ed0f
-  command: 'KRT-BZ001 captures plus KRT-BZ003 M8-M16 initialization, structural, diagnostic, build, test, typecheck, and conformance proof'
+  commit: 6ff9e48221174b247d0339e02533e8f3bc57e6e5
+  command: 'KRT-BZ001 captures plus KRT-BZ003 M8-M17 initialization, structural, diagnostic, build, test, typecheck, and conformance proof'
 files:
   - path: M1-raw-diagnostics.tar.gz
     sha256: 0c6905b1398eafb2f298810df123198d5df7af6cbc2996936556c8a6d2e8bae6
@@ -125,4 +125,12 @@ files:
     sha256: bd09034791d625b8d6ca43f7f9dcebf9df189f4bd5d0990225802a43d5a9b7fc
     bytes: 4988
     role: measurement
-pass_criteria: 'KRT-BZ001 captures remain parseable. M8-M15 preserve provider initialization and behavior while clearing source ordering diagnostics. M16 preserves six bridge-test helper contracts, all 82 registrations/callbacks and four Biome reasons, clears the final ten bridge-test ordering diagnostics with non-target rules exact-equal, and passes package, workspace, and provider gates.'
+  - path: M17-proof.tar.gz
+    sha256: 219c31096180c419a7e4bd40412d46e5c0fe921c7891cfcb9cdd2c66221cc463
+    bytes: 10223
+    role: measurement
+  - path: M17-proof.json
+    sha256: 7472360f859c187553683c2e2352dc0968200697baad5fca30a080e563ccf97f
+    bytes: 1594
+    role: measurement
+pass_criteria: 'KRT-BZ001 captures remain parseable. M8-M16 preserve provider initialization and behavior while clearing source ordering diagnostics. M17 preserves 32 React stream-support and benchmark contracts plus the reviewed private abort-cleanup repair, clears 104 ordering diagnostics with non-target rules exact-equal, and passes package, workspace, and provider gates.'
