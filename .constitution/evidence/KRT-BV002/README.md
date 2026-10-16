@@ -4,11 +4,14 @@ This evidence records the two live Biome `noBitwiseOperators` directives in
 `tools/scripts/api-freeze-gate.ts` at measurement commit
 `99457fbb4fd517f1f867ae9267920bed59d887d5`.
 
-The original source and a byte-identical fixture pass Biome 2.5.14. Replacing
-only the directive syntax with the measured Oxlint counterpart makes retained
-Biome fail with exactly two `lint/suspicious/noBitwiseOperators` diagnostics.
-Oxlint 1.86.0 independently emits exactly two `eslint(no-bitwise)` diagnostics
-on the same flag-membership operations in both syntactic and type-aware modes.
+The source bytes pinned at the measurement commit and a byte-identical fixture
+pass Biome 2.5.14. Replacing only the directive syntax with the measured
+Oxlint counterpart makes retained Biome fail with exactly two
+`lint/suspicious/noBitwiseOperators` diagnostics. Oxlint 1.86.0 independently
+emits exactly two `eslint(no-bitwise)` diagnostics on the same flag-membership
+operations in both syntactic and type-aware modes. Descendant replays keep the
+historical source as the measured input and compare current directive identity,
+rule, reason, and operation semantics; recorded line positions are informational.
 The installed `node_modules/oxlint/configuration_schema.json` identifies the
 default options as `allow: []` and `int32Hint: false`; its measured SHA-256 is
 `e15361eff2cefcc8afac585351981315bd0275a04b19e930f35b575a1faea1e0`.
@@ -27,7 +30,8 @@ devenv -q shell -- bun .constitution/evidence/KRT-BV002/probe.ts "$PWD" "${TMPDI
 ```
 
 The probe passes only when the directive inventory, reasons, retained-checker
-behavior, native diagnostics, source/config digests, required verification
-commands, and clean-worktree assertions all match. It reads the historical
-baseline from commit `99457fbb4fd517f1f867ae9267920bed59d887d5` and requires
-the checked-out commit to descend from that baseline.
+behavior, native diagnostics against the pinned source, current operation
+semantics, config digests, required verification commands, and clean-worktree
+assertions all match. It reads the historical baseline from commit
+`99457fbb4fd517f1f867ae9267920bed59d887d5` and requires the checked-out commit
+to descend from that baseline.

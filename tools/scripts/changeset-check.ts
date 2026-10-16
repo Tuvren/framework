@@ -99,12 +99,12 @@ const forEachSequential = async <T>(
 const findSequential = async <T, TResult>(
   values: Iterable<T>,
   operation: (value: T) => Promise<TResult | null>
-): Promise<TResult | undefined> => {
+): Promise<TResult | null> => {
   const iterator = values[Symbol.iterator]();
-  const visitNext = async (): Promise<TResult | undefined> => {
+  const visitNext = async (): Promise<TResult | null> => {
     const next = iterator.next();
     if (next.done === true) {
-      return undefined;
+      return null;
     }
     const result = await operation(next.value);
     if (result !== null) {
@@ -625,7 +625,7 @@ const findLatestPendingChangesetRevision = async (
 
   const revisions = [...descendants.stdout.split("\n"), baseRevision];
 
-  return await findSequential(revisions, async (revision) => {
+  const pendingRevision = await findSequential(revisions, async (revision) => {
     if (revision.length === 0) {
       return null;
     }
@@ -639,6 +639,7 @@ const findLatestPendingChangesetRevision = async (
     }
     return null;
   });
+  return pendingRevision ?? undefined;
 };
 
 const findPublicChangeBetweenRevisions = async (
@@ -695,8 +696,8 @@ const compareGeneratedRelease = async (
   rootDirectory: string,
   generatedDirectory: string,
   manifests: readonly PackageManifest[]
-): Promise<string | undefined> =>
-  await findSequential(manifests, async (manifest) => {
+): Promise<string | undefined> => {
+  const mismatch = await findSequential(manifests, async (manifest) => {
     if (manifest.private || !manifest.name.startsWith("@tuvren/")) {
       return null;
     }
@@ -719,6 +720,8 @@ const compareGeneratedRelease = async (
       }
     );
   });
+  return mismatch ?? undefined;
+};
 
 const proveConsumedGeneratedRelease = async (options: {
   readonly baseRevision: string;
