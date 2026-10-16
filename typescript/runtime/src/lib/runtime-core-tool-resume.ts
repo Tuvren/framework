@@ -22,7 +22,10 @@ import type {
 import type { TuvrenMessage } from "@tuvren/core/messages";
 
 import { buildCapabilityMetadataFromTools } from "./capability-policy-engine.js";
-import { updateContextManifest } from "./context-manifest.js";
+import {
+  createContextManifest,
+  updateContextManifest,
+} from "./context-manifest.js";
 import {
   runAfterIterationHooks,
   type ExtensionStateUpdate,
@@ -36,6 +39,7 @@ import {
   formatToolResultTaskId,
 } from "./runtime-core-response.js";
 import { normalizeError } from "./runtime-core-shared.js";
+import { finalizeToolBatchProjection } from "./runtime-core-tool-batch-finalization.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type { PauseContext, ResumeContext } from "./runtime-execution-types.js";
 import {
@@ -241,9 +245,20 @@ export async function resumePausedToolExecution(
     parts: [result],
     role: "tool",
   })) satisfies TuvrenMessage[];
-  const manifest = updateContextManifest(
-    headState.manifest,
+  const finalizedProjection = finalizeToolBatchProjection(
+    headState,
+    interruptedToolBatch?.assistantMessageHash,
+    toolBatch.resultHashes,
     resumedMessages,
+    [...pausedIteration.toolResults, ...toolBatch.results]
+  );
+  const finalizedHeadState = finalizedProjection.headState;
+  const manifest = updateContextManifest(
+    createContextManifest(
+      finalizedHeadState.messages,
+      headState.manifest.extensions
+    ),
+    [],
     toolBatch.updates,
     []
   );
@@ -285,8 +300,12 @@ export async function resumePausedToolExecution(
   const nextTreeHash = await host.createIterationTree(
     schemaId,
     headState.turnNode.turnTreeHash,
-    headState.messageHashes,
-    toolBatch.resultHashes,
+    interruptedToolBatch?.assistantMessageHash === undefined
+      ? headState.messageHashes
+      : finalizedHeadState.messageHashes,
+    interruptedToolBatch?.assistantMessageHash === undefined
+      ? toolBatch.resultHashes
+      : [],
     manifestHash,
     runtimeStatusHash,
     turnLineageHash
@@ -316,11 +335,11 @@ export async function resumePausedToolExecution(
     extensions: loopState.activeConfig.extensions ?? [],
     iterationCount: pausedIteration.iterationCount,
     manifest: latestHeadState.manifest,
-    messages: latestHeadState.messages,
+    messages: finalizedHeadState.messages,
     resolution,
     response: pausedIteration.response,
     runId,
-    toolResults: [...pausedIteration.toolResults, ...toolBatch.results],
+    toolResults: finalizedProjection.toolResults,
     turnId: handle.turnId,
   });
   resolution = composeResolutions(resolution, afterIteration.resolution);
@@ -352,7 +371,7 @@ export async function resumePausedToolExecution(
           iterationCount: pausedIteration.iterationCount,
           response: pausedIteration.response,
           toolExecutionMode: pausedIteration.toolExecutionMode,
-          toolResults: [...pausedIteration.toolResults, ...toolBatch.results],
+          toolResults: finalizedProjection.toolResults,
         },
         pausedRunId: runId,
         pausedTurnNodeHash: turnNodeHash,

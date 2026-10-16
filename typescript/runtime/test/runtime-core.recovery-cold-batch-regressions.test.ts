@@ -11,31 +11,22 @@
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { expect, test } from "bun:test";
 
-import {
-  DEFAULT_SCOPE,
-  type KernelRecord,
-  TuvrenRuntimeError,
-} from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { RuntimeRunner } from "@tuvren/core/runner";
-import {
-  decodeDeterministicKernelRecord,
-  encodeDeterministicKernelRecord,
-  type RuntimeKernel,
-} from "@tuvren/kernel-protocol";
+import { decodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 
 import {
   createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
-  DEFAULT_AGENT_SCHEMA,
 } from "../src/index.ts";
-import { encryptMessageRecord } from "../src/lib/payload-codec-seam.ts";
 import {
   createFakeKernelHarness,
   createFakeRunLivenessKernelHarness,
 } from "./fake-kernel.ts";
+import { prepareExpiredToolBatch } from "./runtime-core-cold-recovery-test-helpers.ts";
 import {
   assistantText,
   assistantToolCalls,
@@ -69,100 +60,6 @@ function toolResultMessage(callId: string, value: number): TuvrenMessage {
 
 function createRunnerRegistry(runners: RuntimeRunner[] = []) {
   return createBaseRunnerRegistry(runners);
-}
-
-async function prepareExpiredToolBatch(
-  suffix: string,
-  signalText: string,
-  interruptedMessages: TuvrenMessage[]
-) {
-  const harness = createFakeKernelHarness();
-  const livenessHarness = createFakeRunLivenessKernelHarness(harness);
-  const thread = await livenessHarness.kernel.thread.create(
-    `thread_${suffix}`,
-    DEFAULT_AGENT_SCHEMA.schemaId,
-    `branch_${suffix}`
-  );
-  const staleTurn = await livenessHarness.kernel.turn.create(
-    `turn_${suffix}`,
-    thread.threadId,
-    thread.branchId,
-    null,
-    thread.rootTurnNodeHash
-  );
-  const inputRunId = `run_${suffix}_input`;
-  await livenessHarness.kernel.run.create(
-    inputRunId,
-    staleTurn.turnId,
-    thread.branchId,
-    DEFAULT_AGENT_SCHEMA.schemaId,
-    thread.rootTurnNodeHash,
-    [{ deterministic: false, id: "incorporate_input", sideEffects: true }]
-  );
-  await livenessHarness.kernel.run.beginStep(inputRunId, "incorporate_input");
-  await stageTestMessage(livenessHarness.kernel, inputRunId, "durable_user", {
-    parts: [{ text: signalText, type: "text" }],
-    role: "user",
-  });
-  const inputCheckpoint = await livenessHarness.kernel.run.completeStep(
-    inputRunId,
-    "incorporate_input"
-  );
-  await livenessHarness.kernel.run.complete(inputRunId, "completed");
-  if (inputCheckpoint.turnNodeHash === undefined) {
-    throw new Error("expected durable input checkpoint");
-  }
-
-  await livenessHarness.kernel.turn.updateHead(
-    staleTurn.turnId,
-    inputCheckpoint.turnNodeHash
-  );
-  const staleRunId = `run_${suffix}_stale`;
-  await livenessHarness.kernel.runLiveness.createLeasedRun({
-    branchId: thread.branchId,
-    executionOwnerId: "worker-that-crashed",
-    leaseExpiresAtMs: 20,
-    runId: staleRunId,
-    schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
-    startTurnNodeHash: inputCheckpoint.turnNodeHash,
-    steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
-    turnId: staleTurn.turnId,
-  });
-  await livenessHarness.kernel.run.beginStep(staleRunId, "iterate");
-
-  for (const [index, message] of interruptedMessages.entries()) {
-    await stageTestMessage(
-      livenessHarness.kernel,
-      staleRunId,
-      `interrupted_message_${index.toString()}`,
-      message
-    );
-  }
-
-  return {
-    harness,
-    kernel: livenessHarness.kernel,
-    staleTurn,
-    thread,
-  };
-}
-
-async function stageTestMessage(
-  kernel: RuntimeKernel,
-  runId: string,
-  taskId: string,
-  message: TuvrenMessage
-): Promise<void> {
-  await kernel.staging.stage(
-    runId,
-    await encryptMessageRecord(
-      { codec: IDENTITY_PAYLOAD_CODEC, scope: DEFAULT_SCOPE },
-      encodeDeterministicKernelRecord(message as unknown as KernelRecord)
-    ),
-    taskId,
-    "message",
-    "completed"
-  );
 }
 
 test("retains the original batch and missing calls after a second recovery crash", async () => {
@@ -744,6 +641,7 @@ test("restores original call order after parallel results stage out of order", a
     [assistant, toolResultMessage("fast-second", 2)]
   );
   let observedCallIds: string[] = [];
+  let afterIterationCallIds: string[] = [];
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
     kernel: fixture.kernel,
@@ -778,6 +676,20 @@ test("restores original call order after parallel results stage out of order", a
     signal: textSignal("Recover order"),
     config: {
       name: "primary",
+      extensions: [
+        {
+          name: "capture-finalized-tool-batch",
+          afterIteration(context) {
+            const toolResults = context.toolResults ?? [];
+            if (toolResults.length > 0) {
+              afterIterationCallIds = toolResults.map(
+                (result) => result.callId
+              );
+            }
+            return undefined;
+          },
+        },
+      ],
       tools: [
         {
           name: "lookup",
@@ -794,6 +706,7 @@ test("restores original call order after parallel results stage out of order", a
 
   expect(handle.status().phase).toBe("completed");
   expect(observedCallIds).toEqual(["slow-first", "fast-second"]);
+  expect(afterIterationCallIds).toEqual(["slow-first", "fast-second"]);
   expect(
     await fixture.harness.readBranchMessages(fixture.thread.branchId)
   ).toEqual([
@@ -803,6 +716,138 @@ test("restores original call order after parallel results stage out of order", a
     toolResultMessage("fast-second", 2),
     assistantText("recovered in original order"),
   ]);
+});
+
+test("rebuilds the recovered manifest when one missing call is completed", async () => {
+  const assistant = requireAssistantMessage(
+    assistantToolCalls([
+      { callId: "single-recovered", input: {}, name: "lookup" },
+    ])
+  );
+  const fixture = await prepareExpiredToolBatch(
+    "single_recovered_manifest",
+    "Recover one result",
+    [assistant]
+  );
+  const runtime = createTuvrenRuntime({
+    defaultRunnerId: "fake",
+    kernel: fixture.kernel,
+    now: () => 21,
+    payloadCodec: IDENTITY_PAYLOAD_CODEC,
+    runnerRegistry: createRunnerRegistry([
+      {
+        id: "fake",
+        async execute() {
+          return {
+            messages: [assistantText("single recovered result")],
+            resolution: { reason: "done", type: "end_turn" },
+          };
+        },
+      },
+    ]),
+    runLiveness: {
+      executionOwnerId: "single-recovery-manifest",
+      leaseDurationMs: 50_000,
+    },
+  });
+  const handle = runtime.executeTurn({
+    branchId: fixture.thread.branchId,
+    threadId: fixture.thread.threadId,
+    signal: textSignal("Recover one result"),
+    config: {
+      name: "primary",
+      tools: [
+        {
+          name: "lookup",
+          description: "lookup",
+          inputSchema: { type: "object" },
+          execute() {
+            return { value: 1 };
+          },
+        },
+      ],
+    },
+  });
+  await collectEvents(handle.events());
+
+  expect(handle.status().phase).toBe("completed");
+  expect(handle.status().manifest?.toolResults.total).toBe(1);
+});
+
+test("approval resume keeps missing and durable results in original call order", async () => {
+  const assistant = requireAssistantMessage(
+    assistantToolCalls([
+      { callId: "approval-first", input: {}, name: "lookup" },
+      { callId: "durable-second", input: {}, name: "lookup" },
+    ])
+  );
+  const fixture = await prepareExpiredToolBatch(
+    "approval_recovery_order",
+    "Resume in original order",
+    [assistant, toolResultMessage("durable-second", 2)]
+  );
+  const runtime = createTuvrenRuntime({
+    defaultRunnerId: "fake",
+    kernel: fixture.kernel,
+    now: () => 21,
+    payloadCodec: IDENTITY_PAYLOAD_CODEC,
+    runnerRegistry: createRunnerRegistry([
+      {
+        id: "fake",
+        async execute() {
+          return {
+            messages: [assistantText("approved recovered result")],
+            resolution: { reason: "done", type: "end_turn" },
+          };
+        },
+      },
+    ]),
+    runLiveness: {
+      executionOwnerId: "approval-recovery-order",
+      leaseDurationMs: 50_000,
+    },
+  });
+  const paused = runtime.executeTurn({
+    branchId: fixture.thread.branchId,
+    threadId: fixture.thread.threadId,
+    signal: textSignal("Resume in original order"),
+    config: {
+      name: "primary",
+      tools: [
+        {
+          approval: true,
+          name: "lookup",
+          description: "lookup",
+          inputSchema: { type: "object" },
+          execute() {
+            return { value: 1 };
+          },
+        },
+      ],
+    },
+  });
+  await collectEvents(paused.events());
+  expect(paused.status().phase).toBe("paused");
+
+  const resumed = paused.resolveApproval({
+    decisions: [{ callId: "approval-first", type: "approve" }],
+  });
+  await collectEvents(resumed.events());
+
+  expect(resumed.status().phase).toBe("completed");
+  const resultCallIds = (
+    await fixture.harness.readBranchMessages(fixture.thread.branchId)
+  ).flatMap((message) => {
+    const messageRecord = toOptionalRecord(message);
+    if (messageRecord?.role !== "tool" || !Array.isArray(messageRecord.parts)) {
+      return [];
+    }
+    return messageRecord.parts.flatMap((part) => {
+      const partRecord = toOptionalRecord(part);
+      return typeof partRecord?.callId === "string" ? [partRecord.callId] : [];
+    });
+  });
+  expect(resultCallIds).toEqual(["approval-first", "durable-second"]);
 });
 
 test("recovers aroundTool state before accepting its durable tool result", async () => {
