@@ -108,7 +108,9 @@ export const OBSERVE_ANNOTATION_KEY_SEPARATOR = "\u001F";
  * what characters the caller-supplied fields contain (identifiers are
  * contract-opaque strings; nothing forbids them containing the separator).
  */
-export function keyObserveAnnotation(record: StoredObserveAnnotation): string {
+export const keyObserveAnnotation = (
+  record: StoredObserveAnnotation
+): string => {
   return [
     record.runId,
     String(record.createdAtMs),
@@ -119,7 +121,7 @@ export function keyObserveAnnotation(record: StoredObserveAnnotation): string {
       (field) => `${field.length}${OBSERVE_ANNOTATION_KEY_SEPARATOR}${field}`
     )
     .join(OBSERVE_ANNOTATION_KEY_SEPARATOR);
-}
+};
 
 /**
  * Computes the storage `record_key` for a new observe annotation: its
@@ -127,12 +129,12 @@ export function keyObserveAnnotation(record: StoredObserveAnnotation): string {
  * rows already sharing that identity, so repeated annotations with identical
  * logical fields still get distinct primary keys instead of colliding.
  */
-export async function nextObserveAnnotationRecordKey(
+export const nextObserveAnnotationRecordKey = async (
   sql: DbSql,
   schemaName: string,
   scope: string,
   record: StoredObserveAnnotation
-): Promise<string> {
+): Promise<string> => {
   const identityKey = keyObserveAnnotation(record);
   const table = qualifyIdentifier(schemaName, "observe_annotations");
   // Precondition for the COUNT-derived suffix: annotation deletion is only
@@ -164,7 +166,7 @@ export async function nextObserveAnnotationRecordKey(
   const count = Number(rows[0]?.count ?? 0);
 
   return `${identityKey}${OBSERVE_ANNOTATION_KEY_SEPARATOR}${count}`;
-}
+};
 
 /**
  * Unlike its `compareStoredBranch`/`compareStoredRun`/`compareStoredTurn`/
@@ -178,14 +180,14 @@ export async function nextObserveAnnotationRecordKey(
  * backend-owned above), which additionally folds in `runId`/`turnNodeHash`,
  * so ordering stays deterministic even across identity-hash collisions.
  */
-export function compareStoredObserveAnnotation(
+export const compareStoredObserveAnnotation = (
   left: StoredObserveAnnotation,
   right: StoredObserveAnnotation
-): number {
+): number => {
   return compareByTimestampAndKey(
     left.createdAtMs,
     right.createdAtMs,
     keyObserveAnnotation(left),
     keyObserveAnnotation(right)
   );
-}
+};

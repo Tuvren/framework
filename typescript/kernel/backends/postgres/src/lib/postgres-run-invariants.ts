@@ -28,6 +28,17 @@ import {
 
 export type { TurnNodeRelationship } from "@tuvren/backend-shared";
 
+/**
+ * Decodes a run's `createdTurnNodesCbor` into its ordered, append-only list
+ * of created turn node hashes.
+ */
+export const decodeRunCreatedTurnNodeHashes = (run: StoredRun): string[] => {
+  return decodeHashStringArray(
+    run.createdTurnNodesCbor,
+    "run.createdTurnNodesCbor"
+  );
+};
+
 // This module is a thin delegate to the shared kernel-backend invariant core
 // (KRT-BK001) for: the run-transition-legality and immutability-primitive
 // surface (`assertRunUpdateIsLegal` and its private sub-assertions,
@@ -73,22 +84,11 @@ export const {
 } = runSpan;
 
 /**
- * Decodes a run's `createdTurnNodesCbor` into its ordered, append-only list
- * of created turn node hashes.
- */
-export function decodeRunCreatedTurnNodeHashes(run: StoredRun): string[] {
-  return decodeHashStringArray(
-    run.createdTurnNodesCbor,
-    "run.createdTurnNodesCbor"
-  );
-}
-
-/**
  * A run's active turn node: the most recently created node in its
  * `createdTurnNodesCbor` lineage, or its start turn node when the run has
  * not created any nodes yet.
  */
-export function getRunActiveTurnNodeHash(run: StoredRun): string {
+export const getRunActiveTurnNodeHash = (run: StoredRun): string => {
   const createdTurnNodeHashes = decodeRunCreatedTurnNodeHashes(run);
   return createdTurnNodeHashes.at(-1) ?? run.startTurnNodeHash;
-}
+};
