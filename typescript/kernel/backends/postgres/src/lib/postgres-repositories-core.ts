@@ -275,13 +275,13 @@ interface CoreRepositoryHelpers {
  * and `turns` repositories of a `RuntimeBackendTx`, backed by direct SQL
  * against the transaction's connection for one scope partition.
  */
-export function createCoreRepositories(
+export const createCoreRepositories = (
   context: CoreRepositoryContext,
   helpers: CoreRepositoryHelpers
 ): Pick<
   KrakenBackendTx,
   "branches" | "runs" | "turnNodes" | "turnTreePaths" | "turnTrees" | "turns"
-> {
+> => {
   const { assertTransactionActive, now, schemaName, scope, sql, writeTracker } =
     context;
 
@@ -1044,4 +1044,4 @@ export function createCoreRepositories(
       },
     },
   };
-}
+};

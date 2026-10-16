@@ -59,6 +59,8 @@ const reclamationValidation = createBackendInvariantReclamationValidation({
  * @throws TuvrenPersistenceError with a `postgres_backend_*` code on the first
  *   invariant a defective sweep violated.
  */
-export function assertReclamationSurvivorInvariants(state: BackendState): void {
+export const assertReclamationSurvivorInvariants = (
+  state: BackendState
+): void => {
   reclamationValidation.assertReclamationSurvivorInvariants(state);
-}
+};

@@ -73,6 +73,104 @@ import {
 /** Wire-format version stamped into every encoded snapshot payload. */
 export const CURRENT_SNAPSHOT_VERSION = 1;
 
+// Snapshot-decoding helpers below validate the raw decoded CBOR value's
+// shape before `decodeSnapshot` hands it to the kernel-protocol `assertStored*`
+// guards, so a malformed snapshot payload fails with a clear
+// `postgres_backend_snapshot_payload_invalid` error instead of a confusing
+// downstream type error.
+
+/** Asserts the decoded snapshot root is a plain object. */
+const readSnapshotRecord = (value: unknown): Record<string, unknown> => {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw persistenceError(
+      "postgres backend snapshot payload must be an object",
+      "postgres_backend_snapshot_payload_invalid"
+    );
+  }
+
+  return value as Record<string, unknown>;
+};
+
+/** Asserts a snapshot field is an array and validates every element with `assertRecord`. */
+const readSnapshotArray = <T>(
+  value: unknown,
+  assertRecord: (value: unknown, label: string) => asserts value is T,
+  label: string
+): T[] => {
+  if (!Array.isArray(value)) {
+    throw persistenceError(
+      `postgres backend snapshot field "${label}" must be an array`,
+      "postgres_backend_snapshot_payload_invalid",
+      { label }
+    );
+  }
+
+  return value.map((entry, index) => {
+    assertRecord(entry, `${label}[${index}]`);
+    return entry;
+  });
+};
+
+/**
+ * Asserts a snapshot field is an array without validating element shape —
+ * used where the element type still needs its schema resolved (turn trees,
+ * turn tree paths) before it can be asserted.
+ */
+const readUntypedSnapshotArray = (value: unknown, label: string): unknown[] => {
+  if (!Array.isArray(value)) {
+    throw persistenceError(
+      `postgres backend snapshot field "${label}" must be an array`,
+      "postgres_backend_snapshot_payload_invalid",
+      { label }
+    );
+  }
+
+  return value;
+};
+
+/** Asserts the decoded snapshot's `version` field is a safe integer. */
+const readSnapshotVersion = (value: unknown): number => {
+  if (typeof value !== "number" || !Number.isSafeInteger(value)) {
+    throw persistenceError(
+      "postgres backend snapshot version must be an integer",
+      "postgres_backend_snapshot_payload_invalid",
+      { field: "version" }
+    );
+  }
+
+  return value;
+};
+
+/** Copies a possibly-driver-specific byte buffer into a plain `Uint8Array`. */
+const toUint8Array = (value: Uint8Array): Uint8Array => {
+  return new Uint8Array(value);
+};
+
+/** Resolves a turn-tree schema by id from a decoded snapshot state. */
+const getSchemaForSchemaId = (
+  state: BackendState,
+  schemaId: string,
+  label: string
+) => {
+  const record = state.schemas.get(schemaId);
+  if (record === undefined) {
+    throw persistenceError(
+      `${label} must reference an existing schema`,
+      "postgres_backend_missing_schema_reference",
+      { label, schemaId }
+    );
+  }
+  return decodeTurnTreeSchema(record.schemaCbor, `${label} schema`);
+};
+
+/** Resolves the turn-tree schema referenced by a stored turn tree. */
+const getSchemaForTurnTree = (
+  state: BackendState,
+  turnTree: { schemaId: string }
+) => {
+  return getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
+};
+
 /**
  * Decodes the snapshot wire format back into a `BackendState`, re-validating
  * every record with the kernel-protocol `assertStored*` guards as it is
@@ -92,7 +190,7 @@ export const CURRENT_SNAPSHOT_VERSION = 1;
  *   `postgres_backend_snapshot_payload_version_unsupported` when the
  *   embedded version does not match {@link CURRENT_SNAPSHOT_VERSION}.
  */
-export function decodeSnapshot(value: Uint8Array): BackendState {
+export const decodeSnapshot = (value: Uint8Array): BackendState => {
   const decoded = decodeDeterministicKernelRecord(toUint8Array(value));
   const snapshot = readSnapshotRecord(decoded);
   const state = createEmptyState();
@@ -238,102 +336,4 @@ export function decodeSnapshot(value: Uint8Array): BackendState {
   }
 
   return state;
-}
-
-// Snapshot-decoding helpers below validate the raw decoded CBOR value's
-// shape before `decodeSnapshot` hands it to the kernel-protocol `assertStored*`
-// guards, so a malformed snapshot payload fails with a clear
-// `postgres_backend_snapshot_payload_invalid` error instead of a confusing
-// downstream type error.
-
-/** Asserts the decoded snapshot root is a plain object. */
-function readSnapshotRecord(value: unknown): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw persistenceError(
-      "postgres backend snapshot payload must be an object",
-      "postgres_backend_snapshot_payload_invalid"
-    );
-  }
-
-  return value as Record<string, unknown>;
-}
-
-/** Asserts a snapshot field is an array and validates every element with `assertRecord`. */
-function readSnapshotArray<T>(
-  value: unknown,
-  assertRecord: (value: unknown, label: string) => asserts value is T,
-  label: string
-): T[] {
-  if (!Array.isArray(value)) {
-    throw persistenceError(
-      `postgres backend snapshot field "${label}" must be an array`,
-      "postgres_backend_snapshot_payload_invalid",
-      { label }
-    );
-  }
-
-  return value.map((entry, index) => {
-    assertRecord(entry, `${label}[${index}]`);
-    return entry;
-  });
-}
-
-/**
- * Asserts a snapshot field is an array without validating element shape —
- * used where the element type still needs its schema resolved (turn trees,
- * turn tree paths) before it can be asserted.
- */
-function readUntypedSnapshotArray(value: unknown, label: string): unknown[] {
-  if (!Array.isArray(value)) {
-    throw persistenceError(
-      `postgres backend snapshot field "${label}" must be an array`,
-      "postgres_backend_snapshot_payload_invalid",
-      { label }
-    );
-  }
-
-  return value;
-}
-
-/** Asserts the decoded snapshot's `version` field is a safe integer. */
-function readSnapshotVersion(value: unknown): number {
-  if (typeof value !== "number" || !Number.isSafeInteger(value)) {
-    throw persistenceError(
-      "postgres backend snapshot version must be an integer",
-      "postgres_backend_snapshot_payload_invalid",
-      { field: "version" }
-    );
-  }
-
-  return value;
-}
-
-/** Copies a possibly-driver-specific byte buffer into a plain `Uint8Array`. */
-function toUint8Array(value: Uint8Array): Uint8Array {
-  return new Uint8Array(value);
-}
-
-/** Resolves a turn-tree schema by id from a decoded snapshot state. */
-function getSchemaForSchemaId(
-  state: BackendState,
-  schemaId: string,
-  label: string
-) {
-  const record = state.schemas.get(schemaId);
-  if (record === undefined) {
-    throw persistenceError(
-      `${label} must reference an existing schema`,
-      "postgres_backend_missing_schema_reference",
-      { label, schemaId }
-    );
-  }
-  return decodeTurnTreeSchema(record.schemaCbor, `${label} schema`);
-}
-
-/** Resolves the turn-tree schema referenced by a stored turn tree. */
-function getSchemaForTurnTree(
-  state: BackendState,
-  turnTree: { schemaId: string }
-) {
-  return getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
-}
+};
