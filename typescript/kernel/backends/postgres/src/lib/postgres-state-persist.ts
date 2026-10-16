@@ -39,6 +39,148 @@ import {
  */
 const MAX_PARAMETERS_PER_STATEMENT = 20_000;
 
+/** Flattens one stored turn-tree path into its column value tuple. */
+const turnTreePathRow = (
+  scope: string,
+  record: StoredTurnTreePath
+): unknown[] => {
+  return [
+    scope,
+    record.turnTreeHash,
+    record.path,
+    record.collectionKind,
+    record.collectionKind === "single" ? record.singleHash : null,
+    record.collectionKind === "ordered" ? record.orderedEncoding : null,
+    record.collectionKind === "ordered" ? record.orderedCount : null,
+    record.collectionKind === "ordered" && record.orderedEncoding === "flat"
+      ? record.orderedInlineCbor
+      : null,
+    record.collectionKind === "ordered" && record.orderedEncoding === "chunked"
+      ? record.orderedChunkListCbor
+      : null,
+  ];
+};
+
+/**
+ * Recomputes every turn node's lineage-root position from the parent chain,
+ * failing the migration on a cycle or a dangling parent link.
+ */
+const lineageRootRows = (scope: string, state: BackendState): unknown[][] => {
+  const lineageIndex = createTurnNodeLineageIndex();
+  const rows: unknown[][] = [];
+
+  for (const turnNode of state.turnNodes.values()) {
+    const position = resolveTurnNodeLineagePosition(
+      state.turnNodes,
+      turnNode,
+      lineageIndex,
+      {
+        onCycle: (): never => {
+          throw persistenceError(
+            "turn node lineage must not contain cycles during blob migration",
+            "postgres_backend_turn_node_lineage_cycle",
+            { turnNodeHash: turnNode.hash }
+          );
+        },
+        onMissingPreviousTurnNode: (missingTurnNodeHash: string): never => {
+          throw persistenceError(
+            "turn node lineage requires complete parent links during blob migration",
+            "postgres_backend_missing_turn_node_reference",
+            {
+              previousTurnNodeHash: missingTurnNodeHash,
+              turnNodeHash: turnNode.hash,
+            }
+          );
+        },
+      }
+    );
+    rows.push([
+      scope,
+      turnNode.hash,
+      position.rootTurnNodeHash,
+      position.depth,
+    ]);
+  }
+
+  return rows;
+};
+
+/**
+ * Issues strict `INSERT ... VALUES (...), (...)` statements (no ON CONFLICT
+ * escape hatch — see {@link insertBackendStateRows}) in chunks sized so no
+ * statement exceeds {@link MAX_PARAMETERS_PER_STATEMENT} bind parameters.
+ * `table` and `columns` are fixed internal identifiers, never caller input.
+ * A failed chunk is re-thrown with the table and chunk position attached so
+ * a migration failure names exactly which family and rows broke.
+ */
+const insertRowsInBatches = async (
+  sql: DbSql,
+  table: string,
+  columns: readonly string[],
+  rows: unknown[][]
+): Promise<void> => {
+  if (rows.length === 0) {
+    return;
+  }
+
+  const chunkSize = Math.max(
+    1,
+    Math.floor(MAX_PARAMETERS_PER_STATEMENT / columns.length)
+  );
+
+  for (let offset = 0; offset < rows.length; offset += chunkSize) {
+    const chunk = rows.slice(offset, offset + chunkSize);
+    const parameters: unknown[] = [];
+    const tuples = chunk.map((row) => {
+      const placeholders = row.map((value) => {
+        parameters.push(value);
+        return `$${parameters.length}`;
+      });
+      return `(${placeholders.join(", ")})`;
+    });
+
+    try {
+      await sql.unsafe(
+        `INSERT INTO ${table} (${columns.join(", ")})
+         VALUES ${tuples.join(", ")}`,
+        parameters as ParameterOrJSON<never>[]
+      );
+    } catch (error: unknown) {
+      const code =
+        error instanceof Error && typeof Reflect.get(error, "code") === "string"
+          ? (Reflect.get(error, "code") as string)
+          : undefined;
+      if (code === "22021") {
+        throw persistenceError(
+          `postgres backend migration cannot store a value from table "${table}": ` +
+            "PostgreSQL TEXT columns cannot encode a U+0000 (NUL) code point, " +
+            "and the legacy blob contains one",
+          "postgres_backend_unstorable_text",
+          {
+            chunkOffset: offset,
+            chunkRows: chunk.length,
+            table,
+            totalRows: rows.length,
+          },
+          error
+        );
+      }
+
+      throw persistenceError(
+        "postgres backend bulk family insert failed",
+        "postgres_backend_bulk_insert_failed",
+        {
+          chunkOffset: offset,
+          chunkRows: chunk.length,
+          table,
+          totalRows: rows.length,
+        },
+        error
+      );
+    }
+  }
+};
+
 /**
  * Inserts every family row from a decoded {@link BackendState} into the
  * relational tables for one Scope, using batched multi-row `INSERT`s so the
@@ -61,12 +203,12 @@ const MAX_PARAMETERS_PER_STATEMENT = 20_000;
  * arrays and, within {@link insertRowsInBatches}, per-chunk parameter
  * arrays, all held at once before a chunk's statement is issued.
  */
-export async function insertBackendStateRows(
+export const insertBackendStateRows = async (
   sql: DbSql,
   schemaName: string,
   scope: Scope,
   state: BackendState
-): Promise<void> {
+): Promise<void> => {
   const insertFamily = async (
     table: RelationalTableName,
     columns: readonly string[],
@@ -345,143 +487,4 @@ export async function insertBackendStateRows(
     ],
     annotationRows
   );
-}
-
-/** Flattens one stored turn-tree path into its column value tuple. */
-function turnTreePathRow(scope: string, record: StoredTurnTreePath): unknown[] {
-  return [
-    scope,
-    record.turnTreeHash,
-    record.path,
-    record.collectionKind,
-    record.collectionKind === "single" ? record.singleHash : null,
-    record.collectionKind === "ordered" ? record.orderedEncoding : null,
-    record.collectionKind === "ordered" ? record.orderedCount : null,
-    record.collectionKind === "ordered" && record.orderedEncoding === "flat"
-      ? record.orderedInlineCbor
-      : null,
-    record.collectionKind === "ordered" && record.orderedEncoding === "chunked"
-      ? record.orderedChunkListCbor
-      : null,
-  ];
-}
-
-/**
- * Recomputes every turn node's lineage-root position from the parent chain,
- * failing the migration on a cycle or a dangling parent link.
- */
-function lineageRootRows(scope: string, state: BackendState): unknown[][] {
-  const lineageIndex = createTurnNodeLineageIndex();
-  const rows: unknown[][] = [];
-
-  for (const turnNode of state.turnNodes.values()) {
-    const position = resolveTurnNodeLineagePosition(
-      state.turnNodes,
-      turnNode,
-      lineageIndex,
-      {
-        onCycle: (): never => {
-          throw persistenceError(
-            "turn node lineage must not contain cycles during blob migration",
-            "postgres_backend_turn_node_lineage_cycle",
-            { turnNodeHash: turnNode.hash }
-          );
-        },
-        onMissingPreviousTurnNode: (missingTurnNodeHash: string): never => {
-          throw persistenceError(
-            "turn node lineage requires complete parent links during blob migration",
-            "postgres_backend_missing_turn_node_reference",
-            {
-              previousTurnNodeHash: missingTurnNodeHash,
-              turnNodeHash: turnNode.hash,
-            }
-          );
-        },
-      }
-    );
-    rows.push([
-      scope,
-      turnNode.hash,
-      position.rootTurnNodeHash,
-      position.depth,
-    ]);
-  }
-
-  return rows;
-}
-
-/**
- * Issues strict `INSERT ... VALUES (...), (...)` statements (no ON CONFLICT
- * escape hatch — see {@link insertBackendStateRows}) in chunks sized so no
- * statement exceeds {@link MAX_PARAMETERS_PER_STATEMENT} bind parameters.
- * `table` and `columns` are fixed internal identifiers, never caller input.
- * A failed chunk is re-thrown with the table and chunk position attached so
- * a migration failure names exactly which family and rows broke.
- */
-async function insertRowsInBatches(
-  sql: DbSql,
-  table: string,
-  columns: readonly string[],
-  rows: unknown[][]
-): Promise<void> {
-  if (rows.length === 0) {
-    return;
-  }
-
-  const chunkSize = Math.max(
-    1,
-    Math.floor(MAX_PARAMETERS_PER_STATEMENT / columns.length)
-  );
-
-  for (let offset = 0; offset < rows.length; offset += chunkSize) {
-    const chunk = rows.slice(offset, offset + chunkSize);
-    const parameters: unknown[] = [];
-    const tuples = chunk.map((row) => {
-      const placeholders = row.map((value) => {
-        parameters.push(value);
-        return `$${parameters.length}`;
-      });
-      return `(${placeholders.join(", ")})`;
-    });
-
-    try {
-      await sql.unsafe(
-        `INSERT INTO ${table} (${columns.join(", ")})
-         VALUES ${tuples.join(", ")}`,
-        parameters as ParameterOrJSON<never>[]
-      );
-    } catch (error: unknown) {
-      const code =
-        error instanceof Error && typeof Reflect.get(error, "code") === "string"
-          ? (Reflect.get(error, "code") as string)
-          : undefined;
-      if (code === "22021") {
-        throw persistenceError(
-          `postgres backend migration cannot store a value from table "${table}": ` +
-            "PostgreSQL TEXT columns cannot encode a U+0000 (NUL) code point, " +
-            "and the legacy blob contains one",
-          "postgres_backend_unstorable_text",
-          {
-            chunkOffset: offset,
-            chunkRows: chunk.length,
-            table,
-            totalRows: rows.length,
-          },
-          error
-        );
-      }
-
-      throw persistenceError(
-        "postgres backend bulk family insert failed",
-        "postgres_backend_bulk_insert_failed",
-        {
-          chunkOffset: offset,
-          chunkRows: chunk.length,
-          table,
-          totalRows: rows.length,
-        },
-        error
-      );
-    }
-  }
-}
+};

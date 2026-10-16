@@ -546,6 +546,54 @@
       "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
       "bytes": 20,
       "role": "measurement"
+    },
+    {
+      "path": "M15-postgres-transaction-before-syntactic.json.gz",
+      "sha256": "b8436462c49d9abdf082f4fb48aa1742dfc44c5442996b0e711eee90c7494780",
+      "bytes": 2026,
+      "role": "baseline"
+    },
+    {
+      "path": "M15-postgres-transaction-before-type-aware.json.gz",
+      "sha256": "fc2ad94c66e9cbee16462897211d5898bab1922aba866f294af5b05a7436194d",
+      "bytes": 2647,
+      "role": "baseline"
+    },
+    {
+      "path": "M15-postgres-transaction-after-syntactic.json.gz",
+      "sha256": "57dfe1b144c4c4650ca2c6294d4b5146d13ca5a99986df46b90a1929a0420ffd",
+      "bytes": 976,
+      "role": "measurement"
+    },
+    {
+      "path": "M15-postgres-transaction-after-type-aware.json.gz",
+      "sha256": "09083d090468d7710380a2c5df64f13d9cbcf8ba12181520143320cf728514b7",
+      "bytes": 1590,
+      "role": "measurement"
+    },
+    {
+      "path": "M15-postgres-transaction-before-syntactic-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "baseline"
+    },
+    {
+      "path": "M15-postgres-transaction-before-type-aware-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "baseline"
+    },
+    {
+      "path": "M15-postgres-transaction-after-syntactic-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "measurement"
+    },
+    {
+      "path": "M15-postgres-transaction-after-type-aware-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "measurement"
     }
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."
