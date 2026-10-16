@@ -389,10 +389,10 @@ export const TOOLING_ACCEPTANCE_STEP: VerificationStep = {
  * inner loop, the codegen lane). Throws if an ID no longer matches a verify
  * gate step, so a derived lane can never silently diverge from this file.
  */
-export function selectAuthorityGateSteps(
+export const selectAuthorityGateSteps = (
   ids: readonly string[],
   lane: string
-): VerificationStep[] {
+): VerificationStep[] => {
   return ids.map((id) => {
     const step = AUTHORITY_GATE_STEPS.find((candidate) => candidate.id === id);
 
@@ -405,7 +405,7 @@ export function selectAuthorityGateSteps(
 
     return step;
   });
-}
+};
 
 const CORE_VERIFICATION_PHASES: readonly VerificationPhase[] = [
   {
@@ -656,132 +656,41 @@ const CORE_VERIFICATION_PHASES: readonly VerificationPhase[] = [
   },
 ];
 
-export function createVerificationPhases(): VerificationPhase[] {
+export const createVerificationPhases = (): VerificationPhase[] => {
   return prependGeneratedPrerequisitePhase(CORE_VERIFICATION_PHASES, {
     fresh: false,
   });
-}
+};
 
 export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] =
   createVerificationPhases();
-
-/**
- * Runs the full phased verification pipeline (release-check and the `verify`
- * entry point). The other lanes (verify-kernel, check, codegen) build their
- * own phase lists and call runVerificationPhases directly — it is the single
- * phase-engine entry point for all four lanes (KRT-BM002).
- */
-export function runVerification(): Promise<VerificationResult[]> {
-  return runVerificationPhases(DEFAULT_VERIFICATION_PHASES);
-}
-
-export async function runVerificationPhases(
-  phases: readonly VerificationPhase[],
-  options: VerificationRunOptions = {}
-): Promise<VerificationResult[]> {
-  const results: VerificationResult[] = [];
-
-  for (const phase of phases) {
-    const before = phase.mutatesWorktree
-      ? undefined
-      : await readWorktreeSnapshot(process.cwd());
-    const phaseResults = await runPhase(phase, options);
-    results.push(...phaseResults);
-
-    if (before !== undefined) {
-      await assertWorktreeUnchanged(before, {
-        cwd: process.cwd(),
-        label: `verification phase "${phase.id}"`,
-      });
-    }
-
-    if (phaseResults.some((result) => result.code !== 0)) {
-      return results;
-    }
-  }
-
-  return results;
-}
-
-export function hasVerificationFailure(
-  results: readonly VerificationResult[]
-): boolean {
-  return results.some((result) => result.code !== 0);
-}
-
-export function printVerificationSummary(
-  results: readonly VerificationResult[]
-): void {
-  console.log("");
-  console.log("Transition verification summary");
-
-  for (const result of results) {
-    const status = result.code === 0 ? "pass" : `fail (${result.code})`;
-    console.log(`- ${result.id}: ${status} in ${result.durationMs}ms`);
-  }
-}
 
 interface StepRun extends VerificationResult {
   output: string | null;
 }
 
-async function runPhase(
-  phase: VerificationPhase,
-  options: VerificationRunOptions
-): Promise<VerificationResult[]> {
-  const forceSerial = process.env.VERIFY_SERIAL === "1";
-  const limit = forceSerial
-    ? 1
-    : (phase.concurrency ??
-      Math.min(phase.steps.length, DEFAULT_MAX_CONCURRENCY));
+const spawnCommand = (
+  executable: string,
+  args: readonly string[]
+): Promise<number> => {
+  return new Promise<number>((resolve, reject) => {
+    const child = spawn(executable, args, {
+      env: process.env,
+      stdio: "inherit",
+    });
 
-  if (limit <= 1) {
-    return runPhaseSerially(phase.steps, options);
-  }
+    child.once("error", reject);
+    child.once("close", (code) => {
+      resolve(code ?? 1);
+    });
+  });
+};
 
-  // Capture each step's output so concurrent logs do not interleave; flush them
-  // in phase order once the phase completes. Captured output is held in memory
-  // until the phase finishes — fine for the only parallel phase today (phase 1
-  // is low-volume static analysis + authority validators). A side effect is that
-  // nothing prints mid-phase, so a hung parallel step shows no output until the
-  // phase ends; run VERIFY_SERIAL=1 for live streaming when diagnosing one. If a
-  // chatty step (e.g. a full build) ever moves into a parallel phase, stream it.
-  const runs = await mapWithConcurrency(phase.steps, limit, (step) =>
-    runVerificationStep(step, true, options)
-  );
-
-  for (const run of runs) {
-    if (run.output !== null) {
-      process.stdout.write(run.output);
-    }
-  }
-
-  return runs.map(toResult);
-}
-
-async function runPhaseSerially(
-  steps: readonly VerificationStep[],
-  options: VerificationRunOptions
-): Promise<VerificationResult[]> {
-  const results: VerificationResult[] = [];
-
-  for (const step of steps) {
-    const run = await runVerificationStep(step, false, options);
-    results.push(toResult(run));
-
-    if (run.code !== 0) {
-      break;
-    }
-  }
-
-  return results;
-}
-
-async function runVerificationStep(
+const runVerificationStep = async (
   step: VerificationStep,
   capture: boolean,
   options: VerificationRunOptions
-): Promise<StepRun> {
+): Promise<StepRun> => {
   const [executable, ...args] = step.command;
 
   if (executable === undefined) {
@@ -821,21 +730,39 @@ async function runVerificationStep(
     id: step.id,
     output: header + result.stdout + result.stderr,
   };
-}
+};
 
-function toResult(run: StepRun): VerificationResult {
+const toResult = (run: StepRun): VerificationResult => {
   return { code: run.code, durationMs: run.durationMs, id: run.id };
-}
+};
 
-async function mapWithConcurrency<T, R>(
+const runPhaseSerially = async (
+  steps: readonly VerificationStep[],
+  options: VerificationRunOptions
+): Promise<VerificationResult[]> => {
+  const results: VerificationResult[] = [];
+
+  for (const step of steps) {
+    const run = await runVerificationStep(step, false, options);
+    results.push(toResult(run));
+
+    if (run.code !== 0) {
+      break;
+    }
+  }
+
+  return results;
+};
+
+const mapWithConcurrency = async <T, R>(
   items: readonly T[],
   limit: number,
   fn: (item: T) => Promise<R>
-): Promise<R[]> {
+): Promise<R[]> => {
   const results = new Array<R>(items.length);
   let nextIndex = 0;
 
-  async function worker(): Promise<void> {
+  const worker = async (): Promise<void> => {
     while (true) {
       const index = nextIndex;
       nextIndex += 1;
@@ -846,30 +773,103 @@ async function mapWithConcurrency<T, R>(
 
       results[index] = await fn(items[index] as T);
     }
-  }
+  };
 
   const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
   await Promise.all(workers);
 
   return results;
-}
+};
 
-function spawnCommand(
-  executable: string,
-  args: readonly string[]
-): Promise<number> {
-  return new Promise<number>((resolve, reject) => {
-    const child = spawn(executable, args, {
-      env: process.env,
-      stdio: "inherit",
-    });
+const runPhase = async (
+  phase: VerificationPhase,
+  options: VerificationRunOptions
+): Promise<VerificationResult[]> => {
+  const forceSerial = process.env.VERIFY_SERIAL === "1";
+  const limit = forceSerial
+    ? 1
+    : (phase.concurrency ??
+      Math.min(phase.steps.length, DEFAULT_MAX_CONCURRENCY));
 
-    child.once("error", reject);
-    child.once("close", (code) => {
-      resolve(code ?? 1);
-    });
-  });
-}
+  if (limit <= 1) {
+    return runPhaseSerially(phase.steps, options);
+  }
+
+  // Capture each step's output so concurrent logs do not interleave; flush them
+  // in phase order once the phase completes. Captured output is held in memory
+  // until the phase finishes — fine for the only parallel phase today (phase 1
+  // is low-volume static analysis + authority validators). A side effect is that
+  // nothing prints mid-phase, so a hung parallel step shows no output until the
+  // phase ends; run VERIFY_SERIAL=1 for live streaming when diagnosing one. If a
+  // chatty step (e.g. a full build) ever moves into a parallel phase, stream it.
+  const runs = await mapWithConcurrency(phase.steps, limit, (step) =>
+    runVerificationStep(step, true, options)
+  );
+
+  for (const run of runs) {
+    if (run.output !== null) {
+      process.stdout.write(run.output);
+    }
+  }
+
+  return runs.map(toResult);
+};
+
+export const runVerificationPhases = async (
+  phases: readonly VerificationPhase[],
+  options: VerificationRunOptions = {}
+): Promise<VerificationResult[]> => {
+  const results: VerificationResult[] = [];
+
+  for (const phase of phases) {
+    const before = phase.mutatesWorktree
+      ? undefined
+      : await readWorktreeSnapshot(process.cwd());
+    const phaseResults = await runPhase(phase, options);
+    results.push(...phaseResults);
+
+    if (before !== undefined) {
+      await assertWorktreeUnchanged(before, {
+        cwd: process.cwd(),
+        label: `verification phase "${phase.id}"`,
+      });
+    }
+
+    if (phaseResults.some((result) => result.code !== 0)) {
+      return results;
+    }
+  }
+
+  return results;
+};
+
+/**
+ * Runs the full phased verification pipeline (release-check and the `verify`
+ * entry point). The other lanes (verify-kernel, check, codegen) build their
+ * own phase lists and call runVerificationPhases directly — it is the single
+ * phase-engine entry point for all four lanes (KRT-BM002).
+ */
+export const runVerification = (): Promise<VerificationResult[]> => {
+  return runVerificationPhases(DEFAULT_VERIFICATION_PHASES);
+};
+
+export const hasVerificationFailure = (
+  results: readonly VerificationResult[]
+): boolean => {
+  return results.some((result) => result.code !== 0);
+};
+
+export const printVerificationSummary = (
+  results: readonly VerificationResult[]
+): void => {
+  console.log("");
+  console.log("Transition verification summary");
+
+  for (const result of results) {
+    const status = result.code === 0 ? "pass" : `fail (${result.code})`;
+    console.log(`- ${result.id}: ${status} in ${result.durationMs}ms`);
+  }
+};
 
 if (import.meta.main) {
   const results = await runVerification();

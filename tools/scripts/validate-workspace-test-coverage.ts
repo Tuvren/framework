@@ -57,13 +57,13 @@ const EXCLUDED_TEST_PROJECTS: ReadonlyMap<string, string> = new Map([
   ],
 ]);
 
-function fail(problems: string[]): never {
+const fail = (problems: string[]): never => {
   console.error("workspace-test-coverage: FAIL");
   for (const problem of problems) {
     console.error(`  - ${problem}`);
   }
   process.exit(1);
-}
+};
 
 const projects = loadNxProjectFiles(process.cwd());
 const byName = new Map(projects.map((p) => [p.name, p]));
