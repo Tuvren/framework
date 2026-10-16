@@ -604,8 +604,8 @@ const assertPromptMatchesModel = (input: CreateCallOptionsInput): void => {
 const createCallOptions = (
   input: CreateCallOptionsInput
 ): LanguageModelV3CallOptions => {
-  assertPromptMatchesModel(input);
   const settings = normalizeBridgeSettings(input.prompt);
+  assertPromptMatchesModel(input);
   const { responseFormat } = input.prompt;
 
   assertProviderMediatedToolsSupported(input.prompt, input.model.provider);

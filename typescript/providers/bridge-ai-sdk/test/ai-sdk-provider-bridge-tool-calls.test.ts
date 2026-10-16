@@ -75,6 +75,7 @@ describe("provider-bridge-ai-sdk tool-call normalization", () => {
     });
 
     expect(response.finishReason).toBe("tool_call");
+    expect(response.parts).toHaveLength(1);
     const [part] = response.parts;
     expect(part?.type).toBe("tool_call");
     if (part?.type !== "tool_call") {

@@ -50,6 +50,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { TuvrenMessage } from "@tuvren/core/messages";
+import { isTuvrenMessage } from "@tuvren/core/messages";
 import type {
   ProviderUsage,
   TuvrenModelResponse,
@@ -172,10 +173,7 @@ const lastAssistantMessage = (
     .toReversed()
     .find(
       (message): message is Extract<TuvrenMessage, { role: "assistant" }> =>
-        typeof message === "object" &&
-        message !== null &&
-        "role" in message &&
-        message.role === "assistant"
+        isTuvrenMessage(message) && message.role === "assistant"
     );
   if (assistant === undefined) {
     throw new Error("expected a durable assistant message");
