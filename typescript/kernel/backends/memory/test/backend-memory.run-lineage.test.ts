@@ -34,7 +34,10 @@ import {
   createStoredTurnTreeRecord as createStoredTurnTree,
 } from "@tuvren/kernel-testkit";
 
-import { createCanonicalTurnTreePaths } from "./backend-memory-test-helpers.js";
+import {
+  createCanonicalTurnTreePaths,
+  rejectionOf,
+} from "./backend-memory-test-helpers.js";
 
 describe("@tuvren/backend-memory run lineage", () => {
   test("rejects conflicting object metadata for the same byte hash", async () => {
@@ -50,11 +53,13 @@ describe("@tuvren/backend-memory run lineage", () => {
       await tx.objects.put(objectRecord);
     });
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.objects.put(sameBytesDifferentMediaType);
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.objects.put(sameBytesDifferentMediaType);
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects turns whose start or head lineage is illegal", async () => {
@@ -126,35 +131,39 @@ describe("@tuvren/backend-memory run lineage", () => {
       await tx.branches.set(branch);
     });
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.turns.set({
-          branchId: branch.branchId,
-          createdAtMs: 8,
-          headTurnNodeHash: childNode.hash,
-          parentTurnId: null,
-          startTurnNodeHash: siblingRoot.hash,
-          threadId: thread.threadId,
-          turnId: "turn_bad_start",
-          updatedAtMs: 8,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.turns.set({
+            branchId: branch.branchId,
+            createdAtMs: 8,
+            headTurnNodeHash: childNode.hash,
+            parentTurnId: null,
+            startTurnNodeHash: siblingRoot.hash,
+            threadId: thread.threadId,
+            turnId: "turn_bad_start",
+            updatedAtMs: 8,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.turns.set({
-          branchId: branch.branchId,
-          createdAtMs: 9,
-          headTurnNodeHash: siblingRoot.hash,
-          parentTurnId: null,
-          startTurnNodeHash: rootNode.hash,
-          threadId: thread.threadId,
-          turnId: "turn_bad_head",
-          updatedAtMs: 9,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.turns.set({
+            branchId: branch.branchId,
+            createdAtMs: 9,
+            headTurnNodeHash: siblingRoot.hash,
+            parentTurnId: null,
+            startTurnNodeHash: rootNode.hash,
+            threadId: thread.threadId,
+            turnId: "turn_bad_head",
+            updatedAtMs: 9,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects runs whose start turn node falls outside the referenced turn span", async () => {
@@ -228,29 +237,31 @@ describe("@tuvren/backend-memory run lineage", () => {
       await tx.turns.set(oldTurn);
     });
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.runs.set({
-          branchId: branch.branchId,
-          createdAtMs: 9,
-          createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
-          currentStepIndex: 0,
-          runId: "run_turn_span_mismatch",
-          schemaId: schema.schemaId,
-          startTurnNodeHash: headNode.hash,
-          status: "running",
-          stepSequenceCbor: encodeDeterministicKernelRecord([
-            {
-              deterministic: false,
-              id: "model_call",
-              sideEffects: false,
-            },
-          ]),
-          turnId: oldTurn.turnId,
-          updatedAtMs: 9,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.runs.set({
+            branchId: branch.branchId,
+            createdAtMs: 9,
+            createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
+            currentStepIndex: 0,
+            runId: "run_turn_span_mismatch",
+            schemaId: schema.schemaId,
+            startTurnNodeHash: headNode.hash,
+            status: "running",
+            stepSequenceCbor: encodeDeterministicKernelRecord([
+              {
+                deterministic: false,
+                id: "model_call",
+                sideEffects: false,
+              },
+            ]),
+            turnId: oldTurn.turnId,
+            updatedAtMs: 9,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects runs whose created turn node list references missing nodes", async () => {
@@ -294,40 +305,42 @@ describe("@tuvren/backend-memory run lineage", () => {
       updatedAtMs: 6,
     };
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.schemas.put(schemaRecord);
-        await tx.turnTrees.put(turnTree);
-        await tx.turnTreePaths.putMany(
-          createCanonicalTurnTreePaths(turnTree, [])
-        );
-        await tx.turnNodes.put(turnNode);
-        await tx.threads.put(thread);
-        await tx.branches.set(branch);
-        await tx.turns.set(turn);
-        await tx.runs.set({
-          branchId: branch.branchId,
-          createdAtMs: 7,
-          createdTurnNodesCbor: encodeDeterministicKernelRecord([
-            createHashFromIndex(999),
-          ]),
-          currentStepIndex: 1,
-          runId: "run_created_nodes_missing",
-          schemaId: schema.schemaId,
-          startTurnNodeHash: turnNode.hash,
-          status: "completed",
-          stepSequenceCbor: encodeDeterministicKernelRecord([
-            {
-              deterministic: false,
-              id: "model_call",
-              sideEffects: false,
-            },
-          ]),
-          turnId: turn.turnId,
-          updatedAtMs: 7,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.schemas.put(schemaRecord);
+          await tx.turnTrees.put(turnTree);
+          await tx.turnTreePaths.putMany(
+            createCanonicalTurnTreePaths(turnTree, [])
+          );
+          await tx.turnNodes.put(turnNode);
+          await tx.threads.put(thread);
+          await tx.branches.set(branch);
+          await tx.turns.set(turn);
+          await tx.runs.set({
+            branchId: branch.branchId,
+            createdAtMs: 7,
+            createdTurnNodesCbor: encodeDeterministicKernelRecord([
+              createHashFromIndex(999),
+            ]),
+            currentStepIndex: 1,
+            runId: "run_created_nodes_missing",
+            schemaId: schema.schemaId,
+            startTurnNodeHash: turnNode.hash,
+            status: "completed",
+            stepSequenceCbor: encodeDeterministicKernelRecord([
+              {
+                deterministic: false,
+                id: "model_call",
+                sideEffects: false,
+              },
+            ]),
+            turnId: turn.turnId,
+            updatedAtMs: 7,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects runs whose created turn nodes cross thread lineage", async () => {
@@ -392,46 +405,48 @@ describe("@tuvren/backend-memory run lineage", () => {
       updatedAtMs: 9,
     };
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.schemas.put(schemaRecord);
-        await tx.turnTrees.put(baseTree);
-        await tx.turnTrees.put(siblingTree);
-        await tx.turnTreePaths.putMany(
-          createCanonicalTurnTreePaths(baseTree, [])
-        );
-        await tx.turnTreePaths.putMany(
-          createCanonicalTurnTreePaths(siblingTree, [createHashFromIndex(1)])
-        );
-        await tx.turnNodes.put(rootNode);
-        await tx.turnNodes.put(branchHead);
-        await tx.turnNodes.put(foreignRoot);
-        await tx.threads.put(thread);
-        await tx.branches.set(branch);
-        await tx.turns.set(turn);
-        await tx.runs.set({
-          branchId: branch.branchId,
-          createdAtMs: 10,
-          createdTurnNodesCbor: encodeDeterministicKernelRecord([
-            foreignRoot.hash,
-          ]),
-          currentStepIndex: 1,
-          runId: "run_created_nodes_lineage",
-          schemaId: schema.schemaId,
-          startTurnNodeHash: branchHead.hash,
-          status: "completed",
-          stepSequenceCbor: encodeDeterministicKernelRecord([
-            {
-              deterministic: false,
-              id: "model_call",
-              sideEffects: false,
-            },
-          ]),
-          turnId: turn.turnId,
-          updatedAtMs: 10,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.schemas.put(schemaRecord);
+          await tx.turnTrees.put(baseTree);
+          await tx.turnTrees.put(siblingTree);
+          await tx.turnTreePaths.putMany(
+            createCanonicalTurnTreePaths(baseTree, [])
+          );
+          await tx.turnTreePaths.putMany(
+            createCanonicalTurnTreePaths(siblingTree, [createHashFromIndex(1)])
+          );
+          await tx.turnNodes.put(rootNode);
+          await tx.turnNodes.put(branchHead);
+          await tx.turnNodes.put(foreignRoot);
+          await tx.threads.put(thread);
+          await tx.branches.set(branch);
+          await tx.turns.set(turn);
+          await tx.runs.set({
+            branchId: branch.branchId,
+            createdAtMs: 10,
+            createdTurnNodesCbor: encodeDeterministicKernelRecord([
+              foreignRoot.hash,
+            ]),
+            currentStepIndex: 1,
+            runId: "run_created_nodes_lineage",
+            schemaId: schema.schemaId,
+            startTurnNodeHash: branchHead.hash,
+            status: "completed",
+            stepSequenceCbor: encodeDeterministicKernelRecord([
+              {
+                deterministic: false,
+                id: "model_call",
+                sideEffects: false,
+              },
+            ]),
+            turnId: turn.turnId,
+            updatedAtMs: 10,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects runs whose created turn nodes move beyond the turn head", async () => {
@@ -491,42 +506,44 @@ describe("@tuvren/backend-memory run lineage", () => {
       updatedAtMs: 8,
     };
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.schemas.put(schemaRecord);
-        await tx.turnTrees.put(turnTree);
-        await tx.turnTreePaths.putMany(
-          createCanonicalTurnTreePaths(turnTree, [])
-        );
-        await tx.turnNodes.put(rootNode);
-        await tx.turnNodes.put(turnHead);
-        await tx.turnNodes.put(futureNode);
-        await tx.threads.put(thread);
-        await tx.branches.set(branch);
-        await tx.turns.set(turn);
-        await tx.runs.set({
-          branchId: branch.branchId,
-          createdAtMs: 9,
-          createdTurnNodesCbor: encodeDeterministicKernelRecord([
-            futureNode.hash,
-          ]),
-          currentStepIndex: 1,
-          runId: "run_created_nodes_span",
-          schemaId: schema.schemaId,
-          startTurnNodeHash: turnHead.hash,
-          status: "completed",
-          stepSequenceCbor: encodeDeterministicKernelRecord([
-            {
-              deterministic: false,
-              id: "model_call",
-              sideEffects: false,
-            },
-          ]),
-          turnId: turn.turnId,
-          updatedAtMs: 9,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.schemas.put(schemaRecord);
+          await tx.turnTrees.put(turnTree);
+          await tx.turnTreePaths.putMany(
+            createCanonicalTurnTreePaths(turnTree, [])
+          );
+          await tx.turnNodes.put(rootNode);
+          await tx.turnNodes.put(turnHead);
+          await tx.turnNodes.put(futureNode);
+          await tx.threads.put(thread);
+          await tx.branches.set(branch);
+          await tx.turns.set(turn);
+          await tx.runs.set({
+            branchId: branch.branchId,
+            createdAtMs: 9,
+            createdTurnNodesCbor: encodeDeterministicKernelRecord([
+              futureNode.hash,
+            ]),
+            currentStepIndex: 1,
+            runId: "run_created_nodes_span",
+            schemaId: schema.schemaId,
+            startTurnNodeHash: turnHead.hash,
+            status: "completed",
+            stepSequenceCbor: encodeDeterministicKernelRecord([
+              {
+                deterministic: false,
+                id: "model_call",
+                sideEffects: false,
+              },
+            ]),
+            turnId: turn.turnId,
+            updatedAtMs: 9,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("keeps historical completed runs valid after branch head advances", async () => {
