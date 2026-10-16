@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures in these validation tests.
-
 import { describe, expect, test } from "bun:test";
 
 import type {

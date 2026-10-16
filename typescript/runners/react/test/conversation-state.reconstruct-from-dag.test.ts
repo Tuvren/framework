@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures.
-
 // KRT-BH002 — Reconstruct-from-DAG proof (ADR-0053).
 //
 // ADR-0053 makes the durable lineage the unconditional source of truth: the

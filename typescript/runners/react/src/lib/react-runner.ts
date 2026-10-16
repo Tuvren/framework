@@ -553,7 +553,7 @@ const createAroundModelContext = (
   createAroundModelContextSnapshot({
     config: cloneValue(promptState.config),
     emit: (event) => {
-      context.runtime.emit({
+      void context.runtime.emit({
         data: event.data,
         name: event.name,
         timestamp: context.runtime.now(),

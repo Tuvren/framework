@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures.
-
 // KRT-BH003 — AY005 multi-turn continuity round-trip, end to end (ADR-0053).
 //
 // AY005 wired `TuvrenPrompt.providerContinuity` into the provider call and
