@@ -50,10 +50,10 @@ const CONTINUITY = "thought-signature-turn-1-abc";
  * call and returns a first-turn assistant reply carrying a continuity artifact
  * in `providerMetadata`. It holds no cross-turn session state of its own.
  */
-function createRecordingProvider(): {
+const createRecordingProvider = (): {
   capturedPrompts: TuvrenMessage[][];
   provider: TuvrenProvider;
-} {
+} => {
   const capturedPrompts: TuvrenMessage[][] = [];
   let call = 0;
   const provider: TuvrenProvider = {
@@ -84,9 +84,9 @@ function createRecordingProvider(): {
     },
   };
   return { capturedPrompts, provider };
-}
+};
 
-function buildRuntime(provider: TuvrenProvider) {
+const buildRuntime = (provider: TuvrenProvider) => {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntimeCore({
     defaultRunnerId: REACT_RUNNER_ID,
@@ -96,13 +96,13 @@ function buildRuntime(provider: TuvrenProvider) {
     ]),
   });
   return { harness, provider, runtime };
-}
+};
 
-async function runTurn(
+const runTurn = async (
   runtime: ReturnType<typeof buildRuntime>,
   ids: { branchId: string; threadId: string },
   text: string
-): Promise<void> {
+): Promise<void> => {
   const handle = runtime.runtime.executeTurn({
     branchId: ids.branchId,
     config: { model: runtime.provider, name: "primary" },
@@ -111,15 +111,15 @@ async function runTurn(
   });
   const result = await handle.awaitResult();
   expect(result.status).toBe("completed");
-}
+};
 
-function assistantContinuity(messages: TuvrenMessage[]): unknown {
+const assistantContinuity = (messages: TuvrenMessage[]): unknown => {
   const assistant = messages.find((message) => message.role === "assistant");
   const firstPart = assistant?.parts[0];
   return firstPart && "providerMetadata" in firstPart
     ? firstPart.providerMetadata
     : undefined;
-}
+};
 
 describe("KRT-BH002 reconstruct-from-DAG", () => {
   test("the next turn's provider request is reconstructed from durable lineage carrying the prior continuity, with no provider-held state", async () => {
