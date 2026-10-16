@@ -1,0 +1,44 @@
+{
+  "diagnostics": [
+    {
+      "message": "Unexpected use of `\"&\"`.",
+      "code": "eslint(no-bitwise)",
+      "severity": "error",
+      "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-bitwise.html",
+      "help": "bitwise operators are not allowed, maybe you mistyped `&&` or `||`?",
+      "filename": "tools/scripts/api-freeze-gate.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 5737,
+            "length": 19,
+            "line": 144,
+            "column": 4
+          }
+        }
+      ]
+    },
+    {
+      "message": "Unexpected use of `\"&\"`.",
+      "code": "eslint(no-bitwise)",
+      "severity": "error",
+      "url": "https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-bitwise.html",
+      "help": "bitwise operators are not allowed, maybe you mistyped `&&` or `||`?",
+      "filename": "tools/scripts/api-freeze-gate.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 8879,
+            "length": 17,
+            "line": 238,
+            "column": 4
+          }
+        }
+      ]
+    }
+  ],
+  "number_of_files": 38,
+  "number_of_rules": 474,
+  "threads_count": 16,
+  "start_time": 0.62491855
+}
