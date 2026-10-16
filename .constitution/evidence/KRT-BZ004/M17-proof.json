@@ -45,7 +45,8 @@
     "providerTestkitConformance": "pass",
     "providerCertificationConformance": "pass: 60/60",
     "changeset": "pass",
-    "constitution": "pass: 0 errors, existing TS-004 warning"
+    "constitution": "pass: 0 errors, existing TS-004 warning",
+    "replayCommands": "M17-replay-commands.txt"
   },
   "isolation": {
     "exactFrozenCandidate": true,
