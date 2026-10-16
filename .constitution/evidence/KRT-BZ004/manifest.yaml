@@ -1,9 +1,10 @@
 owner: KRT-BZ004
 mode: contract_test
+result: pass
 produced:
   date: '2026-10-16'
-  commit: 8c03754281b057b33058f852230a8ea392692fb8
-  command: sh .constitution/evidence/KRT-BZ004/M19-replay-commands.txt
+  commit: 9ec9d9da9f64721a7d26222df688de92653e013c
+  command: 'EXTERNAL_HANDOFF=/tmp/epic-bz-m29-handoff/suppressions.json; copy validated handoff; bun run lint; bun run nx run runner-react:lint --skipNxCache; bun run changeset:check --base=master'
 files:
   - path: M1-raw-diagnostics.tar.gz
     sha256: 0c6905b1398eafb2f298810df123198d5df7af6cbc2996936556c8a6d2e8bae6
@@ -161,4 +162,8 @@ files:
     sha256: d0f4b516b878f4104e8bc1a904cc588fe4bdfc0b1e19c4b88ab32709f81da25b
     bytes: 3572
     role: measurement
-pass_criteria: 'KRT-BZ001 captures remain parseable. M8-M16 preserve provider initialization and behavior while clearing source ordering diagnostics. M17 preserves 32 React stream-support and benchmark contracts plus the reviewed private abort-cleanup repair. M18 preserves 26 React prompt and stream contracts. M19 preserves 17 React around-model contracts, clears 52 ordering diagnostics with non-target rules exact-equal, and passes package, workspace, and provider gates.'
+  - path: suppressions.json
+    sha256: 7524249356991976a3255faef82d0e808c6b3db4c771982b26de603d049adc7e
+    bytes: 57204
+    role: measurement
+pass_criteria: 'All five BZ projects use canonical native lint targets with complete zero-diagnostic inventories; no legacy Biome directives remain; the final handoff preserves all 19 legacy identities and records exactly four explicitly approved native exceptions across three comments.'

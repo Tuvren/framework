@@ -1,0 +1,1125 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BZ004",
+  "milestone": "M29",
+  "baseline_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+  "measurement_commit": "9ec9d9da9f64721a7d26222df688de92653e013c",
+  "measurement_tree": {
+    "kind": "committed M29 admission",
+    "commit": "9ec9d9da9f64721a7d26222df688de92653e013c"
+  },
+  "original_ledger_sha256": "6ce9985dacf29d2f5b1080c33ee8fe97c315447b448030779fef44e0dae5e36d",
+  "historical_probe_attribution": "The 19 legacy identities, reasons, and baseline diagnostics come unchanged from KRT-BZ002. Final native facts are fresh measurements verified at the committed M29 admission; the historical probe is not replayed or edited.",
+  "owned_paths": [
+    "typescript/providers/provider-api",
+    "typescript/providers/bridge-ai-sdk",
+    "typescript/providers/testkit",
+    "typescript/providers/certification",
+    "typescript/runners/react"
+  ],
+  "identity_convention": "repository-relative path::checker rule::one-based occurrence within that path/rule; line is informational",
+  "counts": {
+    "admitted_projects": 5,
+    "legacy_baseline_entries": 19,
+    "legacy_final_retained": 0,
+    "legacy_final_native_exceptions": 0,
+    "new_native_exception_diagnostics": 4,
+    "new_native_exception_comments": 3,
+    "final_entries": 23,
+    "final_biome_directives": 0,
+    "final_native_directive_comments": 3,
+    "final_native_diagnostics": 0,
+    "final_unused_disable_diagnostics": 0
+  },
+  "drift": {
+    "legacy_identities_added": [],
+    "legacy_identities_removed": [],
+    "legacy_reasons_changed": [],
+    "new_native_exception_identities": [
+      "typescript/runners/react/src/lib/react-runner-stream-support.ts::promise/prefer-await-to-then::1",
+      "typescript/runners/react/src/lib/react-runner-stream-support.ts::promise/prefer-catch::1",
+      "typescript/runners/react/src/lib/react-runner-stream-support.ts::promise/prefer-await-to-then::2",
+      "typescript/runners/react/src/lib/react-runner-stream-support.ts::promise/prefer-await-to-callbacks::1"
+    ]
+  },
+  "final_native_proof": {
+    "canonical_target_constraints": {
+      "workspace_cwd": ".",
+      "ordered_commands": true,
+      "parallel": false,
+      "target_local_inputs_present": false,
+      "rule_overrides_present": false,
+      "json_only": false
+    },
+    "projects": {
+      "provider-api": {
+        "admission": {
+          "commit": "5ea481157da7eccd6713d8b1bb862e621cb35c77",
+          "milestone": "M25"
+        },
+        "canonical_lint_target": {
+          "executor": "nx:run-commands",
+          "cwd": ".",
+          "commands": [
+            "bunx --bun oxlint --type-aware typescript/providers/provider-api",
+            "bun tools/scripts/json-check.ts typescript/providers/provider-api"
+          ],
+          "parallel": false
+        },
+        "files": 5,
+        "rules": 474,
+        "diagnostics": 0
+      },
+      "bridge-ai-sdk": {
+        "admission": {
+          "commit": "225823bc98de98b55c7cf426bfea08be4d82f43b",
+          "milestone": "M26"
+        },
+        "canonical_lint_target": {
+          "executor": "nx:run-commands",
+          "cwd": ".",
+          "commands": [
+            "bunx --bun oxlint --type-aware typescript/providers/bridge-ai-sdk",
+            "bun tools/scripts/json-check.ts typescript/providers/bridge-ai-sdk"
+          ],
+          "parallel": false
+        },
+        "files": 18,
+        "rules": 474,
+        "diagnostics": 0
+      },
+      "testkit": {
+        "admission": {
+          "commit": "2559ccd1d6db79a315e9767c7b314e62df8ac292",
+          "milestone": "M27"
+        },
+        "canonical_lint_target": {
+          "executor": "nx:run-commands",
+          "cwd": ".",
+          "commands": [
+            "bunx --bun oxlint --type-aware typescript/providers/testkit",
+            "bun tools/scripts/json-check.ts typescript/providers/testkit"
+          ],
+          "parallel": false
+        },
+        "files": 10,
+        "rules": 474,
+        "diagnostics": 0
+      },
+      "certification": {
+        "admission": {
+          "commit": "6027bf498f49bf8661925d92f4adfae8cc241751",
+          "milestone": "M28"
+        },
+        "canonical_lint_target": {
+          "executor": "nx:run-commands",
+          "cwd": ".",
+          "commands": [
+            "bunx --bun oxlint --type-aware typescript/providers/certification",
+            "bun tools/scripts/json-check.ts typescript/providers/certification"
+          ],
+          "parallel": false
+        },
+        "files": 1,
+        "rules": 474,
+        "diagnostics": 0
+      },
+      "runner-react": {
+        "admission": {
+          "commit": "9ec9d9da9f64721a7d26222df688de92653e013c",
+          "milestone": "M29"
+        },
+        "canonical_lint_target": {
+          "executor": "nx:run-commands",
+          "cwd": ".",
+          "commands": [
+            "bunx --bun oxlint --type-aware typescript/runners/react",
+            "bun tools/scripts/json-check.ts typescript/runners/react"
+          ],
+          "parallel": false
+        },
+        "files": 20,
+        "rules": 474,
+        "diagnostics": 0
+      }
+    },
+    "runner_react_syntactic": {
+      "files": 20,
+      "rules": 419,
+      "diagnostics": 0
+    },
+    "runner_react_type_aware": {
+      "files": 20,
+      "rules": 474,
+      "diagnostics": 0
+    },
+    "runner_react_debug_files": {
+      "files": 20,
+      "complete": true,
+      "nonempty": true
+    },
+    "runner_react_unused_disable": {
+      "files": 20,
+      "rules": 474,
+      "diagnostics": 0,
+      "comments": 3,
+      "covered_rule_diagnostics": 4
+    },
+    "json_inventory": {
+      "runner_react_json_files": 7,
+      "diagnostics": 0
+    },
+    "final_full_lint": "pass"
+  },
+  "entries": [
+    {
+      "identity": "typescript/providers/bridge-ai-sdk/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/providers/bridge-ai-sdk/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "commit": "225823bc98de98b55c7cf426bfea08be4d82f43b",
+        "milestone": "M26"
+      },
+      "current_native_proof": {
+        "project": "bridge-ai-sdk",
+        "candidate": "oxc/no-barrel-file",
+        "proof_ref": "#/final_native_proof/projects/bridge-ai-sdk"
+      },
+      "original_measurement": {
+        "identity": "typescript/providers/bridge-ai-sdk/src/index.ts::lint/performance/noBarrelFile::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The enabled shipped oxc/no-barrel-file rule produces no final diagnostic; the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-executed-fidelity.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-executed-fidelity.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock AI SDK model hooks intentionally preserve async provider signatures.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock AI SDK model hooks intentionally preserve async provider signatures.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "commit": "225823bc98de98b55c7cf426bfea08be4d82f43b",
+        "milestone": "M26"
+      },
+      "current_native_proof": {
+        "project": "bridge-ai-sdk",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/bridge-ai-sdk"
+      },
+      "original_measurement": {
+        "identity": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-executed-fidelity.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock model hooks preserve async provider signatures.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock model hooks preserve async provider signatures.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "commit": "225823bc98de98b55c7cf426bfea08be4d82f43b",
+        "milestone": "M26"
+      },
+      "current_native_proof": {
+        "project": "bridge-ai-sdk",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/bridge-ai-sdk"
+      },
+      "original_measurement": {
+        "identity": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-proofs.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock AI SDK model hooks intentionally preserve async provider signatures.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock AI SDK model hooks intentionally preserve async provider signatures.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "commit": "225823bc98de98b55c7cf426bfea08be4d82f43b",
+        "milestone": "M26"
+      },
+      "current_native_proof": {
+        "project": "bridge-ai-sdk",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/bridge-ai-sdk"
+      },
+      "original_measurement": {
+        "identity": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-provider-tools.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-rejections.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-rejections.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock AI SDK model hooks intentionally preserve async provider signatures in rejection tests.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock AI SDK model hooks intentionally preserve async provider signatures in rejection tests.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "commit": "225823bc98de98b55c7cf426bfea08be4d82f43b",
+        "milestone": "M26"
+      },
+      "current_native_proof": {
+        "project": "bridge-ai-sdk",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/bridge-ai-sdk"
+      },
+      "original_measurement": {
+        "identity": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-rejections.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/providers/provider-api/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/providers/provider-api/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public contract surface.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "commit": "5ea481157da7eccd6713d8b1bb862e621cb35c77",
+        "milestone": "M25"
+      },
+      "current_native_proof": {
+        "project": "provider-api",
+        "candidate": "oxc/no-barrel-file",
+        "proof_ref": "#/final_native_proof/projects/provider-api"
+      },
+      "original_measurement": {
+        "identity": "typescript/providers/provider-api/src/index.ts::lint/performance/noBarrelFile::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The enabled shipped oxc/no-barrel-file rule produces no final diagnostic; the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/providers/testkit/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/providers/testkit/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional testkit surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional testkit surface.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "commit": "2559ccd1d6db79a315e9767c7b314e62df8ac292",
+        "milestone": "M27"
+      },
+      "current_native_proof": {
+        "project": "testkit",
+        "candidate": "oxc/no-barrel-file",
+        "proof_ref": "#/final_native_proof/projects/testkit"
+      },
+      "original_measurement": {
+        "identity": "typescript/providers/testkit/src/index.ts::lint/performance/noBarrelFile::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The enabled shipped oxc/no-barrel-file rule produces no final diagnostic; the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/runners/react/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/runners/react/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "baseline_line": 39,
+      "live_line": 39,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "milestone": "M29",
+        "measurement_base_commit": "6027bf498f49bf8661925d92f4adfae8cc241751",
+        "measurement_tree_diff_sha256": "e6a787d77842507d58d21d2b967997679eeabcdd1d0bd841bf23b307ea56dd0c"
+      },
+      "current_native_proof": {
+        "project": "runner-react",
+        "candidate": "oxc/no-barrel-file",
+        "proof_ref": "#/final_native_proof/projects/runner-react"
+      },
+      "original_measurement": {
+        "identity": "typescript/runners/react/src/index.ts::lint/performance/noBarrelFile::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The enabled shipped oxc/no-barrel-file rule produces no final diagnostic; the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/runners/react/test/conversation-state.cache-correctness-neutral.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/conversation-state.cache-correctness-neutral.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async provider interfaces intentionally preserve promise-based signatures.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "milestone": "M29",
+        "measurement_base_commit": "6027bf498f49bf8661925d92f4adfae8cc241751",
+        "measurement_tree_diff_sha256": "e6a787d77842507d58d21d2b967997679eeabcdd1d0bd841bf23b307ea56dd0c"
+      },
+      "current_native_proof": {
+        "project": "runner-react",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/runner-react"
+      },
+      "original_measurement": {
+        "identity": "typescript/runners/react/test/conversation-state.cache-correctness-neutral.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/runners/react/test/conversation-state.continuity-round-trip.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/conversation-state.continuity-round-trip.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async provider interfaces intentionally preserve promise-based signatures.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "milestone": "M29",
+        "measurement_base_commit": "6027bf498f49bf8661925d92f4adfae8cc241751",
+        "measurement_tree_diff_sha256": "e6a787d77842507d58d21d2b967997679eeabcdd1d0bd841bf23b307ea56dd0c"
+      },
+      "current_native_proof": {
+        "project": "runner-react",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/runner-react"
+      },
+      "original_measurement": {
+        "identity": "typescript/runners/react/test/conversation-state.continuity-round-trip.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/runners/react/test/conversation-state.reconstruct-from-dag.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/conversation-state.reconstruct-from-dag.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async provider interfaces intentionally preserve promise-based signatures.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "milestone": "M29",
+        "measurement_base_commit": "6027bf498f49bf8661925d92f4adfae8cc241751",
+        "measurement_tree_diff_sha256": "e6a787d77842507d58d21d2b967997679eeabcdd1d0bd841bf23b307ea56dd0c"
+      },
+      "current_native_proof": {
+        "project": "runner-react",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/runner-react"
+      },
+      "original_measurement": {
+        "identity": "typescript/runners/react/test/conversation-state.reconstruct-from-dag.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner-around-model.integration.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner-around-model.integration.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "milestone": "M29",
+        "measurement_base_commit": "6027bf498f49bf8661925d92f4adfae8cc241751",
+        "measurement_tree_diff_sha256": "e6a787d77842507d58d21d2b967997679eeabcdd1d0bd841bf23b307ea56dd0c"
+      },
+      "current_native_proof": {
+        "project": "runner-react",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/runner-react"
+      },
+      "original_measurement": {
+        "identity": "typescript/runners/react/test/react-runner-around-model.integration.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner-around-model.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner-around-model.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Test doubles intentionally match async provider and extension contracts.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Test doubles intentionally match async provider and extension contracts.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "milestone": "M29",
+        "measurement_base_commit": "6027bf498f49bf8661925d92f4adfae8cc241751",
+        "measurement_tree_diff_sha256": "e6a787d77842507d58d21d2b967997679eeabcdd1d0bd841bf23b307ea56dd0c"
+      },
+      "current_native_proof": {
+        "project": "runner-react",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/runner-react"
+      },
+      "original_measurement": {
+        "identity": "typescript/runners/react/test/react-runner-around-model.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner-stream-failures.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner-stream-failures.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "milestone": "M29",
+        "measurement_base_commit": "6027bf498f49bf8661925d92f4adfae8cc241751",
+        "measurement_tree_diff_sha256": "e6a787d77842507d58d21d2b967997679eeabcdd1d0bd841bf23b307ea56dd0c"
+      },
+      "current_native_proof": {
+        "project": "runner-react",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/runner-react"
+      },
+      "original_measurement": {
+        "identity": "typescript/runners/react/test/react-runner-stream-failures.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner-stream-mapping.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner-stream-mapping.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these stream-mapping tests.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these stream-mapping tests.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "milestone": "M29",
+        "measurement_base_commit": "6027bf498f49bf8661925d92f4adfae8cc241751",
+        "measurement_tree_diff_sha256": "e6a787d77842507d58d21d2b967997679eeabcdd1d0bd841bf23b307ea56dd0c"
+      },
+      "current_native_proof": {
+        "project": "runner-react",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/runner-react"
+      },
+      "original_measurement": {
+        "identity": "typescript/runners/react/test/react-runner-stream-mapping.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner-stream-runtime.integration.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner-stream-runtime.integration.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "milestone": "M29",
+        "measurement_base_commit": "6027bf498f49bf8661925d92f4adfae8cc241751",
+        "measurement_tree_diff_sha256": "e6a787d77842507d58d21d2b967997679eeabcdd1d0bd841bf23b307ea56dd0c"
+      },
+      "current_native_proof": {
+        "project": "runner-react",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/runner-react"
+      },
+      "original_measurement": {
+        "identity": "typescript/runners/react/test/react-runner-stream-runtime.integration.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner-structured-output.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner-structured-output.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures in these validation tests.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async provider interfaces intentionally preserve promise-based signatures in these validation tests.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "milestone": "M29",
+        "measurement_base_commit": "6027bf498f49bf8661925d92f4adfae8cc241751",
+        "measurement_tree_diff_sha256": "e6a787d77842507d58d21d2b967997679eeabcdd1d0bd841bf23b307ea56dd0c"
+      },
+      "current_native_proof": {
+        "project": "runner-react",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/runner-react"
+      },
+      "original_measurement": {
+        "identity": "typescript/runners/react/test/react-runner-structured-output.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner.integration.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner.integration.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Mock async runtime/provider interfaces intentionally preserve promise-based signatures in these integration tests.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "milestone": "M29",
+        "measurement_base_commit": "6027bf498f49bf8661925d92f4adfae8cc241751",
+        "measurement_tree_diff_sha256": "e6a787d77842507d58d21d2b967997679eeabcdd1d0bd841bf23b307ea56dd0c"
+      },
+      "current_native_proof": {
+        "project": "runner-react",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/runner-react"
+      },
+      "original_measurement": {
+        "identity": "typescript/runners/react/test/react-runner.integration.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/runners/react/test/react-runner.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runners/react/test/react-runner.test.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: Test doubles intentionally match async provider and extension contracts.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "Test doubles intentionally match async provider and extension contracts.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "retained_checker_disposition": "original-retained-through-final-Biome-owned-state-and-removed-at-atomic-native-admission",
+      "native_admission_disposition": "removed-at-atomic-native-admission-after-native-diagnostic-was-fixed-no-native-exception",
+      "original_reason_preserved": true,
+      "currently_retained": false,
+      "early_deletion": null,
+      "producing_commit": "bbb4e932591a28578c930faf44ce08024607b77c",
+      "final_admission_source": {
+        "milestone": "M29",
+        "measurement_base_commit": "6027bf498f49bf8661925d92f4adfae8cc241751",
+        "measurement_tree_diff_sha256": "e6a787d77842507d58d21d2b967997679eeabcdd1d0bd841bf23b307ea56dd0c"
+      },
+      "current_native_proof": {
+        "project": "runner-react",
+        "candidate": "eslint(require-await)",
+        "proof_ref": "#/final_native_proof/projects/runner-react"
+      },
+      "original_measurement": {
+        "identity": "typescript/runners/react/test/react-runner.test.ts::lint/suspicious/useAwait::1",
+        "inherits": [
+          "source_digest",
+          "config_digests",
+          "retained_proof",
+          "native_proof"
+        ]
+      },
+      "final_measurement": {
+        "ref": "#/measurement_commit"
+      },
+      "native_admission_reason": "The historical eslint(require-await) counterpart was fixed before atomic native admission; final type-aware diagnostics are zero, so the legacy Biome directive was removed and no native exception was introduced."
+    },
+    {
+      "identity": "typescript/runners/react/src/lib/react-runner-stream-support.ts::promise/prefer-await-to-then::1",
+      "path": "typescript/runners/react/src/lib/react-runner-stream-support.ts",
+      "directive": "// oxlint-disable-next-line promise/prefer-await-to-then -- Preserve detached cleanup and existing promise observation; cleanup rejection must not replace the provider or cancellation outcome already in flight.",
+      "rule": "promise/prefer-await-to-then",
+      "original_reason": "Preserve detached cleanup and existing promise observation; cleanup rejection must not replace the provider or cancellation outcome already in flight.",
+      "baseline_line": null,
+      "live_line": 1314,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "promise/prefer-await-to-then",
+      "retained_checker_disposition": "not-applicable-new-native-exception",
+      "native_admission_disposition": "retained-as-explicit-user-approved-native-exception-at-final-admission",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "221170af16c2a22aad81cea2bca929b16bb02b2789a5285eb72c80b275bc357b",
+        "bytes": 42983
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "native_proof": {
+        "project": "runner-react",
+        "comment_ordinal": 1,
+        "type_aware_files": 20,
+        "type_aware_rules": 474,
+        "type_aware_diagnostics_after_suppression": 0,
+        "report_unused_disable_directives": 0,
+        "directive_is_used": true,
+        "full_lint": "pass"
+      },
+      "producing_commit": "995ab2015e49c0dfb420947eaef681d15e56fcfa",
+      "original_measurement": {
+        "kind": "new-native-exception",
+        "legacy_counterpart_identity": null,
+        "interim": false,
+        "reviewed_candidate_patch_sha256": "8901c1af00f95e01e0f09dc3460c6c90638fe344685c398a73c0cdd30ec9bca6",
+        "user_ruling_ref": "call_149247781fd74efbaf9afc4cd2a7de01 item0",
+        "ruling_date": "2026-10-16"
+      },
+      "final_measurement": {
+        "commit": "9ec9d9da9f64721a7d26222df688de92653e013c"
+      },
+      "native_admission_reason": "Preserve detached cleanup and existing promise observation; cleanup rejection must not replace the provider or cancellation outcome already in flight."
+    },
+    {
+      "identity": "typescript/runners/react/src/lib/react-runner-stream-support.ts::promise/prefer-catch::1",
+      "path": "typescript/runners/react/src/lib/react-runner-stream-support.ts",
+      "directive": "// oxlint-disable-next-line promise/prefer-catch, promise/prefer-await-to-then -- Both handlers must attach in the same synchronous setup step so thrown observer setup, settlement ordering, and abort-listener cleanup remain unchanged.",
+      "rule": "promise/prefer-catch",
+      "original_reason": "Both handlers must attach in the same synchronous setup step so thrown observer setup, settlement ordering, and abort-listener cleanup remain unchanged.",
+      "baseline_line": null,
+      "live_line": 1389,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "promise/prefer-catch",
+      "retained_checker_disposition": "not-applicable-new-native-exception",
+      "native_admission_disposition": "retained-as-explicit-user-approved-native-exception-at-final-admission",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "221170af16c2a22aad81cea2bca929b16bb02b2789a5285eb72c80b275bc357b",
+        "bytes": 42983
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "native_proof": {
+        "project": "runner-react",
+        "comment_ordinal": 2,
+        "type_aware_files": 20,
+        "type_aware_rules": 474,
+        "type_aware_diagnostics_after_suppression": 0,
+        "report_unused_disable_directives": 0,
+        "directive_is_used": true,
+        "full_lint": "pass"
+      },
+      "producing_commit": "995ab2015e49c0dfb420947eaef681d15e56fcfa",
+      "original_measurement": {
+        "kind": "new-native-exception",
+        "legacy_counterpart_identity": null,
+        "interim": false,
+        "reviewed_candidate_patch_sha256": "8901c1af00f95e01e0f09dc3460c6c90638fe344685c398a73c0cdd30ec9bca6",
+        "user_ruling_ref": "call_149247781fd74efbaf9afc4cd2a7de01 item0",
+        "ruling_date": "2026-10-16"
+      },
+      "final_measurement": {
+        "commit": "9ec9d9da9f64721a7d26222df688de92653e013c"
+      },
+      "native_admission_reason": "Both handlers must attach in the same synchronous setup step so thrown observer setup, settlement ordering, and abort-listener cleanup remain unchanged."
+    },
+    {
+      "identity": "typescript/runners/react/src/lib/react-runner-stream-support.ts::promise/prefer-await-to-then::2",
+      "path": "typescript/runners/react/src/lib/react-runner-stream-support.ts",
+      "directive": "// oxlint-disable-next-line promise/prefer-catch, promise/prefer-await-to-then -- Both handlers must attach in the same synchronous setup step so thrown observer setup, settlement ordering, and abort-listener cleanup remain unchanged.",
+      "rule": "promise/prefer-await-to-then",
+      "original_reason": "Both handlers must attach in the same synchronous setup step so thrown observer setup, settlement ordering, and abort-listener cleanup remain unchanged.",
+      "baseline_line": null,
+      "live_line": 1389,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "promise/prefer-await-to-then",
+      "retained_checker_disposition": "not-applicable-new-native-exception",
+      "native_admission_disposition": "retained-as-explicit-user-approved-native-exception-at-final-admission",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "221170af16c2a22aad81cea2bca929b16bb02b2789a5285eb72c80b275bc357b",
+        "bytes": 42983
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "native_proof": {
+        "project": "runner-react",
+        "comment_ordinal": 2,
+        "type_aware_files": 20,
+        "type_aware_rules": 474,
+        "type_aware_diagnostics_after_suppression": 0,
+        "report_unused_disable_directives": 0,
+        "directive_is_used": true,
+        "full_lint": "pass"
+      },
+      "producing_commit": "995ab2015e49c0dfb420947eaef681d15e56fcfa",
+      "original_measurement": {
+        "kind": "new-native-exception",
+        "legacy_counterpart_identity": null,
+        "interim": false,
+        "reviewed_candidate_patch_sha256": "8901c1af00f95e01e0f09dc3460c6c90638fe344685c398a73c0cdd30ec9bca6",
+        "user_ruling_ref": "call_149247781fd74efbaf9afc4cd2a7de01 item0",
+        "ruling_date": "2026-10-16"
+      },
+      "final_measurement": {
+        "commit": "9ec9d9da9f64721a7d26222df688de92653e013c"
+      },
+      "native_admission_reason": "Both handlers must attach in the same synchronous setup step so thrown observer setup, settlement ordering, and abort-listener cleanup remain unchanged."
+    },
+    {
+      "identity": "typescript/runners/react/src/lib/react-runner-stream-support.ts::promise/prefer-await-to-callbacks::1",
+      "path": "typescript/runners/react/src/lib/react-runner-stream-support.ts",
+      "directive": "// oxlint-disable-next-line promise/prefer-await-to-callbacks -- The paired rejection callback preserves same-turn observer registration and removes the abort listener before forwarding the original rejection.",
+      "rule": "promise/prefer-await-to-callbacks",
+      "original_reason": "The paired rejection callback preserves same-turn observer registration and removes the abort listener before forwarding the original rejection.",
+      "baseline_line": null,
+      "live_line": 1401,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "promise/prefer-await-to-callbacks",
+      "retained_checker_disposition": "not-applicable-new-native-exception",
+      "native_admission_disposition": "retained-as-explicit-user-approved-native-exception-at-final-admission",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "221170af16c2a22aad81cea2bca929b16bb02b2789a5285eb72c80b275bc357b",
+        "bytes": 42983
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "native_proof": {
+        "project": "runner-react",
+        "comment_ordinal": 3,
+        "type_aware_files": 20,
+        "type_aware_rules": 474,
+        "type_aware_diagnostics_after_suppression": 0,
+        "report_unused_disable_directives": 0,
+        "directive_is_used": true,
+        "full_lint": "pass"
+      },
+      "producing_commit": "995ab2015e49c0dfb420947eaef681d15e56fcfa",
+      "original_measurement": {
+        "kind": "new-native-exception",
+        "legacy_counterpart_identity": null,
+        "interim": false,
+        "reviewed_candidate_patch_sha256": "8901c1af00f95e01e0f09dc3460c6c90638fe344685c398a73c0cdd30ec9bca6",
+        "user_ruling_ref": "call_149247781fd74efbaf9afc4cd2a7de01 item0",
+        "ruling_date": "2026-10-16"
+      },
+      "final_measurement": {
+        "commit": "9ec9d9da9f64721a7d26222df688de92653e013c"
+      },
+      "native_admission_reason": "The paired rejection callback preserves same-turn observer registration and removes the abort listener before forwarding the original rejection."
+    }
+  ],
+  "initial_ledger_path": ".constitution/evidence/KRT-BZ002/suppressions.json",
+  "reference_convention": "Legacy original_measurement.identity resolves uniquely in the pinned original ledger; inherits names the four unchanged historical proof fields read from that entry. current_native_proof.proof_ref resolves to shared final project proof in this document. New native exceptions remain full entries with null legacy counterparts and explicit user-ruling provenance.",
+  "original_measurement": {
+    "ledger": ".constitution/evidence/KRT-BZ002/suppressions.json",
+    "ledger_sha256": "6ce9985dacf29d2f5b1080c33ee8fe97c315447b448030779fef44e0dae5e36d",
+    "probe": ".constitution/evidence/KRT-BZ002/probe.ts",
+    "measurement_commit": "bbb4e932591a28578c930faf44ce08024607b77c"
+  }
+}
