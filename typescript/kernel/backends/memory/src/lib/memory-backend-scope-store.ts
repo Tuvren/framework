@@ -98,7 +98,7 @@ export class MemoryScopeStore {
     try {
       return await work();
     } finally {
-      releaseQueue();
+      releaseQueue(undefined);
 
       // Only retire the queue slot if it still holds the entry this call
       // installed. A later caller may have already chained onto it (or,
