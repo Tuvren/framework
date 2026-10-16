@@ -712,7 +712,6 @@ export const createCoreRepositories = (
         records.sort((left, right) => left.path.localeCompare(right.path));
         return records.map(helpers.cloneStoredTurnTreePath);
       },
-      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Batch persistence intentionally validates duplicate keys, schema compatibility, normalization, immutability, and insert encoding in one transaction-local path.
       async putMany(records) {
         assertTransactionActive();
         const seenCompositeKeys = new Set<string>();
