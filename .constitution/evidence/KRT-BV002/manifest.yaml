@@ -21,8 +21,8 @@
     },
     {
       "path": "probe.ts",
-      "sha256": "b40c585e092326f7b17b6e13ce27e9f83474dc04d31f50260ebb4250b89dad7c",
-      "bytes": 26740,
+      "sha256": "609144273f3583eab8f0b2427a486f2231e804724ea0ac89cb79e2909496fe86",
+      "bytes": 27016,
       "role": "measurement"
     },
     {

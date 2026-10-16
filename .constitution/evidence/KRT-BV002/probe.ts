@@ -283,26 +283,37 @@ const sourceAtHead = runInternal([
 ]);
 const sourceBefore = sourceAtHead;
 const sourceText = sourceAtHead.toString("utf8");
+// The measured source uses return bodies; the descendant uses concise arrows.
 const operationPattern =
-  /^\s*return \((symbol|type)\.flags & flag\) !== 0;$/gmu;
-const readOperations = (text: string) => [...text.matchAll(operationPattern)].map((match) => ({
-  operand: match[1],
-  text: match[0]?.trim(),
-  line: text.slice(0, match.index).split("\n").length,
-}));
+  /^\s*(?:return\s+)?\(((symbol|type)\.flags\s*&\s*flag)\)\s*!==\s*0;?\s*$/gmu;
+const readOperations = (source: string) =>
+  [...source.matchAll(operationPattern)].map((match) => {
+    const operand = match[2];
+    const expression = match[1];
+    assert(expression && operand);
+    return {
+      operand,
+      expression: `(${expression}) !== 0`,
+      line: source.slice(0, match.index).split("\n").length,
+    };
+  });
 const operations = readOperations(sourceText);
 const checkoutOperations = readOperations(sourceAtCheckout.toString("utf8"));
 assert.deepEqual(
-  checkoutOperations.map(({ operand, text }) => ({ operand, text })),
-  operations.map(({ operand, text }) => ({ operand, text }))
+  checkoutOperations.map(({ operand, expression }) => ({ operand, expression })),
+  operations.map(({ operand, expression }) => ({ operand, expression }))
 );
 assert.deepEqual(operations, [
   {
     operand: "symbol",
-    text: "return (symbol.flags & flag) !== 0;",
+    expression: "(symbol.flags & flag) !== 0",
     line: 141,
   },
-  { operand: "type", text: "return (type.flags & flag) !== 0;", line: 585 },
+  {
+    operand: "type",
+    expression: "(type.flags & flag) !== 0",
+    line: 585,
+  },
 ]);
 
 const fixtureDirectory = path.join(resolvedOutput, "fixture");
