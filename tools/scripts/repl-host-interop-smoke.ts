@@ -18,7 +18,7 @@ import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
 import { once } from "node:events";
 import net from "node:net";
-import { resolve } from "node:path";
+import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 
@@ -26,7 +26,7 @@ import { runCommand } from "./lib/command-runner.js";
 
 interface ReplHostInteropModule {
   DEFAULT_REPL_SCENARIOS: readonly string[];
-  runReplScenarioMatrix(input: {
+  runReplScenarioMatrix: (input: {
     config: {
       backend: "memory";
       kernelGrpcBaseUrl: string;
@@ -36,23 +36,38 @@ interface ReplHostInteropModule {
       sqlitePath?: string;
     };
     scenarios: readonly string[];
-  }): Promise<unknown>;
+  }) => Promise<unknown>;
 }
 
-const REPO_ROOT = resolve(import.meta.dirname, "../..");
-const REPL_HOST_DIST_PATH = resolve(
+const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
+const REPL_HOST_DIST_PATH = path.resolve(
   REPO_ROOT,
   "typescript/host/repl/dist/index.js"
 );
-const REPL_HOST_CLI_PATH = resolve(
+const REPL_HOST_CLI_PATH = path.resolve(
   REPO_ROOT,
   "typescript/host/repl/dist/cli.js"
 );
 const WAIT_TIMEOUT_MS = 30_000;
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isReplHostInteropModule = (
+  value: unknown
+): value is ReplHostInteropModule =>
+  isRecord(value) &&
+  Array.isArray(value.DEFAULT_REPL_SCENARIOS) &&
+  value.DEFAULT_REPL_SCENARIOS.every((entry) => typeof entry === "string") &&
+  typeof value.runReplScenarioMatrix === "function";
+
 const loadReplHostModule = async (): Promise<ReplHostInteropModule> => {
   const moduleUrl = pathToFileURL(REPL_HOST_DIST_PATH).href;
-  return (await import(moduleUrl)) as ReplHostInteropModule;
+  const loaded: unknown = await import(moduleUrl);
+  if (!isReplHostInteropModule(loaded)) {
+    throw new TypeError("repl host module does not expose the expected API");
+  }
+  return loaded;
 };
 
 const spawnRustKernelService = (address: string): ChildProcess => {
@@ -87,7 +102,7 @@ const runRequiredCommand = async (
   }
 };
 
-const runCliWithInput = (
+const runCliWithInput = async (
   command: readonly string[],
   stdin: string
 ): Promise<{ code: number; stderr: string; stdout: string }> => {
@@ -97,68 +112,65 @@ const runCliWithInput = (
     throw new Error("runCliWithInput requires an executable");
   }
 
-  return new Promise((resolveRun, reject) => {
-    const child = spawn(executable, args, {
-      cwd: REPO_ROOT,
-      env: process.env,
-      stdio: "pipe",
-    });
-    const stderrChunks: Uint8Array[] = [];
-    const stdoutChunks: Uint8Array[] = [];
+  const { promise, reject, resolve } = Promise.withResolvers<{
+    code: number;
+    stderr: string;
+    stdout: string;
+  }>();
+  const child = spawn(executable, args, {
+    cwd: REPO_ROOT,
+    env: process.env,
+    stdio: "pipe",
+  });
+  const stderrChunks: Uint8Array[] = [];
+  const stdoutChunks: Uint8Array[] = [];
 
-    child.stderr?.on("data", (chunk: Uint8Array) => {
-      stderrChunks.push(chunk);
-    });
-    child.stdout?.on("data", (chunk: Uint8Array) => {
-      stdoutChunks.push(chunk);
-    });
-    child.stdin.end(stdin);
-    child.once("error", reject);
-    child.once("close", (code) => {
-      resolveRun({
-        code: code ?? 1,
-        stderr: Buffer.concat(stderrChunks).toString("utf-8"),
-        stdout: Buffer.concat(stdoutChunks).toString("utf-8"),
-      });
+  child.stderr?.on("data", (chunk: Uint8Array) => {
+    stderrChunks.push(chunk);
+  });
+  child.stdout?.on("data", (chunk: Uint8Array) => {
+    stdoutChunks.push(chunk);
+  });
+  child.stdin.end(stdin);
+  child.once("error", reject);
+  child.once("close", (code) => {
+    resolve({
+      code: code ?? 1,
+      stderr: Buffer.concat(stderrChunks).toString("utf-8"),
+      stdout: Buffer.concat(stdoutChunks).toString("utf-8"),
     });
   });
+
+  return await promise;
 };
 
-const parseJsonlRecords = (text: string): unknown[] => {
-  return text
+const parseJsonlRecords = (text: string): unknown[] =>
+  text
     .split("\n")
     .filter((line) => line.trim().length > 0)
     .map((line) => JSON.parse(line) as unknown);
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
 
 const reservePort = async (): Promise<number> => {
-  return await new Promise<number>((resolvePort, reject) => {
-    const server = net.createServer();
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
+  const { promise, reject, resolve } = Promise.withResolvers<number>();
+  const server = net.createServer();
+  server.listen(0, "127.0.0.1", () => {
+    const address = server.address();
 
-      if (address === null || typeof address === "string") {
-        server.close();
-        reject(new Error("failed to reserve an IPv4 TCP port"));
-        return;
-      }
+    if (address === null || typeof address === "string") {
+      server.close();
+      reject(new Error("failed to reserve an IPv4 TCP port"));
+      return;
+    }
 
-      const { port } = address;
-      server.close((error) => {
-        if (error !== undefined) {
-          reject(error);
-          return;
-        }
-
-        resolvePort(port);
-      });
+    const { port } = address;
+    server.once("close", () => {
+      resolve(port);
     });
-    server.once("error", reject);
+    server.close();
   });
+  server.once("error", reject);
+
+  return await promise;
 };
 
 const canConnect = async (address: string): Promise<boolean> => {
@@ -170,16 +182,21 @@ const canConnect = async (address: string): Promise<boolean> => {
 
   const port = Number(portText);
 
-  return await new Promise<boolean>((resolveConnect) => {
-    const socket = net.createConnection({ host, port });
-    const finish = (value: boolean) => {
-      socket.destroy();
-      resolveConnect(value);
-    };
+  const { promise, resolve } = Promise.withResolvers<boolean>();
+  const socket = net.createConnection({ host, port });
+  const finish = (value: boolean) => {
+    socket.destroy();
+    resolve(value);
+  };
 
-    socket.once("connect", () => finish(true));
-    socket.once("error", () => finish(false));
+  socket.once("connect", () => {
+    finish(true);
   });
+  socket.once("error", () => {
+    finish(false);
+  });
+
+  return await promise;
 };
 
 const readStream = async (
@@ -194,10 +211,7 @@ const readStream = async (
     chunks.push(chunk);
   });
 
-  if (
-    (stream as NodeJS.ReadableStream & { readableEnded?: boolean })
-      .readableEnded !== true
-  ) {
+  if (Reflect.get(stream, "readableEnded") !== true) {
     await once(stream, "end").catch(() => {
       // The stream can close between the state check and listener registration.
     });
@@ -236,20 +250,11 @@ const readMatrixSummary = (
   allChecksPassed: boolean;
   failedScenarios: string[];
 } => {
-  if (
-    typeof value !== "object" ||
-    value === null ||
-    !("summary" in value) ||
-    typeof value.summary !== "object" ||
-    value.summary === null
-  ) {
+  if (!(isRecord(value) && isRecord(value.summary))) {
     throw new Error("repl host interop smoke did not return a matrix summary");
   }
 
-  const summary = value.summary as {
-    allChecksPassed?: unknown;
-    failedScenarios?: unknown;
-  };
+  const { summary } = value;
 
   if (
     typeof summary.allChecksPassed !== "boolean" ||
@@ -367,7 +372,17 @@ const waitForPort = async (
 ): Promise<void> => {
   const startedAt = Date.now();
 
-  while (Date.now() - startedAt < timeoutMs) {
+  const waitForAttempt = async (): Promise<void> => {
+    if (Date.now() - startedAt >= timeoutMs) {
+      await stopProcessTree(processHandle);
+      throw new Error(
+        await renderProcessFailure(
+          processHandle,
+          "timed out waiting for Rust kernel gRPC service"
+        )
+      );
+    }
+
     if (processHandle.exitCode !== null) {
       throw new Error(await renderProcessFailure(processHandle));
     }
@@ -377,15 +392,10 @@ const waitForPort = async (
     }
 
     await delay(200);
-  }
+    await waitForAttempt();
+  };
 
-  await stopProcessTree(processHandle);
-  throw new Error(
-    await renderProcessFailure(
-      processHandle,
-      "timed out waiting for Rust kernel gRPC service"
-    )
-  );
+  await waitForAttempt();
 };
 
 const main = async (): Promise<void> => {

@@ -41,6 +41,46 @@ interface WorkspaceManifest {
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../");
 const CHANGESET_DIRECTORY = path.join(REPO_ROOT, ".changeset");
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readOptionalStringMap = (
+  value: unknown,
+  field: string,
+  manifestPath: string
+): Record<string, string> | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (
+    !isRecord(value) ||
+    Object.values(value).some((entry) => typeof entry !== "string")
+  ) {
+    throw new TypeError(`${manifestPath} has an invalid ${field} field`);
+  }
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string"
+    )
+  );
+};
+
+const forEachSequential = async <T>(
+  values: Iterable<T>,
+  operation: (value: T) => Promise<void>
+): Promise<void> => {
+  const iterator = values[Symbol.iterator]();
+  const visitNext = async (): Promise<void> => {
+    const next = iterator.next();
+    if (next.done === true) {
+      return;
+    }
+    await operation(next.value);
+    await visitNext();
+  };
+  await visitNext();
+};
+
 const listPendingChangesets = async (): Promise<string[]> => {
   const entries = await readdir(CHANGESET_DIRECTORY, { withFileTypes: true });
 
@@ -52,7 +92,7 @@ const listPendingChangesets = async (): Promise<string[]> => {
         entry.name !== "README.md"
     )
     .map((entry) => entry.name)
-    .sort();
+    .toSorted();
 };
 
 const readManifest = async (
@@ -63,24 +103,34 @@ const readManifest = async (
   try {
     text = await readFile(manifestPath, "utf-8");
   } catch {
-    return undefined; // a workspace parent directory without a package.json
+    // A workspace parent directory can lack a package.json.
+    return undefined;
   }
 
-  const parsed = JSON.parse(text) as {
-    dependencies?: Record<string, string>;
-    name?: string;
-    peerDependencies?: Record<string, string>;
-    private?: boolean;
-    version?: string;
-  };
+  const parsed: unknown = JSON.parse(text);
 
-  if (typeof parsed.name !== "string" || typeof parsed.version !== "string") {
+  if (
+    !isRecord(parsed) ||
+    typeof parsed.name !== "string" ||
+    typeof parsed.version !== "string"
+  ) {
     throw new TypeError(`${manifestPath} is missing a name or version field`);
   }
 
+  const dependencies = readOptionalStringMap(
+    parsed.dependencies,
+    "dependencies",
+    manifestPath
+  );
+  const peerDependencies = readOptionalStringMap(
+    parsed.peerDependencies,
+    "peerDependencies",
+    manifestPath
+  );
+
   const tuvrenDependencyRanges = new Map<string, string>();
 
-  for (const source of [parsed.dependencies, parsed.peerDependencies]) {
+  for (const source of [dependencies, peerDependencies]) {
     for (const [dependency, range] of Object.entries(source ?? {})) {
       if (dependency.startsWith("@tuvren/")) {
         tuvrenDependencyRanges.set(dependency, range);
@@ -98,12 +148,21 @@ const readManifest = async (
 };
 
 const readWorkspaceManifests = async (): Promise<WorkspaceManifest[]> => {
-  const rootManifest = JSON.parse(
+  const rootManifest: unknown = JSON.parse(
     await readFile(path.join(REPO_ROOT, "package.json"), "utf-8")
-  ) as { workspaces?: string[] };
+  );
+  if (
+    !(isRecord(rootManifest) && Array.isArray(rootManifest.workspaces)) ||
+    rootManifest.workspaces.some((entry) => typeof entry !== "string")
+  ) {
+    throw new TypeError("root package.json must declare string workspaces");
+  }
   const manifests: WorkspaceManifest[] = [];
 
-  for (const workspaceGlob of rootManifest.workspaces ?? []) {
+  await forEachSequential(rootManifest.workspaces, async (workspaceGlob) => {
+    if (typeof workspaceGlob !== "string") {
+      throw new TypeError("root package.json workspaces must contain strings");
+    }
     if (!workspaceGlob.endsWith("/*")) {
       throw new Error(
         `unsupported workspace glob ${workspaceGlob}; the release lane only understands trailing /* globs`
@@ -113,9 +172,9 @@ const readWorkspaceManifests = async (): Promise<WorkspaceManifest[]> => {
     const parent = path.join(REPO_ROOT, workspaceGlob.slice(0, -2));
     const entries = await readdir(parent, { withFileTypes: true });
 
-    for (const entry of entries) {
+    await forEachSequential(entries, async (entry) => {
       if (!entry.isDirectory()) {
-        continue;
+        return;
       }
 
       const manifestPath = path.join(parent, entry.name, "package.json");
@@ -124,10 +183,12 @@ const readWorkspaceManifests = async (): Promise<WorkspaceManifest[]> => {
       if (manifest !== undefined) {
         manifests.push(manifest);
       }
-    }
-  }
+    });
+  });
 
-  return manifests.sort((left, right) => left.name.localeCompare(right.name));
+  return manifests.toSorted((left, right) =>
+    left.name.localeCompare(right.name)
+  );
 };
 
 // ADR-0037: leaf packages peer-depend on @tuvren/core so a host resolves
@@ -146,7 +207,7 @@ const validateSingleVersionInvariant = (
       `@tuvren packages diverged onto ${versions.size} versions after the bump: ${[
         ...versions,
       ]
-        .sort()
+        .toSorted()
         .join(", ")}`
     );
   }
@@ -175,19 +236,21 @@ const validateSingleVersionInvariant = (
 const spawnCommand = async (
   executable: string,
   args: readonly string[]
-): Promise<number> =>
-  await new Promise<number>((resolve, reject) => {
-    const child = spawn(executable, args, {
-      cwd: REPO_ROOT,
-      env: process.env,
-      stdio: "inherit",
-    });
-
-    child.once("error", reject);
-    child.once("close", (code) => {
-      resolve(code ?? 1);
-    });
+): Promise<number> => {
+  const { promise, reject, resolve } = Promise.withResolvers<number>();
+  const child = spawn(executable, args, {
+    cwd: REPO_ROOT,
+    env: process.env,
+    stdio: "inherit",
   });
+
+  child.once("error", reject);
+  child.once("close", (code) => {
+    resolve(code ?? 1);
+  });
+
+  return await promise;
+};
 
 const main = async (): Promise<void> => {
   console.log("Tuvren release versioning lane (KRT-BJ008)");

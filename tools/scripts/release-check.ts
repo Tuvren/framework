@@ -64,7 +64,7 @@ const readStringProperty = (
 
 const readRuntimeVersionReport = async (): Promise<RuntimeVersionReport> => {
   const packageJsonText = await readFile(PACKAGE_JSON_PATH, "utf-8");
-  const packageJson = JSON.parse(packageJsonText);
+  const packageJson: unknown = JSON.parse(packageJsonText);
   const packageManager = readStringProperty(packageJson, "packageManager");
 
   return {

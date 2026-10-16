@@ -77,6 +77,45 @@ interface PackageManifest {
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../");
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isStringMap = (value: unknown): value is Record<string, string> =>
+  isRecord(value) &&
+  Object.values(value).every((entry) => typeof entry === "string");
+
+const isPackageManifest = (value: unknown): value is PackageManifest =>
+  isRecord(value) &&
+  (value.dependencies === undefined || isStringMap(value.dependencies)) &&
+  (value.description === undefined || typeof value.description === "string") &&
+  (value.files === undefined ||
+    (Array.isArray(value.files) &&
+      value.files.every((entry) => typeof entry === "string"))) &&
+  (value.license === undefined || typeof value.license === "string") &&
+  (value.name === undefined || typeof value.name === "string") &&
+  (value.optionalDependencies === undefined ||
+    isStringMap(value.optionalDependencies)) &&
+  (value.peerDependencies === undefined ||
+    isStringMap(value.peerDependencies)) &&
+  (value.private === undefined || typeof value.private === "boolean") &&
+  (value.version === undefined || typeof value.version === "string");
+
+const forEachSequential = async <T>(
+  values: Iterable<T>,
+  operation: (value: T) => Promise<void>
+): Promise<void> => {
+  const iterator = values[Symbol.iterator]();
+  const visitNext = async (): Promise<void> => {
+    const next = iterator.next();
+    if (next.done === true) {
+      return;
+    }
+    await operation(next.value);
+    await visitNext();
+  };
+  await visitNext();
+};
+
 // The published-internal engine tier (ADR-0057 item 5; KRT-BL001 §2.6 and §5.1):
 // on the registry solely so the host-facing packages resolve, never
 // host-installable, never semver-guaranteed. Preflight enforces that each one
@@ -106,7 +145,7 @@ const WORKSPACE_RANGE_MATERIALIZERS: Readonly<
 };
 
 const PLACEHOLDER_VERSION = "0.0.0";
-const INTERNAL_POSTURE_PATTERN = /[Ii]nternal/;
+const INTERNAL_POSTURE_PATTERN = /[Ii]nternal/u;
 
 // The consumer program exercises only the published host import contract
 // (ADR-0057 item 3): @tuvren/sdk root, @tuvren/core types, and the two chosen
@@ -187,21 +226,24 @@ console.log(
 const readWorkspacePackages = async (): Promise<WorkspacePackage[]> => {
   const packages: WorkspacePackage[] = [];
 
-  for (const manifestPath of await walkPackageManifests(
+  const manifestPaths = await walkPackageManifests(
     path.join(REPO_ROOT, "typescript")
-  )) {
-    const manifest = JSON.parse(
-      await readFile(manifestPath, "utf-8")
-    ) as PackageManifest;
+  );
+  await forEachSequential(manifestPaths, async (manifestPath) => {
+    const manifest: unknown = JSON.parse(await readFile(manifestPath, "utf-8"));
 
-    if (manifest.name?.startsWith("@tuvren/")) {
+    if (!isPackageManifest(manifest)) {
+      throw new TypeError(`invalid package manifest at ${manifestPath}`);
+    }
+
+    if (manifest.name?.startsWith("@tuvren/") === true) {
       packages.push({
         directory: path.dirname(manifestPath),
         manifest,
         name: manifest.name,
       });
     }
-  }
+  });
 
   return packages;
 };
@@ -224,16 +266,17 @@ const fileExists = async (filePath: string): Promise<boolean> => {
  * publish runner, whose only job is producing the npm `dist/` artifacts.
  */
 const buildPublishableSet = async (): Promise<void> => {
-  const publishable = (await readWorkspacePackages()).filter(
+  const workspacePackages = await readWorkspacePackages();
+  const publishable = workspacePackages.filter(
     (pkg) => pkg.manifest.private !== true
   );
   const projects = await Promise.all(
     publishable.map(async (pkg) => {
-      const project = JSON.parse(
+      const project: unknown = JSON.parse(
         await readFile(path.join(pkg.directory, "project.json"), "utf-8")
-      ) as { name?: string };
+      );
 
-      if (project.name === undefined) {
+      if (!isRecord(project) || typeof project.name !== "string") {
         throw new Error(
           `[publish-registry] ${pkg.name}: project.json has no name; cannot scope the build`
         );
@@ -368,11 +411,11 @@ const validatePackage = async (
     failures.push(`${name}: license must be Apache-2.0`);
   }
 
-  for (const artifact of ["LICENSE", "README.md"]) {
+  await forEachSequential(["LICENSE", "README.md"], async (artifact) => {
     if (!(await fileExists(path.join(directory, artifact)))) {
       failures.push(`${name}: missing ${artifact} (ships in the tarball)`);
     }
-  }
+  });
 
   if (!(await fileExists(path.join(directory, "dist")))) {
     failures.push(
@@ -486,7 +529,7 @@ const publishPackages = async (
   ordered: WorkspacePackage[],
   options: { dryRun: boolean }
 ): Promise<void> => {
-  for (const pkg of ordered) {
+  await forEachSequential(ordered, async (pkg) => {
     const materialized = materializeManifest(pkg);
 
     // Resumability: published versions are immutable, so a real-publish run
@@ -501,7 +544,7 @@ const publishPackages = async (
       console.log(
         `[publish-registry] already on the registry, skipping: ${pkg.name}@${materialized.version}`
       );
-      continue;
+      return;
     }
 
     const manifestPath = path.join(pkg.directory, "package.json");
@@ -537,7 +580,7 @@ const publishPackages = async (
     console.log(
       `[publish-registry] ${options.dryRun ? "dry-run verified" : "published"}: ${pkg.name}@${materialized.version}`
     );
-  }
+  });
 
   if (options.dryRun) {
     console.log(
@@ -583,7 +626,9 @@ const topologicalOrder = (packages: WorkspacePackage[]): WorkspacePackage[] => {
     ordered.push(pkg);
   };
 
-  for (const pkg of [...packages].sort((a, b) => (a.name < b.name ? -1 : 1))) {
+  for (const pkg of [...packages].toSorted((a, b) =>
+    a.name < b.name ? -1 : 1
+  )) {
     visit(pkg, []);
   }
 
@@ -606,7 +651,7 @@ const runPreflight = async (): Promise<WorkspacePackage[]> => {
 
   if (freezeGate.status !== 0) {
     failures.push(
-      `the ADR-0054/0056 freeze gate does not pass on this commit:\n${freezeGate.stdout ?? ""}${freezeGate.stderr ?? ""}`
+      `the ADR-0054/0056 freeze gate does not pass on this commit:\n${String(freezeGate.stdout ?? "")}${String(freezeGate.stderr ?? "")}`
     );
   }
 
@@ -624,9 +669,9 @@ const runPreflight = async (): Promise<WorkspacePackage[]> => {
     );
   }
 
-  for (const pkg of publishable) {
+  await forEachSequential(publishable, async (pkg) => {
     failures.push(...(await validatePackage(pkg, publishableNames)));
-  }
+  });
 
   for (const name of INTERNAL_PUBLISHED_PACKAGES) {
     if (!publishableNames.has(name)) {
@@ -647,7 +692,7 @@ const runPreflight = async (): Promise<WorkspacePackage[]> => {
 
   const ordered = topologicalOrder(publishable);
   console.log(
-    `[publish-registry] preflight passed: ${ordered.length} packages at ${publishable[0]?.manifest.version} (publish order: ${ordered
+    `[publish-registry] preflight passed: ${ordered.length} packages at ${publishable[0]?.manifest.version ?? "unknown"} (publish order: ${ordered
       .map((pkg) => pkg.name.replace("@tuvren/", ""))
       .join(" → ")})`
   );
@@ -718,16 +763,18 @@ const verifyConsumerInstall = async (
     console.log(
       `[publish-registry] consumer verification passed: fresh install of ${version} completed a first Turn via createTuvren from @tuvren/sdk`
     );
-  } catch (error) {
+  } catch (error: unknown) {
     process.exitCode = 1;
-    console.error(`[publish-registry] consumer verification failed: ${error}`);
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error(`[publish-registry] consumer verification failed: ${detail}`);
   } finally {
     await rm(workDir, { force: true, recursive: true });
   }
 };
 
 const main = async (): Promise<void> => {
-  const mode = process.argv[2];
+  const mode = process.argv.at(2) ?? "";
+  const version = process.argv.at(3);
 
   switch (mode) {
     case "--build": {
@@ -751,7 +798,7 @@ const main = async (): Promise<void> => {
       break;
     }
     case "--verify-consumer": {
-      await verifyConsumerInstall(process.argv[3]);
+      await verifyConsumerInstall(version);
       break;
     }
     default: {
