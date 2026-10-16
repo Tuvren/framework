@@ -1,5 +1,1 @@
-[
-  "typescript/kernel/backends/memory",
-  "typescript/kernel/backends/postgres",
-  "typescript/kernel/backends/sqlite"
-]
+["typescript/kernel/backends/memory", "typescript/kernel/backends/sqlite"]
