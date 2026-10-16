@@ -36,7 +36,6 @@
  * builds a `RuntimeRunnerFactory`, and {@link REACT_RUNNER_ID} identifies the
  * runner instances it produces.
  */
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
 export type {
   ReActRunnerOptions,
   ReActRunnerProviderCallMode,

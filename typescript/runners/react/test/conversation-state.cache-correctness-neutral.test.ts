@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures.
-
 // KRT-BH004 — provider-side caching is correctness-neutral (ADR-0053).
 //
 // ADR-0053: provider-side caching is a cost/latency optimization, never a
