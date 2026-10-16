@@ -43,9 +43,9 @@ export interface JsonSourceCheckDependencies extends Omit<
   scopes: readonly string[];
 }
 
-export async function runJsonSourceCheck(
+export const runJsonSourceCheck = async (
   deps: JsonSourceCheckDependencies
-): Promise<JsonSourceCheckResult> {
+): Promise<JsonSourceCheckResult> => {
   const inventory = await discoverJsonInventory(deps);
   if (inventory.jsonFiles.length === 0) {
     throw new Error(
@@ -62,13 +62,15 @@ export async function runJsonSourceCheck(
     protectedFiles: inventory.protectedFiles,
     protectedReasons: inventory.protectedReasons,
   };
-}
+};
 
-export function reportJsonIssues(issues: readonly JsonIntegrityIssue[]): void {
+export const reportJsonIssues = (
+  issues: readonly JsonIntegrityIssue[]
+): void => {
   for (const issue of issues) {
     console.error(`json-source-check: ${issue.file}: ${issue.message}`);
   }
-}
+};
 
 if (import.meta.main) {
   const repoRoot = path.resolve(import.meta.dirname, "../..");

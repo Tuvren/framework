@@ -53,9 +53,9 @@ export interface JsonCheckDependencies extends JsonDiscoveryDependencies {
   jsonOnly: boolean;
 }
 
-export async function runJsonCheck(
+export const runJsonCheck = async (
   deps: JsonCheckDependencies
-): Promise<JsonCheckResult> {
+): Promise<JsonCheckResult> => {
   const inventory = await discoverJsonInventory(deps);
   if (inventory.jsonFiles.length === 0) {
     throw new Error(
@@ -93,16 +93,16 @@ export async function runJsonCheck(
     protectedFiles: inventory.protectedFiles,
     protectedReasons: inventory.protectedReasons,
   };
-}
+};
 
 interface JsonCheckArguments {
   jsonOnly: boolean;
   scopes: string[];
 }
 
-export function parseJsonCheckArguments(
+export const parseJsonCheckArguments = (
   args: readonly string[]
-): JsonCheckArguments {
+): JsonCheckArguments => {
   const jsonOnly = args[0] === JSON_ONLY_FLAG;
   const scopes = args.slice(jsonOnly ? 1 : 0);
   if (scopes.some((scope) => scope.startsWith("--"))) {
@@ -111,7 +111,7 @@ export function parseJsonCheckArguments(
     );
   }
   return { jsonOnly, scopes };
-}
+};
 
 if (import.meta.main) {
   const repoRoot = path.resolve(import.meta.dirname, "../..");

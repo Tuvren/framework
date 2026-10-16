@@ -36,80 +36,43 @@ const AGAINST_BRANCH_CANDIDATES: readonly string[] = [
 ];
 const BREAKING_BASELINE_FETCH_TIMEOUT_MS = 30_000;
 
-const mode = process.argv[2] ?? "interop-smoke";
+const runRequiredCommand = async (
+  command: readonly string[]
+): Promise<void> => {
+  const result = await runCommand(command, { cwd: REPO_ROOT });
 
-switch (mode) {
-  case "breaking": {
-    await runBreakingCheck();
-    break;
+  if (result.code !== 0) {
+    throw new Error(`command failed: ${command.join(" ")}`);
   }
-  case "codegen": {
-    await runCodegen();
-    break;
-  }
-  case "interop-smoke": {
-    await runInteropSmoke();
-    break;
-  }
-  case "lint": {
-    await runBufLint();
-    break;
-  }
-  default: {
-    throw new Error(`unknown kernel interop governance mode "${mode}"`);
-  }
-}
+};
 
-async function runInteropSmoke(): Promise<void> {
-  await runBufLint();
-  await runBreakingCheck();
-  await runCodegen();
-  await assertNoCheckedInGeneratedBindings();
-  console.log("kernel interop governance smoke passed");
-}
+const listFiles = async (directory: string): Promise<string[]> => {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files: string[] = [];
 
-async function runBufLint(): Promise<void> {
-  await runRequiredCommand(["buf", "lint"]);
-}
+  for (const entry of entries) {
+    const entryPath = resolve(directory, entry.name);
 
-async function runCodegen(): Promise<void> {
-  await runRequiredCommand(["buf", "generate"]);
-  await assertGeneratedBindings();
-  await runGeneratedBindingsTypecheck();
-}
-
-async function runBreakingCheck(): Promise<void> {
-  await refreshRemoteBreakingBaseline();
-
-  const againstBranchSearch = await findAgainstBranchWithProtoBaseline();
-
-  if (againstBranchSearch.branch === undefined) {
-    if (againstBranchSearch.inspectedBranchCount === 0) {
-      throw new Error(
-        `unable to inspect a kernel interop breaking-check baseline; checked ${AGAINST_BRANCH_CANDIDATES.join(", ")}`
-      );
+    if (entry.isDirectory()) {
+      files.push(...(await listFiles(entryPath)));
+    } else if (entry.isFile()) {
+      files.push(relative(REPO_ROOT, entryPath));
     }
-
-    // Epic T is the first proto merge, so the initial branch has no baseline to
-    // compare against. After this lands, this path stops applying because the
-    // against branch will contain the proto authority.
-    console.log(
-      "kernel interop breaking check skipped: no prior proto baseline found"
-    );
-    return;
   }
 
-  await runRequiredCommand([
-    "buf",
-    "breaking",
-    "--against",
-    `.git#branch=${againstBranchSearch.branch}`,
-    "--against-config",
-    "buf.yaml",
-  ]);
-}
+  return files.sort();
+};
 
-async function refreshRemoteBreakingBaseline(): Promise<void> {
+const branchExists = async (branch: string): Promise<boolean> => {
+  const result = await runCommand(["git", "rev-parse", "--verify", branch], {
+    captureOutput: true,
+    cwd: REPO_ROOT,
+  });
+
+  return result.code === 0;
+};
+
+const refreshRemoteBreakingBaseline = async (): Promise<void> => {
   const hasOriginMaster = await branchExists("origin/master");
 
   if (!hasOriginMaster) {
@@ -150,50 +113,37 @@ async function refreshRemoteBreakingBaseline(): Promise<void> {
         .join("\n")
     );
   }
-}
+};
 
-async function branchExists(branch: string): Promise<boolean> {
-  const result = await runCommand(["git", "rev-parse", "--verify", branch], {
-    captureOutput: true,
-    cwd: REPO_ROOT,
-  });
+const findAgainstBranchWithProtoBaseline =
+  async (): Promise<AgainstBranchSearch> => {
+    let inspectedBranchCount = 0;
 
-  return result.code === 0;
-}
+    for (const branch of AGAINST_BRANCH_CANDIDATES) {
+      const result = await runCommand(
+        ["git", "ls-tree", "-r", "--name-only", branch, "--", PROTO_ROOT],
+        { captureOutput: true, cwd: REPO_ROOT }
+      );
 
-interface AgainstBranchSearch {
-  branch: string | undefined;
-  inspectedBranchCount: number;
-}
+      if (result.code !== 0) {
+        continue;
+      }
 
-async function findAgainstBranchWithProtoBaseline(): Promise<AgainstBranchSearch> {
-  let inspectedBranchCount = 0;
+      inspectedBranchCount += 1;
 
-  for (const branch of AGAINST_BRANCH_CANDIDATES) {
-    const result = await runCommand(
-      ["git", "ls-tree", "-r", "--name-only", branch, "--", PROTO_ROOT],
-      { captureOutput: true, cwd: REPO_ROOT }
-    );
+      const hasProtoFile = result.stdout
+        .split("\n")
+        .some((line) => line.endsWith(".proto"));
 
-    if (result.code !== 0) {
-      continue;
+      if (hasProtoFile) {
+        return { branch, inspectedBranchCount };
+      }
     }
 
-    inspectedBranchCount += 1;
+    return { branch: undefined, inspectedBranchCount };
+  };
 
-    const hasProtoFile = result.stdout
-      .split("\n")
-      .some((line) => line.endsWith(".proto"));
-
-    if (hasProtoFile) {
-      return { branch, inspectedBranchCount };
-    }
-  }
-
-  return { branch: undefined, inspectedBranchCount };
-}
-
-async function assertGeneratedBindings(): Promise<void> {
+const assertGeneratedBindings = async (): Promise<void> => {
   for (const generatedFile of REQUIRED_GENERATED_FILES) {
     await access(resolve(REPO_ROOT, generatedFile));
   }
@@ -207,9 +157,9 @@ async function assertGeneratedBindings(): Promise<void> {
       `kernel interop codegen produced ${generatedFiles.length} files; expected ${REQUIRED_GENERATED_FILES.length}`
     );
   }
-}
+};
 
-async function assertNoCheckedInGeneratedBindings(): Promise<void> {
+const assertNoCheckedInGeneratedBindings = async (): Promise<void> => {
   // The .proto files are the authored authority; language bindings are local
   // consumer output and must stay ignored until a future TechSpec promotes them.
   const result = await runCommand(["git", "ls-files", "--", GENERATED_ROOT], {
@@ -226,9 +176,9 @@ async function assertNoCheckedInGeneratedBindings(): Promise<void> {
       `generated kernel interop bindings must not be checked in:\n${result.stdout.trim()}`
     );
   }
-}
+};
 
-async function runGeneratedBindingsTypecheck(): Promise<void> {
+const runGeneratedBindingsTypecheck = async (): Promise<void> => {
   // Runtime-core does not include `.generated` in its normal package
   // typecheck, so the interop governance lane compiles generated bindings
   // explicitly before claiming codegen is healthy.
@@ -239,29 +189,82 @@ async function runGeneratedBindingsTypecheck(): Promise<void> {
     "--project",
     GENERATED_TSCONFIG,
   ]);
-}
+};
 
-async function listFiles(directory: string): Promise<string[]> {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const files: string[] = [];
+const runBufLint = async (): Promise<void> => {
+  await runRequiredCommand(["buf", "lint"]);
+};
 
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
+const runCodegen = async (): Promise<void> => {
+  await runRequiredCommand(["buf", "generate"]);
+  await assertGeneratedBindings();
+  await runGeneratedBindingsTypecheck();
+};
 
-    if (entry.isDirectory()) {
-      files.push(...(await listFiles(entryPath)));
-    } else if (entry.isFile()) {
-      files.push(relative(REPO_ROOT, entryPath));
+const runBreakingCheck = async (): Promise<void> => {
+  await refreshRemoteBreakingBaseline();
+
+  const againstBranchSearch = await findAgainstBranchWithProtoBaseline();
+
+  if (againstBranchSearch.branch === undefined) {
+    if (againstBranchSearch.inspectedBranchCount === 0) {
+      throw new Error(
+        `unable to inspect a kernel interop breaking-check baseline; checked ${AGAINST_BRANCH_CANDIDATES.join(", ")}`
+      );
     }
+
+    // Epic T is the first proto merge, so the initial branch has no baseline to
+    // compare against. After this lands, this path stops applying because the
+    // against branch will contain the proto authority.
+    console.log(
+      "kernel interop breaking check skipped: no prior proto baseline found"
+    );
+    return;
   }
 
-  return files.sort();
+  await runRequiredCommand([
+    "buf",
+    "breaking",
+    "--against",
+    `.git#branch=${againstBranchSearch.branch}`,
+    "--against-config",
+    "buf.yaml",
+  ]);
+};
+
+const runInteropSmoke = async (): Promise<void> => {
+  await runBufLint();
+  await runBreakingCheck();
+  await runCodegen();
+  await assertNoCheckedInGeneratedBindings();
+  console.log("kernel interop governance smoke passed");
+};
+
+const mode = process.argv[2] ?? "interop-smoke";
+
+switch (mode) {
+  case "breaking": {
+    await runBreakingCheck();
+    break;
+  }
+  case "codegen": {
+    await runCodegen();
+    break;
+  }
+  case "interop-smoke": {
+    await runInteropSmoke();
+    break;
+  }
+  case "lint": {
+    await runBufLint();
+    break;
+  }
+  default: {
+    throw new Error(`unknown kernel interop governance mode "${mode}"`);
+  }
 }
 
-async function runRequiredCommand(command: readonly string[]): Promise<void> {
-  const result = await runCommand(command, { cwd: REPO_ROOT });
-
-  if (result.code !== 0) {
-    throw new Error(`command failed: ${command.join(" ")}`);
-  }
+interface AgainstBranchSearch {
+  branch: string | undefined;
+  inspectedBranchCount: number;
 }

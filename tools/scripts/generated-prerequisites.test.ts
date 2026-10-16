@@ -43,6 +43,28 @@ import type { VerificationPhase, VerificationStep } from "./verify.js";
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 const scratchDirectories: string[] = [];
 
+const createScratchDirectory = (): string => {
+  const directory = mkdtempSync(
+    path.join(tmpdir(), "generated-prerequisites-test-")
+  );
+  scratchDirectories.push(directory);
+  return directory;
+};
+
+const isUnknownRecord = (value: unknown): value is Record<string, unknown> => {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+};
+
+const requireObject = (
+  value: unknown,
+  label: string
+): Record<string, unknown> => {
+  if (!isUnknownRecord(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+  return value;
+};
+
 afterEach(() => {
   for (const directory of scratchDirectories.splice(0)) {
     rmSync(directory, { force: true, recursive: true });
@@ -223,22 +245,3 @@ describe("generated prerequisite phase", () => {
     ]);
   });
 });
-
-function createScratchDirectory(): string {
-  const directory = mkdtempSync(
-    path.join(tmpdir(), "generated-prerequisites-test-")
-  );
-  scratchDirectories.push(directory);
-  return directory;
-}
-
-function requireObject(value: unknown, label: string): Record<string, unknown> {
-  if (!isUnknownRecord(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-  return value;
-}
-
-function isUnknownRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}

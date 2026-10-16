@@ -67,18 +67,18 @@ const HIDDEN_DIST_DIRECTORIES = [
 
 const UNRESOLVED_MODULE_CODE = 2307;
 
-function isHiddenOutput(fileName: string): boolean {
+const isHiddenOutput = (fileName: string): boolean => {
   const normalized = path.resolve(fileName);
   return HIDDEN_DIST_DIRECTORIES.some(
     (directory) =>
       normalized === directory ||
       normalized.startsWith(`${directory}${path.sep}`)
   );
-}
+};
 
 // Read-only mirror of `ts.sys` that pretends the three testkit build-output
 // trees do not exist. Nothing on disk is modified or deleted.
-function hidingModuleResolutionHost(): ts.ModuleResolutionHost {
+const hidingModuleResolutionHost = (): ts.ModuleResolutionHost => {
   return {
     directoryExists: (directory) => ts.sys.directoryExists(directory),
     fileExists: (fileName) =>
@@ -88,9 +88,9 @@ function hidingModuleResolutionHost(): ts.ModuleResolutionHost {
       isHiddenOutput(fileName) ? undefined : ts.sys.readFile(fileName),
     realpath: (fileName) => ts.sys.realpath?.(fileName) ?? fileName,
   };
-}
+};
 
-function parseConfig(relative: string): ts.ParsedCommandLine {
+const parseConfig = (relative: string): ts.ParsedCommandLine => {
   const host: ts.ParseConfigFileHost = {
     ...ts.sys,
     onUnRecoverableConfigFileDiagnostic: (diagnostic): void => {
@@ -108,21 +108,21 @@ function parseConfig(relative: string): ts.ParsedCommandLine {
     throw new Error(`${relative} did not parse`);
   }
   return parsed;
-}
+};
 
-function withoutSelfAlias(
+const withoutSelfAlias = (
   options: ts.CompilerOptions,
   packageName: string
-): ts.CompilerOptions {
+): ts.CompilerOptions => {
   const paths = { ...options.paths };
   delete paths[packageName];
   return { ...options, paths };
-}
+};
 
-function unresolvedDiagnostics(
+const unresolvedDiagnostics = (
   options: ts.CompilerOptions,
   fileNames: readonly string[]
-): ts.Diagnostic[] {
+): ts.Diagnostic[] => {
   const host = ts.createCompilerHost(options);
   const fileExists = host.fileExists.bind(host);
   const readFile = host.readFile.bind(host);
@@ -134,11 +134,11 @@ function unresolvedDiagnostics(
   return ts
     .getPreEmitDiagnostics(program)
     .filter((diagnostic) => diagnostic.code === UNRESOLVED_MODULE_CODE);
-}
+};
 
-function sourceFor(testkit: TestkitCase): string {
+const sourceFor = (testkit: TestkitCase): string => {
   return path.join(path.dirname(path.join(REPO_ROOT, testkit.config)), "src");
-}
+};
 
 describe("testkit source-only self aliases", () => {
   for (const testkit of TESTKITS) {
