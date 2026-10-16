@@ -227,7 +227,7 @@ export interface SqliteStagedResultRow {
 }
 
 /** Creates an empty state projection with every record family initialized. */
-export function createEmptyState(): BackendState {
+export const createEmptyState = (): BackendState => {
   return {
     branches: new Map(),
     objects: new Map(),
@@ -242,7 +242,452 @@ export function createEmptyState(): BackendState {
     turnTrees: new Map(),
     turns: new Map(),
   };
-}
+};
+
+/** Copies raw bytes so callers never alias a row buffer. */
+export const cloneBytes = (bytes: Uint8Array): Uint8Array => {
+  return Uint8Array.from(bytes);
+};
+
+const toUint8Array = (bytes: Uint8Array): Uint8Array => {
+  return Buffer.from(bytes);
+};
+
+/** Decodes and shape-asserts an `objects` row into a `StoredObject`. */
+export const decodeObjectRow = (row: SqliteObjectRow): StoredObject => {
+  const record: StoredObject = {
+    byteLength: row.byte_length,
+    bytes: cloneBytes(toUint8Array(row.bytes)),
+    createdAtMs: row.created_at_ms,
+    hash: row.hash,
+    mediaType: row.media_type,
+  };
+  assertStoredObject(record, "stored object row");
+  return record;
+};
+
+/**
+ * Copies CBOR bytes and re-attaches the `dataView` property the deterministic
+ * decoder expects on encoded payloads.
+ */
+export const cloneEncodedBytes = (bytes: Uint8Array): Uint8Array => {
+  const cloned = Uint8Array.from(bytes);
+  Reflect.set(
+    cloned,
+    "dataView",
+    new DataView(cloned.buffer, cloned.byteOffset, cloned.byteLength)
+  );
+  return cloned;
+};
+
+/** Decodes and shape-asserts a `schemas` row into a `StoredSchema`. */
+export const decodeSchemaRow = (row: SqliteSchemaRow): StoredSchema => {
+  const record: StoredSchema = {
+    createdAtMs: row.created_at_ms,
+    schemaCbor: cloneEncodedBytes(toUint8Array(row.schema_cbor)),
+    schemaId: row.schema_id,
+  };
+  assertStoredSchema(record, "stored schema row");
+  return record;
+};
+
+/** Decodes a `turn_trees` row into a `StoredTurnTree`. */
+export const decodeTurnTreeRow = (row: SqliteTurnTreeRow): StoredTurnTree => {
+  return {
+    createdAtMs: row.created_at_ms,
+    hash: row.hash,
+    manifestCbor: cloneEncodedBytes(toUint8Array(row.manifest_cbor)),
+    schemaId: row.schema_id,
+  };
+};
+
+const decodeStoredNonNegativeInteger = (
+  value: number | null,
+  field: string,
+  code: string,
+  details: Record<string, unknown>
+): number => {
+  if (value === null || !Number.isSafeInteger(value) || value < 0) {
+    throw persistenceError(
+      `stored rows must keep ${field} as a non-negative safe integer`,
+      code,
+      details
+    );
+  }
+
+  return value;
+};
+
+/**
+ * Decodes a `turn_tree_paths` row into the correct `StoredTurnTreePath`
+ * variant (`single`, ordered `flat`, or ordered `chunked`), rejecting rows
+ * whose variant columns are inconsistent.
+ *
+ * @throws TuvrenPersistenceError `sqlite_backend_invalid_turn_tree_path_row`.
+ */
+export const decodeTurnTreePathRow = (
+  row: SqliteTurnTreePathRow
+): StoredTurnTreePath => {
+  if (row.collection_kind === "single") {
+    return {
+      collectionKind: "single",
+      path: row.path,
+      singleHash: row.single_hash,
+      turnTreeHash: row.turn_tree_hash,
+    };
+  }
+
+  if (row.collection_kind !== "ordered") {
+    throw persistenceError(
+      "stored turn tree path rows must decode to a valid ordered or single variant",
+      "sqlite_backend_invalid_turn_tree_path_row",
+      { path: row.path, turnTreeHash: row.turn_tree_hash }
+    );
+  }
+
+  const orderedCount = decodeStoredNonNegativeInteger(
+    row.ordered_count,
+    "ordered_count",
+    "sqlite_backend_invalid_turn_tree_path_row",
+    { path: row.path, turnTreeHash: row.turn_tree_hash }
+  );
+
+  if (row.ordered_encoding === "flat" && row.ordered_inline_cbor !== null) {
+    return {
+      collectionKind: "ordered",
+      orderedCount,
+      orderedEncoding: "flat",
+      orderedInlineCbor: cloneEncodedBytes(
+        toUint8Array(row.ordered_inline_cbor)
+      ),
+      path: row.path,
+      turnTreeHash: row.turn_tree_hash,
+    };
+  }
+
+  if (
+    row.ordered_encoding === "chunked" &&
+    row.ordered_chunk_list_cbor !== null
+  ) {
+    return {
+      collectionKind: "ordered",
+      orderedChunkListCbor: cloneEncodedBytes(
+        toUint8Array(row.ordered_chunk_list_cbor)
+      ),
+      orderedCount,
+      orderedEncoding: "chunked",
+      path: row.path,
+      turnTreeHash: row.turn_tree_hash,
+    };
+  }
+
+  throw persistenceError(
+    "stored turn tree path rows must decode to a valid ordered or single variant",
+    "sqlite_backend_invalid_turn_tree_path_row",
+    { path: row.path, turnTreeHash: row.turn_tree_hash }
+  );
+};
+
+/**
+ * Decodes deterministic-CBOR bytes into a `HashString[]`, validating every
+ * element.
+ *
+ * @throws TuvrenPersistenceError `sqlite_backend_invalid_hash_array_payload`.
+ */
+export const decodeHashStringArray = (
+  bytes: Uint8Array,
+  label: string
+): string[] => {
+  const decodedValue = decodeDeterministicKernelRecord(bytes);
+
+  if (!Array.isArray(decodedValue)) {
+    throw persistenceError(
+      `${label} must decode to a HashString[]`,
+      "sqlite_backend_invalid_hash_array_payload",
+      { label }
+    );
+  }
+
+  const hashes: string[] = [];
+
+  for (const [index, item] of decodedValue.entries()) {
+    assertHashString(item, `${label}[${index}]`);
+    hashes.push(item);
+  }
+
+  return hashes;
+};
+
+/**
+ * Decodes an `ordered_path_chunks` row, verifying `item_count` matches the
+ * decoded `items_cbor` cardinality.
+ *
+ * @throws TuvrenPersistenceError
+ *   `sqlite_backend_ordered_path_chunk_item_count_mismatch` or
+ *   `sqlite_backend_invalid_ordered_path_chunk_row`.
+ */
+export const decodeOrderedPathChunkRow = (
+  row: SqliteOrderedPathChunkRow
+): StoredOrderedPathChunk => {
+  const itemsCbor = cloneEncodedBytes(toUint8Array(row.items_cbor));
+  const itemHashes = decodeHashStringArray(itemsCbor, "chunk.itemsCbor");
+  const itemCount = decodeStoredNonNegativeInteger(
+    row.item_count,
+    "item_count",
+    "sqlite_backend_invalid_ordered_path_chunk_row",
+    { chunkHash: row.chunk_hash }
+  );
+
+  if (itemCount !== itemHashes.length) {
+    throw persistenceError(
+      "stored ordered path chunk rows must keep item_count aligned with items_cbor",
+      "sqlite_backend_ordered_path_chunk_item_count_mismatch",
+      {
+        chunkHash: row.chunk_hash,
+        decodedCount: itemHashes.length,
+        itemCount,
+      }
+    );
+  }
+
+  return {
+    chunkHash: row.chunk_hash,
+    createdAtMs: row.created_at_ms,
+    itemCount,
+    itemsCbor,
+  };
+};
+
+/** Decodes and shape-asserts a `turn_nodes` row into a `StoredTurnNode`. */
+export const decodeTurnNodeRow = (row: SqliteTurnNodeRow): StoredTurnNode => {
+  const record: StoredTurnNode = {
+    consumedStagedResultsCbor: cloneEncodedBytes(
+      toUint8Array(row.consumed_staged_results_cbor)
+    ),
+    createdAtMs: row.created_at_ms,
+    eventHash: row.event_hash,
+    hash: row.hash,
+    previousTurnNodeHash: row.previous_turn_node_hash,
+    schemaId: row.schema_id,
+    turnTreeHash: row.turn_tree_hash,
+  };
+  assertStoredTurnNode(record, "stored turn node row");
+  return record;
+};
+
+/** Decodes and shape-asserts a `threads` row into a `StoredThread`. */
+export const decodeThreadRow = (row: SqliteThreadRow): StoredThread => {
+  const record: StoredThread = {
+    createdAtMs: row.created_at_ms,
+    rootTurnNodeHash: row.root_turn_node_hash,
+    schemaId: row.schema_id,
+    threadId: row.thread_id,
+  };
+  assertStoredThread(record, "stored thread row");
+  return record;
+};
+
+/** Decodes and shape-asserts a `branches` row into a `StoredBranch`. */
+export const decodeBranchRow = (row: SqliteBranchRow): StoredBranch => {
+  const record: StoredBranch = {
+    ...(row.archived_from_branch_id === null
+      ? {}
+      : { archivedFromBranchId: row.archived_from_branch_id }),
+    branchId: row.branch_id,
+    createdAtMs: row.created_at_ms,
+    headTurnNodeHash: row.head_turn_node_hash,
+    threadId: row.thread_id,
+    updatedAtMs: row.updated_at_ms,
+  };
+  assertStoredBranch(record, "stored branch row");
+  return record;
+};
+
+/** Decodes and shape-asserts a `turns` row into a `StoredTurn`. */
+export const decodeTurnRow = (row: SqliteTurnRow): StoredTurn => {
+  const record: StoredTurn = {
+    branchId: row.branch_id,
+    createdAtMs: row.created_at_ms,
+    headTurnNodeHash: row.head_turn_node_hash,
+    parentTurnId: row.parent_turn_id,
+    startTurnNodeHash: row.start_turn_node_hash,
+    threadId: row.thread_id,
+    turnId: row.turn_id,
+    updatedAtMs: row.updated_at_ms,
+  };
+  assertStoredTurn(record, "stored turn row");
+  return record;
+};
+
+/** Decodes and shape-asserts an `observe_annotations` row. */
+export const decodeObserveAnnotationRow = (
+  row: SqliteObserveAnnotationRow
+): StoredObserveAnnotation => {
+  const record: StoredObserveAnnotation = {
+    annotationCbor: cloneEncodedBytes(toUint8Array(row.annotation_cbor)),
+    annotationHash: row.annotation_hash,
+    createdAtMs: row.created_at_ms,
+    runId: row.run_id,
+    turnNodeHash: row.turn_node_hash,
+  };
+  assertStoredObserveAnnotation(record, "stored observe annotation row");
+  return record;
+};
+
+const decodeStoredRunStatus = (
+  value: unknown,
+  runId: string
+): StoredRun["status"] => {
+  if (
+    value === "running" ||
+    value === "paused" ||
+    value === "completed" ||
+    value === "failed"
+  ) {
+    return value;
+  }
+
+  throw persistenceError(
+    "stored run rows must decode to a valid run status",
+    "sqlite_backend_invalid_run_status",
+    { runId, status: value }
+  );
+};
+
+/**
+ * Decodes and shape-asserts a `runs` row into a `StoredRun`, mapping NULL
+ * optional columns (lease fields, pending signals, preemption reason) to
+ * absent properties.
+ *
+ * @throws TuvrenPersistenceError `sqlite_backend_invalid_run_status`.
+ */
+export const decodeRunRow = (row: SqliteRunRow): StoredRun => {
+  const status = decodeStoredRunStatus(row.status, row.run_id);
+
+  const record: StoredRun = {
+    branchId: row.branch_id,
+    createdAtMs: row.created_at_ms,
+    createdTurnNodesCbor: cloneEncodedBytes(
+      toUint8Array(row.created_turn_nodes_cbor)
+    ),
+    currentStepIndex: row.current_step_index,
+    ...(row.execution_owner_id === null
+      ? {}
+      : {
+          executionOwnerId: row.execution_owner_id,
+        }),
+    ...(row.fencing_token === null
+      ? {}
+      : {
+          fencingToken: row.fencing_token,
+        }),
+    ...(row.lease_expires_at_ms === null
+      ? {}
+      : {
+          leaseExpiresAtMs: row.lease_expires_at_ms,
+        }),
+    runId: row.run_id,
+    schemaId: row.schema_id,
+    startTurnNodeHash: row.start_turn_node_hash,
+    status,
+    stepSequenceCbor: cloneEncodedBytes(toUint8Array(row.step_sequence_cbor)),
+    turnId: row.turn_id,
+    updatedAtMs: row.updated_at_ms,
+    ...(row.pending_signals_cbor === null
+      ? {}
+      : {
+          pendingSignalsCbor: cloneEncodedBytes(
+            toUint8Array(row.pending_signals_cbor)
+          ),
+        }),
+    ...(row.preemption_reason === null
+      ? {}
+      : {
+          preemptionReason: row.preemption_reason,
+        }),
+  };
+  assertStoredRun(record, "stored run row");
+  return record;
+};
+
+/**
+ * Decodes and shape-asserts a `staged_results` row, enforcing that
+ * `interrupt_payload_cbor` is present exactly when status is `interrupted`.
+ *
+ * @throws TuvrenPersistenceError `sqlite_backend_invalid_staged_result_row`.
+ */
+export const decodeStagedResultRow = (
+  row: SqliteStagedResultRow
+): StoredStagedResult => {
+  if (row.status === "interrupted") {
+    if (row.interrupt_payload_cbor === null) {
+      throw persistenceError(
+        "stored staged result rows with interrupted status must include interrupt_payload_cbor",
+        "sqlite_backend_invalid_staged_result_row",
+        { runId: row.run_id, status: row.status, taskId: row.task_id }
+      );
+    }
+
+    const record: StoredStagedResult = {
+      createdAtMs: row.created_at_ms,
+      interruptPayloadCbor: cloneEncodedBytes(
+        toUint8Array(row.interrupt_payload_cbor)
+      ),
+      objectHash: row.object_hash,
+      objectType: row.object_type,
+      runId: row.run_id,
+      status: "interrupted",
+      taskId: row.task_id,
+    };
+    assertStoredStagedResult(record, "stored staged result row");
+    return record;
+  }
+
+  if (row.interrupt_payload_cbor !== null) {
+    throw persistenceError(
+      "stored staged result rows may only include interrupt_payload_cbor for interrupted status",
+      "sqlite_backend_invalid_staged_result_row",
+      { runId: row.run_id, status: row.status, taskId: row.task_id }
+    );
+  }
+
+  if (row.status !== "completed" && row.status !== "failed") {
+    throw persistenceError(
+      "stored staged result rows must decode to a valid staged result status",
+      "sqlite_backend_invalid_staged_result_row",
+      { runId: row.run_id, status: row.status, taskId: row.task_id }
+    );
+  }
+
+  const record: StoredStagedResult = {
+    createdAtMs: row.created_at_ms,
+    objectHash: row.object_hash,
+    objectType: row.object_type,
+    runId: row.run_id,
+    status: row.status,
+    taskId: row.task_id,
+  };
+  assertStoredStagedResult(record, "stored staged result row");
+  return record;
+};
+
+const setUniqueLoadedRecord = <T>(
+  collection: Map<string, T>,
+  key: string,
+  value: T,
+  label: string,
+  context: Record<string, unknown>
+): void => {
+  if (collection.has(key)) {
+    throw persistenceError(
+      `loaded sqlite state must not contain duplicate ${label} records`,
+      "sqlite_backend_duplicate_loaded_record",
+      { ...context, key, label }
+    );
+  }
+
+  collection.set(key, value);
+};
 
 /**
  * Loads every persisted table into a fully decoded {@link BackendState}
@@ -250,7 +695,7 @@ export function createEmptyState(): BackendState {
  * assertions included), and duplicate primary keys are rejected with
  * `sqlite_backend_duplicate_loaded_record`.
  */
-export function loadState(db: Database.Database): BackendState {
+export const loadState = (db: Database.Database): BackendState => {
   const state = createEmptyState();
 
   for (const row of db
@@ -377,176 +822,15 @@ export function loadState(db: Database.Database): BackendState {
   }
 
   return state;
-}
-
-/** Decodes and shape-asserts an `objects` row into a `StoredObject`. */
-export function decodeObjectRow(row: SqliteObjectRow): StoredObject {
-  const record: StoredObject = {
-    byteLength: row.byte_length,
-    bytes: cloneBytes(toUint8Array(row.bytes)),
-    createdAtMs: row.created_at_ms,
-    hash: row.hash,
-    mediaType: row.media_type,
-  };
-  assertStoredObject(record, "stored object row");
-  return record;
-}
-
-/** Decodes and shape-asserts a `schemas` row into a `StoredSchema`. */
-export function decodeSchemaRow(row: SqliteSchemaRow): StoredSchema {
-  const record: StoredSchema = {
-    createdAtMs: row.created_at_ms,
-    schemaCbor: cloneEncodedBytes(toUint8Array(row.schema_cbor)),
-    schemaId: row.schema_id,
-  };
-  assertStoredSchema(record, "stored schema row");
-  return record;
-}
-
-/** Decodes a `turn_trees` row into a `StoredTurnTree`. */
-export function decodeTurnTreeRow(row: SqliteTurnTreeRow): StoredTurnTree {
-  return {
-    createdAtMs: row.created_at_ms,
-    hash: row.hash,
-    manifestCbor: cloneEncodedBytes(toUint8Array(row.manifest_cbor)),
-    schemaId: row.schema_id,
-  };
-}
-
-/**
- * Decodes a `turn_tree_paths` row into the correct `StoredTurnTreePath`
- * variant (`single`, ordered `flat`, or ordered `chunked`), rejecting rows
- * whose variant columns are inconsistent.
- *
- * @throws TuvrenPersistenceError `sqlite_backend_invalid_turn_tree_path_row`.
- */
-export function decodeTurnTreePathRow(
-  row: SqliteTurnTreePathRow
-): StoredTurnTreePath {
-  if (row.collection_kind === "single") {
-    return {
-      collectionKind: "single",
-      path: row.path,
-      singleHash: row.single_hash,
-      turnTreeHash: row.turn_tree_hash,
-    };
-  }
-
-  if (row.collection_kind !== "ordered") {
-    throw persistenceError(
-      "stored turn tree path rows must decode to a valid ordered or single variant",
-      "sqlite_backend_invalid_turn_tree_path_row",
-      { path: row.path, turnTreeHash: row.turn_tree_hash }
-    );
-  }
-
-  const orderedCount = decodeStoredNonNegativeInteger(
-    row.ordered_count,
-    "ordered_count",
-    "sqlite_backend_invalid_turn_tree_path_row",
-    { path: row.path, turnTreeHash: row.turn_tree_hash }
-  );
-
-  if (row.ordered_encoding === "flat" && row.ordered_inline_cbor !== null) {
-    return {
-      collectionKind: "ordered",
-      orderedCount,
-      orderedEncoding: "flat",
-      orderedInlineCbor: cloneEncodedBytes(
-        toUint8Array(row.ordered_inline_cbor)
-      ),
-      path: row.path,
-      turnTreeHash: row.turn_tree_hash,
-    };
-  }
-
-  if (
-    row.ordered_encoding === "chunked" &&
-    row.ordered_chunk_list_cbor !== null
-  ) {
-    return {
-      collectionKind: "ordered",
-      orderedChunkListCbor: cloneEncodedBytes(
-        toUint8Array(row.ordered_chunk_list_cbor)
-      ),
-      orderedCount,
-      orderedEncoding: "chunked",
-      path: row.path,
-      turnTreeHash: row.turn_tree_hash,
-    };
-  }
-
-  throw persistenceError(
-    "stored turn tree path rows must decode to a valid ordered or single variant",
-    "sqlite_backend_invalid_turn_tree_path_row",
-    { path: row.path, turnTreeHash: row.turn_tree_hash }
-  );
-}
-
-/**
- * Decodes an `ordered_path_chunks` row, verifying `item_count` matches the
- * decoded `items_cbor` cardinality.
- *
- * @throws TuvrenPersistenceError
- *   `sqlite_backend_ordered_path_chunk_item_count_mismatch` or
- *   `sqlite_backend_invalid_ordered_path_chunk_row`.
- */
-export function decodeOrderedPathChunkRow(
-  row: SqliteOrderedPathChunkRow
-): StoredOrderedPathChunk {
-  const itemsCbor = cloneEncodedBytes(toUint8Array(row.items_cbor));
-  const itemHashes = decodeHashStringArray(itemsCbor, "chunk.itemsCbor");
-  const itemCount = decodeStoredNonNegativeInteger(
-    row.item_count,
-    "item_count",
-    "sqlite_backend_invalid_ordered_path_chunk_row",
-    { chunkHash: row.chunk_hash }
-  );
-
-  if (itemCount !== itemHashes.length) {
-    throw persistenceError(
-      "stored ordered path chunk rows must keep item_count aligned with items_cbor",
-      "sqlite_backend_ordered_path_chunk_item_count_mismatch",
-      {
-        chunkHash: row.chunk_hash,
-        decodedCount: itemHashes.length,
-        itemCount,
-      }
-    );
-  }
-
-  return {
-    chunkHash: row.chunk_hash,
-    createdAtMs: row.created_at_ms,
-    itemCount,
-    itemsCbor,
-  };
-}
-
-/** Decodes and shape-asserts a `turn_nodes` row into a `StoredTurnNode`. */
-export function decodeTurnNodeRow(row: SqliteTurnNodeRow): StoredTurnNode {
-  const record: StoredTurnNode = {
-    consumedStagedResultsCbor: cloneEncodedBytes(
-      toUint8Array(row.consumed_staged_results_cbor)
-    ),
-    createdAtMs: row.created_at_ms,
-    eventHash: row.event_hash,
-    hash: row.hash,
-    previousTurnNodeHash: row.previous_turn_node_hash,
-    schemaId: row.schema_id,
-    turnTreeHash: row.turn_tree_hash,
-  };
-  assertStoredTurnNode(record, "stored turn node row");
-  return record;
-}
+};
 
 /**
  * Decodes a `turn_node_lineage_roots` row, validating both hashes and the
  * non-negative depth.
  */
-export function decodeTurnNodeLineageMetadataRow(
+export const decodeTurnNodeLineageMetadataRow = (
   row: SqliteTurnNodeLineageRootRow
-): TurnNodeLineageMetadata {
+): TurnNodeLineageMetadata => {
   assertHashString(row.turn_node_hash, "turn_node_hash");
   assertHashString(row.root_turn_node_hash, "root_turn_node_hash");
   const depth = decodeStoredNonNegativeInteger(
@@ -564,66 +848,65 @@ export function decodeTurnNodeLineageMetadataRow(
     rootTurnNodeHash: row.root_turn_node_hash,
     turnNodeHash: row.turn_node_hash,
   };
-}
+};
 
-/** Decodes and shape-asserts a `threads` row into a `StoredThread`. */
-export function decodeThreadRow(row: SqliteThreadRow): StoredThread {
-  const record: StoredThread = {
-    createdAtMs: row.created_at_ms,
-    rootTurnNodeHash: row.root_turn_node_hash,
-    schemaId: row.schema_id,
-    threadId: row.thread_id,
-  };
-  assertStoredThread(record, "stored thread row");
-  return record;
-}
+const readSqliteStringColumn = (
+  row: Record<string, unknown>,
+  column: string,
+  label: string
+): string => {
+  const value = row[column];
 
-/** Decodes and shape-asserts a `branches` row into a `StoredBranch`. */
-export function decodeBranchRow(row: SqliteBranchRow): StoredBranch {
-  const record: StoredBranch = {
-    ...(row.archived_from_branch_id === null
-      ? {}
-      : { archivedFromBranchId: row.archived_from_branch_id }),
-    branchId: row.branch_id,
-    createdAtMs: row.created_at_ms,
-    headTurnNodeHash: row.head_turn_node_hash,
-    threadId: row.thread_id,
-    updatedAtMs: row.updated_at_ms,
-  };
-  assertStoredBranch(record, "stored branch row");
-  return record;
-}
+  if (typeof value === "string") {
+    return value;
+  }
 
-/** Decodes and shape-asserts a `turns` row into a `StoredTurn`. */
-export function decodeTurnRow(row: SqliteTurnRow): StoredTurn {
-  const record: StoredTurn = {
-    branchId: row.branch_id,
-    createdAtMs: row.created_at_ms,
-    headTurnNodeHash: row.head_turn_node_hash,
-    parentTurnId: row.parent_turn_id,
-    startTurnNodeHash: row.start_turn_node_hash,
-    threadId: row.thread_id,
-    turnId: row.turn_id,
-    updatedAtMs: row.updated_at_ms,
-  };
-  assertStoredTurn(record, "stored turn row");
-  return record;
-}
+  throw persistenceError(
+    `${label} column "${column}" must be a string`,
+    "sqlite_backend_invalid_turn_row",
+    { column }
+  );
+};
 
-/** Decodes and shape-asserts an `observe_annotations` row. */
-export function decodeObserveAnnotationRow(
-  row: SqliteObserveAnnotationRow
-): StoredObserveAnnotation {
-  const record: StoredObserveAnnotation = {
-    annotationCbor: cloneEncodedBytes(toUint8Array(row.annotation_cbor)),
-    annotationHash: row.annotation_hash,
-    createdAtMs: row.created_at_ms,
-    runId: row.run_id,
-    turnNodeHash: row.turn_node_hash,
-  };
-  assertStoredObserveAnnotation(record, "stored observe annotation row");
-  return record;
-}
+const readSqliteNullableStringColumn = (
+  row: Record<string, unknown>,
+  column: string,
+  label: string
+): string | null => {
+  const value = row[column];
+
+  if (value === null || typeof value === "string") {
+    return value;
+  }
+
+  throw persistenceError(
+    `${label} column "${column}" must be a string or null`,
+    "sqlite_backend_invalid_turn_row",
+    { column }
+  );
+};
+
+const readSqliteNumberColumn = (
+  row: Record<string, unknown>,
+  column: string,
+  label: string
+): number => {
+  const value = row[column];
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  throw persistenceError(
+    `${label} column "${column}" must be a number`,
+    "sqlite_backend_invalid_turn_row",
+    { column }
+  );
+};
+
+const isUnknownRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
 
 /**
  * Decodes a `turns` row arriving as `unknown` (e.g. from a dynamic query),
@@ -631,7 +914,7 @@ export function decodeObserveAnnotationRow(
  *
  * @throws TuvrenPersistenceError `sqlite_backend_invalid_turn_row`.
  */
-export function decodeUnknownTurnRow(row: unknown): StoredTurn {
+export const decodeUnknownTurnRow = (row: unknown): StoredTurn => {
   const label = "stored turn query row";
 
   if (!isUnknownRecord(row)) {
@@ -664,297 +947,14 @@ export function decodeUnknownTurnRow(row: unknown): StoredTurn {
     turn_id: readSqliteStringColumn(row, "turn_id", label),
     updated_at_ms: readSqliteNumberColumn(row, "updated_at_ms", label),
   });
-}
-
-/**
- * Decodes and shape-asserts a `runs` row into a `StoredRun`, mapping NULL
- * optional columns (lease fields, pending signals, preemption reason) to
- * absent properties.
- *
- * @throws TuvrenPersistenceError `sqlite_backend_invalid_run_status`.
- */
-export function decodeRunRow(row: SqliteRunRow): StoredRun {
-  const status = decodeStoredRunStatus(row.status, row.run_id);
-
-  const record: StoredRun = {
-    branchId: row.branch_id,
-    createdAtMs: row.created_at_ms,
-    createdTurnNodesCbor: cloneEncodedBytes(
-      toUint8Array(row.created_turn_nodes_cbor)
-    ),
-    currentStepIndex: row.current_step_index,
-    ...(row.execution_owner_id === null
-      ? {}
-      : {
-          executionOwnerId: row.execution_owner_id,
-        }),
-    ...(row.fencing_token === null
-      ? {}
-      : {
-          fencingToken: row.fencing_token,
-        }),
-    ...(row.lease_expires_at_ms === null
-      ? {}
-      : {
-          leaseExpiresAtMs: row.lease_expires_at_ms,
-        }),
-    runId: row.run_id,
-    schemaId: row.schema_id,
-    startTurnNodeHash: row.start_turn_node_hash,
-    status,
-    stepSequenceCbor: cloneEncodedBytes(toUint8Array(row.step_sequence_cbor)),
-    turnId: row.turn_id,
-    updatedAtMs: row.updated_at_ms,
-    ...(row.pending_signals_cbor === null
-      ? {}
-      : {
-          pendingSignalsCbor: cloneEncodedBytes(
-            toUint8Array(row.pending_signals_cbor)
-          ),
-        }),
-    ...(row.preemption_reason === null
-      ? {}
-      : {
-          preemptionReason: row.preemption_reason,
-        }),
-  };
-  assertStoredRun(record, "stored run row");
-  return record;
-}
-
-/**
- * Decodes and shape-asserts a `staged_results` row, enforcing that
- * `interrupt_payload_cbor` is present exactly when status is `interrupted`.
- *
- * @throws TuvrenPersistenceError `sqlite_backend_invalid_staged_result_row`.
- */
-export function decodeStagedResultRow(
-  row: SqliteStagedResultRow
-): StoredStagedResult {
-  if (row.status === "interrupted") {
-    if (row.interrupt_payload_cbor === null) {
-      throw persistenceError(
-        "stored staged result rows with interrupted status must include interrupt_payload_cbor",
-        "sqlite_backend_invalid_staged_result_row",
-        { runId: row.run_id, status: row.status, taskId: row.task_id }
-      );
-    }
-
-    const record: StoredStagedResult = {
-      createdAtMs: row.created_at_ms,
-      interruptPayloadCbor: cloneEncodedBytes(
-        toUint8Array(row.interrupt_payload_cbor)
-      ),
-      objectHash: row.object_hash,
-      objectType: row.object_type,
-      runId: row.run_id,
-      status: "interrupted",
-      taskId: row.task_id,
-    };
-    assertStoredStagedResult(record, "stored staged result row");
-    return record;
-  }
-
-  if (row.interrupt_payload_cbor !== null) {
-    throw persistenceError(
-      "stored staged result rows may only include interrupt_payload_cbor for interrupted status",
-      "sqlite_backend_invalid_staged_result_row",
-      { runId: row.run_id, status: row.status, taskId: row.task_id }
-    );
-  }
-
-  if (row.status !== "completed" && row.status !== "failed") {
-    throw persistenceError(
-      "stored staged result rows must decode to a valid staged result status",
-      "sqlite_backend_invalid_staged_result_row",
-      { runId: row.run_id, status: row.status, taskId: row.task_id }
-    );
-  }
-
-  const record: StoredStagedResult = {
-    createdAtMs: row.created_at_ms,
-    objectHash: row.object_hash,
-    objectType: row.object_type,
-    runId: row.run_id,
-    status: row.status,
-    taskId: row.task_id,
-  };
-  assertStoredStagedResult(record, "stored staged result row");
-  return record;
-}
+};
 
 /** Decodes deterministic-CBOR bytes into a validated `TurnTreeSchema`. */
-export function decodeTurnTreeSchema(
+export const decodeTurnTreeSchema = (
   bytes: Uint8Array,
   label: string
-): TurnTreeSchema {
+): TurnTreeSchema => {
   const decodedValue = decodeDeterministicKernelRecord(bytes);
   assertTurnTreeSchema(decodedValue, label);
   return decodedValue;
-}
-
-/**
- * Decodes deterministic-CBOR bytes into a `HashString[]`, validating every
- * element.
- *
- * @throws TuvrenPersistenceError `sqlite_backend_invalid_hash_array_payload`.
- */
-export function decodeHashStringArray(
-  bytes: Uint8Array,
-  label: string
-): string[] {
-  const decodedValue = decodeDeterministicKernelRecord(bytes);
-
-  if (!Array.isArray(decodedValue)) {
-    throw persistenceError(
-      `${label} must decode to a HashString[]`,
-      "sqlite_backend_invalid_hash_array_payload",
-      { label }
-    );
-  }
-
-  const hashes: string[] = [];
-
-  for (const [index, item] of decodedValue.entries()) {
-    assertHashString(item, `${label}[${index}]`);
-    hashes.push(item);
-  }
-
-  return hashes;
-}
-
-/** Copies raw bytes so callers never alias a row buffer. */
-export function cloneBytes(bytes: Uint8Array): Uint8Array {
-  return Uint8Array.from(bytes);
-}
-
-/**
- * Copies CBOR bytes and re-attaches the `dataView` property the deterministic
- * decoder expects on encoded payloads.
- */
-export function cloneEncodedBytes(bytes: Uint8Array): Uint8Array {
-  const cloned = Uint8Array.from(bytes);
-  Reflect.set(
-    cloned,
-    "dataView",
-    new DataView(cloned.buffer, cloned.byteOffset, cloned.byteLength)
-  );
-  return cloned;
-}
-
-function setUniqueLoadedRecord<T>(
-  collection: Map<string, T>,
-  key: string,
-  value: T,
-  label: string,
-  context: Record<string, unknown>
-): void {
-  if (collection.has(key)) {
-    throw persistenceError(
-      `loaded sqlite state must not contain duplicate ${label} records`,
-      "sqlite_backend_duplicate_loaded_record",
-      { ...context, key, label }
-    );
-  }
-
-  collection.set(key, value);
-}
-
-function readSqliteStringColumn(
-  row: Record<string, unknown>,
-  column: string,
-  label: string
-): string {
-  const value = row[column];
-
-  if (typeof value === "string") {
-    return value;
-  }
-
-  throw persistenceError(
-    `${label} column "${column}" must be a string`,
-    "sqlite_backend_invalid_turn_row",
-    { column }
-  );
-}
-
-function readSqliteNullableStringColumn(
-  row: Record<string, unknown>,
-  column: string,
-  label: string
-): string | null {
-  const value = row[column];
-
-  if (value === null || typeof value === "string") {
-    return value;
-  }
-
-  throw persistenceError(
-    `${label} column "${column}" must be a string or null`,
-    "sqlite_backend_invalid_turn_row",
-    { column }
-  );
-}
-
-function readSqliteNumberColumn(
-  row: Record<string, unknown>,
-  column: string,
-  label: string
-): number {
-  const value = row[column];
-
-  if (typeof value === "number") {
-    return value;
-  }
-
-  throw persistenceError(
-    `${label} column "${column}" must be a number`,
-    "sqlite_backend_invalid_turn_row",
-    { column }
-  );
-}
-
-function isUnknownRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function decodeStoredNonNegativeInteger(
-  value: number | null,
-  field: string,
-  code: string,
-  details: Record<string, unknown>
-): number {
-  if (value === null || !Number.isSafeInteger(value) || value < 0) {
-    throw persistenceError(
-      `stored rows must keep ${field} as a non-negative safe integer`,
-      code,
-      details
-    );
-  }
-
-  return value;
-}
-
-function decodeStoredRunStatus(
-  value: unknown,
-  runId: string
-): StoredRun["status"] {
-  if (
-    value === "running" ||
-    value === "paused" ||
-    value === "completed" ||
-    value === "failed"
-  ) {
-    return value;
-  }
-
-  throw persistenceError(
-    "stored run rows must decode to a valid run status",
-    "sqlite_backend_invalid_run_status",
-    { runId, status: value }
-  );
-}
-
-function toUint8Array(bytes: Uint8Array): Uint8Array {
-  return Buffer.from(bytes);
-}
+};
