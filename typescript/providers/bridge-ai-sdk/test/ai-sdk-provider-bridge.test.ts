@@ -33,7 +33,50 @@ import {
   streamFromParts,
 } from "./ai-sdk-provider-bridge-test-helpers.ts";
 
+class ReceiptReference {
+  private readonly reference: string;
+
+  constructor(reference: string) {
+    this.reference = reference;
+  }
+
+  toString(): string {
+    return this.reference;
+  }
+}
+
+const REQUEST_PATTERN = /abc/iu;
+
 describe("provider-bridge-ai-sdk", () => {
+  test("preserves ECMAScript String conversion for non-plain request metadata", async () => {
+    const bridge = createAiSdkProviderBridge({
+      model: createMockModel({
+        async doGenerate() {
+          await Promise.resolve();
+          return createGenerateResult({
+            request: {
+              body: {
+                custom: new ReceiptReference("receipt-42"),
+                pattern: REQUEST_PATTERN,
+              },
+            },
+          });
+        },
+      }),
+    });
+
+    const response = await bridge.generate({
+      messages: [{ parts: [{ text: "hi", type: "text" }], role: "user" }],
+    });
+
+    expect(response.providerMetadata?.aiSdkBridge).toMatchObject({
+      requestBody: {
+        custom: "receipt-42",
+        pattern: "/abc/iu",
+      },
+    });
+  });
+
   test("maps prompt config into LanguageModelV3 call options and synthesizes structured generate output", async () => {
     let capturedOptions: LanguageModelV3CallOptions | undefined;
     const bridge = createAiSdkProviderBridge({
