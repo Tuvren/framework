@@ -97,8 +97,8 @@ describe("@tuvren/backend-memory MemoryScopeStore purge/transact serialization (
     // without awaiting it yet: the fixed store must make D wait for B, so
     // awaiting D here (before B is released) would deadlock the test.
     const transactionD = store.runExclusive(scope, async () => {
-      await deferredB.promise;
       orderLog.push("D-ran");
+      await Promise.resolve();
     });
 
     // Release B. If the single-writer-per-scope guarantee holds, D is still
