@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional testkit surface.
-
 /**
  * `@tuvren/provider-testkit` — shared test fixtures and a mock MCP server for
  * `TuvrenProvider` implementations and provider-mediated MCP integrations.
