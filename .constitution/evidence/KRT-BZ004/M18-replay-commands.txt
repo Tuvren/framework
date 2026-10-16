@@ -1,0 +1,97 @@
+#!/bin/sh
+set -eu
+
+# Run from the EPIC-BZ repository checkout with Bun, direnv/devenv, and the
+# locked workspace dependencies available. The raw captures are written to
+# M18_REPLAY_DIR (default: ${TMPDIR:-/tmp}/epic-bz-m18-replay).
+ROOT=$(git rev-parse --show-toplevel)
+cd "$ROOT"
+
+# Re-enter through direnv using POSIX sh, with one outer shared lock. This
+# preserves the M18 wrapper environment without evaluating zsh output.
+if [ "${1:-}" != --locked ]; then
+  exec flock -x /tmp/tuvren-wave-1-verification.lock \
+    direnv exec "$ROOT" env \
+      NX_DAEMON=false \
+      PGHOST=/run/user/1000/devenv-3ea1e50/postgres \
+      PGPORT=5432 \
+      sh "$ROOT/.constitution/evidence/KRT-BZ004/M18-replay-commands.txt" --locked
+fi
+shift
+
+export NX_DAEMON=false
+export PGHOST=/run/user/1000/devenv-3ea1e50/postgres
+export PGPORT=5432
+test -S "$PGHOST/.s.PGSQL.$PGPORT"
+
+REPLAY_DIR=${M18_REPLAY_DIR:-${TMPDIR:-/tmp}/epic-bz-m18-replay}
+SCRATCH=$(mktemp -d)
+mkdir -p "$REPLAY_DIR"
+cleanup() {
+  git worktree remove --force "$SCRATCH/before" 2>/dev/null || true
+  git worktree remove --force "$SCRATCH/after" 2>/dev/null || true
+  rm -rf "$SCRATCH"
+}
+trap cleanup EXIT HUP INT TERM
+
+# M18 source before/after revisions: bddbd65 is the parent; 5fbe422 is the
+# source change. Share the already-installed, lockfile-pinned dependencies.
+git worktree add --quiet --detach "$SCRATCH/before" bddbd6556b4c9e73631864de6777d87c1b9ac05f
+git worktree add --quiet --detach "$SCRATCH/after" 5fbe42232ca6be3a7db4fa691e33e749582963fd
+ln -s "$ROOT/node_modules" "$SCRATCH/before/node_modules"
+ln -s "$ROOT/node_modules" "$SCRATCH/after/node_modules"
+
+capture_oxlint() {
+  label=$1
+  tree=$2
+  expected_status=1
+  shift 2
+  if (cd "$SCRATCH/$tree" && bunx --bun oxlint "$@" \
+      typescript/runners/react/src/lib/react-runner-prompt.ts \
+      typescript/runners/react/src/lib/react-runner-stream.ts) \
+      >"$REPLAY_DIR/$label.json" 2>"$REPLAY_DIR/$label.stderr"; then
+    status=0
+  else
+    status=$?
+  fi
+  if [ "$status" -ne "$expected_status" ]; then
+    echo "$label: oxlint exit $status; expected $expected_status" >&2
+    return 1
+  fi
+}
+
+# Raw JSON captures use the unchanged 419-rule syntactic and 474-rule
+# type-aware effective presets; status 1 is expected because findings exist.
+capture_oxlint before-syntactic before --format=json
+capture_oxlint before-typeaware before --type-aware --format=json
+capture_oxlint after-syntactic after --format=json
+capture_oxlint after-typeaware after --type-aware --format=json
+
+# Exact-file formatting and retained-Biome checks from M18.
+bunx --bun oxfmt --check \
+  typescript/runners/react/src/lib/react-runner-prompt.ts \
+  typescript/runners/react/src/lib/react-runner-stream.ts
+bunx --bun @biomejs/biome check \
+  typescript/runners/react/src/lib/react-runner-prompt.ts \
+  typescript/runners/react/src/lib/react-runner-stream.ts
+
+# Runner package gates.
+bun ./tools/run-nx.mjs run runner-react:lint
+bun ./tools/run-nx.mjs run runner-react:typecheck
+bun ./tools/run-nx.mjs run runner-react:test
+bun ./tools/run-nx.mjs run runner-react:bench
+bun ./tools/run-nx.mjs run runner-react:build
+
+# Repository and provider conformance gates.
+bun run nx run-many -t typecheck --parallel=4
+bun tools/scripts/conformance.ts
+bun ./tools/run-nx.mjs run providers-testkit:conformance
+bun ./tools/run-nx.mjs run providers-typescript-certification:conformance
+bun tools/scripts/changeset-check.ts
+
+# The constitution CLI is supplied by the installed skill; CODEX_HOME may be
+# set by the host, with ~/.codex as the documented default.
+CODEX_HOME=${CODEX_HOME:-$HOME/.codex}
+bun run "$CODEX_HOME/skills/constitution-tooling/scripts/cli.ts" validate --root "$ROOT"
+
+printf 'M18 replay captures: %s\n' "$REPLAY_DIR"
