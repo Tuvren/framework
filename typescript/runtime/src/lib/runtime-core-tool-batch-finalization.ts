@@ -28,6 +28,12 @@ export interface FinalizedToolBatchProjection {
   toolResults: ToolResultPart[];
 }
 
+interface BatchResultMatches {
+  resultByCallId: Map<string, ToolResultPart>;
+  resultHashByCallId: Map<string, HashString>;
+  resultIndexes: Set<number>;
+}
+
 /**
  * Projects a recovered or approval-resumed tool batch into original call
  * order once all newly completed results have joined the durable history.
@@ -62,48 +68,44 @@ export function finalizeToolBatchProjection(
   if (assistant?.role !== "assistant") {
     return { headState, toolResults: fallbackToolResults };
   }
-  const originalCalls = assistant.parts.filter(
-    (part): part is ToolCallPart => part.type === "tool_call"
-  );
-  const callIds = new Set(originalCalls.map((call) => call.callId));
-  const resultHashByCallId = new Map<string, HashString>();
-  const resultByCallId = new Map<string, ToolResultPart>();
-  for (const [hash, message] of messagesByHash) {
-    if (message.role !== "tool") {
-      continue;
-    }
-    for (const part of message.parts) {
-      if (
-        part.type === "tool_result" &&
-        callIds.has(part.callId) &&
-        !resultHashByCallId.has(part.callId)
-      ) {
-        resultHashByCallId.set(part.callId, hash);
-        resultByCallId.set(part.callId, part);
-      }
-    }
-  }
-
-  const orderedResultHashes = originalCalls.flatMap((call) => {
-    const hash = resultHashByCallId.get(call.callId);
-    return hash === undefined ? [] : [hash];
-  });
-  const uniqueResultHashes = [...new Set(orderedResultHashes)];
-  const withoutResults = hashes.filter(
-    (hash) => !uniqueResultHashes.includes(hash)
-  );
-  const assistantIndex = withoutResults.indexOf(assistantMessageHash);
+  // Identical assistant messages can share a content hash across Turns. The
+  // interrupted batch is the latest matching occurrence in the active path.
+  const assistantIndex = hashes.lastIndexOf(assistantMessageHash);
   if (assistantIndex < 0) {
     return { headState, toolResults: fallbackToolResults };
   }
-  withoutResults.splice(assistantIndex + 1, 0, ...uniqueResultHashes);
+  const originalCalls = assistant.parts.filter(
+    (part): part is ToolCallPart => part.type === "tool_call"
+  );
+  const batchResults = collectBatchResults(
+    hashes,
+    messagesByHash,
+    assistantIndex,
+    originalCalls
+  );
+
+  const orderedResultHashes = originalCalls.flatMap((call) => {
+    const hash = batchResults.resultHashByCallId.get(call.callId);
+    return hash === undefined ? [] : [hash];
+  });
+  const uniqueResultHashes = [...new Set(orderedResultHashes)];
+  const withoutResults: HashString[] = [];
+  for (const [index, hash] of hashes.entries()) {
+    if (index === assistantIndex) {
+      withoutResults.push(hash, ...uniqueResultHashes);
+      continue;
+    }
+    if (!batchResults.resultIndexes.has(index)) {
+      withoutResults.push(hash);
+    }
+  }
 
   const messages = withoutResults.flatMap((hash) => {
     const message = messagesByHash.get(hash);
     return message === undefined ? [] : [message];
   });
   const toolResults = originalCalls.flatMap((call) => {
-    const result = resultByCallId.get(call.callId);
+    const result = batchResults.resultByCallId.get(call.callId);
     return result === undefined ? [] : [result];
   });
 
@@ -115,4 +117,44 @@ export function finalizeToolBatchProjection(
     },
     toolResults,
   };
+}
+
+function collectBatchResults(
+  hashes: HashString[],
+  messagesByHash: Map<HashString, TuvrenMessage>,
+  assistantIndex: number,
+  originalCalls: ToolCallPart[]
+): BatchResultMatches {
+  const callIds = new Set(originalCalls.map((call) => call.callId));
+  const matches: BatchResultMatches = {
+    resultByCallId: new Map(),
+    resultHashByCallId: new Map(),
+    resultIndexes: new Set(),
+  };
+
+  for (let index = assistantIndex + 1; index < hashes.length; index += 1) {
+    const hash = hashes[index];
+    const message = hash === undefined ? undefined : messagesByHash.get(hash);
+    if (message?.role === "assistant") {
+      break;
+    }
+    if (message?.role !== "tool" || hash === undefined) {
+      continue;
+    }
+
+    for (const part of message.parts) {
+      if (
+        part.type !== "tool_result" ||
+        !callIds.has(part.callId) ||
+        matches.resultHashByCallId.has(part.callId)
+      ) {
+        continue;
+      }
+      matches.resultHashByCallId.set(part.callId, hash);
+      matches.resultByCallId.set(part.callId, part);
+      matches.resultIndexes.add(index);
+    }
+  }
+
+  return matches;
 }
