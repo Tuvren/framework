@@ -2,8 +2,8 @@ owner: KRT-BZ004
 mode: contract_test
 produced:
   date: '2026-10-16'
-  commit: 5fbe42232ca6be3a7db4fa691e33e749582963fd
-  command: sh .constitution/evidence/KRT-BZ004/M18-replay-commands.txt
+  commit: 8c03754281b057b33058f852230a8ea392692fb8
+  command: sh .constitution/evidence/KRT-BZ004/M19-replay-commands.txt
 files:
   - path: M1-raw-diagnostics.tar.gz
     sha256: 0c6905b1398eafb2f298810df123198d5df7af6cbc2996936556c8a6d2e8bae6
@@ -149,4 +149,16 @@ files:
     sha256: 4be0a96cede514228eb109f3a5dda13b5b569576cb9a6ecb9a2dee0bde61d312
     bytes: 3738
     role: measurement
-pass_criteria: 'KRT-BZ001 captures remain parseable. M8-M16 preserve provider initialization and behavior while clearing source ordering diagnostics. M17 preserves 32 React stream-support and benchmark contracts plus the reviewed private abort-cleanup repair. M18 preserves 26 React prompt and stream contracts, clears 78 ordering diagnostics with non-target rules exact-equal, and passes package, workspace, and provider gates.'
+  - path: M19-proof.tar.gz
+    sha256: ca954b67763f36da5d7648941a968c7222adb86efe313860cd963be7f71cf7ce
+    bytes: 5591
+    role: measurement
+  - path: M19-proof.json
+    sha256: cb215b95bfd1f3700ffc4652cf79150c3caea3ac105e7575ff8a8d56f5955e25
+    bytes: 4518
+    role: measurement
+  - path: M19-replay-commands.txt
+    sha256: d0f4b516b878f4104e8bc1a904cc588fe4bdfc0b1e19c4b88ab32709f81da25b
+    bytes: 3572
+    role: measurement
+pass_criteria: 'KRT-BZ001 captures remain parseable. M8-M16 preserve provider initialization and behavior while clearing source ordering diagnostics. M17 preserves 32 React stream-support and benchmark contracts plus the reviewed private abort-cleanup repair. M18 preserves 26 React prompt and stream contracts. M19 preserves 17 React around-model contracts, clears 52 ordering diagnostics with non-target rules exact-equal, and passes package, workspace, and provider gates.'

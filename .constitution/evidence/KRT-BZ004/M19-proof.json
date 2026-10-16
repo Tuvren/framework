@@ -1,0 +1,158 @@
+{
+  "milestone": "M19",
+  "ticket": "KRT-BZ003",
+  "baselineHead": "1213e15bf6406763f5ef443d133c904c8078c6da",
+  "scope": {
+    "files": [
+      "typescript/runners/react/src/lib/react-runner-around-model.ts"
+    ],
+    "additions": 473,
+    "deletions": 478,
+    "changedLines": 951,
+    "trackedProofLines": 0,
+    "reviewTargetNear": 1500
+  },
+  "hashes": {
+    "before": "f5b0093a0fdfa15eebddf253ce7f5bea75fbde4c31c1348f3b4fdbd138070151",
+    "after": "e521ffcdfb20860110fec1bdc92c15e2a82617e63d66cc90173c462ae217f59b",
+    "frozenCandidate": "e521ffcdfb20860110fec1bdc92c15e2a82617e63d66cc90173c462ae217f59b"
+  },
+  "diagnostics": {
+    "syntactic": {
+      "before": 56,
+      "after": 4,
+      "targetBefore": 52,
+      "targetAfter": 0,
+      "nonTargetStable": true,
+      "nonTargetRules": {
+        "jsdoc(require-throws-type)": 2,
+        "typescript(method-signature-style)": 2
+      }
+    },
+    "typeAware": {
+      "before": 63,
+      "after": 11,
+      "targetBefore": 52,
+      "targetAfter": 0,
+      "nonTargetStable": true,
+      "nonTargetRules": {
+        "jsdoc(require-throws-type)": 2,
+        "typescript(method-signature-style)": 2,
+        "typescript(no-unsafe-return)": 1,
+        "typescript(no-unsafe-type-assertion)": 2,
+        "typescript(unbound-method)": 4
+      }
+    }
+  },
+  "equivalence": {
+    "candidateHash": "e521ffcdfb20860110fec1bdc92c15e2a82617e63d66cc90173c462ae217f59b",
+    "checks": {
+      "asyncStatus": true,
+      "commentsAndDirectives": true,
+      "dependencyOrder": true,
+      "exports": true,
+      "generics": true,
+      "imports": true,
+      "nonfunctionAndEagerOrder": true,
+      "normalizedBodies": true,
+      "parameterDefaults": true,
+      "returnAnnotationsAndResolvedSignatures": true
+    },
+    "convertedDeclarations": 17,
+    "deliberateBodyOrSemanticRepair": null,
+    "functionResults": [
+      {
+        "bodyMode": "block",
+        "name": "runAroundModelChain"
+      },
+      {
+        "bodyMode": "block",
+        "name": "emitPostNextAroundModelError"
+      },
+      {
+        "bodyMode": "block",
+        "name": "collectAroundModelStateUpdates"
+      },
+      {
+        "bodyMode": "block",
+        "name": "createPostNextAroundModelFallbackOutcome"
+      },
+      {
+        "bodyMode": "block",
+        "name": "finalizeAroundModelSequences"
+      },
+      {
+        "bodyMode": "concise-return",
+        "name": "cloneAssistantSequences"
+      },
+      {
+        "bodyMode": "concise-return",
+        "name": "responsesMatch"
+      },
+      {
+        "bodyMode": "block",
+        "name": "responsesEmitEquivalentAssistantEvents"
+      },
+      {
+        "bodyMode": "block",
+        "name": "finishReasonMatchesDurableAssistantContent"
+      },
+      {
+        "bodyMode": "block",
+        "name": "partsEmitEquivalentAssistantEvents"
+      },
+      {
+        "bodyMode": "block",
+        "name": "resolveAroundModelResponseFormat"
+      },
+      {
+        "bodyMode": "block",
+        "name": "validateAroundModelRetryDurability"
+      },
+      {
+        "bodyMode": "block",
+        "name": "resolveAssistantEventReconciliation"
+      },
+      {
+        "bodyMode": "concise-return",
+        "name": "resolveAroundModelCancellation"
+      },
+      {
+        "bodyMode": "block",
+        "name": "findMatchingNextOutcome"
+      },
+      {
+        "bodyMode": "concise-return",
+        "name": "cloneValue"
+      },
+      {
+        "bodyMode": "block",
+        "name": "stripUndefinedDeep"
+      }
+    ],
+    "sourceHashBefore": "f5b0093a0fdfa15eebddf253ce7f5bea75fbde4c31c1348f3b4fdbd138070151",
+    "typescript": "6.0.2"
+  },
+  "verification": {
+    "allRequestedCommandsPassed": true,
+    "runnerTests": "82/82",
+    "providerCertification": "60/60",
+    "changeset": "direct coverage for 3 publishable packages",
+    "constitution": "0 errors; existing TS-004 warning",
+    "replayCommands": "M19-replay-commands.txt"
+  },
+  "isolation": {
+    "mainCheckoutClean": true,
+    "laneUnexpectedPaths": [],
+    "constitutionWrites": false,
+    "dependenciesAdded": [],
+    "newPatterns": [],
+    "newContracts": []
+  },
+  "codeDecisions": [],
+  "drift": [
+    "Repository typecheck and conformance exited 0 while Nx reported kernel-interop-grpc:codegen as flaky; no failure or source drift resulted.",
+    "Initial constitution attempt was blocked by the default read-only .devenv mount; the identical locked command passed with authorized worktree access."
+  ],
+  "producingCommit": "8c03754281b057b33058f852230a8ea392692fb8"
+}
