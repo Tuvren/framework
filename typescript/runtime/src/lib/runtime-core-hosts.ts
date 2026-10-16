@@ -444,7 +444,8 @@ interface StateCommitHostDependencies {
   stageTurnLineage(
     runId: string,
     turnId: string,
-    taskId: string
+    taskId: string,
+    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
   ): Promise<HashString>;
   storeEventRecord(event: KernelRecord): Promise<HashString>;
   syncRunLeaseStateFromStepResult(

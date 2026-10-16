@@ -34,6 +34,7 @@ import type { ToolRegistry } from "@tuvren/core/tools";
 import { isClientEndpointTool } from "./binding-resolver.js";
 import { buildCapabilityMetadataFromTools } from "./capability-policy-engine.js";
 import { runAfterIterationHooks } from "./extension-runtime.js";
+import type { InterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type { LoopOutcome } from "./runtime-core-recovery.js";
 import { composeResolutions } from "./runtime-core-response.js";
@@ -119,7 +120,8 @@ export interface RuntimeCoreRunnerHost {
     baseMessageHashes: HashString[],
     appendedMessageHashes: HashString[],
     manifestHash: HashString,
-    runtimeStatusHash?: HashString
+    runtimeStatusHash?: HashString,
+    turnLineageHash?: HashString
   ): Promise<HashString>;
   createReadonlyRunnerToolRegistry(registry: ToolRegistry): ToolRegistry;
   createRunnerAgentConfigSnapshot(
@@ -187,6 +189,12 @@ export interface RuntimeCoreRunnerHost {
       state: "completed" | "failed" | "paused" | "running";
     },
     taskId: string
+  ): Promise<HashString>;
+  stageTurnLineage(
+    runId: string,
+    turnId: string,
+    taskId: string,
+    interruptedToolBatch?: InterruptedToolBatchDescriptor
   ): Promise<HashString>;
 }
 
@@ -471,7 +479,8 @@ export async function completeIterationArtifacts(
   runId: string,
   resolution: RuntimeResolution,
   manifest: ContextManifest,
-  appendedMessageHashes: HashString[]
+  appendedMessageHashes: HashString[],
+  interruptedToolBatch?: InterruptedToolBatchDescriptor
 ): Promise<HashString | undefined> {
   const manifestHash = await host.stageManifest(runId, manifest, {
     handle,
@@ -489,6 +498,12 @@ export async function completeIterationArtifacts(
           "runtime_status"
         )
       : undefined;
+  const turnLineageHash = await host.stageTurnLineage(
+    runId,
+    handle.turnId,
+    "turn_lineage_checkpoint",
+    resolution.type === "pause" ? interruptedToolBatch : undefined
+  );
   const nextTreeHash =
     resolution.type === "fail" && resolution.fatality === "hard"
       ? undefined
@@ -498,7 +513,8 @@ export async function completeIterationArtifacts(
           headState.messageHashes,
           appendedMessageHashes,
           manifestHash,
-          runtimeStatusHash
+          runtimeStatusHash,
+          turnLineageHash
         );
 
   return await host.completeIterationRun(

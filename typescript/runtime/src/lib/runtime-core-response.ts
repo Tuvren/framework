@@ -28,6 +28,10 @@ import type {
   TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 
+import {
+  readInterruptedToolBatchDescriptor,
+  type InterruptedToolBatchDescriptor,
+} from "./runtime-core-interrupted-metadata.js";
 import { inferFinishReason } from "./runtime-core-recovery.js";
 import { isRecord, normalizeError } from "./runtime-core-shared.js";
 
@@ -38,6 +42,8 @@ import { isRecord, normalizeError } from "./runtime-core-shared.js";
 export interface TurnLineageRecord {
   /** Id of the branch's currently active turn. */
   activeTurnId: string;
+  /** Interrupted tool-batch state owned by the runtime, when a batch is open. */
+  interruptedToolBatch?: InterruptedToolBatchDescriptor;
 }
 
 /**
@@ -258,7 +264,13 @@ export function toOrderedHashArray(value: PathValue): HashString[] {
 export function isTurnLineageRecord(
   value: unknown
 ): value is TurnLineageRecord {
-  return isRecord(value) && typeof value.activeTurnId === "string";
+  return (
+    isRecord(value) &&
+    typeof value.activeTurnId === "string" &&
+    (!("interruptedToolBatch" in value) ||
+      readInterruptedToolBatchDescriptor(value.interruptedToolBatch) !==
+        undefined)
+  );
 }
 
 /**

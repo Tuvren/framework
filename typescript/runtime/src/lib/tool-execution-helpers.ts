@@ -158,14 +158,14 @@ export function createBatchScopedEnvironment(
       environment.reportSoftError(error);
     },
     signal: fenceSignal,
-    async stageResult(result, orderIndex) {
+    async stageResult(result, orderIndex, updates = []) {
       // Commit-under-valid-authority gate (ADR-0052: a result becomes durable
       // state only through a commit performed while the run still holds write
       // authority). The fence signal aborts on lease loss, cancellation, or the
       // wall-clock deadline, so a result produced after authority is lost is not
       // committed to history under the dead owner. (KRT-BG004)
       throwIfAborted();
-      const hash = await environment.stageResult(result, orderIndex);
+      const hash = await environment.stageResult(result, orderIndex, updates);
       throwIfAborted();
       return hash;
     },

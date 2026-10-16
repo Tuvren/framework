@@ -92,6 +92,7 @@ export async function loadHeadState(
     manifestHash === null
       ? createEmptyContextManifest()
       : await readManifest(kernel, manifestHash);
+  const turnLineage = await readTurnLineageRecord(kernel, turnNode, branchId);
 
   return {
     branchHeadHash: branch.headTurnNodeHash,
@@ -99,6 +100,7 @@ export async function loadHeadState(
     messageHashes,
     messages: await readMessages(kernel, payloadCodecBinding, messageHashes),
     turnNode,
+    ...(turnLineage === null ? {} : { turnLineage }),
   };
 }
 
@@ -402,6 +404,15 @@ async function readBranchActiveTurnId(
   branchId: string
 ): Promise<string | null> {
   const { turnNode } = await readBranchHeadState(kernel, branchId);
+  const turnLineage = await readTurnLineageRecord(kernel, turnNode, branchId);
+  return turnLineage?.activeTurnId ?? null;
+}
+
+async function readTurnLineageRecord(
+  kernel: RuntimeKernel,
+  turnNode: Exclude<Awaited<ReturnType<RuntimeKernel["node"]["get"]>>, null>,
+  branchId: string
+): Promise<import("./runtime-core-response.js").TurnLineageRecord | null> {
   const lineageHash = toOptionalHash(
     await kernel.tree.resolve(turnNode.turnTreeHash, "turn.lineage")
   );
@@ -428,7 +439,7 @@ async function readBranchActiveTurnId(
   const decoded = decodeDeterministicKernelRecord(payload);
 
   if (isTurnLineageRecord(decoded)) {
-    return decoded.activeTurnId;
+    return decoded;
   }
 
   throw new TuvrenLineageError(

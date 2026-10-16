@@ -749,12 +749,13 @@ class RuntimeCore implements TuvrenRuntime {
           status,
           taskId
         ),
-      stageTurnLineage: (runId, turnId, taskId) =>
+      stageTurnLineage: (runId, turnId, taskId, interruptedToolBatch) =>
         stageRuntimeTurnLineageRecord(
           this.hosts.persistence,
           runId,
           turnId,
-          taskId
+          taskId,
+          interruptedToolBatch
         ),
       storeEventRecord: (event) =>
         storeRuntimeEventKernelRecord(this.hosts.persistence, event),
@@ -1260,6 +1261,10 @@ class RuntimeCore implements TuvrenRuntime {
         createId: () => this.createId(),
         stageManifest: (runId, manifest, taskId) =>
           this.hosts.runner.stageManifest(runId, manifest, undefined, taskId),
+        stageRuntimeStatus: (...args) =>
+          this.hosts.runner.stageRuntimeStatus(...args),
+        stageTurnLineage: (...args) =>
+          this.hosts.runner.stageTurnLineage(...args),
         createTrackedRun: (...args) =>
           createRuntimeCoreTrackedRun(this.hosts.liveness, ...args),
         ensureRunnerAssistantEvents: (

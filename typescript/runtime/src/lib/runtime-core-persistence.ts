@@ -18,6 +18,7 @@ import type { HashString, KernelRecord } from "@tuvren/core";
 import type { ContextManifest } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 
+import type { InterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
 import type { LoopState } from "./runtime-core-loop.js";
 import type { DurableRuntimeStatus } from "./runtime-core-recovery.js";
 import type { TurnLineageRecord } from "./runtime-core-response.js";
@@ -153,13 +154,15 @@ export async function stageTurnLineage(
   host: RuntimeCorePersistenceHost,
   runId: string,
   turnId: string,
-  taskId: string
+  taskId: string,
+  interruptedToolBatch?: InterruptedToolBatchDescriptor
 ): Promise<HashString> {
   return await host.stageRecord(
     runId,
     host.encodeKernelRecord(
       {
         activeTurnId: turnId,
+        ...(interruptedToolBatch === undefined ? {} : { interruptedToolBatch }),
       } satisfies TurnLineageRecord,
       "turn lineage"
     ),

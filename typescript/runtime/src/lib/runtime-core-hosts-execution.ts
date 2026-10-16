@@ -50,6 +50,7 @@ interface RunnerHostDependencies {
   stageManifest: RuntimeCoreRunnerHost["stageManifest"];
   stageMessage: RuntimeCoreRunnerHost["stageMessage"];
   stageRuntimeStatus: RuntimeCoreRunnerHost["stageRuntimeStatus"];
+  stageTurnLineage: RuntimeCoreRunnerHost["stageTurnLineage"];
 }
 
 /** Dependency bag adapted into a {@link RuntimeCoreToolResumeHost}. */
@@ -78,6 +79,7 @@ interface ToolResumeHostDependencies {
   stageManifest: RuntimeCoreToolResumeHost["stageManifest"];
   stageMessage: RuntimeCoreToolResumeHost["stageMessage"];
   stageRuntimeStatus: RuntimeCoreToolResumeHost["stageRuntimeStatus"];
+  stageTurnLineage: RuntimeCoreToolResumeHost["stageTurnLineage"];
 }
 
 /** Dependency bag adapted into a {@link RuntimeCoreStatusHost}. */
@@ -160,6 +162,7 @@ export function buildRuntimeCoreRunnerHost(
     stageManifest: (...args) => dependencies.stageManifest(...args),
     stageMessage: (...args) => dependencies.stageMessage(...args),
     stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
+    stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
   };
 }
 
@@ -193,6 +196,7 @@ export function buildRuntimeCoreToolResumeHost(
     stageManifest: (...args) => dependencies.stageManifest(...args),
     stageMessage: (...args) => dependencies.stageMessage(...args),
     stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
+    stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
   };
 }
 
