@@ -914,11 +914,11 @@ export const RUN_LIVENESS_INDEX_DEFINITIONS = {
 >;
 
 /** Lists the directory's `.sql` migration files in application (name) order. */
-export function listMigrationFiles(migrationDirectory: string): string[] {
+export const listMigrationFiles = (migrationDirectory: string): string[] => {
   return readdirSync(migrationDirectory)
     .filter((fileName) => fileName.endsWith(".sql"))
     .sort((left, right) => left.localeCompare(right));
-}
+};
 
 /**
  * Locates the package's migrations directory across layouts (built `dist/`,
@@ -929,9 +929,9 @@ export function listMigrationFiles(migrationDirectory: string): string[] {
  *   `sqlite_backend_missing_migrations_directory` when no candidate
  *   qualifies.
  */
-export function resolveMigrationDirectory(
+export const resolveMigrationDirectory = (
   persistenceError: SqlitePersistenceErrorFactory
-): string {
+): string => {
   const candidates = [
     fileURLToPath(new URL("sqlite-migrations", import.meta.url)),
     fileURLToPath(new URL("migrations", import.meta.url)),
@@ -956,4 +956,4 @@ export function resolveMigrationDirectory(
     "sqlite backend could not locate its migrations directory",
     "sqlite_backend_missing_migrations_directory"
   );
-}
+};
