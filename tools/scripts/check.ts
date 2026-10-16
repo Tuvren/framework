@@ -79,9 +79,9 @@ export interface CheckPhaseOptions {
   includeRust: boolean;
 }
 
-export function createCheckPhases(
+export const createCheckPhases = (
   options: CheckPhaseOptions
-): VerificationPhase[] {
+): VerificationPhase[] => {
   const phases = prependGeneratedPrerequisitePhase(
     [
       {
@@ -141,24 +141,27 @@ export function createCheckPhases(
   }
 
   return phases;
-}
+};
 
-async function runCheckCli(args: readonly string[]): Promise<void> {
-  const baseArg = args.find((arg) => arg.startsWith(BASE_FLAG));
-  const base = baseArg ? baseArg.slice(BASE_FLAG.length) : DEFAULT_BASE;
-  const phases = createCheckPhases({
-    base,
-    includeRust: await rustChangedSince(base),
+const gitLines = async (
+  command: readonly string[]
+): Promise<string[] | undefined> => {
+  const result = await runCommand(command, {
+    captureOutput: true,
+    cwd: process.cwd(),
   });
-  const results = await runVerificationPhases(phases);
-  printVerificationSummary(results);
 
-  if (hasVerificationFailure(results)) {
-    process.exitCode = 1;
+  if (result.code !== 0) {
+    return undefined;
   }
-}
 
-async function rustChangedSince(ref: string): Promise<boolean> {
+  return result.stdout
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+};
+
+const rustChangedSince = async (ref: string): Promise<boolean> => {
   // Diff the working tree against the base ref directly. This matches how
   // `nx affected --base=<ref>` selects projects by default — its default head is
   // the current file system, not a committed SHA — so the Rust gate and the
@@ -188,25 +191,22 @@ async function rustChangedSince(ref: string): Promise<boolean> {
       CARGO_MANIFEST_PATTERN.test(file) ||
       file === "rust-toolchain.toml"
   );
-}
+};
 
-async function gitLines(
-  command: readonly string[]
-): Promise<string[] | undefined> {
-  const result = await runCommand(command, {
-    captureOutput: true,
-    cwd: process.cwd(),
+const runCheckCli = async (args: readonly string[]): Promise<void> => {
+  const baseArg = args.find((arg) => arg.startsWith(BASE_FLAG));
+  const base = baseArg ? baseArg.slice(BASE_FLAG.length) : DEFAULT_BASE;
+  const phases = createCheckPhases({
+    base,
+    includeRust: await rustChangedSince(base),
   });
+  const results = await runVerificationPhases(phases);
+  printVerificationSummary(results);
 
-  if (result.code !== 0) {
-    return undefined;
+  if (hasVerificationFailure(results)) {
+    process.exitCode = 1;
   }
-
-  return result.stdout
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-}
+};
 
 if (import.meta.main) {
   await runCheckCli(process.argv.slice(2));

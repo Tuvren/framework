@@ -95,9 +95,9 @@ const FRESH_FLAG = "--fresh";
 //   evidence, so they run concurrently; Nx serializes its own cache access.
 // - The conformance run-many stays in its own serial phase: it drives real
 //   services (PostgreSQL) and already parallelizes internally.
-export function createKernelVerificationPhases(options: {
+export const createKernelVerificationPhases = (options: {
   fresh: boolean;
-}): readonly VerificationPhase[] {
+}): readonly VerificationPhase[] => {
   const cacheModeArgs = options.fresh ? ["--skipNxCache"] : [];
 
   return prependGeneratedPrerequisitePhase(
@@ -180,7 +180,7 @@ export function createKernelVerificationPhases(options: {
     ],
     { fresh: options.fresh }
   );
-}
+};
 
 if (import.meta.main) {
   const args = process.argv.slice(2);
