@@ -188,10 +188,10 @@ export const sanitizeMetadataValue = (value: unknown): unknown => {
  * per-call collection surfaced on the finish chunk's provider metadata.
  * Parts without `providerMetadata` are ignored.
  */
-export function captureStreamPartMetadata(
+export const captureStreamPartMetadata = (
   collection: unknown[],
   part: LanguageModelV3StreamPart
-): void {
+): void => {
   if (!("providerMetadata" in part) || part.providerMetadata === undefined) {
     return;
   }
@@ -204,7 +204,7 @@ export function captureStreamPartMetadata(
       type: part.type,
     })
   );
-}
+};
 
 /**
  * Sanitizes a record via {@link sanitizeMetadataValue}, returning `undefined`
@@ -219,6 +219,89 @@ export const sanitizeRecord = (
 
   const sanitized = sanitizeMetadataValue(value);
   return isPlainObject(sanitized) ? sanitized : undefined;
+};
+
+/**
+ * Structurally clones metadata values (arrays, plain objects, `Uint8Array`);
+ * other values are returned as-is.
+ */
+export const cloneMetadataValue = <T>(value: T): T => {
+  if (value instanceof Uint8Array) {
+    return new Uint8Array(value) as T;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => cloneMetadataValue(entry)) as T;
+  }
+
+  if (isPlainObject(value)) {
+    const clone: Record<string, unknown> = {};
+
+    for (const [key, entry] of Object.entries(value)) {
+      clone[key] = cloneMetadataValue(entry);
+    }
+
+    return clone as T;
+  }
+
+  return value;
+};
+
+/**
+ * Merges additions into one provider namespace without overwriting keys the
+ * namespace already defines (existing values win).
+ */
+export const mergePromptProviderNamespace = (
+  current: unknown,
+  additions: Record<string, unknown>
+): Record<string, unknown> => {
+  const merged: Record<string, unknown> = {};
+
+  if (isPlainObject(current)) {
+    for (const [key, value] of Object.entries(current)) {
+      merged[key] = cloneMetadataValue(value);
+    }
+  }
+
+  for (const [key, value] of Object.entries(additions)) {
+    if (!(key in merged)) {
+      merged[key] = cloneMetadataValue(value);
+    }
+  }
+
+  return merged;
+};
+
+/**
+ * Keeps provider-namespaced plain-object entries and lifts a flat
+ * `signature` into the `anthropic` namespace; returns `undefined` when no
+ * provider options remain.
+ */
+const normalizePromptProviderMetadata = (
+  providerMetadata: Record<string, unknown>
+): Record<string, unknown> | undefined => {
+  const normalized: Record<string, unknown> = {};
+  let hasProviderOptions = false;
+
+  for (const [providerName, providerValue] of Object.entries(
+    providerMetadata
+  )) {
+    if (!isPlainObject(providerValue)) {
+      continue;
+    }
+
+    normalized[providerName] = cloneMetadataValue(providerValue);
+    hasProviderOptions = true;
+  }
+
+  if (typeof providerMetadata.signature === "string") {
+    normalized.anthropic = mergePromptProviderNamespace(normalized.anthropic, {
+      signature: providerMetadata.signature,
+    });
+    hasProviderOptions = true;
+  }
+
+  return hasProviderOptions ? normalized : undefined;
 };
 
 /**
@@ -377,9 +460,9 @@ export const cloneProviderOptions = (
  * flat `signature` string into the `anthropic` namespace. Returns
  * `undefined` when nothing survives sanitization.
  */
-export function mapPromptProviderOptions(
+export const mapPromptProviderOptions = (
   providerMetadata: Record<string, unknown> | undefined
-): SharedV3ProviderOptions | undefined {
+): SharedV3ProviderOptions | undefined => {
   const sanitized = sanitizeRecord(providerMetadata);
 
   if (sanitized === undefined) {
@@ -391,7 +474,96 @@ export function mapPromptProviderOptions(
   return normalized === undefined
     ? undefined
     : cloneProviderOptions(normalized);
-}
+};
+
+/** Clones a provider-options record, collapsing an empty record to `undefined`. */
+const cloneProviderOptionsOrUndefined = (
+  providerOptions: Record<string, unknown>
+): SharedV3ProviderOptions | undefined =>
+  Object.keys(providerOptions).length === 0
+    ? undefined
+    : cloneProviderOptions(providerOptions);
+
+/**
+ * Filters provider metadata down to the allow-listed replay keys per
+ * provider namespace, dropping namespaces that end up empty.
+ */
+const collectAssistantReplayProviderOptions = (
+  providerMetadata: Record<string, unknown>,
+  allowedProviderKeys: Record<string, Set<string>>
+): Record<string, unknown> => {
+  const normalized: Record<string, unknown> = {};
+
+  for (const [providerName, allowedKeys] of Object.entries(
+    allowedProviderKeys
+  )) {
+    const providerValue = providerMetadata[providerName];
+
+    if (!isPlainObject(providerValue)) {
+      continue;
+    }
+
+    const filteredProviderMetadata: Record<string, unknown> = {};
+
+    for (const key of allowedKeys) {
+      const value = providerValue[key];
+
+      if (value !== undefined) {
+        filteredProviderMetadata[key] = cloneMetadataValue(value);
+      }
+    }
+
+    if (Object.keys(filteredProviderMetadata).length > 0) {
+      normalized[providerName] = filteredProviderMetadata;
+    }
+  }
+
+  return normalized;
+};
+
+/**
+ * Picks the provider-options namespace for a flat reasoning signature from
+ * the active provider name; anything that is not vertex/google-flavored is
+ * treated as anthropic.
+ */
+const getFlatReasoningSignatureProviderNamespace = (
+  activeProvider: string
+): "anthropic" | "google" | "vertex" => {
+  if (activeProvider.includes("vertex")) {
+    return "vertex";
+  }
+
+  if (activeProvider.includes("google")) {
+    return "google";
+  }
+
+  return "anthropic";
+};
+
+/**
+ * Routes a flat (non-namespaced) reasoning `signature` into the active
+ * provider's namespace under its expected key (`signature` for anthropic,
+ * `thoughtSignature` for google/vertex), without overwriting existing keys.
+ */
+const applyFlatReasoningSignature = (
+  providerOptions: Record<string, unknown>,
+  activeProvider: string,
+  signature: string
+): void => {
+  const providerNamespace =
+    getFlatReasoningSignatureProviderNamespace(activeProvider);
+
+  providerOptions[providerNamespace] = mergePromptProviderNamespace(
+    providerOptions[providerNamespace],
+    providerNamespace === "anthropic"
+      ? {
+          signature,
+        }
+      : {
+          thoughtSignature: signature,
+        }
+  );
+};
 
 /**
  * Maps an assistant part's stored `providerMetadata` to the replay
@@ -402,10 +574,10 @@ export function mapPromptProviderOptions(
  * `undefined` for part types with no replay contract or when nothing
  * survives filtering.
  */
-export function mapAssistantReplayProviderOptions(
+export const mapAssistantReplayProviderOptions = (
   activeProvider: string,
   part: TuvrenPromptPart
-): SharedV3ProviderOptions | undefined {
+): SharedV3ProviderOptions | undefined => {
   const sanitized = sanitizeRecord(part.providerMetadata);
 
   if (sanitized === undefined) {
@@ -449,188 +621,15 @@ export function mapAssistantReplayProviderOptions(
       return undefined;
     }
   }
-}
-
-/**
- * Routes a flat (non-namespaced) reasoning `signature` into the active
- * provider's namespace under its expected key (`signature` for anthropic,
- * `thoughtSignature` for google/vertex), without overwriting existing keys.
- */
-function applyFlatReasoningSignature(
-  providerOptions: Record<string, unknown>,
-  activeProvider: string,
-  signature: string
-): void {
-  const providerNamespace =
-    getFlatReasoningSignatureProviderNamespace(activeProvider);
-
-  providerOptions[providerNamespace] = mergePromptProviderNamespace(
-    providerOptions[providerNamespace],
-    providerNamespace === "anthropic"
-      ? {
-          signature,
-        }
-      : {
-          thoughtSignature: signature,
-        }
-  );
-}
-
-/**
- * Picks the provider-options namespace for a flat reasoning signature from
- * the active provider name; anything that is not vertex/google-flavored is
- * treated as anthropic.
- */
-function getFlatReasoningSignatureProviderNamespace(
-  activeProvider: string
-): "anthropic" | "google" | "vertex" {
-  if (activeProvider.includes("vertex")) {
-    return "vertex";
-  }
-
-  if (activeProvider.includes("google")) {
-    return "google";
-  }
-
-  return "anthropic";
-}
-
-/**
- * Structurally clones metadata values (arrays, plain objects, `Uint8Array`);
- * other values are returned as-is.
- */
-export const cloneMetadataValue = <T>(value: T): T => {
-  if (value instanceof Uint8Array) {
-    return new Uint8Array(value) as T;
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((entry) => cloneMetadataValue(entry)) as T;
-  }
-
-  if (isPlainObject(value)) {
-    const clone: Record<string, unknown> = {};
-
-    for (const [key, entry] of Object.entries(value)) {
-      clone[key] = cloneMetadataValue(entry);
-    }
-
-    return clone as T;
-  }
-
-  return value;
 };
-
-/**
- * Keeps provider-namespaced plain-object entries and lifts a flat
- * `signature` into the `anthropic` namespace; returns `undefined` when no
- * provider options remain.
- */
-function normalizePromptProviderMetadata(
-  providerMetadata: Record<string, unknown>
-): Record<string, unknown> | undefined {
-  const normalized: Record<string, unknown> = {};
-  let hasProviderOptions = false;
-
-  for (const [providerName, providerValue] of Object.entries(
-    providerMetadata
-  )) {
-    if (!isPlainObject(providerValue)) {
-      continue;
-    }
-
-    normalized[providerName] = cloneMetadataValue(providerValue);
-    hasProviderOptions = true;
-  }
-
-  if (typeof providerMetadata.signature === "string") {
-    normalized.anthropic = mergePromptProviderNamespace(normalized.anthropic, {
-      signature: providerMetadata.signature,
-    });
-    hasProviderOptions = true;
-  }
-
-  return hasProviderOptions ? normalized : undefined;
-}
-
-/** Clones a provider-options record, collapsing an empty record to `undefined`. */
-function cloneProviderOptionsOrUndefined(
-  providerOptions: Record<string, unknown>
-): SharedV3ProviderOptions | undefined {
-  return Object.keys(providerOptions).length === 0
-    ? undefined
-    : cloneProviderOptions(providerOptions);
-}
-
-/**
- * Filters provider metadata down to the allow-listed replay keys per
- * provider namespace, dropping namespaces that end up empty.
- */
-function collectAssistantReplayProviderOptions(
-  providerMetadata: Record<string, unknown>,
-  allowedProviderKeys: Record<string, Set<string>>
-): Record<string, unknown> {
-  const normalized: Record<string, unknown> = {};
-
-  for (const [providerName, allowedKeys] of Object.entries(
-    allowedProviderKeys
-  )) {
-    const providerValue = providerMetadata[providerName];
-
-    if (!isPlainObject(providerValue)) {
-      continue;
-    }
-
-    const filteredProviderMetadata: Record<string, unknown> = {};
-
-    for (const key of allowedKeys) {
-      const value = providerValue[key];
-
-      if (value !== undefined) {
-        filteredProviderMetadata[key] = cloneMetadataValue(value);
-      }
-    }
-
-    if (Object.keys(filteredProviderMetadata).length > 0) {
-      normalized[providerName] = filteredProviderMetadata;
-    }
-  }
-
-  return normalized;
-}
-
-/**
- * Merges additions into one provider namespace without overwriting keys the
- * namespace already defines (existing values win).
- */
-export function mergePromptProviderNamespace(
-  current: unknown,
-  additions: Record<string, unknown>
-): Record<string, unknown> {
-  const merged: Record<string, unknown> = {};
-
-  if (isPlainObject(current)) {
-    for (const [key, value] of Object.entries(current)) {
-      merged[key] = cloneMetadataValue(value);
-    }
-  }
-
-  for (const [key, value] of Object.entries(additions)) {
-    if (!(key in merged)) {
-      merged[key] = cloneMetadataValue(value);
-    }
-  }
-
-  return merged;
-}
 
 /**
  * Sanitizes a generate result's response metadata (body, headers, id,
  * modelId, ISO timestamp) for provider-metadata attribution.
  */
-export function sanitizeGenerateResponseMetadata(
+export const sanitizeGenerateResponseMetadata = (
   response: LanguageModelV3GenerateResult["response"]
-): unknown {
+): unknown => {
   if (response === undefined) {
     return undefined;
   }
@@ -645,33 +644,31 @@ export function sanitizeGenerateResponseMetadata(
         ? response.timestamp.toISOString()
         : undefined,
   });
-}
+};
 
 /**
  * Extracts the well-typed fields (id, modelId, ISO timestamp) from a
  * `response-metadata` stream part, omitting anything malformed.
  */
-export function sanitizeResponseMetadata(
+export const sanitizeResponseMetadata = (
   response: Extract<LanguageModelV3StreamPart, { type: "response-metadata" }>
-): Record<string, unknown> {
-  return {
-    ...(typeof response.id === "string"
-      ? {
-          id: response.id,
-        }
-      : {}),
-    ...(typeof response.modelId === "string"
-      ? {
-          modelId: response.modelId,
-        }
-      : {}),
-    ...(response.timestamp instanceof Date
-      ? {
-          timestamp: response.timestamp.toISOString(),
-        }
-      : {}),
-  };
-}
+): Record<string, unknown> => ({
+  ...(typeof response.id === "string"
+    ? {
+        id: response.id,
+      }
+    : {}),
+  ...(typeof response.modelId === "string"
+    ? {
+        modelId: response.modelId,
+      }
+    : {}),
+  ...(response.timestamp instanceof Date
+    ? {
+        timestamp: response.timestamp.toISOString(),
+      }
+    : {}),
+});
 
 /**
  * Assembles the provider metadata attached to a response or finish chunk:
@@ -683,10 +680,10 @@ export function sanitizeResponseMetadata(
  * provider namespaces are left intact because reasoning-signature strings
  * would otherwise trip the screening (see the inline note).
  */
-export function buildProviderMetadata(input: {
+export const buildProviderMetadata = (input: {
   bridgeExtras: Record<string, unknown>;
   providerMetadata?: Record<string, unknown>;
-}): Record<string, unknown> | undefined {
+}): Record<string, unknown> | undefined => {
   const metadata: Record<string, unknown> = {};
   const providerMetadata = sanitizeRecord(input.providerMetadata);
   const extras = sanitizeRecord(input.bridgeExtras);
@@ -707,17 +704,17 @@ export function buildProviderMetadata(input: {
   }
 
   return Object.keys(metadata).length === 0 ? undefined : metadata;
-}
+};
 
 /**
  * Deep-merges two provider-metadata records: same-named provider namespaces
  * merge key-by-key with `next` winning; other entries are cloned through.
  * Returns the surviving record, or `undefined` when both inputs are.
  */
-export function mergeProviderMetadataRecords(
+export const mergeProviderMetadataRecords = (
   current: Record<string, unknown> | undefined,
   next: Record<string, unknown> | undefined
-): Record<string, unknown> | undefined {
+): Record<string, unknown> | undefined => {
   if (current === undefined) {
     return next === undefined ? undefined : cloneMetadataValue(next);
   }
@@ -750,16 +747,16 @@ export function mergeProviderMetadataRecords(
   }
 
   return merged;
-}
+};
 
 /**
  * Reads the opaque reasoning signature from stream-part provider metadata,
  * checking `anthropic.signature`, then `google.thoughtSignature`, then
  * `vertex.thoughtSignature`.
  */
-export function readReasoningStreamSignature(
+export const readReasoningStreamSignature = (
   providerMetadata: Record<string, unknown> | undefined
-): string | undefined {
+): string | undefined => {
   const sanitized = sanitizeRecord(providerMetadata);
 
   if (sanitized === undefined) {
@@ -788,15 +785,15 @@ export function readReasoningStreamSignature(
     typeof vertexMetadata.thoughtSignature === "string"
     ? vertexMetadata.thoughtSignature
     : undefined;
-}
+};
 
 /**
  * True when provider metadata carries Anthropic redacted-reasoning content
  * (`anthropic.redactedData`), which streams no visible text.
  */
-export function hasAnthropicRedactedReasoningMetadata(
+export const hasAnthropicRedactedReasoningMetadata = (
   providerMetadata: Record<string, unknown> | undefined
-): boolean {
+): boolean => {
   const sanitized = sanitizeRecord(providerMetadata);
 
   if (sanitized === undefined) {
@@ -809,7 +806,7 @@ export function hasAnthropicRedactedReasoningMetadata(
     isPlainObject(anthropicMetadata) &&
     typeof anthropicMetadata.redactedData === "string"
   );
-}
+};
 
 /** Shallow-clones a headers record so callers cannot mutate bridge defaults. */
 export const cloneHeaders = (
