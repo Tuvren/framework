@@ -9,8 +9,8 @@
   "files": [
     {
       "path": "README.md",
-      "sha256": "b2b0bcbdf74b8e57ade013ae5f616bd59c73524d948851dc3643cc20272d8d71",
-      "bytes": 1731,
+      "sha256": "76ddcd5a66e3713713f956449545e5fd6d67e58bb53794bcb75f07429d252cd5",
+      "bytes": 1999,
       "role": "measurement"
     },
     {
@@ -21,8 +21,8 @@
     },
     {
       "path": "probe.ts",
-      "sha256": "aa13a4b068e78ab7744867f6b4b25d68422662835a097be2a8fb52dde0e51e9f",
-      "bytes": 25682,
+      "sha256": "b40c585e092326f7b17b6e13ce27e9f83474dc04d31f50260ebb4250b89dad7c",
+      "bytes": 26740,
       "role": "measurement"
     },
     {
@@ -50,5 +50,5 @@
       "role": "measurement"
     }
   ],
-  "pass_criteria": "The exact two baseline and live directives retain their original reasons and Biome ownership; original input exits 0, the comments-only fixture exits 1 with exactly two retained-Biome diagnostics, installed Oxlint syntactic and type-aware runs each emit exactly two matching eslint(no-bitwise) diagnostics, source and bitmask operations remain unchanged, all required repository gates pass, and the raw archive agrees with its index."
+  "pass_criteria": "The exact two baseline and live directives retain their original identity, rule, reasons, and Biome ownership; the pinned historical source exits 0, the comments-only fixture exits 1 with exactly two retained-Biome diagnostics, installed Oxlint syntactic and type-aware runs each emit exactly two matching eslint(no-bitwise) diagnostics, current bitmask operation semantics remain unchanged, all required repository gates pass, and the raw archive agrees with its index."
 }

@@ -129,7 +129,9 @@ const generateRelease = async (fixture: Fixture): Promise<void> => {
   await fixture.commit("generate release");
 };
 
-const createFixture = async (): Promise<Fixture> => {
+const createFixture = async (
+  includeSecondPublicPackage = false
+): Promise<Fixture> => {
   const root = await mkdtemp(path.join(tmpdir(), "tuvren-changeset-check-"));
   fixtureRoots.push(root);
   await writeFixtureFile(
@@ -187,6 +189,25 @@ const createFixture = async (): Promise<Fixture> => {
     "packages/private-a/src.ts",
     "export const initial = true;\n"
   );
+  if (includeSecondPublicPackage) {
+    await writeFixtureFile(
+      root,
+      "packages/public-b/package.json",
+      JSON.stringify(
+        {
+          name: "@tuvren/public-b",
+          version: "1.0.0",
+        },
+        null,
+        2
+      )
+    );
+    await writeFixtureFile(
+      root,
+      "packages/public-b/src.ts",
+      "export const initial = true;\n"
+    );
+  }
   await run("git", ["init", "--initial-branch=master"], root);
   await run("git", ["config", "user.email", "fixture@example.test"], root);
   await run("git", ["config", "user.name", "Fixture"], root);
@@ -916,6 +937,26 @@ describe("changeset-check", () => {
     const fixture = await createGeneratedReleaseFixture();
 
     expect(check(fixture)).resolves.toBeUndefined();
+  });
+
+  test("reports a generated-output mismatch in a later public package", async () => {
+    const fixture = await createFixture(true);
+    await run("git", ["checkout", "master"], fixture.root);
+    await fixture.writeChangeset("release.md", '"@tuvren/public-a": patch');
+    await fixture.commit("record release intent");
+    await run("git", ["branch", "-f", "feature", "master"], fixture.root);
+    await run("git", ["checkout", "feature"], fixture.root);
+    await generateRelease(fixture);
+    await writeFixtureFile(
+      fixture.root,
+      "packages/public-b/CHANGELOG.md",
+      "A later package has divergent generated output.\n"
+    );
+
+    await expectCheckToRejectWith(
+      fixture,
+      "packages/public-b/CHANGELOG.md does not match"
+    );
   });
 
   test("replays the newest pending changeset snapshot after release-note updates", async () => {

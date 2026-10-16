@@ -195,7 +195,9 @@ const isInteropTelemetryAttribute = (
 const isInteropTelemetryAttributes = (
   value: unknown
 ): value is Record<string, string | string[] | null> =>
-  isRecord(value) && Object.values(value).every(isInteropTelemetryAttribute);
+  isRecord(value) &&
+  !Array.isArray(value) &&
+  Object.values(value).every(isInteropTelemetryAttribute);
 
 const readStringArray = (value: unknown): string[] => {
   if (!Array.isArray(value)) {

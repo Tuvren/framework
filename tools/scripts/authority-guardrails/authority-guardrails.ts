@@ -360,13 +360,35 @@ const runRegenerateCommand = async (
       stdin: "ignore",
       stdout: "pipe",
     });
-    const [exitCode, stderr, stdout] = await Promise.all([
+    // Concurrent readers retain stdout/stderr chunk arrival order.
+    const outputChunks: string[] = [];
+    const collectOutput = async (
+      stream: ReadableStream<Uint8Array> | null | undefined
+    ): Promise<void> => {
+      if (stream === null || stream === undefined) {
+        return;
+      }
+
+      const reader = stream.getReader();
+      try {
+        while (true) {
+          const chunk = await reader.read();
+          if (chunk.done) {
+            return;
+          }
+          outputChunks.push(Buffer.from(chunk.value).toString("utf8"));
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    };
+    const [exitCode] = await Promise.all([
       subprocess.exited,
-      new Response(subprocess.stderr).text(),
-      new Response(subprocess.stdout).text(),
+      collectOutput(subprocess.stdout),
+      collectOutput(subprocess.stderr),
     ]);
     return {
-      message: `${stdout}${stderr}`.trim().slice(-1000),
+      message: outputChunks.join("").trim().slice(-1000),
       ok: exitCode === 0,
     };
   } catch (error) {

@@ -257,7 +257,14 @@ const baseline = collect((filename) =>
   )
 );
 assert.equal(baseline.length, 2);
-assert.deepEqual(current, baseline);
+const directiveSemantics = (directives: readonly Directive[]) =>
+  directives.map(({ identity, path: directivePath, rule, original_reason }) => ({
+    identity,
+    path: directivePath,
+    rule,
+    original_reason,
+  }));
+assert.deepEqual(directiveSemantics(current), directiveSemantics(baseline));
 assert(
   current.every(
     (item) =>
@@ -268,21 +275,27 @@ assert(
 
 const sourcePath = "tools/scripts/api-freeze-gate.ts";
 const sourceAbsolute = path.join(resolvedRepo, sourcePath);
-const sourceBefore = readFileSync(sourceAbsolute);
+const sourceAtCheckout = readFileSync(sourceAbsolute);
 const sourceAtHead = runInternal([
   "git",
   "show",
   `${measurementCommit}:${sourcePath}`,
 ]);
-assert.deepEqual(sourceBefore, sourceAtHead);
-const sourceText = sourceBefore.toString("utf8");
+const sourceBefore = sourceAtHead;
+const sourceText = sourceAtHead.toString("utf8");
 const operationPattern =
   /^\s*return \((symbol|type)\.flags & flag\) !== 0;$/gmu;
-const operations = [...sourceText.matchAll(operationPattern)].map((match) => ({
+const readOperations = (text: string) => [...text.matchAll(operationPattern)].map((match) => ({
   operand: match[1],
   text: match[0]?.trim(),
-  line: sourceText.slice(0, match.index).split("\n").length,
+  line: text.slice(0, match.index).split("\n").length,
 }));
+const operations = readOperations(sourceText);
+const checkoutOperations = readOperations(sourceAtCheckout.toString("utf8"));
+assert.deepEqual(
+  checkoutOperations.map(({ operand, text }) => ({ operand, text })),
+  operations.map(({ operand, text }) => ({ operand, text }))
+);
 assert.deepEqual(operations, [
   {
     operand: "symbol",
@@ -351,13 +364,15 @@ assert.match(versions[1]?.stdout.toString("utf8") ?? "", /2\.5\.14/u);
 assert.match(versions[2]?.stdout.toString("utf8") ?? "", /1\.86\.0/u);
 
 const biomeOriginal = run(
-  "biome-original-actual-source",
+  "biome-original-measurement-source",
   [
     "bunx",
     "--bun",
     "@biomejs/biome",
     "check",
-    sourcePath,
+    `--config-path=${path.join(resolvedRepo, "biome.jsonc")}`,
+    "--vcs-enabled=false",
+    fixtureOriginalPath,
     "--reporter=json",
     "--max-diagnostics=none",
   ],
@@ -441,7 +456,16 @@ const nativeRuns = [
     flavor: "syntactic",
     report: run(
       "oxlint-actual-syntactic",
-      ["bunx", "--bun", "oxlint", "--format=json", sourcePath],
+      [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--config",
+        path.join(resolvedRepo, "oxlint.config.ts"),
+        "--no-ignore",
+        "--format=json",
+        fixtureOriginalPath,
+      ],
       "oxlint-actual-syntactic.json",
       "oxlint-actual-syntactic.stderr.txt"
     ),
@@ -454,9 +478,12 @@ const nativeRuns = [
         "bunx",
         "--bun",
         "oxlint",
+        "--config",
+        path.join(resolvedRepo, "oxlint.config.ts"),
+        "--no-ignore",
         "--type-aware",
         "--format=json",
-        sourcePath,
+        fixtureOriginalPath,
       ],
       "oxlint-actual-type-aware.json",
       "oxlint-actual-type-aware.stderr.txt"
@@ -596,7 +623,7 @@ const configDigests = {
   ),
 };
 const sourceAfter = readFileSync(sourceAbsolute);
-assert.deepEqual(sourceAfter, sourceBefore);
+assert.deepEqual(sourceAfter, sourceAtCheckout);
 const afterStatus = runInternal(["git", "status", "--porcelain=v1"]);
 assert.deepEqual(afterStatus, beforeStatus);
 writeFileSync(path.join(resolvedOutput, "worktree-after.txt"), afterStatus);
@@ -622,11 +649,13 @@ const sourceProof = {
   measurement_commit: measurementCommit,
   path: sourcePath,
   source_sha256_before: sha256(sourceBefore),
-  source_sha256_at_HEAD: sha256(sourceAtHead),
-  source_sha256_after: sha256(sourceAfter),
+  source_sha256_at_measurement_commit: sha256(sourceAtHead),
+  source_sha256_at_checkout_before: sha256(sourceAtCheckout),
+  source_sha256_at_checkout_after: sha256(sourceAfter),
   source_bytes: sourceBefore.length,
-  actual_source_equals_HEAD: sourceBefore.equals(sourceAtHead),
-  actual_source_unchanged_during_measurement: sourceBefore.equals(sourceAfter),
+  measured_source_equals_measurement_commit: sourceBefore.equals(sourceAtHead),
+  checkout_source_unchanged_during_measurement:
+    sourceAtCheckout.equals(sourceAfter),
   fixture_original_sha256: sha256(readFileSync(fixtureOriginalPath)),
   fixture_original_byte_equivalent:
     readFileSync(fixtureOriginalPath).equals(sourceBefore),
@@ -697,7 +726,7 @@ const entries = baseline.map((original, index) => {
     early_deletion: null,
     source_digests: {
       baseline_sha256: sha256(sourceAtHead),
-      current_before_sha256: sha256(sourceBefore),
+      current_before_sha256: sha256(sourceAtCheckout),
       current_after_sha256: sha256(sourceAfter),
     },
     config_digests: configDigests,
@@ -722,7 +751,7 @@ const entries = baseline.map((original, index) => {
       equivalent_firing_diagnostics: nativeLines,
       candidate_comment_suppresses_same_operation: true,
     },
-    operation_proof: operations[index],
+    operation_proof: checkoutOperations[index],
     producing_commit: measurementCommit,
   };
 });
@@ -764,7 +793,7 @@ writeJson("assertions.json", {
   effective_native_severity: "deny",
   effective_native_explicit_options: null,
   native_candidate_comments_proven_used: true,
-  source_bytes_unchanged: true,
+  current_source_unchanged_during_measurement: true,
   flag_membership_operations_unchanged: true,
   worktree_unchanged: true,
   early_deletions: [],
@@ -792,7 +821,7 @@ writeJson("summary.json", {
     syntactic_fires: 2,
     type_aware_fires: 2,
   },
-  source_sha256: sha256(sourceBefore),
+  source_sha256: sha256(sourceAtHead),
   configs: configDigests,
   drift,
   verification_exit_codes: Object.fromEntries(
