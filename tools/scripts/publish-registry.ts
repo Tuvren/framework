@@ -182,44 +182,38 @@ console.log(
 );
 `;
 
-await main();
+// ── Shared helpers ───────────────────────────────────────────────────────────
 
-async function main(): Promise<void> {
-  const mode = process.argv[2];
+const readWorkspacePackages = async (): Promise<WorkspacePackage[]> => {
+  const packages: WorkspacePackage[] = [];
 
-  switch (mode) {
-    case "--build": {
-      await buildPublishableSet();
-      break;
-    }
-    case "--preflight": {
-      await runPreflight();
-      break;
-    }
-    case "--dry-run": {
-      const packages = await runPreflight();
-      await publishPackages(packages, { dryRun: true });
-      break;
-    }
-    case "--publish": {
-      assertProvenanceCapableEnvironment();
-      assertCleanWorktree();
-      const packages = await runPreflight();
-      await publishPackages(packages, { dryRun: false });
-      break;
-    }
-    case "--verify-consumer": {
-      await verifyConsumerInstall(process.argv[3]);
-      break;
-    }
-    default: {
-      console.error(
-        "[publish-registry] usage: bun tools/scripts/publish-registry.ts --build | --preflight | --dry-run | --publish | --verify-consumer <version>"
-      );
-      process.exitCode = 1;
+  for (const manifestPath of await walkPackageManifests(
+    path.join(REPO_ROOT, "typescript")
+  )) {
+    const manifest = JSON.parse(
+      await readFile(manifestPath, "utf-8")
+    ) as PackageManifest;
+
+    if (manifest.name?.startsWith("@tuvren/")) {
+      packages.push({
+        directory: path.dirname(manifestPath),
+        manifest,
+        name: manifest.name,
+      });
     }
   }
-}
+
+  return packages;
+};
+
+const fileExists = async (filePath: string): Promise<boolean> => {
+  try {
+    await stat(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 // ── Build ────────────────────────────────────────────────────────────────────
 
@@ -229,7 +223,7 @@ async function main(): Promise<void> {
  * builds that need the devenv toolchain — unavailable and unnecessary on the
  * publish runner, whose only job is producing the npm `dist/` artifacts.
  */
-async function buildPublishableSet(): Promise<void> {
+const buildPublishableSet = async (): Promise<void> => {
   const publishable = (await readWorkspacePackages()).filter(
     (pkg) => pkg.manifest.private !== true
   );
@@ -259,11 +253,344 @@ async function buildPublishableSet(): Promise<void> {
     process.exitCode = 1;
     throw new Error("[publish-registry] publishable-set build failed");
   }
-}
+};
 
 // ── Preflight ────────────────────────────────────────────────────────────────
 
-async function runPreflight(): Promise<WorkspacePackage[]> {
+/** ADR-0057 item 5 / KRT-BL001 §5.6: the internal tier must self-describe. */
+const validateInternalPosture = async (
+  pkg: WorkspacePackage
+): Promise<string[]> => {
+  if (!INTERNAL_PUBLISHED_PACKAGES.includes(pkg.name)) {
+    return [];
+  }
+
+  const failures: string[] = [];
+
+  if (!INTERNAL_POSTURE_PATTERN.test(pkg.manifest.description ?? "")) {
+    failures.push(
+      `${pkg.name}: published-internal package must state its internal posture in the manifest description`
+    );
+  }
+
+  const readme = await readFile(
+    path.join(pkg.directory, "README.md"),
+    "utf-8"
+  ).catch(() => "");
+
+  if (!INTERNAL_POSTURE_PATTERN.test(readme)) {
+    failures.push(
+      `${pkg.name}: published-internal package must state its internal posture in README.md`
+    );
+  }
+
+  return failures;
+};
+
+const validateDependencyRanges = (
+  pkg: WorkspacePackage,
+  publishableNames: ReadonlySet<string>
+): string[] => {
+  const failures: string[] = [];
+  const { manifest, name } = pkg;
+
+  // KRT-BL003 STOP: every @tuvren/core peer dependency must materialize as
+  // the ADR-0037 tilde range — `workspace:~` is the only accepted in-tree form.
+  const corePeer = manifest.peerDependencies?.["@tuvren/core"];
+
+  if (corePeer !== undefined && corePeer !== "workspace:~") {
+    failures.push(
+      `${name}: @tuvren/core peer range is "${corePeer}" — ADR-0037 requires the tilde range ("workspace:~") at publish time (STOP condition)`
+    );
+  }
+
+  // The classification itself is also load-bearing: a package that references
+  // @tuvren/core in dependencies/optionalDependencies would bundle a second
+  // core instance in consumer trees, defeating ADR-0037's single-instance
+  // guarantee even with a correct range (the reason provider-api was
+  // reclassified to a peer in KRT-BL003).
+  for (const section of ["dependencies", "optionalDependencies"] as const) {
+    if (manifest[section]?.["@tuvren/core"] !== undefined) {
+      failures.push(
+        `${name}: @tuvren/core appears in ${section} — ADR-0037 requires it as a peerDependency (single shared instance) on every published package`
+      );
+    }
+  }
+
+  // Registry-resolution closure: every @tuvren dependency of a published
+  // package must itself be published. Sections are checked separately — a
+  // name appearing in two sections must not mask a bad range in one of them
+  // (merging would defer the failure from preflight to mid-publish).
+  for (const section of [
+    "dependencies",
+    "optionalDependencies",
+    "peerDependencies",
+  ] as const) {
+    for (const [depName, range] of Object.entries(manifest[section] ?? {})) {
+      if (!depName.startsWith("@tuvren/")) {
+        continue;
+      }
+
+      if (!publishableNames.has(depName)) {
+        failures.push(
+          `${name}: ${section} entry ${depName} is not publishable — registry installs would fail to resolve`
+        );
+      }
+
+      if (
+        range.startsWith("workspace:") &&
+        WORKSPACE_RANGE_MATERIALIZERS[range] === undefined
+      ) {
+        failures.push(
+          `${name}: workspace range "${range}" on ${depName} (${section}) has no defined materialization — use workspace:~ or workspace:*`
+        );
+      }
+    }
+  }
+
+  return failures;
+};
+
+const validatePackage = async (
+  pkg: WorkspacePackage,
+  publishableNames: ReadonlySet<string>
+): Promise<string[]> => {
+  const failures: string[] = [];
+  const { manifest, name, directory } = pkg;
+
+  for (const field of ["description", "license", "repository", "files"]) {
+    if (manifest[field] === undefined) {
+      failures.push(`${name}: manifest lacks "${field}"`);
+    }
+  }
+
+  if (manifest.license !== undefined && manifest.license !== "Apache-2.0") {
+    failures.push(`${name}: license must be Apache-2.0`);
+  }
+
+  for (const artifact of ["LICENSE", "README.md"]) {
+    if (!(await fileExists(path.join(directory, artifact)))) {
+      failures.push(`${name}: missing ${artifact} (ships in the tarball)`);
+    }
+  }
+
+  if (!(await fileExists(path.join(directory, "dist")))) {
+    failures.push(
+      `${name}: dist/ is not built — run the build lane before publishing`
+    );
+  }
+
+  // Unlike LICENSE/README (which npm auto-includes), dist ships only if the
+  // `files` allowlist names it — a misconfigured allowlist would publish a
+  // code-less tarball that every other check here still passes.
+  if (manifest.files !== undefined && !manifest.files.includes("dist")) {
+    failures.push(
+      `${name}: "files" allowlist does not include "dist" — the tarball would ship no code`
+    );
+  }
+
+  failures.push(
+    ...(await validateInternalPosture(pkg)),
+    ...validateDependencyRanges(pkg, publishableNames)
+  );
+
+  return failures;
+};
+
+// ── Publish ──────────────────────────────────────────────────────────────────
+
+const assertProvenanceCapableEnvironment = (): void => {
+  if (process.env.ACTIONS_ID_TOKEN_REQUEST_URL === undefined) {
+    console.error(
+      "[publish-registry] --publish requires a CI OIDC context (GitHub Actions with `id-token: write`): npm provenance — a KRT-BL003 acceptance criterion — cannot be produced by a local publish. Run the release workflow (.github/workflows/release.yml) instead, or use --dry-run locally."
+    );
+    process.exitCode = 1;
+    throw new Error("no OIDC context");
+  }
+};
+
+/**
+ * True only when the registry positively confirms the exact version exists.
+ * Any failure (network, auth, spawn) returns false so the loop proceeds to a
+ * real `npm publish`, whose own duplicate-version rejection stays the
+ * backstop — this check may only ever skip work, never invent it.
+ */
+const isAlreadyPublished = (name: string, version: string): boolean => {
+  const result = spawnSync(
+    "npm",
+    ["view", `${name}@${version}`, "version", "--json"],
+    { encoding: "utf-8" }
+  );
+
+  return (
+    result.status === 0 &&
+    (result.stdout ?? "").trim() === JSON.stringify(version)
+  );
+};
+
+const assertCleanWorktree = (): void => {
+  const status = spawnSync("git", ["status", "--porcelain"], {
+    cwd: REPO_ROOT,
+    encoding: "utf-8",
+  });
+
+  if (status.status !== 0 || (status.stdout ?? "").trim() !== "") {
+    console.error(
+      "[publish-registry] --publish requires a clean worktree; the published artifacts must correspond to a commit"
+    );
+    process.exitCode = 1;
+    throw new Error("dirty worktree");
+  }
+};
+
+const materializeManifest = (pkg: WorkspacePackage): PackageManifest => {
+  const manifest = structuredClone(pkg.manifest);
+  const { version } = manifest;
+
+  if (version === undefined) {
+    throw new Error(`${pkg.name}: manifest has no version`);
+  }
+
+  for (const section of [
+    "dependencies",
+    "optionalDependencies",
+    "peerDependencies",
+  ] as const) {
+    const entries = manifest[section];
+
+    if (entries === undefined) {
+      continue;
+    }
+
+    for (const [depName, range] of Object.entries(entries)) {
+      const materialize = WORKSPACE_RANGE_MATERIALIZERS[range];
+
+      if (materialize !== undefined) {
+        entries[depName] = materialize(version);
+      } else if (range.startsWith("workspace:")) {
+        throw new Error(
+          `${pkg.name}: unexpected workspace range "${range}" on ${depName} survived preflight`
+        );
+      }
+    }
+  }
+
+  // devDependencies never ship; drop them so a stray workspace: range there
+  // cannot confuse registry tooling.
+  manifest.devDependencies = undefined;
+
+  return manifest;
+};
+
+const publishPackages = async (
+  ordered: WorkspacePackage[],
+  options: { dryRun: boolean }
+): Promise<void> => {
+  for (const pkg of ordered) {
+    const materialized = materializeManifest(pkg);
+
+    // Resumability: published versions are immutable, so a real-publish run
+    // that failed mid-loop (network, registry, auth) would otherwise be
+    // unresumable — re-running hits npm's duplicate-version rejection on the
+    // packages that already made it. Skipping those turns "re-run the release
+    // workflow" into the recovery path for a torn release.
+    if (
+      !options.dryRun &&
+      isAlreadyPublished(pkg.name, materialized.version ?? "")
+    ) {
+      console.log(
+        `[publish-registry] already on the registry, skipping: ${pkg.name}@${materialized.version}`
+      );
+      continue;
+    }
+
+    const manifestPath = path.join(pkg.directory, "package.json");
+    const original = await readFile(manifestPath, "utf-8");
+
+    await writeFile(manifestPath, `${JSON.stringify(materialized, null, 2)}\n`);
+
+    try {
+      // This flag is what makes the packages public — the matching
+      // `access: "public"` in .changeset/config.json only governs a
+      // `changeset publish` invocation, which this pipeline does not use.
+      const args = [
+        "publish",
+        "--access",
+        "public",
+        ...(options.dryRun ? ["--dry-run"] : ["--provenance"]),
+      ];
+      const result = spawnSync("npm", args, {
+        cwd: pkg.directory,
+        stdio: "inherit",
+      });
+
+      if (result.status !== 0) {
+        throw new Error(
+          `[publish-registry] npm publish failed for ${pkg.name}`
+        );
+      }
+    } finally {
+      // Restore the workspace-protocol manifest byte-for-byte.
+      await writeFile(manifestPath, original);
+    }
+
+    console.log(
+      `[publish-registry] ${options.dryRun ? "dry-run verified" : "published"}: ${pkg.name}@${materialized.version}`
+    );
+  }
+
+  if (options.dryRun) {
+    console.log(
+      "[publish-registry] dry run complete — no registry mutation occurred"
+    );
+  }
+};
+
+const topologicalOrder = (packages: WorkspacePackage[]): WorkspacePackage[] => {
+  const byName = new Map(packages.map((pkg) => [pkg.name, pkg]));
+  const visited = new Set<string>();
+  const ordered: WorkspacePackage[] = [];
+
+  const visit = (pkg: WorkspacePackage, trail: string[]): void => {
+    if (visited.has(pkg.name)) {
+      return;
+    }
+
+    if (trail.includes(pkg.name)) {
+      throw new Error(
+        `[publish-registry] dependency cycle: ${[...trail, pkg.name].join(" → ")}`
+      );
+    }
+
+    // Peer edges are included deliberately: a peer is provided by the
+    // consumer, so it is not strictly a publish-order constraint, but
+    // ordering by it too keeps the "never reference a not-yet-published
+    // package" guarantee conservative. Today no @tuvren peer target has
+    // @tuvren edges of its own, so this cannot manufacture a false cycle.
+    for (const depName of Object.keys({
+      ...pkg.manifest.dependencies,
+      ...pkg.manifest.optionalDependencies,
+      ...pkg.manifest.peerDependencies,
+    })) {
+      const dep = byName.get(depName);
+
+      if (dep !== undefined) {
+        visit(dep, [...trail, pkg.name]);
+      }
+    }
+
+    visited.add(pkg.name);
+    ordered.push(pkg);
+  };
+
+  for (const pkg of [...packages].sort((a, b) => (a.name < b.name ? -1 : 1))) {
+    visit(pkg, []);
+  }
+
+  return ordered;
+};
+
+const runPreflight = async (): Promise<WorkspacePackage[]> => {
   const failures: string[] = [];
   const all = await readWorkspacePackages();
   const publishable = all.filter((pkg) => pkg.manifest.private !== true);
@@ -326,340 +653,7 @@ async function runPreflight(): Promise<WorkspacePackage[]> {
   );
 
   return ordered;
-}
-
-async function validatePackage(
-  pkg: WorkspacePackage,
-  publishableNames: ReadonlySet<string>
-): Promise<string[]> {
-  const failures: string[] = [];
-  const { manifest, name, directory } = pkg;
-
-  for (const field of ["description", "license", "repository", "files"]) {
-    if (manifest[field] === undefined) {
-      failures.push(`${name}: manifest lacks "${field}"`);
-    }
-  }
-
-  if (manifest.license !== undefined && manifest.license !== "Apache-2.0") {
-    failures.push(`${name}: license must be Apache-2.0`);
-  }
-
-  for (const artifact of ["LICENSE", "README.md"]) {
-    if (!(await fileExists(path.join(directory, artifact)))) {
-      failures.push(`${name}: missing ${artifact} (ships in the tarball)`);
-    }
-  }
-
-  if (!(await fileExists(path.join(directory, "dist")))) {
-    failures.push(
-      `${name}: dist/ is not built — run the build lane before publishing`
-    );
-  }
-
-  // Unlike LICENSE/README (which npm auto-includes), dist ships only if the
-  // `files` allowlist names it — a misconfigured allowlist would publish a
-  // code-less tarball that every other check here still passes.
-  if (manifest.files !== undefined && !manifest.files.includes("dist")) {
-    failures.push(
-      `${name}: "files" allowlist does not include "dist" — the tarball would ship no code`
-    );
-  }
-
-  failures.push(
-    ...(await validateInternalPosture(pkg)),
-    ...validateDependencyRanges(pkg, publishableNames)
-  );
-
-  return failures;
-}
-
-/** ADR-0057 item 5 / KRT-BL001 §5.6: the internal tier must self-describe. */
-async function validateInternalPosture(
-  pkg: WorkspacePackage
-): Promise<string[]> {
-  if (!INTERNAL_PUBLISHED_PACKAGES.includes(pkg.name)) {
-    return [];
-  }
-
-  const failures: string[] = [];
-
-  if (!INTERNAL_POSTURE_PATTERN.test(pkg.manifest.description ?? "")) {
-    failures.push(
-      `${pkg.name}: published-internal package must state its internal posture in the manifest description`
-    );
-  }
-
-  const readme = await readFile(
-    path.join(pkg.directory, "README.md"),
-    "utf-8"
-  ).catch(() => "");
-
-  if (!INTERNAL_POSTURE_PATTERN.test(readme)) {
-    failures.push(
-      `${pkg.name}: published-internal package must state its internal posture in README.md`
-    );
-  }
-
-  return failures;
-}
-
-function validateDependencyRanges(
-  pkg: WorkspacePackage,
-  publishableNames: ReadonlySet<string>
-): string[] {
-  const failures: string[] = [];
-  const { manifest, name } = pkg;
-
-  // KRT-BL003 STOP: every @tuvren/core peer dependency must materialize as
-  // the ADR-0037 tilde range — `workspace:~` is the only accepted in-tree form.
-  const corePeer = manifest.peerDependencies?.["@tuvren/core"];
-
-  if (corePeer !== undefined && corePeer !== "workspace:~") {
-    failures.push(
-      `${name}: @tuvren/core peer range is "${corePeer}" — ADR-0037 requires the tilde range ("workspace:~") at publish time (STOP condition)`
-    );
-  }
-
-  // The classification itself is also load-bearing: a package that references
-  // @tuvren/core in dependencies/optionalDependencies would bundle a second
-  // core instance in consumer trees, defeating ADR-0037's single-instance
-  // guarantee even with a correct range (the reason provider-api was
-  // reclassified to a peer in KRT-BL003).
-  for (const section of ["dependencies", "optionalDependencies"] as const) {
-    if (manifest[section]?.["@tuvren/core"] !== undefined) {
-      failures.push(
-        `${name}: @tuvren/core appears in ${section} — ADR-0037 requires it as a peerDependency (single shared instance) on every published package`
-      );
-    }
-  }
-
-  // Registry-resolution closure: every @tuvren dependency of a published
-  // package must itself be published. Sections are checked separately — a
-  // name appearing in two sections must not mask a bad range in one of them
-  // (merging would defer the failure from preflight to mid-publish).
-  for (const section of [
-    "dependencies",
-    "optionalDependencies",
-    "peerDependencies",
-  ] as const) {
-    for (const [depName, range] of Object.entries(manifest[section] ?? {})) {
-      if (!depName.startsWith("@tuvren/")) {
-        continue;
-      }
-
-      if (!publishableNames.has(depName)) {
-        failures.push(
-          `${name}: ${section} entry ${depName} is not publishable — registry installs would fail to resolve`
-        );
-      }
-
-      if (
-        range.startsWith("workspace:") &&
-        WORKSPACE_RANGE_MATERIALIZERS[range] === undefined
-      ) {
-        failures.push(
-          `${name}: workspace range "${range}" on ${depName} (${section}) has no defined materialization — use workspace:~ or workspace:*`
-        );
-      }
-    }
-  }
-
-  return failures;
-}
-
-// ── Publish ──────────────────────────────────────────────────────────────────
-
-function assertProvenanceCapableEnvironment(): void {
-  if (process.env.ACTIONS_ID_TOKEN_REQUEST_URL === undefined) {
-    console.error(
-      "[publish-registry] --publish requires a CI OIDC context (GitHub Actions with `id-token: write`): npm provenance — a KRT-BL003 acceptance criterion — cannot be produced by a local publish. Run the release workflow (.github/workflows/release.yml) instead, or use --dry-run locally."
-    );
-    process.exitCode = 1;
-    throw new Error("no OIDC context");
-  }
-}
-
-/**
- * True only when the registry positively confirms the exact version exists.
- * Any failure (network, auth, spawn) returns false so the loop proceeds to a
- * real `npm publish`, whose own duplicate-version rejection stays the
- * backstop — this check may only ever skip work, never invent it.
- */
-function isAlreadyPublished(name: string, version: string): boolean {
-  const result = spawnSync(
-    "npm",
-    ["view", `${name}@${version}`, "version", "--json"],
-    { encoding: "utf-8" }
-  );
-
-  return (
-    result.status === 0 &&
-    (result.stdout ?? "").trim() === JSON.stringify(version)
-  );
-}
-
-function assertCleanWorktree(): void {
-  const status = spawnSync("git", ["status", "--porcelain"], {
-    cwd: REPO_ROOT,
-    encoding: "utf-8",
-  });
-
-  if (status.status !== 0 || (status.stdout ?? "").trim() !== "") {
-    console.error(
-      "[publish-registry] --publish requires a clean worktree; the published artifacts must correspond to a commit"
-    );
-    process.exitCode = 1;
-    throw new Error("dirty worktree");
-  }
-}
-
-async function publishPackages(
-  ordered: WorkspacePackage[],
-  options: { dryRun: boolean }
-): Promise<void> {
-  for (const pkg of ordered) {
-    const materialized = materializeManifest(pkg);
-
-    // Resumability: published versions are immutable, so a real-publish run
-    // that failed mid-loop (network, registry, auth) would otherwise be
-    // unresumable — re-running hits npm's duplicate-version rejection on the
-    // packages that already made it. Skipping those turns "re-run the release
-    // workflow" into the recovery path for a torn release.
-    if (
-      !options.dryRun &&
-      isAlreadyPublished(pkg.name, materialized.version ?? "")
-    ) {
-      console.log(
-        `[publish-registry] already on the registry, skipping: ${pkg.name}@${materialized.version}`
-      );
-      continue;
-    }
-
-    const manifestPath = path.join(pkg.directory, "package.json");
-    const original = await readFile(manifestPath, "utf-8");
-
-    await writeFile(manifestPath, `${JSON.stringify(materialized, null, 2)}\n`);
-
-    try {
-      // This flag is what makes the packages public — the matching
-      // `access: "public"` in .changeset/config.json only governs a
-      // `changeset publish` invocation, which this pipeline does not use.
-      const args = [
-        "publish",
-        "--access",
-        "public",
-        ...(options.dryRun ? ["--dry-run"] : ["--provenance"]),
-      ];
-      const result = spawnSync("npm", args, {
-        cwd: pkg.directory,
-        stdio: "inherit",
-      });
-
-      if (result.status !== 0) {
-        throw new Error(
-          `[publish-registry] npm publish failed for ${pkg.name}`
-        );
-      }
-    } finally {
-      // Restore the workspace-protocol manifest byte-for-byte.
-      await writeFile(manifestPath, original);
-    }
-
-    console.log(
-      `[publish-registry] ${options.dryRun ? "dry-run verified" : "published"}: ${pkg.name}@${materialized.version}`
-    );
-  }
-
-  if (options.dryRun) {
-    console.log(
-      "[publish-registry] dry run complete — no registry mutation occurred"
-    );
-  }
-}
-
-function materializeManifest(pkg: WorkspacePackage): PackageManifest {
-  const manifest = structuredClone(pkg.manifest);
-  const { version } = manifest;
-
-  if (version === undefined) {
-    throw new Error(`${pkg.name}: manifest has no version`);
-  }
-
-  for (const section of [
-    "dependencies",
-    "optionalDependencies",
-    "peerDependencies",
-  ] as const) {
-    const entries = manifest[section];
-
-    if (entries === undefined) {
-      continue;
-    }
-
-    for (const [depName, range] of Object.entries(entries)) {
-      const materialize = WORKSPACE_RANGE_MATERIALIZERS[range];
-
-      if (materialize !== undefined) {
-        entries[depName] = materialize(version);
-      } else if (range.startsWith("workspace:")) {
-        throw new Error(
-          `${pkg.name}: unexpected workspace range "${range}" on ${depName} survived preflight`
-        );
-      }
-    }
-  }
-
-  // devDependencies never ship; drop them so a stray workspace: range there
-  // cannot confuse registry tooling.
-  manifest.devDependencies = undefined;
-
-  return manifest;
-}
-
-function topologicalOrder(packages: WorkspacePackage[]): WorkspacePackage[] {
-  const byName = new Map(packages.map((pkg) => [pkg.name, pkg]));
-  const visited = new Set<string>();
-  const ordered: WorkspacePackage[] = [];
-
-  const visit = (pkg: WorkspacePackage, trail: string[]): void => {
-    if (visited.has(pkg.name)) {
-      return;
-    }
-
-    if (trail.includes(pkg.name)) {
-      throw new Error(
-        `[publish-registry] dependency cycle: ${[...trail, pkg.name].join(" → ")}`
-      );
-    }
-
-    // Peer edges are included deliberately: a peer is provided by the
-    // consumer, so it is not strictly a publish-order constraint, but
-    // ordering by it too keeps the "never reference a not-yet-published
-    // package" guarantee conservative. Today no @tuvren peer target has
-    // @tuvren edges of its own, so this cannot manufacture a false cycle.
-    for (const depName of Object.keys({
-      ...pkg.manifest.dependencies,
-      ...pkg.manifest.optionalDependencies,
-      ...pkg.manifest.peerDependencies,
-    })) {
-      const dep = byName.get(depName);
-
-      if (dep !== undefined) {
-        visit(dep, [...trail, pkg.name]);
-      }
-    }
-
-    visited.add(pkg.name);
-    ordered.push(pkg);
-  };
-
-  for (const pkg of [...packages].sort((a, b) => (a.name < b.name ? -1 : 1))) {
-    visit(pkg, []);
-  }
-
-  return ordered;
-}
+};
 
 // ── Consumer verification (post-publish acceptance) ─────────────────────────
 
@@ -668,9 +662,9 @@ function topologicalOrder(packages: WorkspacePackage[]): WorkspacePackage[] {
  * (no workspace links, no local tarballs) can issue a first Turn by calling
  * `createTuvren` from the published `@tuvren/sdk` root export.
  */
-async function verifyConsumerInstall(
+const verifyConsumerInstall = async (
   version: string | undefined
-): Promise<void> {
+): Promise<void> => {
   if (version === undefined || version === "") {
     console.error(
       "[publish-registry] --verify-consumer requires the published version, e.g. --verify-consumer 0.1.0"
@@ -730,37 +724,43 @@ async function verifyConsumerInstall(
   } finally {
     await rm(workDir, { force: true, recursive: true });
   }
-}
+};
 
-// ── Shared helpers ───────────────────────────────────────────────────────────
+const main = async (): Promise<void> => {
+  const mode = process.argv[2];
 
-async function readWorkspacePackages(): Promise<WorkspacePackage[]> {
-  const packages: WorkspacePackage[] = [];
-
-  for (const manifestPath of await walkPackageManifests(
-    path.join(REPO_ROOT, "typescript")
-  )) {
-    const manifest = JSON.parse(
-      await readFile(manifestPath, "utf-8")
-    ) as PackageManifest;
-
-    if (manifest.name?.startsWith("@tuvren/")) {
-      packages.push({
-        directory: path.dirname(manifestPath),
-        manifest,
-        name: manifest.name,
-      });
+  switch (mode) {
+    case "--build": {
+      await buildPublishableSet();
+      break;
+    }
+    case "--preflight": {
+      await runPreflight();
+      break;
+    }
+    case "--dry-run": {
+      const packages = await runPreflight();
+      await publishPackages(packages, { dryRun: true });
+      break;
+    }
+    case "--publish": {
+      assertProvenanceCapableEnvironment();
+      assertCleanWorktree();
+      const packages = await runPreflight();
+      await publishPackages(packages, { dryRun: false });
+      break;
+    }
+    case "--verify-consumer": {
+      await verifyConsumerInstall(process.argv[3]);
+      break;
+    }
+    default: {
+      console.error(
+        "[publish-registry] usage: bun tools/scripts/publish-registry.ts --build | --preflight | --dry-run | --publish | --verify-consumer <version>"
+      );
+      process.exitCode = 1;
     }
   }
+};
 
-  return packages;
-}
-
-async function fileExists(filePath: string): Promise<boolean> {
-  try {
-    await stat(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
+await main();
