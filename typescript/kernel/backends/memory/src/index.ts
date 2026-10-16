@@ -33,7 +33,6 @@
  */
 
 export type { MemoryBackendOptions } from "./lib/memory-backend.js";
-// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 export { createMemoryBackend } from "./lib/memory-backend.js";
 export type { MemoryScopeStore } from "./lib/memory-backend-scope-store.js";
 export { createMemoryScopeStore } from "./lib/memory-backend-scope-store.js";
