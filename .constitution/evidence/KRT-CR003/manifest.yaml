@@ -1,5 +1,6 @@
 owner: KRT-CR003
-mode: gherkin
+mode: live_probe
+result: pass
 produced:
   date: 2026-10-15
   commit: d6c8bf6
