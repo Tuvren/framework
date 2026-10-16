@@ -180,19 +180,7 @@ export const sanitizeMetadataValue = (value: unknown): unknown => {
     return sanitized;
   }
 
-  if (typeof value === "object") {
-    return Object.prototype.toString.call(value);
-  }
-
-  if (typeof value === "function") {
-    return Function.prototype.toString.call(value);
-  }
-
-  if (typeof value === "bigint" || typeof value === "symbol") {
-    return value.toString();
-  }
-
-  return Object.prototype.toString.call(value);
+  return Reflect.apply(String, undefined, [value]);
 };
 
 /**
