@@ -1,6 +1,7 @@
 {
   "owner": "KRT-BR004",
   "mode": "contract_test",
+  "result": "pass",
   "produced": {
     "date": "2026-10-15",
     "commit": "16834aab351659788c56435de70f8969cabdfe7f",
@@ -705,6 +706,12 @@
       "path": "M21-sqlite-transaction-after-type-aware.json.gz",
       "sha256": "fc46dbec6e4a5db01bdb1e6d666dad55ca0ca3f9fa0c05b8c1748d10328bc07f",
       "bytes": 772,
+      "role": "measurement"
+    },
+    {
+      "path": "suppressions.json",
+      "sha256": "df812f8066c8bc41488f3bc77c599144261b93c45f10653bcc9eb80ef1b54d10",
+      "bytes": 97981,
       "role": "measurement"
     }
   ],

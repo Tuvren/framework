@@ -1,0 +1,1416 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BR004",
+  "milestone": "M36",
+  "baseline_commit": "16834aab351659788c56435de70f8969cabdfe7f",
+  "measurement_commit": "d67b06190b73d37a19f907e768a7d564a8cba032",
+  "reference_convention": "Legacy identities inherit immutable original directive, reason, and diagnostic proof by ledger path, digest, and identity. Final project facts come from the reviewed admission commits; raw reports are not duplicated.",
+  "owned_paths": [
+    "typescript/kernel/backends/shared",
+    "typescript/kernel/backends/memory",
+    "typescript/kernel/backends/postgres",
+    "typescript/kernel/backends/sqlite"
+  ],
+  "counts": {
+    "admitted_projects": 4,
+    "legacy_entries": 7,
+    "legacy_biome_retained": 0,
+    "final_native_directive_comments": 122,
+    "final_native_rule_identities": 127,
+    "final_biome_directives": 0,
+    "final_native_diagnostics": 0,
+    "final_unused_disable_diagnostics": 0
+  },
+  "final_project_proof": {
+    "shared": {
+      "admission_commit": "860ce29350ed5d018ffc6e3f9381bbd9a9f8adc1",
+      "code_files": 17,
+      "json_files": 7
+    },
+    "memory": {
+      "admission_commit": "d67b06190b73d37a19f907e768a7d564a8cba032",
+      "code_files": 24,
+      "json_files": 7
+    },
+    "postgres": {
+      "admission_commit": "f79fd83720f7a7a788833cb38c479aee09361f74",
+      "code_files": 49,
+      "json_files": 7
+    },
+    "sqlite": {
+      "admission_commit": "d4504f299dba238690c810ed52d16cd288f1c69d",
+      "code_files": 39,
+      "json_files": 9
+    },
+    "rules": 474,
+    "canonical_target": {
+      "executor": "nx:run-commands",
+      "cwd": ".",
+      "ordered_commands": [
+        "bunx --bun oxlint --type-aware PROJECT_ROOT",
+        "bun tools/scripts/json-check.ts PROJECT_ROOT"
+      ],
+      "parallel": false,
+      "target_local_inputs": false
+    },
+    "biome_coverage": []
+  },
+  "drift": {
+    "legacy_identities_added": [],
+    "legacy_identities_removed": [],
+    "legacy_reasons_changed": [],
+    "new_native_rule_identities": [
+      "typescript/kernel/backends/memory/src/lib/memory-backend-scope-store.ts::unicorn/no-useless-undefined::1",
+      "typescript/kernel/backends/memory/src/lib/memory-backend-turn-tree.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/memory/src/lib/memory-backend-turn-tree.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/memory/src/lib/memory-backend.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/memory/test/backend-memory.scope-store-concurrency.test.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/bench/postgres-cross-scope-throughput.bench.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/bench/postgres-cross-scope-throughput.bench.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/postgres/bench/postgres-cross-scope-throughput.bench.ts::no-await-in-loop::3",
+      "typescript/kernel/backends/postgres/bench/postgres-write-latency.bench.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/bench/postgres-write-latency.bench.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/postgres/src/index.ts::jsdoc/check-tag-names::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::no-await-in-loop::3",
+      "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::class-methods-use-this::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::no-await-in-loop::4",
+      "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::promise/avoid-new::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::promise/prefer-await-to-then::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::promise/prefer-await-to-callbacks::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-blob-migration.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-db-lineage.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-db-lineage.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/postgres/src/lib/postgres-legacy-snapshot-decode.ts::typescript/no-unsafe-type-assertion::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-legacy-snapshot-decode.ts::typescript/no-unsafe-type-assertion::2",
+      "typescript/kernel/backends/postgres/src/lib/postgres-repositories-core.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-schema-init.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-state-persist.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-state-persist.ts::typescript/no-unsafe-type-assertion::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::3",
+      "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::4",
+      "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::5",
+      "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::6",
+      "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::typescript/no-unsafe-type-assertion::1",
+      "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::complexity::1",
+      "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::no-await-in-loop::3",
+      "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::no-await-in-loop::4",
+      "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::no-await-in-loop::5",
+      "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::no-await-in-loop::6",
+      "typescript/kernel/backends/postgres/test/backend-postgres.delta-write.test.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/test/backend-postgres.delta-write.test.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/postgres/test/backend-postgres.lease-clock.test.ts::typescript/await-thenable::1",
+      "typescript/kernel/backends/postgres/test/backend-postgres.lease-clock.test.ts::typescript/no-confusing-void-expression::1",
+      "typescript/kernel/backends/postgres/test/backend-postgres.lease-clock.test.ts::typescript/await-thenable::2",
+      "typescript/kernel/backends/postgres/test/backend-postgres.lease-clock.test.ts::typescript/no-confusing-void-expression::2",
+      "typescript/kernel/backends/postgres/test/backend-postgres.legacy-blob-elsewhere-guard.test.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/test/backend-postgres.legacy-blob-elsewhere-guard.test.ts::typescript/await-thenable::1",
+      "typescript/kernel/backends/postgres/test/backend-postgres.legacy-blob-elsewhere-guard.test.ts::typescript/no-confusing-void-expression::1",
+      "typescript/kernel/backends/postgres/test/backend-postgres.phase-observer.test.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/test/backend-postgres.pool-contention.test.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/test/backend-postgres.schema-name-default.test.ts::unicorn/no-useless-undefined::1",
+      "typescript/kernel/backends/postgres/test/backend-postgres.test.ts::typescript/no-unsafe-type-assertion::1",
+      "typescript/kernel/backends/postgres/test/backend-postgres.test.ts::typescript/no-unsafe-type-assertion::2",
+      "typescript/kernel/backends/postgres/test/backend-postgres.turn-tree-chunk-aware-writes.test.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/test/backend-postgres.turn-tree-chunk-aware-writes.test.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/postgres/test/backend-postgres.turn-tree-chunk-aware-writes.test.ts::no-await-in-loop::3",
+      "typescript/kernel/backends/postgres/test/legacy-snapshot-encoder.ts::typescript/no-unsafe-type-assertion::1",
+      "typescript/kernel/backends/postgres/test/postgres-test-helpers.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/postgres/test/postgres-test-helpers.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::3",
+      "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::4",
+      "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts::typescript/promise-function-async::1",
+      "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts::no-await-in-loop::3",
+      "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts::no-await-in-loop::4",
+      "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts::unicorn/prefer-number-coercion::1",
+      "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts::no-await-in-loop::3",
+      "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts::no-await-in-loop::4",
+      "typescript/kernel/backends/sqlite/bench/sqlite-retention-dry-run.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/sqlite/src/index.ts::jsdoc/check-tag-names::1",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts::promise-function-async::1",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts::class-methods-use-this::1",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts::require-await::1",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts::promise-function-async::1",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-support.ts::promise-function-async::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.invariants.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.phase-observer.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.phase-observer.test.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.purge-scope.test.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.purge-scope.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.reclaim-invariant-wiring-guard.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.reclaim-invariant-wiring-guard.test.ts::typescript/no-unsafe-type-assertion::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.reclamation.test.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.reclamation.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.record-validation.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-failure-normalization.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-failure-normalization.test.ts::typescript/no-unsafe-type-assertion::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-normalization-guard.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-normalization-guard.test.ts::typescript/no-unsafe-type-assertion::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-normalization.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.scope-isolation.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.startup.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.startup.test.ts::typescript/no-unsafe-type-assertion::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.startup.test.ts::typescript/no-unsafe-type-assertion::2",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.startup.test.ts::typescript/no-unsafe-type-assertion::3",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.test.ts::typescript/no-misused-promises::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.test.ts::typescript/strict-void-return::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts::typescript/no-floating-promises::2",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts::typescript/no-floating-promises::3",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts::typescript/no-floating-promises::4",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts::typescript/no-floating-promises::5",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts::no-await-in-loop::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts::no-await-in-loop::2",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts::no-await-in-loop::3",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts::no-await-in-loop::4",
+      "typescript/kernel/backends/sqlite/test/backend-sqlite.wal-locking.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::typescript/no-floating-promises::1",
+      "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::1",
+      "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::2",
+      "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::3",
+      "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::4",
+      "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::5",
+      "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::6",
+      "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::7",
+      "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::8"
+    ]
+  },
+  "legacy_entries": [
+    {
+      "identity": "typescript/kernel/backends/memory/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/kernel/backends/memory/src/index.ts",
+      "biome_rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public contract surface.",
+      "final_biome_retained": false,
+      "final_disposition": "removed-at-atomic-admission-no-firing-native-counterpart",
+      "native_counterpart": null
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/kernel/backends/postgres/src/index.ts",
+      "biome_rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public contract surface.",
+      "final_biome_retained": false,
+      "final_disposition": "removed-at-atomic-admission-no-firing-native-counterpart",
+      "native_counterpart": null
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-repositories-core.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-repositories-core.ts",
+      "biome_rule": "lint/complexity/noExcessiveCognitiveComplexity",
+      "original_reason": "Batch persistence intentionally validates duplicate keys, schema compatibility, normalization, immutability, and insert encoding in one transaction-local path.",
+      "final_biome_retained": false,
+      "final_disposition": "removed-at-atomic-admission-no-firing-native-counterpart",
+      "native_counterpart": null
+    },
+    {
+      "identity": "typescript/kernel/backends/shared/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/kernel/backends/shared/src/index.ts",
+      "biome_rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public contract surface.",
+      "final_biome_retained": false,
+      "final_disposition": "removed-at-atomic-admission-no-firing-native-counterpart",
+      "native_counterpart": null
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/kernel/backends/sqlite/src/index.ts",
+      "biome_rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public contract surface.",
+      "final_biome_retained": false,
+      "final_disposition": "removed-at-atomic-admission-no-firing-native-counterpart",
+      "native_counterpart": null
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts",
+      "biome_rule": "lint/suspicious/useAwait",
+      "original_reason": "queueConnectionWork requires a Promise-returning callback; every read below is synchronous better-sqlite3 work, so there is nothing to await.",
+      "final_biome_retained": false,
+      "final_disposition": "removed-at-atomic-admission-native-counterpart-retained",
+      "native_counterpart": "eslint/require-await"
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts",
+      "biome_rule": "lint/complexity/noExcessiveCognitiveComplexity",
+      "original_reason": "Batch persistence intentionally validates duplicate keys, schema compatibility, normalization, immutability, and insert encoding in one transaction-local path.",
+      "final_biome_retained": false,
+      "final_disposition": "removed-at-atomic-admission-no-firing-native-counterpart",
+      "native_counterpart": null
+    }
+  ],
+  "native_directives": [
+    {
+      "identity": "typescript/kernel/backends/memory/src/lib/memory-backend-scope-store.ts::unicorn/no-useless-undefined::1",
+      "path": "typescript/kernel/backends/memory/src/lib/memory-backend-scope-store.ts",
+      "line": 101,
+      "rule": "unicorn/no-useless-undefined",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line unicorn/no-useless-undefined -- Promise.withResolvers<undefined> requires an explicit completion value in declaration builds.",
+      "reason": "Promise.withResolvers<undefined> requires an explicit completion value in declaration builds."
+    },
+    {
+      "identity": "typescript/kernel/backends/memory/src/lib/memory-backend-turn-tree.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/memory/src/lib/memory-backend-turn-tree.ts",
+      "line": 288,
+      "rule": "no-await-in-loop",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line no-await-in-loop",
+      "reason": "Preserve deterministic chunk order and first-failure behavior without retaining a promise for every chunk."
+    },
+    {
+      "identity": "typescript/kernel/backends/memory/src/lib/memory-backend-turn-tree.ts::no-await-in-loop::2",
+      "path": "typescript/kernel/backends/memory/src/lib/memory-backend-turn-tree.ts",
+      "line": 301,
+      "rule": "no-await-in-loop",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line no-await-in-loop",
+      "reason": "Preserve deterministic validation order and stop at the first invalid chunk without retaining a promise for every chunk."
+    },
+    {
+      "identity": "typescript/kernel/backends/memory/src/lib/memory-backend.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/memory/src/lib/memory-backend.ts",
+      "line": 818,
+      "rule": "no-await-in-loop",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line no-await-in-loop",
+      "reason": "Preserve input order and stop at the first invalid path without retaining a promise for every record."
+    },
+    {
+      "identity": "typescript/kernel/backends/memory/test/backend-memory.scope-store-concurrency.test.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/memory/test/backend-memory.scope-store-concurrency.test.ts",
+      "line": 54,
+      "rule": "no-await-in-loop",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line no-await-in-loop",
+      "reason": "Advance one deterministic microtask at a time without retaining a promise chain for the whole retry budget."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/bench/postgres-cross-scope-throughput.bench.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/bench/postgres-cross-scope-throughput.bench.ts",
+      "line": 82,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Query each scope and hash serially so isolation failures are deterministic and the benchmark does not add read concurrency. */",
+      "reason": "Query each scope and hash serially so isolation failures are deterministic and the benchmark does not add read concurrency."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/bench/postgres-cross-scope-throughput.bench.ts::no-await-in-loop::2",
+      "path": "typescript/kernel/backends/postgres/bench/postgres-cross-scope-throughput.bench.ts",
+      "line": 209,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Keep benchmark setup, each per-scope write stream, the serial baseline, and teardown ordered so measured work does not overlap accidentally. */",
+      "reason": "Keep benchmark setup, each per-scope write stream, the serial baseline, and teardown ordered so measured work does not overlap accidentally."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/bench/postgres-cross-scope-throughput.bench.ts::no-await-in-loop::3",
+      "path": "typescript/kernel/backends/postgres/bench/postgres-cross-scope-throughput.bench.ts",
+      "line": 279,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Benchmark repetitions must run serially to keep samples independent and preserve their output order. */",
+      "reason": "Benchmark repetitions must run serially to keep samples independent and preserve their output order."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/bench/postgres-write-latency.bench.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/bench/postgres-write-latency.bench.ts",
+      "line": 129,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Warmup and measured writes must remain serial so each latency sample covers one complete write. */",
+      "reason": "Warmup and measured writes must remain serial so each latency sample covers one complete write."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/bench/postgres-write-latency.bench.ts::no-await-in-loop::2",
+      "path": "typescript/kernel/backends/postgres/bench/postgres-write-latency.bench.ts",
+      "line": 166,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Run scope-size cases and their seed writes serially so samples and cleanup never overlap. */",
+      "reason": "Run scope-size cases and their seed writes serially so samples and cleanup never overlap."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/index.ts::jsdoc/check-tag-names::1",
+      "path": "typescript/kernel/backends/postgres/src/index.ts",
+      "line": 17,
+      "rule": "jsdoc/check-tag-names",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript package documentation tag on the public entrypoint. */",
+      "reason": "Preserve the standard TypeScript package documentation tag on the public entrypoint."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts",
+      "line": 396,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Delete bounded key batches serially to preserve transaction statement order and the first database failure. */",
+      "reason": "Delete bounded key batches serially to preserve transaction statement order and the first database failure."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::no-await-in-loop::2",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts",
+      "line": 616,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Load chunk records in encoded order and stop at the first missing or invalid chunk. */",
+      "reason": "Load chunk records in encoded order and stop at the first missing or invalid chunk."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::no-await-in-loop::3",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts",
+      "line": 658,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Hash, look up, and insert promoted chunks in deterministic order while bounding retained data. */",
+      "reason": "Hash, look up, and insert promoted chunks in deterministic order while bounding retained data."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::class-methods-use-this::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts",
+      "line": 927,
+      "rule": "class-methods-use-this",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line class-methods-use-this",
+      "reason": "/** Reports the fixed {@link POSTGRES_BACKEND_CAPABILITIES} this backend supports. */ The runtime interface requires an instance method even though this backend reports a fixed capability bitmask."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::no-await-in-loop::4",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts",
+      "line": 1321,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Purge every table serially in the shared child-first roster and stop at the first failed delete. */",
+      "reason": "Purge every table serially in the shared child-first roster and stop at the first failed delete."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::promise/avoid-new::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts",
+      "line": 1375,
+      "rule": "promise/avoid-new",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line promise/avoid-new",
+      "reason": "A resolver-backed promise is the queue lock: its identity and explicit release preserve FIFO serialization."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::promise/prefer-await-to-then::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts",
+      "line": 1459,
+      "rule": "promise/prefer-await-to-then",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line promise/prefer-await-to-then, promise/prefer-await-to-callbacks",
+      "reason": "); The wrapper's identity must be installed before rejection cleanup can compare and clear only the active attempt."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts::promise/prefer-await-to-callbacks::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-backend.ts",
+      "line": 1459,
+      "rule": "promise/prefer-await-to-callbacks",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line promise/prefer-await-to-then, promise/prefer-await-to-callbacks",
+      "reason": "); The wrapper's identity must be installed before rejection cleanup can compare and clear only the active attempt."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-blob-migration.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-blob-migration.ts",
+      "line": 72,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Migrate scopes in durable order, stop at the first invalid snapshot, and keep peak decoded state bounded to one scope. */",
+      "reason": "Migrate scopes in durable order, stop at the first invalid snapshot, and keep peak decoded state bounded to one scope."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-db-lineage.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-db-lineage.ts",
+      "line": 277,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Check candidate archive branches in query order and stop on the first match without issuing speculative reads. */",
+      "reason": "Check candidate archive branches in query order and stop on the first match without issuing speculative reads."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-db-lineage.ts::no-await-in-loop::2",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-db-lineage.ts",
+      "line": 518,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Validate the lineage chain serially because each node is checked against the preceding node and failures are order-sensitive. */",
+      "reason": "Validate the lineage chain serially because each node is checked against the preceding node and failures are order-sensitive."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-legacy-snapshot-decode.ts::typescript/no-unsafe-type-assertion::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-legacy-snapshot-decode.ts",
+      "line": 219,
+      "rule": "typescript/no-unsafe-type-assertion",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/no-unsafe-type-assertion",
+      "reason": ").entries()) { Schema resolution needs schemaId before the schema-dependent assertion can validate the full record."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-legacy-snapshot-decode.ts::typescript/no-unsafe-type-assertion::2",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-legacy-snapshot-decode.ts",
+      "line": 246,
+      "rule": "typescript/no-unsafe-type-assertion",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/no-unsafe-type-assertion",
+      "reason": ").entries()) { Turn-tree resolution needs turnTreeHash before the schema-dependent assertion can validate the full record."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-repositories-core.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-repositories-core.ts",
+      "line": 729,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Validate and persist batch records in input order, stopping at the first duplicate, missing reference, or immutable conflict. */",
+      "reason": "Validate and persist batch records in input order, stopping at the first duplicate, missing reference, or immutable conflict."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-schema-init.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-schema-init.ts",
+      "line": 597,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Apply migrations serially because each statement depends on the preceding durable schema state and ledger entry. */",
+      "reason": "Apply migrations serially because each statement depends on the preceding durable schema state and ledger entry."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-state-persist.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-state-persist.ts",
+      "line": 129,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Insert bounded chunks sequentially so the first database failure and transaction statement order stay deterministic. */",
+      "reason": "Insert bounded chunks sequentially so the first database failure and transaction statement order stay deterministic."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-state-persist.ts::typescript/no-unsafe-type-assertion::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-state-persist.ts",
+      "line": 142,
+      "rule": "typescript/no-unsafe-type-assertion",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-unsafe-type-assertion -- Each internally constructed row contains only values accepted by the postgres driver; keep the assertion at this driver boundary. */",
+      "reason": "Each internally constructed row contains only values accepted by the postgres driver; keep the assertion at this driver boundary."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts",
+      "line": 383,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Resolve consumed object references in encoded order and stop on the first missing object. */",
+      "reason": "Resolve consumed object references in encoded order and stop on the first missing object."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::2",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts",
+      "line": 565,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Validate created turn nodes in their encoded lineage order and preserve the first failure. */",
+      "reason": "Validate created turn nodes in their encoded lineage order and preserve the first failure."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::3",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts",
+      "line": 616,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Revalidate dependent turns and runs serially so database reads and first-failure ordering remain stable. */",
+      "reason": "Revalidate dependent turns and runs serially so database reads and first-failure ordering remain stable."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::4",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts",
+      "line": 700,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Validate active runs in query order and stop on the first missing turn or head mismatch. */",
+      "reason": "Validate active runs in query order and stop on the first missing turn or head mismatch."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::5",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts",
+      "line": 753,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Load referenced chunks in stored path order and preserve the first missing-reference error. */",
+      "reason": "Load referenced chunks in stored path order and preserve the first missing-reference error."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts::no-await-in-loop::6",
+      "path": "typescript/kernel/backends/postgres/src/lib/postgres-transaction-validation.ts",
+      "line": 833,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Validate each tracked family serially to preserve write-set order and the first invariant failure. */",
+      "reason": "Validate each tracked family serially to preserve write-set order and the first invariant failure."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts",
+      "line": 93,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Derive fixture hashes serially to retain deterministic input and failure order. */",
+      "reason": "Derive fixture hashes serially to retain deterministic input and failure order."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::typescript/no-unsafe-type-assertion::1",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts",
+      "line": 226,
+      "rule": "typescript/no-unsafe-type-assertion",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/no-unsafe-type-assertion",
+      "reason": "deterministic record values. return encodeDeterministicKernelRecord("
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::no-await-in-loop::2",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts",
+      "line": 285,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Seed legacy rows serially to preserve insertion order and the first database failure. */",
+      "reason": "Seed legacy rows serially to preserve insertion order and the first database failure."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::complexity::1",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts",
+      "line": 317,
+      "rule": "complexity",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line complexity",
+      "reason": "Keep the complete end-to-end fixture and its ordered assertions together; splitting the scenario would obscure the one migrated state it validates."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::no-await-in-loop::3",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts",
+      "line": 359,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Each checkpoint depends on the preceding durable turn-node lineage. */",
+      "reason": "Each checkpoint depends on the preceding durable turn-node lineage."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::no-await-in-loop::4",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts",
+      "line": 433,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Each tree incorporation depends on the preceding tree hash. */",
+      "reason": "Each tree incorporation depends on the preceding tree hash."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::no-await-in-loop::5",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts",
+      "line": 567,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Compare table counts serially so assertion and database failure order stays deterministic. */",
+      "reason": "Compare table counts serially so assertion and database failure order stays deterministic."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts::no-await-in-loop::6",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts",
+      "line": 916,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Compare both scopes table-by-table to preserve deterministic leak diagnostics. */",
+      "reason": "Compare both scopes table-by-table to preserve deterministic leak diagnostics."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.delta-write.test.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.delta-write.test.ts",
+      "line": 88,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Seed each bounded transaction and its records serially to preserve transaction order and the first database failure. */",
+      "reason": "Seed each bounded transaction and its records serially to preserve transaction order and the first database failure."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.delta-write.test.ts::no-await-in-loop::2",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.delta-write.test.ts",
+      "line": 133,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Query the shared table roster serially so counts and the first database failure remain deterministic. */",
+      "reason": "Query the shared table roster serially so counts and the first database failure remain deterministic."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.lease-clock.test.ts::typescript/await-thenable::1",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.lease-clock.test.ts",
+      "line": 222,
+      "rule": "typescript/await-thenable",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/await-thenable, typescript/no-confusing-void-expression -- Bun requires awaiting rejects so the assertion settles before teardown.",
+      "reason": "Bun requires awaiting rejects so the assertion settles before teardown."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.lease-clock.test.ts::typescript/no-confusing-void-expression::1",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.lease-clock.test.ts",
+      "line": 222,
+      "rule": "typescript/no-confusing-void-expression",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/await-thenable, typescript/no-confusing-void-expression -- Bun requires awaiting rejects so the assertion settles before teardown.",
+      "reason": "Bun requires awaiting rejects so the assertion settles before teardown."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.lease-clock.test.ts::typescript/await-thenable::2",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.lease-clock.test.ts",
+      "line": 247,
+      "rule": "typescript/await-thenable",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/await-thenable, typescript/no-confusing-void-expression -- Bun requires awaiting rejects before the test advances the backend clock.",
+      "reason": "Bun requires awaiting rejects before the test advances the backend clock."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.lease-clock.test.ts::typescript/no-confusing-void-expression::2",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.lease-clock.test.ts",
+      "line": 247,
+      "rule": "typescript/no-confusing-void-expression",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/await-thenable, typescript/no-confusing-void-expression -- Bun requires awaiting rejects before the test advances the backend clock.",
+      "reason": "Bun requires awaiting rejects before the test advances the backend clock."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.legacy-blob-elsewhere-guard.test.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.legacy-blob-elsewhere-guard.test.ts",
+      "line": 91,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Drop tracked schemas serially so teardown preserves allocation order and reports the first database failure. */",
+      "reason": "Drop tracked schemas serially so teardown preserves allocation order and reports the first database failure."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.legacy-blob-elsewhere-guard.test.ts::typescript/await-thenable::1",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.legacy-blob-elsewhere-guard.test.ts",
+      "line": 184,
+      "rule": "typescript/await-thenable",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/await-thenable, typescript/no-confusing-void-expression -- Bun requires awaiting resolves so teardown cannot race the assertion.",
+      "reason": "Bun requires awaiting resolves so teardown cannot race the assertion."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.legacy-blob-elsewhere-guard.test.ts::typescript/no-confusing-void-expression::1",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.legacy-blob-elsewhere-guard.test.ts",
+      "line": 184,
+      "rule": "typescript/no-confusing-void-expression",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/await-thenable, typescript/no-confusing-void-expression -- Bun requires awaiting resolves so teardown cannot race the assertion.",
+      "reason": "Bun requires awaiting resolves so teardown cannot race the assertion."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.phase-observer.test.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.phase-observer.test.ts",
+      "line": 156,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Seed each construction path serially so setup failure order stays deterministic. */",
+      "reason": "Seed each construction path serially so setup failure order stays deterministic."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.pool-contention.test.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.pool-contention.test.ts",
+      "line": 189,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Verify records serially through the transaction-bound repository and preserve assertion order. */",
+      "reason": "Verify records serially through the transaction-bound repository and preserve assertion order."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.schema-name-default.test.ts::unicorn/no-useless-undefined::1",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.schema-name-default.test.ts",
+      "line": 37,
+      "rule": "unicorn/no-useless-undefined",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line unicorn/no-useless-undefined",
+      "reason": "test('defaults an unset schemaName to the backend-owned \"tuvren_kernel\", not \"public\"', () => { The public helper requires its optional value as an explicit argument."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.test.ts::typescript/no-unsafe-type-assertion::1",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.test.ts",
+      "line": 132,
+      "rule": "typescript/no-unsafe-type-assertion",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-unsafe-type-assertion -- This test alone reaches the private SQL driver to inject one bootstrap failure. */",
+      "reason": "This test alone reaches the private SQL driver to inject one bootstrap failure."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.test.ts::typescript/no-unsafe-type-assertion::2",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.test.ts",
+      "line": 141,
+      "rule": "typescript/no-unsafe-type-assertion",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-unsafe-type-assertion -- Preserve the driver's overload set after replacing only its implementation. */",
+      "reason": "Preserve the driver's overload set after replacing only its implementation."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.turn-tree-chunk-aware-writes.test.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.turn-tree-chunk-aware-writes.test.ts",
+      "line": 64,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Derive fixture hashes serially to retain deterministic input and failure order. */",
+      "reason": "Derive fixture hashes serially to retain deterministic input and failure order."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.turn-tree-chunk-aware-writes.test.ts::no-await-in-loop::2",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.turn-tree-chunk-aware-writes.test.ts",
+      "line": 95,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Each tree incorporation depends on the preceding tree hash. */",
+      "reason": "Each tree incorporation depends on the preceding tree hash."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/backend-postgres.turn-tree-chunk-aware-writes.test.ts::no-await-in-loop::3",
+      "path": "typescript/kernel/backends/postgres/test/backend-postgres.turn-tree-chunk-aware-writes.test.ts",
+      "line": 144,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Each tree incorporation depends on the preceding tree hash. */",
+      "reason": "Each tree incorporation depends on the preceding tree hash."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/legacy-snapshot-encoder.ts::typescript/no-unsafe-type-assertion::1",
+      "path": "typescript/kernel/backends/postgres/test/legacy-snapshot-encoder.ts",
+      "line": 169,
+      "rule": "typescript/no-unsafe-type-assertion",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/no-unsafe-type-assertion",
+      "reason": "deterministic record values. return encodeDeterministicKernelRecord("
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/postgres-test-helpers.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/postgres/test/postgres-test-helpers.ts",
+      "line": 141,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Retry readiness serially within the fixed deadline while retaining the last connection failure. */",
+      "reason": "Retry readiness serially within the fixed deadline while retaining the last connection failure."
+    },
+    {
+      "identity": "typescript/kernel/backends/postgres/test/postgres-test-helpers.ts::no-await-in-loop::2",
+      "path": "typescript/kernel/backends/postgres/test/postgres-test-helpers.ts",
+      "line": 198,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Drop allocated schemas serially and preserve the first teardown failure. */",
+      "reason": "Drop allocated schemas serially and preserve the first teardown failure."
+    },
+    {
+      "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
+      "line": 245,
+      "rule": "no-await-in-loop",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line no-await-in-loop",
+      "reason": "for (const objectRecord of state.objects.values()) { Preserve first-failure order without retaining promises for all rows."
+    },
+    {
+      "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::2",
+      "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
+      "line": 260,
+      "rule": "no-await-in-loop",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line no-await-in-loop",
+      "reason": "); Preserve first-failure order without retaining promises for all rows."
+    },
+    {
+      "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::3",
+      "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
+      "line": 270,
+      "rule": "no-await-in-loop",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line no-await-in-loop",
+      "reason": "for (const chunkRecord of state.orderedPathChunks.values()) { Preserve first-failure order without retaining promises for all rows."
+    },
+    {
+      "identity": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts::no-await-in-loop::4",
+      "path": "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
+      "line": 295,
+      "rule": "no-await-in-loop",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line no-await-in-loop",
+      "reason": "for (const turnNode of state.turnNodes.values()) { Preserve first-failure order without retaining promises for all rows."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts",
+      "line": 87,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Each benchmark case runs its iterations serially so transaction timing, mutable counters, and prepared rollback state never overlap. */",
+      "reason": "Each benchmark case runs its iterations serially so transaction timing, mutable counters, and prepared rollback state never overlap."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts::typescript/promise-function-async::1",
+      "path": "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts",
+      "line": 111,
+      "rule": "typescript/promise-function-async",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/promise-function-async -- Keep the no-op benchmark callback free of added async/await work.",
+      "reason": "Keep the no-op benchmark callback free of added async/await work."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts::no-await-in-loop::2",
+      "path": "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts",
+      "line": 294,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Warmups and measured samples must run serially so their timings and phase observations remain independent and ordered. */",
+      "reason": "Warmups and measured samples must run serially so their timings and phase observations remain independent and ordered."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts::no-await-in-loop::3",
+      "path": "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts",
+      "line": 340,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Seed turn nodes in lineage order because every node depends on the preceding node's hash and each write depends on that lineage. */",
+      "reason": "Seed turn nodes in lineage order because every node depends on the preceding node's hash and each write depends on that lineage."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts::no-await-in-loop::4",
+      "path": "typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts",
+      "line": 444,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Run database-size cases and their benchmark cases serially so samples, output, and temporary database lifetimes never overlap. */",
+      "reason": "Run database-size cases and their benchmark cases serially so samples, output, and temporary database lifetimes never overlap."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts::unicorn/prefer-number-coercion::1",
+      "path": "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts",
+      "line": 83,
+      "rule": "unicorn/prefer-number-coercion",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line unicorn/prefer-number-coercion -- Preserve radix-10 prefix parsing for the benchmark size override.",
+      "reason": "Preserve radix-10 prefix parsing for the benchmark size override."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts",
+      "line": 117,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Warmups and measured samples must run serially so their timings and phase observations remain independent and ordered. */",
+      "reason": "Warmups and measured samples must run serially so their timings and phase observations remain independent and ordered."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts::no-await-in-loop::2",
+      "path": "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts",
+      "line": 156,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Seed turn nodes in lineage order because every node depends on the preceding node's hash and each write depends on that lineage. */",
+      "reason": "Seed turn nodes in lineage order because every node depends on the preceding node's hash and each write depends on that lineage."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts::no-await-in-loop::3",
+      "path": "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts",
+      "line": 261,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Seed each orphan and persist it before advancing the sequence so benchmark setup remains deterministic and bounded. */",
+      "reason": "Seed each orphan and persist it before advancing the sequence so benchmark setup remains deterministic and bounded."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts::no-await-in-loop::4",
+      "path": "typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts",
+      "line": 288,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Run database-size cases serially so samples, output, and temporary database lifetimes never overlap. */",
+      "reason": "Run database-size cases serially so samples, output, and temporary database lifetimes never overlap."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/bench/sqlite-retention-dry-run.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/sqlite/bench/sqlite-retention-dry-run.ts",
+      "line": 128,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Seed records in dependency order inside one transaction so the proof preserves deterministic first-failure and write ordering. */",
+      "reason": "Seed records in dependency order inside one transaction so the proof preserves deterministic first-failure and write ordering."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/index.ts::jsdoc/check-tag-names::1",
+      "path": "typescript/kernel/backends/sqlite/src/index.ts",
+      "line": 1,
+      "rule": "jsdoc/check-tag-names",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript package documentation tag on the public entrypoint. */",
+      "reason": "Preserve the standard TypeScript package documentation tag on the public entrypoint."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts",
+      "line": 795,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Hash and insert chunks in encoded order to preserve deterministic statement order, timestamps, and first-failure behavior. */",
+      "reason": "Hash and insert chunks in encoded order to preserve deterministic statement order, timestamps, and first-failure behavior."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts::promise-function-async::1",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts",
+      "line": 967,
+      "rule": "promise-function-async",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable promise-function-async -- Public backend methods and hook thunks preserve synchronous precondition and engine throws before returning promises. */",
+      "reason": "Public backend methods and hook thunks preserve synchronous precondition and engine throws before returning promises."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts::class-methods-use-this::1",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts",
+      "line": 1009,
+      "rule": "class-methods-use-this",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line class-methods-use-this",
+      "reason": "/** Reports the SQLite backend's static capability set. */ The runtime interface requires an instance method even though this backend reports a fixed capability bitmask."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts::require-await::1",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts",
+      "line": 1056,
+      "rule": "require-await",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable require-await -- queueConnectionWork requires a Promise-returning callback; every read below is synchronous better-sqlite3 work, so there is nothing to await. */",
+      "reason": "queueConnectionWork requires a Promise-returning callback; every read below is synchronous better-sqlite3 work, so there is nothing to await."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts::promise-function-async::1",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts",
+      "line": 225,
+      "rule": "promise-function-async",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable promise-function-async -- Repository methods validate synchronously before returning fulfilled promises so transaction callbacks preserve their synchronous error contract. */",
+      "reason": "Repository methods validate synchronously before returning fulfilled promises so transaction callbacks preserve their synchronous error contract."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-core.ts",
+      "line": 538,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Validate and persist batch entries in input order so duplicate handling, timestamps, statements, and first failures remain deterministic. */",
+      "reason": "Validate and persist batch entries in input order so duplicate handling, timestamps, statements, and first failures remain deterministic."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-support.ts::promise-function-async::1",
+      "path": "typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-support.ts",
+      "line": 180,
+      "rule": "promise-function-async",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable promise-function-async -- Repository methods validate synchronously before returning fulfilled promises so transaction callbacks preserve their synchronous error contract. */",
+      "reason": "Repository methods validate synchronously before returning fulfilled promises so transaction callbacks preserve their synchronous error contract."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.invariants.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.invariants.test.ts",
+      "line": 101,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.phase-observer.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.phase-observer.test.ts",
+      "line": 90,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.phase-observer.test.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.phase-observer.test.ts",
+      "line": 128,
+      "rule": "no-await-in-loop",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable no-await-in-loop -- Seed and verify the three separate databases serially to preserve setup and first-failure order. */",
+      "reason": "Seed and verify the three separate databases serially to preserve setup and first-failure order."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.purge-scope.test.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.purge-scope.test.ts",
+      "line": 45,
+      "rule": "no-await-in-loop",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line no-await-in-loop -- Close backends serially to preserve teardown and first-failure order.",
+      "reason": "Close backends serially to preserve teardown and first-failure order."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.purge-scope.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.purge-scope.test.ts",
+      "line": 61,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.reclaim-invariant-wiring-guard.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.reclaim-invariant-wiring-guard.test.ts",
+      "line": 79,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.reclaim-invariant-wiring-guard.test.ts::typescript/no-unsafe-type-assertion::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.reclaim-invariant-wiring-guard.test.ts",
+      "line": 87,
+      "rule": "typescript/no-unsafe-type-assertion",
+      "scope": "next-line",
+      "live_comment": "/* oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The module URL must stay dynamic so node:test can install the mock before linking this private seam. */",
+      "reason": "The module URL must stay dynamic so node:test can install the mock before linking this private seam."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.reclamation.test.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.reclamation.test.ts",
+      "line": 63,
+      "rule": "no-await-in-loop",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line no-await-in-loop -- Close backends serially to preserve teardown and first-failure order.",
+      "reason": "Close backends serially to preserve teardown and first-failure order."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.reclamation.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.reclamation.test.ts",
+      "line": 68,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.record-validation.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.record-validation.test.ts",
+      "line": 39,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-failure-normalization.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-failure-normalization.test.ts",
+      "line": 52,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-failure-normalization.test.ts::typescript/no-unsafe-type-assertion::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-failure-normalization.test.ts",
+      "line": 58,
+      "rule": "typescript/no-unsafe-type-assertion",
+      "scope": "next-line",
+      "live_comment": "/* oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test intentionally replaces the backend's private database executor to force a rollback failure. */",
+      "reason": "This test intentionally replaces the backend's private database executor to force a rollback failure."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-normalization-guard.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-normalization-guard.test.ts",
+      "line": 48,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-normalization-guard.test.ts::typescript/no-unsafe-type-assertion::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-normalization-guard.test.ts",
+      "line": 56,
+      "rule": "typescript/no-unsafe-type-assertion",
+      "scope": "next-line",
+      "live_comment": "/* oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The module URL must stay dynamic so node:test can install the mock before linking this private seam. */",
+      "reason": "The module URL must stay dynamic so node:test can install the mock before linking this private seam."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-normalization.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.rollback-normalization.test.ts",
+      "line": 73,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.scope-isolation.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.scope-isolation.test.ts",
+      "line": 155,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.startup.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.startup.test.ts",
+      "line": 47,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.startup.test.ts::typescript/no-unsafe-type-assertion::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.startup.test.ts",
+      "line": 293,
+      "rule": "typescript/no-unsafe-type-assertion",
+      "scope": "next-line",
+      "live_comment": "/* oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The copied runtime is loaded from a unique file URL so this distribution test must describe its expected public entrypoint. */",
+      "reason": "The copied runtime is loaded from a unique file URL so this distribution test must describe its expected public entrypoint."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.startup.test.ts::typescript/no-unsafe-type-assertion::2",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.startup.test.ts",
+      "line": 328,
+      "rule": "typescript/no-unsafe-type-assertion",
+      "scope": "next-line",
+      "live_comment": "/* oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The copied runtime is loaded from a unique file URL so this distribution test must describe its expected public entrypoint. */",
+      "reason": "The copied runtime is loaded from a unique file URL so this distribution test must describe its expected public entrypoint."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.startup.test.ts::typescript/no-unsafe-type-assertion::3",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.startup.test.ts",
+      "line": 360,
+      "rule": "typescript/no-unsafe-type-assertion",
+      "scope": "next-line",
+      "live_comment": "/* oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The copied runtime is loaded from a unique file URL so this distribution test must describe its expected public entrypoint. */",
+      "reason": "The copied runtime is loaded from a unique file URL so this distribution test must describe its expected public entrypoint."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.test.ts::typescript/no-misused-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.test.ts",
+      "line": 28,
+      "rule": "typescript/no-misused-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-misused-promises, typescript/strict-void-return -- The shared testkit accepts the Node test registration functions; their promise-capable return type is deliberately ignored by the registration contract. */",
+      "reason": "The shared testkit accepts the Node test registration functions; their promise-capable return type is deliberately ignored by the registration contract."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.test.ts::typescript/strict-void-return::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.test.ts",
+      "line": 28,
+      "rule": "typescript/strict-void-return",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-misused-promises, typescript/strict-void-return -- The shared testkit accepts the Node test registration functions; their promise-capable return type is deliberately ignored by the registration contract. */",
+      "reason": "The shared testkit accepts the Node test registration functions; their promise-capable return type is deliberately ignored by the registration contract."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts",
+      "line": 88,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts::typescript/no-floating-promises::2",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts",
+      "line": 98,
+      "rule": "typescript/no-floating-promises",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/no-floating-promises -- The invalid limit throws synchronously before the promise-capable repository call can start.",
+      "reason": "The invalid limit throws synchronously before the promise-capable repository call can start."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts::typescript/no-floating-promises::3",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts",
+      "line": 115,
+      "rule": "typescript/no-floating-promises",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/no-floating-promises -- The invalid limit throws synchronously before the promise-capable repository call can start.",
+      "reason": "The invalid limit throws synchronously before the promise-capable repository call can start."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts::typescript/no-floating-promises::4",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts",
+      "line": 132,
+      "rule": "typescript/no-floating-promises",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/no-floating-promises -- The invalid limit throws synchronously before the promise-capable repository call can start.",
+      "reason": "The invalid limit throws synchronously before the promise-capable repository call can start."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts::typescript/no-floating-promises::5",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts",
+      "line": 149,
+      "rule": "typescript/no-floating-promises",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line typescript/no-floating-promises -- The invalid limit throws synchronously before the promise-capable repository call can start.",
+      "reason": "The invalid limit throws synchronously before the promise-capable repository call can start."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts::no-await-in-loop::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts",
+      "line": 52,
+      "rule": "no-await-in-loop",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line no-await-in-loop -- Close backends serially to preserve teardown and first-failure order.",
+      "reason": "Close backends serially to preserve teardown and first-failure order."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts::no-await-in-loop::2",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts",
+      "line": 61,
+      "rule": "no-await-in-loop",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line no-await-in-loop -- Derive fixture hashes serially to retain deterministic input and failure order.",
+      "reason": "Derive fixture hashes serially to retain deterministic input and failure order."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts",
+      "line": 68,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts::no-await-in-loop::3",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts",
+      "line": 92,
+      "rule": "no-await-in-loop",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line no-await-in-loop -- Each incorporation depends on the preceding tree hash.",
+      "reason": "Each incorporation depends on the preceding tree hash."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts::no-await-in-loop::4",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts",
+      "line": 140,
+      "rule": "no-await-in-loop",
+      "scope": "next-line",
+      "live_comment": "// oxlint-disable-next-line no-await-in-loop -- Each incorporation depends on the preceding tree hash.",
+      "reason": "Each incorporation depends on the preceding tree hash."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/backend-sqlite.wal-locking.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/backend-sqlite.wal-locking.test.ts",
+      "line": 56,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::typescript/no-floating-promises::1",
+      "path": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts",
+      "line": 210,
+      "rule": "typescript/no-floating-promises",
+      "scope": "block",
+      "live_comment": "/* oxlint-disable typescript/no-floating-promises -- Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged. */",
+      "reason": "Node test registrations are intentionally left to the test runner so existing scheduling and failure handling remain unchanged."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::1",
+      "path": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts",
+      "line": 228,
+      "rule": "promise/prefer-await-to-callbacks",
+      "scope": "next-line",
+      "live_comment": "/* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */",
+      "reason": "node:assert requires a synchronous predicate to verify the exact persistence error code."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::2",
+      "path": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts",
+      "line": 247,
+      "rule": "promise/prefer-await-to-callbacks",
+      "scope": "next-line",
+      "live_comment": "/* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */",
+      "reason": "node:assert requires a synchronous predicate to verify the exact persistence error code."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::3",
+      "path": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts",
+      "line": 262,
+      "rule": "promise/prefer-await-to-callbacks",
+      "scope": "next-line",
+      "live_comment": "/* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */",
+      "reason": "node:assert requires a synchronous predicate to verify the exact persistence error code."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::4",
+      "path": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts",
+      "line": 290,
+      "rule": "promise/prefer-await-to-callbacks",
+      "scope": "next-line",
+      "live_comment": "/* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */",
+      "reason": "node:assert requires a synchronous predicate to verify the exact persistence error code."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::5",
+      "path": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts",
+      "line": 305,
+      "rule": "promise/prefer-await-to-callbacks",
+      "scope": "next-line",
+      "live_comment": "/* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */",
+      "reason": "node:assert requires a synchronous predicate to verify the exact persistence error code."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::6",
+      "path": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts",
+      "line": 328,
+      "rule": "promise/prefer-await-to-callbacks",
+      "scope": "next-line",
+      "live_comment": "/* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */",
+      "reason": "node:assert requires a synchronous predicate to verify the exact persistence error code."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::7",
+      "path": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts",
+      "line": 369,
+      "rule": "promise/prefer-await-to-callbacks",
+      "scope": "next-line",
+      "live_comment": "/* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */",
+      "reason": "node:assert requires a synchronous predicate to verify the exact persistence error code."
+    },
+    {
+      "identity": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts::promise/prefer-await-to-callbacks::8",
+      "path": "typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts",
+      "line": 403,
+      "rule": "promise/prefer-await-to-callbacks",
+      "scope": "next-line",
+      "live_comment": "/* oxlint-disable-next-line promise/prefer-await-to-callbacks -- node:assert requires a synchronous predicate to verify the exact persistence error code. */",
+      "reason": "node:assert requires a synchronous predicate to verify the exact persistence error code."
+    }
+  ],
+  "result": "pass",
+  "pass_criteria": "All four backend projects use canonical native targets; complete shipped-preset and JSON selections are nonempty and clean; legacy Biome directives and coverage are removed atomically; every retained native directive is live and justified.",
+  "legacy_inheritance": {
+    "ledger": ".constitution/evidence/KRT-BR002/suppressions.json",
+    "ledger_sha256": "e42dbdb295a8cd0edfc38362626649b8bc6fff7e3c4d63033af19311d0cdc348",
+    "inherited_fields": [
+      "original directive",
+      "original reason",
+      "baseline diagnostics",
+      "retained-Biome proof",
+      "candidate native-rule proof"
+    ]
+  },
+  "native_directive_disposition": "Every listed final native rule identity is retained, freshly firing without its live comment, and consumed under the final type-aware unused-directive check; raw diagnostics are not duplicated."
+}
