@@ -41,7 +41,7 @@ const NUL_CODE_POINT = "\u0000";
  * alphabet already excludes `"`, so escaping an embedded quote is
  * unreachable; the identifier is simply wrapped in double quotes.
  */
-export function quoteIdentifier(identifier: string): string {
+export const quoteIdentifier = (identifier: string): string => {
   if (!SAFE_SQL_IDENTIFIER.test(identifier)) {
     throw persistenceError(
       `postgres backend refused to quote unsafe SQL identifier "${identifier}"`,
@@ -51,7 +51,7 @@ export function quoteIdentifier(identifier: string): string {
   }
 
   return `"${identifier}"`;
-}
+};
 
 /**
  * PostgreSQL btree indexes cap a single index tuple at 2704 bytes on the
@@ -111,6 +111,30 @@ export function quoteIdentifier(identifier: string): string {
 const MAX_STORABLE_TEXT_BYTES = 512;
 
 /**
+ * Rejects ill-formed UTF-16 before a value is bound as a query parameter.
+ * This narrower read-side guard intentionally does not apply the write-only
+ * NUL and btree-length constraints: it exists solely to prevent the runtime
+ * from replacement-encoding distinct lookup identities to the same text.
+ */
+export const assertPostgresWellFormedText = (
+  value: string,
+  label: string
+): void => {
+  // PostgreSQL stores Unicode scalar values, while JavaScript strings may
+  // contain lone UTF-16 surrogates. The runtime/driver replacement-encodes
+  // those invalid sequences as U+FFFD, which can collapse two distinct Scope
+  // or record identities onto the same durable key. Reject before hashing or
+  // binding instead of silently changing caller-supplied identity.
+  if (!value.isWellFormed()) {
+    throw persistenceError(
+      `postgres backend cannot bind ${label}: value is not a well-formed UTF-16 string`,
+      "postgres_backend_unstorable_text",
+      { label }
+    );
+  }
+};
+
+/**
  * Rejects a caller-supplied identifier/text value that is not well-formed
  * UTF-16 or contains U+0000 (NUL). Every affected field here now lands
  * directly in a relational `TEXT`
@@ -131,7 +155,10 @@ const MAX_STORABLE_TEXT_BYTES = 512;
  * @throws TuvrenPersistenceError `postgres_backend_unstorable_text` when
  *   `value` is not well-formed UTF-16 or contains U+0000.
  */
-export function assertPostgresStorableText(value: string, label: string): void {
+export const assertPostgresStorableText = (
+  value: string,
+  label: string
+): void => {
   assertPostgresWellFormedText(value, label);
 
   if (value.includes(NUL_CODE_POINT)) {
@@ -141,13 +168,16 @@ export function assertPostgresStorableText(value: string, label: string): void {
       { label }
     );
   }
-}
+};
 
 /**
  * Applies the representability guard plus the conservative btree byte bound
  * to a caller-supplied field that participates in a primary key or index.
  */
-export function assertPostgresIndexedText(value: string, label: string): void {
+export const assertPostgresIndexedText = (
+  value: string,
+  label: string
+): void => {
   assertPostgresStorableText(value, label);
   const byteLength = Buffer.byteLength(value, "utf-8");
   if (byteLength > MAX_STORABLE_TEXT_BYTES) {
@@ -160,39 +190,15 @@ export function assertPostgresIndexedText(value: string, label: string): void {
       { actualBytes: byteLength, label, maxBytes: MAX_STORABLE_TEXT_BYTES }
     );
   }
-}
-
-/**
- * Rejects ill-formed UTF-16 before a value is bound as a query parameter.
- * This narrower read-side guard intentionally does not apply the write-only
- * NUL and btree-length constraints: it exists solely to prevent the runtime
- * from replacement-encoding distinct lookup identities to the same text.
- */
-export function assertPostgresWellFormedText(
-  value: string,
-  label: string
-): void {
-  // PostgreSQL stores Unicode scalar values, while JavaScript strings may
-  // contain lone UTF-16 surrogates. The runtime/driver replacement-encodes
-  // those invalid sequences as U+FFFD, which can collapse two distinct Scope
-  // or record identities onto the same durable key. Reject before hashing or
-  // binding instead of silently changing caller-supplied identity.
-  if (!value.isWellFormed()) {
-    throw persistenceError(
-      `postgres backend cannot bind ${label}: value is not a well-formed UTF-16 string`,
-      "postgres_backend_unstorable_text",
-      { label }
-    );
-  }
-}
+};
 
 /** Returns `"schema"."table"` for a validated schema name and table name. */
-export function qualifyIdentifier(
+export const qualifyIdentifier = (
   schemaName: string,
   tableName: RelationalTableName
-): string {
+): string => {
   return `${quoteIdentifier(schemaName)}.${quoteIdentifier(tableName)}`;
-}
+};
 
 /**
  * Derives a PostgreSQL advisory-lock key (signed 64-bit, the single-argument
@@ -206,7 +212,7 @@ export function qualifyIdentifier(
  * never unlock each other) but a 64-bit auditable key space keeps them
  * negligible. Length-prefixing keeps `("ab","c")` and `("a","bc")` distinct.
  */
-export function deriveAdvisoryLockKey(...parts: string[]): bigint {
+export const deriveAdvisoryLockKey = (...parts: string[]): bigint => {
   const hash = createHash("sha256");
   for (const part of parts) {
     hash.update(`${part.length}:`);
@@ -214,4 +220,4 @@ export function deriveAdvisoryLockKey(...parts: string[]): bigint {
   }
 
   return hash.digest().readBigInt64BE(0);
-}
+};

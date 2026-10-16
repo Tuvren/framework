@@ -594,7 +594,15 @@
       "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
       "bytes": 20,
       "role": "measurement"
-    }
+    },
+    {"path":"M16-postgres-schema-before-syntactic.json.gz","sha256":"0fd210f57e018052730f0b5146620fb40bac8680c8c781d18e147c3b6f8c8580","bytes":2936,"role":"baseline"},
+    {"path":"M16-postgres-schema-before-type-aware.json.gz","sha256":"c658ce7a8ca63d975f09e9b8b5698c587f3782dc96b6e0f0d08f44ab81bb2ea7","bytes":3030,"role":"baseline"},
+    {"path":"M16-postgres-schema-after-syntactic.json.gz","sha256":"8175b49264c078a1d352f74bf61366b3cb6676087414526d123dbe13ec4e8f7e","bytes":1637,"role":"measurement"},
+    {"path":"M16-postgres-schema-after-type-aware.json.gz","sha256":"6fb80ebb0310d38841ff323473e492c543ab4225179eb0e3e4e91e3bdc7edf63","bytes":1773,"role":"measurement"},
+    {"path":"M16-postgres-schema-before-syntactic-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"baseline"},
+    {"path":"M16-postgres-schema-before-type-aware-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"baseline"},
+    {"path":"M16-postgres-schema-after-syntactic-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"measurement"},
+    {"path":"M16-postgres-schema-after-type-aware-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"measurement"}
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."
 }

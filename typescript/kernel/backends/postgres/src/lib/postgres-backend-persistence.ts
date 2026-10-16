@@ -128,9 +128,9 @@ export interface PostgresBackendPersistenceOptions {
  * (`lock_not_available`), normalized to a typed `TuvrenPersistenceError`
  * (`postgres_backend_engine_error`) by `normalizeBackendError`.
  */
-export function createPostgresClient(
+export const createPostgresClient = (
   options: PostgresBackendPersistenceOptions
-): Sql {
+): Sql => {
   const configuration = {
     connect_timeout: 5,
     connection: { lock_timeout: SCOPE_LOCK_TIMEOUT_MS },
@@ -152,7 +152,7 @@ export function createPostgresClient(
   }
 
   return postgres(configuration);
-}
+};
 
 /**
  * PostgreSQL's `NAMEDATALEN` is 64, leaving 63 bytes for an identifier before
@@ -188,7 +188,7 @@ const MAX_SCHEMA_NAME_BYTES = 63;
  * @throws TuvrenPersistenceError `postgres_backend_invalid_schema_name` when
  *   the name does not match the pattern or exceeds the byte-length limit.
  */
-export function normalizeSchemaName(schemaName: string | undefined): string {
+export const normalizeSchemaName = (schemaName: string | undefined): string => {
   const normalized = schemaName ?? DEFAULT_SCHEMA_NAME;
 
   if (!VALID_SCHEMA_NAME_PATTERN.test(normalized)) {
@@ -214,7 +214,7 @@ export function normalizeSchemaName(schemaName: string | undefined): string {
   }
 
   return normalized;
-}
+};
 
 /**
  * True when the host did not supply an explicit `schemaName` and
@@ -227,8 +227,8 @@ export function normalizeSchemaName(schemaName: string | undefined): string {
  * explicit `schemaName` is a deliberate host decision to respect, not a
  * default this backend chose on the host's behalf.
  */
-export function wasSchemaNameDefaulted(
+export const wasSchemaNameDefaulted = (
   schemaName: string | undefined
-): boolean {
+): boolean => {
   return schemaName === undefined;
-}
+};

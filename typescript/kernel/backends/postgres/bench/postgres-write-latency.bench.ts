@@ -54,9 +54,108 @@ interface WriteLatencyResult extends TimingStats {
   scopeObjectCount: number;
 }
 
-await main();
+const createBenchBackendOptions = (
+  phaseObserver: ReturnType<typeof createRecordingPhaseObserver>
+): PostgresBackendOptions => {
+  const host = process.env.PGHOST;
+  const portValue = process.env.PGPORT;
+  const username = process.env.PGUSER ?? process.env.USER;
 
-async function main(): Promise<void> {
+  if (host === undefined || host.length === 0) {
+    throw new Error(
+      "PGHOST is missing. Load the repo environment with direnv and start PostgreSQL with `bun run services:up` before running this benchmark."
+    );
+  }
+
+  if (portValue === undefined || portValue.length === 0) {
+    throw new Error(
+      "PGPORT is missing. Load the repo environment with direnv and start PostgreSQL with `bun run services:up` before running this benchmark."
+    );
+  }
+
+  if (username === undefined || username.length === 0) {
+    throw new Error(
+      "PGUSER/USER is missing. This benchmark requires a local database user."
+    );
+  }
+
+  const port = Number.parseInt(portValue, 10);
+
+  if (!Number.isSafeInteger(port) || port <= 0) {
+    throw new Error(
+      `PGPORT must be a positive integer, received "${portValue}"`
+    );
+  }
+
+  return {
+    database: DEVENV_DATABASE_NAME,
+    host,
+    phaseObserver,
+    port,
+    schemaName: `bench_${randomUUID().replaceAll("-", "_")}`,
+    username,
+  };
+};
+
+const seededObjectBytes = (scopeObjectCount: number, index: number) => {
+  return new Uint8Array([
+    scopeObjectCount % 251,
+    index % 251,
+    Math.floor(index / 251) % 251,
+    Math.floor(index / 63_001) % 251,
+  ]);
+};
+
+const measureMarginalWriteLatency = async (
+  backend: ReturnType<typeof createPostgresBackend>,
+  scopeObjectCount: number,
+  observer: ReturnType<typeof createRecordingPhaseObserver>
+): Promise<WriteLatencyResult> => {
+  let writeCounter = 0;
+
+  const writeOnce = async (): Promise<number> => {
+    const index = writeCounter;
+    writeCounter += 1;
+    const record = await createStoredObjectRecord(
+      seededObjectBytes(scopeObjectCount, 1_000_000 + index),
+      20_000 + index
+    );
+    const startedAt = process.hrtime.bigint();
+    await backend.transact(async (tx) => {
+      await tx.objects.put(record);
+    });
+    return Number(process.hrtime.bigint() - startedAt);
+  };
+
+  for (let index = 0; index < WARMUP_WRITES; index += 1) {
+    await writeOnce();
+  }
+
+  // Only attribute phases for the measured samples below, not the warmup
+  // writes above -- so the phase table lines up 1:1 with the reported
+  // latency sample count.
+  observer.reset();
+
+  const samples: number[] = [];
+  for (let index = 0; index < SAMPLE_COUNT; index += 1) {
+    samples.push(await writeOnce());
+  }
+
+  const sortedSamples = [...samples].sort((left, right) => left - right);
+
+  return {
+    averageNs:
+      samples.reduce((total, sample) => total + sample, 0) / samples.length,
+    bestNs: Math.min(...samples),
+    medianNs: percentile(sortedSamples, 0.5),
+    n: samples.length,
+    p95Ns: percentile(sortedSamples, 0.95),
+    phases: summarizePhases(observer.samples),
+    scopeObjectCount,
+  };
+};
+
+const main = async (): Promise<void> => {
   process.stdout.write("postgres backend write-latency benchmark\n");
   process.stdout.write(
     `sample count: ${SAMPLE_COUNT} (BENCH_SAMPLE_COUNT to override)\n`
@@ -117,105 +216,6 @@ async function main(): Promise<void> {
       2
     )}\n`
   );
-}
+};
 
-async function measureMarginalWriteLatency(
-  backend: ReturnType<typeof createPostgresBackend>,
-  scopeObjectCount: number,
-  observer: ReturnType<typeof createRecordingPhaseObserver>
-): Promise<WriteLatencyResult> {
-  let writeCounter = 0;
-
-  const writeOnce = async (): Promise<number> => {
-    const index = writeCounter;
-    writeCounter += 1;
-    const record = await createStoredObjectRecord(
-      seededObjectBytes(scopeObjectCount, 1_000_000 + index),
-      20_000 + index
-    );
-    const startedAt = process.hrtime.bigint();
-    await backend.transact(async (tx) => {
-      await tx.objects.put(record);
-    });
-    return Number(process.hrtime.bigint() - startedAt);
-  };
-
-  for (let index = 0; index < WARMUP_WRITES; index += 1) {
-    await writeOnce();
-  }
-
-  // Only attribute phases for the measured samples below, not the warmup
-  // writes above -- so the phase table lines up 1:1 with the reported
-  // latency sample count.
-  observer.reset();
-
-  const samples: number[] = [];
-  for (let index = 0; index < SAMPLE_COUNT; index += 1) {
-    samples.push(await writeOnce());
-  }
-
-  const sortedSamples = [...samples].sort((left, right) => left - right);
-
-  return {
-    averageNs:
-      samples.reduce((total, sample) => total + sample, 0) / samples.length,
-    bestNs: Math.min(...samples),
-    medianNs: percentile(sortedSamples, 0.5),
-    n: samples.length,
-    p95Ns: percentile(sortedSamples, 0.95),
-    phases: summarizePhases(observer.samples),
-    scopeObjectCount,
-  };
-}
-
-function createBenchBackendOptions(
-  phaseObserver: ReturnType<typeof createRecordingPhaseObserver>
-): PostgresBackendOptions {
-  const host = process.env.PGHOST;
-  const portValue = process.env.PGPORT;
-  const username = process.env.PGUSER ?? process.env.USER;
-
-  if (host === undefined || host.length === 0) {
-    throw new Error(
-      "PGHOST is missing. Load the repo environment with direnv and start PostgreSQL with `bun run services:up` before running this benchmark."
-    );
-  }
-
-  if (portValue === undefined || portValue.length === 0) {
-    throw new Error(
-      "PGPORT is missing. Load the repo environment with direnv and start PostgreSQL with `bun run services:up` before running this benchmark."
-    );
-  }
-
-  if (username === undefined || username.length === 0) {
-    throw new Error(
-      "PGUSER/USER is missing. This benchmark requires a local database user."
-    );
-  }
-
-  const port = Number.parseInt(portValue, 10);
-
-  if (!Number.isSafeInteger(port) || port <= 0) {
-    throw new Error(
-      `PGPORT must be a positive integer, received "${portValue}"`
-    );
-  }
-
-  return {
-    database: DEVENV_DATABASE_NAME,
-    host,
-    phaseObserver,
-    port,
-    schemaName: `bench_${randomUUID().replaceAll("-", "_")}`,
-    username,
-  };
-}
-
-function seededObjectBytes(scopeObjectCount: number, index: number) {
-  return new Uint8Array([
-    scopeObjectCount % 251,
-    index % 251,
-    Math.floor(index / 251) % 251,
-    Math.floor(index / 63_001) % 251,
-  ]);
-}
+await main();

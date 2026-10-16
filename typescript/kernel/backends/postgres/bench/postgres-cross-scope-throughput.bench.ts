@@ -38,11 +38,11 @@ import type { TimingStats } from "@tuvren/kernel-testkit";
 import { createPostgresBackend, destroyPostgresBackend } from "../src/index.js";
 import type { PostgresBackendOptions } from "../src/index.js";
 
-async function closeBackend(
+const closeBackend = async (
   backend: ReturnType<typeof createPostgresBackend>
-): Promise<void> {
+): Promise<void> => {
   await backend.destroy();
-}
+};
 
 // Network-bound, real-postgres bench: each repetition allocates fresh scopes
 // so per-scope object count never grows across repetitions (a growing scope
@@ -75,78 +75,109 @@ interface RepetitionResult {
   serialNs: number;
 }
 
-await main();
+const assertScopeIsolation = async (
+  backends: ReturnType<typeof createPostgresBackend>[],
+  expectedHashesByScope: string[][]
+): Promise<void> => {
+  for (const [scopeIndex, backend] of backends.entries()) {
+    const ownHashes = expectedHashesByScope[scopeIndex] ?? [];
+    const siblingHashes = expectedHashesByScope
+      .filter((_unused, otherIndex) => otherIndex !== scopeIndex)
+      .flat();
 
-async function main(): Promise<void> {
-  process.stdout.write("postgres backend cross-scope throughput benchmark\n");
-  process.stdout.write(
-    `sample count: ${SAMPLE_COUNT} (BENCH_SAMPLE_COUNT to override), ${SCOPE_COUNT} scopes x ${WRITES_PER_SCOPE} writes per repetition\n`
-  );
+    await backend.transact(async (tx) => {
+      for (const hash of ownHashes) {
+        if (!(await tx.objects.has(hash))) {
+          throw new Error(
+            `expected scope ${scopeIndex} to contain its own write ${hash}`
+          );
+        }
+      }
+      for (const hash of siblingHashes) {
+        if (await tx.objects.has(hash)) {
+          throw new Error(
+            `expected scope ${scopeIndex} to be isolated from sibling scope write ${hash}`
+          );
+        }
+      }
+    });
+  }
+};
 
-  const schemaName = `bench_cross_scope_${randomUUID().replaceAll("-", "_")}`;
-  const results: RepetitionResult[] = [];
+const summarize = (samples: readonly number[]): TimingStats => {
+  const sorted = [...samples].sort((left, right) => left - right);
 
-  try {
-    for (let repetition = 0; repetition < SAMPLE_COUNT; repetition += 1) {
-      results.push(await runRepetition(schemaName, repetition));
-    }
-  } finally {
-    await destroyPostgresBackend(createBenchBackendOptions(schemaName));
+  return {
+    averageNs:
+      samples.reduce((total, sample) => total + sample, 0) / samples.length,
+    bestNs: Math.min(...samples),
+    medianNs: percentile(sorted, 0.5),
+    n: samples.length,
+    p95Ns: percentile(sorted, 0.95),
+  };
+};
+
+const createBenchBackendOptions = (
+  schemaName: string,
+  scope?: string
+): PostgresBackendOptions => {
+  const host = process.env.PGHOST;
+  const portValue = process.env.PGPORT;
+  const username = process.env.PGUSER ?? process.env.USER;
+
+  if (host === undefined || host.length === 0) {
+    throw new Error(
+      "PGHOST is missing. Load the repo environment with direnv and start PostgreSQL with `bun run services:up` before running this benchmark."
+    );
   }
 
-  const concurrentSamples = results.map((result) => result.concurrentNs);
-  const serialSamples = results.map((result) => result.serialNs);
-  const concurrentStats = summarize(concurrentSamples);
-  const serialStats = summarize(serialSamples);
-  const scalingFactorBest = concurrentStats.bestNs / serialStats.bestNs;
-  const scalingFactorMedian = concurrentStats.medianNs / serialStats.medianNs;
+  if (portValue === undefined || portValue.length === 0) {
+    throw new Error(
+      "PGPORT is missing. Load the repo environment with direnv and start PostgreSQL with `bun run services:up` before running this benchmark."
+    );
+  }
 
-  process.stdout.write(
-    `concurrent (${SCOPE_COUNT} scopes in parallel, ${WRITES_PER_SCOPE} writes each): best ${formatNs(
-      concurrentStats.bestNs
-    )}, median ${formatNs(concurrentStats.medianNs)}, p95 ${formatNs(
-      concurrentStats.p95Ns
-    )}, avg ${formatNs(concurrentStats.averageNs)}\n`
-  );
-  process.stdout.write(
-    `serial (${SCOPE_COUNT} fresh scopes, ${WRITES_PER_SCOPE} writes each, run sequentially): best ${formatNs(
-      serialStats.bestNs
-    )}, median ${formatNs(serialStats.medianNs)}, p95 ${formatNs(
-      serialStats.p95Ns
-    )}, avg ${formatNs(serialStats.averageNs)}\n`
-  );
-  process.stdout.write(
-    `scaling factor (concurrent / serial): best ${scalingFactorBest.toFixed(
-      3
-    )}, median ${scalingFactorMedian.toFixed(3)} (near 1/${SCOPE_COUNT}=${(
-      1 / SCOPE_COUNT
-    ).toFixed(
-      3
-    )} indicates no cross-scope serialization; near 1 would indicate full serialization)\n`
-  );
+  if (username === undefined || username.length === 0) {
+    throw new Error(
+      "PGUSER/USER is missing. This benchmark requires a local database user."
+    );
+  }
 
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        benchmark: "postgres-cross-scope-throughput",
-        concurrentStats,
-        generatedAt: new Date().toISOString(),
-        scalingFactorBest,
-        scalingFactorMedian,
-        scopeCount: SCOPE_COUNT,
-        serialStats,
-        writesPerScope: WRITES_PER_SCOPE,
-      },
-      null,
-      2
-    )}\n`
-  );
-}
+  const port = Number.parseInt(portValue, 10);
 
-async function runRepetition(
+  if (!Number.isSafeInteger(port) || port <= 0) {
+    throw new Error(
+      `PGPORT must be a positive integer, received "${portValue}"`
+    );
+  }
+
+  return {
+    database: DEVENV_DATABASE_NAME,
+    host,
+    port,
+    schemaName,
+    scope,
+    username,
+  };
+};
+
+const seededObjectBytes = (
+  repetition: number,
+  scopeIndex: number,
+  writeIndex: number
+): Uint8Array => {
+  return new Uint8Array([
+    repetition % 251,
+    scopeIndex % 251,
+    writeIndex % 251,
+    Math.floor(writeIndex / 251) % 251,
+  ]);
+};
+
+const runRepetition = async (
   schemaName: string,
   repetition: number
-): Promise<RepetitionResult> {
+): Promise<RepetitionResult> => {
   const concurrentScopeNames = Array.from(
     { length: SCOPE_COUNT },
     (_unused, index) => `cross-scope-concurrent-${repetition}-${index}`
@@ -230,103 +261,72 @@ async function runRepetition(
   }
 
   return { concurrentNs, serialNs };
-}
+};
 
-async function assertScopeIsolation(
-  backends: ReturnType<typeof createPostgresBackend>[],
-  expectedHashesByScope: string[][]
-): Promise<void> {
-  for (const [scopeIndex, backend] of backends.entries()) {
-    const ownHashes = expectedHashesByScope[scopeIndex] ?? [];
-    const siblingHashes = expectedHashesByScope
-      .filter((_unused, otherIndex) => otherIndex !== scopeIndex)
-      .flat();
+const main = async (): Promise<void> => {
+  process.stdout.write("postgres backend cross-scope throughput benchmark\n");
+  process.stdout.write(
+    `sample count: ${SAMPLE_COUNT} (BENCH_SAMPLE_COUNT to override), ${SCOPE_COUNT} scopes x ${WRITES_PER_SCOPE} writes per repetition\n`
+  );
 
-    await backend.transact(async (tx) => {
-      for (const hash of ownHashes) {
-        if (!(await tx.objects.has(hash))) {
-          throw new Error(
-            `expected scope ${scopeIndex} to contain its own write ${hash}`
-          );
-        }
-      }
-      for (const hash of siblingHashes) {
-        if (await tx.objects.has(hash)) {
-          throw new Error(
-            `expected scope ${scopeIndex} to be isolated from sibling scope write ${hash}`
-          );
-        }
-      }
-    });
-  }
-}
+  const schemaName = `bench_cross_scope_${randomUUID().replaceAll("-", "_")}`;
+  const results: RepetitionResult[] = [];
 
-function summarize(samples: readonly number[]): TimingStats {
-  const sorted = [...samples].sort((left, right) => left - right);
-
-  return {
-    averageNs:
-      samples.reduce((total, sample) => total + sample, 0) / samples.length,
-    bestNs: Math.min(...samples),
-    medianNs: percentile(sorted, 0.5),
-    n: samples.length,
-    p95Ns: percentile(sorted, 0.95),
-  };
-}
-
-function createBenchBackendOptions(
-  schemaName: string,
-  scope?: string
-): PostgresBackendOptions {
-  const host = process.env.PGHOST;
-  const portValue = process.env.PGPORT;
-  const username = process.env.PGUSER ?? process.env.USER;
-
-  if (host === undefined || host.length === 0) {
-    throw new Error(
-      "PGHOST is missing. Load the repo environment with direnv and start PostgreSQL with `bun run services:up` before running this benchmark."
-    );
+  try {
+    for (let repetition = 0; repetition < SAMPLE_COUNT; repetition += 1) {
+      results.push(await runRepetition(schemaName, repetition));
+    }
+  } finally {
+    await destroyPostgresBackend(createBenchBackendOptions(schemaName));
   }
 
-  if (portValue === undefined || portValue.length === 0) {
-    throw new Error(
-      "PGPORT is missing. Load the repo environment with direnv and start PostgreSQL with `bun run services:up` before running this benchmark."
-    );
-  }
+  const concurrentSamples = results.map((result) => result.concurrentNs);
+  const serialSamples = results.map((result) => result.serialNs);
+  const concurrentStats = summarize(concurrentSamples);
+  const serialStats = summarize(serialSamples);
+  const scalingFactorBest = concurrentStats.bestNs / serialStats.bestNs;
+  const scalingFactorMedian = concurrentStats.medianNs / serialStats.medianNs;
 
-  if (username === undefined || username.length === 0) {
-    throw new Error(
-      "PGUSER/USER is missing. This benchmark requires a local database user."
-    );
-  }
+  process.stdout.write(
+    `concurrent (${SCOPE_COUNT} scopes in parallel, ${WRITES_PER_SCOPE} writes each): best ${formatNs(
+      concurrentStats.bestNs
+    )}, median ${formatNs(concurrentStats.medianNs)}, p95 ${formatNs(
+      concurrentStats.p95Ns
+    )}, avg ${formatNs(concurrentStats.averageNs)}\n`
+  );
+  process.stdout.write(
+    `serial (${SCOPE_COUNT} fresh scopes, ${WRITES_PER_SCOPE} writes each, run sequentially): best ${formatNs(
+      serialStats.bestNs
+    )}, median ${formatNs(serialStats.medianNs)}, p95 ${formatNs(
+      serialStats.p95Ns
+    )}, avg ${formatNs(serialStats.averageNs)}\n`
+  );
+  process.stdout.write(
+    `scaling factor (concurrent / serial): best ${scalingFactorBest.toFixed(
+      3
+    )}, median ${scalingFactorMedian.toFixed(3)} (near 1/${SCOPE_COUNT}=${(
+      1 / SCOPE_COUNT
+    ).toFixed(
+      3
+    )} indicates no cross-scope serialization; near 1 would indicate full serialization)\n`
+  );
 
-  const port = Number.parseInt(portValue, 10);
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        benchmark: "postgres-cross-scope-throughput",
+        concurrentStats,
+        generatedAt: new Date().toISOString(),
+        scalingFactorBest,
+        scalingFactorMedian,
+        scopeCount: SCOPE_COUNT,
+        serialStats,
+        writesPerScope: WRITES_PER_SCOPE,
+      },
+      null,
+      2
+    )}\n`
+  );
+};
 
-  if (!Number.isSafeInteger(port) || port <= 0) {
-    throw new Error(
-      `PGPORT must be a positive integer, received "${portValue}"`
-    );
-  }
-
-  return {
-    database: DEVENV_DATABASE_NAME,
-    host,
-    port,
-    schemaName,
-    scope,
-    username,
-  };
-}
-
-function seededObjectBytes(
-  repetition: number,
-  scopeIndex: number,
-  writeIndex: number
-): Uint8Array {
-  return new Uint8Array([
-    repetition % 251,
-    scopeIndex % 251,
-    writeIndex % 251,
-    Math.floor(writeIndex / 251) % 251,
-  ]);
-}
+await main();
