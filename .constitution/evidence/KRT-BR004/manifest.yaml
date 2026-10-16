@@ -658,6 +658,30 @@
       "sha256": "d45e43eb1a558c8d235e20eeaa0467da08c7be13aaa6cca49315da430551323b",
       "bytes": 1441,
       "role": "measurement"
+    },
+    {
+      "path": "M20-sqlite-records-before-syntactic.json.gz",
+      "sha256": "8ed10d8005e8c982d2d4f84de962c0c88f84d6b55a3ee689bfa8442f5421955f",
+      "bytes": 2443,
+      "role": "baseline"
+    },
+    {
+      "path": "M20-sqlite-records-before-typeaware.json.gz",
+      "sha256": "51900e042c834d7f8cbdb8f1acafa2604f3e2180b3b0e5d176f76deb542f86da",
+      "bytes": 3107,
+      "role": "baseline"
+    },
+    {
+      "path": "M20-sqlite-records-after-syntactic.json.gz",
+      "sha256": "c4543bd1d095f188295b26c9922f1bd67fc55d432ce7283c367097abfe54bb39",
+      "bytes": 615,
+      "role": "measurement"
+    },
+    {
+      "path": "M20-sqlite-records-after-typeaware.json.gz",
+      "sha256": "1bfffade260fbb977bac71364b3b14bb9b113eb6eee4897bcf07ab7a8d0fe3d3",
+      "bytes": 1289,
+      "role": "measurement"
     }
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."
