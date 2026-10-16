@@ -73,6 +73,23 @@ const check = async (fixture: Fixture): Promise<void> => {
   });
 };
 
+const expectCheckToRejectWith = async (
+  fixture: Fixture,
+  expectedMessage: string
+): Promise<void> => {
+  try {
+    await check(fixture);
+  } catch (error: unknown) {
+    expect(error).toBeInstanceOf(Error);
+    expect(error instanceof Error ? error.message : error).toContain(
+      expectedMessage
+    );
+    return;
+  }
+
+  throw new Error(`Expected check to reject with: ${expectedMessage}`);
+};
+
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -399,7 +416,8 @@ describe("changeset-check", () => {
     await fixture.writeChangesetContents("b.md", "invalid frontmatter\n");
     await fixture.writeChangesetContents("a.md", "invalid frontmatter\n");
 
-    await expect(check(fixture)).rejects.toThrow(
+    await expectCheckToRejectWith(
+      fixture,
       ".changeset/a.md has invalid frontmatter"
     );
   });
@@ -730,7 +748,8 @@ describe("changeset-check", () => {
     await fixture.writeChangeset("public.md", '"@tuvren/public-a": patch');
     await fixture.commit("remove malformed historical intent");
 
-    await expect(check(fixture)).rejects.toThrow(
+    await expectCheckToRejectWith(
+      fixture,
       ".changeset/a.md has invalid frontmatter"
     );
   });
