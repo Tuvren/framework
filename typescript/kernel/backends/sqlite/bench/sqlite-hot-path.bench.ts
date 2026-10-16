@@ -16,7 +16,7 @@
 
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import path from "node:path";
 import process from "node:process";
 
 import { createRecordingPhaseObserver } from "@tuvren/backend-shared";
@@ -61,8 +61,8 @@ interface BenchmarkCase {
   historySize: number;
   iterations: number;
   name: string;
-  prepare?(iterations: number): Promise<void>;
-  run(iterations: number): Promise<void>;
+  prepare?: (iterations: number) => Promise<void>;
+  run: (iterations: number) => Promise<void>;
 }
 
 interface BenchmarkResult {
@@ -84,6 +84,7 @@ interface SeededHistory {
   threadId: string;
 }
 
+/* oxlint-disable no-await-in-loop -- Each benchmark case runs its iterations serially so transaction timing, mutable counters, and prepared rollback state never overlap. */
 const createBenchmarkCases = (
   backend: RuntimeBackend,
   seededHistory: SeededHistory
@@ -107,7 +108,9 @@ const createBenchmarkCases = (
       name: "no-op transaction",
       async run(iterations) {
         for (let index = 0; index < iterations; index += 1) {
-          await backend.transact(() => Promise.resolve());
+          await backend.transact(async () => {
+            await Promise.resolve();
+          });
         }
       },
     },
@@ -287,7 +290,9 @@ const createBenchmarkCases = (
     },
   ];
 };
+/* oxlint-enable no-await-in-loop */
 
+/* oxlint-disable no-await-in-loop -- Warmups and measured samples must run serially so their timings and phase observations remain independent and ordered. */
 const measure = async (
   benchmarkCase: BenchmarkCase,
   observer: ReturnType<typeof createRecordingPhaseObserver>
@@ -314,7 +319,7 @@ const measure = async (
   }
 
   const bestNs = Math.min(...samples);
-  const sortedSamples = [...samples].sort((left, right) => left - right);
+  const sortedSamples = samples.toSorted((left, right) => left - right);
   const medianNs = percentile(sortedSamples, 0.5);
   const p95Ns = percentile(sortedSamples, 0.95);
   const averageNs =
@@ -331,7 +336,9 @@ const measure = async (
     phases: summarizePhases(observer.samples),
   };
 };
+/* oxlint-enable no-await-in-loop */
 
+/* oxlint-disable no-await-in-loop -- Seed turn nodes in lineage order because every node depends on the preceding node's hash and each write depends on that lineage. */
 const seedHistory = async (
   backend: RuntimeBackend,
   extraTurnNodeCount: number
@@ -433,18 +440,22 @@ const seedHistory = async (
     threadId: thread.threadId,
   };
 };
+/* oxlint-enable no-await-in-loop */
 
+/* oxlint-disable no-await-in-loop -- Run database-size cases and their benchmark cases serially so samples, output, and temporary database lifetimes never overlap. */
 const main = async (): Promise<void> => {
   process.stdout.write("sqlite backend hot-path benchmark\n");
   const results: BenchmarkResult[] = [];
 
   for (const historySize of HOT_PATH_HISTORY_SIZES) {
-    const tempDirectory = mkdtempSync(join(tmpdir(), "tuvren-sqlite-bench-"));
+    const tempDirectory = mkdtempSync(
+      path.join(tmpdir(), "tuvren-sqlite-bench-")
+    );
 
     try {
       const observer = createRecordingPhaseObserver();
       const backend = createSqliteBackend({
-        databasePath: join(tempDirectory, "kraken.db"),
+        databasePath: path.join(tempDirectory, "kraken.db"),
         phaseObserver: observer,
       });
 
@@ -497,5 +508,6 @@ const main = async (): Promise<void> => {
     )}\n`
   );
 };
+/* oxlint-enable no-await-in-loop */
 
 await main();

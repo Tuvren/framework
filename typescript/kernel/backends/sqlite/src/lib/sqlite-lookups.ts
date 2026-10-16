@@ -77,9 +77,9 @@ export const selectObject = (
   db: Database.Database,
   hash: string
 ): StoredObject | null => {
-  const row = db.prepare("SELECT * FROM objects WHERE hash = ?").get(hash) as
-    | SqliteObjectRow
-    | undefined;
+  const row = db
+    .prepare<[string], SqliteObjectRow>("SELECT * FROM objects WHERE hash = ?")
+    .get(hash);
   return row === undefined ? null : decodeObjectRow(row);
 };
 
@@ -89,8 +89,10 @@ export const selectSchema = (
   schemaId: string
 ): StoredSchema | null => {
   const row = db
-    .prepare("SELECT * FROM schemas WHERE schema_id = ?")
-    .get(schemaId) as SqliteSchemaRow | undefined;
+    .prepare<[string], SqliteSchemaRow>(
+      "SELECT * FROM schemas WHERE schema_id = ?"
+    )
+    .get(schemaId);
   return row === undefined ? null : decodeSchemaRow(row);
 };
 
@@ -100,8 +102,10 @@ export const selectTurnTree = (
   hash: string
 ): StoredTurnTree | null => {
   const row = db
-    .prepare("SELECT * FROM turn_trees WHERE hash = ?")
-    .get(hash) as SqliteTurnTreeRow | undefined;
+    .prepare<[string], SqliteTurnTreeRow>(
+      "SELECT * FROM turn_trees WHERE hash = ?"
+    )
+    .get(hash);
   return row === undefined ? null : decodeTurnTreeRow(row);
 };
 
@@ -112,10 +116,10 @@ export const selectTurnTreePath = (
   path: string
 ): StoredTurnTreePath | null => {
   const row = db
-    .prepare(
+    .prepare<[string, string], SqliteTurnTreePathRow>(
       "SELECT * FROM turn_tree_paths WHERE turn_tree_hash = ? AND path = ?"
     )
-    .get(turnTreeHash, path) as SqliteTurnTreePathRow | undefined;
+    .get(turnTreeHash, path);
   return row === undefined ? null : decodeTurnTreePathRow(row);
 };
 
@@ -125,10 +129,10 @@ export const selectTurnTreePathsByTurnTree = (
   turnTreeHash: string
 ): StoredTurnTreePath[] => {
   const rows = db
-    .prepare(
+    .prepare<[string], SqliteTurnTreePathRow>(
       "SELECT * FROM turn_tree_paths WHERE turn_tree_hash = ? ORDER BY path"
     )
-    .all(turnTreeHash) as SqliteTurnTreePathRow[];
+    .all(turnTreeHash);
   return rows.map(decodeTurnTreePathRow);
 };
 
@@ -138,8 +142,10 @@ export const selectOrderedPathChunk = (
   chunkHash: string
 ): StoredOrderedPathChunk | null => {
   const row = db
-    .prepare("SELECT * FROM ordered_path_chunks WHERE chunk_hash = ?")
-    .get(chunkHash) as SqliteOrderedPathChunkRow | undefined;
+    .prepare<[string], SqliteOrderedPathChunkRow>(
+      "SELECT * FROM ordered_path_chunks WHERE chunk_hash = ?"
+    )
+    .get(chunkHash);
   return row === undefined ? null : decodeOrderedPathChunkRow(row);
 };
 
@@ -149,8 +155,10 @@ export const selectTurnNode = (
   hash: string
 ): StoredTurnNode | null => {
   const row = db
-    .prepare("SELECT * FROM turn_nodes WHERE hash = ?")
-    .get(hash) as SqliteTurnNodeRow | undefined;
+    .prepare<[string], SqliteTurnNodeRow>(
+      "SELECT * FROM turn_nodes WHERE hash = ?"
+    )
+    .get(hash);
   return row === undefined ? null : decodeTurnNodeRow(row);
 };
 
@@ -160,8 +168,10 @@ export const selectTurnNodeLineageMetadata = (
   turnNodeHash: string
 ): TurnNodeLineageMetadata | null => {
   const row = db
-    .prepare("SELECT * FROM turn_node_lineage_roots WHERE turn_node_hash = ?")
-    .get(turnNodeHash) as SqliteTurnNodeLineageRootRow | undefined;
+    .prepare<[string], SqliteTurnNodeLineageRootRow>(
+      "SELECT * FROM turn_node_lineage_roots WHERE turn_node_hash = ?"
+    )
+    .get(turnNodeHash);
   return row === undefined ? null : decodeTurnNodeLineageMetadataRow(row);
 };
 
@@ -171,8 +181,10 @@ export const selectThread = (
   threadId: string
 ): StoredThread | null => {
   const row = db
-    .prepare("SELECT * FROM threads WHERE thread_id = ?")
-    .get(threadId) as SqliteThreadRow | undefined;
+    .prepare<[string], SqliteThreadRow>(
+      "SELECT * FROM threads WHERE thread_id = ?"
+    )
+    .get(threadId);
   return row === undefined ? null : decodeThreadRow(row);
 };
 
@@ -182,8 +194,10 @@ export const selectBranch = (
   branchId: string
 ): StoredBranch | null => {
   const row = db
-    .prepare("SELECT * FROM branches WHERE branch_id = ?")
-    .get(branchId) as SqliteBranchRow | undefined;
+    .prepare<[string], SqliteBranchRow>(
+      "SELECT * FROM branches WHERE branch_id = ?"
+    )
+    .get(branchId);
   return row === undefined ? null : decodeBranchRow(row);
 };
 
@@ -193,10 +207,10 @@ export const selectBranchesByThread = (
   threadId: string
 ): StoredBranch[] => {
   const rows = db
-    .prepare(
+    .prepare<[string], SqliteBranchRow>(
       "SELECT * FROM branches WHERE thread_id = ? ORDER BY created_at_ms, branch_id"
     )
-    .all(threadId) as SqliteBranchRow[];
+    .all(threadId);
   return rows.map(decodeBranchRow);
 };
 
@@ -206,8 +220,8 @@ export const selectTurn = (
   turnId: string
 ): StoredTurn | null => {
   const row = db
-    .prepare("SELECT * FROM turns WHERE turn_id = ?")
-    .get(turnId) as SqliteTurnRow | undefined;
+    .prepare<[string], SqliteTurnRow>("SELECT * FROM turns WHERE turn_id = ?")
+    .get(turnId);
   return row === undefined ? null : decodeTurnRow(row);
 };
 
@@ -217,10 +231,10 @@ export const selectTurnsByThread = (
   threadId: string
 ): StoredTurn[] => {
   const rows = db
-    .prepare(
+    .prepare<[string], SqliteTurnRow>(
       "SELECT * FROM turns WHERE thread_id = ? ORDER BY created_at_ms, turn_id"
     )
-    .all(threadId) as SqliteTurnRow[];
+    .all(threadId);
   return rows.map(decodeTurnRow);
 };
 
@@ -229,9 +243,9 @@ export const selectRun = (
   db: Database.Database,
   runId: string
 ): StoredRun | null => {
-  const row = db.prepare("SELECT * FROM runs WHERE run_id = ?").get(runId) as
-    | SqliteRunRow
-    | undefined;
+  const row = db
+    .prepare<[string], SqliteRunRow>("SELECT * FROM runs WHERE run_id = ?")
+    .get(runId);
   return row === undefined ? null : decodeRunRow(row);
 };
 
@@ -241,7 +255,7 @@ export const selectObserveAnnotationsByRun = (
   runId: string
 ): StoredObserveAnnotation[] => {
   const rows = db
-    .prepare(
+    .prepare<[string], SqliteObserveAnnotationRow>(
       `
         SELECT *
         FROM observe_annotations
@@ -249,7 +263,7 @@ export const selectObserveAnnotationsByRun = (
         ORDER BY created_at_ms, record_key
       `
     )
-    .all(runId) as SqliteObserveAnnotationRow[];
+    .all(runId);
   return rows.map(decodeObserveAnnotationRow);
 };
 
@@ -259,10 +273,10 @@ export const selectRunsByTurn = (
   turnId: string
 ): StoredRun[] => {
   const rows = db
-    .prepare(
+    .prepare<[string], SqliteRunRow>(
       "SELECT * FROM runs WHERE turn_id = ? ORDER BY created_at_ms, run_id"
     )
-    .all(turnId) as SqliteRunRow[];
+    .all(turnId);
   return rows.map(decodeRunRow);
 };
 
@@ -272,10 +286,10 @@ export const selectRunsByBranch = (
   branchId: string
 ): StoredRun[] => {
   const rows = db
-    .prepare(
+    .prepare<[string], SqliteRunRow>(
       "SELECT * FROM runs WHERE branch_id = ? ORDER BY created_at_ms, run_id"
     )
-    .all(branchId) as SqliteRunRow[];
+    .all(branchId);
   return rows.map(decodeRunRow);
 };
 
@@ -289,7 +303,7 @@ export const selectExpiredRuns = (
   nowMs: EpochMs
 ): StoredRun[] => {
   const rows = db
-    .prepare(
+    .prepare<[number], SqliteRunRow>(
       `
         SELECT *
         FROM runs
@@ -301,7 +315,7 @@ export const selectExpiredRuns = (
         ORDER BY created_at_ms, run_id
       `
     )
-    .all(nowMs) as SqliteRunRow[];
+    .all(nowMs);
   return rows.map(decodeRunRow);
 };
 
@@ -311,7 +325,7 @@ export const selectTurnsByParentTurnId = (
   parentTurnId: string
 ): StoredTurn[] => {
   const rows = db
-    .prepare(
+    .prepare<[string], SqliteTurnRow>(
       `
         SELECT *
         FROM turns
@@ -319,7 +333,7 @@ export const selectTurnsByParentTurnId = (
         ORDER BY created_at_ms, turn_id
       `
     )
-    .all(parentTurnId) as SqliteTurnRow[];
+    .all(parentTurnId);
   return rows.map(decodeTurnRow);
 };
 
@@ -329,7 +343,7 @@ export const selectActiveRunsByBranch = (
   branchId: string
 ): StoredRun[] => {
   const rows = db
-    .prepare(
+    .prepare<[string], SqliteRunRow>(
       `
         SELECT *
         FROM runs
@@ -337,7 +351,7 @@ export const selectActiveRunsByBranch = (
         ORDER BY created_at_ms, run_id
       `
     )
-    .all(branchId) as SqliteRunRow[];
+    .all(branchId);
   return rows.map(decodeRunRow);
 };
 
@@ -348,8 +362,10 @@ export const selectStagedResult = (
   taskId: string
 ): StoredStagedResult | null => {
   const row = db
-    .prepare("SELECT * FROM staged_results WHERE run_id = ? AND task_id = ?")
-    .get(runId, taskId) as SqliteStagedResultRow | undefined;
+    .prepare<[string, string], SqliteStagedResultRow>(
+      "SELECT * FROM staged_results WHERE run_id = ? AND task_id = ?"
+    )
+    .get(runId, taskId);
   return row === undefined ? null : decodeStagedResultRow(row);
 };
 
@@ -359,10 +375,10 @@ export const selectStagedResultsByRun = (
   runId: string
 ): StoredStagedResult[] => {
   const rows = db
-    .prepare(
+    .prepare<[string], SqliteStagedResultRow>(
       "SELECT * FROM staged_results WHERE run_id = ? ORDER BY created_at_ms, task_id"
     )
-    .all(runId) as SqliteStagedResultRow[];
+    .all(runId);
   return rows.map(decodeStagedResultRow);
 };
 
@@ -372,8 +388,10 @@ export const countStagedResultsByRun = (
   runId: string
 ): number => {
   const row = db
-    .prepare("SELECT COUNT(*) AS count FROM staged_results WHERE run_id = ?")
-    .get(runId) as { count: number } | undefined;
+    .prepare<[string], { count: number }>(
+      "SELECT COUNT(*) AS count FROM staged_results WHERE run_id = ?"
+    )
+    .get(runId);
   return row?.count ?? 0;
 };
 
@@ -561,10 +579,5 @@ export const getSchemaForSchemaIdInDatabase = (
 export const getSchemaForTurnTreeInDatabase = (
   db: Database.Database,
   turnTree: StoredTurnTree
-): TurnTreeSchema => {
-  return getSchemaForSchemaIdInDatabase(
-    db,
-    turnTree.schemaId,
-    "turnTree.schemaId"
-  );
-};
+): TurnTreeSchema =>
+  getSchemaForSchemaIdInDatabase(db, turnTree.schemaId, "turnTree.schemaId");

@@ -25,9 +25,8 @@ export const persistenceError = (
   code: string,
   details?: unknown,
   cause?: unknown
-): TuvrenPersistenceError => {
-  return new TuvrenPersistenceError(message, { cause, code, details });
-};
+): TuvrenPersistenceError =>
+  new TuvrenPersistenceError(message, { cause, code, details });
 
 /**
  * Normalizes any thrown value at the backend boundary so callers only ever
@@ -47,10 +46,9 @@ export const normalizeBackendError = (error: unknown): Error => {
   }
 
   if (error instanceof Error) {
+    const reflectedCode: unknown = Reflect.get(error, "code");
     const sqliteCode =
-      typeof Reflect.get(error, "code") === "string"
-        ? (Reflect.get(error, "code") as string)
-        : undefined;
+      typeof reflectedCode === "string" ? reflectedCode : undefined;
 
     if (sqliteCode?.startsWith("SQLITE_") === true) {
       return persistenceError(

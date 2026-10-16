@@ -16,7 +16,7 @@
 
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import nodePath from "node:path";
 
 import {
   decodeDeterministicKernelRecord,
@@ -125,14 +125,17 @@ interface SqliteTurnTreePathRow {
   turn_tree_hash: string;
 }
 
+/* oxlint-disable no-await-in-loop -- Seed records in dependency order inside one transaction so the proof preserves deterministic first-failure and write ordering. */
 const seedRetentionProofDatabase = async (
   backend: RuntimeBackend
 ): Promise<void> => {
   const schema = createCanonicalKernelTestSchema();
   const schemaRecord = createStoredSchemaRecord(schema, 1);
   const messageObjects = await Promise.all(
-    Array.from({ length: RETENTION_MESSAGE_COUNT }, (_, index) =>
-      createStoredObjectRecord(new Uint8Array([index + 1]), 10 + index)
+    Array.from(
+      { length: RETENTION_MESSAGE_COUNT },
+      async (_, index) =>
+        await createStoredObjectRecord(new Uint8Array([index + 1]), 10 + index)
     )
   );
   const eventObject = await createStoredObjectRecord(
@@ -262,6 +265,7 @@ const seedRetentionProofDatabase = async (
     await tx.branches.set(branch);
   });
 };
+/* oxlint-enable no-await-in-loop */
 
 const decodeConsumedStagedResultObjectHashes = (
   bytes: Uint8Array
@@ -379,11 +383,11 @@ const collectOrderedChunkEdgesFromPath = (
 const selectTurnTreePaths = (
   db: Database.Database,
   hashes: ReadonlySet<string>
-): SqliteTurnTreePathRow[] => {
-  return (
-    db.prepare("SELECT * FROM turn_tree_paths").all() as SqliteTurnTreePathRow[]
-  ).filter((row) => hashes.has(row.turn_tree_hash));
-};
+): SqliteTurnTreePathRow[] =>
+  db
+    .prepare<[], SqliteTurnTreePathRow>("SELECT * FROM turn_tree_paths")
+    .all()
+    .filter((row) => hashes.has(row.turn_tree_hash));
 
 const collectTurnTreePathEdges = (
   db: Database.Database,
@@ -408,13 +412,11 @@ const collectTurnTreePathEdges = (
 const selectOrderedPathChunks = (
   db: Database.Database,
   hashes: ReadonlySet<string>
-): SqliteOrderedPathChunkRow[] => {
-  return (
-    db
-      .prepare("SELECT * FROM ordered_path_chunks")
-      .all() as SqliteOrderedPathChunkRow[]
-  ).filter((row) => hashes.has(row.chunk_hash));
-};
+): SqliteOrderedPathChunkRow[] =>
+  db
+    .prepare<[], SqliteOrderedPathChunkRow>("SELECT * FROM ordered_path_chunks")
+    .all()
+    .filter((row) => hashes.has(row.chunk_hash));
 
 const collectOrderedChunkEdges = (
   db: Database.Database,
@@ -456,11 +458,11 @@ const collectRunEdges = (
 const selectRetainedStagedResults = (
   db: Database.Database,
   runIds: ReadonlySet<string>
-): SqliteStagedResultRow[] => {
-  return (
-    db.prepare("SELECT * FROM staged_results").all() as SqliteStagedResultRow[]
-  ).filter((row) => runIds.has(row.run_id));
-};
+): SqliteStagedResultRow[] =>
+  db
+    .prepare<[], SqliteStagedResultRow>("SELECT * FROM staged_results")
+    .all()
+    .filter((row) => runIds.has(row.run_id));
 
 const collectStagedResultEdges = (
   db: Database.Database,
@@ -479,11 +481,11 @@ const collectStagedResultEdges = (
 const selectRetainedThreads = (
   db: Database.Database,
   turnNodeHashes: ReadonlySet<string>
-): SqliteThreadRow[] => {
-  return (
-    db.prepare("SELECT * FROM threads").all() as SqliteThreadRow[]
-  ).filter((row) => turnNodeHashes.has(row.root_turn_node_hash));
-};
+): SqliteThreadRow[] =>
+  db
+    .prepare<[], SqliteThreadRow>("SELECT * FROM threads")
+    .all()
+    .filter((row) => turnNodeHashes.has(row.root_turn_node_hash));
 
 const collectThreadEdges = (
   db: Database.Database,
@@ -501,7 +503,7 @@ const collectThreadEdges = (
 
 const loadRetainedTurnNodeHashes = (db: Database.Database): Set<string> => {
   const rows = db
-    .prepare(
+    .prepare<[], { hash: string }>(
       `
         WITH RECURSIVE roots(hash) AS (
           SELECT head_turn_node_hash FROM branches
@@ -529,41 +531,45 @@ const loadRetainedTurnNodeHashes = (db: Database.Database): Set<string> => {
         ORDER BY hash
       `
     )
-    .all() as { hash: string }[];
+    .all();
   return new Set(rows.map((row) => row.hash));
 };
 
 const selectTurnNodes = (
   db: Database.Database,
   hashes: ReadonlySet<string>
-): SqliteTurnNodeRow[] => {
-  return (
-    db.prepare("SELECT * FROM turn_nodes").all() as SqliteTurnNodeRow[]
-  ).filter((row) => hashes.has(row.hash));
-};
+): SqliteTurnNodeRow[] =>
+  db
+    .prepare<[], SqliteTurnNodeRow>("SELECT * FROM turn_nodes")
+    .all()
+    .filter((row) => hashes.has(row.hash));
 
 const selectRetainedTurns = (
   db: Database.Database,
   turnNodeHashes: ReadonlySet<string>
-): SqliteTurnRow[] => {
-  return (db.prepare("SELECT * FROM turns").all() as SqliteTurnRow[]).filter(
-    (row) =>
-      turnNodeHashes.has(row.start_turn_node_hash) ||
-      turnNodeHashes.has(row.head_turn_node_hash)
-  );
-};
+): SqliteTurnRow[] =>
+  db
+    .prepare<[], SqliteTurnRow>("SELECT * FROM turns")
+    .all()
+    .filter(
+      (row) =>
+        turnNodeHashes.has(row.start_turn_node_hash) ||
+        turnNodeHashes.has(row.head_turn_node_hash)
+    );
 
 const selectRetainedRuns = (
   db: Database.Database,
   turnIds: ReadonlySet<string>
-): SqliteRunRow[] => {
-  return (db.prepare("SELECT * FROM runs").all() as SqliteRunRow[]).filter(
-    (row) =>
-      turnIds.has(row.turn_id) ||
-      row.status === "running" ||
-      row.status === "paused"
-  );
-};
+): SqliteRunRow[] =>
+  db
+    .prepare<[], SqliteRunRow>("SELECT * FROM runs")
+    .all()
+    .filter(
+      (row) =>
+        turnIds.has(row.turn_id) ||
+        row.status === "running" ||
+        row.status === "paused"
+    );
 
 const runRetentionDryRun = (db: Database.Database): RetentionDryRunSummary => {
   const retainedTurnNodeHashes = loadRetainedTurnNodeHashes(db);
@@ -628,34 +634,49 @@ const runRetentionDryRun = (db: Database.Database): RetentionDryRunSummary => {
 };
 
 const countTable = (db: Database.Database, tableName: string): number => {
-  const row = db.prepare(`SELECT COUNT(*) AS count FROM ${tableName}`).get() as
-    | { count: number }
-    | undefined;
+  const row = db
+    .prepare<[], { count: number }>(
+      `SELECT COUNT(*) AS count FROM ${tableName}`
+    )
+    .get();
   return row?.count ?? 0;
 };
 
-const countTables = (db: Database.Database): TableCounts => {
-  return {
-    branches: countTable(db, "branches"),
-    objects: countTable(db, "objects"),
-    orderedPathChunks: countTable(db, "ordered_path_chunks"),
-    runs: countTable(db, "runs"),
-    schemas: countTable(db, "schemas"),
-    stagedResults: countTable(db, "staged_results"),
-    threads: countTable(db, "threads"),
-    turnNodes: countTable(db, "turn_nodes"),
-    turnTreePaths: countTable(db, "turn_tree_paths"),
-    turnTrees: countTable(db, "turn_trees"),
-    turns: countTable(db, "turns"),
-  };
-};
+const countTables = (db: Database.Database): TableCounts => ({
+  branches: countTable(db, "branches"),
+  objects: countTable(db, "objects"),
+  orderedPathChunks: countTable(db, "ordered_path_chunks"),
+  runs: countTable(db, "runs"),
+  schemas: countTable(db, "schemas"),
+  stagedResults: countTable(db, "staged_results"),
+  threads: countTable(db, "threads"),
+  turnNodes: countTable(db, "turn_nodes"),
+  turnTreePaths: countTable(db, "turn_tree_paths"),
+  turnTrees: countTable(db, "turn_trees"),
+  turns: countTable(db, "turns"),
+});
 
 const assertTableCountsEqual = (
   left: TableCounts,
   right: TableCounts
 ): void => {
-  for (const [tableName, leftCount] of Object.entries(left)) {
-    const rightCount = right[tableName as keyof TableCounts];
+  const tableNames = [
+    "branches",
+    "objects",
+    "orderedPathChunks",
+    "runs",
+    "schemas",
+    "stagedResults",
+    "threads",
+    "turnNodes",
+    "turns",
+    "turnTreePaths",
+    "turnTrees",
+  ] as const satisfies readonly (keyof TableCounts)[];
+
+  for (const tableName of tableNames) {
+    const leftCount = left[tableName];
+    const rightCount = right[tableName];
 
     if (leftCount !== rightCount) {
       throw new Error(
@@ -679,8 +700,22 @@ const assertExpectedSummary = (summary: RetentionDryRunSummary): void => {
     retainedTurnTreePathCount: 2,
   };
 
-  for (const [key, expectedValue] of Object.entries(expected)) {
-    const actualValue = summary[key as keyof RetentionDryRunSummary];
+  const summaryKeys = [
+    "retainedObjectCount",
+    "retainedOrderedChunkCount",
+    "retainedRunCount",
+    "retainedSchemaCount",
+    "retainedStagedResultCount",
+    "retainedThreadCount",
+    "retainedTurnCount",
+    "retainedTurnNodeCount",
+    "retainedTurnTreeCount",
+    "retainedTurnTreePathCount",
+  ] as const satisfies readonly (keyof RetentionDryRunSummary)[];
+
+  for (const key of summaryKeys) {
+    const actualValue = summary[key];
+    const expectedValue = expected[key];
 
     if (actualValue !== expectedValue) {
       throw new Error(
@@ -691,10 +726,12 @@ const assertExpectedSummary = (summary: RetentionDryRunSummary): void => {
 };
 
 const main = async (): Promise<void> => {
-  const tempDirectory = mkdtempSync(join(tmpdir(), "tuvren-sqlite-retention-"));
+  const tempDirectory = mkdtempSync(
+    nodePath.join(tmpdir(), "tuvren-sqlite-retention-")
+  );
 
   try {
-    const databasePath = join(tempDirectory, "kraken.db");
+    const databasePath = nodePath.join(tempDirectory, "kraken.db");
     const backend = createSqliteBackend({ databasePath });
     await seedRetentionProofDatabase(backend);
 

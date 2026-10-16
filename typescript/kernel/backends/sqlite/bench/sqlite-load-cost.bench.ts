@@ -30,7 +30,7 @@
 
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import path from "node:path";
 import process from "node:process";
 
 import { createRecordingPhaseObserver } from "@tuvren/backend-shared";
@@ -80,7 +80,7 @@ const readDatabaseSizesFromEnv = (fallback: readonly number[]): number[] => {
   }
 
   return raw.split(",").map((entry) => {
-    const parsed = Number.parseInt(entry.trim(), 10);
+    const parsed = Math.trunc(Number(entry.trim()));
 
     if (!Number.isSafeInteger(parsed) || parsed < 0) {
       throw new Error(
@@ -113,6 +113,7 @@ interface LoadCostResult extends Record<string, unknown> {
   reclaim: OperationResult;
 }
 
+/* oxlint-disable no-await-in-loop -- Warmups and measured samples must run serially so their timings and phase observations remain independent and ordered. */
 const measureRepeated = async (
   warmupIterations: number,
   sampleCount: number,
@@ -137,7 +138,7 @@ const measureRepeated = async (
     samples.push(Number(process.hrtime.bigint() - startedAt));
   }
 
-  const sortedSamples = [...samples].sort((left, right) => left - right);
+  const sortedSamples = samples.toSorted((left, right) => left - right);
 
   return {
     averageNs:
@@ -149,7 +150,9 @@ const measureRepeated = async (
     phases: summarizePhases(observer.samples),
   };
 };
+/* oxlint-enable no-await-in-loop */
 
+/* oxlint-disable no-await-in-loop -- Seed turn nodes in lineage order because every node depends on the preceding node's hash and each write depends on that lineage. */
 const seedChain = async (
   backend: RuntimeBackend,
   turnNodeCount: number
@@ -242,6 +245,7 @@ const seedChain = async (
     await tx.turns.set(turn);
   });
 };
+/* oxlint-enable no-await-in-loop */
 
 /**
  * Objects with no referencing TurnNode/Turn/Branch are unreachable by
@@ -253,6 +257,7 @@ const seedChain = async (
  * were already swept by an intervening reclaim() and a later batch reuses
  * small index values.
  */
+/* oxlint-disable no-await-in-loop -- Seed each orphan and persist it before advancing the sequence so benchmark setup remains deterministic and bounded. */
 const seedOrphanObjects = async (
   backend: RuntimeBackend,
   databaseSize: number,
@@ -277,7 +282,9 @@ const seedOrphanObjects = async (
 
   return startSequence + count;
 };
+/* oxlint-enable no-await-in-loop */
 
+/* oxlint-disable no-await-in-loop -- Run database-size cases serially so samples, output, and temporary database lifetimes never overlap. */
 const main = async (): Promise<void> => {
   process.stdout.write("sqlite backend load-cost benchmark\n");
   process.stdout.write(
@@ -287,13 +294,13 @@ const main = async (): Promise<void> => {
 
   for (const databaseSize of DATABASE_SIZES) {
     const tempDirectory = mkdtempSync(
-      join(tmpdir(), "tuvren-sqlite-load-cost-bench-")
+      path.join(tmpdir(), "tuvren-sqlite-load-cost-bench-")
     );
 
     try {
       const observer = createRecordingPhaseObserver();
       const backend = createSqliteBackend({
-        databasePath: join(tempDirectory, "kraken.db"),
+        databasePath: path.join(tempDirectory, "kraken.db"),
         phaseObserver: observer,
       });
 
@@ -410,10 +417,11 @@ const main = async (): Promise<void> => {
     )}\n`
   );
 };
+/* oxlint-enable no-await-in-loop */
 
 await main();
 
 interface RepeatedMeasurement {
-  prepareSample?(sampleIndex: number): Promise<void>;
-  run(): Promise<void>;
+  prepareSample?: (sampleIndex: number) => Promise<void>;
+  run: () => Promise<void>;
 }

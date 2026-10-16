@@ -29,12 +29,8 @@ export type { TurnNodeRelationship } from "@tuvren/backend-shared";
  * Decodes a run's `createdTurnNodesCbor` into its ordered, append-only list
  * of created turn node hashes.
  */
-export const decodeRunCreatedTurnNodeHashes = (run: StoredRun): string[] => {
-  return decodeHashStringArray(
-    run.createdTurnNodesCbor,
-    "run.createdTurnNodesCbor"
-  );
-};
+export const decodeRunCreatedTurnNodeHashes = (run: StoredRun): string[] =>
+  decodeHashStringArray(run.createdTurnNodesCbor, "run.createdTurnNodesCbor");
 
 // This module is a thin delegate to the shared kernel-backend invariant core
 // (KRT-BK001) for: the run-transition-legality and immutability-primitive
@@ -49,8 +45,8 @@ export const decodeRunCreatedTurnNodeHashes = (run: StoredRun): string[] => {
 // actual implementations. `decodeRunCreatedTurnNodeHashes` stays backend-owned
 // (it is not part of this extraction, and this same module still needs it
 // below for sqlite-specific lineage checks) and is injected into both
-// shared factories. `function` hoisting makes the later declaration in this
-// module available here at call time.
+// shared factories. The ordered `const` definition above is initialized
+// before these factories are constructed.
 const runLogic = createBackendInvariantRunLogic({
   decodeRunCreatedTurnNodeHashes,
   errorPrefix: "sqlite",

@@ -128,7 +128,7 @@ const validateThreadInDatabase = (
   }
 
   const duplicateRootThread = db
-    .prepare(
+    .prepare<[string, string], { thread_id: string }>(
       `
         SELECT thread_id
         FROM threads
@@ -136,9 +136,7 @@ const validateThreadInDatabase = (
         LIMIT 1
       `
     )
-    .get(thread.rootTurnNodeHash, thread.threadId) as
-    | { thread_id: string }
-    | undefined;
+    .get(thread.rootTurnNodeHash, thread.threadId);
 
   if (duplicateRootThread !== undefined) {
     throw persistenceError(
@@ -667,7 +665,7 @@ const validateTurnTreePathsInDatabase = (
  * (including backward-move archiving), runs, staged results, and the
  * one-active-run-per-branch rule.
  *
- * @throws TuvrenPersistenceError with a `sqlite_backend_*` code on the first
+ * @throws {TuvrenPersistenceError} with a `sqlite_backend_*` code on the first
  *   violated invariant; the caller must roll the transaction back.
  */
 export const validateTransactionWriteSet = (
@@ -741,7 +739,7 @@ const setUniqueLoadedRecord = <T>(
  * has an entry, and each entry's root hash and depth match a recomputed
  * ancestry walk.
  *
- * @throws TuvrenPersistenceError with a `sqlite_backend_*` code describing
+ * @throws {TuvrenPersistenceError} with a `sqlite_backend_*` code describing
  *   the first index/lineage divergence.
  */
 export const validateTurnNodeLineageRootIndex = (
@@ -754,8 +752,10 @@ export const validateTurnNodeLineageRootIndex = (
   >();
 
   for (const row of db
-    .prepare("SELECT * FROM turn_node_lineage_roots")
-    .all() as SqliteTurnNodeLineageRootRow[]) {
+    .prepare<[], SqliteTurnNodeLineageRootRow>(
+      "SELECT * FROM turn_node_lineage_roots"
+    )
+    .all()) {
     const metadata = decodeTurnNodeLineageMetadataRow(row);
     setUniqueLoadedRecord(
       actualMetadataByTurnNodeHash,
