@@ -47,6 +47,7 @@ import {
   createGenerateResult,
   createMockModel,
   createUsage,
+  captureRejection,
   streamFromParts,
 } from "./ai-sdk-provider-bridge-test-helpers.ts";
 
@@ -74,7 +75,7 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (generate)", () => {
   test("attributes a providerExecuted+dynamic round-trip to provider-native without a spurious validation error", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate() {
+        doGenerate() {
           // Realistic provider-executed round-trip: the provider's own tool-call
           // record (providerExecuted + dynamic) precedes the tool-result.
           return createGenerateResult({
@@ -138,7 +139,7 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (generate)", () => {
   test("still rejects an UNDECLARED providerExecuted tool-call (baseline protection)", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate() {
+        doGenerate() {
           return createGenerateResult({
             content: [
               {
@@ -159,17 +160,18 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (generate)", () => {
 
     // No providerNativeTools declared → the provider-owned execution is genuinely
     // out of scope for the baseline bridge and must still be rejected.
-    await expect(
+    const rejection = await captureRejection(
       bridge.generate({
         messages: [{ parts: [{ text: "go", type: "text" }], role: "user" }],
       })
-    ).rejects.toBeInstanceOf(TuvrenProviderError);
+    );
+    expect(rejection).toBeInstanceOf(TuvrenProviderError);
   });
 
   test("a DECLARED provider-executed tool-call with no matching result yields no observation (provider bookkeeping, not a silent function call)", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate() {
+        doGenerate() {
           // A declared provider-executed tool-call WITHOUT its tool-result: a
           // truncated/interrupted provider turn. The call is the provider's own
           // bookkeeping — only a tool-result is an attributable observation — so
@@ -225,7 +227,7 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
   test("attributes a streamed providerExecuted+dynamic round-trip to provider-native without a spurious validation error", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doStream() {
+        doStream() {
           return {
             stream: streamFromParts([
               {
@@ -266,22 +268,23 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
     // (1) The provider-executed result surfaces as a provider_tool_result chunk
     // attributed to the provider-native execution class.
     const providerResult = chunks.find(
-      (chunk) => chunk.type === "provider_tool_result"
+      (
+        chunk
+      ): chunk is Extract<
+        (typeof chunks)[number],
+        { type: "provider_tool_result" }
+      > => chunk.type === "provider_tool_result"
     );
     expect(providerResult).toBeDefined();
-    expect((providerResult as { name: string }).name).toBe("web_search");
-    expect(
-      (providerResult as { providerMetadata?: Record<string, unknown> })
-        .providerMetadata?.executionClass
-    ).toBe("provider-native");
+    expect(providerResult?.name).toBe("web_search");
+    expect(providerResult?.providerMetadata?.executionClass).toBe(
+      "provider-native"
+    );
     // The stream chunk also carries the runtime-facing owner attribution
     // (AY002/AY004): provider-executed results are owned by the provider, never
     // the host. (The generate-side record exposes executionClass at the bridge
     // seam; owner is attached when the runtime maps the result to tool.result.)
-    expect(
-      (providerResult as { providerMetadata?: Record<string, unknown> })
-        .providerMetadata?.owner
-    ).toBe("provider");
+    expect(providerResult?.providerMetadata?.owner).toBe("provider");
 
     // (2) No spurious validation error and no client-facing tool_call chunk for
     // the provider-executed call: only the provider_tool_result carries it.
@@ -296,7 +299,7 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
   test("a DECLARED streamed provider-executed tool-call with no matching result yields no provider_tool_result and no client tool_call", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doStream() {
+        doStream() {
           // Streamed counterpart of the orphan case: the provider-executed
           // tool-call streams but its tool-result never arrives this turn. The
           // skipped call emits no chunk; no provider_tool_result is fabricated;
@@ -357,7 +360,7 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
     // never emitting a tool_call_start/args_delta/done the runtime would execute.
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doStream() {
+        doStream() {
           return {
             stream: streamFromParts([
               {
@@ -407,14 +410,18 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
 
     // (1) The provider-executed result is attributed to provider-native.
     const providerResult = chunks.find(
-      (chunk) => chunk.type === "provider_tool_result"
+      (
+        chunk
+      ): chunk is Extract<
+        (typeof chunks)[number],
+        { type: "provider_tool_result" }
+      > => chunk.type === "provider_tool_result"
     );
     expect(providerResult).toBeDefined();
-    expect((providerResult as { name: string }).name).toBe("web_search");
-    expect(
-      (providerResult as { providerMetadata?: Record<string, unknown> })
-        .providerMetadata?.executionClass
-    ).toBe("provider-native");
+    expect(providerResult?.name).toBe("web_search");
+    expect(providerResult?.providerMetadata?.executionClass).toBe(
+      "provider-native"
+    );
 
     // (2) The entire provider-executed input prelude stays out of the client tool
     // stream: no tool_call_start, no tool_call_args_delta, no tool_call_done.
@@ -432,10 +439,11 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
     // providerOwned tool-state — must NOT push the turn through the tool-call
     // finish-reason normalization. A spurious `tool_call` here would drive a
     // continue/execute-tools iteration with no client call to run (KRT-BH005).
-    const finishChunk = chunks.find((chunk) => chunk.type === "finish");
-    expect((finishChunk as { finishReason?: string }).finishReason).toBe(
-      "stop"
+    const finishChunk = chunks.find(
+      (chunk): chunk is Extract<(typeof chunks)[number], { type: "finish" }> =>
+        chunk.type === "finish"
     );
+    expect(finishChunk?.finishReason).toBe("stop");
   });
 
   test("still rejects an UNDECLARED provider-executed tool-input-start (baseline protection on the incremental path)", async () => {
@@ -445,7 +453,7 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
     // declared-lookup guard must not become a blanket allow.
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doStream() {
+        doStream() {
           return {
             stream: streamFromParts([
               {
@@ -462,13 +470,14 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
       }),
     });
 
-    await expect(
+    const rejection = await captureRejection(
       collectAsyncIterable(
         bridge.stream({
           messages: [{ parts: [{ text: "go", type: "text" }], role: "user" }],
         })
       )
-    ).rejects.toBeInstanceOf(TuvrenProviderError);
+    );
+    expect(rejection).toBeInstanceOf(TuvrenProviderError);
   });
 
   test("a lingering provider-owned tool-state never hijacks the client tool-call correlation scan", async () => {
@@ -483,7 +492,7 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
     // lingering provider-owned state produced before the scan excluded it.
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doStream() {
+        doStream() {
           return {
             stream: streamFromParts([
               // Declared provider-executed tool, incremental — seeds the lingering

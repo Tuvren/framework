@@ -33,7 +33,6 @@
  * {@link createAiSdkProviderBridgeFromProvider} resolves the model from an
  * AI SDK provider registry.
  *
- * @packageDocumentation
  */
 
 export type {

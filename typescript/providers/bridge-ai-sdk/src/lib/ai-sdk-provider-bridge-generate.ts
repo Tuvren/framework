@@ -49,7 +49,7 @@ export type ProviderToolClassLookup = (
  * path (defined once in `ai-sdk-provider-bridge.ts`).
  */
 export interface GenerateResultHelpers {
-  mapFinishReason(
+  mapFinishReason: (
     reason: Pick<
       LanguageModelV3GenerateResult["finishReason"],
       "raw" | "unified"
@@ -57,8 +57,8 @@ export interface GenerateResultHelpers {
     options: {
       hasToolCalls?: boolean;
     }
-  ): TuvrenModelResponse["finishReason"];
-  mapUsage(usage: LanguageModelV3GenerateResult["usage"]): {
+  ) => TuvrenModelResponse["finishReason"];
+  mapUsage: (usage: LanguageModelV3GenerateResult["usage"]) => {
     canonical?:
       | {
           inputTokens: number;
@@ -67,10 +67,10 @@ export interface GenerateResultHelpers {
       | undefined;
     rawUsage: unknown;
   };
-  parseStructuredOutput(
+  parseStructuredOutput: (
     serialized: string,
     request: StructuredOutputRequest
-  ): unknown;
+  ) => unknown;
 }
 
 /** Accumulator threaded through the content-part loop of {@link mapGenerateResult}. */
@@ -219,7 +219,7 @@ const mapGeneratedToolCallPart = (
     ),
     name: contentPart.toolName,
     providerMetadata: {
-      ...(providerMetadata === undefined ? {} : providerMetadata),
+      ...providerMetadata,
       providerCallId: contentPart.toolCallId,
     },
     type: "tool_call",
@@ -421,7 +421,7 @@ const buildGenerateProviderMetadata = (
  * @param providerToolClassLookup - Resolves a tool name to its declared
  *   provider execution class; `undefined` keeps the baseline rejection of
  *   all provider-owned execution in force.
- * @throws TuvrenProviderError with code `unsupported_ai_sdk_content`,
+ * @throws {TuvrenProviderError} With code `unsupported_ai_sdk_content`,
  *   `structured_output_validation`, or `invalid_ai_sdk_tool_call_input` when
  *   the result cannot be mapped.
  */

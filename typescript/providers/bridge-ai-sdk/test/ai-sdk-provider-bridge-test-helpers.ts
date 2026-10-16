@@ -68,44 +68,64 @@ export const streamFromParts = (
     },
   });
 
+interface MockModelOverrides extends Omit<
+  Partial<LanguageModelV3>,
+  "doGenerate" | "doStream"
+> {
+  doGenerate?: (
+    ...args: Parameters<LanguageModelV3["doGenerate"]>
+  ) =>
+    | Awaited<ReturnType<LanguageModelV3["doGenerate"]>>
+    | ReturnType<LanguageModelV3["doGenerate"]>;
+  doStream?: (
+    ...args: Parameters<LanguageModelV3["doStream"]>
+  ) =>
+    | Awaited<ReturnType<LanguageModelV3["doStream"]>>
+    | ReturnType<LanguageModelV3["doStream"]>;
+}
+
 export const createMockModel = (
-  overrides: Partial<LanguageModelV3> & {
-    doGenerate?: LanguageModelV3["doGenerate"];
-    doStream?: LanguageModelV3["doStream"];
-  } = {}
-): LanguageModelV3 => ({
-  async doGenerate() {
-    await Promise.resolve();
-    return createGenerateResult({
-      content: [
-        {
-          text: "default",
-          type: "text",
-        },
-      ],
-    });
-  },
-  async doStream() {
-    await Promise.resolve();
-    return {
-      stream: streamFromParts([
-        {
-          finishReason: {
-            raw: "stop",
-            unified: "stop",
-          },
-          type: "finish",
-          usage: createUsage(1, 1),
-        },
-      ]),
-    };
-  },
-  modelId: "mock-model",
-  provider: "mock-provider",
-  specificationVersion: "v3",
-  supportedUrls: {},
-  ...overrides,
-});
+  overrides: MockModelOverrides = {}
+): LanguageModelV3 => {
+  const { doGenerate, doStream, ...modelOverrides } = overrides;
+
+  return {
+    async doGenerate(options) {
+      return await Promise.resolve(
+        doGenerate?.(options) ??
+          createGenerateResult({
+            content: [
+              {
+                text: "default",
+                type: "text",
+              },
+            ],
+          })
+      );
+    },
+    async doStream(options) {
+      return await Promise.resolve(
+        doStream?.(options) ?? {
+          stream: streamFromParts([
+            {
+              finishReason: {
+                raw: "stop",
+                unified: "stop",
+              },
+              type: "finish",
+              usage: createUsage(1, 1),
+            },
+          ]),
+        }
+      );
+    },
+    modelId: "mock-model",
+    provider: "mock-provider",
+    specificationVersion: "v3",
+    supportedUrls: {},
+    ...modelOverrides,
+  };
+};
 
 export const collectAsyncIterable = async <T>(
   iterable: AsyncIterable<T>
@@ -117,4 +137,20 @@ export const collectAsyncIterable = async <T>(
   }
 
   return values;
+};
+
+export const captureRejection = async (
+  promise: PromiseLike<unknown>
+): Promise<Error> => {
+  try {
+    await promise;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return error;
+    }
+    throw new TypeError("expected the rejected value to be an Error", {
+      cause: error,
+    });
+  }
+  throw new Error("expected the promise to reject");
 };

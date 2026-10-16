@@ -25,6 +25,7 @@ import {
   createGenerateResult,
   createMockModel,
   createUsage,
+  captureRejection,
   streamFromParts,
 } from "./ai-sdk-provider-bridge-test-helpers.ts";
 
@@ -73,24 +74,16 @@ describe("provider-bridge-ai-sdk tool-call normalization", () => {
       },
     });
 
-    expect(response).toEqual(
-      expect.objectContaining({
-        finishReason: "tool_call",
-        parts: [
-          expect.objectContaining({
-            callId: expect.any(String),
-            input: {
-              query: "docs",
-            },
-            name: "search",
-            providerMetadata: {
-              providerCallId: "call-1",
-            },
-            type: "tool_call",
-          }),
-        ],
-      })
-    );
+    expect(response.finishReason).toBe("tool_call");
+    const [part] = response.parts;
+    expect(part?.type).toBe("tool_call");
+    if (part?.type !== "tool_call") {
+      throw new TypeError("expected a tool_call response part");
+    }
+    expect(typeof part.callId).toBe("string");
+    expect(part.input).toEqual({ query: "docs" });
+    expect(part.name).toBe("search");
+    expect(part.providerMetadata).toEqual({ providerCallId: "call-1" });
   });
 
   test("normalizes generated tool-call finish reasons when a provider reports stop", async () => {
@@ -576,7 +569,7 @@ describe("provider-bridge-ai-sdk tool-call normalization", () => {
       }),
     });
 
-    await expect(
+    const rejection = await captureRejection(
       collectAsyncIterable(
         bridge.stream({
           messages: [
@@ -587,7 +580,8 @@ describe("provider-bridge-ai-sdk tool-call normalization", () => {
           ],
         })
       )
-    ).rejects.toThrow(TuvrenProviderError);
+    );
+    expect(rejection).toBeInstanceOf(TuvrenProviderError);
   });
 
   test("preserves streamed Google reasoning thought signatures in reasoning chunks", async () => {

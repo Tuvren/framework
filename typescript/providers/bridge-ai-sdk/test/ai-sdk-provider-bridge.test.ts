@@ -130,16 +130,6 @@ describe("provider-bridge-ai-sdk", () => {
             role: "user",
           },
           {
-            providerMetadata: {
-              aiSdkBridge: {
-                requestBody: {
-                  replayed: false,
-                },
-              },
-              openai: {
-                responseId: "resp-history",
-              },
-            },
             parts: [
               {
                 providerMetadata: {
@@ -169,6 +159,16 @@ describe("provider-bridge-ai-sdk", () => {
                 type: "tool_call",
               },
             ],
+            providerMetadata: {
+              aiSdkBridge: {
+                requestBody: {
+                  replayed: false,
+                },
+              },
+              openai: {
+                responseId: "resp-history",
+              },
+            },
             role: "assistant",
           },
           {
@@ -216,53 +216,51 @@ describe("provider-bridge-ai-sdk", () => {
       provider: bridge,
     });
 
-    expect(capturedOptions).toEqual(
-      expect.objectContaining({
-        headers: {
-          authorization: "Bearer test",
-          "x-trace-id": "trace-1",
+    expect(capturedOptions).toMatchObject({
+      headers: {
+        authorization: "Bearer test",
+        "x-trace-id": "trace-1",
+      },
+      maxOutputTokens: 128,
+      providerOptions: {
+        openai: {
+          reasoningEffort: "low",
+          textVerbosity: "low",
         },
-        maxOutputTokens: 128,
-        providerOptions: {
-          openai: {
-            reasoningEffort: "low",
-            textVerbosity: "low",
+      },
+      responseFormat: {
+        name: "answer",
+        schema: {
+          properties: {
+            answer: {
+              type: "string",
+            },
           },
+          required: ["answer"],
+          type: "object",
         },
-        responseFormat: {
-          name: "answer",
-          schema: {
+        type: "json",
+      },
+      toolChoice: {
+        type: "required",
+      },
+      tools: [
+        {
+          description: "Search docs",
+          inputSchema: {
             properties: {
-              answer: {
+              query: {
                 type: "string",
               },
             },
-            required: ["answer"],
+            required: ["query"],
             type: "object",
           },
-          type: "json",
+          name: "search",
+          type: "function",
         },
-        toolChoice: {
-          type: "required",
-        },
-        tools: [
-          {
-            description: "Search docs",
-            inputSchema: {
-              properties: {
-                query: {
-                  type: "string",
-                },
-              },
-              required: ["query"],
-              type: "object",
-            },
-            name: "search",
-            type: "function",
-          },
-        ],
-      })
-    );
+      ],
+    });
     expect(capturedOptions?.prompt).toEqual([
       {
         content: "You are helpful",
@@ -589,9 +587,9 @@ describe("provider-bridge-ai-sdk", () => {
     const bridge = createAiSdkProviderBridge({
       defaultProviderOptions,
       model: createMockModel({
-        doGenerate(options) {
+        async doGenerate(options) {
           capturedOptions = options;
-          return Promise.resolve(createGenerateResult());
+          return await Promise.resolve(createGenerateResult());
         },
       }),
     });

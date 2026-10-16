@@ -1,11 +1,12 @@
 import type {
   LanguageModelV3,
   LanguageModelV3CallOptions,
+  LanguageModelV3FunctionTool,
   LanguageModelV3GenerateResult,
+  LanguageModelV3ProviderTool,
+  LanguageModelV3StreamPart,
   ProviderV3,
   SharedV3ProviderOptions,
-  LanguageModelV3FunctionTool,
-  LanguageModelV3ProviderTool,
 } from "@ai-sdk/provider";
 import type {
   ProviderStreamChunk,
@@ -18,10 +19,8 @@ import Ajv from "ajv";
 import Ajv2019 from "ajv/dist/2019.js";
 import Ajv2020 from "ajv/dist/2020.js";
 
-import {
-  mapGenerateResult,
-  type ProviderToolClassLookup,
-} from "./ai-sdk-provider-bridge-generate.js";
+import { mapGenerateResult } from "./ai-sdk-provider-bridge-generate.js";
+import type { ProviderToolClassLookup } from "./ai-sdk-provider-bridge-generate.js";
 import {
   mapPromptMessages,
   mapProviderMediatedToolConfigs,
@@ -117,7 +116,7 @@ export interface AiSdkProviderBridgeOptions {
   /**
    * Stable identifier reported as `TuvrenProvider.id`.
    *
-   * @defaultValue `"ai-sdk:{model.provider}:{model.modelId}"`
+   * Defaults to `"ai-sdk:{model.provider}:{model.modelId}"`.
    */
   id?: string;
   /** The already-constructed AI SDK language model to bridge. */
@@ -234,11 +233,20 @@ const readOptionalStringArray = (
     return undefined;
   }
 
-  if (
-    Array.isArray(value) &&
-    value.every((entry) => typeof entry === "string" && entry.length > 0)
-  ) {
-    return [...value];
+  if (Array.isArray(value)) {
+    const strings: string[] = [];
+
+    for (const entry of value) {
+      if (typeof entry !== "string" || entry.length === 0) {
+        break;
+      }
+
+      strings.push(entry);
+    }
+
+    if (strings.length === value.length) {
+      return strings;
+    }
   }
 
   throw bridgeError(
@@ -331,7 +339,7 @@ const normalizeBridgeSettings = (prompt: TuvrenPrompt) => {
  * provider tool (AY004), so binding any other provider is a configuration
  * error rather than a silent no-op.
  *
- * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config`.
+ * @throws {TuvrenProviderError} With code `invalid_ai_sdk_bridge_config`.
  */
 const assertProviderMediatedToolsSupported = (
   prompt: TuvrenPrompt,
@@ -363,8 +371,8 @@ const mergeHeaders = (
   }
 
   return {
-    ...(defaults ?? {}),
-    ...(overrides ?? {}),
+    ...defaults,
+    ...overrides,
   };
 };
 
@@ -435,7 +443,7 @@ const continuityToProviderOptions = (
  * object. Accepts `"auto" | "none" | "required"`, a bare tool name string,
  * or an already-shaped `{ type }` / `{ type: "tool", toolName }` object.
  *
- * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config` for
+ * @throws {TuvrenProviderError} With code `invalid_ai_sdk_bridge_config` for
  *   any other shape.
  */
 const normalizeToolChoice = (
@@ -530,21 +538,22 @@ const buildAllTools = (
  * cooperative cancellation signal (ADR-0043), and merges headers and
  * provider options (defaults < providerContinuity < per-prompt settings).
  *
- * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config` when
+ * @throws {TuvrenProviderError} With code `invalid_ai_sdk_bridge_config` when
  *   the prompt conflicts with the bound model or uses unsupported settings.
  */
-const createCallOptions = (input: {
+interface CreateCallOptionsInput {
   bridgeId: string;
   defaultHeaders?: Record<string, string | undefined>;
   defaultProviderOptions?: SharedV3ProviderOptions;
   includeRawChunks?: boolean;
   model: LanguageModelV3;
   prompt: TuvrenPrompt;
-}): LanguageModelV3CallOptions => {
-  const settings = normalizeBridgeSettings(input.prompt);
+}
+
+const assertPromptMatchesModel = (input: CreateCallOptionsInput): void => {
   const requestedModel = input.prompt.config?.model;
   const requestedProvider = input.prompt.config?.provider;
-  const responseFormat = input.prompt.responseFormat;
+  const { responseFormat } = input.prompt;
 
   if (
     typeof requestedModel === "string" &&
@@ -590,6 +599,14 @@ const createCallOptions = (input: {
       }
     );
   }
+};
+
+const createCallOptions = (
+  input: CreateCallOptionsInput
+): LanguageModelV3CallOptions => {
+  assertPromptMatchesModel(input);
+  const settings = normalizeBridgeSettings(input.prompt);
+  const { responseFormat } = input.prompt;
 
   assertProviderMediatedToolsSupported(input.prompt, input.model.provider);
 
@@ -729,7 +746,7 @@ const shouldNormalizeToolCallFinishReason = (
   >,
   hasToolCalls: boolean | undefined
 ): boolean => {
-  if (!hasToolCalls) {
+  if (hasToolCalls !== true) {
     return reason.unified === "tool-calls";
   }
 
@@ -771,17 +788,25 @@ const mapFinishReason = (
   }
 
   switch (reason.unified) {
-    case "stop":
+    case "stop": {
       return "stop";
-    case "length":
+    }
+    case "length": {
       return "length";
-    case "content-filter":
+    }
+    case "content-filter": {
       return "content_filter";
+    }
+    case "tool-calls": {
+      return "tool_call";
+    }
     case "error":
-    case "other":
+    case "other": {
       return "error";
-    default:
+    }
+    default: {
       return "error";
+    }
   }
 };
 
@@ -918,7 +943,7 @@ const validateStructuredOutput = (
  * Parses structured-output text as JSON and validates it against the
  * requested schema (KrakenFrameworkSpecification §3.5).
  *
- * @throws TuvrenProviderError with code `structured_output_validation` when
+ * @throws {TuvrenProviderError} With code `structured_output_validation` when
  *   the text is not valid JSON or does not satisfy the schema.
  */
 const parseStructuredOutput = (
@@ -988,7 +1013,7 @@ class AiSdkProviderBridge implements TuvrenProvider {
    * JSON and validated against the requested schema before it is surfaced as
    * a `structured` part (KrakenFrameworkSpecification §3.5).
    *
-   * @throws TuvrenProviderError with code `ai_sdk_generate_failed` when the
+   * @throws {TuvrenProviderError} With code `ai_sdk_generate_failed` when the
    *   underlying call fails, or a more specific bridge code
    *   (`invalid_ai_sdk_bridge_config`, `structured_output_validation`,
    *   `unsupported_ai_sdk_content`, ...) when mapping fails.
@@ -1033,7 +1058,8 @@ class AiSdkProviderBridge implements TuvrenProvider {
    * the consumer stops early or a mapping error is thrown, so the underlying
    * HTTP stream is never leaked.
    *
-   * @throws TuvrenProviderError with code `ai_sdk_stream_failed` when the
+   * @yields {ProviderStreamChunk} Each canonical chunk mapped from the AI SDK stream.
+   * @throws {TuvrenProviderError} With code `ai_sdk_stream_failed` when the
    *   underlying stream fails, or a mapping-specific bridge code (for example
    *   `unsupported_ai_sdk_stream_part`).
    */
@@ -1060,14 +1086,21 @@ class AiSdkProviderBridge implements TuvrenProvider {
     let readerDone = false;
 
     try {
-      while (!readerDone) {
-        const nextPart = await reader.read();
-        if (nextPart.done || nextPart.value === undefined) {
-          readerDone = true;
-          break;
-        }
+      const streamParts: AsyncIterable<LanguageModelV3StreamPart> = {
+        [Symbol.asyncIterator]() {
+          return {
+            next: async () => {
+              const nextPart = await reader.read();
+              readerDone = nextPart.done;
+              return nextPart.done
+                ? { done: true, value: undefined }
+                : { done: false, value: nextPart.value };
+            },
+          };
+        },
+      };
 
-        const part = nextPart.value;
+      for await (const part of streamParts) {
         captureStreamPartMetadata(state.streamPartMetadata, part);
 
         for (const chunk of mapStreamPart(part, state, {
@@ -1085,7 +1118,7 @@ class AiSdkProviderBridge implements TuvrenProvider {
       });
     } finally {
       if (!readerDone) {
-        await reader.cancel().catch(() => undefined);
+        await reader.cancel().catch(() => null);
       }
 
       reader.releaseLock();
@@ -1127,7 +1160,7 @@ export const createAiSdkProviderBridge = (
  *
  * @param options - The provider registry, model id, and the same defaults
  *   accepted by {@link createAiSdkProviderBridge}.
- * @throws TuvrenProviderError with code `ai_sdk_provider_lookup_failed` when
+ * @throws {TuvrenProviderError} With code `ai_sdk_provider_lookup_failed` when
  *   the registry cannot resolve the requested model.
  */
 export const createAiSdkProviderBridgeFromProvider = (

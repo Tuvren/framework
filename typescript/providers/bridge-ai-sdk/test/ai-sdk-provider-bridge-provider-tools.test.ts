@@ -30,8 +30,15 @@ import {
   createGenerateResult,
   createMockModel,
   createUsage,
+  captureRejection,
   streamFromParts,
 } from "./ai-sdk-provider-bridge-test-helpers.ts";
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const hasType = (value: unknown, type: string): boolean =>
+  isRecord(value) && value.type === type;
 
 // ---------------------------------------------------------------------------
 // Provider-native tool declaration mapping (AY002)
@@ -42,7 +49,7 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
     let capturedTools: unknown[] | undefined;
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate(options) {
+        doGenerate(options) {
           capturedTools = options.tools;
           return createGenerateResult();
         },
@@ -74,7 +81,7 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
     let capturedTools: unknown[] | undefined;
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate(options) {
+        doGenerate(options) {
           capturedTools = options.tools;
           return createGenerateResult();
         },
@@ -103,7 +110,7 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
     let capturedTools: unknown[] | undefined;
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate(options) {
+        doGenerate(options) {
           capturedTools = options.tools;
           return createGenerateResult();
         },
@@ -117,19 +124,17 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
       ],
       tools: [
         {
-          name: "my_function",
           description: "a function tool",
           inputSchema: { type: "object" },
+          name: "my_function",
         },
       ],
     });
 
     expect(capturedTools).toHaveLength(2);
-    const fnTool = capturedTools?.find(
-      (t: unknown) => (t as { type: string }).type === "function"
-    );
-    const providerTool = capturedTools?.find(
-      (t: unknown) => (t as { type: string }).type === "provider"
+    const fnTool = capturedTools?.find((tool) => hasType(tool, "function"));
+    const providerTool = capturedTools?.find((tool) =>
+      hasType(tool, "provider")
     );
     expect(fnTool).toBeDefined();
     expect(providerTool).toBeDefined();
@@ -138,7 +143,7 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
   test("accepts LanguageModelV3ToolResult for declared provider-native tool in generate", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate() {
+        doGenerate() {
           return createGenerateResult({
             content: [
               {
@@ -178,7 +183,7 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
   test("still rejects undeclared provider-owned tool results (baseline protection)", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate() {
+        doGenerate() {
           return createGenerateResult({
             content: [
               {
@@ -194,17 +199,18 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
     });
 
     // No providerNativeTools declared → should still reject
-    await expect(
+    const rejection = await captureRejection(
       bridge.generate({
         messages: [{ parts: [{ text: "test", type: "text" }], role: "user" }],
       })
-    ).rejects.toBeInstanceOf(TuvrenProviderError);
+    );
+    expect(rejection).toBeInstanceOf(TuvrenProviderError);
   });
 
   test("yields provider_tool_result chunk for declared provider-native tool in stream", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doStream() {
+        doStream() {
           return {
             stream: streamFromParts([
               {
@@ -234,21 +240,22 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
     );
 
     const providerResultChunk = chunks.find(
-      (c) => c.type === "provider_tool_result"
+      (
+        chunk
+      ): chunk is Extract<
+        (typeof chunks)[number],
+        { type: "provider_tool_result" }
+      > => chunk.type === "provider_tool_result"
     );
     expect(providerResultChunk).toBeDefined();
-    expect((providerResultChunk as { name: string }).name).toBe(
-      "code_execution"
-    );
-    expect(
-      (providerResultChunk as { providerCallId: string }).providerCallId
-    ).toBe("native-stream-1");
+    expect(providerResultChunk?.name).toBe("code_execution");
+    expect(providerResultChunk?.providerCallId).toBe("native-stream-1");
   });
 
   test("still rejects undeclared streamed provider tool results (baseline protection)", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doStream() {
+        doStream() {
           return {
             stream: streamFromParts([
               {
@@ -264,13 +271,16 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
     });
 
     // No providerNativeTools declared → still rejects
-    await expect(
+    const rejection = await captureRejection(
       collectAsyncIterable(
         bridge.stream({
           messages: [{ parts: [{ text: "test", type: "text" }], role: "user" }],
         })
       )
-    ).rejects.toThrow('AI SDK stream part "tool-result" is out of scope');
+    );
+    expect(rejection.message).toContain(
+      'AI SDK stream part "tool-result" is out of scope'
+    );
   });
 });
 
@@ -283,7 +293,7 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
     let capturedTools: unknown[] | undefined;
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate(options) {
+        doGenerate(options) {
           capturedTools = options.tools;
           return createGenerateResult();
         },
@@ -316,7 +326,7 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
   test("accepts dynamic=true LanguageModelV3ToolResult for declared provider-mediated tool in generate", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate() {
+        doGenerate() {
           return createGenerateResult({
             content: [
               {
@@ -362,7 +372,7 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
       model: createMockModel({ provider: "anthropic" }),
     });
 
-    await expect(
+    const rejection = await captureRejection(
       bridge.generate({
         messages: [{ parts: [{ text: "go", type: "text" }], role: "user" }],
         providerMediatedTools: [
@@ -373,13 +383,16 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
           },
         ],
       })
-    ).rejects.toThrow("provider-mediated tools require an OpenAI-bound model");
+    );
+    expect(rejection.message).toContain(
+      "provider-mediated tools require an OpenAI-bound model"
+    );
   });
 
   test("yields provider_tool_result chunk with executionClass provider-mediated for declared mediated tool in stream", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doStream() {
+        doStream() {
           return {
             stream: streamFromParts([
               {
@@ -415,13 +428,16 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
     );
 
     const providerResultChunk = chunks.find(
-      (c) => c.type === "provider_tool_result"
+      (
+        chunk
+      ): chunk is Extract<
+        (typeof chunks)[number],
+        { type: "provider_tool_result" }
+      > => chunk.type === "provider_tool_result"
     );
     expect(providerResultChunk).toBeDefined();
-    expect((providerResultChunk as { name: string }).name).toBe("mcp_tool");
-    const meta = (
-      providerResultChunk as { providerMetadata?: Record<string, unknown> }
-    ).providerMetadata;
+    expect(providerResultChunk?.name).toBe("mcp_tool");
+    const meta = providerResultChunk?.providerMetadata;
     expect(meta?.executionClass).toBe("provider-mediated");
   });
 });
@@ -435,7 +451,7 @@ describe("provider-bridge-ai-sdk provider continuity", () => {
     let capturedProviderOptions: Record<string, unknown> | undefined;
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        async doGenerate(options) {
+        doGenerate(options) {
           capturedProviderOptions = options.providerOptions;
           return createGenerateResult();
         },
@@ -450,8 +466,9 @@ describe("provider-bridge-ai-sdk provider continuity", () => {
     });
 
     expect(capturedProviderOptions).toBeDefined();
+    const anthropicOptions = capturedProviderOptions?.anthropic;
     expect(
-      (capturedProviderOptions?.anthropic as Record<string, unknown>)?.sessionId
+      isRecord(anthropicOptions) ? anthropicOptions.sessionId : undefined
     ).toBe("abc123");
   });
 });

@@ -104,7 +104,7 @@ export const isPlainObject = (
     return false;
   }
 
-  const prototype = Object.getPrototypeOf(value);
+  const prototype = Reflect.getPrototypeOf(value);
 
   if (prototype !== Object.prototype && prototype !== null) {
     return false;
@@ -180,7 +180,19 @@ export const sanitizeMetadataValue = (value: unknown): unknown => {
     return sanitized;
   }
 
-  return String(value);
+  if (typeof value === "object") {
+    return Object.prototype.toString.call(value);
+  }
+
+  if (typeof value === "function") {
+    return Function.prototype.toString.call(value);
+  }
+
+  if (typeof value === "bigint" || typeof value === "symbol") {
+    return value.toString();
+  }
+
+  return Object.prototype.toString.call(value);
 };
 
 /**
@@ -225,13 +237,13 @@ export const sanitizeRecord = (
  * Structurally clones metadata values (arrays, plain objects, `Uint8Array`);
  * other values are returned as-is.
  */
-export const cloneMetadataValue = <T>(value: T): T => {
+export const cloneMetadataValue = (value: unknown): unknown => {
   if (value instanceof Uint8Array) {
-    return new Uint8Array(value) as T;
+    return new Uint8Array(value);
   }
 
   if (Array.isArray(value)) {
-    return value.map((entry) => cloneMetadataValue(entry)) as T;
+    return value.map((entry) => cloneMetadataValue(entry));
   }
 
   if (isPlainObject(value)) {
@@ -241,7 +253,7 @@ export const cloneMetadataValue = <T>(value: T): T => {
       clone[key] = cloneMetadataValue(entry);
     }
 
-    return clone as T;
+    return clone;
   }
 
   return value;
@@ -351,7 +363,7 @@ export const isJsonValue = (value: unknown): value is JsonValue => {
 };
 
 /** Recursively clones one already-validated {@link JsonValue}. */
-const cloneJsonValue = (value: JsonValue): JsonValue => {
+export const cloneJsonValue = (value: JsonValue): JsonValue => {
   if (
     value === null ||
     typeof value === "string" ||
@@ -392,7 +404,7 @@ const cloneJsonValue = (value: JsonValue): JsonValue => {
 /**
  * Deep-clones a record as a JSON object, dropping `undefined` entries.
  *
- * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config` when
+ * @throws {TuvrenProviderError} With code `invalid_ai_sdk_bridge_config` when
  *   an entry is not JSON-serializable.
  */
 export const cloneJsonObject = (value: Record<string, unknown>): JsonObject => {
@@ -424,7 +436,7 @@ export const cloneJsonObject = (value: Record<string, unknown>): JsonObject => {
  * Deep-clones a provider-options record, enforcing that every provider
  * namespace is a plain JSON-serializable object.
  *
- * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config` when
+ * @throws {TuvrenProviderError} With code `invalid_ai_sdk_bridge_config` when
  *   a namespace entry is not a plain object.
  */
 export const cloneProviderOptions = (
@@ -584,43 +596,33 @@ export const mapAssistantReplayProviderOptions = (
     return undefined;
   }
 
-  switch (part.type) {
-    case "text": {
-      return cloneProviderOptionsOrUndefined(
-        collectAssistantReplayProviderOptions(
-          sanitized,
-          ASSISTANT_TEXT_REPLAY_PROVIDER_KEYS
-        )
-      );
-    }
-    case "reasoning": {
-      const normalized = collectAssistantReplayProviderOptions(
+  if (part.type === "text" || part.type === "tool_call") {
+    return cloneProviderOptionsOrUndefined(
+      collectAssistantReplayProviderOptions(
         sanitized,
-        ASSISTANT_REASONING_REPLAY_PROVIDER_KEYS
-      );
-
-      if (typeof sanitized.signature === "string") {
-        applyFlatReasoningSignature(
-          normalized,
-          activeProvider,
-          sanitized.signature
-        );
-      }
-
-      return cloneProviderOptionsOrUndefined(normalized);
-    }
-    case "tool_call": {
-      return cloneProviderOptionsOrUndefined(
-        collectAssistantReplayProviderOptions(
-          sanitized,
-          ASSISTANT_TEXT_REPLAY_PROVIDER_KEYS
-        )
-      );
-    }
-    default: {
-      return undefined;
-    }
+        ASSISTANT_TEXT_REPLAY_PROVIDER_KEYS
+      )
+    );
   }
+
+  if (part.type !== "reasoning") {
+    return undefined;
+  }
+
+  const normalized = collectAssistantReplayProviderOptions(
+    sanitized,
+    ASSISTANT_REASONING_REPLAY_PROVIDER_KEYS
+  );
+
+  if (typeof sanitized.signature === "string") {
+    applyFlatReasoningSignature(
+      normalized,
+      activeProvider,
+      sanitized.signature
+    );
+  }
+
+  return cloneProviderOptionsOrUndefined(normalized);
 };
 
 /**
@@ -716,14 +718,26 @@ export const mergeProviderMetadataRecords = (
   next: Record<string, unknown> | undefined
 ): Record<string, unknown> | undefined => {
   if (current === undefined) {
-    return next === undefined ? undefined : cloneMetadataValue(next);
+    if (next === undefined) {
+      return undefined;
+    }
+
+    const clonedNext: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(next)) {
+      clonedNext[key] = cloneMetadataValue(value);
+    }
+    return clonedNext;
   }
 
   if (next === undefined) {
     return current;
   }
 
-  const merged = cloneMetadataValue(current);
+  const merged: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(current)) {
+    merged[key] = cloneMetadataValue(value);
+  }
 
   for (const [providerName, providerValue] of Object.entries(next)) {
     const existingValue = merged[providerName];
@@ -833,7 +847,17 @@ export const cloneFileData = (
  */
 export const cloneJsonSchema = (
   schema: StructuredOutputRequest["schema"]
-): JSONSchema7 => cloneMetadataValue(schema) as JSONSchema7;
+): JSONSchema7 => {
+  if (schema === true) {
+    return {};
+  }
+
+  if (schema === false) {
+    return { not: {} };
+  }
+
+  return structuredClone(schema);
+};
 
 /**
  * Normalizes any thrown value into a `TuvrenProviderError`: existing
@@ -936,7 +960,7 @@ export const providerOwnedToolExecutionUnsupportedError = (
  * Looks up the tool state seeded by `tool-input-start` for a provider call
  * id.
  *
- * @throws TuvrenProviderError with code `unsupported_ai_sdk_stream_part`
+ * @throws {TuvrenProviderError} With code `unsupported_ai_sdk_stream_part`
  *   when input parts arrive before the tool input started.
  */
 export const requireToolState = (
