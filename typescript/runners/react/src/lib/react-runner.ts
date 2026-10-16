@@ -147,86 +147,168 @@ interface ResolvedReActRunnerOptions {
   toolExecutionMode: ReActRunnerToolExecutionModeResolver;
 }
 
-/**
- * `RuntimeRunner` implementation for the ReAct strategy: one model call per
- * iteration, no internal multi-step planning. `execute` and `resume` share
- * the same iteration engine ({@link executeIteration}); `resume` additionally
- * validates that every approval decision targets a tool call left pending by
- * the prior iteration before continuing.
- *
- * Both methods normalize any thrown error into a `fail` resolution with
- * `fatality: "hard"` instead of letting it escape the runner boundary,
- * matching the shared-core expectation that a runner never throws across the
- * seam.
- */
-class ReActRunner implements RuntimeRunner {
-  readonly id = REACT_RUNNER_ID;
-  private readonly options: ResolvedReActRunnerOptions;
+/** Builds the `fail`/`fatality: "hard"` resolution used for a cancelled iteration. */
+const createExecutionCancelledResolution = (): Extract<
+  RunnerExecutionResult["resolution"],
+  { type: "fail" }
+> => ({
+  error: new TuvrenRuntimeError("execution cancelled", {
+    code: "react_runner_execution_cancelled",
+  }),
+  fatality: "hard",
+  type: "fail",
+});
 
-  constructor(options: ResolvedReActRunnerOptions) {
-    this.options = options;
-  }
-
-  async execute(
-    context: RunnerExecutionContext
-  ): Promise<RunnerExecutionResult> {
-    try {
-      return await executeIteration(context, this.options);
-    } catch (error: unknown) {
-      return {
-        resolution: {
-          error: normalizeExecutionError(error),
-          fatality: "hard",
-          type: "fail",
-        },
-      };
-    }
-  }
-
-  async resume(context: RunnerResumeContext): Promise<RunnerExecutionResult> {
-    try {
-      validateResumeApprovalContext(context);
-      // Resume uses the same ReAct iteration engine as execute after validating
-      // that approval decisions correspond to already-pending tool calls.
-      return await executeIteration(context, this.options);
-    } catch (error: unknown) {
-      return {
-        resolution: {
-          error: normalizeExecutionError(error),
-          fatality: "hard",
-          type: "fail",
-        },
-      };
-    }
-  }
-}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
 
 /**
- * Builds a `RuntimeRunnerFactory` for the ReAct runner.
- *
- * Each call to the returned factory's `create()` produces a fresh, stateless
- * `ReActRunner` instance bound to the resolved options; the factory itself
- * can be registered once and reused across agent configs.
- *
- * @param options - Optional provider-call and tool-execution mode overrides.
- *   Omitted fields default to `"stream"` and `"parallel"` respectively.
- * @returns A factory whose `id` is {@link REACT_RUNNER_ID}.
+ * Built-in `IterationDecision` used when `config.loopPolicy` is not set:
+ * continue and execute tools when the model finished with `"tool_call"`,
+ * otherwise end the turn with reason `"done"`.
  */
-export function createReActRunner(
-  options?: ReActRunnerOptions
-): RuntimeRunnerFactory {
-  const resolvedOptions: ResolvedReActRunnerOptions = {
-    providerCallMode: options?.providerCallMode ?? "stream",
-    toolExecutionMode: options?.toolExecutionMode ?? "parallel",
-  };
+const defaultIterationDecision = (
+  response: TuvrenModelResponse
+): IterationDecision => {
+  if (response.finishReason === "tool_call") {
+    return {
+      continue: true,
+      executeTools: true,
+    };
+  }
 
   return {
-    create() {
-      return new ReActRunner(resolvedOptions);
-    },
-    id: REACT_RUNNER_ID,
+    continue: false,
+    executeTools: false,
+    reason: "done",
   };
-}
+};
+
+const cloneValue = <T>(value: T): T => structuredClone(value);
+
+/**
+ * Resolves the `IterationDecision` for a completed model response by calling
+ * `config.loopPolicy.evaluate` (or {@link defaultIterationDecision} when no
+ * loop policy is configured), then validates the result's shape and its
+ * consistency with whether the response requested tool calls.
+ *
+ * @throws TuvrenRuntimeError with code `invalid_loop_policy` when
+ *   `evaluate()` returns a malformed `IterationDecision`, or when the
+ *   response requests tool calls but the decision does not set both
+ *   `continue` and `executeTools` (tool-call responses must continue the
+ *   iteration loop and execute the requested tools).
+ */
+const resolveIterationDecision = (
+  config: Readonly<AgentConfig>,
+  response: TuvrenModelResponse,
+  manifest: RunnerExecutionContext["manifest"],
+  iterationCount: number,
+  requestsTools: boolean
+): IterationDecision => {
+  const decision =
+    config.loopPolicy === undefined
+      ? defaultIterationDecision(response)
+      : config.loopPolicy.evaluate(
+          cloneValue(response),
+          cloneValue(manifest),
+          iterationCount
+        );
+
+  if (
+    !isRecord(decision) ||
+    typeof decision.continue !== "boolean" ||
+    typeof decision.executeTools !== "boolean" ||
+    (decision.reason !== undefined && typeof decision.reason !== "string")
+  ) {
+    throw new TuvrenRuntimeError(
+      "loopPolicy.evaluate() must return a valid IterationDecision",
+      {
+        code: "invalid_loop_policy",
+        details: {
+          decision,
+        },
+      }
+    );
+  }
+
+  if (requestsTools && !(decision.continue && decision.executeTools)) {
+    throw new TuvrenRuntimeError(
+      "tool-call responses require loopPolicy to continue and execute tools",
+      {
+        code: "invalid_loop_policy",
+        details: {
+          decision,
+          finishReason: response.finishReason,
+        },
+      }
+    );
+  }
+
+  return decision;
+};
+
+/**
+ * Maps an `IterationDecision` to the corresponding `RuntimeResolution`:
+ * `continue_iteration` when `decision.continue` is true, otherwise `end_turn`
+ * with `decision.reason` (defaulting to `"done"`).
+ */
+const iterationDecisionToResolution = (
+  decision: IterationDecision
+): RunnerExecutionResult["resolution"] => {
+  if (decision.continue) {
+    return {
+      type: "continue_iteration",
+    };
+  }
+
+  return {
+    reason: decision.reason ?? "done",
+    type: "end_turn",
+  };
+};
+
+// ---------------------------------------------------------------------------
+// Provider-native / provider-mediated pre-staged tool message (AY002/AY004)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the pre-staged role-`tool` message for provider-native/mediated
+ * invocation results (AY002/AY004), stamping `providerMetadata.owner:
+ * "provider"` on every part so shared core recognizes it as already-executed
+ * and does not dispatch it through the Tool Execution Gateway.
+ *
+ * @returns `undefined` when there are no provider tool results to stage.
+ */
+const buildPrestagedProviderToolMessage = (
+  providerToolResults: ProviderNativeInvocationRecord[] | undefined
+): Extract<TuvrenMessage, { role: "tool" }> | undefined => {
+  if (providerToolResults === undefined || providerToolResults.length === 0) {
+    return undefined;
+  }
+
+  const parts = providerToolResults.map((record) => ({
+    callId: record.callId,
+    ...(record.isError === true ? { isError: true as const } : {}),
+    name: record.name,
+    output: record.result,
+    providerMetadata: {
+      // Spread record.providerMetadata first so canonical attribution fields
+      // below are always authoritative regardless of what the provider stamps. (AY002/AY004)
+      ...record.providerMetadata,
+      executionClass: record.executionClass,
+      owner: "provider",
+      providerCallId: record.providerCallId,
+    },
+    type: "tool_result" as const,
+  }));
+
+  const [first, ...rest] = parts;
+
+  return {
+    parts: [first, ...rest],
+    role: "tool",
+  };
+};
 
 /**
  * Builds the `RunnerExecutionResult` for a model response with no
@@ -244,12 +326,12 @@ export function createReActRunner(
  *   response has no parts, is not cancelled, and carries no provider tool
  *   results to fall back on.
  */
-function buildEmptyPartsResult(
+const buildEmptyPartsResult = (
   context: RunnerExecutionContext,
   response: TuvrenModelResponse,
   execution: ModelExecutionOutcome,
   cancelled: boolean
-): RunnerExecutionResult {
+): RunnerExecutionResult => {
   if (cancelled) {
     return {
       partial: false,
@@ -298,7 +380,417 @@ function buildEmptyPartsResult(
       details: { response },
     }
   );
-}
+};
+
+const isConcreteProvider = (value: unknown): value is TuvrenProvider => {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === "string" &&
+    value.id.trim().length > 0 &&
+    typeof value.generate === "function" &&
+    typeof value.stream === "function"
+  );
+};
+
+/**
+ * Narrows `config.model` to a concrete `TuvrenProvider`.
+ *
+ * @throws TuvrenValidationError with code `react_runner_missing_provider`
+ *   when `model` is a string model id or otherwise not a provider — the ReAct
+ *   runner requires the host to have already resolved a concrete provider.
+ */
+const resolveProvider = (model: AgentConfig["model"]): TuvrenProvider => {
+  if (isConcreteProvider(model)) {
+    return model;
+  }
+
+  throw new TuvrenValidationError(
+    "ReAct runner execution requires config.model to be a concrete TuvrenProvider",
+    {
+      code: "react_runner_missing_provider",
+      details: {
+        model,
+      },
+    }
+  );
+};
+
+/**
+ * Evaluates {@link ReActRunnerProviderCallModeResolver} for the current call.
+ *
+ * @throws TuvrenRuntimeError with code
+ *   `react_runner_invalid_provider_call_mode` when the resolver (or fixed
+ *   value) does not produce `"generate"` or `"stream"`.
+ */
+const resolveProviderCallMode = (
+  resolver: ReActRunnerProviderCallModeResolver,
+  context: RunnerExecutionContext,
+  provider: TuvrenProvider
+): ReActRunnerProviderCallMode => {
+  const resolvedMode: unknown =
+    typeof resolver === "function"
+      ? resolver({
+          config: context.config,
+          iterationCount: context.iterationCount,
+          provider,
+        })
+      : resolver;
+
+  if (resolvedMode === "generate" || resolvedMode === "stream") {
+    return resolvedMode;
+  }
+
+  throw new TuvrenRuntimeError(
+    'providerCallMode must resolve to "generate" or "stream"',
+    {
+      code: "react_runner_invalid_provider_call_mode",
+      details: {
+        providerCallMode: resolvedMode,
+      },
+    }
+  );
+};
+
+/**
+ * Builds the `TuvrenPrompt` sent to `provider.generate`/`provider.stream`
+ * from the final `AroundModelContext` produced by the `aroundModel` chain.
+ * Optional tool/continuity fields are included only when non-empty so the
+ * provider adapter sees `undefined` rather than empty arrays/objects.
+ */
+const createProviderPrompt = (aroundContext: AroundModelContext) => ({
+  config: cloneValue(aroundContext.config),
+  messages: cloneValue(aroundContext.messages),
+  responseFormat: cloneValue(aroundContext.prompt.responseFormat),
+  tools:
+    aroundContext.tools.length === 0
+      ? undefined
+      : cloneValue(aroundContext.tools),
+  ...(aroundContext.prompt.providerNativeTools !== undefined &&
+  aroundContext.prompt.providerNativeTools.length > 0
+    ? {
+        providerNativeTools: cloneValue(
+          aroundContext.prompt.providerNativeTools
+        ),
+      }
+    : {}),
+  ...(aroundContext.prompt.providerMediatedTools !== undefined &&
+  aroundContext.prompt.providerMediatedTools.length > 0
+    ? {
+        providerMediatedTools: cloneValue(
+          aroundContext.prompt.providerMediatedTools
+        ),
+      }
+    : {}),
+  ...(aroundContext.prompt.providerContinuity === undefined
+    ? {}
+    : {
+        providerContinuity: cloneValue(aroundContext.prompt.providerContinuity),
+      }),
+});
+
+/**
+ * Terminal `next()` step of the `aroundModel` chain: resolves the concrete
+ * provider from `config.model`, picks generate-vs-stream per
+ * {@link ReActRunnerOptions.providerCallMode}, and issues exactly one
+ * provider call, wrapping its result as a {@link ModelExecutionOutcome} with
+ * a single buffered assistant sequence.
+ *
+ * @throws TuvrenValidationError when `config.model` is not a concrete
+ *   `TuvrenProvider` (see {@link resolveProvider}).
+ */
+const callProvider = async (
+  aroundContext: AroundModelContext,
+  context: RunnerExecutionContext,
+  options: ResolvedReActRunnerOptions
+): Promise<ModelExecutionOutcome> => {
+  const provider = resolveProvider(context.config.model);
+  const providerCallMode = resolveProviderCallMode(
+    options.providerCallMode,
+    context,
+    provider
+  );
+  const prompt = createProviderPrompt(aroundContext);
+  const sequence =
+    providerCallMode === "generate"
+      ? await executeGenerateCall({
+          now: context.runtime.now,
+          prompt,
+          provider,
+          signal: context.signal,
+        })
+      : await executeStreamCall({
+          now: context.runtime.now,
+          prompt,
+          provider,
+          runtime: context.runtime,
+          signal: context.signal,
+        });
+
+  return {
+    assistantEventReconciliation: undefined,
+    assistantSequences: [sequence],
+    cancelled: sequence.cancelled,
+    response: sequence.response,
+    responseFormat: cloneValue(prompt.responseFormat),
+    stateUpdates: [],
+  };
+};
+
+/**
+ * Builds the initial `AroundModelContext` snapshot passed into the
+ * `aroundModel` chain for one iteration. `emit` is wired to publish
+ * extension-authored custom events onto `context.runtime` immediately,
+ * preserving temporal ordering relative to other runner-emitted events
+ * (framework spec §6.7).
+ */
+const createAroundModelContext = (
+  context: RunnerExecutionContext,
+  promptState: ReturnType<typeof preparePromptState>
+): AroundModelContext =>
+  createAroundModelContextSnapshot({
+    config: cloneValue(promptState.config),
+    emit: (event) => {
+      context.runtime.emit({
+        data: event.data,
+        name: event.name,
+        timestamp: context.runtime.now(),
+        type: "custom",
+      });
+    },
+    extensionState: {},
+    iterationCount: context.iterationCount,
+    manifest: cloneValue(context.manifest),
+    messages: cloneValue(promptState.messages),
+    prompt: cloneValue(promptState.prompt),
+    sharedExports: cloneValue(promptState.sharedExports),
+    tools: cloneValue(promptState.tools),
+  });
+
+/**
+ * Evaluates {@link ReActRunnerToolExecutionModeResolver} for the current
+ * response.
+ *
+ * @throws TuvrenRuntimeError with code
+ *   `react_runner_invalid_tool_execution_mode` when the resolver (or fixed
+ *   value) does not produce `"parallel"` or `"sequential"`.
+ */
+const resolveToolExecutionMode = (
+  resolver: ReActRunnerToolExecutionModeResolver,
+  context: RunnerExecutionContext,
+  response: TuvrenModelResponse
+): RunnerToolExecutionMode => {
+  const resolvedMode: unknown =
+    typeof resolver === "function"
+      ? resolver({
+          config: context.config,
+          iterationCount: context.iterationCount,
+          response,
+        })
+      : resolver;
+
+  if (resolvedMode === "parallel" || resolvedMode === "sequential") {
+    return resolvedMode;
+  }
+
+  throw new TuvrenRuntimeError(
+    'toolExecutionMode must resolve to "parallel" or "sequential"',
+    {
+      code: "react_runner_invalid_tool_execution_mode",
+      details: {
+        toolExecutionMode: resolvedMode,
+      },
+    }
+  );
+};
+
+const getStructuredOutputSchemaDialect = (
+  schema: TuvrenJsonSchema
+): string | undefined => {
+  if (typeof schema === "boolean") {
+    return undefined;
+  }
+
+  const schemaDialect = schema.$schema;
+
+  if (schemaDialect === undefined) {
+    return undefined;
+  }
+
+  return typeof schemaDialect === "string" ? schemaDialect : undefined;
+};
+
+/**
+ * Selects an Ajv instance matching `schema.$schema`: draft-07 (or no
+ * declared dialect) uses the default `Ajv`, draft/2019-09 uses `Ajv2019`,
+ * and draft/2020-12 uses `Ajv2020`.
+ *
+ * @throws TuvrenProviderError with code `structured_output_validation` and
+ *   `details.reason: "unsupported_schema_dialect"` for any other declared
+ *   `$schema`.
+ */
+const createStructuredOutputAjv = (
+  schema: TuvrenJsonSchema
+): Ajv | Ajv2019 | Ajv2020 => {
+  const schemaDialect = getStructuredOutputSchemaDialect(schema);
+
+  if (
+    schemaDialect === undefined ||
+    JSON_SCHEMA_DRAFT_7_URIS.has(schemaDialect)
+  ) {
+    return new Ajv(STRUCTURED_OUTPUT_AJV_OPTIONS);
+  }
+
+  if (JSON_SCHEMA_DRAFT_2019_09_URIS.has(schemaDialect)) {
+    return new Ajv2019(STRUCTURED_OUTPUT_AJV_OPTIONS);
+  }
+
+  if (JSON_SCHEMA_DRAFT_2020_12_URIS.has(schemaDialect)) {
+    return new Ajv2020(STRUCTURED_OUTPUT_AJV_OPTIONS);
+  }
+
+  throw new TuvrenProviderError("structured output validation failed", {
+    code: "structured_output_validation",
+    details: {
+      reason: "unsupported_schema_dialect",
+      schemaDialect,
+    },
+  });
+};
+
+/**
+ * Compiles `schema` with an Ajv instance selected for its declared JSON
+ * Schema dialect (see {@link createStructuredOutputAjv}).
+ *
+ * @throws TuvrenProviderError with code `structured_output_validation` and
+ *   `details.reason: "schema_compilation_failed"` when Ajv rejects the
+ *   schema.
+ */
+const compileStructuredOutputSchema = (schema: TuvrenJsonSchema) => {
+  const ajv = createStructuredOutputAjv(schema);
+
+  try {
+    return ajv.compile(schema);
+  } catch (error: unknown) {
+    throw new TuvrenProviderError("structured output validation failed", {
+      code: "structured_output_validation",
+      details: {
+        message: error instanceof Error ? error.message : String(error),
+        reason: "schema_compilation_failed",
+        schemaDialect: getStructuredOutputSchemaDialect(schema),
+      },
+    });
+  }
+};
+
+const hasRequestedToolCalls = (response: TuvrenModelResponse): boolean =>
+  response.parts.some((part) => part.type === "tool_call");
+
+/**
+ * Validates a model response against `AgentConfig.responseFormat` when a
+ * structured-output request is active.
+ *
+ * A response that requests tool calls is exempt from requiring a `structured`
+ * part (the model may legitimately defer structured output to a later
+ * iteration). Otherwise every `structured` part in the response must satisfy
+ * the requested JSON Schema, compiled per {@link compileStructuredOutputSchema}.
+ *
+ * @param request - The active `responseFormat`, or `undefined` to skip
+ *   validation entirely.
+ * @throws TuvrenProviderError with code `structured_output_validation` when no
+ *   `structured` part is present (and no tool calls were requested) or when a
+ *   `structured` part fails schema validation.
+ */
+const validateStructuredOutput = (
+  request: TuvrenPrompt["responseFormat"],
+  response: TuvrenModelResponse
+): void => {
+  if (request === undefined) {
+    return;
+  }
+
+  const structuredParts = response.parts.filter(
+    (part): part is StructuredPart => part.type === "structured"
+  );
+
+  if (structuredParts.length === 0 && !hasRequestedToolCalls(response)) {
+    throw new TuvrenProviderError("structured output validation failed", {
+      code: "structured_output_validation",
+      details: {
+        reason: "missing_structured_part",
+        response,
+      },
+    });
+  }
+
+  const validator = compileStructuredOutputSchema(request.schema);
+
+  for (const part of structuredParts) {
+    if (!validator(part.data)) {
+      throw new TuvrenProviderError("structured output validation failed", {
+        code: "structured_output_validation",
+        details: {
+          errors: validator.errors ?? [],
+          response,
+        },
+      });
+    }
+  }
+};
+
+const normalizeExecutionError = (error: unknown): Error => {
+  if (error instanceof Error) {
+    return error;
+  }
+
+  return new Error(String(error));
+};
+
+/**
+ * Clones `parts` into the assistant message's non-empty parts tuple.
+ *
+ * @throws TuvrenRuntimeError with code `react_runner_empty_response` when
+ *   `parts` is empty; callers only reach this after already confirming
+ *   `response.parts.length > 0`, so this guards against future misuse.
+ */
+const toNonEmptyParts = (
+  parts: TuvrenModelResponse["parts"]
+): Extract<TuvrenMessage, { role: "assistant" }>["parts"] => {
+  const [firstPart, ...remainingParts] = cloneValue(parts);
+
+  if (firstPart === undefined) {
+    throw new TuvrenRuntimeError(
+      "assistant output must include at least one part",
+      {
+        code: "react_runner_empty_response",
+      }
+    );
+  }
+
+  return [firstPart, ...remainingParts];
+};
+
+const stripUndefinedDeep = <T>(value: T): T => {
+  if (value instanceof Uint8Array) {
+    return new Uint8Array(value) as T;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => stripUndefinedDeep(item)) as T;
+  }
+
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value).flatMap(([key, item]) =>
+      item === undefined ? [] : [[key, stripUndefinedDeep(item)]]
+    );
+
+    return Object.fromEntries(entries) as T;
+  }
+
+  return value;
+};
 
 /**
  * Runs one ReAct iteration: prepares the prompt, calls the model through the
@@ -326,10 +818,10 @@ function buildEmptyPartsResult(
  * @throws TuvrenRuntimeError when the response contains `tool_result` parts
  *   or (via {@link buildEmptyPartsResult}) an unsupported empty response.
  */
-async function executeIteration(
+const executeIteration = async (
   context: RunnerExecutionContext,
   options: ResolvedReActRunnerOptions
-): Promise<RunnerExecutionResult> {
+): Promise<RunnerExecutionResult> => {
   const promptState = preparePromptState({
     config: context.config,
     iterationCount: context.iterationCount,
@@ -481,100 +973,7 @@ async function executeIteration(
   );
 
   return runnerResult;
-}
-
-/**
- * Terminal `next()` step of the `aroundModel` chain: resolves the concrete
- * provider from `config.model`, picks generate-vs-stream per
- * {@link ReActRunnerOptions.providerCallMode}, and issues exactly one
- * provider call, wrapping its result as a {@link ModelExecutionOutcome} with
- * a single buffered assistant sequence.
- *
- * @throws TuvrenValidationError when `config.model` is not a concrete
- *   `TuvrenProvider` (see {@link resolveProvider}).
- */
-async function callProvider(
-  aroundContext: AroundModelContext,
-  context: RunnerExecutionContext,
-  options: ResolvedReActRunnerOptions
-): Promise<ModelExecutionOutcome> {
-  const provider = resolveProvider(context.config.model);
-  const providerCallMode = resolveProviderCallMode(
-    options.providerCallMode,
-    context,
-    provider
-  );
-  const prompt = createProviderPrompt(aroundContext);
-  const sequence =
-    providerCallMode === "generate"
-      ? await executeGenerateCall({
-          now: context.runtime.now,
-          prompt,
-          provider,
-          signal: context.signal,
-        })
-      : await executeStreamCall({
-          now: context.runtime.now,
-          prompt,
-          provider,
-          runtime: context.runtime,
-          signal: context.signal,
-        });
-
-  return {
-    assistantEventReconciliation: undefined,
-    assistantSequences: [sequence],
-    cancelled: sequence.cancelled,
-    response: sequence.response,
-    responseFormat: cloneValue(prompt.responseFormat),
-    stateUpdates: [],
-  };
-}
-
-/**
- * Builds the initial `AroundModelContext` snapshot passed into the
- * `aroundModel` chain for one iteration. `emit` is wired to publish
- * extension-authored custom events onto `context.runtime` immediately,
- * preserving temporal ordering relative to other runner-emitted events
- * (framework spec §6.7).
- */
-function createAroundModelContext(
-  context: RunnerExecutionContext,
-  promptState: ReturnType<typeof preparePromptState>
-): AroundModelContext {
-  return createAroundModelContextSnapshot({
-    config: cloneValue(promptState.config),
-    emit: (event) => {
-      context.runtime.emit({
-        data: event.data,
-        name: event.name,
-        timestamp: context.runtime.now(),
-        type: "custom",
-      });
-    },
-    extensionState: {},
-    iterationCount: context.iterationCount,
-    manifest: cloneValue(context.manifest),
-    messages: cloneValue(promptState.messages),
-    prompt: cloneValue(promptState.prompt),
-    sharedExports: cloneValue(promptState.sharedExports),
-    tools: cloneValue(promptState.tools),
-  });
-}
-
-/** Builds the `fail`/`fatality: "hard"` resolution used for a cancelled iteration. */
-function createExecutionCancelledResolution(): Extract<
-  RunnerExecutionResult["resolution"],
-  { type: "fail" }
-> {
-  return {
-    error: new TuvrenRuntimeError("execution cancelled", {
-      code: "react_runner_execution_cancelled",
-    }),
-    fatality: "hard",
-    type: "fail",
-  };
-}
+};
 
 /**
  * Validates that a resume call's approval decisions correspond to tool calls
@@ -590,7 +989,7 @@ function createExecutionCancelledResolution(): Extract<
  * @throws TuvrenRuntimeError with code `runner_resume_unknown_approval_call`
  *   when a decision's `callId` does not match any pending assistant tool call.
  */
-function validateResumeApprovalContext(context: RunnerResumeContext): void {
+const validateResumeApprovalContext = (context: RunnerResumeContext): void => {
   const pendingCallIds = new Set<string>();
 
   for (const message of context.messages) {
@@ -627,495 +1026,85 @@ function validateResumeApprovalContext(context: RunnerResumeContext): void {
       );
     }
   }
-}
+};
 
 /**
- * Narrows `config.model` to a concrete `TuvrenProvider`.
+ * `RuntimeRunner` implementation for the ReAct strategy: one model call per
+ * iteration, no internal multi-step planning. `execute` and `resume` share
+ * the same iteration engine ({@link executeIteration}); `resume` additionally
+ * validates that every approval decision targets a tool call left pending by
+ * the prior iteration before continuing.
  *
- * @throws TuvrenValidationError with code `react_runner_missing_provider`
- *   when `model` is a string model id or otherwise not a provider — the ReAct
- *   runner requires the host to have already resolved a concrete provider.
+ * Both methods normalize any thrown error into a `fail` resolution with
+ * `fatality: "hard"` instead of letting it escape the runner boundary,
+ * matching the shared-core expectation that a runner never throws across the
+ * seam.
  */
-function resolveProvider(model: AgentConfig["model"]): TuvrenProvider {
-  if (isConcreteProvider(model)) {
-    return model;
+class ReActRunner implements RuntimeRunner {
+  readonly id = REACT_RUNNER_ID;
+  private readonly options: ResolvedReActRunnerOptions;
+
+  constructor(options: ResolvedReActRunnerOptions) {
+    this.options = options;
   }
 
-  throw new TuvrenValidationError(
-    "ReAct runner execution requires config.model to be a concrete TuvrenProvider",
-    {
-      code: "react_runner_missing_provider",
-      details: {
-        model,
-      },
-    }
-  );
-}
-
-function isConcreteProvider(value: unknown): value is TuvrenProvider {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return (
-    typeof value.id === "string" &&
-    value.id.trim().length > 0 &&
-    typeof value.generate === "function" &&
-    typeof value.stream === "function"
-  );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-/**
- * Evaluates {@link ReActRunnerProviderCallModeResolver} for the current call.
- *
- * @throws TuvrenRuntimeError with code
- *   `react_runner_invalid_provider_call_mode` when the resolver (or fixed
- *   value) does not produce `"generate"` or `"stream"`.
- */
-function resolveProviderCallMode(
-  resolver: ReActRunnerProviderCallModeResolver,
-  context: RunnerExecutionContext,
-  provider: TuvrenProvider
-): ReActRunnerProviderCallMode {
-  const resolvedMode: unknown =
-    typeof resolver === "function"
-      ? resolver({
-          config: context.config,
-          iterationCount: context.iterationCount,
-          provider,
-        })
-      : resolver;
-
-  if (resolvedMode === "generate" || resolvedMode === "stream") {
-    return resolvedMode;
-  }
-
-  throw new TuvrenRuntimeError(
-    'providerCallMode must resolve to "generate" or "stream"',
-    {
-      code: "react_runner_invalid_provider_call_mode",
-      details: {
-        providerCallMode: resolvedMode,
-      },
-    }
-  );
-}
-
-/**
- * Evaluates {@link ReActRunnerToolExecutionModeResolver} for the current
- * response.
- *
- * @throws TuvrenRuntimeError with code
- *   `react_runner_invalid_tool_execution_mode` when the resolver (or fixed
- *   value) does not produce `"parallel"` or `"sequential"`.
- */
-function resolveToolExecutionMode(
-  resolver: ReActRunnerToolExecutionModeResolver,
-  context: RunnerExecutionContext,
-  response: TuvrenModelResponse
-): RunnerToolExecutionMode {
-  const resolvedMode: unknown =
-    typeof resolver === "function"
-      ? resolver({
-          config: context.config,
-          iterationCount: context.iterationCount,
-          response,
-        })
-      : resolver;
-
-  if (resolvedMode === "parallel" || resolvedMode === "sequential") {
-    return resolvedMode;
-  }
-
-  throw new TuvrenRuntimeError(
-    'toolExecutionMode must resolve to "parallel" or "sequential"',
-    {
-      code: "react_runner_invalid_tool_execution_mode",
-      details: {
-        toolExecutionMode: resolvedMode,
-      },
-    }
-  );
-}
-
-/**
- * Resolves the `IterationDecision` for a completed model response by calling
- * `config.loopPolicy.evaluate` (or {@link defaultIterationDecision} when no
- * loop policy is configured), then validates the result's shape and its
- * consistency with whether the response requested tool calls.
- *
- * @throws TuvrenRuntimeError with code `invalid_loop_policy` when
- *   `evaluate()` returns a malformed `IterationDecision`, or when the
- *   response requests tool calls but the decision does not set both
- *   `continue` and `executeTools` (tool-call responses must continue the
- *   iteration loop and execute the requested tools).
- */
-function resolveIterationDecision(
-  config: Readonly<AgentConfig>,
-  response: TuvrenModelResponse,
-  manifest: RunnerExecutionContext["manifest"],
-  iterationCount: number,
-  requestsTools: boolean
-): IterationDecision {
-  const decision =
-    config.loopPolicy === undefined
-      ? defaultIterationDecision(response)
-      : config.loopPolicy.evaluate(
-          cloneValue(response),
-          cloneValue(manifest),
-          iterationCount
-        );
-
-  if (
-    !isRecord(decision) ||
-    typeof decision.continue !== "boolean" ||
-    typeof decision.executeTools !== "boolean" ||
-    (decision.reason !== undefined && typeof decision.reason !== "string")
-  ) {
-    throw new TuvrenRuntimeError(
-      "loopPolicy.evaluate() must return a valid IterationDecision",
-      {
-        code: "invalid_loop_policy",
-        details: {
-          decision,
+  async execute(
+    context: RunnerExecutionContext
+  ): Promise<RunnerExecutionResult> {
+    try {
+      return await executeIteration(context, this.options);
+    } catch (error: unknown) {
+      return {
+        resolution: {
+          error: normalizeExecutionError(error),
+          fatality: "hard",
+          type: "fail",
         },
-      }
-    );
+      };
+    }
   }
 
-  if (requestsTools && !(decision.continue && decision.executeTools)) {
-    throw new TuvrenRuntimeError(
-      "tool-call responses require loopPolicy to continue and execute tools",
-      {
-        code: "invalid_loop_policy",
-        details: {
-          decision,
-          finishReason: response.finishReason,
+  async resume(context: RunnerResumeContext): Promise<RunnerExecutionResult> {
+    try {
+      validateResumeApprovalContext(context);
+      // Resume uses the same ReAct iteration engine as execute after validating
+      // that approval decisions correspond to already-pending tool calls.
+      return await executeIteration(context, this.options);
+    } catch (error: unknown) {
+      return {
+        resolution: {
+          error: normalizeExecutionError(error),
+          fatality: "hard",
+          type: "fail",
         },
-      }
-    );
+      };
+    }
   }
-
-  return decision;
 }
 
 /**
- * Built-in `IterationDecision` used when `config.loopPolicy` is not set:
- * continue and execute tools when the model finished with `"tool_call"`,
- * otherwise end the turn with reason `"done"`.
+ * Builds a `RuntimeRunnerFactory` for the ReAct runner.
+ *
+ * Each call to the returned factory's `create()` produces a fresh, stateless
+ * `ReActRunner` instance bound to the resolved options; the factory itself
+ * can be registered once and reused across agent configs.
+ *
+ * @param options - Optional provider-call and tool-execution mode overrides.
+ *   Omitted fields default to `"stream"` and `"parallel"` respectively.
+ * @returns A factory whose `id` is {@link REACT_RUNNER_ID}.
  */
-function defaultIterationDecision(
-  response: TuvrenModelResponse
-): IterationDecision {
-  if (response.finishReason === "tool_call") {
-    return {
-      continue: true,
-      executeTools: true,
-    };
-  }
+export const createReActRunner = (
+  options?: ReActRunnerOptions
+): RuntimeRunnerFactory => {
+  const resolvedOptions: ResolvedReActRunnerOptions = {
+    providerCallMode: options?.providerCallMode ?? "stream",
+    toolExecutionMode: options?.toolExecutionMode ?? "parallel",
+  };
 
   return {
-    continue: false,
-    executeTools: false,
-    reason: "done",
-  };
-}
-
-/**
- * Maps an `IterationDecision` to the corresponding `RuntimeResolution`:
- * `continue_iteration` when `decision.continue` is true, otherwise `end_turn`
- * with `decision.reason` (defaulting to `"done"`).
- */
-function iterationDecisionToResolution(
-  decision: IterationDecision
-): RunnerExecutionResult["resolution"] {
-  if (decision.continue) {
-    return {
-      type: "continue_iteration",
-    };
-  }
-
-  return {
-    reason: decision.reason ?? "done",
-    type: "end_turn",
-  };
-}
-
-/**
- * Validates a model response against `AgentConfig.responseFormat` when a
- * structured-output request is active.
- *
- * A response that requests tool calls is exempt from requiring a `structured`
- * part (the model may legitimately defer structured output to a later
- * iteration). Otherwise every `structured` part in the response must satisfy
- * the requested JSON Schema, compiled per {@link compileStructuredOutputSchema}.
- *
- * @param request - The active `responseFormat`, or `undefined` to skip
- *   validation entirely.
- * @throws TuvrenProviderError with code `structured_output_validation` when no
- *   `structured` part is present (and no tool calls were requested) or when a
- *   `structured` part fails schema validation.
- */
-function validateStructuredOutput(
-  request: TuvrenPrompt["responseFormat"],
-  response: TuvrenModelResponse
-): void {
-  if (request === undefined) {
-    return;
-  }
-
-  const structuredParts = response.parts.filter(
-    (part): part is StructuredPart => part.type === "structured"
-  );
-
-  if (structuredParts.length === 0 && !hasRequestedToolCalls(response)) {
-    throw new TuvrenProviderError("structured output validation failed", {
-      code: "structured_output_validation",
-      details: {
-        reason: "missing_structured_part",
-        response,
-      },
-    });
-  }
-
-  const validator = compileStructuredOutputSchema(request.schema);
-
-  for (const part of structuredParts) {
-    if (!validator(part.data)) {
-      throw new TuvrenProviderError("structured output validation failed", {
-        code: "structured_output_validation",
-        details: {
-          errors: validator.errors ?? [],
-          response,
-        },
-      });
-    }
-  }
-}
-
-/**
- * Compiles `schema` with an Ajv instance selected for its declared JSON
- * Schema dialect (see {@link createStructuredOutputAjv}).
- *
- * @throws TuvrenProviderError with code `structured_output_validation` and
- *   `details.reason: "schema_compilation_failed"` when Ajv rejects the
- *   schema.
- */
-function compileStructuredOutputSchema(schema: TuvrenJsonSchema) {
-  const ajv = createStructuredOutputAjv(schema);
-
-  try {
-    return ajv.compile(schema);
-  } catch (error: unknown) {
-    throw new TuvrenProviderError("structured output validation failed", {
-      code: "structured_output_validation",
-      details: {
-        message: error instanceof Error ? error.message : String(error),
-        reason: "schema_compilation_failed",
-        schemaDialect: getStructuredOutputSchemaDialect(schema),
-      },
-    });
-  }
-}
-
-/**
- * Selects an Ajv instance matching `schema.$schema`: draft-07 (or no
- * declared dialect) uses the default `Ajv`, draft/2019-09 uses `Ajv2019`,
- * and draft/2020-12 uses `Ajv2020`.
- *
- * @throws TuvrenProviderError with code `structured_output_validation` and
- *   `details.reason: "unsupported_schema_dialect"` for any other declared
- *   `$schema`.
- */
-function createStructuredOutputAjv(
-  schema: TuvrenJsonSchema
-): Ajv | Ajv2019 | Ajv2020 {
-  const schemaDialect = getStructuredOutputSchemaDialect(schema);
-
-  if (
-    schemaDialect === undefined ||
-    JSON_SCHEMA_DRAFT_7_URIS.has(schemaDialect)
-  ) {
-    return new Ajv(STRUCTURED_OUTPUT_AJV_OPTIONS);
-  }
-
-  if (JSON_SCHEMA_DRAFT_2019_09_URIS.has(schemaDialect)) {
-    return new Ajv2019(STRUCTURED_OUTPUT_AJV_OPTIONS);
-  }
-
-  if (JSON_SCHEMA_DRAFT_2020_12_URIS.has(schemaDialect)) {
-    return new Ajv2020(STRUCTURED_OUTPUT_AJV_OPTIONS);
-  }
-
-  throw new TuvrenProviderError("structured output validation failed", {
-    code: "structured_output_validation",
-    details: {
-      reason: "unsupported_schema_dialect",
-      schemaDialect,
+    create() {
+      return new ReActRunner(resolvedOptions);
     },
-  });
-}
-
-function getStructuredOutputSchemaDialect(
-  schema: TuvrenJsonSchema
-): string | undefined {
-  if (typeof schema === "boolean") {
-    return undefined;
-  }
-
-  const schemaDialect = schema.$schema;
-
-  if (schemaDialect === undefined) {
-    return undefined;
-  }
-
-  return typeof schemaDialect === "string" ? schemaDialect : undefined;
-}
-
-function hasRequestedToolCalls(response: TuvrenModelResponse): boolean {
-  return response.parts.some((part) => part.type === "tool_call");
-}
-
-/**
- * Builds the `TuvrenPrompt` sent to `provider.generate`/`provider.stream`
- * from the final `AroundModelContext` produced by the `aroundModel` chain.
- * Optional tool/continuity fields are included only when non-empty so the
- * provider adapter sees `undefined` rather than empty arrays/objects.
- */
-function createProviderPrompt(aroundContext: AroundModelContext) {
-  return {
-    config: cloneValue(aroundContext.config),
-    messages: cloneValue(aroundContext.messages),
-    responseFormat: cloneValue(aroundContext.prompt.responseFormat),
-    tools:
-      aroundContext.tools.length === 0
-        ? undefined
-        : cloneValue(aroundContext.tools),
-    ...(aroundContext.prompt.providerNativeTools !== undefined &&
-    aroundContext.prompt.providerNativeTools.length > 0
-      ? {
-          providerNativeTools: cloneValue(
-            aroundContext.prompt.providerNativeTools
-          ),
-        }
-      : {}),
-    ...(aroundContext.prompt.providerMediatedTools !== undefined &&
-    aroundContext.prompt.providerMediatedTools.length > 0
-      ? {
-          providerMediatedTools: cloneValue(
-            aroundContext.prompt.providerMediatedTools
-          ),
-        }
-      : {}),
-    ...(aroundContext.prompt.providerContinuity === undefined
-      ? {}
-      : {
-          providerContinuity: cloneValue(
-            aroundContext.prompt.providerContinuity
-          ),
-        }),
+    id: REACT_RUNNER_ID,
   };
-}
-
-function normalizeExecutionError(error: unknown): Error {
-  if (error instanceof Error) {
-    return error;
-  }
-
-  return new Error(String(error));
-}
-
-function cloneValue<T>(value: T): T {
-  return structuredClone(value);
-}
-
-/**
- * Clones `parts` into the assistant message's non-empty parts tuple.
- *
- * @throws TuvrenRuntimeError with code `react_runner_empty_response` when
- *   `parts` is empty; callers only reach this after already confirming
- *   `response.parts.length > 0`, so this guards against future misuse.
- */
-function toNonEmptyParts(
-  parts: TuvrenModelResponse["parts"]
-): Extract<TuvrenMessage, { role: "assistant" }>["parts"] {
-  const [firstPart, ...remainingParts] = cloneValue(parts);
-
-  if (firstPart === undefined) {
-    throw new TuvrenRuntimeError(
-      "assistant output must include at least one part",
-      {
-        code: "react_runner_empty_response",
-      }
-    );
-  }
-
-  return [firstPart, ...remainingParts];
-}
-
-function stripUndefinedDeep<T>(value: T): T {
-  if (value instanceof Uint8Array) {
-    return new Uint8Array(value) as T;
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((item) => stripUndefinedDeep(item)) as T;
-  }
-
-  if (value !== null && typeof value === "object") {
-    const entries = Object.entries(value).flatMap(([key, item]) =>
-      item === undefined ? [] : [[key, stripUndefinedDeep(item)]]
-    );
-
-    return Object.fromEntries(entries) as T;
-  }
-
-  return value;
-}
-
-// ---------------------------------------------------------------------------
-// Provider-native / provider-mediated pre-staged tool message (AY002/AY004)
-// ---------------------------------------------------------------------------
-
-/**
- * Builds the pre-staged role-`tool` message for provider-native/mediated
- * invocation results (AY002/AY004), stamping `providerMetadata.owner:
- * "provider"` on every part so shared core recognizes it as already-executed
- * and does not dispatch it through the Tool Execution Gateway.
- *
- * @returns `undefined` when there are no provider tool results to stage.
- */
-function buildPrestagedProviderToolMessage(
-  providerToolResults: ProviderNativeInvocationRecord[] | undefined
-): Extract<TuvrenMessage, { role: "tool" }> | undefined {
-  if (providerToolResults === undefined || providerToolResults.length === 0) {
-    return undefined;
-  }
-
-  const parts = providerToolResults.map((record) => ({
-    callId: record.callId,
-    ...(record.isError === true ? { isError: true as const } : {}),
-    name: record.name,
-    output: record.result,
-    providerMetadata: {
-      // Spread record.providerMetadata first so canonical attribution fields
-      // below are always authoritative regardless of what the provider stamps. (AY002/AY004)
-      ...record.providerMetadata,
-      executionClass: record.executionClass,
-      owner: "provider",
-      providerCallId: record.providerCallId,
-    },
-    type: "tool_result" as const,
-  }));
-
-  const [first, ...rest] = parts;
-
-  return {
-    parts: [first, ...rest],
-    role: "tool",
-  };
-}
+};
