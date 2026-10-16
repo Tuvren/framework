@@ -32,9 +32,8 @@ import type {
 import type { BackendState } from "./backend-invariant-state.js";
 
 /** Builds a fully-formed `<prefix>_backend_<reason>` error code. */
-const errorCode = (errorPrefix: string, suffix: string): string => {
-  return `${errorPrefix}_backend_${suffix}`;
-};
+const errorCode = (errorPrefix: string, suffix: string): string =>
+  `${errorPrefix}_backend_${suffix}`;
 
 /**
  * Asserts a backward branch-head move (rewind) preserved history: the same
@@ -53,7 +52,7 @@ const errorCode = (errorPrefix: string, suffix: string): string => {
  *   validate.
  * @param baseState - The state projection loaded before the transaction,
  *   used to recognize which archive branches this transaction created.
- * @throws The injected persistence error with code
+ * @throws {TuvrenPersistenceError} The injected persistence error with code
  *   `<prefix>_backend_backward_branch_move_missing_archive` or
  *   `<prefix>_backend_backward_branch_move_active_run_not_failed`.
  */
@@ -140,7 +139,7 @@ export interface BackendInvariantIntegrityAssertionsConfig extends BackendInvari
    * `decodeRunCreatedTurnNodeHashes` injection precedent in
    * `backend-invariant-run-logic.ts`.
    */
-  getRunActiveTurnNodeHash(run: StoredRun): string;
+  getRunActiveTurnNodeHash: (run: StoredRun) => string;
 }
 
 /**
@@ -150,33 +149,33 @@ export interface BackendInvariantIntegrityAssertionsConfig extends BackendInvari
  * `BackendInvariantRecordUtils`.
  */
 export interface BackendInvariantIntegrityAssertions {
-  assertBackwardBranchMoveIsArchived(
+  assertBackwardBranchMoveIsArchived: (
     state: BackendState,
     baseState: BackendState,
     previousBranch: StoredBranch,
     nextBranch: StoredBranch
-  ): void;
-  assertChunkedTurnTreePathChunkLayout(
+  ) => void;
+  assertChunkedTurnTreePathChunkLayout: (
     chunk: StoredOrderedPathChunk,
     index: number,
     totalChunks: number
-  ): void;
-  assertTurnParentLink(
+  ) => void;
+  assertTurnParentLink: (
     state: BackendState,
     turn: StoredTurn,
     label: string
-  ): void;
-  ensureImmutableRecordMatch<T>(
+  ) => void;
+  ensureImmutableRecordMatch: <T>(
     existing: T,
     incoming: T,
     areEqual: (left: T, right: T) => boolean,
     label: string
-  ): void;
-  listTurnsByThread(
+  ) => void;
+  listTurnsByThread: (
     state: BackendState,
     threadId: string,
     excludedTurnId?: string
-  ): StoredTurn[];
+  ) => StoredTurn[];
   /** Fixed item capacity of every non-final ordered path chunk. */
   readonly ORDERED_PATH_CHUNK_SIZE: number;
 }
@@ -225,9 +224,8 @@ export const createBackendInvariantIntegrityAssertions = (
   const { ensureImmutableRecordMatch, ensureTurnExists, persistenceError } =
     createBackendInvariantRecordUtils(config);
 
-  const code = (suffix: string): string => {
-    return `${config.errorPrefix}_backend_${suffix}`;
-  };
+  const code = (suffix: string): string =>
+    `${config.errorPrefix}_backend_${suffix}`;
 
   /**
    * Asserts a turn's semantic-parent link is canonical: a turn whose start
@@ -237,7 +235,7 @@ export const createBackendInvariantIntegrityAssertions = (
    * and when the parent shares the branch it must be the immediately
    * previous semantic turn, not an earlier one.
    *
-   * @throws The injected persistence error with code
+   * @throws {TuvrenPersistenceError} The injected persistence error with code
    *   `<prefix>_backend_turn_parent_required`,
    *   `<prefix>_backend_turn_parent_thread_mismatch`,
    *   `<prefix>_backend_turn_parent_start_turn_node_mismatch`, or
@@ -352,7 +350,7 @@ export const createBackendInvariantIntegrityAssertions = (
    * chunk holds 1..{@link ORDERED_PATH_CHUNK_SIZE} items, and every chunk
    * except the final one is exactly full.
    *
-   * @throws The injected persistence error with code
+   * @throws {TuvrenPersistenceError} The injected persistence error with code
    *   `<prefix>_backend_ordered_path_chunk_size_invalid` or
    *   `<prefix>_backend_ordered_path_chunk_not_fixed_size`.
    */

@@ -32,7 +32,7 @@ export interface BackendInvariantRunLogicConfig extends BackendInvariantRecordUt
    * because this shared module has no access to any single backend's
    * lineage file.
    */
-  decodeRunCreatedTurnNodeHashes(run: StoredRun): string[];
+  decodeRunCreatedTurnNodeHashes: (run: StoredRun) => string[];
 }
 
 /**
@@ -52,15 +52,15 @@ export interface BackendInvariantRunLogic {
    *   (e.g. `"record.updatedAtMs"`).
    * @param updatedAtCode - Fully-formed backend-prefixed error code raised
    *   on regression.
-   * @throws TuvrenPersistenceError when `nextUpdatedAtMs` is less than
+   * @throws {TuvrenPersistenceError} when `nextUpdatedAtMs` is less than
    *   `previousUpdatedAtMs`.
    */
-  assertMonotonicUpdatedAtMs(
+  assertMonotonicUpdatedAtMs: (
     previousUpdatedAtMs: number,
     nextUpdatedAtMs: number,
     label: string,
     updatedAtCode: string
-  ): void;
+  ) => void;
   /**
    * Asserts that replacing `existingRun` with `nextRun` is a legal stored-run
    * transition: identity/lineage fields stay immutable, `updatedAtMs` and
@@ -69,10 +69,10 @@ export interface BackendInvariantRunLogic {
    * token, lease expiry, preemption reason) follow the lease lifecycle rules,
    * and the status change is a legal run-status transition.
    *
-   * @throws TuvrenPersistenceError with a backend-prefixed
+   * @throws {TuvrenPersistenceError} with a backend-prefixed
    *   `<prefix>_backend_run_*` code identifying the first violated invariant.
    */
-  assertRunUpdateIsLegal(existingRun: StoredRun, nextRun: StoredRun): void;
+  assertRunUpdateIsLegal: (existingRun: StoredRun, nextRun: StoredRun) => void;
 }
 
 /**
@@ -92,9 +92,8 @@ export const createBackendInvariantRunLogic = (
     persistenceError,
   } = createBackendInvariantRecordUtils(config);
 
-  const code = (suffix: string): string => {
-    return `${config.errorPrefix}_backend_${suffix}`;
-  };
+  const code = (suffix: string): string =>
+    `${config.errorPrefix}_backend_${suffix}`;
 
   /**
    * `executionOwnerId` is immutable while the run stays running and must

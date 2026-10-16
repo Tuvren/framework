@@ -23,6 +23,12 @@ import type {
   BackendState,
 } from "../src/index.ts";
 
+const importValidation = async () =>
+  await import("../src/lib/backend-invariant-reclamation-validation.ts");
+const importReclamation = async () =>
+  await import("../src/lib/backend-invariant-reclamation.ts");
+const importPublic = async () => await import("../src/index.ts");
+
 const importOrder = process.env.TUVREN_BACKEND_SHARED_IMPORT_ORDER;
 
 if (importOrder === undefined) {
@@ -44,12 +50,6 @@ if (importOrder === undefined) {
   }
 } else {
   test("keeps canonical exports, empty summary, and first validation failure", async () => {
-    const importValidation = () =>
-      import("../src/lib/backend-invariant-reclamation-validation.ts");
-    const importReclamation = () =>
-      import("../src/lib/backend-invariant-reclamation.ts");
-    const importPublic = () => import("../src/index.ts");
-
     let validation: Awaited<ReturnType<typeof importValidation>>;
     let reclamation: Awaited<ReturnType<typeof importReclamation>>;
     let publicApi: Awaited<ReturnType<typeof importPublic>>;
@@ -79,9 +79,9 @@ if (importOrder === undefined) {
       stagedResults: new Map(),
       threads: new Map(),
       turnNodes: new Map(),
-      turns: new Map(),
       turnTreePaths: new Map(),
       turnTrees: new Map(),
+      turns: new Map(),
     };
     const noOpDeps: BackendInvariantReclamationDeps = {
       decodeHashStringArray: () => [],
@@ -117,10 +117,10 @@ if (importOrder === undefined) {
       ]),
     };
     const validationConfig: BackendInvariantReclamationValidationConfig = {
-      errorPrefix: "proof",
       decodeHashStringArray: () => [],
       decodeRunCreatedTurnNodeHashes: () => [],
       decodeTurnNodeConsumedStagedResultObjectHashes: () => [],
+      errorPrefix: "proof",
       resolveStoredTurnTreePathValue: () => null,
     };
     const assertSurvivors =

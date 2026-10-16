@@ -86,11 +86,13 @@ export type PersistencePhase =
  * production path's measured bytes or behavior when no observer is supplied.
  */
 export interface PhaseObserver {
-  startPhase(phase: PersistencePhase): () => void;
+  startPhase: (phase: PersistencePhase) => () => void;
 }
 
 /** Shared frozen no-op end-callback every {@link NOOP_PHASE_OBSERVER} phase returns. */
-const NOOP_PHASE_END: () => void = Object.freeze(() => undefined);
+const NOOP_PHASE_END: () => void = Object.freeze(() => {
+  // This shared callback intentionally performs no work.
+});
 
 /**
  * The default {@link PhaseObserver} every instrumented backend construction
@@ -117,7 +119,7 @@ export interface PhaseSample {
  */
 export interface RecordingPhaseObserver extends PhaseObserver {
   /** Clears all recorded samples so the observer can be reused across bench tiers. */
-  reset(): void;
+  reset: () => void;
   /** Every phase measurement recorded since construction or the last {@link reset}. */
   readonly samples: readonly PhaseSample[];
 }

@@ -50,81 +50,71 @@ const NO_OP_DEPS: BackendInvariantReclamationDeps = {
   resolveStoredTurnTreePathValue: () => null,
 };
 
-const makeEmptyState = (): BackendState => {
-  return {
-    branches: new Map(),
-    objects: new Map(),
-    observeAnnotations: new Map(),
-    orderedPathChunks: new Map(),
-    runs: new Map(),
-    schemas: new Map(),
-    stagedResults: new Map(),
-    threads: new Map(),
-    turnNodes: new Map(),
-    turnTreePaths: new Map(),
-    turnTrees: new Map(),
-    turns: new Map(),
-  };
-};
+const makeEmptyState = (): BackendState => ({
+  branches: new Map(),
+  objects: new Map(),
+  observeAnnotations: new Map(),
+  orderedPathChunks: new Map(),
+  runs: new Map(),
+  schemas: new Map(),
+  stagedResults: new Map(),
+  threads: new Map(),
+  turnNodes: new Map(),
+  turnTreePaths: new Map(),
+  turnTrees: new Map(),
+  turns: new Map(),
+});
 
 const makeRun = (
   overrides: Partial<StoredRun> & { runId: string }
-): StoredRun => {
-  return {
-    branchId: "branch_1",
-    createdAtMs: 0,
-    createdTurnNodesCbor: new Uint8Array(),
-    currentStepIndex: 0,
-    schemaId: "schema_1",
-    startTurnNodeHash: "hash_start",
-    status: "running",
-    stepSequenceCbor: new Uint8Array(),
-    turnId: "turn_1",
-    updatedAtMs: 0,
-    ...overrides,
-  };
-};
+): StoredRun => ({
+  branchId: "branch_1",
+  createdAtMs: 0,
+  createdTurnNodesCbor: new Uint8Array(),
+  currentStepIndex: 0,
+  schemaId: "schema_1",
+  startTurnNodeHash: "hash_start",
+  status: "running",
+  stepSequenceCbor: new Uint8Array(),
+  turnId: "turn_1",
+  updatedAtMs: 0,
+  ...overrides,
+});
 
 const makeObject = (
   overrides: Partial<StoredObject> & { hash: string }
-): StoredObject => {
-  return {
-    byteLength: 1,
-    bytes: new Uint8Array([1]),
-    createdAtMs: 0,
-    mediaType: "application/octet-stream",
-    ...overrides,
-  };
-};
+): StoredObject => ({
+  byteLength: 1,
+  bytes: new Uint8Array([1]),
+  createdAtMs: 0,
+  mediaType: "application/octet-stream",
+  ...overrides,
+});
 
 const makeTurnNode = (
   overrides: Partial<StoredTurnNode> & { hash: string }
-): StoredTurnNode => {
-  return {
-    consumedStagedResultsCbor: new Uint8Array(),
-    createdAtMs: 0,
-    eventHash: null,
-    previousTurnNodeHash: null,
-    schemaId: "schema_1",
-    turnTreeHash: "tree_1",
-    ...overrides,
-  };
-};
+): StoredTurnNode => ({
+  consumedStagedResultsCbor: new Uint8Array(),
+  createdAtMs: 0,
+  eventHash: null,
+  previousTurnNodeHash: null,
+  schemaId: "schema_1",
+  turnTreeHash: "tree_1",
+  ...overrides,
+});
 
 const makeTurn = (
   overrides: Partial<StoredTurn> & { turnId: string }
-): StoredTurn => {
-  return {
-    branchId: "branch_1",
-    createdAtMs: 0,
-    headTurnNodeHash: "hash_start",
-    parentTurnId: null,
-    startTurnNodeHash: "hash_start",
-    threadId: "thread_1",
-    updatedAtMs: 0,
-    ...overrides,
-  };
-};
+): StoredTurn => ({
+  branchId: "branch_1",
+  createdAtMs: 0,
+  headTurnNodeHash: "hash_start",
+  parentTurnId: null,
+  startTurnNodeHash: "hash_start",
+  threadId: "thread_1",
+  updatedAtMs: 0,
+  ...overrides,
+});
 
 describe("@tuvren/backend-shared isExpiredLeaselessRunningRun", () => {
   test("running + all lease fields undefined + quiet past the horizon => expired", () => {
@@ -390,7 +380,8 @@ describe("@tuvren/backend-shared reclaimBackendState leaseless-run horizon exclu
       makeRun({
         createdAtMs: 0,
         runId: "run_still_active",
-        updatedAtMs: nowMs - 1000, // recent activity, well under the expiry horizon
+        // Recent activity, well under the expiry horizon.
+        updatedAtMs: nowMs - 1000,
       })
     );
     activeState.objects.set(

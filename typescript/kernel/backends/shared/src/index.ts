@@ -29,7 +29,6 @@
  * lineage decoders, which are injected rather than imported so this package
  * never depends on a single backend's modules.
  *
- * @packageDocumentation
  */
 
 // Individual sub-factories/functions are exposed directly (rather than
