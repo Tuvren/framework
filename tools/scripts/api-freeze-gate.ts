@@ -136,16 +136,596 @@ interface EntrypointTarget {
   specifier: string;
 }
 
-function hasSymbolFlag(symbol: ts.Symbol, flag: ts.SymbolFlags): boolean {
+const hasSymbolFlag = (symbol: ts.Symbol, flag: ts.SymbolFlags): boolean =>
   // biome-ignore lint/suspicious/noBitwiseOperators: ts.SymbolFlags is a bitflag enum; masking is the API's membership test.
-  return (symbol.flags & flag) !== 0;
-}
+  (symbol.flags & flag) !== 0;
 
-if (import.meta.main) {
-  await main();
-}
+const assertAuthorityDeclaration = async (): Promise<void> => {
+  const packet = await readFile(CORE_AUTHORITY_PACKET, "utf-8");
 
-async function main(): Promise<void> {
+  if (!packet.includes(AUTHORITY_DECLARATION_MARKER)) {
+    console.error(
+      `[api-freeze-gate] the core authority packet no longer carries the wholly-experimental declaration for @tuvren/core/capabilities ("${AUTHORITY_DECLARATION_MARKER}") — realign WHOLLY_EXPERIMENTAL_ENTRYPOINTS in tools/scripts/api-freeze-gate.ts with the packet before running the gate`
+    );
+    process.exitCode = 1;
+    throw new Error("authority declaration drift");
+  }
+};
+
+/**
+ * Derive the audited entrypoints mechanically from the freeze targets'
+ * export maps (no hand-kept list): every `@tuvren/core` subpath, plus the
+ * `@tuvren/sdk` root.
+ */
+const resolveEntrypointTargets = async (): Promise<EntrypointTarget[]> => {
+  const targets: EntrypointTarget[] = [];
+
+  const coreManifest = JSON.parse(
+    await readFile(
+      path.join(REPO_ROOT, CORE_PACKAGE_DIR, "package.json"),
+      "utf-8"
+    )
+  ) as { exports?: Record<string, unknown>; name: string };
+
+  for (const key of Object.keys(coreManifest.exports ?? {})) {
+    if (key === "./package.json") {
+      continue;
+    }
+
+    const subpath = key === "." ? "" : key.slice(1); // "./errors" -> "/errors"
+    targets.push({
+      sourceFile: path.join(
+        REPO_ROOT,
+        CORE_PACKAGE_DIR,
+        "src",
+        key === "." ? "index.ts" : `${key.slice(2)}/index.ts`
+      ),
+      specifier: `${coreManifest.name}${subpath}`,
+    });
+  }
+
+  // @tuvren/sdk root only: ./advanced (ADR-0059 escape hatch) and the leaf
+  // packages are outside the snapshot per the KRT-BL001 freeze record.
+  targets.push({
+    sourceFile: path.join(REPO_ROOT, SDK_PACKAGE_DIR, "src/index.ts"),
+    specifier: "@tuvren/sdk",
+  });
+
+  return targets;
+};
+
+/**
+ * Read the `@experimental` TSDoc release tag wherever it is placed: on the
+ * declaration itself, or on the enclosing statement (the barrel re-export
+ * placement KRT-BJ006 landed — a `/** @experimental *​/` ahead of an
+ * `export type { X } from ...` statement attaches to the ExportDeclaration,
+ * while the symbol's declaration node is the inner ExportSpecifier).
+ */
+const symbolCarriesExperimentalTag = (symbol: ts.Symbol): boolean => {
+  for (const declaration of symbol.getDeclarations() ?? []) {
+    let node: ts.Node | undefined = declaration;
+
+    while (node !== undefined && !ts.isSourceFile(node)) {
+      if (
+        ts.getJSDocTags(node).some((tag) => tag.tagName.text === "experimental")
+      ) {
+        return true;
+      }
+
+      node = node.parent;
+    }
+  }
+
+  return false;
+};
+
+const hasTypeFlag = (type: ts.Type, flag: ts.TypeFlags): boolean =>
+  // biome-ignore lint/suspicious/noBitwiseOperators: ts.TypeFlags is a bitflag enum; masking is the API's membership test.
+  (type.flags & flag) !== 0;
+
+/**
+ * True when the type is an object type whose symbol has a declaration inside
+ * this repository (not lib.d.ts / node_modules). Non-object types (primitives,
+ * unique symbols) always print via `typeToString`, never member expansion —
+ * their apparent members are lib.d.ts surface, not ours.
+ */
+const typeIsDeclaredInRepo = (type: ts.Type): boolean => {
+  if (!hasTypeFlag(type, ts.TypeFlags.Object)) {
+    return false;
+  }
+
+  const symbol = type.getSymbol() ?? type.aliasSymbol;
+
+  return (symbol?.getDeclarations() ?? []).some((declaration) => {
+    const { fileName } = declaration.getSourceFile();
+
+    return fileName.startsWith(REPO_ROOT) && !fileName.includes("node_modules");
+  });
+};
+
+/**
+ * Strip the TS-internal symbol-ID counter from escaped well-known-symbol
+ * member names (`__@toStringTag@715` → `__@toStringTag`); the counter is a
+ * checker allocation order, not API surface.
+ */
+const normalizeMemberName = (name: string): string =>
+  name.replace(WELL_KNOWN_SYMBOL_ID_PATTERN, "$1");
+
+/**
+ * Deterministic structural text for a value export's type: every call and
+ * construct signature, plus — ONLY for types declared inside this repo — each
+ * property with its checker-resolved type text. Types declared outside the
+ * repo (primitives, lib.d.ts shapes like RegExp/Uint8Array) print via
+ * `typeToString` instead of member expansion: expanding lib members embeds
+ * TS-internal symbol-ID counters in well-known-symbol names (`__@iterator@49`)
+ * that shift on unrelated source edits, corrupting the snapshot with false
+ * blocked findings (M2 review P1). Residual well-known-symbol names from
+ * in-repo types are ID-normalized for the same reason. Referenced named types
+ * print by name; their own shape changes are caught at their own snapshot
+ * entries (see the known limitation in the module header).
+ */
+const structuralTypeText = (
+  type: ts.Type,
+  location: ts.Node,
+  checker: ts.TypeChecker
+): string => {
+  const parts: string[] = [];
+
+  for (const callSignature of type.getCallSignatures()) {
+    parts.push(
+      `call ${checker.signatureToString(callSignature, location, ts.TypeFormatFlags.NoTruncation)}`
+    );
+  }
+
+  for (const constructSignature of type.getConstructSignatures()) {
+    parts.push(
+      `new ${checker.signatureToString(constructSignature, location, ts.TypeFormatFlags.NoTruncation)}`
+    );
+  }
+
+  if (typeIsDeclaredInRepo(type)) {
+    const properties = checker
+      .getPropertiesOfType(type)
+      .map(
+        (property) =>
+          `${normalizeMemberName(property.getName())}: ${checker.typeToString(
+            checker.getTypeOfSymbolAtLocation(property, location),
+            location,
+            ts.TypeFormatFlags.NoTruncation
+          )}`
+      )
+      .sort();
+
+    parts.push(...properties);
+  }
+
+  return parts.length > 0
+    ? parts.join("; ")
+    : checker.typeToString(type, location, ts.TypeFormatFlags.NoTruncation);
+};
+
+const describeExport = (
+  exportSymbol: ts.Symbol,
+  checker: ts.TypeChecker,
+  printer: ts.Printer
+): ExportRecord => {
+  const resolved = hasSymbolFlag(exportSymbol, ts.SymbolFlags.Alias)
+    ? checker.getAliasedSymbol(exportSymbol)
+    : exportSymbol;
+
+  const experimental =
+    symbolCarriesExperimentalTag(exportSymbol) ||
+    symbolCarriesExperimentalTag(resolved);
+
+  const declarations = resolved.getDeclarations() ?? [];
+  const isValue = hasSymbolFlag(resolved, ts.SymbolFlags.Value);
+  const location = declarations[0];
+
+  let signature: string;
+
+  if (isValue && location !== undefined) {
+    // Value exports (functions, consts, classes): derive the signature from
+    // the CHECKER, not the printed source declaration — printing source nodes
+    // would embed function/class bodies, so an internal body edit would
+    // falsely trip the freeze. The checker text captures call/construct
+    // signatures and typed members with inferred types resolved.
+    const parts = [
+      structuralTypeText(
+        checker.getTypeOfSymbolAtLocation(resolved, location),
+        location,
+        checker
+      ),
+    ];
+
+    if (hasSymbolFlag(resolved, ts.SymbolFlags.Class)) {
+      parts.push(
+        `instance: ${structuralTypeText(
+          checker.getDeclaredTypeOfSymbol(resolved),
+          location,
+          checker
+        )}`
+      );
+    }
+
+    signature = parts.join(" ");
+  } else {
+    // Type exports (interfaces, type aliases): printed declaration text is
+    // body-free and captures the full structural shape, including generics
+    // and heritage clauses that a type-reference string would elide.
+    signature = declarations
+      .map((declaration) =>
+        printer
+          .printNode(
+            ts.EmitHint.Unspecified,
+            declaration,
+            declaration.getSourceFile()
+          )
+          .replace(WHITESPACE_RUN_PATTERN, " ")
+          .trim()
+      )
+      .sort()
+      .join(" | ");
+  }
+
+  return {
+    kind: isValue ? "value" : "type",
+    signature,
+    stability: experimental ? "experimental" : "stable",
+  };
+};
+
+const sortRecord = <T>(record: Record<string, T>): Record<string, T> =>
+  // Codepoint order, not localeCompare: the canonical snapshot order must not
+  // depend on the regenerating machine's system locale.
+  Object.fromEntries(
+    Object.entries(record).sort(([a], [b]) => (a < b ? -1 : 1))
+  );
+
+const extractSurface = (
+  targets: EntrypointTarget[],
+  workspacePaths: Record<string, string[]>
+): ApiSurface => {
+  const program = ts.createProgram(
+    targets.map((target) => target.sourceFile),
+    {
+      baseUrl: REPO_ROOT,
+      module: ts.ModuleKind.NodeNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+      paths: workspacePaths,
+      skipLibCheck: true,
+      strict: true,
+      target: ts.ScriptTarget.ES2022,
+    }
+  );
+  const checker = program.getTypeChecker();
+  const printer = ts.createPrinter({ removeComments: true });
+  const surface: ApiSurface = {};
+
+  for (const target of targets) {
+    const sourceFile = program.getSourceFile(target.sourceFile);
+
+    if (sourceFile === undefined) {
+      throw new Error(
+        `[api-freeze-gate] entrypoint source missing: ${target.sourceFile}`
+      );
+    }
+
+    const moduleSymbol = checker.getSymbolAtLocation(sourceFile);
+
+    if (moduleSymbol === undefined) {
+      throw new Error(
+        `[api-freeze-gate] entrypoint has no module symbol (no exports?): ${target.sourceFile}`
+      );
+    }
+
+    const entrySurface: EntrypointSurface = {};
+
+    for (const exportSymbol of checker.getExportsOfModule(moduleSymbol)) {
+      entrySurface[exportSymbol.getName()] = describeExport(
+        exportSymbol,
+        checker,
+        printer
+      );
+    }
+
+    surface[target.specifier] = sortRecord(entrySurface);
+  }
+
+  return sortRecord(surface);
+};
+
+/**
+ * Map every `@tuvren/*` workspace package specifier to its SOURCE entrypoint
+ * (`src/.../index.ts`), derived mechanically from each package's export map by
+ * rewriting `./dist/<p>/index.d.ts` → `src/<p>/index.ts`. Without this,
+ * cross-package imports (e.g. `@tuvren/sdk` re-exporting from `@tuvren/core`)
+ * resolve through checked-in `dist/*.d.ts` build output, and the gate would
+ * see a STALE surface for any package whose dist lags its source.
+ */
+const buildWorkspaceSourcePaths = async (): Promise<
+  Record<string, string[]>
+> => {
+  const paths: Record<string, string[]> = {};
+
+  for (const absoluteManifestPath of await walkPackageManifests(
+    path.join(REPO_ROOT, "typescript")
+  )) {
+    const manifestPath = path.relative(REPO_ROOT, absoluteManifestPath);
+    const manifest = JSON.parse(
+      await readFile(absoluteManifestPath, "utf-8")
+    ) as { exports?: Record<string, { types?: string }>; name?: string };
+
+    if (
+      !manifest.name?.startsWith("@tuvren/") ||
+      manifest.exports === undefined
+    ) {
+      continue;
+    }
+
+    const packageDir = path.dirname(manifestPath);
+
+    for (const [key, entry] of Object.entries(manifest.exports)) {
+      const types = entry?.types;
+
+      if (typeof types !== "string" || !types.startsWith("./dist/")) {
+        continue;
+      }
+
+      const sourceRelative = types
+        .replace(DIST_PREFIX_PATTERN, "src/")
+        .replace(DECLARATION_SUFFIX_PATTERN, ".ts");
+      const specifier =
+        key === "." ? manifest.name : `${manifest.name}/${key.slice(2)}`;
+      paths[specifier] = [path.join(packageDir, sourceRelative)];
+    }
+  }
+
+  return paths;
+};
+
+const isUnknownRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === "string");
+
+const isExportRecord = (value: unknown): value is ExportRecord =>
+  isUnknownRecord(value) &&
+  (value.kind === "type" || value.kind === "value") &&
+  typeof value.signature === "string" &&
+  (value.stability === "experimental" || value.stability === "stable");
+
+const isApiSurface = (value: unknown): value is ApiSurface => {
+  if (!isUnknownRecord(value)) {
+    return false;
+  }
+
+  for (const entrypoint of Object.values(value)) {
+    if (!isUnknownRecord(entrypoint)) {
+      return false;
+    }
+
+    for (const record of Object.values(entrypoint)) {
+      if (!isExportRecord(record)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+};
+
+const isSnapshotLedgerEntry = (value: unknown): value is SnapshotLedgerEntry =>
+  isUnknownRecord(value) &&
+  typeof value.bump === "string" &&
+  isStringArray(value.changes) &&
+  typeof value.recordedAt === "string";
+
+const isSnapshotFile = (value: unknown): value is SnapshotFile => {
+  if (!isUnknownRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.$description === "string" &&
+    isStringArray(value.authority) &&
+    isApiSurface(value.entrypoints) &&
+    Array.isArray(value.ledger) &&
+    value.ledger.every(isSnapshotLedgerEntry)
+  );
+};
+
+const isErrorWithCode = (error: unknown): error is Error & { code: string } =>
+  error instanceof Error && "code" in error && typeof error.code === "string";
+
+export const readSnapshot = async (
+  snapshotPath: string
+): Promise<SnapshotFile | undefined> => {
+  try {
+    const parsed: unknown = JSON.parse(await readFile(snapshotPath, "utf-8"));
+
+    if (!isSnapshotFile(parsed)) {
+      throw new Error(
+        `[api-freeze-gate] invalid API snapshot shape: ${snapshotPath}`
+      );
+    }
+
+    return parsed;
+  } catch (error: unknown) {
+    if (isErrorWithCode(error) && error.code === "ENOENT") {
+      return undefined;
+    }
+
+    throw error;
+  }
+};
+
+const runSnapshotFormatter = (
+  request: SnapshotFormatterRequest
+): SnapshotFormatterResult => {
+  const configArgs =
+    request.configPath === undefined ? [] : ["-c", request.configPath];
+  const result = spawnSync(
+    "bunx",
+    ["--bun", "oxfmt", ...configArgs, "--write", request.snapshotPath],
+    {
+      cwd: request.repoRoot,
+      stdio: ["ignore", "ignore", "pipe"],
+    }
+  );
+
+  return {
+    status: result.status,
+    stderr: [result.error?.message, result.stderr?.toString()]
+      .filter((part) => part !== undefined && part.length > 0)
+      .join("\n"),
+  };
+};
+
+/**
+ * Persist one API-surface snapshot update and prove the native formatter did
+ * not alter its parsed authority. Paths are explicit so the production writer
+ * can be exercised against a complete scratch copy without touching the
+ * checked-in snapshot.
+ */
+export const writeApiSnapshot = async (
+  options: WriteSnapshotOptions
+): Promise<void> => {
+  const previous = await readSnapshot(options.snapshotPath);
+  const snapshot: SnapshotFile = {
+    ...(previous ?? {
+      $description:
+        "ADR-0054/0056 frozen public API surface of @tuvren/core (root + subpaths) and @tuvren/sdk (root). Generated by tools/scripts/api-freeze-gate.ts; refresh with `bun run api-freeze` (allowed drift) or `bun run api-freeze --major` (declared breaking change). Do not edit by hand.",
+      authority: ["ADR-0054", "ADR-0056", "ADR-0057"],
+      entrypoints: options.live,
+      ledger: [],
+    }),
+    entrypoints: options.live,
+    ledger: [...(previous?.ledger ?? []), options.ledgerEntry],
+  };
+
+  await mkdir(path.dirname(options.snapshotPath), { recursive: true });
+  await writeFile(
+    options.snapshotPath,
+    `${JSON.stringify(snapshot, null, 2)}\n`
+  );
+
+  // Leave the checked-in artifact formatter-clean (repo generator rule): the
+  // workspace formatter collapses short arrays differently than
+  // JSON.stringify, so normalize through it rather than relying on a manual
+  // format pass after regeneration.
+  const formatter = options.formatter ?? runSnapshotFormatter;
+  const format = formatter({
+    configPath: options.formatterConfigPath,
+    repoRoot: options.repoRoot,
+    snapshotPath: options.snapshotPath,
+  });
+
+  if (format.status !== 0) {
+    throw new Error(
+      `[api-freeze-gate] formatter pass on the snapshot failed: ${format.stderr}`
+    );
+  }
+
+  // The snapshot is reviewed machine authority, so the formatter must never
+  // change its parsed values — only its layout.
+  const formatted = await readSnapshot(options.snapshotPath);
+
+  if (!isDeepStrictEqual(formatted, snapshot)) {
+    throw new Error(
+      "[api-freeze-gate] formatter pass altered the parsed API snapshot values"
+    );
+  }
+};
+
+const writeSnapshot = async (
+  live: ApiSurface,
+  bump: string,
+  changes: string[]
+): Promise<void> => {
+  await writeApiSnapshot({
+    ledgerEntry: {
+      bump,
+      changes,
+      recordedAt: new Date().toISOString(),
+    },
+    live,
+    repoRoot: REPO_ROOT,
+    snapshotPath: SNAPSHOT_PATH,
+  });
+};
+
+const describeSurface = (surface: ApiSurface): string => {
+  const entrypoints = Object.keys(surface);
+  const exports = entrypoints.reduce(
+    (total, entrypoint) =>
+      total + Object.keys(surface[entrypoint] ?? {}).length,
+    0
+  );
+
+  return `${entrypoints.length} entrypoints, ${exports} exports`;
+};
+
+const printFindings = (findings: DiffFinding[], label: string): void => {
+  for (const finding of findings) {
+    const line = `[api-freeze-gate] ${label}: ${finding.entrypoint} export "${finding.exportName}" — ${finding.class}: ${finding.detail}`;
+
+    if (finding.verdict === "blocked") {
+      console.error(line);
+    } else {
+      console.log(line);
+    }
+  }
+};
+
+/** Returns true when ADR-0056 consistency-floor violations exist (never overridable). */
+const reportFloorViolations = (diff: SurfaceDiff): boolean => {
+  for (const violation of diff.floorViolations) {
+    console.error(
+      `[api-freeze-gate] ADR-0056 consistency floor: ${violation.entrypoint} export "${violation.exportName}" lacks the @experimental tag under a subpath the authority declares wholly experimental — tag it in the barrel; this is a documentation defect, never overridable`
+    );
+  }
+
+  return diff.floorViolations.length > 0;
+};
+
+const reportCheckModeDrift = (diff: SurfaceDiff): void => {
+  if (diff.blocked.length > 0) {
+    console.error(
+      "[api-freeze-gate] blocked drift on the frozen surface (ADR-0056). If this breaking change is intentional, declare the semver-major explicitly: `bun run api-freeze --major`, then commit the refreshed snapshot"
+    );
+  } else {
+    console.error(
+      `[api-freeze-gate] snapshot is stale: allowed drift (implied bump: ${diff.impliedBump}). Record it with \`bun run api-freeze\` and commit the refreshed snapshot`
+    );
+  }
+};
+
+const recordDrift = async (
+  diff: SurfaceDiff,
+  live: ApiSurface,
+  declaredMajor: boolean
+): Promise<void> => {
+  if (diff.blocked.length > 0 && !declaredMajor) {
+    console.error(
+      "[api-freeze-gate] refusing to absorb blocked (breaking) drift without an explicit semver-major declaration — re-run as `bun run api-freeze --major` if the break is intentional (ADR-0054 semver-major with migration window)"
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  const bump = diff.blocked.length > 0 ? "major" : diff.impliedBump;
+  const changes = [...diff.blocked, ...diff.allowed].map(
+    (finding) => `${finding.entrypoint}#${finding.exportName}: ${finding.class}`
+  );
+
+  await writeSnapshot(live, bump, changes);
+  console.log(
+    `[api-freeze-gate] snapshot refreshed (${changes.length} change(s), recorded bump: ${bump})`
+  );
+};
+
+const main = async (): Promise<void> => {
   const args = new Set(process.argv.slice(2));
   const checkMode = args.has("--check");
   const updateMode = args.has("--update");
@@ -234,603 +814,8 @@ async function main(): Promise<void> {
   }
 
   await recordDrift(diff, live, declaredMajor);
-}
+};
 
-/** Returns true when ADR-0056 consistency-floor violations exist (never overridable). */
-function reportFloorViolations(diff: SurfaceDiff): boolean {
-  for (const violation of diff.floorViolations) {
-    console.error(
-      `[api-freeze-gate] ADR-0056 consistency floor: ${violation.entrypoint} export "${violation.exportName}" lacks the @experimental tag under a subpath the authority declares wholly experimental — tag it in the barrel; this is a documentation defect, never overridable`
-    );
-  }
-
-  return diff.floorViolations.length > 0;
-}
-
-function reportCheckModeDrift(diff: SurfaceDiff): void {
-  if (diff.blocked.length > 0) {
-    console.error(
-      "[api-freeze-gate] blocked drift on the frozen surface (ADR-0056). If this breaking change is intentional, declare the semver-major explicitly: `bun run api-freeze --major`, then commit the refreshed snapshot"
-    );
-  } else {
-    console.error(
-      `[api-freeze-gate] snapshot is stale: allowed drift (implied bump: ${diff.impliedBump}). Record it with \`bun run api-freeze\` and commit the refreshed snapshot`
-    );
-  }
-}
-
-async function recordDrift(
-  diff: SurfaceDiff,
-  live: ApiSurface,
-  declaredMajor: boolean
-): Promise<void> {
-  if (diff.blocked.length > 0 && !declaredMajor) {
-    console.error(
-      "[api-freeze-gate] refusing to absorb blocked (breaking) drift without an explicit semver-major declaration — re-run as `bun run api-freeze --major` if the break is intentional (ADR-0054 semver-major with migration window)"
-    );
-    process.exitCode = 1;
-    return;
-  }
-
-  const bump = diff.blocked.length > 0 ? "major" : diff.impliedBump;
-  const changes = [...diff.blocked, ...diff.allowed].map(
-    (finding) => `${finding.entrypoint}#${finding.exportName}: ${finding.class}`
-  );
-
-  await writeSnapshot(live, bump, changes);
-  console.log(
-    `[api-freeze-gate] snapshot refreshed (${changes.length} change(s), recorded bump: ${bump})`
-  );
-}
-
-async function assertAuthorityDeclaration(): Promise<void> {
-  const packet = await readFile(CORE_AUTHORITY_PACKET, "utf-8");
-
-  if (!packet.includes(AUTHORITY_DECLARATION_MARKER)) {
-    console.error(
-      `[api-freeze-gate] the core authority packet no longer carries the wholly-experimental declaration for @tuvren/core/capabilities ("${AUTHORITY_DECLARATION_MARKER}") — realign WHOLLY_EXPERIMENTAL_ENTRYPOINTS in tools/scripts/api-freeze-gate.ts with the packet before running the gate`
-    );
-    process.exitCode = 1;
-    throw new Error("authority declaration drift");
-  }
-}
-
-/**
- * Derive the audited entrypoints mechanically from the freeze targets'
- * export maps (no hand-kept list): every `@tuvren/core` subpath, plus the
- * `@tuvren/sdk` root.
- */
-async function resolveEntrypointTargets(): Promise<EntrypointTarget[]> {
-  const targets: EntrypointTarget[] = [];
-
-  const coreManifest = JSON.parse(
-    await readFile(
-      path.join(REPO_ROOT, CORE_PACKAGE_DIR, "package.json"),
-      "utf-8"
-    )
-  ) as { exports?: Record<string, unknown>; name: string };
-
-  for (const key of Object.keys(coreManifest.exports ?? {})) {
-    if (key === "./package.json") {
-      continue;
-    }
-
-    const subpath = key === "." ? "" : key.slice(1); // "./errors" -> "/errors"
-    targets.push({
-      sourceFile: path.join(
-        REPO_ROOT,
-        CORE_PACKAGE_DIR,
-        "src",
-        key === "." ? "index.ts" : `${key.slice(2)}/index.ts`
-      ),
-      specifier: `${coreManifest.name}${subpath}`,
-    });
-  }
-
-  // @tuvren/sdk root only: ./advanced (ADR-0059 escape hatch) and the leaf
-  // packages are outside the snapshot per the KRT-BL001 freeze record.
-  targets.push({
-    sourceFile: path.join(REPO_ROOT, SDK_PACKAGE_DIR, "src/index.ts"),
-    specifier: "@tuvren/sdk",
-  });
-
-  return targets;
-}
-
-/**
- * Map every `@tuvren/*` workspace package specifier to its SOURCE entrypoint
- * (`src/.../index.ts`), derived mechanically from each package's export map by
- * rewriting `./dist/<p>/index.d.ts` → `src/<p>/index.ts`. Without this,
- * cross-package imports (e.g. `@tuvren/sdk` re-exporting from `@tuvren/core`)
- * resolve through checked-in `dist/*.d.ts` build output, and the gate would
- * see a STALE surface for any package whose dist lags its source.
- */
-async function buildWorkspaceSourcePaths(): Promise<Record<string, string[]>> {
-  const paths: Record<string, string[]> = {};
-
-  for (const absoluteManifestPath of await walkPackageManifests(
-    path.join(REPO_ROOT, "typescript")
-  )) {
-    const manifestPath = path.relative(REPO_ROOT, absoluteManifestPath);
-    const manifest = JSON.parse(
-      await readFile(absoluteManifestPath, "utf-8")
-    ) as { exports?: Record<string, { types?: string }>; name?: string };
-
-    if (
-      !manifest.name?.startsWith("@tuvren/") ||
-      manifest.exports === undefined
-    ) {
-      continue;
-    }
-
-    const packageDir = path.dirname(manifestPath);
-
-    for (const [key, entry] of Object.entries(manifest.exports)) {
-      const types = entry?.types;
-
-      if (typeof types !== "string" || !types.startsWith("./dist/")) {
-        continue;
-      }
-
-      const sourceRelative = types
-        .replace(DIST_PREFIX_PATTERN, "src/")
-        .replace(DECLARATION_SUFFIX_PATTERN, ".ts");
-      const specifier =
-        key === "." ? manifest.name : `${manifest.name}/${key.slice(2)}`;
-      paths[specifier] = [path.join(packageDir, sourceRelative)];
-    }
-  }
-
-  return paths;
-}
-
-function extractSurface(
-  targets: EntrypointTarget[],
-  workspacePaths: Record<string, string[]>
-): ApiSurface {
-  const program = ts.createProgram(
-    targets.map((target) => target.sourceFile),
-    {
-      baseUrl: REPO_ROOT,
-      module: ts.ModuleKind.NodeNext,
-      moduleResolution: ts.ModuleResolutionKind.NodeNext,
-      paths: workspacePaths,
-      skipLibCheck: true,
-      strict: true,
-      target: ts.ScriptTarget.ES2022,
-    }
-  );
-  const checker = program.getTypeChecker();
-  const printer = ts.createPrinter({ removeComments: true });
-  const surface: ApiSurface = {};
-
-  for (const target of targets) {
-    const sourceFile = program.getSourceFile(target.sourceFile);
-
-    if (sourceFile === undefined) {
-      throw new Error(
-        `[api-freeze-gate] entrypoint source missing: ${target.sourceFile}`
-      );
-    }
-
-    const moduleSymbol = checker.getSymbolAtLocation(sourceFile);
-
-    if (moduleSymbol === undefined) {
-      throw new Error(
-        `[api-freeze-gate] entrypoint has no module symbol (no exports?): ${target.sourceFile}`
-      );
-    }
-
-    const entrySurface: EntrypointSurface = {};
-
-    for (const exportSymbol of checker.getExportsOfModule(moduleSymbol)) {
-      entrySurface[exportSymbol.getName()] = describeExport(
-        exportSymbol,
-        checker,
-        printer
-      );
-    }
-
-    surface[target.specifier] = sortRecord(entrySurface);
-  }
-
-  return sortRecord(surface);
-}
-
-function describeExport(
-  exportSymbol: ts.Symbol,
-  checker: ts.TypeChecker,
-  printer: ts.Printer
-): ExportRecord {
-  const resolved = hasSymbolFlag(exportSymbol, ts.SymbolFlags.Alias)
-    ? checker.getAliasedSymbol(exportSymbol)
-    : exportSymbol;
-
-  const experimental =
-    symbolCarriesExperimentalTag(exportSymbol) ||
-    symbolCarriesExperimentalTag(resolved);
-
-  const declarations = resolved.getDeclarations() ?? [];
-  const isValue = hasSymbolFlag(resolved, ts.SymbolFlags.Value);
-  const location = declarations[0];
-
-  let signature: string;
-
-  if (isValue && location !== undefined) {
-    // Value exports (functions, consts, classes): derive the signature from
-    // the CHECKER, not the printed source declaration — printing source nodes
-    // would embed function/class bodies, so an internal body edit would
-    // falsely trip the freeze. The checker text captures call/construct
-    // signatures and typed members with inferred types resolved.
-    const parts = [
-      structuralTypeText(
-        checker.getTypeOfSymbolAtLocation(resolved, location),
-        location,
-        checker
-      ),
-    ];
-
-    if (hasSymbolFlag(resolved, ts.SymbolFlags.Class)) {
-      parts.push(
-        `instance: ${structuralTypeText(
-          checker.getDeclaredTypeOfSymbol(resolved),
-          location,
-          checker
-        )}`
-      );
-    }
-
-    signature = parts.join(" ");
-  } else {
-    // Type exports (interfaces, type aliases): printed declaration text is
-    // body-free and captures the full structural shape, including generics
-    // and heritage clauses that a type-reference string would elide.
-    signature = declarations
-      .map((declaration) =>
-        printer
-          .printNode(
-            ts.EmitHint.Unspecified,
-            declaration,
-            declaration.getSourceFile()
-          )
-          .replace(WHITESPACE_RUN_PATTERN, " ")
-          .trim()
-      )
-      .sort()
-      .join(" | ");
-  }
-
-  return {
-    kind: isValue ? "value" : "type",
-    signature,
-    stability: experimental ? "experimental" : "stable",
-  };
-}
-
-/**
- * Deterministic structural text for a value export's type: every call and
- * construct signature, plus — ONLY for types declared inside this repo — each
- * property with its checker-resolved type text. Types declared outside the
- * repo (primitives, lib.d.ts shapes like RegExp/Uint8Array) print via
- * `typeToString` instead of member expansion: expanding lib members embeds
- * TS-internal symbol-ID counters in well-known-symbol names (`__@iterator@49`)
- * that shift on unrelated source edits, corrupting the snapshot with false
- * blocked findings (M2 review P1). Residual well-known-symbol names from
- * in-repo types are ID-normalized for the same reason. Referenced named types
- * print by name; their own shape changes are caught at their own snapshot
- * entries (see the known limitation in the module header).
- */
-function structuralTypeText(
-  type: ts.Type,
-  location: ts.Node,
-  checker: ts.TypeChecker
-): string {
-  const parts: string[] = [];
-
-  for (const callSignature of type.getCallSignatures()) {
-    parts.push(
-      `call ${checker.signatureToString(callSignature, location, ts.TypeFormatFlags.NoTruncation)}`
-    );
-  }
-
-  for (const constructSignature of type.getConstructSignatures()) {
-    parts.push(
-      `new ${checker.signatureToString(constructSignature, location, ts.TypeFormatFlags.NoTruncation)}`
-    );
-  }
-
-  if (typeIsDeclaredInRepo(type)) {
-    const properties = checker
-      .getPropertiesOfType(type)
-      .map(
-        (property) =>
-          `${normalizeMemberName(property.getName())}: ${checker.typeToString(
-            checker.getTypeOfSymbolAtLocation(property, location),
-            location,
-            ts.TypeFormatFlags.NoTruncation
-          )}`
-      )
-      .sort();
-
-    parts.push(...properties);
-  }
-
-  return parts.length > 0
-    ? parts.join("; ")
-    : checker.typeToString(type, location, ts.TypeFormatFlags.NoTruncation);
-}
-
-/**
- * True when the type is an object type whose symbol has a declaration inside
- * this repository (not lib.d.ts / node_modules). Non-object types (primitives,
- * unique symbols) always print via `typeToString`, never member expansion —
- * their apparent members are lib.d.ts surface, not ours.
- */
-function typeIsDeclaredInRepo(type: ts.Type): boolean {
-  if (!hasTypeFlag(type, ts.TypeFlags.Object)) {
-    return false;
-  }
-
-  const symbol = type.getSymbol() ?? type.aliasSymbol;
-
-  return (symbol?.getDeclarations() ?? []).some((declaration) => {
-    const { fileName } = declaration.getSourceFile();
-
-    return fileName.startsWith(REPO_ROOT) && !fileName.includes("node_modules");
-  });
-}
-
-function hasTypeFlag(type: ts.Type, flag: ts.TypeFlags): boolean {
-  // biome-ignore lint/suspicious/noBitwiseOperators: ts.TypeFlags is a bitflag enum; masking is the API's membership test.
-  return (type.flags & flag) !== 0;
-}
-
-/**
- * Strip the TS-internal symbol-ID counter from escaped well-known-symbol
- * member names (`__@toStringTag@715` → `__@toStringTag`); the counter is a
- * checker allocation order, not API surface.
- */
-function normalizeMemberName(name: string): string {
-  return name.replace(WELL_KNOWN_SYMBOL_ID_PATTERN, "$1");
-}
-
-/**
- * Read the `@experimental` TSDoc release tag wherever it is placed: on the
- * declaration itself, or on the enclosing statement (the barrel re-export
- * placement KRT-BJ006 landed — a `/** @experimental *​/` ahead of an
- * `export type { X } from ...` statement attaches to the ExportDeclaration,
- * while the symbol's declaration node is the inner ExportSpecifier).
- */
-function symbolCarriesExperimentalTag(symbol: ts.Symbol): boolean {
-  for (const declaration of symbol.getDeclarations() ?? []) {
-    let node: ts.Node | undefined = declaration;
-
-    while (node !== undefined && !ts.isSourceFile(node)) {
-      if (
-        ts.getJSDocTags(node).some((tag) => tag.tagName.text === "experimental")
-      ) {
-        return true;
-      }
-
-      node = node.parent;
-    }
-  }
-
-  return false;
-}
-
-export async function readSnapshot(
-  snapshotPath: string
-): Promise<SnapshotFile | undefined> {
-  try {
-    const parsed: unknown = JSON.parse(await readFile(snapshotPath, "utf-8"));
-
-    if (!isSnapshotFile(parsed)) {
-      throw new Error(
-        `[api-freeze-gate] invalid API snapshot shape: ${snapshotPath}`
-      );
-    }
-
-    return parsed;
-  } catch (error: unknown) {
-    if (isErrorWithCode(error) && error.code === "ENOENT") {
-      return undefined;
-    }
-
-    throw error;
-  }
-}
-
-async function writeSnapshot(
-  live: ApiSurface,
-  bump: string,
-  changes: string[]
-): Promise<void> {
-  await writeApiSnapshot({
-    ledgerEntry: {
-      bump,
-      changes,
-      recordedAt: new Date().toISOString(),
-    },
-    live,
-    repoRoot: REPO_ROOT,
-    snapshotPath: SNAPSHOT_PATH,
-  });
-}
-
-/**
- * Persist one API-surface snapshot update and prove the native formatter did
- * not alter its parsed authority. Paths are explicit so the production writer
- * can be exercised against a complete scratch copy without touching the
- * checked-in snapshot.
- */
-export async function writeApiSnapshot(
-  options: WriteSnapshotOptions
-): Promise<void> {
-  const previous = await readSnapshot(options.snapshotPath);
-  const snapshot: SnapshotFile = {
-    ...(previous ?? {
-      $description:
-        "ADR-0054/0056 frozen public API surface of @tuvren/core (root + subpaths) and @tuvren/sdk (root). Generated by tools/scripts/api-freeze-gate.ts; refresh with `bun run api-freeze` (allowed drift) or `bun run api-freeze --major` (declared breaking change). Do not edit by hand.",
-      authority: ["ADR-0054", "ADR-0056", "ADR-0057"],
-      entrypoints: options.live,
-      ledger: [],
-    }),
-    entrypoints: options.live,
-    ledger: [...(previous?.ledger ?? []), options.ledgerEntry],
-  };
-
-  await mkdir(path.dirname(options.snapshotPath), { recursive: true });
-  await writeFile(
-    options.snapshotPath,
-    `${JSON.stringify(snapshot, null, 2)}\n`
-  );
-
-  // Leave the checked-in artifact formatter-clean (repo generator rule): the
-  // workspace formatter collapses short arrays differently than
-  // JSON.stringify, so normalize through it rather than relying on a manual
-  // format pass after regeneration.
-  const formatter = options.formatter ?? runSnapshotFormatter;
-  const format = formatter({
-    configPath: options.formatterConfigPath,
-    repoRoot: options.repoRoot,
-    snapshotPath: options.snapshotPath,
-  });
-
-  if (format.status !== 0) {
-    throw new Error(
-      `[api-freeze-gate] formatter pass on the snapshot failed: ${format.stderr}`
-    );
-  }
-
-  // The snapshot is reviewed machine authority, so the formatter must never
-  // change its parsed values — only its layout.
-  const formatted = await readSnapshot(options.snapshotPath);
-
-  if (!isDeepStrictEqual(formatted, snapshot)) {
-    throw new Error(
-      "[api-freeze-gate] formatter pass altered the parsed API snapshot values"
-    );
-  }
-}
-
-function runSnapshotFormatter(
-  request: SnapshotFormatterRequest
-): SnapshotFormatterResult {
-  const configArgs =
-    request.configPath === undefined ? [] : ["-c", request.configPath];
-  const result = spawnSync(
-    "bunx",
-    ["--bun", "oxfmt", ...configArgs, "--write", request.snapshotPath],
-    {
-      cwd: request.repoRoot,
-      stdio: ["ignore", "ignore", "pipe"],
-    }
-  );
-
-  return {
-    status: result.status,
-    stderr: [result.error?.message, result.stderr?.toString()]
-      .filter((part) => part !== undefined && part.length > 0)
-      .join("\n"),
-  };
-}
-
-function isSnapshotFile(value: unknown): value is SnapshotFile {
-  if (!isUnknownRecord(value)) {
-    return false;
-  }
-
-  return (
-    typeof value.$description === "string" &&
-    isStringArray(value.authority) &&
-    isApiSurface(value.entrypoints) &&
-    Array.isArray(value.ledger) &&
-    value.ledger.every(isSnapshotLedgerEntry)
-  );
-}
-
-function isApiSurface(value: unknown): value is ApiSurface {
-  if (!isUnknownRecord(value)) {
-    return false;
-  }
-
-  for (const entrypoint of Object.values(value)) {
-    if (!isUnknownRecord(entrypoint)) {
-      return false;
-    }
-
-    for (const record of Object.values(entrypoint)) {
-      if (!isExportRecord(record)) {
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
-function isExportRecord(value: unknown): value is ExportRecord {
-  return (
-    isUnknownRecord(value) &&
-    (value.kind === "type" || value.kind === "value") &&
-    typeof value.signature === "string" &&
-    (value.stability === "experimental" || value.stability === "stable")
-  );
-}
-
-function isSnapshotLedgerEntry(value: unknown): value is SnapshotLedgerEntry {
-  return (
-    isUnknownRecord(value) &&
-    typeof value.bump === "string" &&
-    isStringArray(value.changes) &&
-    typeof value.recordedAt === "string"
-  );
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) && value.every((item) => typeof item === "string")
-  );
-}
-
-function isUnknownRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isErrorWithCode(error: unknown): error is Error & { code: string } {
-  return (
-    error instanceof Error && "code" in error && typeof error.code === "string"
-  );
-}
-
-function printFindings(findings: DiffFinding[], label: string): void {
-  for (const finding of findings) {
-    const line = `[api-freeze-gate] ${label}: ${finding.entrypoint} export "${finding.exportName}" — ${finding.class}: ${finding.detail}`;
-
-    if (finding.verdict === "blocked") {
-      console.error(line);
-    } else {
-      console.log(line);
-    }
-  }
-}
-
-function describeSurface(surface: ApiSurface): string {
-  const entrypoints = Object.keys(surface);
-  const exports = entrypoints.reduce(
-    (total, entrypoint) =>
-      total + Object.keys(surface[entrypoint] ?? {}).length,
-    0
-  );
-
-  return `${entrypoints.length} entrypoints, ${exports} exports`;
-}
-
-function sortRecord<T>(record: Record<string, T>): Record<string, T> {
-  // Codepoint order, not localeCompare: the canonical snapshot order must not
-  // depend on the regenerating machine's system locale.
-  return Object.fromEntries(
-    Object.entries(record).sort(([a], [b]) => (a < b ? -1 : 1))
-  );
+if (import.meta.main) {
+  await main();
 }
