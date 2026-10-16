@@ -197,6 +197,8 @@ closeout:
       item: "Align the resilience model and flow-preemption-idempotent-side-effect cold-crash wording with the implemented reactive-checkpoint and resume-only-missing behavior."
     - stage: tech-spec
       item: "Route the stale `(runId, callId, fencingToken)` narrative in spec/kernel/authority-packet.json to its authority owner; framework authority and ADR-0065 use `(turnId, callId)`."
+    - stage: tech-spec
+      item: "Reconcile kernel specification §5.6's empty-staging no-checkpoint narrative with measured TypeScript event-only checkpoint behavior. The framework specification now states only the recovery behavior it can prove and does not use Markdown alone as the cross-implementation oracle."
   follow_ups:
     - "Keep CPU-heavy wave verification serialized through the global lock with `VERIFY_SERIAL=1 NX_PARALLEL=1`; the measured schedule resolved unchanged host-repl five-second subprocess timeouts without changing tests or cache policy."
     - "Preserve the M7 generator-only scope exception when reviewing history: the two Epic AF reports are derived freshness artifacts, not manually authored TechSpec content."
@@ -222,6 +224,14 @@ closeout:
         - spec/conformance/engine/plans/runtime-api-lifecycle-extended.json
         - spec/conformance/engine/scenarios/runtime-api-scenarios.json
       commit: 4dc97b0
+    - summary: "Persist an internal interrupted-batch descriptor and per-result `aroundTool` state snapshot before the durable result so repeated recovery preserves dispatch eligibility, execution mode, extension state, and original ordering without changing the kernel protocol."
+      kind: pattern
+      paths:
+        - typescript/runtime/src/lib/runtime-core-interrupted-metadata.ts
+        - typescript/runtime/src/lib/runtime-core-recovery-plan.ts
+        - typescript/runtime/src/lib/tool-execution.ts
+        - typescript/runtime/src/lib/tool-execution-helpers.ts
+      commit: cd14fae
   settled:
     - record: tech-spec/adrs/ADR-0065-idempotency-identity-is-call-identity-not-authority-epoch.md
       evidence:

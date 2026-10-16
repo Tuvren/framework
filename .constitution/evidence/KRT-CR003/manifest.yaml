@@ -10,7 +10,7 @@ files:
     bytes: 32
     role: log
   - path: verification-summary.md
-    sha256: 426ded9ce0bfe068cf68e083f4495b77f7f10c56452f8c53c2158e465c73feeb
-    bytes: 1935
+    sha256: 7f99bed477ceeedb2d01b7d9bdd6eb45a9a5ee2a1fc75c3c62a407b16dd64ac3
+    bytes: 2434
     role: measurement
 pass_criteria: Recovery skips the runner for the interrupted iteration, dispatches exactly the missing original calls with stable identity through normal policy and approval handling, does not duplicate the assistant message, checkpoints recovered and new results, preserves no-assistant re-inference, the SQLite recipe emits the required line, and the full serial repository gate exits 0.

@@ -132,6 +132,33 @@ describe("interrupted iteration recovery plan", () => {
     expect(plan.assistantMessage).toBeUndefined();
   });
 
+  test("does not dispatch tool calls from an interrupted staged message", async () => {
+    const fixture = await createFixture();
+    const [assistant] = await stageMessages(fixture, [TOOL_CALLS]);
+    const headState = await fixture.loadHeadState();
+
+    if (assistant === undefined) {
+      throw new Error("expected staged assistant message");
+    }
+
+    const plan = await derivePlan(fixture, headState, {
+      consumedStagedResults: [],
+      lastCompletedStepId: null,
+      lastTurnNodeHash: headState.branchHeadHash,
+      stepSequence: iterateSteps(),
+      uncommittedStagedResults: [
+        {
+          ...assistant,
+          interruptPayload: null,
+          status: "interrupted",
+        },
+      ],
+    });
+
+    expectPlan(plan, "re_infer", [], []);
+    expect(plan.assistantMessage).toBeUndefined();
+  });
+
   test("re-infers after an empty expired run even when the prior checkpoint completed a tool batch", async () => {
     const harness = createFakeKernelHarness();
     const livenessHarness = createFakeRunLivenessKernelHarness(harness);
