@@ -46,8 +46,8 @@ import type { BackendState } from "./memory-backend-types.js";
 export const reclaimBackendState = (
   state: BackendState,
   nowMs: EpochMs
-): ReclamationSummary => {
-  return reclaimSharedBackendState(
+): ReclamationSummary =>
+  reclaimSharedBackendState(
     state,
     {
       decodeHashStringArray,
@@ -57,4 +57,3 @@ export const reclaimBackendState = (
     },
     nowMs
   );
-};

@@ -246,9 +246,9 @@ describe("@tuvren/backend-memory scope isolation (KRT-BE003)", () => {
       await delay(20);
       order.push("first:end");
     });
-    const secondTransaction = second.transact(() => {
+    const secondTransaction = second.transact(async () => {
       order.push("second:start", "second:end");
-      return Promise.resolve();
+      await Promise.resolve();
     });
 
     await Promise.all([firstTransaction, secondTransaction]);
@@ -273,9 +273,9 @@ describe("@tuvren/backend-memory scope isolation (KRT-BE003)", () => {
       await delay(20);
       order.push("a:end");
     });
-    const bTransaction = scopeB.transact(() => {
+    const bTransaction = scopeB.transact(async () => {
       order.push("b:start", "b:end");
-      return Promise.resolve();
+      await Promise.resolve();
     });
 
     await Promise.all([aTransaction, bTransaction]);
@@ -343,24 +343,23 @@ describe("@tuvren/backend-memory scope isolation (KRT-BE003)", () => {
 
     // Scope A observes its own complete record set.
     await scopeA.transact(async (tx) => {
-      expect((await tx.threads.get(seeded.threadId))?.threadId).toBe(
-        seeded.threadId
-      );
-      expect((await tx.branches.get(seeded.branchId))?.branchId).toBe(
-        seeded.branchId
-      );
-      expect(
-        (await tx.branches.listByThread(seeded.threadId)).map((b) => b.branchId)
-      ).toEqual([seeded.branchId]);
-      expect((await tx.turnNodes.get(seeded.headTurnNodeHash))?.hash).toBe(
-        seeded.headTurnNodeHash
-      );
-      expect((await tx.turnTrees.get(seeded.turnTreeHash))?.hash).toBe(
+      const storedThread = await tx.threads.get(seeded.threadId);
+      const storedBranch = await tx.branches.get(seeded.branchId);
+      const branches = await tx.branches.listByThread(seeded.threadId);
+      const storedTurnNode = await tx.turnNodes.get(seeded.headTurnNodeHash);
+      const storedTurnTree = await tx.turnTrees.get(seeded.turnTreeHash);
+      const storedPaths = await tx.turnTreePaths.listByTurnTree(
         seeded.turnTreeHash
       );
-      expect(
-        (await tx.turnTreePaths.listByTurnTree(seeded.turnTreeHash)).length
-      ).toBeGreaterThan(0);
+
+      expect(storedThread?.threadId).toBe(seeded.threadId);
+      expect(storedBranch?.branchId).toBe(seeded.branchId);
+      expect(branches.map((branch) => branch.branchId)).toEqual([
+        seeded.branchId,
+      ]);
+      expect(storedTurnNode?.hash).toBe(seeded.headTurnNodeHash);
+      expect(storedTurnTree?.hash).toBe(seeded.turnTreeHash);
+      expect(storedPaths.length).toBeGreaterThan(0);
       expect(await tx.objects.has(seeded.messageHash)).toBe(true);
     });
   });

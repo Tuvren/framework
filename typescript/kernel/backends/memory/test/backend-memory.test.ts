@@ -53,7 +53,104 @@ import {
   validateCommittedState,
 } from "../src/lib/memory-backend-state.js";
 import type { BackendState } from "../src/lib/memory-backend-types.js";
-import { createCanonicalTurnTreePaths } from "./backend-memory-test-helpers.js";
+import {
+  createCanonicalTurnTreePaths,
+  rejectionOf,
+} from "./backend-memory-test-helpers.js";
+
+const singlePath = (
+  turnTreeHash: string,
+  singleHash: string | null
+): StoredTurnTreePath => ({
+  collectionKind: "single",
+  path: "context.manifest",
+  singleHash,
+  turnTreeHash,
+});
+
+const buildCommittedStateWithRun = async (): Promise<{
+  runId: string;
+  state: BackendState;
+}> => {
+  const schema = createSchema();
+  const turnTree = await createStoredTurnTree(
+    schema,
+    { "context.manifest": null, messages: [] },
+    11
+  );
+  const paths = createCanonicalTurnTreePaths(turnTree, []);
+  const rootNode = await createStoredTurnNode({
+    consumedStagedResults: [],
+    createdAtMs: 12,
+    eventHash: null,
+    previousTurnNodeHash: null,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const thread: StoredThread = {
+    createdAtMs: 13,
+    rootTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    threadId: "thread_obs",
+  };
+  const branch: StoredBranch = {
+    branchId: "branch_obs",
+    createdAtMs: 14,
+    headTurnNodeHash: rootNode.hash,
+    threadId: thread.threadId,
+    updatedAtMs: 14,
+  };
+  const turn: StoredTurn = {
+    branchId: branch.branchId,
+    createdAtMs: 15,
+    headTurnNodeHash: rootNode.hash,
+    parentTurnId: null,
+    startTurnNodeHash: rootNode.hash,
+    threadId: thread.threadId,
+    turnId: "turn_obs",
+    updatedAtMs: 15,
+  };
+  const run: StoredRun = {
+    branchId: branch.branchId,
+    createdAtMs: 16,
+    createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
+    currentStepIndex: 1,
+    runId: "run_obs",
+    schemaId: schema.schemaId,
+    startTurnNodeHash: rootNode.hash,
+    status: "completed",
+    stepSequenceCbor: encodeDeterministicKernelRecord([
+      { deterministic: false, id: "step", sideEffects: false },
+    ]),
+    turnId: turn.turnId,
+    updatedAtMs: 16,
+  };
+
+  const state = createEmptyState();
+  state.schemas.set(schema.schemaId, createStoredSchema(schema, 10));
+  state.turnTrees.set(turnTree.hash, turnTree);
+  state.turnTreePaths.set(
+    turnTree.hash,
+    new Map(paths.map((path) => [path.path, path]))
+  );
+  state.turnNodes.set(rootNode.hash, rootNode);
+  state.threads.set(thread.threadId, thread);
+  state.branches.set(branch.branchId, branch);
+  state.turns.set(turn.turnId, turn);
+  state.runs.set(run.runId, run);
+  return { runId: run.runId, state };
+};
+
+const makeAnnotation = (
+  runId: string,
+  turnNodeHash: string | null
+): StoredObserveAnnotation => ({
+  annotationCbor: new Uint8Array([1]),
+  annotationHash: createHashFromIndex(20),
+  createdAtMs: 20,
+  runId,
+  turnNodeHash,
+});
 
 registerBackendConformanceSuite({
   createBackend: () => createMemoryBackend(),
@@ -89,12 +186,13 @@ describe("@tuvren/backend-memory", () => {
     const backend = createMemoryBackend();
     const objectRecord = await createStoredObject(new Uint8Array([1, 2, 3]), 1);
 
-    await expect(
+    const rollbackError = await rejectionOf(
       backend.transact(async (tx) => {
         await tx.objects.put(objectRecord);
         throw new Error("boom");
       })
-    ).rejects.toThrow("boom");
+    );
+    expect(rollbackError.message).toContain("boom");
 
     await backend.transact(async (tx) => {
       expect(await tx.objects.get(objectRecord.hash)).toBeNull();
@@ -131,9 +229,9 @@ describe("@tuvren/backend-memory", () => {
       await delay(20);
       order.push("first:end");
     });
-    const secondTransaction = backend.transact(() => {
+    const secondTransaction = backend.transact(async () => {
       order.push("second:start", "second:end");
-      return Promise.resolve();
+      await Promise.resolve();
     });
 
     await Promise.all([firstTransaction, secondTransaction]);
@@ -144,11 +242,14 @@ describe("@tuvren/backend-memory", () => {
       "second:end",
     ]);
 
-    await expect(
+    const nestedTransactionError = await rejectionOf(
       backend.transact(async () => {
-        await backend.transact(() => Promise.resolve());
+        await backend.transact(async () => {
+          await Promise.resolve();
+        });
       })
-    ).rejects.toThrow("must not be nested");
+    );
+    expect(nestedTransactionError.message).toContain("must not be nested");
   });
 
   test("rejects repository handle use after the transaction ends", async () => {
@@ -156,20 +257,20 @@ describe("@tuvren/backend-memory", () => {
     const objectRecord = await createStoredObject(new Uint8Array([1]), 1);
     const escapedTransactions: KrakenBackendTx[] = [];
 
-    await backend.transact((tx) => {
+    await backend.transact(async (tx) => {
       escapedTransactions.push(tx);
-      return Promise.resolve();
+      await Promise.resolve();
     });
 
-    const txHandle = escapedTransactions[0];
+    const [txHandle] = escapedTransactions;
 
     if (txHandle === undefined) {
       throw new Error("expected escaped transaction handle");
     }
 
-    await expect(txHandle.objects.put(objectRecord)).rejects.toBeInstanceOf(
-      TuvrenPersistenceError
-    );
+    expect(
+      await rejectionOf(txHandle.objects.put(objectRecord))
+    ).toBeInstanceOf(TuvrenPersistenceError);
 
     await backend.transact(async (tx) => {
       expect(await tx.objects.get(objectRecord.hash)).toBeNull();
@@ -186,7 +287,7 @@ describe("@tuvren/backend-memory", () => {
       messages: largeOrderedHashes,
     };
     const turnTreeRecord = await createStoredTurnTree(schema, manifest, 11);
-    const singlePath: StoredTurnTreePath = {
+    const singlePathRecord: StoredTurnTreePath = {
       collectionKind: "single",
       path: "context.manifest",
       singleHash: null,
@@ -204,7 +305,7 @@ describe("@tuvren/backend-memory", () => {
     await backend.transact(async (tx) => {
       await tx.schemas.put(schemaRecord);
       await tx.turnTrees.put(turnTreeRecord);
-      await tx.turnTreePaths.putMany([orderedPath, singlePath]);
+      await tx.turnTreePaths.putMany([orderedPath, singlePathRecord]);
     });
 
     await backend.transact(async (tx) => {
@@ -214,7 +315,7 @@ describe("@tuvren/backend-memory", () => {
         "messages",
       ]);
 
-      const messagesPath = paths[1];
+      const [, messagesPath] = paths;
       if (
         messagesPath === undefined ||
         messagesPath.collectionKind !== "ordered" ||
@@ -231,16 +332,24 @@ describe("@tuvren/backend-memory", () => {
       }
 
       expect(chunkHashes).toHaveLength(2);
+      const storedChunks = await Promise.all(
+        chunkHashes.map(async (chunkHash, index) => {
+          if (typeof chunkHash !== "string") {
+            throw new TypeError(`expected chunk hash at index ${index}`);
+          }
 
-      let totalCount = 0;
-      for (const [index, chunkHash] of chunkHashes.entries()) {
-        const storedChunk = await tx.orderedPathChunks.get(String(chunkHash));
-        if (storedChunk === null) {
-          throw new Error(`expected stored chunk at index ${index}`);
-        }
+          const storedChunk = await tx.orderedPathChunks.get(chunkHash);
+          if (storedChunk === null) {
+            throw new Error(`expected stored chunk at index ${index}`);
+          }
 
-        totalCount += storedChunk.itemCount;
-      }
+          return storedChunk;
+        })
+      );
+      const totalCount = storedChunks.reduce(
+        (sum, storedChunk) => sum + storedChunk.itemCount,
+        0
+      );
 
       expect(totalCount).toBe(33);
     });
@@ -259,15 +368,6 @@ describe("@tuvren/backend-memory", () => {
       path: "messages",
       turnTreeHash: "",
     };
-    const singlePath = (
-      turnTreeHash: string,
-      singleHash: string | null
-    ): StoredTurnTreePath => ({
-      collectionKind: "single",
-      path: "context.manifest",
-      singleHash,
-      turnTreeHash,
-    });
     const firstTurnTree = await createStoredTurnTree(
       schema,
       {
@@ -490,21 +590,19 @@ describe("@tuvren/backend-memory", () => {
     });
 
     await backend.transact(async (tx) => {
-      expect(
-        (await tx.branches.listByThread(thread.threadId)).map(
-          (branch) => branch.branchId
-        )
-      ).toEqual(["branch_b", "branch_a"]);
-      expect(
-        (await tx.runs.listByBranch(lateBranch.branchId)).map(
-          (run) => run.runId
-        )
-      ).toEqual(["run_a", "run_b"]);
-      expect(
-        (await tx.stagedResults.listByRun(stagedRun.runId)).map(
-          (stagedResult) => stagedResult.taskId
-        )
-      ).toEqual(["task_a", "task_b"]);
+      const branches = await tx.branches.listByThread(thread.threadId);
+      const runs = await tx.runs.listByBranch(lateBranch.branchId);
+      const stagedResults = await tx.stagedResults.listByRun(stagedRun.runId);
+
+      expect(branches.map((branch) => branch.branchId)).toEqual([
+        "branch_b",
+        "branch_a",
+      ]);
+      expect(runs.map((run) => run.runId)).toEqual(["run_a", "run_b"]);
+      expect(stagedResults.map((stagedResult) => stagedResult.taskId)).toEqual([
+        "task_a",
+        "task_b",
+      ]);
     });
   });
 });
@@ -518,92 +616,6 @@ describe("@tuvren/backend-memory", () => {
 // crafted state because the public write path forbids constructing the
 // inconsistency in the first place.
 describe("@tuvren/backend-memory validateCommittedState observe-annotation invariant", () => {
-  const buildCommittedStateWithRun = async (): Promise<{
-    runId: string;
-    state: BackendState;
-  }> => {
-    const schema = createSchema();
-    const turnTree = await createStoredTurnTree(
-      schema,
-      { "context.manifest": null, messages: [] },
-      11
-    );
-    const paths = createCanonicalTurnTreePaths(turnTree, []);
-    const rootNode = await createStoredTurnNode({
-      consumedStagedResults: [],
-      createdAtMs: 12,
-      eventHash: null,
-      previousTurnNodeHash: null,
-      schemaId: schema.schemaId,
-      turnTreeHash: turnTree.hash,
-    });
-    const thread: StoredThread = {
-      createdAtMs: 13,
-      rootTurnNodeHash: rootNode.hash,
-      schemaId: schema.schemaId,
-      threadId: "thread_obs",
-    };
-    const branch: StoredBranch = {
-      branchId: "branch_obs",
-      createdAtMs: 14,
-      headTurnNodeHash: rootNode.hash,
-      threadId: thread.threadId,
-      updatedAtMs: 14,
-    };
-    const turn: StoredTurn = {
-      branchId: branch.branchId,
-      createdAtMs: 15,
-      headTurnNodeHash: rootNode.hash,
-      parentTurnId: null,
-      startTurnNodeHash: rootNode.hash,
-      threadId: thread.threadId,
-      turnId: "turn_obs",
-      updatedAtMs: 15,
-    };
-    const run: StoredRun = {
-      branchId: branch.branchId,
-      createdAtMs: 16,
-      createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
-      currentStepIndex: 1,
-      runId: "run_obs",
-      schemaId: schema.schemaId,
-      startTurnNodeHash: rootNode.hash,
-      status: "completed",
-      stepSequenceCbor: encodeDeterministicKernelRecord([
-        { deterministic: false, id: "step", sideEffects: false },
-      ]),
-      turnId: turn.turnId,
-      updatedAtMs: 16,
-    };
-
-    const state = createEmptyState();
-    state.schemas.set(schema.schemaId, createStoredSchema(schema, 10));
-    state.turnTrees.set(turnTree.hash, turnTree);
-    state.turnTreePaths.set(
-      turnTree.hash,
-      new Map(paths.map((path) => [path.path, path]))
-    );
-    state.turnNodes.set(rootNode.hash, rootNode);
-    state.threads.set(thread.threadId, thread);
-    state.branches.set(branch.branchId, branch);
-    state.turns.set(turn.turnId, turn);
-    state.runs.set(run.runId, run);
-    return { runId: run.runId, state };
-  };
-
-  const makeAnnotation = (
-    runId: string,
-    turnNodeHash: string | null
-  ): StoredObserveAnnotation => {
-    return {
-      annotationCbor: new Uint8Array([1]),
-      annotationHash: createHashFromIndex(20),
-      createdAtMs: 20,
-      runId,
-      turnNodeHash,
-    };
-  };
-
   test("accepts a committed annotation whose run and turn node both exist", async () => {
     const { runId, state } = await buildCommittedStateWithRun();
     const rootNodeHash = state.threads.get("thread_obs")?.rootTurnNodeHash;
@@ -611,9 +623,9 @@ describe("@tuvren/backend-memory validateCommittedState observe-annotation invar
       makeAnnotation(runId, rootNodeHash ?? null),
     ]);
 
-    expect(() =>
-      validateCommittedState(state, createEmptyState())
-    ).not.toThrow();
+    expect(() => {
+      validateCommittedState(state, createEmptyState());
+    }).not.toThrow();
   });
 
   test("rejects a committed annotation whose run does not exist", async () => {
@@ -622,9 +634,9 @@ describe("@tuvren/backend-memory validateCommittedState observe-annotation invar
       makeAnnotation("ghost_run", null),
     ]);
 
-    expect(() => validateCommittedState(state, createEmptyState())).toThrow(
-      "must reference an existing run"
-    );
+    expect(() => {
+      validateCommittedState(state, createEmptyState());
+    }).toThrow("must reference an existing run");
   });
 
   test("rejects a committed annotation whose turn node does not exist", async () => {
@@ -633,9 +645,9 @@ describe("@tuvren/backend-memory validateCommittedState observe-annotation invar
       makeAnnotation(runId, createHashFromIndex(999)),
     ]);
 
-    expect(() => validateCommittedState(state, createEmptyState())).toThrow(
-      "must reference an existing turn node"
-    );
+    expect(() => {
+      validateCommittedState(state, createEmptyState());
+    }).toThrow("must reference an existing turn node");
   });
 });
 
@@ -712,9 +724,9 @@ describe("@tuvren/backend-memory validateCommittedState turn node lineage invari
     state.threads.set(thread.threadId, thread);
     state.branches.set(branch.branchId, branch);
 
-    expect(() => validateCommittedState(state, createEmptyState())).toThrow(
-      "must not traverse a cyclic turn node lineage"
-    );
+    expect(() => {
+      validateCommittedState(state, createEmptyState());
+    }).toThrow("must not traverse a cyclic turn node lineage");
   });
 
   test("rejects a branch head whose turn node lineage reaches a different thread's root", async () => {
@@ -774,8 +786,8 @@ describe("@tuvren/backend-memory validateCommittedState turn node lineage invari
     state.threads.set(thread.threadId, thread);
     state.branches.set(branch.branchId, branch);
 
-    expect(() => validateCommittedState(state, createEmptyState())).toThrow(
-      "must belong to the referenced thread by lineage walk"
-    );
+    expect(() => {
+      validateCommittedState(state, createEmptyState());
+    }).toThrow("must belong to the referenced thread by lineage walk");
   });
 });

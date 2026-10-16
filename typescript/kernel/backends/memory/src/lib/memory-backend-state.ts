@@ -44,22 +44,20 @@ import { assertTurnTreeManifestMatchesStoredPaths } from "./memory-backend-turn-
 import type { BackendState } from "./memory-backend-types.js";
 
 /** Creates an empty Scope partition with every record family initialized. */
-export const createEmptyState = (): BackendState => {
-  return {
-    branches: new Map(),
-    objects: new Map(),
-    observeAnnotations: new Map(),
-    orderedPathChunks: new Map(),
-    runs: new Map(),
-    schemas: new Map(),
-    stagedResults: new Map(),
-    threads: new Map(),
-    turnNodes: new Map(),
-    turnTreePaths: new Map(),
-    turnTrees: new Map(),
-    turns: new Map(),
-  };
-};
+export const createEmptyState = (): BackendState => ({
+  branches: new Map(),
+  objects: new Map(),
+  observeAnnotations: new Map(),
+  orderedPathChunks: new Map(),
+  runs: new Map(),
+  schemas: new Map(),
+  stagedResults: new Map(),
+  threads: new Map(),
+  turnNodes: new Map(),
+  turnTreePaths: new Map(),
+  turnTrees: new Map(),
+  turns: new Map(),
+});
 
 const validateThreadInvariants = (state: BackendState): void => {
   const rootTurnNodeOwners = new Map<string, string>();
@@ -510,7 +508,7 @@ const validateObserveAnnotationInvariants = (state: BackendState): void => {
  * @param baseState - The committed state the transaction started from; used
  *   for cross-transaction invariants such as backward branch moves requiring
  *   an archive branch created in the same transaction.
- * @throws TuvrenPersistenceError with a `memory_backend_*` code on the first
+ * @throws {TuvrenPersistenceError} with a `memory_backend_*` code on the first
  *   violated invariant; the caller must then discard the draft.
  */
 export const validateCommittedState = (

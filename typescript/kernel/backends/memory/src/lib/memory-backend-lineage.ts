@@ -60,7 +60,7 @@ const turnNodeLineage = createBackendInvariantTurnNodeLineage({
  * in the store. Reuses `index`'s memoized positions across every call
  * sharing it in the same validation pass.
  *
- * @throws TuvrenPersistenceError `memory_backend_thread_lineage_mismatch`
+ * @throws {TuvrenPersistenceError} `memory_backend_thread_lineage_mismatch`
  *   when the walk reaches a different root than `thread.rootTurnNodeHash`,
  *   or `memory_backend_cyclic_turn_node_lineage` on a lineage cycle.
  */
@@ -103,7 +103,7 @@ export const assertTurnNodeBelongsToThread = (
  * Reuses `index`'s memoized positions across every call sharing it in the
  * same validation pass.
  *
- * @throws TuvrenPersistenceError `memory_backend_turn_node_not_descendant`
+ * @throws {TuvrenPersistenceError} `memory_backend_turn_node_not_descendant`
  *   when the ancestor is not on the descendant's lineage, or
  *   `memory_backend_cyclic_turn_node_lineage` on a lineage cycle.
  */
@@ -144,7 +144,7 @@ export const assertTurnNodeDescendsFrom = (
  * reports whether it reaches the candidate ancestor. A node is considered a
  * descendant of itself.
  *
- * @throws TuvrenPersistenceError `memory_backend_cyclic_turn_node_lineage`
+ * @throws {TuvrenPersistenceError} `memory_backend_cyclic_turn_node_lineage`
  *   when the walk revisits a node.
  */
 export const isTurnNodeDescendantOf = (
@@ -186,7 +186,7 @@ export const isTurnNodeDescendantOf = (
  * Classifies the lineage relationship from `sourceTurnNodeHash` to
  * `targetTurnNodeHash`.
  *
- * @throws TuvrenPersistenceError `memory_backend_cyclic_turn_node_lineage`
+ * @throws {TuvrenPersistenceError} `memory_backend_cyclic_turn_node_lineage`
  *   when either ancestry walk encounters a cycle.
  */
 export const classifyTurnNodeRelationship = (
@@ -213,12 +213,8 @@ export const classifyTurnNodeRelationship = (
  * Decodes a run's `createdTurnNodesCbor` into its ordered, append-only list
  * of created turn node hashes.
  */
-export const decodeRunCreatedTurnNodeHashes = (run: StoredRun): string[] => {
-  return decodeHashStringArray(
-    run.createdTurnNodesCbor,
-    "run.createdTurnNodesCbor"
-  );
-};
+export const decodeRunCreatedTurnNodeHashes = (run: StoredRun): string[] =>
+  decodeHashStringArray(run.createdTurnNodesCbor, "run.createdTurnNodesCbor");
 
 /**
  * A run's active turn node: the most recently created node in its
@@ -236,7 +232,7 @@ export const getRunActiveTurnNodeHash = (run: StoredRun): string => {
  * (backward move, e.g. a rewind) of the current head. Lateral jumps onto an
  * unrelated lineage are rejected.
  *
- * @throws TuvrenPersistenceError `memory_backend_branch_head_lateral_move`.
+ * @throws {TuvrenPersistenceError} `memory_backend_branch_head_lateral_move`.
  */
 export const assertBranchHeadMoveIsLinear = (
   state: BackendState,
@@ -267,7 +263,7 @@ export const assertBranchHeadMoveIsLinear = (
  * after the turn's start node and at or before the turn's head node on the
  * same lineage.
  *
- * @throws TuvrenPersistenceError `memory_backend_run_turn_span_mismatch`.
+ * @throws {TuvrenPersistenceError} `memory_backend_run_turn_span_mismatch`.
  */
 export const assertRunStartTurnNodeWithinTurnSpan = (
   state: BackendState,
@@ -323,7 +319,7 @@ export const assertRunStartTurnNodeWithinTurnSpan = (
  * lies within the run's turn span (between the turn's start node and head
  * node, inclusive).
  *
- * @throws TuvrenPersistenceError
+ * @throws {TuvrenPersistenceError}
  *   `memory_backend_run_created_turn_node_outside_turn_span`.
  */
 export const assertRunCreatedTurnNodeWithinTurnSpan = (
@@ -380,7 +376,7 @@ export const assertRunCreatedTurnNodeWithinTurnSpan = (
  * unique hashes forming a contiguous `previousTurnNodeHash` chain that starts
  * immediately after the run's start turn node.
  *
- * @throws TuvrenPersistenceError
+ * @throws {TuvrenPersistenceError}
  *   `memory_backend_run_created_turn_nodes_duplicate` or
  *   `memory_backend_run_created_turn_nodes_not_contiguous`.
  */
@@ -439,7 +435,7 @@ export const assertRunCreatedTurnNodesAreCanonical = (
  * branch head and the turn head, so an in-flight run can never drift from
  * the lineage position the branch and turn claim.
  *
- * @throws TuvrenPersistenceError
+ * @throws {TuvrenPersistenceError}
  *   `memory_backend_active_run_branch_head_mismatch` or
  *   `memory_backend_active_run_turn_head_mismatch`.
  */
@@ -487,7 +483,7 @@ export const assertActiveRunHeadAlignment = (
  * parent shares the branch it must be the immediately previous semantic turn,
  * not an earlier one.
  *
- * @throws TuvrenPersistenceError `memory_backend_turn_parent_required`,
+ * @throws {TuvrenPersistenceError} `memory_backend_turn_parent_required`,
  *   `memory_backend_turn_parent_thread_mismatch`,
  *   `memory_backend_turn_parent_start_turn_node_mismatch`, or
  *   `memory_backend_turn_parent_not_immediate_predecessor`.
@@ -587,7 +583,7 @@ export const assertTurnParentLink = (
  * @param state - The draft (post-transaction) state being validated.
  * @param baseState - The committed state before the transaction, used to
  *   recognize which archive branches this transaction created.
- * @throws TuvrenPersistenceError
+ * @throws {TuvrenPersistenceError}
  *   `memory_backend_backward_branch_move_missing_archive` or
  *   `memory_backend_backward_branch_move_active_run_not_failed`.
  */
@@ -668,7 +664,7 @@ export type TurnNodeRelationship = "backward" | "forward" | "lateral" | "same";
  * Decodes a turn node's `consumedStagedResultsCbor` and extracts the
  * validated `objectHash` of every staged result the node consumed.
  *
- * @throws TuvrenPersistenceError
+ * @throws {TuvrenPersistenceError}
  *   `memory_backend_invalid_consumed_staged_results_cbor` when the payload is
  *   not an array, or `memory_backend_invalid_consumed_staged_result_entry`
  *   when an entry is not an object carrying a string `objectHash`.

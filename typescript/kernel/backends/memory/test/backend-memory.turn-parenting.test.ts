@@ -36,7 +36,10 @@ import {
   createStoredTurnTreeRecord as createStoredTurnTree,
 } from "@tuvren/kernel-testkit";
 
-import { createCanonicalTurnTreePaths } from "./backend-memory-test-helpers.js";
+import {
+  createCanonicalTurnTreePaths,
+  rejectionOf,
+} from "./backend-memory-test-helpers.js";
 
 describe("@tuvren/backend-memory turn parenting", () => {
   test("rejects turns whose parent is not the immediate predecessor or contiguous start", async () => {
@@ -130,35 +133,39 @@ describe("@tuvren/backend-memory turn parenting", () => {
       await tx.turns.set(turn2);
     });
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.turns.set({
-          branchId: branch.branchId,
-          createdAtMs: 11,
-          headTurnNodeHash: nodeC.hash,
-          parentTurnId: turn1.turnId,
-          startTurnNodeHash: nodeB.hash,
-          threadId: thread.threadId,
-          turnId: "turn_parent_3",
-          updatedAtMs: 11,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.turns.set({
+            branchId: branch.branchId,
+            createdAtMs: 11,
+            headTurnNodeHash: nodeC.hash,
+            parentTurnId: turn1.turnId,
+            startTurnNodeHash: nodeB.hash,
+            threadId: thread.threadId,
+            turnId: "turn_parent_3",
+            updatedAtMs: 11,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.turns.set({
-          branchId: branch.branchId,
-          createdAtMs: 12,
-          headTurnNodeHash: nodeC.hash,
-          parentTurnId: turn1.turnId,
-          startTurnNodeHash: nodeC.hash,
-          threadId: thread.threadId,
-          turnId: "turn_parent_bad_start",
-          updatedAtMs: 12,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.turns.set({
+            branchId: branch.branchId,
+            createdAtMs: 12,
+            headTurnNodeHash: nodeC.hash,
+            parentTurnId: turn1.turnId,
+            startTurnNodeHash: nodeC.hash,
+            threadId: thread.threadId,
+            turnId: "turn_parent_bad_start",
+            updatedAtMs: 12,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects null parent turns when a branch-local predecessor exists", async () => {
@@ -231,20 +238,22 @@ describe("@tuvren/backend-memory turn parenting", () => {
       });
     });
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.turns.set({
-          branchId: branch.branchId,
-          createdAtMs: 9,
-          headTurnNodeHash: nodeB.hash,
-          parentTurnId: null,
-          startTurnNodeHash: nodeA.hash,
-          threadId: thread.threadId,
-          turnId: "turn_null_parent_2",
-          updatedAtMs: 9,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.turns.set({
+            branchId: branch.branchId,
+            createdAtMs: 9,
+            headTurnNodeHash: nodeB.hash,
+            parentTurnId: null,
+            startTurnNodeHash: nodeA.hash,
+            threadId: thread.threadId,
+            turnId: "turn_null_parent_2",
+            updatedAtMs: 9,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("accepts fork parent links and rejects stale same-branch parent links", async () => {
@@ -382,20 +391,22 @@ describe("@tuvren/backend-memory turn parenting", () => {
       await tx.turns.set(siblingTurn);
     });
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.turns.set({
-          branchId: mainBranch.branchId,
-          createdAtMs: 14,
-          headTurnNodeHash: mainTail.hash,
-          parentTurnId: mainTurn1.turnId,
-          startTurnNodeHash: mainNext.hash,
-          threadId: thread.threadId,
-          turnId: "turn_parent_main_stale",
-          updatedAtMs: 14,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.turns.set({
+            branchId: mainBranch.branchId,
+            createdAtMs: 14,
+            headTurnNodeHash: mainTail.hash,
+            parentTurnId: mainTurn1.turnId,
+            startTurnNodeHash: mainNext.hash,
+            threadId: thread.threadId,
+            turnId: "turn_parent_main_stale",
+            updatedAtMs: 14,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects metadata drift on immutable hash-addressed records", async () => {
@@ -439,59 +450,71 @@ describe("@tuvren/backend-memory turn parenting", () => {
       await tx.threads.put(threadRecord);
     });
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.objects.put({
-          ...objectRecord,
-          createdAtMs: 999,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.objects.put({
+            ...objectRecord,
+            createdAtMs: 999,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.schemas.put({
-          ...schemaRecord,
-          createdAtMs: 999,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.schemas.put({
+            ...schemaRecord,
+            createdAtMs: 999,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.turnTrees.put({
-          ...turnTree,
-          createdAtMs: 999,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.turnTrees.put({
+            ...turnTree,
+            createdAtMs: 999,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.orderedPathChunks.put({
-          ...chunkRecord,
-          createdAtMs: 999,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.orderedPathChunks.put({
+            ...chunkRecord,
+            createdAtMs: 999,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.turnNodes.put({
-          ...rootNode,
-          createdAtMs: 999,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.turnNodes.put({
+            ...rootNode,
+            createdAtMs: 999,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.threads.put({
-          ...threadRecord,
-          createdAtMs: 999,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.threads.put({
+            ...threadRecord,
+            createdAtMs: 999,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects metadata drift for staged results with the same run and task identity", async () => {
@@ -578,13 +601,15 @@ describe("@tuvren/backend-memory turn parenting", () => {
       await tx.stagedResults.set(stagedResult);
     });
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.stagedResults.set({
-          ...stagedResult,
-          createdAtMs: 999,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.stagedResults.set({
+            ...stagedResult,
+            createdAtMs: 999,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 });

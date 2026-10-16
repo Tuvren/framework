@@ -52,7 +52,10 @@ import {
   createStoredTurnTreeRecord as createStoredTurnTree,
 } from "@tuvren/kernel-testkit";
 
-import { createCanonicalTurnTreePaths } from "./backend-memory-test-helpers.js";
+import {
+  createCanonicalTurnTreePaths,
+  rejectionOf,
+} from "./backend-memory-test-helpers.js";
 
 /**
  * One byte field handed to the backend, with the own-property fingerprint it
@@ -261,10 +264,10 @@ const expectByteFieldsUnmutated = (
       ownKeys: Reflect.ownKeys(probe.buffer),
     }).toEqual({ label: probe.label, ownKeys: probe.ownKeys });
     expect({
-      content: Array.from(probe.buffer),
+      content: [...probe.buffer],
       label: probe.label,
     }).toEqual({
-      content: Array.from(originals.get(probe.label) ?? probe.buffer),
+      content: [...(originals.get(probe.label) ?? probe.buffer)],
       label: probe.label,
     });
   }
@@ -273,11 +276,8 @@ const expectByteFieldsUnmutated = (
 /** Snapshots every probed byte field's content, keyed by probe label. */
 const snapshotByteFields = (
   probes: readonly ByteFieldProbe[]
-): Map<string, Uint8Array> => {
-  return new Map(
-    probes.map((probe) => [probe.label, Uint8Array.from(probe.buffer)])
-  );
-};
+): Map<string, Uint8Array> =>
+  new Map(probes.map((probe) => [probe.label, Uint8Array.from(probe.buffer)]));
 
 describe("@tuvren/backend-memory buffer ownership", () => {
   test("keeps caller byte fields untouched by writes and identity validation", async () => {
@@ -286,7 +286,9 @@ describe("@tuvren/backend-memory buffer ownership", () => {
     const probes = collectByteFieldProbes(records, "records");
     const originals = snapshotByteFields(probes);
 
-    await backend.transact((tx) => writeCallerRecords(tx, records));
+    await backend.transact(async (tx) => {
+      await writeCallerRecords(tx, records);
+    });
     expectByteFieldsUnmutated(probes, originals);
 
     // The updated run reuses the caller's byte fields, so the update path's
@@ -317,23 +319,25 @@ describe("@tuvren/backend-memory buffer ownership", () => {
     const probes = collectByteFieldProbes(records, "records");
     const originals = snapshotByteFields(probes);
 
-    await backend.transact((tx) => writeCallerRecords(tx, records));
+    await backend.transact(async (tx) => {
+      await writeCallerRecords(tx, records);
+    });
 
     for (const probe of probes) {
       probe.buffer.fill(0);
     }
 
-    const stored = await backend.transact((tx) =>
-      tx.runs.get(records.run.runId)
+    const stored = await backend.transact(
+      async (tx) => await tx.runs.get(records.run.runId)
     );
-    const storedNode = await backend.transact((tx) =>
-      tx.turnNodes.get(records.turnNode.hash)
+    const storedNode = await backend.transact(
+      async (tx) => await tx.turnNodes.get(records.turnNode.hash)
     );
-    const storedTree = await backend.transact((tx) =>
-      tx.turnTrees.get(records.turnTree.hash)
+    const storedTree = await backend.transact(
+      async (tx) => await tx.turnTrees.get(records.turnTree.hash)
     );
-    const storedSchema = await backend.transact((tx) =>
-      tx.schemas.get(records.schemaRecord.schemaId)
+    const storedSchema = await backend.transact(
+      async (tx) => await tx.schemas.get(records.schemaRecord.schemaId)
     );
 
     expect([...(stored?.stepSequenceCbor ?? [])]).toEqual([
@@ -359,10 +363,12 @@ describe("@tuvren/backend-memory buffer ownership", () => {
     const probes = collectByteFieldProbes(records, "records");
     const originals = snapshotByteFields(probes);
 
-    await backend.transact((tx) => writeCallerRecords(tx, records));
+    await backend.transact(async (tx) => {
+      await writeCallerRecords(tx, records);
+    });
 
-    const first = await backend.transact((tx) =>
-      tx.runs.get(records.run.runId)
+    const first = await backend.transact(
+      async (tx) => await tx.runs.get(records.run.runId)
     );
     const firstStepSequence = first?.stepSequenceCbor;
 
@@ -375,8 +381,8 @@ describe("@tuvren/backend-memory buffer ownership", () => {
 
     firstStepSequence?.fill(0);
 
-    const second = await backend.transact((tx) =>
-      tx.runs.get(records.run.runId)
+    const second = await backend.transact(
+      async (tx) => await tx.runs.get(records.run.runId)
     );
 
     expect([...(second?.stepSequenceCbor ?? [])]).toEqual([
@@ -399,20 +405,21 @@ describe("@tuvren/backend-memory buffer ownership", () => {
     );
     const originals = snapshotByteFields(probes);
 
-    await expect(
+    const rejectedWrite = await rejectionOf(
       backend.transact(async (tx) => {
         await tx.schemas.put(records.schemaRecord);
         await tx.turnTrees.put(tamperedTurnTree);
       })
-    ).rejects.toThrow(DETERMINISTIC_HASH_ERROR);
+    );
+    expect(rejectedWrite.message).toMatch(DETERMINISTIC_HASH_ERROR);
 
     expectByteFieldsUnmutated(probes, originals);
 
-    const storedTurnTree = await backend.transact((tx) =>
-      tx.turnTrees.get(tamperedTurnTree.hash)
+    const storedTurnTree = await backend.transact(
+      async (tx) => await tx.turnTrees.get(tamperedTurnTree.hash)
     );
-    const storedSchema = await backend.transact((tx) =>
-      tx.schemas.get(records.schemaRecord.schemaId)
+    const storedSchema = await backend.transact(
+      async (tx) => await tx.schemas.get(records.schemaRecord.schemaId)
     );
 
     expect(storedTurnTree).toBeNull();
@@ -425,10 +432,12 @@ describe("@tuvren/backend-memory buffer ownership", () => {
     const probes = collectByteFieldProbes(records, "records");
     const originals = snapshotByteFields(probes);
 
-    await backend.transact((tx) => writeCallerRecords(tx, records));
+    await backend.transact(async (tx) => {
+      await writeCallerRecords(tx, records);
+    });
     expectByteFieldsUnmutated(probes, originals);
 
-    await expect(
+    const rollbackError = await rejectionOf(
       backend.transact(async (tx) => {
         await tx.stagedResults.set({
           ...records.interruptedResult,
@@ -441,15 +450,16 @@ describe("@tuvren/backend-memory buffer ownership", () => {
         });
         throw new Error("buffer ownership rollback probe");
       })
-    ).rejects.toThrow("buffer ownership rollback probe");
+    );
+    expect(rollbackError.message).toContain("buffer ownership rollback probe");
 
     expectByteFieldsUnmutated(probes, originals);
 
-    const stored = await backend.transact((tx) =>
-      tx.runs.get(records.run.runId)
+    const stored = await backend.transact(
+      async (tx) => await tx.runs.get(records.run.runId)
     );
-    const stagedResults = await backend.transact((tx) =>
-      tx.stagedResults.listByRun(records.run.runId)
+    const stagedResults = await backend.transact(
+      async (tx) => await tx.stagedResults.listByRun(records.run.runId)
     );
 
     expect(stored?.status).toBe("running");

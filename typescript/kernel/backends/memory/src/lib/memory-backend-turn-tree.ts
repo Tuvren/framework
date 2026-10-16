@@ -71,15 +71,13 @@ export const listTurnsByThread = (
     turns.push(turn);
   }
 
-  turns.sort((left, right) => {
+  return turns.toSorted((left, right) => {
     if (left.createdAtMs !== right.createdAtMs) {
       return left.createdAtMs - right.createdAtMs;
     }
 
     return left.turnId.localeCompare(right.turnId);
   });
-
-  return turns;
 };
 
 /**
@@ -89,43 +87,41 @@ export const listTurnsByThread = (
  * repository write path replaces records via clone-on-write rather than
  * mutating them in place.
  */
-export const cloneState = (state: BackendState): BackendState => {
-  return {
-    branches: new Map(state.branches),
-    objects: new Map(state.objects),
-    observeAnnotations: new Map(
-      Array.from(state.observeAnnotations, ([runId, records]) => [
-        runId,
-        records.map(cloneStoredObserveAnnotation),
-      ])
-    ),
-    orderedPathChunks: new Map(state.orderedPathChunks),
-    runs: new Map(state.runs),
-    schemas: new Map(state.schemas),
-    stagedResults: new Map(
-      Array.from(state.stagedResults, ([runId, results]) => [
-        runId,
-        new Map(results),
-      ])
-    ),
-    threads: new Map(state.threads),
-    turnNodes: new Map(state.turnNodes),
-    turnTreePaths: new Map(
-      Array.from(state.turnTreePaths, ([turnTreeHash, paths]) => [
-        turnTreeHash,
-        new Map(paths),
-      ])
-    ),
-    turnTrees: new Map(state.turnTrees),
-    turns: new Map(state.turns),
-  };
-};
+export const cloneState = (state: BackendState): BackendState => ({
+  branches: new Map(state.branches),
+  objects: new Map(state.objects),
+  observeAnnotations: new Map(
+    Array.from(state.observeAnnotations, ([runId, records]) => [
+      runId,
+      records.map(cloneStoredObserveAnnotation),
+    ])
+  ),
+  orderedPathChunks: new Map(state.orderedPathChunks),
+  runs: new Map(state.runs),
+  schemas: new Map(state.schemas),
+  stagedResults: new Map(
+    Array.from(state.stagedResults, ([runId, results]) => [
+      runId,
+      new Map(results),
+    ])
+  ),
+  threads: new Map(state.threads),
+  turnNodes: new Map(state.turnNodes),
+  turnTreePaths: new Map(
+    Array.from(state.turnTreePaths, ([turnTreeHash, paths]) => [
+      turnTreeHash,
+      new Map(paths),
+    ])
+  ),
+  turnTrees: new Map(state.turnTrees),
+  turns: new Map(state.turns),
+});
 
 /**
  * Decodes deterministic-CBOR bytes into a `HashString[]`, validating every
  * element.
  *
- * @throws TuvrenPersistenceError
+ * @throws {TuvrenPersistenceError}
  *   `memory_backend_invalid_hash_array_payload` when the payload is not an
  *   array, or a hash-validation error naming the offending index.
  */
@@ -157,18 +153,17 @@ export const decodeHashStringArray = (
  * Encodes a hash array as deterministic CBOR, validating every element
  * first so only well-formed hash strings are ever persisted.
  */
-export const encodeHashStringArray = (hashes: string[]): Uint8Array => {
-  return encodeDeterministicKernelRecord(
+export const encodeHashStringArray = (hashes: string[]): Uint8Array =>
+  encodeDeterministicKernelRecord(
     hashes.map((hash) => validateHashString(hash))
   );
-};
 
 /**
  * Asserts the canonical chunk layout of a chunked ordered path: every chunk
  * holds 1..{@link ORDERED_PATH_CHUNK_SIZE} items, and every chunk except the
  * final one is exactly full.
  *
- * @throws TuvrenPersistenceError
+ * @throws {TuvrenPersistenceError}
  *   `memory_backend_ordered_path_chunk_size_invalid` or
  *   `memory_backend_ordered_path_chunk_not_fixed_size`.
  */
@@ -215,7 +210,7 @@ export const assertChunkedTurnTreePathChunkLayout = (
  * @param now - Clock used to stamp `createdAtMs` on newly materialized
  *   chunks; an existing chunk keeps its original timestamp.
  * @returns A record safe to store (always a clone or a freshly built value).
- * @throws TuvrenPersistenceError
+ * @throws {TuvrenPersistenceError}
  *   `memory_backend_chunked_turn_tree_path_below_threshold` or
  *   `memory_backend_chunked_turn_tree_path_count_mismatch`, plus chunk-layout
  *   errors from {@link assertChunkedTurnTreePathChunkLayout}.
@@ -288,6 +283,9 @@ export const normalizeStoredTurnTreePath = async (
       index + ORDERED_PATH_CHUNK_SIZE
     );
     const itemsCbor = encodeHashStringArray(chunkItems);
+    // Preserve deterministic chunk order and first-failure behavior without
+    // retaining a promise for every chunk.
+    // oxlint-disable-next-line no-await-in-loop
     const chunkHash = await hashKernelRecord(chunkItems);
     const existingChunk = state.orderedPathChunks.get(chunkHash);
     const chunkRecord: StoredOrderedPathChunk = {
@@ -298,6 +296,9 @@ export const normalizeStoredTurnTreePath = async (
     };
 
     assertStoredOrderedPathChunk(chunkRecord, "chunkRecord");
+    // Preserve deterministic validation order and stop at the first invalid
+    // chunk without retaining a promise for every chunk.
+    // oxlint-disable-next-line no-await-in-loop
     await assertStoredOrderedPathChunkIdentity(chunkRecord, "chunkRecord");
     putImmutableRecord(
       state.orderedPathChunks,
@@ -338,7 +339,7 @@ export const decodeTurnTreeSchema = (
 /**
  * Loads and decodes the turn-tree schema stored under `schemaId`.
  *
- * @throws TuvrenPersistenceError when the schema record does not exist or its
+ * @throws {TuvrenPersistenceError} when the schema record does not exist or its
  *   CBOR payload is not a valid turn-tree schema.
  */
 export const getSchemaForSchemaId = (
@@ -354,9 +355,8 @@ export const getSchemaForSchemaId = (
 export const getSchemaForTurnTree = (
   state: BackendState,
   turnTree: StoredTurnTree
-): TurnTreeSchema => {
-  return getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
-};
+): TurnTreeSchema =>
+  getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
 
 /**
  * Resolves a stored turn-tree path to its logical value: the single hash (or
@@ -435,7 +435,7 @@ export const areManifestPathValuesEqual = (
  * fewer, and each stored path resolves to the same logical value the manifest
  * records for that path.
  *
- * @throws TuvrenPersistenceError `memory_backend_invalid_turn_tree_manifest`,
+ * @throws {TuvrenPersistenceError} `memory_backend_invalid_turn_tree_manifest`,
  *   `memory_backend_missing_turn_tree_paths`,
  *   `memory_backend_turn_tree_path_count_mismatch`,
  *   `memory_backend_missing_turn_tree_path`, or
