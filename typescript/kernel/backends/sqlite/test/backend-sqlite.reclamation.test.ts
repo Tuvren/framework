@@ -37,7 +37,7 @@ const UNSUPPORTED_RECLAMATION_PATTERN =
 
 const openBackends: { close(): Promise<void> }[] = [];
 
-async function createReclamationKernel() {
+const createReclamationKernel = async () => {
   let clock = 0;
   const now = () => {
     clock += 1;
@@ -56,7 +56,7 @@ async function createReclamationKernel() {
     "branch_reclaim"
   );
   return { kernel, schemaId, thread };
-}
+};
 
 after(async () => {
   for (const backend of openBackends) {

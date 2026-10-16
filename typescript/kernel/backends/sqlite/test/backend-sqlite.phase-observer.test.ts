@@ -50,6 +50,42 @@ import Database from "better-sqlite3";
 import { createSqliteBackend } from "../src/index.js";
 import { createTempDatabasePath } from "./backend-sqlite-test-helpers.js";
 
+const fixedReclaimClock = (): number => {
+  return 1_700_000_100_000;
+};
+
+/** Converts Buffer columns to hex strings so `deepStrictEqual` compares raw bytes exactly. */
+const normalizeRow = (
+  row: Record<string, unknown>
+): Record<string, unknown> => {
+  const normalized: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(row)) {
+    normalized[key] = Buffer.isBuffer(value) ? value.toString("hex") : value;
+  }
+
+  return normalized;
+};
+
+/** Reads every row of `table` (ordered deterministically) via a read-only connection. */
+const readTableRows = (
+  databasePath: string,
+  table: string,
+  orderColumn: string
+): unknown[] => {
+  const db = new Database(databasePath, { readonly: true });
+
+  try {
+    const rows = db
+      .prepare(`SELECT * FROM ${table} ORDER BY ${orderColumn}`)
+      .all();
+
+    return rows.map((row) => normalizeRow(row as Record<string, unknown>));
+  } finally {
+    db.close();
+  }
+};
+
 describe("@tuvren/backend-sqlite phase observer seam (issue #108)", () => {
   test("omitting phaseObserver, NOOP_PHASE_OBSERVER, and an active RecordingPhaseObserver all persist identical rows for an equivalent transact()+fsck() flow", async () => {
     const fixedNow = () => 1_700_000_000_000;
@@ -262,37 +298,3 @@ describe("@tuvren/backend-sqlite phase observer seam (issue #108)", () => {
     }
   });
 });
-
-function fixedReclaimClock(): number {
-  return 1_700_000_100_000;
-}
-
-/** Reads every row of `table` (ordered deterministically) via a read-only connection. */
-function readTableRows(
-  databasePath: string,
-  table: string,
-  orderColumn: string
-): unknown[] {
-  const db = new Database(databasePath, { readonly: true });
-
-  try {
-    const rows = db
-      .prepare(`SELECT * FROM ${table} ORDER BY ${orderColumn}`)
-      .all();
-
-    return rows.map((row) => normalizeRow(row as Record<string, unknown>));
-  } finally {
-    db.close();
-  }
-}
-
-/** Converts Buffer columns to hex strings so `deepStrictEqual` compares raw bytes exactly. */
-function normalizeRow(row: Record<string, unknown>): Record<string, unknown> {
-  const normalized: Record<string, unknown> = {};
-
-  for (const [key, value] of Object.entries(row)) {
-    normalized[key] = Buffer.isBuffer(value) ? value.toString("hex") : value;
-  }
-
-  return normalized;
-}

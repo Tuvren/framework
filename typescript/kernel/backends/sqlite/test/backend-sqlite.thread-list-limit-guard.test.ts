@@ -43,12 +43,12 @@ import { createTempDatabasePath } from "./backend-sqlite-test-helpers.js";
 // immutable-record-match guard on a differing createdAtMs. The schema record
 // itself is registered once with a fixed createdAtMs across all seeded
 // threads for the same reason (schemas are keyed by schemaId, not content).
-async function seedThread(
+const seedThread = async (
   backend: RuntimeBackend,
   threadId: string,
   index: number,
   base: number
-): Promise<void> {
+): Promise<void> => {
   const schema = createCanonicalKernelTestSchema();
   const schemaRecord = createStoredSchemaRecord(schema, 1);
   const manifest = {
@@ -83,7 +83,7 @@ async function seedThread(
     await tx.turnNodes.put(turnNode);
     await tx.threads.put(thread);
   });
-}
+};
 
 describe("@tuvren/backend-sqlite threads.list LIMIT guard (KRT-BK006)", () => {
   test("rejects a negative limit before touching the database", async () => {
