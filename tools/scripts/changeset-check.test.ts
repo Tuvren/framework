@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { spawn } from "node:child_process";
 import {
   appendFile,
   mkdir,
@@ -15,6 +14,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { spawn } from "bun";
+
 import { checkChangesetCoverage } from "./changeset-check.js";
 
 interface CommandResult {
@@ -24,15 +25,18 @@ interface CommandResult {
 }
 
 interface Fixture {
-  commit(message: string): Promise<void>;
-  movePublicSource(destination: string): Promise<void>;
-  privateChange(content: string): Promise<void>;
-  publicChange(content: string): Promise<void>;
-  publicSourceTypeChange(): Promise<void>;
+  commit: (message: string) => Promise<void>;
+  movePublicSource: (destination: string) => Promise<void>;
+  privateChange: (content: string) => Promise<void>;
+  publicChange: (content: string) => Promise<void>;
+  publicSourceTypeChange: () => Promise<void>;
   readonly root: string;
-  writeChangeset(filename: string, frontmatter: string): Promise<void>;
-  writeChangesetContents(filename: string, contents: string): Promise<void>;
-  writePublicManifest(description: string, isPrivate?: boolean): Promise<void>;
+  writeChangeset: (filename: string, frontmatter: string) => Promise<void>;
+  writeChangesetContents: (filename: string, contents: string) => Promise<void>;
+  writePublicManifest: (
+    description: string,
+    isPrivate?: boolean
+  ) => Promise<void>;
 }
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../");
@@ -45,14 +49,12 @@ const fixtureRoots: string[] = [];
 const publicManifest = (
   description: string,
   isPrivate = false
-): Record<string, unknown> => {
-  return {
-    description,
-    name: "@tuvren/public-a",
-    ...(isPrivate ? { private: true } : {}),
-    version: "1.0.0",
-  };
-};
+): Record<string, unknown> => ({
+  description,
+  name: "@tuvren/public-a",
+  ...(isPrivate ? { private: true } : {}),
+  version: "1.0.0",
+});
 
 const writeFixtureFile = async (
   root: string,
@@ -64,44 +66,40 @@ const writeFixtureFile = async (
   await writeFile(filePath, content);
 };
 
-const check = (fixture: Fixture): Promise<void> => {
-  return checkChangesetCoverage({
+const check = async (fixture: Fixture): Promise<void> => {
+  await checkChangesetCoverage({
     base: "master",
     rootDirectory: fixture.root,
   });
 };
 
-const isObject = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
-const run = (
+const hasChangesetReader = (
+  value: unknown
+): value is { readChangesets: (rootDirectory: string) => Promise<unknown> } =>
+  isObject(value) && typeof value.readChangesets === "function";
+
+const run = async (
   executable: string,
   args: readonly string[],
   cwd: string
 ): Promise<CommandResult> => {
-  return new Promise((resolve) => {
-    const child = spawn(executable, args, {
-      cwd,
-      env: process.env,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString();
-    });
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString();
-    });
-    child.once("error", (error: Error) => {
-      stderr += error.message;
-    });
-    child.once("close", (code) => {
-      resolve({ exitCode: code ?? 1, stderr, stdout });
-    });
+  const subprocess = spawn([executable, ...args], {
+    cwd,
+    env: process.env,
+    stderr: "pipe",
+    stdin: "ignore",
+    stdout: "pipe",
   });
+  const [exitCode, stderr, stdout] = await Promise.all([
+    subprocess.exited,
+    new Response(subprocess.stderr).text(),
+    new Response(subprocess.stdout).text(),
+  ]);
+
+  return { exitCode, stderr, stdout };
 };
 
 const generateRelease = async (fixture: Fixture): Promise<void> => {
@@ -264,7 +262,7 @@ const assertPublicSourceMoveRequiresIntent = async (
     `R100\tpackages/public-a/src.ts\t${destination}`
   );
 
-  await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+  expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
   await fixture.commit("move public source");
 
   const committed = await run(
@@ -276,22 +274,20 @@ const assertPublicSourceMoveRequiresIntent = async (
   expect(committed.stdout).toContain(
     `R100\tpackages/public-a/src.ts\t${destination}`
   );
-  await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+  expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
 
   await fixture.writeChangeset("source-move.md", '"@tuvren/public-a": patch');
   await fixture.commit("record source move intent");
 
-  await expect(check(fixture)).resolves.toBeUndefined();
+  expect(check(fixture)).resolves.toBeUndefined();
 };
 
 const readNativeChangesets = async (rootDirectory: string): Promise<void> => {
   const cliRequire = createRequire(await realpath(CHANGESET_CLI));
   const readerPath = cliRequire.resolve("@changesets/read");
-  const reader = await import(pathToFileURL(readerPath).href);
+  const reader: unknown = await import(pathToFileURL(readerPath).href);
 
-  if (
-    !("readChangesets" in reader && typeof reader.readChangesets === "function")
-  ) {
+  if (!hasChangesetReader(reader)) {
     throw new Error("installed Changesets reader has an invalid API");
   }
 
@@ -324,7 +320,8 @@ const releaseVersion = (
     throw new Error("Changesets status did not produce a releases array");
   }
 
-  const release = value.releases.find(
+  const releases: unknown[] = value.releases;
+  const release = releases.find(
     (entry) => isObject(entry) && entry.name === packageName
   );
 
@@ -345,9 +342,9 @@ const releaseVersion = (
 
 afterEach(async () => {
   await Promise.all(
-    fixtureRoots
-      .splice(0)
-      .map((fixtureRoot) => rm(fixtureRoot, { force: true, recursive: true }))
+    fixtureRoots.splice(0).map(async (fixtureRoot) => {
+      await rm(fixtureRoot, { force: true, recursive: true });
+    })
   );
 });
 
@@ -357,7 +354,7 @@ describe("changeset-check", () => {
     await fixture.publicChange("export const changed = true;\n");
     await fixture.commit("change public package");
 
-    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+    expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
   });
 
   test("passes when a changed public package has a direct changeset", async () => {
@@ -366,7 +363,7 @@ describe("changeset-check", () => {
     await fixture.writeChangeset("public.md", '"@tuvren/public-a": patch');
     await fixture.commit("change public package with intent");
 
-    await expect(check(fixture)).resolves.toBeUndefined();
+    expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("public command terminates with success and failure statuses", async () => {
@@ -403,7 +400,7 @@ describe("changeset-check", () => {
     await fixture.writeChangeset("empty.md", "{}");
     await fixture.commit("change public package with unrelated intent");
 
-    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+    expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
   });
 
   test("rejects every changeset package that native status rejects", async () => {
@@ -425,7 +422,7 @@ describe("changeset-check", () => {
     expect(`${status.stdout}${status.stderr}`).toContain(
       "not in the workspace"
     );
-    await expect(check(fixture)).rejects.toThrow("@tuvren/ghost");
+    expect(check(fixture)).rejects.toThrow("@tuvren/ghost");
   });
 
   test("rejects malformed delimiters that native status rejects", async () => {
@@ -444,7 +441,7 @@ describe("changeset-check", () => {
     );
 
     expect(status.exitCode).toBe(1);
-    await expect(check(fixture)).rejects.toThrow("frontmatter");
+    expect(check(fixture)).rejects.toThrow("frontmatter");
   });
 
   test("accepts delimiter formats supported by the installed parser", async () => {
@@ -463,7 +460,7 @@ describe("changeset-check", () => {
     );
 
     expect(status.exitCode).toBe(0);
-    await expect(check(fixture)).resolves.toBeUndefined();
+    expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("does not let a native-valid none release cover a public package", async () => {
@@ -485,7 +482,7 @@ describe("changeset-check", () => {
       newVersion: "1.0.0",
       oldVersion: "1.0.0",
     });
-    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+    expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
   });
 
   test("does not let an old pending changeset cover a new public change", async () => {
@@ -498,7 +495,7 @@ describe("changeset-check", () => {
     await fixture.publicChange("export const later = true;\n");
     await fixture.commit("change public package after intent");
 
-    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+    expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
   });
 
   test("accepts a changed nonempty changeset release note as an updated intent", async () => {
@@ -515,7 +512,7 @@ describe("changeset-check", () => {
     );
     await fixture.commit("change source and changeset prose");
 
-    await expect(check(fixture)).resolves.toBeUndefined();
+    expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("accepts a changed declaration for the covered public package", async () => {
@@ -529,7 +526,7 @@ describe("changeset-check", () => {
     await fixture.writeChangeset("old.md", '"@tuvren/public-a": minor');
     await fixture.commit("change source and public declaration");
 
-    await expect(check(fixture)).resolves.toBeUndefined();
+    expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("does not let an unrelated declaration refresh an unchanged public intent", async () => {
@@ -546,7 +543,7 @@ describe("changeset-check", () => {
     );
     await fixture.commit("change source and add unrelated declaration");
 
-    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+    expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
   });
 
   test("does not let a renamed unchanged pending intent cover a new public change", async () => {
@@ -564,7 +561,7 @@ describe("changeset-check", () => {
     );
     await fixture.commit("change source and rename unchanged intent");
 
-    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+    expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
   });
 
   test("matches native Changesets metadata filtering", async () => {
@@ -572,15 +569,13 @@ describe("changeset-check", () => {
     await fixture.publicChange("export const changed = true;\n");
     await fixture.writeChangeset("public.md", '"@tuvren/public-a": patch');
 
-    for (const filename of [
-      ".hidden.md",
-      "rEaDmE.md",
-      "AGENTS.md",
-      "CLAUDE.md",
-      "GEMINI.md",
-    ]) {
-      await fixture.writeChangesetContents(filename, "not a changeset\n");
-    }
+    await Promise.all(
+      [".hidden.md", "rEaDmE.md", "AGENTS.md", "CLAUDE.md", "GEMINI.md"].map(
+        async (filename) => {
+          await fixture.writeChangesetContents(filename, "not a changeset\n");
+        }
+      )
+    );
     await fixture.commit("add changeset metadata files");
 
     const status = await run(
@@ -590,7 +585,7 @@ describe("changeset-check", () => {
     );
 
     expect(status.exitCode).toBe(0);
-    await expect(check(fixture)).resolves.toBeUndefined();
+    expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("matches native pre-directory errors while allowing an absent pre directory", async () => {
@@ -605,7 +600,7 @@ describe("changeset-check", () => {
     );
 
     expect(absentStatus.exitCode).toBe(0);
-    await expect(check(absentPre)).resolves.toBeUndefined();
+    expect(check(absentPre)).resolves.toBeUndefined();
 
     const preFile = await createFixture();
     await preFile.publicChange("export const changed = true;\n");
@@ -622,10 +617,10 @@ describe("changeset-check", () => {
     );
 
     expect(invalidStatus.exitCode).toBe(1);
-    await expect(readNativeChangesets(preFile.root)).rejects.toMatchObject({
+    expect(readNativeChangesets(preFile.root)).rejects.toMatchObject({
       code: "ENOTDIR",
     });
-    await expect(check(preFile)).rejects.toThrow(".changeset/pre");
+    expect(check(preFile)).rejects.toThrow(".changeset/pre");
   });
 
   test("rejects an unchanged intent renamed from a native-valid quoted Unicode name", async () => {
@@ -654,7 +649,7 @@ describe("changeset-check", () => {
     );
 
     expect(status.exitCode).toBe(0);
-    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+    expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
   });
 
   test("accepts an updated intent renamed from a native-valid quoted Unicode name", async () => {
@@ -687,19 +682,19 @@ describe("changeset-check", () => {
     );
 
     expect(status.exitCode).toBe(0);
-    await expect(check(fixture)).resolves.toBeUndefined();
+    expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("exempts private-only and root-only changes", async () => {
     const privateFixture = await createFixture();
     await privateFixture.privateChange("export const changed = true;\n");
     await privateFixture.commit("change private package");
-    await expect(check(privateFixture)).resolves.toBeUndefined();
+    expect(check(privateFixture)).resolves.toBeUndefined();
 
     const rootFixture = await createFixture();
     await writeFile(path.join(rootFixture.root, "README.md"), "root only\n");
     await rootFixture.commit("change root file");
-    await expect(check(rootFixture)).resolves.toBeUndefined();
+    expect(check(rootFixture)).resolves.toBeUndefined();
   });
 
   test("exempts a package made private by its current manifest", async () => {
@@ -707,7 +702,7 @@ describe("changeset-check", () => {
     await fixture.writePublicManifest("now private", true);
     await fixture.commit("make package private");
 
-    await expect(check(fixture)).resolves.toBeUndefined();
+    expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("exempts removal of a historical private-only intent", async () => {
@@ -724,7 +719,7 @@ describe("changeset-check", () => {
     await rm(path.join(fixture.root, ".changeset/private.md"));
     await fixture.commit("remove private package and its intent");
 
-    await expect(check(fixture)).resolves.toBeUndefined();
+    expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("accepts fresh public intent after removal of a historical private-only intent", async () => {
@@ -743,7 +738,7 @@ describe("changeset-check", () => {
     await fixture.writeChangeset("public.md", '"@tuvren/public-a": patch');
     await fixture.commit("remove private package and change public package");
 
-    await expect(check(fixture)).resolves.toBeUndefined();
+    expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("measures Changesets status private/fixed behavior without using it as coverage", async () => {
@@ -769,13 +764,13 @@ describe("changeset-check", () => {
     expect(status.exitCode).toBe(0);
     expect(releaseNames(report)).toContain("@tuvren/private-a");
     expect(releaseNames(report)).toContain("@tuvren/public-a");
-    await expect(check(fixture)).resolves.toBeUndefined();
+    expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("fails clearly when the requested base cannot resolve", async () => {
     const fixture = await createFixture();
 
-    await expect(
+    expect(
       checkChangesetCoverage({
         base: "missing-base",
         rootDirectory: fixture.root,
@@ -819,7 +814,7 @@ describe("changeset-check", () => {
     expect(untracked.exitCode).toBe(0);
     expect(untracked.stdout).toContain(".changeset/working-tree.md");
 
-    await expect(check(fixture)).resolves.toBeUndefined();
+    expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("requires intent for public source type changes in each Git state", async () => {
@@ -833,7 +828,7 @@ describe("changeset-check", () => {
 
     expect(workingTree.stdout).toContain("T\tpackages/public-a/src.ts");
 
-    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+    expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
 
     const stage = await run(
       "git",
@@ -848,14 +843,14 @@ describe("changeset-check", () => {
     );
     expect(staged.stdout).toContain("T\tpackages/public-a/src.ts");
 
-    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+    expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
     await fixture.commit("replace public source with symlink");
 
-    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+    expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
     await fixture.writeChangeset("type-change.md", '"@tuvren/public-a": patch');
     await fixture.commit("record intent for public source type change");
 
-    await expect(check(fixture)).resolves.toBeUndefined();
+    expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("requires direct intent when public source moves to a private package", async () => {
@@ -871,7 +866,7 @@ describe("changeset-check", () => {
   test("accepts a consumed release only when installed Changesets reproduces it", async () => {
     const fixture = await createGeneratedReleaseFixture();
 
-    await expect(check(fixture)).resolves.toBeUndefined();
+    expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("replays the newest pending changeset snapshot after release-note updates", async () => {
@@ -888,7 +883,7 @@ describe("changeset-check", () => {
     await fixture.commit("update release note");
     await generateRelease(fixture);
 
-    await expect(check(fixture)).resolves.toBeUndefined();
+    expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("rejects source changes concealed by a generated version bump", async () => {
@@ -896,9 +891,7 @@ describe("changeset-check", () => {
     await fixture.publicChange("export const concealed = true;\n");
     await fixture.commit("conceal source change");
 
-    await expect(check(fixture)).rejects.toThrow(
-      "is not generated release output"
-    );
+    expect(check(fixture)).rejects.toThrow("is not generated release output");
   });
 
   test("rejects non-version public manifest edits concealed by a version bump", async () => {
@@ -906,7 +899,7 @@ describe("changeset-check", () => {
     await fixture.writePublicManifest("concealed manifest edit");
     await fixture.commit("conceal manifest change");
 
-    await expect(check(fixture)).rejects.toThrow("does not match");
+    expect(check(fixture)).rejects.toThrow("does not match");
   });
 
   test("rejects public source changes before an unrelated private intent", async () => {
@@ -917,7 +910,7 @@ describe("changeset-check", () => {
     await fixture.commit("record unrelated private intent");
     await generateRelease(fixture);
 
-    await expect(check(fixture)).rejects.toThrow(
+    expect(check(fixture)).rejects.toThrow(
       "changed before the pending-changeset snapshot"
     );
   });
@@ -930,7 +923,7 @@ describe("changeset-check", () => {
     await fixture.commit("record unrelated private intent");
     await generateRelease(fixture);
 
-    await expect(check(fixture)).rejects.toThrow(
+    expect(check(fixture)).rejects.toThrow(
       "changed before the pending-changeset snapshot"
     );
   });

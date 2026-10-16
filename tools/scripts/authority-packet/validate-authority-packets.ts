@@ -16,9 +16,9 @@
 
 import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { relative, resolve } from "node:path";
+import path from "node:path";
 
-import type { AnySchema } from "ajv";
+import type { Schema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
 import { parseRegenerateCommandArgv } from "../lib/regenerate-command-argv.js";
@@ -68,15 +68,31 @@ interface ValidationFailure {
   message: string;
 }
 
-const MARKDOWN_HEADING_RE = /^#{1,6}\s+(.+)/;
+const MARKDOWN_HEADING_RE = /^#{1,6}\s+(?<heading>.+)/u;
 
-const REPO_ROOT = resolve(import.meta.dirname, "../../..");
-const SPEC_ROOT = resolve(REPO_ROOT, "spec");
-const SCHEMA_PATH = resolve(
+const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
+const SPEC_ROOT = path.resolve(REPO_ROOT, "spec");
+const SCHEMA_PATH = path.resolve(
   REPO_ROOT,
   "tools/schemas/authority-packet.schema.json"
 );
 const MANIFEST_FILE_NAME = "authority-packet.json";
+
+const forEachSequential = async <T>(
+  values: Iterable<T>,
+  operation: (value: T) => Promise<void>
+): Promise<void> => {
+  const iterator = values[Symbol.iterator]();
+  const visitNext = async (): Promise<void> => {
+    const next = iterator.next();
+    if (next.done === true) {
+      return;
+    }
+    await operation(next.value);
+    await visitNext();
+  };
+  await visitNext();
+};
 
 const findAuthorityPacketManifests = async (
   directory: string
@@ -84,26 +100,26 @@ const findAuthorityPacketManifests = async (
   const entries = await readdir(directory, { withFileTypes: true });
   const manifests: string[] = [];
 
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
+  await forEachSequential(entries, async (entry) => {
+    const entryPath = path.resolve(directory, entry.name);
 
     if (entry.isDirectory()) {
       manifests.push(...(await findAuthorityPacketManifests(entryPath)));
-      continue;
+      return;
     }
 
     if (entry.isFile() && entry.name === MANIFEST_FILE_NAME) {
       manifests.push(entryPath);
     }
-  }
+  });
 
-  return manifests.sort();
+  return manifests.toSorted();
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
-const readJsonSchema = (value: unknown, label: string): AnySchema => {
+const readJsonSchema = (value: unknown, label: string): Schema => {
   if (typeof value === "boolean" || isRecord(value)) {
     return value;
   }
@@ -117,7 +133,7 @@ const requireExistingPath = (
   failures: ValidationFailure[],
   label: string
 ): void => {
-  const absolutePath = resolve(REPO_ROOT, candidatePath);
+  const absolutePath = path.resolve(REPO_ROOT, candidatePath);
 
   if (!existsSync(absolutePath)) {
     failures.push({
@@ -226,9 +242,9 @@ const validateGeneratedArtifacts = (
     } catch (error) {
       failures.push({
         manifestPath,
-        message:
-          `freshness check for ${artifact.path} has an invalid regenerate command: ` +
-          `${error instanceof Error ? error.message : String(error)}`,
+        message: `freshness check for ${artifact.path} has an invalid regenerate command: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       });
     }
   }
@@ -272,11 +288,11 @@ const validateConformancePlanLinks = async (
     }
   }
 
-  for (const plan of manifest.conformancePlans ?? []) {
-    const sourcePath = resolve(REPO_ROOT, plan.path);
+  await forEachSequential(manifest.conformancePlans ?? [], async (plan) => {
+    const sourcePath = path.resolve(REPO_ROOT, plan.path);
 
     if (!existsSync(sourcePath)) {
-      continue;
+      return;
     }
 
     const value = JSON.parse(await readFile(sourcePath, "utf-8")) as unknown;
@@ -286,7 +302,7 @@ const validateConformancePlanLinks = async (
         manifestPath,
         message: `conformance plan ${plan.path} is missing packetId, planId, or planVersion`,
       });
-      continue;
+      return;
     }
 
     if (value.packetId !== manifest.packetId) {
@@ -305,7 +321,7 @@ const validateConformancePlanLinks = async (
         message: `conformance plan ${plan.path} metadata does not match manifest declaration`,
       });
     }
-  }
+  });
 };
 
 const validateVerificationPaths = (
@@ -360,15 +376,18 @@ const validateVerificationPaths = (
 const toMarkdownSlug = (text: string): string =>
   text
     .toLowerCase()
-    .replaceAll(/[^\w\s-]/g, "")
-    .replaceAll(/\s+/g, "-")
-    .replaceAll(/-+/g, "-")
+    .replaceAll(/[^\w\s-]/gu, "")
+    .replaceAll(/\s+/gu, "-")
+    .replaceAll(/-+/gu, "-")
     .trim();
 
 const markdownAnchorExists = (content: string, anchor: string): boolean => {
   for (const line of content.split("\n")) {
     const match = MARKDOWN_HEADING_RE.exec(line);
-    if (match !== null && toMarkdownSlug(match[1]) === anchor) {
+    if (
+      match?.groups?.heading !== undefined &&
+      toMarkdownSlug(match.groups.heading) === anchor
+    ) {
       return true;
     }
   }
@@ -380,9 +399,9 @@ const validateHumanAuthorityRefs = async (
   manifest: AuthorityPacketManifest,
   failures: ValidationFailure[]
 ): Promise<void> => {
-  for (const ref of manifest.humanAuthorityRefs ?? []) {
+  await forEachSequential(manifest.humanAuthorityRefs ?? [], async (ref) => {
     if (ref.startsWith("http://") || ref.startsWith("https://")) {
-      continue;
+      return;
     }
 
     const hashIndex = ref.indexOf("#");
@@ -390,17 +409,17 @@ const validateHumanAuthorityRefs = async (
     const anchor = hashIndex === -1 ? undefined : ref.slice(hashIndex + 1);
 
     if (!filePath) {
-      continue;
+      return;
     }
 
-    const absolutePath = resolve(REPO_ROOT, filePath);
+    const absolutePath = path.resolve(REPO_ROOT, filePath);
 
     if (!existsSync(absolutePath)) {
       failures.push({
         manifestPath,
         message: `humanAuthorityRef file does not exist: ${filePath}`,
       });
-      continue;
+      return;
     }
 
     if (anchor !== undefined) {
@@ -412,7 +431,7 @@ const validateHumanAuthorityRefs = async (
         });
       }
     }
-  }
+  });
 };
 
 export const validateAuthorityPackets = async (): Promise<
@@ -420,7 +439,8 @@ export const validateAuthorityPackets = async (): Promise<
 > => {
   // No existsSync guard on the root: a missing spec/ (sparse checkout,
   // wrong cwd) must fail this gate loudly, never pass it vacuously.
-  const manifestPaths = (await findAuthorityPacketManifests(SPEC_ROOT)).sort();
+  const discoveredManifestPaths = await findAuthorityPacketManifests(SPEC_ROOT);
+  const manifestPaths = discoveredManifestPaths.toSorted();
   if (manifestPaths.length === 0) {
     throw new Error(
       `authority-packet gate found zero packets under ${SPEC_ROOT} — refusing to report a vacuous pass`
@@ -431,11 +451,11 @@ export const validateAuthorityPackets = async (): Promise<
     SCHEMA_PATH
   );
   const ajv = new Ajv2020({ allErrors: true, strict: false });
-  const validate = ajv.compile(schema);
+  const validate = ajv.compile<AuthorityPacketManifest>(schema);
   const failures: ValidationFailure[] = [];
   const seenPacketIds = new Map<string, string>();
 
-  for (const manifestPath of manifestPaths) {
+  await forEachSequential(manifestPaths, async (manifestPath) => {
     const value = JSON.parse(await readFile(manifestPath, "utf-8")) as unknown;
 
     if (!validate(value)) {
@@ -443,10 +463,10 @@ export const validateAuthorityPackets = async (): Promise<
         manifestPath,
         message: `schema validation failed: ${ajv.errorsText(validate.errors)}`,
       });
-      continue;
+      return;
     }
 
-    const manifest = value as AuthorityPacketManifest;
+    const manifest = value;
     const priorPacketPath = seenPacketIds.get(manifest.packetId);
 
     if (priorPacketPath === undefined) {
@@ -454,7 +474,7 @@ export const validateAuthorityPackets = async (): Promise<
     } else {
       failures.push({
         manifestPath,
-        message: `duplicates packetId ${manifest.packetId} already declared by ${relative(
+        message: `duplicates packetId ${manifest.packetId} already declared by ${path.relative(
           REPO_ROOT,
           priorPacketPath
         )}`,
@@ -467,7 +487,7 @@ export const validateAuthorityPackets = async (): Promise<
     await validateConformancePlanLinks(manifestPath, manifest, failures);
     validateVerificationPaths(manifestPath, manifest, failures);
     await validateHumanAuthorityRefs(manifestPath, manifest, failures);
-  }
+  });
 
   return failures;
 };
@@ -478,7 +498,7 @@ const main = async (): Promise<void> => {
   if (failures.length > 0) {
     for (const failure of failures) {
       console.error(
-        `${relative(REPO_ROOT, failure.manifestPath)}: ${failure.message}`
+        `${path.relative(REPO_ROOT, failure.manifestPath)}: ${failure.message}`
       );
     }
     process.exitCode = 1;

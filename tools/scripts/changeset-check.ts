@@ -7,7 +7,6 @@
  * This gate instead maps Git path changes to the current publishable manifests
  * and requires a direct, validated changeset entry for each affected package.
  */
-import { spawn } from "node:child_process";
 import {
   access,
   mkdtemp,
@@ -21,6 +20,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+
+import { spawn } from "bun";
 
 import { walkPackageManifests } from "./lib/walk-package-manifests.js";
 
@@ -78,6 +79,41 @@ const CHANGESETS_CLI_PATH = path.join(
 );
 const FULL_GIT_COMMIT = /^[0-9a-f]{40}$/u;
 let changesetParserPromise: Promise<ChangesetParser> | undefined;
+
+const forEachSequential = async <T>(
+  values: Iterable<T>,
+  operation: (value: T) => Promise<void>
+): Promise<void> => {
+  const iterator = values[Symbol.iterator]();
+  const visitNext = async (): Promise<void> => {
+    const next = iterator.next();
+    if (next.done === true) {
+      return;
+    }
+    await operation(next.value);
+    await visitNext();
+  };
+  await visitNext();
+};
+
+const findSequential = async <T, TResult>(
+  values: Iterable<T>,
+  operation: (value: T) => Promise<TResult | null>
+): Promise<TResult | undefined> => {
+  const iterator = values[Symbol.iterator]();
+  const visitNext = async (): Promise<TResult | undefined> => {
+    const next = iterator.next();
+    if (next.done === true) {
+      return undefined;
+    }
+    const result = await operation(next.value);
+    if (result !== null) {
+      return result;
+    }
+    return await visitNext();
+  };
+  return await visitNext();
+};
 
 const parseBaseArgument = (arguments_: readonly string[]): string => {
   if (arguments_.length === 0) {
@@ -140,21 +176,19 @@ const readOptionalFile = async (
   }
 };
 
-const isPathWithin = (directory: string, changedPath: string): boolean => {
-  return changedPath === directory || changedPath.startsWith(`${directory}/`);
-};
+const isPathWithin = (directory: string, changedPath: string): boolean =>
+  changedPath === directory || changedPath.startsWith(`${directory}/`);
 
 const isPublicPackagePath = (
   changedPath: string,
   manifests: readonly PackageManifest[]
-): boolean => {
-  return manifests.some(
+): boolean =>
+  manifests.some(
     (manifest) =>
       !manifest.private &&
       manifest.name.startsWith("@tuvren/") &&
       isPathWithin(manifest.directory, changedPath)
   );
-};
 
 const normalizeGitPath = (filePath: string): string => {
   const normalized = filePath.replaceAll("\\", "/");
@@ -168,58 +202,43 @@ const normalizeGitPath = (filePath: string): string => {
   return normalized;
 };
 
-const isObject = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const isChangesetParserModule = (
   value: unknown
-): value is { readonly default: ChangesetParser } => {
-  return isObject(value) && typeof value.default === "function";
-};
+): value is { readonly default: ChangesetParser } =>
+  isObject(value) && typeof value.default === "function";
 
-const hasErrorCode = (error: unknown, code: string): boolean => {
-  return isObject(error) && error.code === code;
-};
+const hasErrorCode = (error: unknown, code: string): boolean =>
+  isObject(error) && error.code === code;
 
 const runCommand = async (
   executable: string,
   args: readonly string[],
   cwd: string
 ): Promise<CommandResult> => {
-  return await new Promise((resolve) => {
-    const child = spawn(executable, args, {
+  try {
+    const subprocess = spawn([executable, ...args], {
       cwd,
       env: process.env,
-      stdio: ["ignore", "pipe", "pipe"],
+      stderr: "pipe",
+      stdin: "ignore",
+      stdout: "pipe",
     });
-    let stdout = "";
-    let stderr = "";
-    let settled = false;
-
-    const finish = (exitCode: number): void => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      resolve({ exitCode, stderr, stdout });
+    const [exitCode, stderr, stdout] = await Promise.all([
+      subprocess.exited,
+      new Response(subprocess.stderr).text(),
+      new Response(subprocess.stdout).text(),
+    ]);
+    return { exitCode, stderr, stdout };
+  } catch (error) {
+    return {
+      exitCode: 1,
+      stderr: error instanceof Error ? error.message : String(error),
+      stdout: "",
     };
-
-    child.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString();
-    });
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString();
-    });
-    child.once("error", (error: Error) => {
-      stderr += error.message;
-      finish(1);
-    });
-    child.once("close", (code) => {
-      finish(code ?? 1);
-    });
-  });
+  }
 };
 
 const resolveRevision = async (
@@ -277,7 +296,7 @@ const readChangedPaths = async (
   ];
   const changedPaths = new Set<string>();
 
-  for (const args of commands) {
+  await forEachSequential(commands, async (args) => {
     const result = await runCommand("git", args, rootDirectory);
 
     if (result.exitCode !== 0) {
@@ -293,7 +312,7 @@ const readChangedPaths = async (
 
       changedPaths.add(normalizeGitPath(rawPath));
     }
-  }
+  });
 
   return changedPaths;
 };
@@ -346,29 +365,32 @@ const readPendingChangesetPaths = async (
 ): Promise<string[]> => {
   const paths: string[] = [];
 
-  for (const directory of [CHANGESET_DIRECTORY, `${CHANGESET_DIRECTORY}/pre`]) {
-    let entries: string[];
+  await forEachSequential(
+    [CHANGESET_DIRECTORY, `${CHANGESET_DIRECTORY}/pre`],
+    async (directory) => {
+      let entries: string[];
 
-    try {
-      entries = await readdir(path.join(rootDirectory, directory));
-    } catch (error: unknown) {
-      if (directory.endsWith("/pre") && hasErrorCode(error, "ENOENT")) {
-        continue;
+      try {
+        entries = await readdir(path.join(rootDirectory, directory));
+      } catch (error: unknown) {
+        if (directory.endsWith("/pre") && hasErrorCode(error, "ENOENT")) {
+          return;
+        }
+
+        throw new Error(`cannot read ${directory} directory`, { cause: error });
       }
 
-      throw new Error(`cannot read ${directory} directory`, { cause: error });
-    }
+      for (const entry of entries) {
+        const relativePath = `${directory}/${entry}`;
 
-    for (const entry of entries) {
-      const relativePath = `${directory}/${entry}`;
-
-      if (isNativeChangesetPath(relativePath)) {
-        paths.push(relativePath);
+        if (isNativeChangesetPath(relativePath)) {
+          paths.push(relativePath);
+        }
       }
     }
-  }
+  );
 
-  return paths.sort((left, right) => left.localeCompare(right));
+  return paths.toSorted((left, right) => left.localeCompare(right));
 };
 
 const readPendingChangesetPathsAtRevision = async (
@@ -388,7 +410,7 @@ const readPendingChangesetPathsAtRevision = async (
   return result.stdout
     .split("\0")
     .filter((filePath) => isNativeChangesetPath(filePath))
-    .sort();
+    .toSorted();
 };
 
 const loadChangesetParser = async (): Promise<ChangesetParser> => {
@@ -506,29 +528,27 @@ const readPendingChangesetsAtRevision = async (
     rootDirectory,
     revision
   );
-  const changesets: PendingChangeset[] = [];
+  return await Promise.all(
+    paths.map(async (relativePath) => {
+      const contents = await runCommand(
+        "git",
+        ["show", `${revision}:${relativePath}`],
+        rootDirectory
+      );
 
-  for (const relativePath of paths) {
-    const contents = await runCommand(
-      "git",
-      ["show", `${revision}:${relativePath}`],
-      rootDirectory
-    );
+      if (contents.exitCode !== 0) {
+        throw new Error(`cannot read base changeset ${relativePath}`);
+      }
 
-    if (contents.exitCode !== 0) {
-      throw new Error(`cannot read base changeset ${relativePath}`);
-    }
-
-    // Historical notes establish prior intent. Parse their native syntax and
-    // release types without applying the current workspace membership check.
-    const parsed = await parseChangesetContents(
-      contents.stdout,
-      relativePath.slice(`${CHANGESET_DIRECTORY}/`.length)
-    );
-    changesets.push({ ...parsed, relativePath });
-  }
-
-  return changesets;
+      // Historical notes establish prior intent. Parse their native syntax and
+      // release types without applying the current workspace membership check.
+      const parsed = await parseChangesetContents(
+        contents.stdout,
+        relativePath.slice(`${CHANGESET_DIRECTORY}/`.length)
+      );
+      return { ...parsed, relativePath };
+    })
+  );
 };
 
 const parseChangeset = async (
@@ -550,19 +570,17 @@ const readPendingChangesets = async (
   rootDirectory: string,
   workspaceNames: ReadonlySet<string>
 ): Promise<PendingChangeset[]> => {
-  const changesets: PendingChangeset[] = [];
-
-  for (const relativePath of await readPendingChangesetPaths(rootDirectory)) {
-    changesets.push(
-      await parseChangeset(
-        path.join(rootDirectory, relativePath),
-        relativePath.slice(`${CHANGESET_DIRECTORY}/`.length),
-        workspaceNames
-      )
-    );
-  }
-
-  return changesets;
+  const paths = await readPendingChangesetPaths(rootDirectory);
+  return await Promise.all(
+    paths.map(
+      async (relativePath) =>
+        await parseChangeset(
+          path.join(rootDirectory, relativePath),
+          relativePath.slice(`${CHANGESET_DIRECTORY}/`.length),
+          workspaceNames
+        )
+    )
+  );
 };
 
 const changesetHasNewOrUpdatedIntent = (
@@ -603,20 +621,20 @@ const findLatestPendingChangesetRevision = async (
 
   const revisions = [...descendants.stdout.split("\n"), baseRevision];
 
-  for (const revision of revisions) {
+  return await findSequential(revisions, async (revision) => {
     if (revision.length === 0) {
-      continue;
+      return null;
     }
 
-    if (
-      (await readPendingChangesetPathsAtRevision(rootDirectory, revision))
-        .length > 0
-    ) {
+    const pendingPaths = await readPendingChangesetPathsAtRevision(
+      rootDirectory,
+      revision
+    );
+    if (pendingPaths.length > 0) {
       return revision;
     }
-  }
-
-  return undefined;
+    return null;
+  });
 };
 
 const findPublicChangeBetweenRevisions = async (
@@ -646,7 +664,7 @@ const findPublicChangeBetweenRevisions = async (
     .split("\0")
     .filter((value) => value.length > 0)
     .map(normalizeGitPath)
-    .sort()
+    .toSorted()
     .find((changedPath) => isPublicPackagePath(changedPath, manifests));
 };
 
@@ -673,29 +691,30 @@ const compareGeneratedRelease = async (
   rootDirectory: string,
   generatedDirectory: string,
   manifests: readonly PackageManifest[]
-): Promise<string | undefined> => {
-  for (const manifest of manifests) {
+): Promise<string | undefined> =>
+  await findSequential(manifests, async (manifest) => {
     if (manifest.private || !manifest.name.startsWith("@tuvren/")) {
-      continue;
+      return null;
     }
 
-    for (const filename of ["package.json", "CHANGELOG.md"]) {
-      const relativePath = path.join(manifest.directory, filename);
-      const expected = await readOptionalFile(
-        path.join(generatedDirectory, relativePath)
-      );
-      const actual = await readOptionalFile(
-        path.join(rootDirectory, relativePath)
-      );
+    return await findSequential(
+      ["package.json", "CHANGELOG.md"],
+      async (filename) => {
+        const relativePath = path.join(manifest.directory, filename);
+        const expected = await readOptionalFile(
+          path.join(generatedDirectory, relativePath)
+        );
+        const actual = await readOptionalFile(
+          path.join(rootDirectory, relativePath)
+        );
 
-      if (expected !== actual) {
-        return `${normalizeGitPath(relativePath)} does not match the installed Changesets-generated release output`;
+        if (expected !== actual) {
+          return `${normalizeGitPath(relativePath)} does not match the installed Changesets-generated release output`;
+        }
+        return null;
       }
-    }
-  }
-
-  return undefined;
-};
+    );
+  });
 
 const proveConsumedGeneratedRelease = async (options: {
   readonly baseRevision: string;
@@ -724,7 +743,7 @@ const proveConsumedGeneratedRelease = async (options: {
   }
 
   const unexpectedWorkingOrReleasePath = [...options.changedPaths]
-    .sort()
+    .toSorted()
     .find(
       (changedPath) =>
         isPublicPackagePath(changedPath, options.manifests) &&
@@ -800,7 +819,7 @@ const readWorkspaceManifests = async (
   const manifests: PackageManifest[] = [];
   const names = new Set<string>();
 
-  for (const workspacePattern of workspacePatterns) {
+  await forEachSequential(workspacePatterns, async (workspacePattern) => {
     const parent = workspacePattern.slice(0, -2);
     const parentDirectory = path.join(rootDirectory, parent);
 
@@ -814,13 +833,13 @@ const readWorkspaceManifests = async (
 
     const manifestPaths = await walkPackageManifests(parentDirectory);
 
-    for (const manifestPath of manifestPaths) {
+    await forEachSequential(manifestPaths, async (manifestPath) => {
       const directory = normalizeGitPath(
         path.relative(rootDirectory, path.dirname(manifestPath))
       );
 
       if (!matchesWorkspacePattern(directory, workspacePattern)) {
-        continue;
+        return;
       }
 
       const manifest = await readPackageManifest(manifestPath, directory);
@@ -833,19 +852,20 @@ const readWorkspaceManifests = async (
 
       names.add(manifest.name);
       manifests.push(manifest);
-    }
-  }
+    });
+  });
 
   if (manifests.length === 0) {
     throw new Error("no workspace package manifests could be established");
   }
 
-  return manifests.sort((left, right) => left.name.localeCompare(right.name));
+  return manifests.toSorted((left, right) =>
+    left.name.localeCompare(right.name)
+  );
 };
 
-const formatPackageNames = (manifests: readonly PackageManifest[]): string => {
-  return manifests.map((manifest) => manifest.name).join(", ");
-};
+const formatPackageNames = (manifests: readonly PackageManifest[]): string =>
+  manifests.map((manifest) => manifest.name).join(", ");
 
 export const checkChangesetCoverage = async (
   options: ChangesetCheckOptions

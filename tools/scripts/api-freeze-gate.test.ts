@@ -87,7 +87,9 @@ describe("API freeze snapshot writer", () => {
       });
 
       const written = requireSnapshot(await readSnapshot(scratchSnapshotPath));
-      expect(Object.keys(written).sort()).toEqual(Object.keys(original).sort());
+      expect(Object.keys(written).toSorted()).toEqual(
+        Object.keys(original).toSorted()
+      );
       expect(written.$description).toBe(original.$description);
       expect(written.authority).toEqual(original.authority);
       expect(written.entrypoints).toEqual(original.entrypoints);
@@ -140,7 +142,7 @@ describe("API freeze snapshot writer", () => {
       );
       await writeFile(scratchSnapshotPath, repositoryBytes);
 
-      await expect(
+      expect(
         writeApiSnapshot({
           formatter: ({ snapshotPath }) => {
             const before = readFileSync(snapshotPath, "utf-8");

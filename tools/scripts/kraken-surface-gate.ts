@@ -30,12 +30,8 @@
 // package entrypoints small and explicit).
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import path from "node:path";
 import process from "node:process";
-
-const WORKSPACE_GLOBS: readonly string[] = JSON.parse(
-  readFileSync("package.json", "utf-8")
-).workspaces;
 
 interface Violation {
   entry: string;
@@ -43,25 +39,49 @@ interface Violation {
   packageName: string;
 }
 
-const SUBPATH_PREFIX = /^\.\//;
-const TYPE_PREFIX = /^\s*type\s+/;
-const RENAMED_EXPORT = /\bas\s+([A-Za-z_$][\w$]*)\s*$/;
-const WHITESPACE = /\s+/;
-const NAMED_EXPORT_BLOCK = /export\s+(?:type\s+)?\{([^}]*)\}/g;
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readJsonObject = (filePath: string): Record<string, unknown> => {
+  const value: unknown = JSON.parse(readFileSync(filePath, "utf-8"));
+  if (!isRecord(value)) {
+    throw new Error(`kraken-surface-gate: ${filePath} must contain an object`);
+  }
+  return value;
+};
+
+const rootManifest = readJsonObject("package.json");
+if (
+  !(
+    Array.isArray(rootManifest.workspaces) &&
+    rootManifest.workspaces.every((workspace) => typeof workspace === "string")
+  )
+) {
+  throw new Error(
+    "kraken-surface-gate: package.json must declare a string workspaces array"
+  );
+}
+const WORKSPACE_GLOBS: readonly string[] = rootManifest.workspaces;
+
+const SUBPATH_PREFIX = /^\.\//u;
+const TYPE_PREFIX = /^\s*type\s+/u;
+const RENAMED_EXPORT = /\bas\s+(?<name>[A-Za-z_$][\w$]*)\s*$/u;
+const WHITESPACE = /\s+/u;
+const NAMED_EXPORT_BLOCK = /export\s+(?:type\s+)?\{(?<contents>[^}]*)\}/gu;
 // Single-name declaration forms only; `const`/`let`/`var` go through the
 // declarator scanner below because one statement can bind several names
 // (`export const a = 1, KrakenB = 2;`). `const\s+enum` stays here so the
 // capture lands on the enum's name; `namespace`/`module` bind a public
 // namespace name just like a class or enum does.
 const DECLARATION_EXPORT =
-  /export\s+(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?(?:const\s+enum|function\*?|class|interface|type|enum|namespace|module)\s+([A-Za-z_$][\w$]*)/g;
-const VARIABLE_EXPORT = /export\s+(?:declare\s+)?(?:const|let|var)\s+/g;
-const CONST_ENUM_TAIL = /^enum\s/;
-const LEADING_IDENTIFIER = /^\s*([A-Za-z_$][\w$]*)/;
+  /export\s+(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?(?:const\s+enum|function\*?|class|interface|type|enum|namespace|module)\s+(?<name>[A-Za-z_$][\w$]*)/gu;
+const VARIABLE_EXPORT = /export\s+(?:declare\s+)?(?:const|let|var)\s+/gu;
+const CONST_ENUM_TAIL = /^enum\s/u;
+const LEADING_IDENTIFIER = /^\s*(?<name>[A-Za-z_$][\w$]*)/u;
 // Any `export *` form is unverifiable name-by-name — including the ES2020
 // namespace re-export `export * as Ns from`, which would otherwise slip a
 // (possibly Kraken*-named) namespace binding past both extraction branches.
-const WILDCARD_EXPORT = /export\s+\*/;
+const WILDCARD_EXPORT = /export\s+\*/u;
 
 const resolveWorkspaceDirs = (): string[] => {
   const dirs: string[] = [];
@@ -78,9 +98,9 @@ const resolveWorkspaceDirs = (): string[] => {
     for (const entry of readdirSync(parent, { withFileTypes: true })) {
       if (
         entry.isDirectory() &&
-        existsSync(join(parent, entry.name, "package.json"))
+        existsSync(path.join(parent, entry.name, "package.json"))
       ) {
-        dirs.push(join(parent, entry.name));
+        dirs.push(path.join(parent, entry.name));
       }
     }
   }
@@ -96,16 +116,15 @@ const sourceCandidatesForExport = (subpath: string): string[] => {
 };
 
 const collectEntryFiles = (packageDir: string): string[] => {
-  const manifest = JSON.parse(
-    readFileSync(join(packageDir, "package.json"), "utf-8")
-  );
+  const manifest = readJsonObject(path.join(packageDir, "package.json"));
+  const exportsValue = manifest.exports;
 
   // No exports map and no src entry barrel: the package declares no public
   // source surface to guard (the certification wrapper projects). Anything
   // with an explicit exports map must resolve every subpath, below.
   if (
-    manifest.exports === undefined &&
-    !existsSync(join(packageDir, "src/index.ts"))
+    exportsValue === undefined &&
+    !existsSync(path.join(packageDir, "src/index.ts"))
   ) {
     return [];
   }
@@ -116,17 +135,20 @@ const collectEntryFiles = (packageDir: string): string[] => {
   // counting as "checked" — fail loud instead, mirroring the unresolvable-
   // subpath branch below.
   if (
-    manifest.exports !== undefined &&
-    (typeof manifest.exports !== "object" ||
-      manifest.exports === null ||
-      !Object.keys(manifest.exports).some((key) => key.startsWith(".")))
+    exportsValue !== undefined &&
+    !(
+      isRecord(exportsValue) &&
+      Object.keys(exportsValue).some((key) => key.startsWith("."))
+    )
   ) {
     throw new Error(
       `kraken-surface-gate: ${packageDir} declares an "exports" form with no "." subpaths (string shorthand or conditions-only object) — the resolver cannot map it to source entries and the package would go unscanned; use dot-subpath exports or extend the resolver`
     );
   }
 
-  const subpaths = Object.keys(manifest.exports ?? { ".": true });
+  const subpaths = Object.keys(
+    isRecord(exportsValue) ? exportsValue : { ".": true }
+  );
   const entries: string[] = [];
 
   for (const subpath of subpaths) {
@@ -135,7 +157,7 @@ const collectEntryFiles = (packageDir: string): string[] => {
     }
 
     const candidate = sourceCandidatesForExport(subpath).find((relativePath) =>
-      existsSync(join(packageDir, relativePath))
+      existsSync(path.join(packageDir, relativePath))
     );
 
     // Fail loud instead of silently skipping: a subpath this resolver cannot
@@ -147,7 +169,7 @@ const collectEntryFiles = (packageDir: string): string[] => {
       );
     }
 
-    entries.push(join(packageDir, candidate));
+    entries.push(path.join(packageDir, candidate));
   }
 
   return entries;
@@ -221,7 +243,7 @@ const variableExportNames = (source: string, entry: string): string[] => {
     }
 
     for (const segment of splitTopLevelDeclarators(source, start)) {
-      const name = segment.match(LEADING_IDENTIFIER)?.[1];
+      const name = LEADING_IDENTIFIER.exec(segment)?.groups?.name;
 
       // Destructuring or otherwise unnameable declarators cannot be verified
       // name-by-name — reject them the same way `export *` is rejected.
@@ -242,7 +264,7 @@ const exportedNames = (source: string, entry: string): string[] => {
   const names: string[] = [];
 
   for (const match of source.matchAll(NAMED_EXPORT_BLOCK)) {
-    const items = (match[1] ?? "").split(",");
+    const items = (match.groups?.contents ?? "").split(",");
 
     for (const item of items) {
       const trimmed = item.replace(TYPE_PREFIX, "").trim();
@@ -251,13 +273,15 @@ const exportedNames = (source: string, entry: string): string[] => {
         continue;
       }
 
-      const asMatch = trimmed.match(RENAMED_EXPORT);
-      names.push(asMatch?.[1] ?? trimmed.split(WHITESPACE)[0] ?? trimmed);
+      const asMatch = RENAMED_EXPORT.exec(trimmed);
+      names.push(
+        asMatch?.groups?.name ?? trimmed.split(WHITESPACE)[0] ?? trimmed
+      );
     }
   }
 
   for (const match of source.matchAll(DECLARATION_EXPORT)) {
-    const name = match[1];
+    const name = match.groups?.name;
 
     if (name !== undefined) {
       names.push(name);
@@ -273,9 +297,13 @@ const violations: Violation[] = [];
 let scannedEntries = 0;
 
 for (const packageDir of resolveWorkspaceDirs()) {
-  const packageName = JSON.parse(
-    readFileSync(join(packageDir, "package.json"), "utf-8")
-  ).name;
+  const packageManifest = readJsonObject(path.join(packageDir, "package.json"));
+  const { name: packageName } = packageManifest;
+  if (typeof packageName !== "string") {
+    throw new TypeError(
+      `kraken-surface-gate: ${packageDir}/package.json must declare a string name`
+    );
+  }
 
   for (const entry of collectEntryFiles(packageDir)) {
     const source = readFileSync(entry, "utf-8");
