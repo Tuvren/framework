@@ -256,7 +256,12 @@ export async function resumePausedToolExecution(
   const manifest = updateContextManifest(
     createContextManifest(
       finalizedHeadState.messages,
-      headState.manifest.extensions
+      headState.manifest.extensions,
+      remapTurnBoundaries(
+        headState.messageHashes,
+        headState.manifest.turnBoundaries,
+        finalizedHeadState.messageHashes
+      )
     ),
     [],
     toolBatch.updates,
@@ -391,6 +396,43 @@ export async function resumePausedToolExecution(
   return {
     resolution,
   };
+}
+
+/** Keeps durable Turn boundaries attached to their messages after projection. */
+function remapTurnBoundaries(
+  sourceHashes: HashString[],
+  sourceBoundaries: number[],
+  targetHashes: HashString[]
+): number[] {
+  const targetOffsets: number[] = [];
+
+  for (const boundary of sourceBoundaries) {
+    const boundaryHash = sourceHashes[boundary];
+    if (boundaryHash === undefined) {
+      continue;
+    }
+
+    let occurrence = 0;
+    for (let index = 0; index <= boundary; index += 1) {
+      if (sourceHashes[index] === boundaryHash) {
+        occurrence += 1;
+      }
+    }
+
+    let matchingOccurrence = 0;
+    for (const [index, hash] of targetHashes.entries()) {
+      if (hash !== boundaryHash) {
+        continue;
+      }
+      matchingOccurrence += 1;
+      if (matchingOccurrence === occurrence) {
+        targetOffsets.push(index);
+        break;
+      }
+    }
+  }
+
+  return targetOffsets;
 }
 
 /**

@@ -758,8 +758,168 @@ describe("framework-runtime-core", () => {
         "Saw transferred steering."
       )
     ).toBe(true);
+    expect(
+      (await readBranchContextManifest(harness.kernel, thread.branchId))
+        .turnBoundaries
+    ).toEqual([0]);
+  });
+
+  test("keeps approval results with the correct Turn when a runner reuses call ids", async () => {
+    const harness = createFakeKernelHarness();
+    const runner = {
+      async execute(context) {
+        const currentTurn = context.messages
+          .filter((message) => message.role === "user")
+          .findLast((message) => message.role === "user");
+        const turnLabel =
+          currentTurn?.role === "user"
+            ? currentTurn.parts.find((part) => part.type === "text")?.text
+            : undefined;
+        const completedForCurrentTurn = context.messages.some(
+          (message) =>
+            message.role === "tool" &&
+            message.parts.some(
+              (part) =>
+                part.type === "tool_result" &&
+                typeof part.output === "object" &&
+                part.output !== null &&
+                "forTurn" in part.output &&
+                part.output.forTurn === turnLabel
+            )
+        );
+
+        if (!completedForCurrentTurn && turnLabel !== undefined) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "reused-call-id",
+                  input: { forTurn: turnLabel },
+                  name: "work",
+                },
+              ]),
+            ],
+            resolution: { type: "continue_iteration" },
+          };
+        }
+
+        return {
+          messages: [assistantText(`Finished ${turnLabel ?? "unknown"}.`)],
+          resolution: { reason: "done", type: "end_turn" },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies RuntimeRunner;
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      runnerRegistry: createRunnerRegistry([runner]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const config = {
+      name: "primary",
+      tools: [
+        {
+          approval: true,
+          description: "Work requiring approval",
+          execute(input: unknown) {
+            if (
+              input === null ||
+              typeof input !== "object" ||
+              !("forTurn" in input) ||
+              typeof input.forTurn !== "string"
+            ) {
+              throw new Error("expected a turn label in the tool input");
+            }
+            return { forTurn: input.forTurn };
+          },
+          inputSchema: {
+            properties: { forTurn: { type: "string" } },
+            required: ["forTurn"],
+            type: "object",
+          },
+          name: "work",
+        },
+      ],
+    };
+
+    for (const turnLabel of ["first turn", "second turn"]) {
+      const pausedHandle = runtime.executeTurn({
+        branchId: thread.branchId,
+        config,
+        signal: textSignal(turnLabel),
+        threadId: thread.threadId,
+      });
+      await collectEvents(pausedHandle.events());
+      expect(pausedHandle.status().phase).toBe("paused");
+
+      const resumedHandle = pausedHandle.resolveApproval({
+        decisions: [{ callId: "reused-call-id", type: "approve" }],
+      });
+      await collectEvents(resumedHandle.events());
+      expect(resumedHandle.status().phase).toBe("completed");
+    }
+
+    const messages = (await harness.readBranchMessages(thread.branchId)).filter(
+      isMessagePartsSnapshot
+    );
+    for (const turnLabel of ["first turn", "second turn"]) {
+      const assistantIndex = messages.findIndex(
+        (message) =>
+          message.role === "assistant" &&
+          message.parts.some(
+            (part) =>
+              part !== null &&
+              typeof part === "object" &&
+              "type" in part &&
+              part.type === "tool_call" &&
+              "callId" in part &&
+              part.callId === "reused-call-id" &&
+              "input" in part &&
+              typeof part.input === "object" &&
+              part.input !== null &&
+              "forTurn" in part.input &&
+              part.input.forTurn === turnLabel
+          )
+      );
+      const resultMessage = messages[assistantIndex + 1];
+      expect(resultMessage?.role).toBe("tool");
+      if (resultMessage?.role === "tool") {
+        const result = resultMessage.parts[0];
+        if (
+          result !== null &&
+          typeof result === "object" &&
+          "type" in result &&
+          result.type === "tool_result" &&
+          "output" in result
+        ) {
+          expect(result.output).toEqual({ forTurn: turnLabel });
+        } else {
+          throw new Error("expected the adjacent tool result");
+        }
+      }
+    }
   });
 });
+
+interface MessagePartsSnapshot {
+  parts: unknown[];
+  role: string;
+}
+
+function isMessagePartsSnapshot(value: unknown): value is MessagePartsSnapshot {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    "role" in value &&
+    typeof value.role === "string" &&
+    "parts" in value &&
+    Array.isArray(value.parts)
+  );
+}
 
 function createRunnerRegistry(
   runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
