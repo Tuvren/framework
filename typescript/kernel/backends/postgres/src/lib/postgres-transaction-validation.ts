@@ -83,205 +83,15 @@ import { validateTurnTreePathInvariants } from "./postgres-state-validation.js";
 import type { TransactionWriteTracker } from "./postgres-write-tracker.js";
 
 /**
- * Pre-commit gate: re-validates every record family the transaction's write
- * tracker recorded, directly against the database (targeted SQL lookups and
- * lineage-index checks rather than a full state reload). Covers threads,
- * turn-tree paths, turn nodes, turns and their dependents, branches
- * (including backward-move archiving), runs, staged results, and the
- * one-active-run-per-branch rule.
- *
- * @throws TuvrenPersistenceError with a `postgres_backend_*` code on the first
- *   violated invariant; the caller must roll the transaction back.
- */
-export async function validateTransactionWriteSet(
-  sql: DbSql,
-  schemaName: string,
-  scope: string,
-  writeTracker: TransactionWriteTracker
-): Promise<void> {
-  for (const threadId of writeTracker.threadIds) {
-    await validateThreadInDatabase(sql, schemaName, scope, threadId);
-  }
-
-  for (const turnTreeHash of writeTracker.turnTreeHashes) {
-    await validateTurnTreePathsInDatabase(sql, schemaName, scope, turnTreeHash);
-  }
-
-  for (const turnNodeHash of writeTracker.turnNodeHashes) {
-    await validateTurnNodeInDatabase(sql, schemaName, scope, turnNodeHash);
-  }
-
-  for (const turnId of writeTracker.turnIds) {
-    await validateTurnInDatabase(sql, schemaName, scope, turnId);
-  }
-
-  for (const turnId of writeTracker.turnIdsForDependentValidation) {
-    await validateTurnDependentsInDatabase(sql, schemaName, scope, turnId);
-  }
-
-  for (const [branchId] of writeTracker.branchWrites) {
-    await validateBranchInDatabase(
-      sql,
-      schemaName,
-      scope,
-      writeTracker,
-      branchId
-    );
-  }
-
-  for (const runId of writeTracker.runIds) {
-    await validateRunInDatabase(sql, schemaName, scope, runId);
-  }
-
-  for (const runId of writeTracker.stagedResultRunIds) {
-    await validateStagedResultsForRunInDatabase(sql, schemaName, scope, runId);
-  }
-
-  for (const branchId of writeTracker.branchIdsForActiveRunValidation) {
-    await validateActiveRunsForBranchInDatabase(
-      sql,
-      schemaName,
-      scope,
-      branchId
-    );
-  }
-}
-
-/**
- * Verifies the derived `turn_node_lineage_roots` index agrees exactly with
- * the loaded turn nodes: every entry references an existing node, every node
- * has an entry, and each entry's root hash and depth match a recomputed
- * ancestry walk.
- *
- * @throws TuvrenPersistenceError with a `postgres_backend_*` code describing
- *   the first index/lineage divergence.
- */
-export async function validateTurnNodeLineageRootIndex(
-  sql: DbSql,
-  schemaName: string,
-  scope: string,
-  state: BackendState
-): Promise<void> {
-  const actualMetadataByTurnNodeHash = new Map<
-    string,
-    TurnNodeLineageMetadata
-  >();
-
-  const table = qualifyIdentifier(schemaName, "turn_node_lineage_roots");
-  const lineageRows = await sql.unsafe<PostgresTurnNodeLineageRootRow[]>(
-    `SELECT * FROM ${table} WHERE scope = $1`,
-    [scope]
-  );
-
-  for (const row of lineageRows) {
-    const metadata = decodeTurnNodeLineageMetadataRow(row);
-    setUniqueLoadedRecord(
-      actualMetadataByTurnNodeHash,
-      metadata.turnNodeHash,
-      metadata,
-      "turn node lineage metadata",
-      { turnNodeHash: metadata.turnNodeHash }
-    );
-  }
-
-  for (const metadata of actualMetadataByTurnNodeHash.values()) {
-    if (!state.turnNodes.has(metadata.turnNodeHash)) {
-      throw persistenceError(
-        "turn node lineage metadata must reference an existing turn node",
-        "postgres_backend_orphan_turn_node_lineage_metadata",
-        { turnNodeHash: metadata.turnNodeHash }
-      );
-    }
-
-    if (!state.turnNodes.has(metadata.rootTurnNodeHash)) {
-      throw persistenceError(
-        "turn node lineage metadata must reference an existing root turn node",
-        "postgres_backend_orphan_turn_node_lineage_metadata",
-        {
-          rootTurnNodeHash: metadata.rootTurnNodeHash,
-          turnNodeHash: metadata.turnNodeHash,
-        }
-      );
-    }
-  }
-
-  // Issue #108 M2: `expectedPosition` used to be recomputed by walking
-  // `previousTurnNodeHash` ancestry all the way to the thread root on every
-  // single turn node (`computeExpectedTurnNodeLineageMetadata`), making this
-  // loop O(n^2) on a long linear chain — the measured superlinear residual
-  // in `loadValidatedState` (see the M2 section of
-  // `.constitution/reports/108-git-faithful-blob-persistence.md`). One
-  // `TurnNodeLineageIndex` shared across every iteration below memoizes each
-  // node's root+depth the first time it is reached, so the whole loop is
-  // O(n) total: a shared ancestor prefix (the common case on a chain) is
-  // walked at most once no matter how many turn nodes reference it.
-  const lineageIndex = createTurnNodeLineageIndex();
-
-  for (const turnNode of state.turnNodes.values()) {
-    const actualMetadata = actualMetadataByTurnNodeHash.get(turnNode.hash);
-
-    if (actualMetadata === undefined) {
-      throw persistenceError(
-        "turn nodes must have lineage root metadata",
-        "postgres_backend_missing_turn_node_lineage_metadata",
-        { turnNodeHash: turnNode.hash }
-      );
-    }
-
-    const expectedPosition = resolveTurnNodeLineagePosition(
-      state.turnNodes,
-      turnNode,
-      lineageIndex,
-      {
-        onCycle: (): never => {
-          throw persistenceError(
-            "turn node lineage must not contain cycles",
-            "postgres_backend_turn_node_lineage_cycle",
-            { turnNodeHash: turnNode.hash }
-          );
-        },
-        onMissingPreviousTurnNode: (missingTurnNodeHash: string): never => {
-          throw persistenceError(
-            "turn node lineage metadata requires complete turn node parent links",
-            "postgres_backend_missing_turn_node_reference",
-            {
-              previousTurnNodeHash: missingTurnNodeHash,
-              turnNodeHash: turnNode.hash,
-            }
-          );
-        },
-      }
-    );
-
-    if (
-      actualMetadata.rootTurnNodeHash !== expectedPosition.rootTurnNodeHash ||
-      actualMetadata.depth !== expectedPosition.depth
-    ) {
-      throw persistenceError(
-        "turn node lineage metadata must match the parent-linked turn node chain",
-        "postgres_backend_turn_node_lineage_metadata_mismatch",
-        {
-          actualDepth: actualMetadata.depth,
-          actualRootTurnNodeHash: actualMetadata.rootTurnNodeHash,
-          expectedDepth: expectedPosition.depth,
-          expectedRootTurnNodeHash: expectedPosition.rootTurnNodeHash,
-          turnNodeHash: turnNode.hash,
-        }
-      );
-    }
-  }
-}
-
-/**
  * Re-checks one written thread's schema/genesis/uniqueness invariants
  * directly against the database.
  */
-async function validateThreadInDatabase(
+const validateThreadInDatabase = async (
   sql: DbSql,
   schemaName: string,
   scope: string,
   threadId: string
-): Promise<void> {
+): Promise<void> => {
   const thread = await selectThread(sql, schemaName, scope, threadId);
 
   if (thread === null) {
@@ -352,89 +162,20 @@ async function validateThreadInDatabase(
       }
     );
   }
-}
-
-/**
- * Re-checks one written branch's thread-lineage, archive, and backward-move
- * invariants directly against the database.
- */
-async function validateBranchInDatabase(
-  sql: DbSql,
-  schemaName: string,
-  scope: string,
-  writeTracker: TransactionWriteTracker,
-  branchId: string
-): Promise<void> {
-  const branch = await selectBranch(sql, schemaName, scope, branchId);
-
-  if (branch === null) {
-    return;
-  }
-
-  const thread = await ensureThreadExistsInDatabase(
-    sql,
-    schemaName,
-    scope,
-    branch.threadId,
-    "branch.threadId"
-  );
-  await assertTurnNodeBelongsToThreadInDatabase(
-    sql,
-    schemaName,
-    scope,
-    branch.headTurnNodeHash,
-    thread,
-    "branch.headTurnNodeHash"
-  );
-
-  if (branch.archivedFromBranchId !== undefined) {
-    await validateArchiveBranchInDatabase(
-      sql,
-      schemaName,
-      scope,
-      writeTracker,
-      branch
-    );
-  }
-
-  const trackedBranch = writeTracker.branchWrites.get(branch.branchId);
-
-  if (trackedBranch?.before === null || trackedBranch?.before === undefined) {
-    return;
-  }
-
-  const headMoveDirection = await classifyTurnNodeRelationshipInDatabase(
-    sql,
-    schemaName,
-    scope,
-    trackedBranch.before.headTurnNodeHash,
-    branch.headTurnNodeHash
-  );
-
-  if (headMoveDirection === "backward") {
-    await assertBackwardBranchMoveIsArchivedInDatabase(
-      sql,
-      schemaName,
-      scope,
-      writeTracker,
-      trackedBranch.before,
-      branch
-    );
-  }
-}
+};
 
 /**
  * Re-checks one written archive branch's source-thread match, pre-transaction
  * source existence, preserved head, and paired backward move directly
  * against the database.
  */
-async function validateArchiveBranchInDatabase(
+const validateArchiveBranchInDatabase = async (
   sql: DbSql,
   schemaName: string,
   scope: string,
   writeTracker: TransactionWriteTracker,
   branch: StoredBranch
-): Promise<void> {
+): Promise<void> => {
   if (branch.archivedFromBranchId === undefined) {
     return;
   }
@@ -524,18 +265,87 @@ async function validateArchiveBranchInDatabase(
       }
     );
   }
-}
+};
+
+/**
+ * Re-checks one written branch's thread-lineage, archive, and backward-move
+ * invariants directly against the database.
+ */
+const validateBranchInDatabase = async (
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  writeTracker: TransactionWriteTracker,
+  branchId: string
+): Promise<void> => {
+  const branch = await selectBranch(sql, schemaName, scope, branchId);
+
+  if (branch === null) {
+    return;
+  }
+
+  const thread = await ensureThreadExistsInDatabase(
+    sql,
+    schemaName,
+    scope,
+    branch.threadId,
+    "branch.threadId"
+  );
+  await assertTurnNodeBelongsToThreadInDatabase(
+    sql,
+    schemaName,
+    scope,
+    branch.headTurnNodeHash,
+    thread,
+    "branch.headTurnNodeHash"
+  );
+
+  if (branch.archivedFromBranchId !== undefined) {
+    await validateArchiveBranchInDatabase(
+      sql,
+      schemaName,
+      scope,
+      writeTracker,
+      branch
+    );
+  }
+
+  const trackedBranch = writeTracker.branchWrites.get(branch.branchId);
+
+  if (trackedBranch?.before === null || trackedBranch?.before === undefined) {
+    return;
+  }
+
+  const headMoveDirection = await classifyTurnNodeRelationshipInDatabase(
+    sql,
+    schemaName,
+    scope,
+    trackedBranch.before.headTurnNodeHash,
+    branch.headTurnNodeHash
+  );
+
+  if (headMoveDirection === "backward") {
+    await assertBackwardBranchMoveIsArchivedInDatabase(
+      sql,
+      schemaName,
+      scope,
+      writeTracker,
+      trackedBranch.before,
+      branch
+    );
+  }
+};
 
 /**
  * Re-checks one written turn node's schema match, lineage metadata, and
  * consumed-staged-result references directly against the database.
  */
-async function validateTurnNodeInDatabase(
+const validateTurnNodeInDatabase = async (
   sql: DbSql,
   schemaName: string,
   scope: string,
   turnNodeHash: string
-): Promise<void> {
+): Promise<void> => {
   const turnNode = await selectTurnNode(sql, schemaName, scope, turnNodeHash);
 
   if (turnNode === null) {
@@ -581,18 +391,18 @@ async function validateTurnNodeInDatabase(
       "turnNode.consumedStagedResultsCbor"
     );
   }
-}
+};
 
 /**
  * Re-checks one written turn's branch/thread consistency, lineage
  * membership, descent, and parent link directly against the database.
  */
-async function validateTurnInDatabase(
+const validateTurnInDatabase = async (
   sql: DbSql,
   schemaName: string,
   scope: string,
   turnId: string
-): Promise<void> {
+): Promise<void> => {
   const turn = await selectTurn(sql, schemaName, scope, turnId);
 
   if (turn === null) {
@@ -658,44 +468,19 @@ async function validateTurnInDatabase(
     turn,
     "turn.parentTurnId"
   );
-}
-
-/**
- * Re-validates every turn and run whose lineage position depends on a turn
- * whose head hash just changed — the child turns branching from it and the
- * runs it hosts.
- */
-async function validateTurnDependentsInDatabase(
-  sql: DbSql,
-  schemaName: string,
-  scope: string,
-  turnId: string
-): Promise<void> {
-  for (const dependentTurn of await selectTurnsByParentTurnId(
-    sql,
-    schemaName,
-    scope,
-    turnId
-  )) {
-    await validateTurnInDatabase(sql, schemaName, scope, dependentTurn.turnId);
-  }
-
-  for (const run of await selectRunsByTurn(sql, schemaName, scope, turnId)) {
-    await validateRunInDatabase(sql, schemaName, scope, run.runId);
-  }
-}
+};
 
 /**
  * Re-checks one written run's referential and schema consistency, turn-span
  * containment of its start and created turn nodes, canonical lineage, and
  * (when active) head alignment, directly against the database.
  */
-async function validateRunInDatabase(
+const validateRunInDatabase = async (
   sql: DbSql,
   schemaName: string,
   scope: string,
   runId: string
-): Promise<void> {
+): Promise<void> => {
   const run = await selectRun(sql, schemaName, scope, runId);
 
   if (run === null) {
@@ -811,15 +596,40 @@ async function validateRunInDatabase(
   if (run.status === "running" || run.status === "paused") {
     await assertActiveRunHeadAlignmentInDatabase(run, branch, turn);
   }
-}
+};
+
+/**
+ * Re-validates every turn and run whose lineage position depends on a turn
+ * whose head hash just changed — the child turns branching from it and the
+ * runs it hosts.
+ */
+const validateTurnDependentsInDatabase = async (
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  turnId: string
+): Promise<void> => {
+  for (const dependentTurn of await selectTurnsByParentTurnId(
+    sql,
+    schemaName,
+    scope,
+    turnId
+  )) {
+    await validateTurnInDatabase(sql, schemaName, scope, dependentTurn.turnId);
+  }
+
+  for (const run of await selectRunsByTurn(sql, schemaName, scope, turnId)) {
+    await validateRunInDatabase(sql, schemaName, scope, run.runId);
+  }
+};
 
 /** Asserts a non-`running` run retains no staged results. */
-async function validateStagedResultsForRunInDatabase(
+const validateStagedResultsForRunInDatabase = async (
   sql: DbSql,
   schemaName: string,
   scope: string,
   runId: string
-): Promise<void> {
+): Promise<void> => {
   const run = await ensureRunExistsInDatabase(
     sql,
     schemaName,
@@ -845,18 +655,18 @@ async function validateStagedResultsForRunInDatabase(
       }
     );
   }
-}
+};
 
 /**
  * Asserts a branch has at most one active run and that every active run on
  * it is head-aligned.
  */
-async function validateActiveRunsForBranchInDatabase(
+const validateActiveRunsForBranchInDatabase = async (
   sql: DbSql,
   schemaName: string,
   scope: string,
   branchId: string
-): Promise<void> {
+): Promise<void> => {
   const branch = await selectBranch(sql, schemaName, scope, branchId);
 
   if (branch === null) {
@@ -891,7 +701,7 @@ async function validateActiveRunsForBranchInDatabase(
     );
     await assertActiveRunHeadAlignmentInDatabase(run, branch, turn);
   }
-}
+};
 
 /**
  * Re-validates a written turn tree's path collection by projecting just the
@@ -901,12 +711,12 @@ async function validateActiveRunsForBranchInDatabase(
  * shared validator are stubbed to throw, since this code path never
  * exercises them (turn trees do not reference turns or runs).
  */
-async function validateTurnTreePathsInDatabase(
+const validateTurnTreePathsInDatabase = async (
   sql: DbSql,
   schemaName: string,
   scope: string,
   turnTreeHash: string
-): Promise<void> {
+): Promise<void> => {
   const turnTree = await selectTurnTree(sql, schemaName, scope, turnTreeHash);
 
   if (turnTree === null) {
@@ -991,7 +801,72 @@ async function validateTurnTreePathsInDatabase(
     decodeTurnNodeConsumedStagedResultObjectHashes,
     validateHashString,
   });
-}
+};
+
+/**
+ * Pre-commit gate: re-validates every record family the transaction's write
+ * tracker recorded, directly against the database (targeted SQL lookups and
+ * lineage-index checks rather than a full state reload). Covers threads,
+ * turn-tree paths, turn nodes, turns and their dependents, branches
+ * (including backward-move archiving), runs, staged results, and the
+ * one-active-run-per-branch rule.
+ *
+ * @throws TuvrenPersistenceError with a `postgres_backend_*` code on the first
+ *   violated invariant; the caller must roll the transaction back.
+ */
+export const validateTransactionWriteSet = async (
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  writeTracker: TransactionWriteTracker
+): Promise<void> => {
+  for (const threadId of writeTracker.threadIds) {
+    await validateThreadInDatabase(sql, schemaName, scope, threadId);
+  }
+
+  for (const turnTreeHash of writeTracker.turnTreeHashes) {
+    await validateTurnTreePathsInDatabase(sql, schemaName, scope, turnTreeHash);
+  }
+
+  for (const turnNodeHash of writeTracker.turnNodeHashes) {
+    await validateTurnNodeInDatabase(sql, schemaName, scope, turnNodeHash);
+  }
+
+  for (const turnId of writeTracker.turnIds) {
+    await validateTurnInDatabase(sql, schemaName, scope, turnId);
+  }
+
+  for (const turnId of writeTracker.turnIdsForDependentValidation) {
+    await validateTurnDependentsInDatabase(sql, schemaName, scope, turnId);
+  }
+
+  for (const [branchId] of writeTracker.branchWrites) {
+    await validateBranchInDatabase(
+      sql,
+      schemaName,
+      scope,
+      writeTracker,
+      branchId
+    );
+  }
+
+  for (const runId of writeTracker.runIds) {
+    await validateRunInDatabase(sql, schemaName, scope, runId);
+  }
+
+  for (const runId of writeTracker.stagedResultRunIds) {
+    await validateStagedResultsForRunInDatabase(sql, schemaName, scope, runId);
+  }
+
+  for (const branchId of writeTracker.branchIdsForActiveRunValidation) {
+    await validateActiveRunsForBranchInDatabase(
+      sql,
+      schemaName,
+      scope,
+      branchId
+    );
+  }
+};
 
 /**
  * Inserts a keyed record into a loaded-record map, throwing
@@ -999,13 +874,13 @@ async function validateTurnTreePathsInDatabase(
  * used to catch a corrupted database with duplicate rows a primary key
  * should have prevented.
  */
-function setUniqueLoadedRecord<T>(
+const setUniqueLoadedRecord = <T>(
   records: Map<string, T>,
   key: string,
   value: T,
   recordType: string,
   details: Record<string, string>
-): void {
+): void => {
   if (records.has(key)) {
     throw persistenceError(
       `postgres backend found duplicate ${recordType} rows while loading persisted state`,
@@ -1015,4 +890,129 @@ function setUniqueLoadedRecord<T>(
   }
 
   records.set(key, value);
-}
+};
+
+/**
+ * Verifies the derived `turn_node_lineage_roots` index agrees exactly with
+ * the loaded turn nodes: every entry references an existing node, every node
+ * has an entry, and each entry's root hash and depth match a recomputed
+ * ancestry walk.
+ *
+ * @throws TuvrenPersistenceError with a `postgres_backend_*` code describing
+ *   the first index/lineage divergence.
+ */
+export const validateTurnNodeLineageRootIndex = async (
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  state: BackendState
+): Promise<void> => {
+  const actualMetadataByTurnNodeHash = new Map<
+    string,
+    TurnNodeLineageMetadata
+  >();
+
+  const table = qualifyIdentifier(schemaName, "turn_node_lineage_roots");
+  const lineageRows = await sql.unsafe<PostgresTurnNodeLineageRootRow[]>(
+    `SELECT * FROM ${table} WHERE scope = $1`,
+    [scope]
+  );
+
+  for (const row of lineageRows) {
+    const metadata = decodeTurnNodeLineageMetadataRow(row);
+    setUniqueLoadedRecord(
+      actualMetadataByTurnNodeHash,
+      metadata.turnNodeHash,
+      metadata,
+      "turn node lineage metadata",
+      { turnNodeHash: metadata.turnNodeHash }
+    );
+  }
+
+  for (const metadata of actualMetadataByTurnNodeHash.values()) {
+    if (!state.turnNodes.has(metadata.turnNodeHash)) {
+      throw persistenceError(
+        "turn node lineage metadata must reference an existing turn node",
+        "postgres_backend_orphan_turn_node_lineage_metadata",
+        { turnNodeHash: metadata.turnNodeHash }
+      );
+    }
+
+    if (!state.turnNodes.has(metadata.rootTurnNodeHash)) {
+      throw persistenceError(
+        "turn node lineage metadata must reference an existing root turn node",
+        "postgres_backend_orphan_turn_node_lineage_metadata",
+        {
+          rootTurnNodeHash: metadata.rootTurnNodeHash,
+          turnNodeHash: metadata.turnNodeHash,
+        }
+      );
+    }
+  }
+
+  // Issue #108 M2: `expectedPosition` used to be recomputed by walking
+  // `previousTurnNodeHash` ancestry all the way to the thread root on every
+  // single turn node (`computeExpectedTurnNodeLineageMetadata`), making this
+  // loop O(n^2) on a long linear chain — the measured superlinear residual
+  // in `loadValidatedState` (see the M2 section of
+  // `.constitution/reports/108-git-faithful-blob-persistence.md`). One
+  // `TurnNodeLineageIndex` shared across every iteration below memoizes each
+  // node's root+depth the first time it is reached, so the whole loop is
+  // O(n) total: a shared ancestor prefix (the common case on a chain) is
+  // walked at most once no matter how many turn nodes reference it.
+  const lineageIndex = createTurnNodeLineageIndex();
+
+  for (const turnNode of state.turnNodes.values()) {
+    const actualMetadata = actualMetadataByTurnNodeHash.get(turnNode.hash);
+
+    if (actualMetadata === undefined) {
+      throw persistenceError(
+        "turn nodes must have lineage root metadata",
+        "postgres_backend_missing_turn_node_lineage_metadata",
+        { turnNodeHash: turnNode.hash }
+      );
+    }
+
+    const expectedPosition = resolveTurnNodeLineagePosition(
+      state.turnNodes,
+      turnNode,
+      lineageIndex,
+      {
+        onCycle: (): never => {
+          throw persistenceError(
+            "turn node lineage must not contain cycles",
+            "postgres_backend_turn_node_lineage_cycle",
+            { turnNodeHash: turnNode.hash }
+          );
+        },
+        onMissingPreviousTurnNode: (missingTurnNodeHash: string): never => {
+          throw persistenceError(
+            "turn node lineage metadata requires complete turn node parent links",
+            "postgres_backend_missing_turn_node_reference",
+            {
+              previousTurnNodeHash: missingTurnNodeHash,
+              turnNodeHash: turnNode.hash,
+            }
+          );
+        },
+      }
+    );
+
+    if (
+      actualMetadata.rootTurnNodeHash !== expectedPosition.rootTurnNodeHash ||
+      actualMetadata.depth !== expectedPosition.depth
+    ) {
+      throw persistenceError(
+        "turn node lineage metadata must match the parent-linked turn node chain",
+        "postgres_backend_turn_node_lineage_metadata_mismatch",
+        {
+          actualDepth: actualMetadata.depth,
+          actualRootTurnNodeHash: actualMetadata.rootTurnNodeHash,
+          expectedDepth: expectedPosition.depth,
+          expectedRootTurnNodeHash: expectedPosition.rootTurnNodeHash,
+          turnNodeHash: turnNode.hash,
+        }
+      );
+    }
+  }
+};
