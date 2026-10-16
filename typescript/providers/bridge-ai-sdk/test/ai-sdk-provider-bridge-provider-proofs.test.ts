@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Mock model hooks preserve async provider signatures.
-
 /**
  * KRT-AY006 — Concrete provider-native and provider-mediated execution class proofs.
  *

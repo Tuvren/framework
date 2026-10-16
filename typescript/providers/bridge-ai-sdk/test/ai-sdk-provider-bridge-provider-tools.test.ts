@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Mock AI SDK model hooks intentionally preserve async provider signatures.
-
 import { describe, expect, test } from "bun:test";
 
 import { TuvrenProviderError } from "@tuvren/core";

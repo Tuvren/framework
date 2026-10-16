@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
-
 /**
  * `@tuvren/provider-bridge-ai-sdk` — the Vercel AI SDK provider bridge.
  *

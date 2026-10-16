@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Mock AI SDK model hooks intentionally preserve async provider signatures.
-
 // KRT-BH005 — Bridge providerExecuted/dynamic fidelity audit (ADR-0055).
 //
 // AI SDK v6 (ai@6.0.142) models a provider-executed tool round-trip as a
