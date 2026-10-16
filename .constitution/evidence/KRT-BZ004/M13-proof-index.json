@@ -1,0 +1,65 @@
+{
+  "milestone": "M13",
+  "scope": {
+    "source": "typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-utils.ts",
+    "test": "typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge.test.ts",
+    "changedLines": 842,
+    "numstat": {
+      "source": {"added": 408, "removed": 392},
+      "test": {"added": 42, "removed": 0}
+    }
+  },
+  "candidate": {
+    "utilsSha256": "35ef3263612dc21100b0671eea2a1ad07dfbe3d3030db1c44834914f0e8d78d0",
+    "utilsByteEqual": true,
+    "testSha256": "ff35600d3b2324426d59dd9f72655aa74bffec587be81f04d269f527d4d13def",
+    "testByteEqual": true
+  },
+  "cloneDecision": "The private cloneJsonValue object branch directly performs the existing Object.entries iteration, undefined skip, isJsonValue validation, bridgeError construction, and recursive cloning. This breaks cloneJsonObject↔cloneJsonValue mutual recursion while preserving public cloneJsonObject and observable behavior.",
+  "behavior": {
+    "frozenProof": {
+      "tests": 3,
+      "assertions": 9,
+      "nestedJsonCloneEqual": true,
+      "mutationIsolation": true,
+      "droppedUndefinedEqual": true,
+      "sparseArrayShapeEqual": true,
+      "outputPrototypesEqual": true,
+      "invalidErrorShapeAndOrderEqual": true,
+      "proxyAccessTraceEqual": true,
+      "proxyAccessEvents": 15
+    },
+    "livePackage": {"tests": 67, "assertions": 156, "failures": 0},
+    "aggregate": {"tests": 70, "assertions": 165, "failures": 0}
+  },
+  "diagnostics": {
+    "frozenStageRemainingTarget": 26,
+    "functionStyle": 15,
+    "noUseBeforeDefine": 11,
+    "interpretation": "Stable deferred M14 debt; M13 target is clear and adds no new native-rule diagnostic."
+  },
+  "gates": {
+    "bridgeTypecheck": "pass",
+    "bridgeLint": "pass",
+    "bridgeBuild": "pass",
+    "bridgeTest": "pass",
+    "diffCheck": "pass",
+    "focusedTest": "pass",
+    "cloneBehavior": "pass",
+    "freshImport": "pass",
+    "providerTestkitConformance": "pass",
+    "providerCertificationConformance": "pass",
+    "format": "pass",
+    "changeset": "pass",
+    "constitution": "pass",
+    "workspaceTypecheck": "pass",
+    "workspaceConformance": "pass",
+    "syntacticDiagnostics": "expected nonzero exit 1; 129 diagnostics",
+    "typeAwareDiagnostics": "expected nonzero exit 1; 153 diagnostics"
+  },
+  "isolation": {
+    "main": "clean master",
+    "laneModifiedFiles": 2,
+    "unexpectedWork": false
+  }
+}
