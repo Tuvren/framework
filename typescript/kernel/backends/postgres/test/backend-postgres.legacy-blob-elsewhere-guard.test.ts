@@ -43,9 +43,8 @@ import {
   createPostgresTestBackendOptions,
 } from "./postgres-test-helpers.js";
 
-const freshSchemaName = (label: string): string => {
-  return `test_${label}_${randomUUID().replaceAll("-", "_")}`;
-};
+const freshSchemaName = (label: string): string =>
+  `test_${label}_${randomUUID().replaceAll("-", "_")}`;
 
 const dropSchema = async (sql: Sql, schemaName: string): Promise<void> => {
   await sql.unsafe(
@@ -58,7 +57,8 @@ const schemaExists = async (sql: Sql, schemaName: string): Promise<boolean> => {
     "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1) AS exists",
     [schemaName]
   );
-  return rows[0]?.exists === true;
+  const [row] = rows;
+  return row?.exists ?? false;
 };
 
 const fixedNow = (): number => 1_700_000_000_000;
@@ -88,9 +88,11 @@ describe("@tuvren/backend-postgres legacy-blob-schema-elsewhere guard (round-6 r
 
   afterAll(async () => {
     await dropSchema(sql, legacySchemaName);
+    /* oxlint-disable no-await-in-loop -- Drop tracked schemas serially so teardown preserves allocation order and reports the first database failure. */
     for (const schemaName of throwawaySchemas) {
       await dropSchema(sql, schemaName);
     }
+    /* oxlint-enable no-await-in-loop */
     await sql.end({ timeout: 0 });
     // createPostgresTestBackendOptions() above allocated a random schema
     // name for connection-options purposes only (never actually created in
@@ -116,18 +118,26 @@ describe("@tuvren/backend-postgres legacy-blob-schema-elsewhere guard (round-6 r
     }
 
     expect(caughtError).toBeInstanceOf(Error);
-    const normalizedError = caughtError as Error & {
-      code?: string;
-      details?: unknown;
-    };
-    expect(normalizedError.code).toBe(
+    if (!(caughtError instanceof Error)) {
+      throw new TypeError("expected a normalized legacy-schema error");
+    }
+    expect(Reflect.get(caughtError, "code")).toBe(
       "postgres_backend_legacy_blob_schema_elsewhere"
     );
-    const details = normalizedError.details as
-      | { configuredSchemaName?: string; legacySchemas?: string[] }
-      | undefined;
-    expect(details?.configuredSchemaName).toBe(targetSchemaName);
-    expect(details?.legacySchemas).toContain(legacySchemaName);
+    const details: unknown =
+      "details" in caughtError ? caughtError.details : undefined;
+    if (
+      typeof details !== "object" ||
+      details === null ||
+      Array.isArray(details)
+    ) {
+      throw new TypeError("expected object-shaped legacy-schema details");
+    }
+    expect(Reflect.get(details, "configuredSchemaName")).toBe(targetSchemaName);
+    const legacySchemas: unknown =
+      "legacySchemas" in details ? details.legacySchemas : undefined;
+    expect(legacySchemas).toBeArray();
+    expect(legacySchemas).toContain(legacySchemaName);
 
     // The guard fires before `CREATE SCHEMA IF NOT EXISTS` commits (the
     // whole init runs inside one transaction that rolls back on throw), so
@@ -170,6 +180,8 @@ describe("@tuvren/backend-postgres legacy-blob-schema-elsewhere guard (round-6 r
     // exists, so the "creating it for the first time" condition is false
     // and the guard must stay silent even though the legacy table still
     // exists elsewhere.
+    // Bun's async matcher is Promise-backed at runtime despite its void declaration.
+    // oxlint-disable-next-line typescript/await-thenable, typescript/no-confusing-void-expression -- Bun requires awaiting resolves so teardown cannot race the assertion.
     await expect(
       ensurePostgresRelationalSchemaInitialized(
         sql,

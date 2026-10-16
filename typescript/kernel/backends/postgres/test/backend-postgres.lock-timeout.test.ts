@@ -79,7 +79,7 @@ describe("@tuvren/backend-postgres connection-wide lock_timeout startup paramete
     try {
       const first = await client.reserve();
       await first.unsafe("SELECT 1");
-      await first.release();
+      first.release();
 
       const second = await client.reserve();
       try {
@@ -87,7 +87,7 @@ describe("@tuvren/backend-postgres connection-wide lock_timeout startup paramete
           await second.unsafe<{ lock_timeout: string }[]>("SHOW lock_timeout");
         expect(rows[0]?.lock_timeout).toBe("5s");
       } finally {
-        await second.release();
+        second.release();
       }
     } finally {
       await client.end({ timeout: 0 });
@@ -139,7 +139,7 @@ describe("@tuvren/backend-postgres connection-wide lock_timeout startup paramete
         } catch {
           // Best-effort: the connection may already have been dropped.
         }
-        await adminReserved.release();
+        adminReserved.release();
       }
       await admin.end({ timeout: 0 });
       await backend.destroy({ dropSchema: true });
@@ -185,7 +185,7 @@ describe("@tuvren/backend-postgres connection-wide lock_timeout startup paramete
         } catch {
           // Best-effort: the connection may already have been dropped.
         }
-        await adminReserved.release();
+        adminReserved.release();
       }
       await admin.end({ timeout: 0 });
       await backend.destroy({ dropSchema: true });

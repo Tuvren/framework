@@ -32,7 +32,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import path from "node:path";
 
 import { persistenceError } from "../src/lib/postgres-errors.js";
 import {
@@ -49,7 +49,7 @@ import {
 } from "../src/lib/postgres-schema.js";
 
 const TEST_DIRECTORY = import.meta.dirname;
-const SCHEMA_INIT_SOURCE_PATH = join(
+const SCHEMA_INIT_SOURCE_PATH = path.join(
   TEST_DIRECTORY,
   "../src/lib/postgres-schema-init.ts"
 );
@@ -58,26 +58,28 @@ const SCHEMA_INIT_SOURCE_PATH = join(
 // multi-line `CREATE INDEX ... \n  ON table(...)` form the migration file
 // actually uses (e.g. idx_turn_tree_paths_scope_path_turn_tree_hash) as well
 // as the single-line form.
-const CREATE_TABLE_PATTERN = /CREATE TABLE\s+(\w+)\s*\(/g;
-const CREATE_INDEX_PATTERN = /CREATE\s+(?:UNIQUE\s+)?INDEX\s+(\w+)\s+ON/g;
-const CREATE_TABLE_BODY_PATTERN = /CREATE TABLE\s+(\w+)\s*\(([\s\S]*?)\n\);/g;
+const CREATE_TABLE_PATTERN = /CREATE TABLE\s+(?<name>\w+)\s*\(/gu;
+const CREATE_INDEX_PATTERN =
+  /CREATE\s+(?:UNIQUE\s+)?INDEX\s+(?<name>\w+)\s+ON/gu;
+const CREATE_TABLE_BODY_PATTERN =
+  /CREATE TABLE\s+(?<table>\w+)\s*\((?<body>[\s\S]*?)\n\);/gu;
 const FOREIGN_KEY_PATTERN =
-  /FOREIGN KEY\s*\(([^)]+)\)\s+REFERENCES\s+(\w+)\s*\(([^)]+)\)/g;
+  /FOREIGN KEY\s*\((?<sourceColumns>[^)]+)\)\s+REFERENCES\s+(?<targetTable>\w+)\s*\((?<targetColumns>[^)]+)\)/gu;
 const COLUMN_DEFINITION_PATTERN =
-  /^\s*(\w+)\s+(TEXT|BYTEA|BIGINT|INTEGER)(?:\s+COLLATE\s+"C")?\s+(NOT NULL|NULL),?\s*$/gm;
+  /^\s*(?<columnName>\w+)\s+(?<dataType>TEXT|BYTEA|BIGINT|INTEGER)(?:\s+COLLATE\s+"C")?\s+(?<nullability>NOT NULL|NULL),?\s*$/gmu;
 
 // The migration ledger table must be created via `CREATE TABLE IF NOT
 // EXISTS` bound to the `migrationsTable` identifier (derived from
 // MIGRATIONS_TABLE through qualifyIdentifier) directly in the init module,
 // not shipped inside a checked-in migration's SQL body.
 const MIGRATIONS_TABLE_CREATE_PATTERN =
-  /CREATE TABLE IF NOT EXISTS\s+\$\{migrationsTable\}/;
+  /CREATE TABLE IF NOT EXISTS\s+\$\{migrationsTable\}/u;
 const MIGRATIONS_TABLE_BINDING_PATTERN =
-  /qualifyIdentifier\(schemaName,\s*MIGRATIONS_TABLE\)/;
+  /qualifyIdentifier\(schemaName,\s*MIGRATIONS_TABLE\)/u;
 
-const extractAll = (pattern: RegExp, sql: string): string[] => {
-  return [...sql.matchAll(pattern)].map((match) => {
-    const name = match[1];
+const extractAll = (pattern: RegExp, sql: string): string[] =>
+  [...sql.matchAll(pattern)].map((match) => {
+    const name = match.groups?.name;
     if (name === undefined) {
       throw new Error(
         `pattern ${pattern.source} matched without a capture group`
@@ -85,7 +87,6 @@ const extractAll = (pattern: RegExp, sql: string): string[] => {
     }
     return name;
   });
-};
 
 const loadAllMigrationSql = (): { name: string; sql: string }[] => {
   const migrationDirectory = resolveMigrationDirectory(persistenceError);
@@ -95,24 +96,23 @@ const loadAllMigrationSql = (): { name: string; sql: string }[] => {
   }));
 };
 
-const parseColumnList = (columns: string): string[] => {
-  return columns.split(",").map((column) => column.trim());
-};
+const parseColumnList = (columns: string): string[] =>
+  columns.split(",").map((column) => column.trim());
 
 const extractForeignKeySignatures = (sql: string): string[] => {
   const signatures: string[] = [];
 
   for (const tableMatch of sql.matchAll(CREATE_TABLE_BODY_PATTERN)) {
-    const sourceTable = tableMatch[1];
-    const tableBody = tableMatch[2];
+    const sourceTable = tableMatch.groups?.table;
+    const tableBody = tableMatch.groups?.body;
     if (sourceTable === undefined || tableBody === undefined) {
       throw new Error("CREATE TABLE match omitted its table name or body");
     }
 
     for (const foreignKeyMatch of tableBody.matchAll(FOREIGN_KEY_PATTERN)) {
-      const sourceColumns = foreignKeyMatch[1];
-      const targetTable = foreignKeyMatch[2];
-      const targetColumns = foreignKeyMatch[3];
+      const sourceColumns = foreignKeyMatch.groups?.sourceColumns;
+      const targetTable = foreignKeyMatch.groups?.targetTable;
+      const targetColumns = foreignKeyMatch.groups?.targetColumns;
       if (
         sourceColumns === undefined ||
         targetTable === undefined ||
@@ -138,15 +138,15 @@ const extractForeignKeySignatures = (sql: string): string[] => {
 const extractColumnSignatures = (sql: string): string[] => {
   const signatures: string[] = [];
   for (const tableMatch of sql.matchAll(CREATE_TABLE_BODY_PATTERN)) {
-    const tableName = tableMatch[1];
-    const tableBody = tableMatch[2];
+    const tableName = tableMatch.groups?.table;
+    const tableBody = tableMatch.groups?.body;
     if (tableName === undefined || tableBody === undefined) {
       throw new Error("CREATE TABLE match omitted its table name or body");
     }
     for (const columnMatch of tableBody.matchAll(COLUMN_DEFINITION_PATTERN)) {
-      const columnName = columnMatch[1];
-      const dataType = columnMatch[2];
-      const nullability = columnMatch[3];
+      const columnName = columnMatch.groups?.columnName;
+      const dataType = columnMatch.groups?.dataType;
+      const nullability = columnMatch.groups?.nullability;
       if (
         columnName === undefined ||
         dataType === undefined ||
@@ -170,10 +170,10 @@ const extractColumnSignatures = (sql: string): string[] => {
 const formatSetDiff = (missing: string[], extra: string[]): string => {
   const parts: string[] = [];
   if (missing.length > 0) {
-    parts.push(`missing from roster: ${missing.sort().join(", ")}`);
+    parts.push(`missing from roster: ${missing.toSorted().join(", ")}`);
   }
   if (extra.length > 0) {
-    parts.push(`extra in roster (not in DDL): ${extra.sort().join(", ")}`);
+    parts.push(`extra in roster (not in DDL): ${extra.toSorted().join(", ")}`);
   }
   return parts.join("; ");
 };

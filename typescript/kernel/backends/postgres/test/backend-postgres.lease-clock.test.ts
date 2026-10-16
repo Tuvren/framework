@@ -53,7 +53,7 @@ interface LeaseClockFixture {
   kernel: ReturnType<typeof createRuntimeKernel>;
   rootTurnNodeHash: string;
   schemaId: string;
-  setBackendNow(value: number): void;
+  setBackendNow: (value: number) => void;
   turnId: string;
 }
 
@@ -93,12 +93,12 @@ const createLeaseClockFixture = async (
   };
 };
 
-const createLeasedRun = (
+const createLeasedRun = async (
   fixture: LeaseClockFixture,
   ownerSuppliedExpiryMs: number,
   runId = "run_lease_clock"
-) => {
-  return fixture.kernel.runLiveness.createLeasedRun({
+) =>
+  await fixture.kernel.runLiveness.createLeasedRun({
     branchId: fixture.branchId,
     executionOwnerId: "owner-alpha",
     leaseExpiresAtMs: ownerSuppliedExpiryMs,
@@ -108,7 +108,6 @@ const createLeasedRun = (
     steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
     turnId: fixture.turnId,
   });
-};
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();
@@ -140,7 +139,9 @@ describe("createPostgresBackend backend-authoritative lease clock", () => {
 
     try {
       const beforeMs = Date.now();
-      const backendNowMs = await backend.transact(async (tx) => tx.now?.());
+      const backendNowMs = await backend.transact(
+        async (tx) => await Promise.resolve(tx.now?.())
+      );
       const afterMs = Date.now();
 
       expect(backendNowMs).toBeDefined();
@@ -174,7 +175,8 @@ describe("createPostgresBackend backend-authoritative lease clock", () => {
     const fixture = await createLeaseClockFixture(1000);
 
     try {
-      const run = await createLeasedRun(fixture, 50); // backend expiry 1050
+      // The backend stamps expiry at 1050.
+      const run = await createLeasedRun(fixture, 50);
 
       // Backend clock still before expiry: a far-future caller clock must NOT
       // force the lease to be listed as expired.
@@ -197,7 +199,8 @@ describe("createPostgresBackend backend-authoritative lease clock", () => {
     const fixture = await createLeaseClockFixture(1000);
 
     try {
-      const run = await createLeasedRun(fixture, 50); // backend expiry 1050
+      // The backend stamps expiry at 1050.
+      const run = await createLeasedRun(fixture, 50);
 
       // Renew while still valid in backend time (1010 < 1050). Worker A again
       // supplies an owner-time absolute (60); the kernel re-bases onto backend
@@ -215,6 +218,8 @@ describe("createPostgresBackend backend-authoritative lease clock", () => {
       // wall clock still reads 0, renewal must fail because the backend clock is
       // authoritative.
       fixture.setBackendNow(1071);
+      // Bun's async matcher is Promise-backed at runtime despite its void declaration.
+      // oxlint-disable-next-line typescript/await-thenable, typescript/no-confusing-void-expression -- Bun requires awaiting rejects so the assertion settles before teardown.
       await expect(
         fixture.kernel.runLiveness.renewLease(
           run.runId,
@@ -232,11 +237,14 @@ describe("createPostgresBackend backend-authoritative lease clock", () => {
     const fixture = await createLeaseClockFixture(1000);
 
     try {
-      const run = await createLeasedRun(fixture, 50); // backend expiry 1050
+      // The backend stamps expiry at 1050.
+      const run = await createLeasedRun(fixture, 50);
 
       // A preempting worker whose clock is far ahead (caller nowMs huge) must
       // not be able to preempt while the backend clock says the lease is valid.
       fixture.setBackendNow(1049);
+      // Bun's async matcher is Promise-backed at runtime despite its void declaration.
+      // oxlint-disable-next-line typescript/await-thenable, typescript/no-confusing-void-expression -- Bun requires awaiting rejects before the test advances the backend clock.
       await expect(
         fixture.kernel.runLiveness.preemptExpired(
           run.runId,
@@ -259,8 +267,8 @@ describe("createPostgresBackend backend-authoritative lease clock", () => {
       // branch head; the run is durably failed with the recorded reason.
       expect(recovery.lastTurnNodeHash).not.toBe(fixture.rootTurnNodeHash);
 
-      const storedRun = await fixture.backend.transact((tx) =>
-        tx.runs.get(run.runId)
+      const storedRun = await fixture.backend.transact(
+        async (tx) => await tx.runs.get(run.runId)
       );
       expect(storedRun?.status).toBe("failed");
       expect(storedRun?.preemptionReason).toBe("stale_running_recovery");
@@ -283,8 +291,8 @@ describe("createPostgresBackend backend-authoritative lease clock", () => {
         reason
       );
 
-      const storedRun = await fixture.backend.transact((tx) =>
-        tx.runs.get(run.runId)
+      const storedRun = await fixture.backend.transact(
+        async (tx) => await tx.runs.get(run.runId)
       );
       expect(storedRun?.preemptionReason).toBe(reason);
     } finally {

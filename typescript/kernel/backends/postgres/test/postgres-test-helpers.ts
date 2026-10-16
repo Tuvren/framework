@@ -26,7 +26,7 @@ import type { PostgresBackendOptions } from "../src/index.js";
 import { quoteIdentifier } from "../src/lib/postgres-sql.js";
 
 const DEVENV_DATABASE_NAME = "tuvren_runtime";
-const SCHEMA_NAME_PATTERN = /^[a-z][a-z0-9_]*$/;
+const SCHEMA_NAME_PATTERN = /^[a-z][a-z0-9_]*$/u;
 const allocatedSchemas = new Set<string>();
 
 interface DevenvPostgresEnvironment {
@@ -63,7 +63,7 @@ const readDevenvPostgresEnvironment = (): DevenvPostgresEnvironment => {
     );
   }
 
-  const port = Number.parseInt(portValue, 10);
+  const port = Math.trunc(Number(portValue));
 
   if (!Number.isSafeInteger(port) || port <= 0) {
     throw new Error(
@@ -87,7 +87,9 @@ const createSqlClient = () => {
     host: environment.host,
     idle_timeout: 1,
     max: 1,
-    onnotice: () => undefined,
+    onnotice: () => {
+      /* empty */
+    },
     port: environment.port,
     prepare: false,
     username: environment.username,
@@ -108,20 +110,21 @@ const requireSchemaName = (options: PostgresBackendOptions): string => {
  * backend's own connection handling. Shared by every test file that needs
  * to reach into a schema the backend under test owns.
  */
-export const createAdminClient = (options: PostgresBackendOptions): Sql => {
-  return postgres({
+export const createAdminClient = (options: PostgresBackendOptions): Sql =>
+  postgres({
     connect_timeout: 5,
     database: options.database,
     host: options.host,
     idle_timeout: 1,
     max: 1,
-    onnotice: () => undefined,
+    onnotice: () => {
+      /* intentionally ignore server notices in test clients */
+    },
     password: options.password,
     port: options.port,
     prepare: false,
     username: options.username,
   });
-};
 
 export const assertDevenvPostgresReady = async (): Promise<void> => {
   // The session starts PostgreSQL through `devenv up -d`, but the daemon can
@@ -135,6 +138,7 @@ export const assertDevenvPostgresReady = async (): Promise<void> => {
   const startedAt = Date.now();
   let lastError: unknown;
 
+  /* oxlint-disable no-await-in-loop -- Retry readiness serially within the fixed deadline while retaining the last connection failure. */
   while (Date.now() - startedAt < totalBudgetMs) {
     const sql = createSqlClient();
 
@@ -154,6 +158,7 @@ export const assertDevenvPostgresReady = async (): Promise<void> => {
 
     await delay(retryDelayMs);
   }
+  /* oxlint-enable no-await-in-loop */
 
   const message =
     lastError instanceof Error ? lastError.message : String(lastError);
@@ -190,12 +195,14 @@ export const cleanupAllocatedSchemas = async (): Promise<void> => {
   const sql = createSqlClient();
 
   try {
+    /* oxlint-disable no-await-in-loop -- Drop allocated schemas serially and preserve the first teardown failure. */
     for (const schemaName of allocatedSchemas) {
       assertSchemaName(schemaName);
       await sql.unsafe(
         `DROP SCHEMA IF EXISTS ${quoteIdentifier(schemaName)} CASCADE`
       );
     }
+    /* oxlint-enable no-await-in-loop */
   } finally {
     allocatedSchemas.clear();
     await sql.end({ timeout: 0 });

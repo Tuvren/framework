@@ -61,9 +61,11 @@ afterAll(async () => {
 const seededHashes = async (count: number, seed: string): Promise<string[]> => {
   const hashes: string[] = [];
 
+  /* oxlint-disable no-await-in-loop -- Derive fixture hashes serially to retain deterministic input and failure order. */
   for (let index = 0; index < count; index += 1) {
     hashes.push(await hashKernelRecord(`${seed}-${index}`));
   }
+  /* oxlint-enable no-await-in-loop */
 
   return hashes;
 };
@@ -90,6 +92,7 @@ describe("createPostgresBackend chunk-aware TurnTree caller writes (KRT-BK008)",
     const hashes = await seededHashes(THRESHOLD + 6, "postgres-chunk-parity");
     let treeHash = rootNode.turnTreeHash;
 
+    /* oxlint-disable no-await-in-loop -- Each tree incorporation depends on the preceding tree hash. */
     for (const [index, hash] of hashes.entries()) {
       treeHash = await kernel.tree.incorporate(treeHash, [
         {
@@ -101,12 +104,13 @@ describe("createPostgresBackend chunk-aware TurnTree caller writes (KRT-BK008)",
         },
       ]);
     }
+    /* oxlint-enable no-await-in-loop */
 
     const resolved = await kernel.tree.resolve(treeHash, "messages");
     expect(resolved).toEqual(hashes);
 
-    const storedPath = await backend.transact(async (tx) =>
-      tx.turnTreePaths.get(treeHash, "messages")
+    const storedPath = await backend.transact(
+      async (tx) => await tx.turnTreePaths.get(treeHash, "messages")
     );
     expect(storedPath?.collectionKind).toBe("ordered");
 
@@ -137,6 +141,7 @@ describe("createPostgresBackend chunk-aware TurnTree caller writes (KRT-BK008)",
     );
     let treeHash = rootNode.turnTreeHash;
 
+    /* oxlint-disable no-await-in-loop -- Each tree incorporation depends on the preceding tree hash. */
     for (const [index, hash] of hashes.entries()) {
       treeHash = await kernel.tree.incorporate(treeHash, [
         {
@@ -148,9 +153,10 @@ describe("createPostgresBackend chunk-aware TurnTree caller writes (KRT-BK008)",
         },
       ]);
     }
+    /* oxlint-enable no-await-in-loop */
 
-    const storedPath = await backend.transact(async (tx) =>
-      tx.turnTreePaths.get(treeHash, "messages")
+    const storedPath = await backend.transact(
+      async (tx) => await tx.turnTreePaths.get(treeHash, "messages")
     );
     expect(storedPath?.collectionKind).toBe("ordered");
 

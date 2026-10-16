@@ -44,6 +44,8 @@ import {
   createPostgresTestBackendOptions,
 } from "./postgres-test-helpers.js";
 
+const fixedNow = (): number => 1_700_000_000_000;
+
 /**
  * Dumps every column of the seeded `objects` and `schemas` rows for one
  * backend's own schema/scope partition — the full family-table content the
@@ -71,7 +73,7 @@ const dumpFamilyRows = async (
       {
         byte_length: number;
         bytes: Uint8Array;
-        created_at_ms: number;
+        created_at_ms: string;
         media_type: string;
       }[]
     >(
@@ -81,7 +83,7 @@ const dumpFamilyRows = async (
       [DEFAULT_SCOPE, objectHash]
     );
     const schemaRows = await admin.unsafe<
-      { created_at_ms: number; schema_cbor: Uint8Array }[]
+      { created_at_ms: string; schema_cbor: Uint8Array }[]
     >(
       `SELECT schema_cbor, created_at_ms
          FROM ${qualifyIdentifier(schemaName, "schemas")}
@@ -89,15 +91,15 @@ const dumpFamilyRows = async (
       [DEFAULT_SCOPE, schemaId]
     );
 
-    const objectRow = objectRows[0];
-    const schemaRow = schemaRows[0];
+    const [objectRow] = objectRows;
+    const [schemaRow] = schemaRows;
 
     return {
       objectRow:
         objectRow === undefined
           ? null
           : {
-              byteLength: Number(objectRow.byte_length),
+              byteLength: objectRow.byte_length,
               bytes: [...objectRow.bytes],
               createdAtMs: Number(objectRow.created_at_ms),
               mediaType: objectRow.media_type,
@@ -128,7 +130,6 @@ describe("@tuvren/backend-postgres phase observer seam (ADR-0067 relational pers
     // A fixed clock is load-bearing here: created_at_ms is part of the
     // row-for-row comparison below, so every construction must stamp the
     // same value rather than drifting across real wall-clock reads.
-    const fixedNow = () => 1_700_000_000_000;
     const schema = createCanonicalKernelTestSchema();
     const schemaRecord = createStoredSchemaRecord(schema, 1);
     const objectRecord = await createStoredObjectRecord(
@@ -152,6 +153,7 @@ describe("@tuvren/backend-postgres phase observer seam (ADR-0067 relational pers
     const explicitNoopBackend = createPostgresBackend(explicitNoopOptions);
     const recordingBackend = createPostgresBackend(recordingOptions);
 
+    /* oxlint-disable no-await-in-loop -- Seed each construction path serially so setup failure order stays deterministic. */
     for (const backend of [
       defaultBackend,
       explicitNoopBackend,
@@ -162,6 +164,7 @@ describe("@tuvren/backend-postgres phase observer seam (ADR-0067 relational pers
         await tx.objects.put(objectRecord);
       });
     }
+    /* oxlint-enable no-await-in-loop */
 
     // Behavior-neutral seam: every construction path must leave the same
     // durable rows for the same inputs (relational equivalent of the old
@@ -171,8 +174,13 @@ describe("@tuvren/backend-postgres phase observer seam (ADR-0067 relational pers
     // schema_cbor/created_at_ms), not just the two identity keys the caller
     // already knows.
     const dumps = await Promise.all(
-      [defaultOptions, explicitNoopOptions, recordingOptions].map((options) =>
-        dumpFamilyRows(options, schemaRecord.schemaId, objectRecord.hash)
+      [defaultOptions, explicitNoopOptions, recordingOptions].map(
+        async (options) =>
+          await dumpFamilyRows(
+            options,
+            schemaRecord.schemaId,
+            objectRecord.hash
+          )
       )
     );
 

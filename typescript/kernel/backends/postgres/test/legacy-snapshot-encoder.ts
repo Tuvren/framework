@@ -62,47 +62,29 @@ import {
 // These comparators give the encoded snapshot a deterministic element order
 // per record family, by identity key, independent of `Map` iteration order.
 
-const compareStoredObject = (
-  left: StoredObject,
-  right: StoredObject
-): number => {
-  return left.hash.localeCompare(right.hash);
-};
+const compareStoredObject = (left: StoredObject, right: StoredObject): number =>
+  left.hash.localeCompare(right.hash);
 
 const compareStoredOrderedPathChunk = (
   left: StoredOrderedPathChunk,
   right: StoredOrderedPathChunk
-): number => {
-  return left.chunkHash.localeCompare(right.chunkHash);
-};
+): number => left.chunkHash.localeCompare(right.chunkHash);
 
-const compareStoredSchema = (
-  left: StoredSchema,
-  right: StoredSchema
-): number => {
-  return left.schemaId.localeCompare(right.schemaId);
-};
+const compareStoredSchema = (left: StoredSchema, right: StoredSchema): number =>
+  left.schemaId.localeCompare(right.schemaId);
 
-const compareStoredThread = (
-  left: StoredThread,
-  right: StoredThread
-): number => {
-  return left.threadId.localeCompare(right.threadId);
-};
+const compareStoredThread = (left: StoredThread, right: StoredThread): number =>
+  left.threadId.localeCompare(right.threadId);
 
 const compareStoredTurnNode = (
   left: StoredTurnNode,
   right: StoredTurnNode
-): number => {
-  return left.hash.localeCompare(right.hash);
-};
+): number => left.hash.localeCompare(right.hash);
 
 const compareStoredTurnTree = (
   left: StoredTurnTree,
   right: StoredTurnTree
-): number => {
-  return left.hash.localeCompare(right.hash);
-};
+): number => left.hash.localeCompare(right.hash);
 
 const compareStoredTurnTreePath = (
   left: StoredTurnTreePath,
@@ -117,9 +99,8 @@ const compareStoredTurnTreePath = (
   return left.path.localeCompare(right.path);
 };
 
-const compareStoredTurn = (left: StoredTurn, right: StoredTurn): number => {
-  return left.turnId.localeCompare(right.turnId);
-};
+const compareStoredTurn = (left: StoredTurn, right: StoredTurn): number =>
+  left.turnId.localeCompare(right.turnId);
 
 /**
  * Projects a `BackendState` into the legacy snapshot wire format: every
@@ -133,10 +114,10 @@ const compareStoredTurn = (left: StoredTurn, right: StoredTurn): number => {
  */
 export const encodeSnapshot = (state: BackendState): Uint8Array => {
   const snapshot = {
-    branches: Array.from(state.branches.values(), cloneStoredBranch).sort(
+    branches: Array.from(state.branches.values(), cloneStoredBranch).toSorted(
       compareStoredBranch
     ),
-    objects: Array.from(state.objects.values(), cloneStoredObject).sort(
+    objects: Array.from(state.objects.values(), cloneStoredObject).toSorted(
       compareStoredObject
     ),
     observeAnnotations: Array.from(
@@ -144,43 +125,48 @@ export const encodeSnapshot = (state: BackendState): Uint8Array => {
       (records) => records.map(cloneStoredObserveAnnotation)
     )
       .flat()
-      .sort(compareStoredObserveAnnotation),
+      .toSorted(compareStoredObserveAnnotation),
     orderedPathChunks: Array.from(
       state.orderedPathChunks.values(),
       cloneStoredOrderedPathChunk
-    ).sort(compareStoredOrderedPathChunk),
-    runs: Array.from(state.runs.values(), cloneStoredRun).sort(
+    ).toSorted(compareStoredOrderedPathChunk),
+    runs: Array.from(state.runs.values(), cloneStoredRun).toSorted(
       compareStoredRun
     ),
-    schemas: Array.from(state.schemas.values(), cloneStoredSchema).sort(
+    schemas: Array.from(state.schemas.values(), cloneStoredSchema).toSorted(
       compareStoredSchema
     ),
     stagedResults: Array.from(state.stagedResults.values(), (records) =>
       Array.from(records.values(), cloneStoredStagedResult)
     )
       .flat()
-      .sort(compareStoredStagedResult),
-    threads: Array.from(state.threads.values(), cloneStoredThread).sort(
+      .toSorted(compareStoredStagedResult),
+    threads: Array.from(state.threads.values(), cloneStoredThread).toSorted(
       compareStoredThread
     ),
-    turnNodes: Array.from(state.turnNodes.values(), cloneStoredTurnNode).sort(
-      compareStoredTurnNode
-    ),
+    turnNodes: Array.from(
+      state.turnNodes.values(),
+      cloneStoredTurnNode
+    ).toSorted(compareStoredTurnNode),
     turnTreePaths: Array.from(state.turnTreePaths.values(), (records) =>
       Array.from(records.values(), cloneStoredTurnTreePath)
     )
       .flat()
-      .sort(compareStoredTurnTreePath),
-    turnTrees: Array.from(state.turnTrees.values(), cloneStoredTurnTree).sort(
-      compareStoredTurnTree
-    ),
-    turns: Array.from(state.turns.values(), cloneStoredTurn).sort(
+      .toSorted(compareStoredTurnTreePath),
+    turnTrees: Array.from(
+      state.turnTrees.values(),
+      cloneStoredTurnTree
+    ).toSorted(compareStoredTurnTree),
+    turns: Array.from(state.turns.values(), cloneStoredTurn).toSorted(
       compareStoredTurn
     ),
     version: CURRENT_SNAPSHOT_VERSION,
   } satisfies Record<string, unknown>;
 
+  // The projection above contains only the protocol's recursively validated
+  // deterministic record values.
   return encodeDeterministicKernelRecord(
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     snapshot as unknown as Parameters<typeof encodeDeterministicKernelRecord>[0]
   );
 };

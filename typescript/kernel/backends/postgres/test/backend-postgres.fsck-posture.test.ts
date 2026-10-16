@@ -65,7 +65,8 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
     const schemaName = options.schemaName ?? "public";
 
     try {
-      expect((await backend.health()).ok).toBe(true);
+      const baselineHealth = await backend.health();
+      expect(baselineHealth.ok).toBe(true);
 
       const admin = createAdminClient(options);
       try {
@@ -79,7 +80,7 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
       simulatedNowMs += 60_001;
       const health = await backend.health();
       expect(health.ok).toBe(false);
-      expect(health.ok === false ? health.reason : undefined).toMatch(
+      expect(health.ok ? undefined : health.reason).toMatch(
         RELATIONAL_COLUMNS_INVALID_ERROR_PATTERN
       );
     } finally {
@@ -114,7 +115,7 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
 
       const fsck = await backend.fsck();
       expect(fsck.ok).toBe(false);
-      expect(fsck.ok === false ? fsck.reason : undefined).toMatch(
+      expect(fsck.ok ? undefined : fsck.reason).toMatch(
         RELATIONAL_INDEXES_MISSING_ERROR_PATTERN
       );
     } finally {
@@ -153,7 +154,7 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
       simulatedNowMs += 60_001;
       const health = await backend.health();
       expect(health.ok).toBe(false);
-      expect(health.ok === false ? health.reason : undefined).toMatch(
+      expect(health.ok ? undefined : health.reason).toMatch(
         RELATIONAL_COLLATION_INVALID_ERROR_PATTERN
       );
     } finally {
@@ -208,7 +209,7 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
       simulatedNowMs += 60_001;
       const health = await backend.health();
       expect(health.ok).toBe(false);
-      expect(health.ok === false ? health.reason : undefined).toMatch(
+      expect(health.ok ? undefined : health.reason).toMatch(
         RELATIONAL_FKS_NOT_DEFERRABLE_ERROR_PATTERN
       );
     } finally {
@@ -259,7 +260,7 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
       simulatedNowMs += 60_001;
       const health = await backend.health();
       expect(health.ok).toBe(false);
-      expect(health.ok === false ? health.reason : undefined).toMatch(
+      expect(health.ok ? undefined : health.reason).toMatch(
         RELATIONAL_FKS_MISSING_ERROR_PATTERN
       );
     } finally {
