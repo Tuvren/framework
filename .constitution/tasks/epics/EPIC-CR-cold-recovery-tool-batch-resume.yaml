@@ -200,7 +200,7 @@ closeout:
     - stage: tech-spec
       item: "Reconcile kernel specification §5.6's empty-staging no-checkpoint narrative with measured TypeScript event-only checkpoint behavior. The framework specification now states only the recovery behavior it can prove and does not use Markdown alone as the cross-implementation oracle."
   follow_ups:
-    - "Keep CPU-heavy wave verification serialized through the global lock with `VERIFY_SERIAL=1 NX_PARALLEL=1`; the measured schedule resolved unchanged host-repl five-second subprocess timeouts without changing tests or cache policy."
+    - "Keep CPU-heavy wave verification serialized through the global lock with `NX_DAEMON=false VERIFY_SERIAL=1 NX_PARALLEL=1`; the measured schedule resolved unchanged host-repl five-second subprocess timeouts without changing tests or cache policy."
     - "Preserve the M7 generator-only scope exception when reviewing history: the two Epic AF reports are derived freshness artifacts, not manually authored TechSpec content."
   code_decisions:
     - summary: "Represent an interrupted iteration as an internal `InterruptedIterationRecoveryPlan` with re-infer, resume-tool-batch, and completed-tool-batch dispositions derived only from decoded durable messages and their object hashes."
@@ -234,6 +234,13 @@ closeout:
         - typescript/runtime/src/lib/tool-execution.ts
         - typescript/runtime/src/lib/tool-execution-helpers.ts
       commit: c9e1313
+    - summary: "Finalize recovered and approval-resumed tool batches through one projection so checkpoints, manifests, hooks, pause context, and returned tool results share original call order and the complete durable result set."
+      kind: pattern
+      paths:
+        - typescript/runtime/src/lib/runtime-core-tool-batch-finalization.ts
+        - typescript/runtime/src/lib/runtime-core-iteration.ts
+        - typescript/runtime/src/lib/runtime-core-tool-resume.ts
+      commit: 7c248b4
   settled:
     - record: tech-spec/adrs/ADR-0065-idempotency-identity-is-call-identity-not-authority-epoch.md
       evidence:
