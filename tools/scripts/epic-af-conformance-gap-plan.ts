@@ -436,47 +436,7 @@ const PROMOTED_CLASSIFICATIONS = new Set<MatrixClassification>([
 
 const EPIC_AF_FOLLOW_UP_PREFIX = "KRT-AF";
 
-async function main(): Promise<void> {
-  const options = readCliOptions(process.argv.slice(2));
-  const matrix = readCoverageMatrix(
-    JSON.parse(await readFile(MATRIX_PATH, "utf-8")) as unknown
-  );
-  const plannedSurfaces = createPlannedSurfaces(matrix.entries);
-  const plan: GapPlan = {
-    generatedBy: "bun tools/scripts/epic-af-conformance-gap-plan.ts",
-    matrixPath: MATRIX_PATH,
-    promoteNowClaims: plannedSurfaces
-      .filter((surface) => surface.disposition === "promote")
-      .reduce((count, surface) => count + surface.claimIds.length, 0),
-    surfaces: plannedSurfaces,
-  };
-
-  const artifacts = [
-    {
-      content: `${renderJson(plan)}\n`,
-      path: PLAN_JSON_PATH,
-    },
-    {
-      content: renderMarkdown(plan),
-      path: PLAN_MD_PATH,
-    },
-  ];
-
-  if (options.check) {
-    await checkGeneratedArtifacts(artifacts);
-    const implementedChecks = await readImplementedCheckEvidence();
-    checkPromotedCheckIdsAreImplemented(plan, implementedChecks);
-    checkPromotedEvidenceIsDeclared(plan, implementedChecks);
-    checkPromotedSurfacesAreConcrete(plan);
-    return;
-  }
-
-  for (const artifact of artifacts) {
-    await writeGeneratedFile(artifact.path, artifact.content);
-  }
-}
-
-function readCliOptions(args: readonly string[]): CliOptions {
+const readCliOptions = (args: readonly string[]): CliOptions => {
   const options = {
     check: false,
   };
@@ -491,11 +451,11 @@ function readCliOptions(args: readonly string[]): CliOptions {
   }
 
   return options;
-}
+};
 
-async function checkGeneratedArtifacts(
+const checkGeneratedArtifacts = async (
   artifacts: readonly { content: string; path: string }[]
-): Promise<void> {
+): Promise<void> => {
   const drifted: string[] = [];
 
   for (const artifact of artifacts) {
@@ -511,28 +471,12 @@ async function checkGeneratedArtifacts(
       `Epic AF gap plan artifacts are stale; regenerate with bun run docs:af-gap-plan: ${drifted.join(", ")}`
     );
   }
-}
+};
 
-function checkPromotedCheckIdsAreImplemented(
+const checkPromotedEvidenceIsDeclared = (
   plan: GapPlan,
   implementedChecks: ReadonlyMap<string, ReadonlySet<string>>
-): void {
-  const missingCheckIds = plan.surfaces
-    .filter((surface) => surface.disposition === "promote")
-    .flatMap((surface) => surface.checkIds)
-    .filter((checkId) => !implementedChecks.has(checkId));
-
-  if (missingCheckIds.length > 0) {
-    throw new Error(
-      `Epic AF gap plan references promoted checks that are missing from boundary conformance plans: ${uniqueSorted(missingCheckIds).join(", ")}`
-    );
-  }
-}
-
-function checkPromotedEvidenceIsDeclared(
-  plan: GapPlan,
-  implementedChecks: ReadonlyMap<string, ReadonlySet<string>>
-): void {
+): void => {
   const missingEvidence: string[] = [];
 
   for (const surface of plan.surfaces) {
@@ -560,9 +504,9 @@ function checkPromotedEvidenceIsDeclared(
       `Epic AF promoted surfaces reference evidence not declared by their planned checks: ${missingEvidence.join(", ")}`
     );
   }
-}
+};
 
-function checkPromotedSurfacesAreConcrete(plan: GapPlan): void {
+const checkPromotedSurfacesAreConcrete = (plan: GapPlan): void => {
   const ambiguous = plan.surfaces
     .filter((surface) => surface.disposition === "promote")
     .filter(
@@ -582,40 +526,9 @@ function checkPromotedSurfacesAreConcrete(plan: GapPlan): void {
       `Epic AF promoted surfaces must map to concrete packet, plan, fixture, operation, capability, checks, and evidence: ${ambiguous.join(", ")}`
     );
   }
-}
+};
 
-async function readImplementedCheckEvidence(): Promise<
-  Map<string, Set<string>>
-> {
-  const checks = new Map<string, Set<string>>();
-
-  // No existsSync guard on the root: a missing spec/ (sparse checkout,
-  // wrong cwd) must fail this gate loudly, never pass it vacuously.
-  const planPaths = await findConformancePlanPaths(SPEC_ROOT);
-  if (planPaths.length === 0) {
-    throw new Error(
-      `epic-af gap plan found zero conformance plans under ${SPEC_ROOT} — refusing to report a vacuous pass`
-    );
-  }
-
-  for (const planPath of planPaths) {
-    const plan = JSON.parse(await readFile(planPath, "utf-8")) as unknown;
-
-    if (!(isRecord(plan) && Array.isArray(plan.checks))) {
-      continue;
-    }
-
-    for (const check of plan.checks) {
-      if (isRecord(check) && typeof check.checkId === "string") {
-        checks.set(check.checkId, readEvidencePaths(check));
-      }
-    }
-  }
-
-  return checks;
-}
-
-function readEvidencePaths(check: Record<string, unknown>): Set<string> {
+const readEvidencePaths = (check: Record<string, unknown>): Set<string> => {
   const { evidence } = check;
 
   if (!Array.isArray(evidence)) {
@@ -625,9 +538,23 @@ function readEvidencePaths(check: Record<string, unknown>): Set<string> {
   return new Set(
     evidence.filter((entry): entry is string => typeof entry === "string")
   );
-}
+};
 
-async function findConformancePlanPaths(directory: string): Promise<string[]> {
+// Tolerates a port segment between "conformance" and "plans" (e.g.
+// spec/conformance/kernel/plans/x.json) — only the immediate parent
+// directory name and a "conformance" ancestor segment are required.
+const isConformancePlansPath = (entryPath: string): boolean => {
+  const segments = entryPath.split("/");
+  const plansIndex = segments.lastIndexOf("plans");
+  return (
+    plansIndex === segments.length - 2 &&
+    segments.slice(0, plansIndex).includes("conformance")
+  );
+};
+
+const findConformancePlanPaths = async (
+  directory: string
+): Promise<string[]> => {
   const entries = await readdir(directory, { withFileTypes: true });
   const paths: string[] = [];
 
@@ -649,78 +576,17 @@ async function findConformancePlanPaths(directory: string): Promise<string[]> {
   }
 
   return paths.sort();
-}
+};
 
-// Tolerates a port segment between "conformance" and "plans" (e.g.
-// spec/conformance/kernel/plans/x.json) — only the immediate parent
-// directory name and a "conformance" ancestor segment are required.
-function isConformancePlansPath(entryPath: string): boolean {
-  const segments = entryPath.split("/");
-  const plansIndex = segments.lastIndexOf("plans");
-  return (
-    plansIndex === segments.length - 2 &&
-    segments.slice(0, plansIndex).includes("conformance")
-  );
-}
-
-function createPlannedSurfaces(
-  entries: readonly CoverageEntry[]
-): PlannedSurface[] {
-  const selected = entries.filter((entry) => {
-    const plan = SURFACE_PLANS[entry.surface];
-    return (
-      plan !== undefined &&
-      (plan.disposition === "exclude" ||
-        PROMOTED_CLASSIFICATIONS.has(entry.classification) ||
-        entry.followUpTicket.startsWith(EPIC_AF_FOLLOW_UP_PREFIX))
-    );
-  });
-  const grouped = new Map<string, CoverageEntry[]>();
-
-  for (const entry of selected) {
-    const plan = SURFACE_PLANS[entry.surface];
-    if (plan === undefined) {
-      throw new Error(
-        `Epic AF gap plan lacks surface mapping: ${entry.surface}`
-      );
-    }
-
-    const group = grouped.get(entry.surface) ?? [];
-    group.push(entry);
-    grouped.set(entry.surface, group);
+const inlineList = (values: readonly string[]): string => {
+  if (values.length === 0) {
+    return "`N/A`";
   }
 
-  return [...grouped.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([surface, surfaceEntries]) => {
-      const first = surfaceEntries[0];
-      if (first === undefined) {
-        throw new Error(`Epic AF gap plan found empty surface ${surface}`);
-      }
+  return values.map((value) => `\`${value}\``).join(", ");
+};
 
-      const surfacePlan = SURFACE_PLANS[surface];
-
-      return {
-        ...surfacePlan,
-        adapterCapability: first.adapterCapability,
-        authorityPacket: surfacePlan.authorityPacket ?? first.authorityPacket,
-        claimIds: uniqueSorted(surfaceEntries.map((entry) => entry.claimId)),
-        classifications: uniqueSorted(
-          surfaceEntries.map((entry) => entry.classification)
-        ),
-        compatibilityEvidence: first.compatibilityEvidence,
-        conformancePlan: surfacePlan.conformancePlan ?? first.conformancePlan,
-        fixture: surfacePlan.fixture ?? first.fixture,
-        generatedArtifact: first.generatedArtifact,
-        matrixFollowUpTickets: uniqueSorted(
-          surfaceEntries.map((entry) => entry.followUpTicket)
-        ),
-        surface,
-      };
-    });
-}
-
-function renderMarkdown(plan: GapPlan): string {
+const renderMarkdown = (plan: GapPlan): string => {
   const lines = [
     "# Epic AF Conformance Gap Plan",
     "",
@@ -778,25 +644,161 @@ function renderMarkdown(plan: GapPlan): string {
   }
 
   return `${lines.join("\n")}\n`;
-}
+};
 
-function inlineList(values: readonly string[]): string {
-  if (values.length === 0) {
-    return "`N/A`";
+const isJsonPrimitive = (value: unknown): boolean =>
+  value === null ||
+  typeof value === "boolean" ||
+  typeof value === "number" ||
+  typeof value === "string";
+
+const writeGeneratedFile = async (
+  path: string,
+  content: string
+): Promise<void> => {
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, content);
+};
+
+const uniqueSorted = <T extends string>(values: readonly T[]): T[] =>
+  [...new Set(values)].sort();
+
+const checkPromotedCheckIdsAreImplemented = (
+  plan: GapPlan,
+  implementedChecks: ReadonlyMap<string, ReadonlySet<string>>
+): void => {
+  const missingCheckIds = plan.surfaces
+    .filter((surface) => surface.disposition === "promote")
+    .flatMap((surface) => surface.checkIds)
+    .filter((checkId) => !implementedChecks.has(checkId));
+
+  if (missingCheckIds.length > 0) {
+    throw new Error(
+      `Epic AF gap plan references promoted checks that are missing from boundary conformance plans: ${uniqueSorted(missingCheckIds).join(", ")}`
+    );
+  }
+};
+
+const createPlannedSurfaces = (
+  entries: readonly CoverageEntry[]
+): PlannedSurface[] => {
+  const selected = entries.filter((entry) => {
+    const plan = SURFACE_PLANS[entry.surface];
+    return (
+      plan !== undefined &&
+      (plan.disposition === "exclude" ||
+        PROMOTED_CLASSIFICATIONS.has(entry.classification) ||
+        entry.followUpTicket.startsWith(EPIC_AF_FOLLOW_UP_PREFIX))
+    );
+  });
+  const grouped = new Map<string, CoverageEntry[]>();
+
+  for (const entry of selected) {
+    const plan = SURFACE_PLANS[entry.surface];
+    if (plan === undefined) {
+      throw new Error(
+        `Epic AF gap plan lacks surface mapping: ${entry.surface}`
+      );
+    }
+
+    const group = grouped.get(entry.surface) ?? [];
+    group.push(entry);
+    grouped.set(entry.surface, group);
   }
 
-  return values.map((value) => `\`${value}\``).join(", ");
-}
+  return [...grouped.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([surface, surfaceEntries]) => {
+      const first = surfaceEntries[0];
+      if (first === undefined) {
+        throw new Error(`Epic AF gap plan found empty surface ${surface}`);
+      }
 
-function renderJson(value: unknown): string {
-  return renderJsonValue(value, 0, 0);
-}
+      const surfacePlan = SURFACE_PLANS[surface];
 
-function renderJsonValue(
+      return {
+        ...surfacePlan,
+        adapterCapability: first.adapterCapability,
+        authorityPacket: surfacePlan.authorityPacket ?? first.authorityPacket,
+        claimIds: uniqueSorted(surfaceEntries.map((entry) => entry.claimId)),
+        classifications: uniqueSorted(
+          surfaceEntries.map((entry) => entry.classification)
+        ),
+        compatibilityEvidence: first.compatibilityEvidence,
+        conformancePlan: surfacePlan.conformancePlan ?? first.conformancePlan,
+        fixture: surfacePlan.fixture ?? first.fixture,
+        generatedArtifact: first.generatedArtifact,
+        matrixFollowUpTickets: uniqueSorted(
+          surfaceEntries.map((entry) => entry.followUpTicket)
+        ),
+        surface,
+      };
+    });
+};
+
+const readClassification = (value: unknown): MatrixClassification => {
+  if (
+    value === "authority-backed-conformance-covered" ||
+    value === "explicitly-deferred" ||
+    value === "implementation-defined" ||
+    value === "implementation-local-evidence" ||
+    value === "missing-conformance-follow-up"
+  ) {
+    return value;
+  }
+
+  throw new Error(`unsupported matrix classification ${String(value)}`);
+};
+
+const readString = (record: Record<string, unknown>, key: string): string => {
+  const value = record[key];
+
+  if (typeof value !== "string") {
+    throw new TypeError(`coverage entry ${key} must be a string`);
+  }
+
+  return value;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readImplementedCheckEvidence = async (): Promise<
+  Map<string, Set<string>>
+> => {
+  const checks = new Map<string, Set<string>>();
+
+  // No existsSync guard on the root: a missing spec/ (sparse checkout,
+  // wrong cwd) must fail this gate loudly, never pass it vacuously.
+  const planPaths = await findConformancePlanPaths(SPEC_ROOT);
+  if (planPaths.length === 0) {
+    throw new Error(
+      `epic-af gap plan found zero conformance plans under ${SPEC_ROOT} — refusing to report a vacuous pass`
+    );
+  }
+
+  for (const planPath of planPaths) {
+    const plan = JSON.parse(await readFile(planPath, "utf-8")) as unknown;
+
+    if (!(isRecord(plan) && Array.isArray(plan.checks))) {
+      continue;
+    }
+
+    for (const check of plan.checks) {
+      if (isRecord(check) && typeof check.checkId === "string") {
+        checks.set(check.checkId, readEvidencePaths(check));
+      }
+    }
+  }
+
+  return checks;
+};
+
+const renderJsonValue = (
   value: unknown,
   depth: number,
   inlinePrefixLength: number
-): string {
+): string => {
   if (
     value === null ||
     typeof value === "boolean" ||
@@ -815,13 +817,13 @@ function renderJsonValue(
   }
 
   return renderJsonObject(value, depth);
-}
+};
 
-function renderJsonArray(
+const renderJsonArray = (
   values: readonly unknown[],
   depth: number,
   inlinePrefixLength: number
-): string {
+): string => {
   if (values.length === 0) {
     return "[]";
   }
@@ -843,12 +845,12 @@ function renderJsonArray(
   );
 
   return `[\n${lines.join(",\n")}\n${currentIndent}]`;
-}
+};
 
-function renderJsonObject(
+const renderJsonObject = (
   value: Record<string, unknown>,
   depth: number
-): string {
+): string => {
   const entries = Object.entries(value);
 
   if (entries.length === 0) {
@@ -864,40 +866,19 @@ function renderJsonObject(
   });
 
   return `{\n${lines.join(",\n")}\n${currentIndent}}`;
-}
+};
 
-function isJsonPrimitive(value: unknown): boolean {
-  return (
-    value === null ||
-    typeof value === "boolean" ||
-    typeof value === "number" ||
-    typeof value === "string"
-  );
-}
+const renderJson = (value: unknown): string => renderJsonValue(value, 0, 0);
 
-async function writeGeneratedFile(
-  path: string,
-  content: string
-): Promise<void> {
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, content);
-}
-
-function uniqueSorted<T extends string>(values: readonly T[]): T[] {
-  return [...new Set(values)].sort();
-}
-
-function readCoverageMatrix(value: unknown): CoverageMatrix {
-  if (!(isRecord(value) && Array.isArray(value.entries))) {
-    throw new Error(`${MATRIX_PATH} must contain an entries array`);
+const readRecord = (value: unknown, label: string): Record<string, unknown> => {
+  if (!isRecord(value)) {
+    throw new Error(`${label} must be an object`);
   }
 
-  return {
-    entries: value.entries.map(readCoverageEntry),
-  };
-}
+  return value;
+};
 
-function readCoverageEntry(value: unknown): CoverageEntry {
+const readCoverageEntry = (value: unknown): CoverageEntry => {
   const record = readRecord(value, "coverage entry");
   return {
     adapterCapability: readString(record, "adapterCapability"),
@@ -912,43 +893,57 @@ function readCoverageEntry(value: unknown): CoverageEntry {
     sourceFile: readString(record, "sourceFile"),
     surface: readString(record, "surface"),
   };
-}
+};
 
-function readClassification(value: unknown): MatrixClassification {
-  if (
-    value === "authority-backed-conformance-covered" ||
-    value === "explicitly-deferred" ||
-    value === "implementation-defined" ||
-    value === "implementation-local-evidence" ||
-    value === "missing-conformance-follow-up"
-  ) {
-    return value;
+const readCoverageMatrix = (value: unknown): CoverageMatrix => {
+  if (!(isRecord(value) && Array.isArray(value.entries))) {
+    throw new Error(`${MATRIX_PATH} must contain an entries array`);
   }
 
-  throw new Error(`unsupported matrix classification ${String(value)}`);
-}
+  return {
+    entries: value.entries.map(readCoverageEntry),
+  };
+};
 
-function readRecord(value: unknown, label: string): Record<string, unknown> {
-  if (!isRecord(value)) {
-    throw new Error(`${label} must be an object`);
+const main = async (): Promise<void> => {
+  const options = readCliOptions(process.argv.slice(2));
+  const matrix = readCoverageMatrix(
+    JSON.parse(await readFile(MATRIX_PATH, "utf-8")) as unknown
+  );
+  const plannedSurfaces = createPlannedSurfaces(matrix.entries);
+  const plan: GapPlan = {
+    generatedBy: "bun tools/scripts/epic-af-conformance-gap-plan.ts",
+    matrixPath: MATRIX_PATH,
+    promoteNowClaims: plannedSurfaces
+      .filter((surface) => surface.disposition === "promote")
+      .reduce((count, surface) => count + surface.claimIds.length, 0),
+    surfaces: plannedSurfaces,
+  };
+
+  const artifacts = [
+    {
+      content: `${renderJson(plan)}\n`,
+      path: PLAN_JSON_PATH,
+    },
+    {
+      content: renderMarkdown(plan),
+      path: PLAN_MD_PATH,
+    },
+  ];
+
+  if (options.check) {
+    await checkGeneratedArtifacts(artifacts);
+    const implementedChecks = await readImplementedCheckEvidence();
+    checkPromotedCheckIdsAreImplemented(plan, implementedChecks);
+    checkPromotedEvidenceIsDeclared(plan, implementedChecks);
+    checkPromotedSurfacesAreConcrete(plan);
+    return;
   }
 
-  return value;
-}
-
-function readString(record: Record<string, unknown>, key: string): string {
-  const value = record[key];
-
-  if (typeof value !== "string") {
-    throw new TypeError(`coverage entry ${key} must be a string`);
+  for (const artifact of artifacts) {
+    await writeGeneratedFile(artifact.path, artifact.content);
   }
-
-  return value;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+};
 
 try {
   await main();

@@ -31,6 +31,49 @@ interface RuntimeVersionReport {
 
 const PACKAGE_JSON_PATH = new URL("../../package.json", import.meta.url);
 
+const parseDeclaredBunVersion = (
+  packageManager: string | undefined
+): string | undefined => {
+  if (packageManager === undefined) {
+    return undefined;
+  }
+
+  const [manager, version] = packageManager.split("@");
+
+  if (manager !== "bun" || version === undefined || version.length === 0) {
+    return undefined;
+  }
+
+  return version;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readStringProperty = (
+  value: unknown,
+  propertyName: string
+): string | undefined => {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const propertyValue = value[propertyName];
+  return typeof propertyValue === "string" ? propertyValue : undefined;
+};
+
+const readRuntimeVersionReport = async (): Promise<RuntimeVersionReport> => {
+  const packageJsonText = await readFile(PACKAGE_JSON_PATH, "utf-8");
+  const packageJson = JSON.parse(packageJsonText);
+  const packageManager = readStringProperty(packageJson, "packageManager");
+
+  return {
+    declaredBunVersion: parseDeclaredBunVersion(packageManager),
+    observedBunVersion: process.versions.bun,
+    observedNodeVersion: process.version,
+  };
+};
+
 const runtimeReport = await readRuntimeVersionReport();
 
 console.log("Transition release check");
@@ -56,48 +99,4 @@ if (hasVerificationFailure(results)) {
 } else {
   console.log("");
   console.log("Transition release check completed successfully.");
-}
-
-async function readRuntimeVersionReport(): Promise<RuntimeVersionReport> {
-  const packageJsonText = await readFile(PACKAGE_JSON_PATH, "utf-8");
-  const packageJson = JSON.parse(packageJsonText);
-  const packageManager = readStringProperty(packageJson, "packageManager");
-
-  return {
-    declaredBunVersion: parseDeclaredBunVersion(packageManager),
-    observedBunVersion: process.versions.bun,
-    observedNodeVersion: process.version,
-  };
-}
-
-function parseDeclaredBunVersion(
-  packageManager: string | undefined
-): string | undefined {
-  if (packageManager === undefined) {
-    return undefined;
-  }
-
-  const [manager, version] = packageManager.split("@");
-
-  if (manager !== "bun" || version === undefined || version.length === 0) {
-    return undefined;
-  }
-
-  return version;
-}
-
-function readStringProperty(
-  value: unknown,
-  propertyName: string
-): string | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
-
-  const propertyValue = value[propertyName];
-  return typeof propertyValue === "string" ? propertyValue : undefined;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
