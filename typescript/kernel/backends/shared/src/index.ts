@@ -40,7 +40,6 @@ export type {
   BackendInvariantIntegrityAssertions,
   BackendInvariantIntegrityAssertionsConfig,
 } from "./lib/backend-invariant-integrity-assertions.js";
-// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 export {
   createBackendInvariantIntegrityAssertions,
   listTurnsByThread,
