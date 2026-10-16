@@ -669,9 +669,9 @@ const assertTableCountsEqual = (
     "stagedResults",
     "threads",
     "turnNodes",
-    "turns",
     "turnTreePaths",
     "turnTrees",
+    "turns",
   ] as const satisfies readonly (keyof TableCounts)[];
 
   for (const tableName of tableNames) {

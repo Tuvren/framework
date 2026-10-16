@@ -80,7 +80,8 @@ const readDatabaseSizesFromEnv = (fallback: readonly number[]): number[] => {
   }
 
   return raw.split(",").map((entry) => {
-    const parsed = Math.trunc(Number(entry.trim()));
+    // oxlint-disable-next-line unicorn/prefer-number-coercion -- Preserve radix-10 prefix parsing for the benchmark size override.
+    const parsed = Number.parseInt(entry.trim(), 10);
 
     if (!Number.isSafeInteger(parsed) || parsed < 0) {
       throw new Error(

@@ -108,9 +108,8 @@ const createBenchmarkCases = (
       name: "no-op transaction",
       async run(iterations) {
         for (let index = 0; index < iterations; index += 1) {
-          await backend.transact(async () => {
-            await Promise.resolve();
-          });
+          // oxlint-disable-next-line typescript/promise-function-async -- Keep the no-op benchmark callback free of added async/await work.
+          await backend.transact(() => Promise.resolve());
         }
       },
     },
