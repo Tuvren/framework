@@ -100,9 +100,121 @@ const SKIP_DIRECTORY_NAMES: ReadonlySet<string> = new Set([
   "coverage",
 ]);
 
-await main();
+const staticSpecifier = (
+  node: ts.Expression | undefined
+): { node: ts.Node; text: string } | undefined => {
+  // `isStringLiteralLike` accepts both quoted strings ("x"/'x') and
+  // no-substitution templates (`x`); a TemplateExpression with substitutions is
+  // deliberately excluded because its value is not statically resolvable.
+  if (node !== undefined && ts.isStringLiteralLike(node)) {
+    return { node, text: node.text };
+  }
+  return undefined;
+};
 
-async function main(): Promise<void> {
+const scriptKindFor = (fileName: string): ts.ScriptKind => {
+  return fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+};
+
+const isForbidden = (specifier: string): boolean => {
+  return FORBIDDEN_SPECIFIERS.some(
+    (forbidden) =>
+      specifier === forbidden || specifier.startsWith(`${forbidden}/`)
+  );
+};
+
+const isScannable = (fileName: string): boolean => {
+  return SCANNABLE_EXTENSIONS.some((extension) => fileName.endsWith(extension));
+};
+
+// Resolve the module specifier a node imports, or `undefined` if the node is
+// not an import position (or its specifier is not statically known — e.g. a
+// `${...}` template, which cannot be a compile-time module specifier).
+const moduleSpecifierOf = (
+  node: ts.Node
+): { node: ts.Node; text: string } | undefined => {
+  // Static `import ... from "x"`, `export ... from "x"`, and side-effect
+  // `import "x"`. `export { x }` with no `from` has no moduleSpecifier.
+  if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+    return staticSpecifier(node.moduleSpecifier);
+  }
+  // `import x = require("x")`
+  if (
+    ts.isImportEqualsDeclaration(node) &&
+    ts.isExternalModuleReference(node.moduleReference)
+  ) {
+    return staticSpecifier(node.moduleReference.expression);
+  }
+  // Dynamic `import("x")` and `require("x")`.
+  if (ts.isCallExpression(node)) {
+    const callee = node.expression;
+    const isImportCall = callee.kind === ts.SyntaxKind.ImportKeyword;
+    const isRequireCall = ts.isIdentifier(callee) && callee.text === "require";
+    if (isImportCall || isRequireCall) {
+      return staticSpecifier(node.arguments[0]);
+    }
+  }
+  return undefined;
+};
+
+const findScannableFiles = async (directory: string): Promise<string[]> => {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const paths: string[] = [];
+
+  for (const entry of entries) {
+    const entryPath = resolve(directory, entry.name);
+
+    if (entry.isDirectory()) {
+      if (
+        SKIP_DIRECTORY_NAMES.has(entry.name) ||
+        entry.name.startsWith(".tmp")
+      ) {
+        continue;
+      }
+      paths.push(...(await findScannableFiles(entryPath)));
+      continue;
+    }
+
+    if (entry.isFile() && isScannable(entry.name)) {
+      paths.push(entryPath);
+    }
+  }
+
+  return paths.sort();
+};
+
+const extractForbiddenImports = (
+  content: string,
+  fileName: string
+): FoundSpecifier[] => {
+  // Parse with parent nodes populated so `getStart` resolves leading trivia;
+  // the ScriptKind only distinguishes JSX so import extraction is unaffected by
+  // .mts/.cts/.d.ts variants.
+  const sourceFile = ts.createSourceFile(
+    fileName,
+    content,
+    ts.ScriptTarget.Latest,
+    true,
+    scriptKindFor(fileName)
+  );
+  const results: FoundSpecifier[] = [];
+
+  const visit = (node: ts.Node): void => {
+    const specifier = moduleSpecifierOf(node);
+    if (specifier !== undefined && isForbidden(specifier.text)) {
+      const { line } = sourceFile.getLineAndCharacterOfPosition(
+        specifier.node.getStart(sourceFile)
+      );
+      results.push({ line: line + 1, specifier: specifier.text });
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return results;
+};
+
+const main = async (): Promise<void> => {
   if (!existsSync(HOST_ROOT)) {
     console.error(
       `host import boundary gate failed: host root not found at ${relative(REPO_ROOT, HOST_ROOT)}`
@@ -155,118 +267,6 @@ async function main(): Promise<void> {
   console.log(
     `host import boundary gate passed (${files.length} host source files scanned under ${relative(REPO_ROOT, HOST_ROOT)})`
   );
-}
+};
 
-function extractForbiddenImports(
-  content: string,
-  fileName: string
-): FoundSpecifier[] {
-  // Parse with parent nodes populated so `getStart` resolves leading trivia;
-  // the ScriptKind only distinguishes JSX so import extraction is unaffected by
-  // .mts/.cts/.d.ts variants.
-  const sourceFile = ts.createSourceFile(
-    fileName,
-    content,
-    ts.ScriptTarget.Latest,
-    true,
-    scriptKindFor(fileName)
-  );
-  const results: FoundSpecifier[] = [];
-
-  const visit = (node: ts.Node): void => {
-    const specifier = moduleSpecifierOf(node);
-    if (specifier !== undefined && isForbidden(specifier.text)) {
-      const { line } = sourceFile.getLineAndCharacterOfPosition(
-        specifier.node.getStart(sourceFile)
-      );
-      results.push({ line: line + 1, specifier: specifier.text });
-    }
-    ts.forEachChild(node, visit);
-  };
-
-  visit(sourceFile);
-  return results;
-}
-
-// Resolve the module specifier a node imports, or `undefined` if the node is
-// not an import position (or its specifier is not statically known — e.g. a
-// `${...}` template, which cannot be a compile-time module specifier).
-function moduleSpecifierOf(
-  node: ts.Node
-): { node: ts.Node; text: string } | undefined {
-  // Static `import ... from "x"`, `export ... from "x"`, and side-effect
-  // `import "x"`. `export { x }` with no `from` has no moduleSpecifier.
-  if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
-    return staticSpecifier(node.moduleSpecifier);
-  }
-  // `import x = require("x")`
-  if (
-    ts.isImportEqualsDeclaration(node) &&
-    ts.isExternalModuleReference(node.moduleReference)
-  ) {
-    return staticSpecifier(node.moduleReference.expression);
-  }
-  // Dynamic `import("x")` and `require("x")`.
-  if (ts.isCallExpression(node)) {
-    const callee = node.expression;
-    const isImportCall = callee.kind === ts.SyntaxKind.ImportKeyword;
-    const isRequireCall = ts.isIdentifier(callee) && callee.text === "require";
-    if (isImportCall || isRequireCall) {
-      return staticSpecifier(node.arguments[0]);
-    }
-  }
-  return undefined;
-}
-
-function staticSpecifier(
-  node: ts.Expression | undefined
-): { node: ts.Node; text: string } | undefined {
-  // `isStringLiteralLike` accepts both quoted strings ("x"/'x') and
-  // no-substitution templates (`x`); a TemplateExpression with substitutions is
-  // deliberately excluded because its value is not statically resolvable.
-  if (node !== undefined && ts.isStringLiteralLike(node)) {
-    return { node, text: node.text };
-  }
-  return undefined;
-}
-
-function scriptKindFor(fileName: string): ts.ScriptKind {
-  return fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
-}
-
-function isForbidden(specifier: string): boolean {
-  return FORBIDDEN_SPECIFIERS.some(
-    (forbidden) =>
-      specifier === forbidden || specifier.startsWith(`${forbidden}/`)
-  );
-}
-
-async function findScannableFiles(directory: string): Promise<string[]> {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const paths: string[] = [];
-
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      if (
-        SKIP_DIRECTORY_NAMES.has(entry.name) ||
-        entry.name.startsWith(".tmp")
-      ) {
-        continue;
-      }
-      paths.push(...(await findScannableFiles(entryPath)));
-      continue;
-    }
-
-    if (entry.isFile() && isScannable(entry.name)) {
-      paths.push(entryPath);
-    }
-  }
-
-  return paths.sort();
-}
-
-function isScannable(fileName: string): boolean {
-  return SCANNABLE_EXTENSIONS.some((extension) => fileName.endsWith(extension));
-}
+await main();
