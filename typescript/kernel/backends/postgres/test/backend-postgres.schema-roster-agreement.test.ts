@@ -75,7 +75,7 @@ const MIGRATIONS_TABLE_CREATE_PATTERN =
 const MIGRATIONS_TABLE_BINDING_PATTERN =
   /qualifyIdentifier\(schemaName,\s*MIGRATIONS_TABLE\)/;
 
-function extractAll(pattern: RegExp, sql: string): string[] {
+const extractAll = (pattern: RegExp, sql: string): string[] => {
   return [...sql.matchAll(pattern)].map((match) => {
     const name = match[1];
     if (name === undefined) {
@@ -85,21 +85,21 @@ function extractAll(pattern: RegExp, sql: string): string[] {
     }
     return name;
   });
-}
+};
 
-function loadAllMigrationSql(): { name: string; sql: string }[] {
+const loadAllMigrationSql = (): { name: string; sql: string }[] => {
   const migrationDirectory = resolveMigrationDirectory(persistenceError);
   return listMigrationFiles(migrationDirectory).map((name) => ({
     name,
     sql: readMigrationSql(migrationDirectory, name),
   }));
-}
+};
 
-function parseColumnList(columns: string): string[] {
+const parseColumnList = (columns: string): string[] => {
   return columns.split(",").map((column) => column.trim());
-}
+};
 
-function extractForeignKeySignatures(sql: string): string[] {
+const extractForeignKeySignatures = (sql: string): string[] => {
   const signatures: string[] = [];
 
   for (const tableMatch of sql.matchAll(CREATE_TABLE_BODY_PATTERN)) {
@@ -133,9 +133,9 @@ function extractForeignKeySignatures(sql: string): string[] {
   }
 
   return signatures;
-}
+};
 
-function extractColumnSignatures(sql: string): string[] {
+const extractColumnSignatures = (sql: string): string[] => {
   const signatures: string[] = [];
   for (const tableMatch of sql.matchAll(CREATE_TABLE_BODY_PATTERN)) {
     const tableName = tableMatch[1];
@@ -165,9 +165,9 @@ function extractColumnSignatures(sql: string): string[] {
     }
   }
   return signatures;
-}
+};
 
-function formatSetDiff(missing: string[], extra: string[]): string {
+const formatSetDiff = (missing: string[], extra: string[]): string => {
   const parts: string[] = [];
   if (missing.length > 0) {
     parts.push(`missing from roster: ${missing.sort().join(", ")}`);
@@ -176,12 +176,12 @@ function formatSetDiff(missing: string[], extra: string[]): string {
     parts.push(`extra in roster (not in DDL): ${extra.sort().join(", ")}`);
   }
   return parts.join("; ");
-}
+};
 
-function assertSetsEqual(
+const assertSetsEqual = (
   ddlNames: Iterable<string>,
   rosterNames: readonly string[]
-): void {
+): void => {
   const ddlSet = new Set(ddlNames);
   const rosterSet = new Set(rosterNames);
 
@@ -191,7 +191,7 @@ function assertSetsEqual(
 
   expect(missingFromRoster, diffMessage).toEqual([]);
   expect(extraInRoster, diffMessage).toEqual([]);
-}
+};
 
 describe("relational Postgres schema DDL <-> roster agreement", () => {
   test("every CREATE TABLE across all migration files matches RELATIONAL_REQUIRED_TABLES exactly, excluding the migration ledger", () => {

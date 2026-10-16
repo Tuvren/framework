@@ -47,11 +47,11 @@ import {
 // Closes a backend's connection pool without dropping its schema, so two
 // backends sharing a schema can each be closed independently before the
 // afterAll teardown drops the schema.
-async function closeBackend(
+const closeBackend = async (
   backend: ReturnType<typeof createPostgresBackend>
-): Promise<void> {
+): Promise<void> => {
   await backend.destroy();
-}
+};
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();

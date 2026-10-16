@@ -611,6 +611,30 @@
     {"path":"M17-postgres-repositories-before-type-aware-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"baseline"},
     {"path":"M17-postgres-repositories-after-syntactic-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"measurement"},
     {"path":"M17-postgres-repositories-after-type-aware-stderr.log.gz","sha256":"59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2","bytes":20,"role":"measurement"}
+    ,{
+      "path": "M18-postgres-test-before-syntactic.json.gz",
+      "sha256": "6a63505921f7fe35b30a7f4cd3d734ed999a5c03f0936f41104c74ba9411104b",
+      "bytes": 5384,
+      "role": "baseline"
+    },
+    {
+      "path": "M18-postgres-test-before-typeaware.json.gz",
+      "sha256": "8b4f4a5ec4cd27d87a85b00989fb3e23fec160f9421dc879691c24864bad511d",
+      "bytes": 8218,
+      "role": "baseline"
+    },
+    {
+      "path": "M18-postgres-test-after-syntactic.json.gz",
+      "sha256": "cd9890655d5693cb810c1f0a346e59a2332002ac7bc786c4254b88a828755e20",
+      "bytes": 3978,
+      "role": "measurement"
+    },
+    {
+      "path": "M18-postgres-test-after-typeaware.json.gz",
+      "sha256": "2dd3fd890c16e594ba4ca996e3dac8675c14d88c6f271de17176676803b3c04c",
+      "bytes": 6639,
+      "role": "measurement"
+    }
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."
 }

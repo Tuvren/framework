@@ -71,7 +71,7 @@ const TEXT_TOO_LONG_CODE = "postgres_backend_text_too_long";
 const MAX_STORABLE_TEXT_BYTES = 512;
 
 /** Builds an ASCII (1 byte/char) identifier of an exact total byte length. */
-function asciiIdOfLength(label: string, totalBytes: number): string {
+const asciiIdOfLength = (label: string, totalBytes: number): string => {
   const prefix = `${label}_`;
   if (prefix.length > totalBytes) {
     throw new Error(
@@ -79,7 +79,7 @@ function asciiIdOfLength(label: string, totalBytes: number): string {
     );
   }
   return prefix + "a".repeat(totalBytes - prefix.length);
-}
+};
 
 const TEST_SCHEMA = {
   incorporationRules: [{ objectType: "message", targetPath: "messages" }],
@@ -94,9 +94,9 @@ interface CodedError {
   code?: string;
 }
 
-function readErrorCode(error: unknown): string | undefined {
+const readErrorCode = (error: unknown): string | undefined => {
   return (error as CodedError | undefined)?.code;
-}
+};
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();

@@ -57,9 +57,9 @@ interface LeaseClockFixture {
   turnId: string;
 }
 
-async function createLeaseClockFixture(
+const createLeaseClockFixture = async (
   initialBackendNowMs: number
-): Promise<LeaseClockFixture> {
+): Promise<LeaseClockFixture> => {
   let backendNowMs = initialBackendNowMs;
   const backend = createPostgresBackend(
     createPostgresTestBackendOptions({ now: () => backendNowMs })
@@ -91,13 +91,13 @@ async function createLeaseClockFixture(
     },
     turnId: turn.turnId,
   };
-}
+};
 
-function createLeasedRun(
+const createLeasedRun = (
   fixture: LeaseClockFixture,
   ownerSuppliedExpiryMs: number,
   runId = "run_lease_clock"
-) {
+) => {
   return fixture.kernel.runLiveness.createLeasedRun({
     branchId: fixture.branchId,
     executionOwnerId: "owner-alpha",
@@ -108,7 +108,7 @@ function createLeasedRun(
     steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
     turnId: fixture.turnId,
   });
-}
+};
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();

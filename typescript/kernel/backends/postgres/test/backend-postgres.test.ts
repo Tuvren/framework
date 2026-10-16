@@ -53,9 +53,9 @@ import {
   createPostgresTestBackendOptions,
 } from "./postgres-test-helpers.js";
 
-function assertCommittedState(
+const assertCommittedState = (
   state: ReturnType<typeof createEmptyState>
-): void {
+): void => {
   validateCommittedState(state, createEmptyState(), {
     assertActiveRunHeadAlignment,
     assertBackwardBranchMoveIsArchived,
@@ -69,7 +69,7 @@ function assertCommittedState(
     decodeTurnNodeConsumedStagedResultObjectHashes,
     validateHashString,
   });
-}
+};
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();

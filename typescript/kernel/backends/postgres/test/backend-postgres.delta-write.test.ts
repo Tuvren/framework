@@ -44,39 +44,39 @@ import {
  * write transaction's `xmin`.
  */
 
-function requireSchemaName(
+const requireSchemaName = (
   options: ReturnType<typeof createPostgresTestBackendOptions>
-): string {
+): string => {
   if (options.schemaName === undefined) {
     throw new Error("expected a schema name on the test backend options");
   }
 
   return options.schemaName;
-}
+};
 
 // Deterministic, unique-per-index byte content so every seeded object hashes
 // to a distinct `objects.hash` (StoredObject identity is content-addressed).
 // Encodes `index` as four big-endian base-256 digits (arithmetic, not
 // bitwise, per this repo's lint rules) plus a constant salt byte.
-function objectBytesForIndex(index: number): Uint8Array {
+const objectBytesForIndex = (index: number): Uint8Array => {
   const byte3 = Math.floor(index / 16_777_216) % 256;
   const byte2 = Math.floor(index / 65_536) % 256;
   const byte1 = Math.floor(index / 256) % 256;
   const byte0 = index % 256;
 
   return new Uint8Array([byte3, byte2, byte1, byte0, 0xdc]);
-}
+};
 
 // Inserts `count` distinct objects into the backend's scope across
 // `count / batchSize` `transact()` calls, each issuing `batchSize`
 // `tx.objects.put()` calls, so setup approximates realistic write traffic
 // without paying one transaction (and one advisory-lock acquisition) per
 // object.
-async function seedObjects(
+const seedObjects = async (
   backend: ReturnType<typeof createPostgresBackend>,
   count: number,
   batchSize: number
-): Promise<void> {
+): Promise<void> => {
   const records = await Promise.all(
     Array.from({ length: count }, (_, index) =>
       createStoredObjectRecord(objectBytesForIndex(index), 1)
@@ -91,15 +91,15 @@ async function seedObjects(
       }
     });
   }
-}
+};
 
 // Reads the `xmin` (transaction id) that wrote `hash`'s row in `objects`.
-async function readObjectRowTransactionId(
+const readObjectRowTransactionId = async (
   admin: Sql,
   schemaName: string,
   scope: string,
   hash: string
-): Promise<string> {
+): Promise<string> => {
   const objectsTable = `${quoteIdentifier(schemaName)}.${quoteIdentifier("objects")}`;
   const rows = await admin.unsafe<{ tx: string }[]>(
     `SELECT xmin::text AS tx FROM ${objectsTable} WHERE scope = $1 AND hash = $2`,
@@ -112,18 +112,18 @@ async function readObjectRowTransactionId(
   }
 
   return row.tx;
-}
+};
 
 // Counts, across every family table in the relational schema, how many rows
 // carry `transactionId` as their `xmin` within `scope`. A delta-proportional
 // single-object write must total exactly 1 (the one row it inserted into
 // `objects`) regardless of how many other rows already exist in the scope.
-async function countRowsWrittenByTransaction(
+const countRowsWrittenByTransaction = async (
   admin: Sql,
   schemaName: string,
   scope: string,
   transactionId: string
-): Promise<Record<string, number>> {
+): Promise<Record<string, number>> => {
   const countsByTable: Record<string, number> = {};
 
   for (const table of RELATIONAL_REQUIRED_TABLES) {
@@ -136,11 +136,11 @@ async function countRowsWrittenByTransaction(
   }
 
   return countsByTable;
-}
+};
 
-function totalRows(countsByTable: Record<string, number>): number {
+const totalRows = (countsByTable: Record<string, number>): number => {
   return Object.values(countsByTable).reduce((sum, count) => sum + count, 0);
-}
+};
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();
