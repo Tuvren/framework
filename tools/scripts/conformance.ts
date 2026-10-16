@@ -24,7 +24,7 @@
 
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import path from "node:path";
 
 const ROOT = process.cwd();
 
@@ -37,12 +37,27 @@ if (gate.status !== 0) {
   process.exit(gate.status ?? 1);
 }
 
-const manifest: { projects: string[] } = JSON.parse(
+const parsedManifest: unknown = JSON.parse(
   readFileSync(
-    join(ROOT, "tools/conformance/certification/certified-projects.json"),
+    path.join(ROOT, "tools/conformance/certification/certified-projects.json"),
     "utf-8"
   )
 );
+if (!(typeof parsedManifest === "object" && parsedManifest !== null)) {
+  throw new TypeError("certified-projects.json must contain string projects");
+}
+const projectsValue =
+  "projects" in parsedManifest ? parsedManifest.projects : undefined;
+if (!Array.isArray(projectsValue)) {
+  throw new TypeError("certified-projects.json must contain string projects");
+}
+const projects: string[] = [];
+for (const project of projectsValue) {
+  if (typeof project !== "string") {
+    throw new TypeError("certified-projects.json must contain string projects");
+  }
+  projects.push(project);
+}
 
 const run = spawnSync(
   "bun",
@@ -52,7 +67,7 @@ const run = spawnSync(
     "-t",
     "conformance",
     "-p",
-    manifest.projects.join(","),
+    projects.join(","),
     ...process.argv.slice(2),
   ],
   { cwd: ROOT, stdio: "inherit" }

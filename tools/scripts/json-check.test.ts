@@ -25,11 +25,15 @@ const CLI_FIXTURE_SOURCES = [
   "tools/scripts/lib/json-source-integrity.ts",
 ] as const;
 
-const withScratch = <T>(run: (directory: string) => Promise<T>): Promise<T> => {
+const withScratch = async <T>(
+  run: (directory: string) => Promise<T> | T
+): Promise<T> => {
   const directory = mkdtempSync(path.join(tmpdir(), "json-check-"));
-  return run(directory).finally(() => {
+  try {
+    return await run(directory);
+  } finally {
     rmSync(directory, { force: true, recursive: true });
-  });
+  }
 };
 
 const write = (directory: string, relative: string, source: string): void => {
@@ -58,23 +62,23 @@ const prepareCliFixture = (directory: string): void => {
   }
 };
 
-const runCli = (directory: string): SpawnSyncReturns<string> => {
-  return spawnSync(
+const runCli = (directory: string): SpawnSyncReturns<string> =>
+  spawnSync(
     process.execPath,
     ["tools/scripts/json-check.ts", "--json-only", "project"],
     { cwd: directory, encoding: "utf-8" }
   );
-};
 
-const discoveryAndFormatRunner = (
-  candidates: readonly string[],
-  formatCode: number,
-  commands: string[][]
-): ((command: readonly string[]) => Promise<RunCommandResult>) => {
-  return (command): Promise<RunCommandResult> => {
+const discoveryAndFormatRunner =
+  (
+    candidates: readonly string[],
+    formatCode: number,
+    commands: string[][]
+  ): ((command: readonly string[]) => Promise<RunCommandResult>) =>
+  async (command): Promise<RunCommandResult> => {
     commands.push([...command]);
     if (command[0] === "git") {
-      return Promise.resolve({
+      return await Promise.resolve({
         code: 0,
         stderr: "",
         stdout: command.includes("--deleted")
@@ -82,9 +86,12 @@ const discoveryAndFormatRunner = (
           : candidates.map((file) => `${file}\0`).join(""),
       });
     }
-    return Promise.resolve({ code: formatCode, stderr: "", stdout: "" });
+    return await Promise.resolve({
+      code: formatCode,
+      stderr: "",
+      stdout: "",
+    });
   };
-};
 
 describe("native JSON format gate", () => {
   test("a mixed project validates JSON and passes exact files to Oxfmt", async () => {
@@ -119,10 +126,10 @@ describe("native JSON format gate", () => {
   });
 
   test("a JSON-only project fails when a new JS or TS file appears", async () => {
-    await withScratch(async (directory) => {
+    await withScratch((directory) => {
       write(directory, "spec/data.json", '{"a":1}\n');
       write(directory, "spec/generated/new.ts", "export {};\n");
-      await expect(
+      expect(
         runJsonCheck({
           formatIgnorePatterns: ["**/generated"],
           jsonOnly: true,
@@ -189,7 +196,6 @@ describe("native JSON format gate", () => {
       const result = runCli(directory);
 
       expect(result.status, `${result.stdout}${result.stderr}`).toBe(0);
-      return Promise.resolve();
     });
   });
 
@@ -202,7 +208,6 @@ describe("native JSON format gate", () => {
 
       expect(result.status).toBe(1);
       expect(result.stderr).toContain("project/.yarn/config.json");
-      return Promise.resolve();
     });
   });
 

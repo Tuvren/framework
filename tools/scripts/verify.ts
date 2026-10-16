@@ -392,8 +392,8 @@ export const TOOLING_ACCEPTANCE_STEP: VerificationStep = {
 export const selectAuthorityGateSteps = (
   ids: readonly string[],
   lane: string
-): VerificationStep[] => {
-  return ids.map((id) => {
+): VerificationStep[] =>
+  ids.map((id) => {
     const step = AUTHORITY_GATE_STEPS.find((candidate) => candidate.id === id);
 
     if (step === undefined) {
@@ -405,7 +405,6 @@ export const selectAuthorityGateSteps = (
 
     return step;
   });
-};
 
 const CORE_VERIFICATION_PHASES: readonly VerificationPhase[] = [
   {
@@ -656,11 +655,10 @@ const CORE_VERIFICATION_PHASES: readonly VerificationPhase[] = [
   },
 ];
 
-export const createVerificationPhases = (): VerificationPhase[] => {
-  return prependGeneratedPrerequisitePhase(CORE_VERIFICATION_PHASES, {
+export const createVerificationPhases = (): VerificationPhase[] =>
+  prependGeneratedPrerequisitePhase(CORE_VERIFICATION_PHASES, {
     fresh: false,
   });
-};
 
 export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] =
   createVerificationPhases();
@@ -669,21 +667,20 @@ interface StepRun extends VerificationResult {
   output: string | null;
 }
 
-const spawnCommand = (
+const spawnCommand = async (
   executable: string,
   args: readonly string[]
 ): Promise<number> => {
-  return new Promise<number>((resolve, reject) => {
-    const child = spawn(executable, args, {
-      env: process.env,
-      stdio: "inherit",
-    });
-
-    child.once("error", reject);
-    child.once("close", (code) => {
-      resolve(code ?? 1);
-    });
+  const child = spawn(executable, args, {
+    env: process.env,
+    stdio: "inherit",
   });
+  const childCompletion = Promise.withResolvers<number>();
+  child.once("error", childCompletion.reject);
+  child.once("close", (code) => {
+    childCompletion.resolve(code ?? 1);
+  });
+  return await childCompletion.promise;
 };
 
 const runVerificationStep = async (
@@ -732,25 +729,31 @@ const runVerificationStep = async (
   };
 };
 
-const toResult = (run: StepRun): VerificationResult => {
-  return { code: run.code, durationMs: run.durationMs, id: run.id };
-};
+const toResult = (run: StepRun): VerificationResult => ({
+  code: run.code,
+  durationMs: run.durationMs,
+  id: run.id,
+});
 
 const runPhaseSerially = async (
   steps: readonly VerificationStep[],
   options: VerificationRunOptions
 ): Promise<VerificationResult[]> => {
   const results: VerificationResult[] = [];
-
-  for (const step of steps) {
+  const runStep = async (index: number): Promise<void> => {
+    const step = steps[index];
+    if (step === undefined) {
+      return;
+    }
     const run = await runVerificationStep(step, false, options);
     results.push(toResult(run));
 
-    if (run.code !== 0) {
-      break;
+    if (run.code === 0) {
+      await runStep(index + 1);
     }
-  }
+  };
 
+  await runStep(0);
   return results;
 };
 
@@ -759,20 +762,20 @@ const mapWithConcurrency = async <T, R>(
   limit: number,
   fn: (item: T) => Promise<R>
 ): Promise<R[]> => {
-  const results = new Array<R>(items.length);
+  const results: R[] = [];
+  results.length = items.length;
   let nextIndex = 0;
 
   const worker = async (): Promise<void> => {
-    while (true) {
-      const index = nextIndex;
-      nextIndex += 1;
-
-      if (index >= items.length) {
-        return;
-      }
-
-      results[index] = await fn(items[index] as T);
+    const index = nextIndex;
+    nextIndex += 1;
+    const item = items[index];
+    if (item === undefined) {
+      return;
     }
+
+    results[index] = await fn(item);
+    await worker();
   };
 
   const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
@@ -792,7 +795,7 @@ const runPhase = async (
       Math.min(phase.steps.length, DEFAULT_MAX_CONCURRENCY));
 
   if (limit <= 1) {
-    return runPhaseSerially(phase.steps, options);
+    return await runPhaseSerially(phase.steps, options);
   }
 
   // Capture each step's output so concurrent logs do not interleave; flush them
@@ -802,8 +805,10 @@ const runPhase = async (
   // nothing prints mid-phase, so a hung parallel step shows no output until the
   // phase ends; run VERIFY_SERIAL=1 for live streaming when diagnosing one. If a
   // chatty step (e.g. a full build) ever moves into a parallel phase, stream it.
-  const runs = await mapWithConcurrency(phase.steps, limit, (step) =>
-    runVerificationStep(step, true, options)
+  const runs = await mapWithConcurrency(
+    phase.steps,
+    limit,
+    async (step) => await runVerificationStep(step, true, options)
   );
 
   for (const run of runs) {
@@ -820,11 +825,15 @@ export const runVerificationPhases = async (
   options: VerificationRunOptions = {}
 ): Promise<VerificationResult[]> => {
   const results: VerificationResult[] = [];
-
-  for (const phase of phases) {
-    const before = phase.mutatesWorktree
-      ? undefined
-      : await readWorktreeSnapshot(process.cwd());
+  const runPhaseAt = async (index: number): Promise<boolean> => {
+    const phase = phases[index];
+    if (phase === undefined) {
+      return true;
+    }
+    const before =
+      phase.mutatesWorktree === true
+        ? undefined
+        : await readWorktreeSnapshot(process.cwd());
     const phaseResults = await runPhase(phase, options);
     results.push(...phaseResults);
 
@@ -836,10 +845,13 @@ export const runVerificationPhases = async (
     }
 
     if (phaseResults.some((result) => result.code !== 0)) {
-      return results;
+      return false;
     }
-  }
 
+    return await runPhaseAt(index + 1);
+  };
+
+  await runPhaseAt(0);
   return results;
 };
 
@@ -849,15 +861,12 @@ export const runVerificationPhases = async (
  * own phase lists and call runVerificationPhases directly — it is the single
  * phase-engine entry point for all four lanes (KRT-BM002).
  */
-export const runVerification = (): Promise<VerificationResult[]> => {
-  return runVerificationPhases(DEFAULT_VERIFICATION_PHASES);
-};
+export const runVerification = async (): Promise<VerificationResult[]> =>
+  await runVerificationPhases(DEFAULT_VERIFICATION_PHASES);
 
 export const hasVerificationFailure = (
   results: readonly VerificationResult[]
-): boolean => {
-  return results.some((result) => result.code !== 0);
-};
+): boolean => results.some((result) => result.code !== 0);
 
 export const printVerificationSummary = (
   results: readonly VerificationResult[]

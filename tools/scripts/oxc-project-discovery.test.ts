@@ -78,10 +78,10 @@ const ALL_PROJECT_ROOTS = [
 const LOCAL_SOURCE_DIRS = ["bench", "smoke", "src", "test"] as const;
 
 interface ProjectTsConfig {
-  compilerOptions?: Record<string, unknown>;
-  files?: unknown[];
-  include?: unknown;
-  references?: { path?: unknown }[];
+  compilerOptions: Record<string, unknown>;
+  files: unknown[];
+  include: unknown;
+  references: { path: unknown }[];
 }
 
 interface ParsedProject {
@@ -89,28 +89,37 @@ interface ParsedProject {
   fileNames: Set<string>;
 }
 
-const parseJson = <T>(text: string): T => {
-  return JSON.parse(text) as T;
-};
-
-const readProjectTsConfig = (relativePath: string): ProjectTsConfig => {
-  return parseJson<ProjectTsConfig>(
-    readFileSync(path.join(REPO_ROOT, relativePath), "utf-8")
-  );
-};
-
-const referencesTypecheck = (config: ProjectTsConfig): boolean => {
-  return (config.references ?? []).some(
-    (reference) => reference.path === "./tsconfig.typecheck.json"
-  );
-};
-
 // M9a readers. The package-root proof starts from `JSON.parse` as `unknown` and
 // narrows each field it reads, so a malformed or reshaped config fails loudly
 // instead of being cast into the expected interface.
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readProjectTsConfig = (relativePath: string): ProjectTsConfig => {
+  const parsed: unknown = JSON.parse(
+    readFileSync(path.join(REPO_ROOT, relativePath), "utf-8")
+  );
+  if (!isRecord(parsed)) {
+    throw new TypeError(`${relativePath} is not a JSON object`);
+  }
+  return {
+    compilerOptions: isRecord(parsed.compilerOptions)
+      ? parsed.compilerOptions
+      : {},
+    files: Array.isArray(parsed.files) ? parsed.files : [],
+    include: parsed.include,
+    references: Array.isArray(parsed.references)
+      ? parsed.references
+          .filter(isRecord)
+          .map((reference) => ({ path: reference.path }))
+      : [],
+  };
 };
+
+const referencesTypecheck = (config: ProjectTsConfig): boolean =>
+  config.references.some(
+    (reference) => reference.path === "./tsconfig.typecheck.json"
+  );
 
 const readConfigDocument = (relativePath: string): Record<string, unknown> => {
   const parsed: unknown = JSON.parse(
@@ -203,9 +212,8 @@ const collectTypeScriptFiles = (directory: string): string[] => {
   return files;
 };
 
-const hasTypeScriptFiles = (directory: string): boolean => {
-  return collectTypeScriptFiles(directory).length > 0;
-};
+const hasTypeScriptFiles = (directory: string): boolean =>
+  collectTypeScriptFiles(directory).length > 0;
 
 describe("type-aware project discovery", () => {
   test("certification wrappers expose their typecheck config through a root reference", () => {

@@ -16,7 +16,7 @@
 
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, resolve } from "node:path";
+import path from "node:path";
 
 import { runCommand } from "./lib/command-runner.js";
 import type { RunCommandResult } from "./lib/command-runner.js";
@@ -46,31 +46,33 @@ interface TelemetryGeneratorTarget {
   templatePath: string;
 }
 
-const REPO_ROOT = resolve(import.meta.dirname, "../..");
+const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 const SEMCONV_REGISTRY_PATH = "spec/telemetry/semconv";
-const WEAVER_TEMPLATE_ROOT = resolve(REPO_ROOT, "tools/generators/telemetry");
+const WEAVER_TEMPLATE_ROOT = path.resolve(
+  REPO_ROOT,
+  "tools/generators/telemetry"
+);
 const WEAVER_RESOLVED_REGISTRY_TARGET = "resolved-registry";
-const GENERATOR_PLAN_PATH = resolve(
+const GENERATOR_PLAN_PATH = path.resolve(
   REPO_ROOT,
   "tools/generators/telemetry/generator-plan.json"
 );
-const REGISTRY_MANIFEST_PATH = resolve(
+const REGISTRY_MANIFEST_PATH = path.resolve(
   REPO_ROOT,
   "spec/telemetry/semconv/manifest.yaml"
 );
-const MARKDOWN_OUTPUT_PATH = resolve(
+const MARKDOWN_OUTPUT_PATH = path.resolve(
   REPO_ROOT,
   "spec/telemetry/artifacts/semantic-conventions.md"
 );
-const JSON_OUTPUT_PATH = resolve(
+const JSON_OUTPUT_PATH = path.resolve(
   REPO_ROOT,
   "spec/telemetry/artifacts/otel-attributes.json"
 );
 const NEWLINE_PATTERN = /\r?\n/u;
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const readGeneratorTarget = (
   value: unknown,
@@ -93,7 +95,7 @@ const readGeneratorTarget = (
 
 const readGeneratorPlan = async (): Promise<TelemetryGeneratorPlan> => {
   const planText = await readFile(GENERATOR_PLAN_PATH, "utf-8");
-  const plan = JSON.parse(planText);
+  const plan: unknown = JSON.parse(planText);
 
   if (!isRecord(plan)) {
     throw new Error("telemetry generator plan must be an object");
@@ -172,7 +174,7 @@ const collectResolvedTelemetryAttributes = (
   groups: unknown
 ): ResolvedTelemetryAttribute[] => {
   if (!Array.isArray(groups)) {
-    throw new Error("resolved telemetry registry groups must be an array");
+    throw new TypeError("resolved telemetry registry groups must be an array");
   }
 
   const attributes: ResolvedTelemetryAttribute[] = [];
@@ -198,7 +200,7 @@ export const parseResolvedTelemetryRegistry = (
   jsonText: string,
   schemaUrl: string
 ): ResolvedTelemetryRegistry => {
-  const parsedRegistry = JSON.parse(jsonText);
+  const parsedRegistry: unknown = JSON.parse(jsonText);
 
   if (!isRecord(parsedRegistry)) {
     throw new Error("resolved telemetry registry must be an object");
@@ -252,7 +254,7 @@ const generateResolvedWeaverRegistry = async (
   }
 
   const resolvedJson = await readFile(
-    resolve(outputDirectory, "resolved-registry.json"),
+    path.resolve(outputDirectory, "resolved-registry.json"),
     "utf-8"
   );
 
@@ -432,7 +434,7 @@ const writeRustTelemetryOutput = async (
   rustOutputPath: string,
   resolvedRegistry: ResolvedTelemetryRegistry
 ): Promise<void> => {
-  await readFile(resolve(REPO_ROOT, rustTarget.templatePath), "utf-8");
+  await readFile(path.resolve(REPO_ROOT, rustTarget.templatePath), "utf-8");
 
   if (!rustTarget.enabled) {
     return;
@@ -473,7 +475,7 @@ const formatGeneratedOutputs = async (
     );
   }
 
-  if (rustOutputPath == null) {
+  if (rustOutputPath === undefined) {
     return;
   }
 
@@ -495,14 +497,14 @@ const main = async (): Promise<void> => {
   await ensureWeaverIsAvailable();
   await runWeaverRegistryCheck();
   const generatorPlan = await readGeneratorPlan();
-  const typescriptOutputPath = resolve(
+  const typescriptOutputPath = path.resolve(
     REPO_ROOT,
     generatorPlan.typescript.outputPath
   );
-  const rustOutputPath = resolve(REPO_ROOT, generatorPlan.rust.outputPath);
+  const rustOutputPath = path.resolve(REPO_ROOT, generatorPlan.rust.outputPath);
 
   const temporaryDirectory = await mkdtemp(
-    resolve(tmpdir(), "tuvren-telemetry-")
+    path.resolve(tmpdir(), "tuvren-telemetry-")
   );
 
   try {
@@ -511,10 +513,10 @@ const main = async (): Promise<void> => {
       await readRegistrySchemaUrl()
     );
 
-    await mkdir(dirname(MARKDOWN_OUTPUT_PATH), { recursive: true });
-    await mkdir(dirname(JSON_OUTPUT_PATH), { recursive: true });
-    await mkdir(dirname(typescriptOutputPath), { recursive: true });
-    await mkdir(dirname(rustOutputPath), { recursive: true });
+    await mkdir(path.dirname(MARKDOWN_OUTPUT_PATH), { recursive: true });
+    await mkdir(path.dirname(JSON_OUTPUT_PATH), { recursive: true });
+    await mkdir(path.dirname(typescriptOutputPath), { recursive: true });
+    await mkdir(path.dirname(rustOutputPath), { recursive: true });
 
     await writeFile(
       MARKDOWN_OUTPUT_PATH,

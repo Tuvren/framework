@@ -15,18 +15,22 @@
  */
 
 import { access } from "node:fs/promises";
-import { resolve } from "node:path";
+import path from "node:path";
 import process from "node:process";
 
 import { runCommand } from "./lib/command-runner.js";
 
-const REPO_ROOT = resolve(import.meta.dirname, "../..");
+const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 const DEFAULT_CONFIG = "tsconfig.typecheck.json";
 
 const readDefaultTypecheckConfigs = async (
   projectRootPath: string
 ): Promise<string[]> => {
-  const defaultConfigPath = resolve(REPO_ROOT, projectRootPath, DEFAULT_CONFIG);
+  const defaultConfigPath = path.resolve(
+    REPO_ROOT,
+    projectRootPath,
+    DEFAULT_CONFIG
+  );
 
   try {
     await access(defaultConfigPath);
@@ -49,7 +53,7 @@ const runTypeScript = async (
       "--bun",
       "tsc",
       "--project",
-      resolve(REPO_ROOT, projectRootPath, config),
+      path.resolve(REPO_ROOT, projectRootPath, config),
       "--noEmit",
       "--pretty",
       "false",
@@ -75,11 +79,19 @@ const configs =
     ? requestedConfigs
     : await readDefaultTypecheckConfigs(projectRoot);
 
-for (const config of configs) {
-  const code = await runTypeScript(projectRoot, config);
+const runConfigs = async (index: number): Promise<void> => {
+  const config = configs[index];
+  if (config === undefined) {
+    return;
+  }
 
+  const code = await runTypeScript(projectRoot, config);
   if (code !== 0) {
     process.exitCode = code;
-    break;
+    return;
   }
-}
+
+  await runConfigs(index + 1);
+};
+
+await runConfigs(0);

@@ -10,13 +10,11 @@ import { isDeepStrictEqual } from "node:util";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 
-const stdio = (relativePath: string): string => {
-  return path.join(REPO_ROOT, relativePath);
-};
+const stdio = (relativePath: string): string =>
+  path.join(REPO_ROOT, relativePath);
 
-const read = (relativePath: string): string => {
-  return readFileSync(stdio(relativePath), "utf-8");
-};
+const read = (relativePath: string): string =>
+  readFileSync(stdio(relativePath), "utf-8");
 
 const FORMAT_CALLER_SOURCES = [
   "tools/scripts/conformance/format-generated-json.ts",
@@ -131,7 +129,6 @@ const ARTIFACT_TARGETS: ArtifactTarget[] = [
     // Only the evidence-refresh target invokes the changed compatibility
     // formatter; codegen and check in this project remain check-only.
     file: "reports/compatibility/project.json",
-    target: "evidence-refresh",
     preservedInputs: [
       "default",
       "^production",
@@ -147,6 +144,7 @@ const ARTIFACT_TARGETS: ArtifactTarget[] = [
       "{workspaceRoot}/python/kernel-conformance-adapter/**/*",
       "{workspaceRoot}/dart/kernel-conformance-adapter/**/*",
     ],
+    target: "evidence-refresh",
   },
 ];
 
@@ -165,16 +163,94 @@ interface ProjectManifest {
   targets?: Record<string, ProjectTarget>;
 }
 
+interface KernelPlan {
+  checks: {
+    assertions: { kind?: string }[];
+    checkId: string;
+  }[];
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const parseJson = (text: string): unknown => JSON.parse(text);
+
+const readKernelPlan = (): KernelPlan => {
+  const value = parseJson(readFileSync(KERNEL_PLAN_PATH, "utf-8"));
+  if (!(isRecord(value) && Array.isArray(value.checks))) {
+    throw new TypeError("kernel plan must contain a checks array");
+  }
+
+  const checks = value.checks.map((check) => {
+    if (
+      !isRecord(check) ||
+      typeof check.checkId !== "string" ||
+      !Array.isArray(check.assertions)
+    ) {
+      throw new TypeError("kernel plan check is invalid");
+    }
+    const assertions = check.assertions.map((assertion) => {
+      if (!isRecord(assertion)) {
+        throw new TypeError("kernel plan assertion is invalid");
+      }
+      if (assertion.kind !== undefined && typeof assertion.kind !== "string") {
+        throw new TypeError("kernel plan assertion kind is invalid");
+      }
+      return assertion.kind === undefined ? {} : { kind: assertion.kind };
+    });
+    return { assertions, checkId: check.checkId };
+  });
+
+  return { checks };
+};
+
+const targetFor = (file: string): ArtifactTarget => {
+  const target = ARTIFACT_TARGETS.find((candidate) => candidate.file === file);
+  if (target === undefined) {
+    throw new Error(`${file} is not a declared artifact target`);
+  }
+  return target;
+};
+
 const readTarget = (
   relativePath: string,
   targetName: string
 ): { command: string; inputs: string[] } => {
-  const manifest = JSON.parse(read(relativePath)) as ProjectManifest;
+  const value = parseJson(read(relativePath));
+  if (!isRecord(value)) {
+    throw new TypeError(`${relativePath} must contain a project manifest`);
+  }
+  const manifest: ProjectManifest = {};
+  if (isRecord(value.targets)) {
+    manifest.targets = {};
+    for (const [name, targetValue] of Object.entries(value.targets)) {
+      if (!isRecord(targetValue)) {
+        continue;
+      }
+      const inputs = Array.isArray(targetValue.inputs)
+        ? targetValue.inputs.filter(
+            (input): input is string => typeof input === "string"
+          )
+        : undefined;
+      const options = isRecord(targetValue.options)
+        ? { command: targetValue.options.command }
+        : undefined;
+      manifest.targets[name] = {
+        inputs,
+        options:
+          typeof options?.command === "string"
+            ? { command: options.command }
+            : undefined,
+      };
+    }
+  }
   const target = manifest.targets?.[targetName];
   const command = target?.options?.command;
 
   if (typeof command !== "string") {
-    throw new Error(`${relativePath} does not declare a ${targetName} command`);
+    throw new TypeError(
+      `${relativePath} does not declare a ${targetName} command`
+    );
   }
 
   return { command, inputs: target?.inputs ?? [] };
@@ -183,17 +259,27 @@ const readTarget = (
 const missingInputs = (
   inputs: readonly string[],
   preserved: readonly string[]
-): string[] => {
-  return preserved.filter((value) => !inputs.includes(value));
+): string[] => preserved.filter((value) => !inputs.includes(value));
+
+const removalControl = (file: string, removed: string): void => {
+  const target = targetFor(file);
+  const { inputs } = readTarget(target.file, target.target);
+
+  expect(missingInputs(inputs, target.preservedInputs)).toEqual([]);
+  expect(
+    missingInputs(
+      inputs.filter((value) => value !== removed),
+      target.preservedInputs
+    )
+  ).toEqual([removed]);
 };
 
-const runGenerator = (args: readonly string[]): SpawnSyncReturns<string> => {
-  return spawnSync(process.execPath, [KERNEL_PLAN_SCRIPT, ...args], {
+const runGenerator = (args: readonly string[]): SpawnSyncReturns<string> =>
+  spawnSync(process.execPath, [KERNEL_PLAN_SCRIPT, ...args], {
     cwd: REPO_ROOT,
     encoding: "utf-8",
     maxBuffer: 64 * 1024 * 1024,
   });
-};
 
 describe("generator formatter callers", () => {
   test("no caller invokes Biome and every caller invokes Oxfmt", () => {
@@ -255,29 +341,6 @@ describe("artifact target configuration", () => {
 });
 
 describe("preserved input controls", () => {
-  const targetFor = (file: string): ArtifactTarget => {
-    const target = ARTIFACT_TARGETS.find(
-      (candidate) => candidate.file === file
-    );
-    if (target == null) {
-      throw new Error(`${file} is not a declared artifact target`);
-    }
-    return target;
-  };
-
-  const removalControl = (file: string, removed: string): void => {
-    const target = targetFor(file);
-    const { inputs } = readTarget(target.file, target.target);
-
-    expect(missingInputs(inputs, target.preservedInputs)).toEqual([]);
-    expect(
-      missingInputs(
-        inputs.filter((value) => value !== removed),
-        target.preservedInputs
-      )
-    ).toEqual([removed]);
-  };
-
   test("removing a core artifact input fails the check", () => {
     removalControl(
       "spec/core/project.json",
@@ -320,12 +383,7 @@ describe("preserved input controls", () => {
 
 describe("kernel plan promotion guard", () => {
   test("the committed plan keeps 44 checks, 10 promoted checks, and resultField assertions", () => {
-    const plan = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf-8")) as {
-      checks: {
-        assertions: Array<{ kind?: string }>;
-        checkId: string;
-      }[];
-    };
+    const plan = readKernelPlan();
     const generatedFamilies = plan.checks.filter(
       (check) =>
         check.checkId.includes("deterministic_hashing") ||
@@ -346,23 +404,23 @@ describe("kernel plan promotion guard", () => {
   });
 
   test("--format-only preserves the parsed plan", () => {
-    const before = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf-8"));
+    const before = parseJson(readFileSync(KERNEL_PLAN_PATH, "utf-8"));
     const result = runGenerator(["--format-only"]);
 
     expect(result.status, result.stderr).toBe(0);
-    const after = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf-8"));
+    const after = parseJson(readFileSync(KERNEL_PLAN_PATH, "utf-8"));
     expect(isDeepStrictEqual(after, before)).toBe(true);
   });
 
   test("normal generation still refuses to drop promoted checks", () => {
-    const before = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf-8"));
+    const before = parseJson(readFileSync(KERNEL_PLAN_PATH, "utf-8"));
     const result = runGenerator([]);
 
     expect(result.status).not.toBe(0);
     expect(`${result.stdout}${result.stderr}`).toContain(
       "refusing to overwrite"
     );
-    const after = JSON.parse(readFileSync(KERNEL_PLAN_PATH, "utf-8"));
+    const after = parseJson(readFileSync(KERNEL_PLAN_PATH, "utf-8"));
     expect(isDeepStrictEqual(after, before)).toBe(true);
   });
 });

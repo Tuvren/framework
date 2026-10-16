@@ -36,7 +36,7 @@ import type { VerificationPhase } from "./verify.js";
 
 const BASE_FLAG = "--base=";
 const DEFAULT_BASE = "master";
-const CARGO_MANIFEST_PATTERN = /(^|\/)Cargo\.(toml|lock)$/;
+const CARGO_MANIFEST_PATTERN = /(?:^|\/)Cargo\.(?:toml|lock)$/u;
 
 // The constitutional gate for the inner loop: the cheap, read-only authority
 // and conformance validators, always run regardless of which files changed —
@@ -195,7 +195,8 @@ const rustChangedSince = async (ref: string): Promise<boolean> => {
 
 const runCheckCli = async (args: readonly string[]): Promise<void> => {
   const baseArg = args.find((arg) => arg.startsWith(BASE_FLAG));
-  const base = baseArg ? baseArg.slice(BASE_FLAG.length) : DEFAULT_BASE;
+  const base =
+    baseArg === undefined ? DEFAULT_BASE : baseArg.slice(BASE_FLAG.length);
   const phases = createCheckPhases({
     base,
     includeRust: await rustChangedSince(base),

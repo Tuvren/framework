@@ -31,7 +31,7 @@
 
 import { spawn } from "node:child_process";
 import { copyFileSync, mkdirSync, readdirSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import path from "node:path";
 import process from "node:process";
 
 const readFlag = (name: string): string | undefined => {
@@ -64,16 +64,17 @@ if (cleanDir !== undefined) {
   rmSync(cleanDir, { force: true, recursive: true });
 }
 
-const code = await new Promise<number>((resolve, reject) => {
-  const child = spawn(
-    "bunx",
-    ["--bun", "tsc", "--project", tsconfig, "--pretty", "false"],
-    { env: process.env, stdio: "inherit" }
-  );
-
-  child.once("error", reject);
-  child.once("close", (exitCode) => resolve(exitCode ?? 1));
+const child = spawn(
+  "bunx",
+  ["--bun", "tsc", "--project", tsconfig, "--pretty", "false"],
+  { env: process.env, stdio: "inherit" }
+);
+const childCompletion = Promise.withResolvers<number>();
+child.once("error", childCompletion.reject);
+child.once("close", (exitCode) => {
+  childCompletion.resolve(exitCode ?? 1);
 });
+const code = await childCompletion.promise;
 
 if (code !== 0) {
   process.exit(code);
@@ -89,9 +90,9 @@ if (migrations.length === 0) {
   );
 }
 
-const target = join(outDir, "migrations");
+const target = path.join(outDir, "migrations");
 mkdirSync(target, { recursive: true });
 
 for (const name of migrations) {
-  copyFileSync(join("migrations", name), join(target, name));
+  copyFileSync(path.join("migrations", name), path.join(target, name));
 }
