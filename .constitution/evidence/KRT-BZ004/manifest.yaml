@@ -3,7 +3,7 @@ mode: contract_test
 produced:
   date: '2026-10-15'
   commit: 6ff9e48221174b247d0339e02533e8f3bc57e6e5
-  command: 'KRT-BZ001 captures plus KRT-BZ003 M8-M17 initialization, structural, diagnostic, build, test, typecheck, and conformance proof'
+  command: sh .constitution/evidence/KRT-BZ004/M17-replay-commands.txt
 files:
   - path: M1-raw-diagnostics.tar.gz
     sha256: 0c6905b1398eafb2f298810df123198d5df7af6cbc2996936556c8a6d2e8bae6
@@ -130,7 +130,11 @@ files:
     bytes: 10223
     role: measurement
   - path: M17-proof.json
-    sha256: 7472360f859c187553683c2e2352dc0968200697baad5fca30a080e563ccf97f
-    bytes: 1594
+    sha256: 2d6270d3a9c242352e314189b907512b4b97f4f3b612b3c2093e682c8ba0bb5b
+    bytes: 1643
+    role: measurement
+  - path: M17-replay-commands.txt
+    sha256: ba06f37f2c2d339a5412854b5042cec326c60cc189605f94888b2c7bcc68234b
+    bytes: 3753
     role: measurement
 pass_criteria: 'KRT-BZ001 captures remain parseable. M8-M16 preserve provider initialization and behavior while clearing source ordering diagnostics. M17 preserves 32 React stream-support and benchmark contracts plus the reviewed private abort-cleanup repair, clears 104 ordering diagnostics with non-target rules exact-equal, and passes package, workspace, and provider gates.'
