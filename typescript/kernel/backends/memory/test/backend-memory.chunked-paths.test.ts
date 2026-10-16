@@ -35,7 +35,10 @@ import {
   createStoredTurnTreeRecord as createStoredTurnTree,
 } from "@tuvren/kernel-testkit";
 
-import { createCanonicalTurnTreePaths } from "./backend-memory-test-helpers.js";
+import {
+  createCanonicalTurnTreePaths,
+  rejectionOf,
+} from "./backend-memory-test-helpers.js";
 
 describe("@tuvren/backend-memory chunked paths", () => {
   test("rejects chunked ordered paths that have not crossed the promotion threshold", async () => {
@@ -60,22 +63,24 @@ describe("@tuvren/backend-memory chunked paths", () => {
       turnTreeHash: turnTree.hash,
     };
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.schemas.put(schemaRecord);
-        await tx.turnTrees.put(turnTree);
-        await tx.orderedPathChunks.put(chunkRecord);
-        await tx.turnTreePaths.putMany([
-          {
-            collectionKind: "single",
-            path: "context.manifest",
-            singleHash: null,
-            turnTreeHash: turnTree.hash,
-          },
-          chunkedPath,
-        ]);
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.schemas.put(schemaRecord);
+          await tx.turnTrees.put(turnTree);
+          await tx.orderedPathChunks.put(chunkRecord);
+          await tx.turnTreePaths.putMany([
+            {
+              collectionKind: "single",
+              path: "context.manifest",
+              singleHash: null,
+              turnTreeHash: turnTree.hash,
+            },
+            chunkedPath,
+          ]);
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects chunked ordered paths whose chunks do not use the fixed storage layout", async () => {
@@ -100,22 +105,24 @@ describe("@tuvren/backend-memory chunked paths", () => {
       turnTreeHash: turnTree.hash,
     };
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.schemas.put(schemaRecord);
-        await tx.turnTrees.put(turnTree);
-        await tx.orderedPathChunks.put(oversizedChunk);
-        await tx.turnTreePaths.putMany([
-          {
-            collectionKind: "single",
-            path: "context.manifest",
-            singleHash: null,
-            turnTreeHash: turnTree.hash,
-          },
-          chunkedPath,
-        ]);
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.schemas.put(schemaRecord);
+          await tx.turnTrees.put(turnTree);
+          await tx.orderedPathChunks.put(oversizedChunk);
+          await tx.turnTreePaths.putMany([
+            {
+              collectionKind: "single",
+              path: "context.manifest",
+              singleHash: null,
+              turnTreeHash: turnTree.hash,
+            },
+            chunkedPath,
+          ]);
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects archive branches whose source branch was created in the same transaction", async () => {
@@ -165,20 +172,22 @@ describe("@tuvren/backend-memory chunked paths", () => {
       updatedAtMs: 7,
     };
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.schemas.put(schemaRecord);
-        await tx.turnTrees.put(turnTree);
-        await tx.turnTreePaths.putMany(
-          createCanonicalTurnTreePaths(turnTree, [])
-        );
-        await tx.turnNodes.put(rootNode);
-        await tx.turnNodes.put(headNode);
-        await tx.threads.put(thread);
-        await tx.branches.set(sourceBranch);
-        await tx.branches.set(archiveBranch);
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.schemas.put(schemaRecord);
+          await tx.turnTrees.put(turnTree);
+          await tx.turnTreePaths.putMany(
+            createCanonicalTurnTreePaths(turnTree, [])
+          );
+          await tx.turnNodes.put(rootNode);
+          await tx.turnNodes.put(headNode);
+          await tx.threads.put(thread);
+          await tx.branches.set(sourceBranch);
+          await tx.branches.set(archiveBranch);
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects backward rollback transactions that leave active runs on the archived segment via created turn nodes", async () => {
@@ -285,14 +294,16 @@ describe("@tuvren/backend-memory chunked paths", () => {
       });
     });
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.branches.set(archiveBranch);
-        await tx.branches.set({
-          ...branch,
-          updatedAtMs: 10,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.branches.set(archiveBranch);
+          await tx.branches.set({
+            ...branch,
+            updatedAtMs: 10,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 });

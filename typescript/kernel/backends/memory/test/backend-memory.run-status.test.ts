@@ -33,7 +33,10 @@ import {
   createStoredTurnTreeRecord as createStoredTurnTree,
 } from "@tuvren/kernel-testkit";
 
-import { createCanonicalTurnTreePaths } from "./backend-memory-test-helpers.js";
+import {
+  createCanonicalTurnTreePaths,
+  rejectionOf,
+} from "./backend-memory-test-helpers.js";
 
 describe("@tuvren/backend-memory run status", () => {
   test("rejects halted run updates that change progress or created turn nodes", async () => {
@@ -150,34 +153,38 @@ describe("@tuvren/backend-memory run status", () => {
       await tx.runs.set(pausedRun);
     });
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.runs.set({
-          ...failedRun,
-          createdTurnNodesCbor: encodeDeterministicKernelRecord([
-            createdNode.hash,
-            extraNode.hash,
-          ]),
-          currentStepIndex: 1,
-          updatedAtMs: 11,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.runs.set({
+            ...failedRun,
+            createdTurnNodesCbor: encodeDeterministicKernelRecord([
+              createdNode.hash,
+              extraNode.hash,
+            ]),
+            currentStepIndex: 1,
+            updatedAtMs: 11,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.runs.set({
-          ...pausedRun,
-          createdTurnNodesCbor: encodeDeterministicKernelRecord([
-            createdNode.hash,
-            extraNode.hash,
-          ]),
-          currentStepIndex: 1,
-          status: "failed",
-          updatedAtMs: 11,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.runs.set({
+            ...pausedRun,
+            createdTurnNodesCbor: encodeDeterministicKernelRecord([
+              createdNode.hash,
+              extraNode.hash,
+            ]),
+            currentStepIndex: 1,
+            status: "failed",
+            updatedAtMs: 11,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects terminal or paused runs that still retain staged results", async () => {
@@ -263,16 +270,18 @@ describe("@tuvren/backend-memory run status", () => {
       });
     });
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.runs.set({
-          ...runningRun,
-          currentStepIndex: 1,
-          status: "completed",
-          updatedAtMs: 10,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.runs.set({
+            ...runningRun,
+            currentStepIndex: 1,
+            status: "completed",
+            updatedAtMs: 10,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects illegal run status rewrites", async () => {
@@ -380,16 +389,18 @@ describe("@tuvren/backend-memory run status", () => {
       await tx.runs.set(completedRun);
     });
 
-    await expect(
-      completedBackend.transact(async (tx) => {
-        await tx.runs.set({
-          ...completedRun,
-          currentStepIndex: 0,
-          status: "running",
-          updatedAtMs: 10,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        completedBackend.transact(async (tx) => {
+          await tx.runs.set({
+            ...completedRun,
+            currentStepIndex: 0,
+            status: "running",
+            updatedAtMs: 10,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
 
     const pausedBackend = createMemoryBackend();
     await pausedBackend.transact(async (tx) => {
@@ -406,15 +417,17 @@ describe("@tuvren/backend-memory run status", () => {
       await tx.runs.set(pausedRun);
     });
 
-    await expect(
-      pausedBackend.transact(async (tx) => {
-        await tx.runs.set({
-          ...pausedRun,
-          status: "completed",
-          updatedAtMs: 11,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        pausedBackend.transact(async (tx) => {
+          await tx.runs.set({
+            ...pausedRun,
+            status: "completed",
+            updatedAtMs: 11,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects run updates that rewind step progress or rewrite created turn nodes", async () => {
@@ -513,27 +526,31 @@ describe("@tuvren/backend-memory run status", () => {
       await tx.runs.set(runningRun);
     });
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.runs.set({
-          ...runningRun,
-          currentStepIndex: 0,
-          updatedAtMs: 10,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.runs.set({
+            ...runningRun,
+            currentStepIndex: 0,
+            updatedAtMs: 10,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.runs.set({
-          ...runningRun,
-          createdTurnNodesCbor: encodeDeterministicKernelRecord([
-            alternateCreatedNode.hash,
-          ]),
-          updatedAtMs: 10,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.runs.set({
+            ...runningRun,
+            createdTurnNodesCbor: encodeDeterministicKernelRecord([
+              alternateCreatedNode.hash,
+            ]),
+            updatedAtMs: 10,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 
   test("rejects rewriting immutable turn creation fields", async () => {
@@ -598,14 +615,16 @@ describe("@tuvren/backend-memory run status", () => {
       await tx.turns.set(turn);
     });
 
-    await expect(
-      backend.transact(async (tx) => {
-        await tx.turns.set({
-          ...turn,
-          startTurnNodeHash: headNode.hash,
-          updatedAtMs: 8,
-        });
-      })
-    ).rejects.toBeInstanceOf(TuvrenPersistenceError);
+    expect(
+      await rejectionOf(
+        backend.transact(async (tx) => {
+          await tx.turns.set({
+            ...turn,
+            startTurnNodeHash: headNode.hash,
+            updatedAtMs: 8,
+          });
+        })
+      )
+    ).toBeInstanceOf(TuvrenPersistenceError);
   });
 });

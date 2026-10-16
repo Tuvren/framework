@@ -176,8 +176,8 @@ if (firstModule === undefined) {
 
     const backend = publicApi.createMemoryBackend();
     expect(await backend.health()).toEqual({ ok: true });
-    expect(await backend.transact(() => Promise.resolve("committed"))).toBe(
-      "committed"
-    );
+    expect(
+      await backend.transact(async () => await Promise.resolve("committed"))
+    ).toBe("committed");
   });
 }
