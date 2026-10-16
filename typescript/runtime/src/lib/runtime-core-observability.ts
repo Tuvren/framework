@@ -104,9 +104,16 @@ export async function stageRuntimeTurnLineageRecord(
   host: RuntimeCorePersistenceHost,
   runId: string,
   turnId: string,
-  taskId: string
+  taskId: string,
+  interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
 ): Promise<HashString> {
-  return await stageRuntimeTurnLineage(host, runId, turnId, taskId);
+  return await stageRuntimeTurnLineage(
+    host,
+    runId,
+    turnId,
+    taskId,
+    interruptedToolBatch
+  );
 }
 
 /**

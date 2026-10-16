@@ -177,7 +177,8 @@ export async function createIterationTree(
   baseMessageHashes: HashString[],
   appendedMessageHashes: HashString[],
   manifestHash: HashString,
-  runtimeStatusHash?: HashString
+  runtimeStatusHash?: HashString,
+  turnLineageHash?: HashString
 ): Promise<HashString> {
   const changes: Record<string, PathValue> = {
     "context.manifest": manifestHash,
@@ -186,6 +187,9 @@ export async function createIterationTree(
 
   if (runtimeStatusHash !== undefined) {
     changes["runtime.status"] = runtimeStatusHash;
+  }
+  if (turnLineageHash !== undefined) {
+    changes["turn.lineage"] = turnLineageHash;
   }
 
   return await host.treeCreate(schemaId, changes, baseTurnTreeHash);

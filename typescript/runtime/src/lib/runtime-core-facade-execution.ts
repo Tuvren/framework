@@ -457,7 +457,8 @@ export async function completeRuntimeCoreIterationArtifacts(
   runId: string,
   resolution: RuntimeResolution,
   manifest: ContextManifest,
-  appendedMessageHashes: HashString[]
+  appendedMessageHashes: HashString[],
+  interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
 ): Promise<HashString | undefined> {
   return await completeRuntimeIterationArtifactsFacade(
     hosts.runner,
@@ -469,7 +470,8 @@ export async function completeRuntimeCoreIterationArtifacts(
     runId,
     resolution,
     manifest,
-    appendedMessageHashes
+    appendedMessageHashes,
+    interruptedToolBatch
   );
 }
 
@@ -635,7 +637,8 @@ export async function createRuntimeCoreIterationTree(
   baseMessageHashes: HashString[],
   appendedMessageHashes: HashString[],
   manifestHash: HashString,
-  runtimeStatusHash?: HashString
+  runtimeStatusHash?: HashString,
+  turnLineageHash?: HashString
 ): Promise<HashString> {
   return await createRuntimeIterationTreeFacade(
     hosts.turnProgress,
@@ -644,7 +647,8 @@ export async function createRuntimeCoreIterationTree(
     baseMessageHashes,
     appendedMessageHashes,
     manifestHash,
-    runtimeStatusHash
+    runtimeStatusHash,
+    turnLineageHash
   );
 }
 

@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-import { type EpochMs, TuvrenRuntimeError } from "@tuvren/core";
+import {
+  type EpochMs,
+  type HashString,
+  TuvrenRuntimeError,
+} from "@tuvren/core";
 import type { InputSignal } from "@tuvren/core/execution";
 import type {
   RuntimeKernel,
@@ -217,22 +221,15 @@ export async function recoverExpiredExecutionBranchIfNeeded(
           turnId: expiredRun.turnId,
         })
       : undefined;
-  const estimatedIterationCount = await estimateRecoveredIterationCount(
+  const estimatedIterations = await estimateRecoveredIterationCount(
     kernel,
     expiredRun.turnId,
-    recoveredHeadState
+    recoveredHeadState,
+    interruptedIterationPlan?.assistantMessageHash
   );
-  const interruptedAssistantWasCommitted =
-    interruptedIterationPlan?.assistantMessageHash !== undefined &&
-    recoveredHeadState.messageHashes.includes(
-      interruptedIterationPlan.assistantMessageHash
-    );
   const iterationCount =
-    interruptedIterationPlan !== undefined &&
-    interruptedIterationPlan.disposition !== "re_infer" &&
-    interruptedAssistantWasCommitted
-      ? Math.max(0, estimatedIterationCount - 1)
-      : estimatedIterationCount;
+    estimatedIterations.count -
+    (estimatedIterations.interruptedAssistantIncluded ? 1 : 0);
 
   return {
     activeAgentName: await host.readRecoveredActiveAgentName(
@@ -303,18 +300,22 @@ export async function completeRecoveredTerminalExecution(
 async function estimateRecoveredIterationCount(
   kernel: RuntimeKernel,
   turnId: string,
-  recoveredHeadState: HeadState
-): Promise<number> {
+  recoveredHeadState: HeadState,
+  interruptedAssistantHash: HashString | undefined
+): Promise<{
+  count: number;
+  interruptedAssistantIncluded: boolean;
+}> {
   const turn = await kernel.turn.get(turnId);
 
   if (turn === null) {
-    return 1;
+    return { count: 0, interruptedAssistantIncluded: false };
   }
 
   const startTurnNode = await kernel.node.get(turn.startTurnNodeHash);
 
   if (startTurnNode === null) {
-    return 1;
+    return { count: 0, interruptedAssistantIncluded: false };
   }
 
   const startMessageHashes = toOrderedHashArray(
@@ -327,14 +328,24 @@ async function estimateRecoveredIterationCount(
       (hash, index) => recoveredHeadState.messageHashes[index] === hash
     )
   ) {
-    const assistantIterations = recoveredHeadState.messages
-      .slice(startMessageHashes.length)
-      .filter((message) => message.role === "assistant").length;
-
-    if (assistantIterations > 0) {
-      return assistantIterations;
-    }
+    const appendedHashes = recoveredHeadState.messageHashes.slice(
+      startMessageHashes.length
+    );
+    const appendedMessages = recoveredHeadState.messages.slice(
+      startMessageHashes.length
+    );
+    const assistantHashes = appendedMessages.flatMap((message, index) =>
+      message.role === "assistant" && appendedHashes[index] !== undefined
+        ? [appendedHashes[index]]
+        : []
+    );
+    return {
+      count: assistantHashes.length,
+      interruptedAssistantIncluded:
+        interruptedAssistantHash !== undefined &&
+        assistantHashes.includes(interruptedAssistantHash),
+    };
   }
 
-  return 1;
+  return { count: 0, interruptedAssistantIncluded: false };
 }

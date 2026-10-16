@@ -44,10 +44,6 @@ import {
 } from "./context-manifest.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import { validateRunnerAssistantEvents } from "./runtime-core-assistant-validation.js";
-import {
-  withInterruptedToolBatchDescriptor,
-  withoutInterruptedToolBatchDescriptor,
-} from "./runtime-core-interrupted-metadata.js";
 import type { InterruptedIterationRecoveryPlan } from "./runtime-core-recovery-plan.js";
 import {
   createCancelledResolution,
@@ -195,13 +191,20 @@ export interface RuntimeCoreIterationHost {
     runId: string,
     resolution: RuntimeResolution,
     manifest: ContextManifest,
-    appendedMessageHashes: HashString[]
+    appendedMessageHashes: HashString[],
+    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
   ): Promise<HashString | undefined>;
   createId(): string;
   stageManifest(
     runId: string,
     manifest: ContextManifest,
     taskId?: string
+  ): Promise<HashString>;
+  stageTurnLineage(
+    runId: string,
+    turnId: string,
+    taskId: string,
+    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
   ): Promise<HashString>;
   createRunnerExecutionContext(
     handle: RuntimeExecutionHandle,
@@ -792,15 +795,16 @@ export async function executeIterationPhase(
   applyRunnerStateUpdates(input.loopState, runnerResult.stateUpdates);
 
   if (requestedToolCalls.length > 0) {
-    await host.stageManifest(
+    await host.stageTurnLineage(
       iterationRunId,
-      withInterruptedToolBatchDescriptor(input.headState.manifest, {
+      input.handle.turnId,
+      "interrupted_tool_batch_eligibility",
+      {
         executable:
           (cancellationResolution ?? resolution).type ===
             "continue_iteration" && !partial,
         toolExecutionMode,
-      }),
-      "interrupted_tool_batch_eligibility"
+      }
     );
   }
 
@@ -862,6 +866,7 @@ interface PreparedIteration {
   assistantMessageHash?: HashString;
   partial: boolean;
   rebuildManifestFromHistory?: boolean;
+  recoveryPlan?: InterruptedIterationRecoveryPlan;
   requestedToolCalls: ToolCallPart[];
   resolution: RuntimeResolution;
   runnerResponse: TuvrenModelResponse;
@@ -917,6 +922,7 @@ async function executeRecoveredIterationPhase(
       undefined
     ),
     rebuildManifestFromHistory: true,
+    recoveryPlan,
     stagedMessageHashes: [...recoveryPlan.stagedMessageHashes],
     stagedMessages: [...recoveryPlan.stagedMessages],
     toolExecutionMode: recoveryPlan.descriptor?.toolExecutionMode ?? "parallel",
@@ -937,13 +943,16 @@ async function completePreparedIteration(
     prepared.requestedToolCalls.length > 0
   ) {
     // Persist the batch descriptor before a call can complete and the process can die.
-    const descriptorManifest = withInterruptedToolBatchDescriptor(
-      updateContextManifest(
-        input.headState.manifest,
-        prepared.stagedMessages,
-        input.loopState.carriedStateUpdates,
-        []
-      ),
+    const descriptorManifest = updateContextManifest(
+      input.headState.manifest,
+      prepared.stagedMessages,
+      input.loopState.carriedStateUpdates,
+      []
+    );
+    await host.stageTurnLineage(
+      iterationRunId,
+      input.handle.turnId,
+      "interrupted_tool_batch",
       {
         assistantMessageHash: prepared.assistantMessageHash,
         executable:
@@ -953,11 +962,6 @@ async function completePreparedIteration(
       }
     );
     durableBatchManifest = descriptorManifest;
-    await host.stageManifest(
-      iterationRunId,
-      descriptorManifest,
-      "interrupted_tool_batch_descriptor"
-    );
   }
 
   const toolBatchResult = await host.applyRequestedToolBatchIfNeeded({
@@ -988,10 +992,21 @@ async function completePreparedIteration(
 
   resolution = createCancelledResolution(input.handle) ?? resolution;
 
+  const canonicalizedRecovery = canonicalizeRecoveredToolBatchHistory(
+    input.headState,
+    prepared.recoveryPlan,
+    prepared.stagedMessageHashes,
+    prepared.stagedMessages
+  );
+  const checkpointHeadState =
+    canonicalizedRecovery?.headState ?? input.headState;
+  const checkpointAppendedHashes =
+    canonicalizedRecovery === undefined ? prepared.stagedMessageHashes : [];
+
   const manifest = prepared.rebuildManifestFromHistory
     ? updateContextManifest(
         createContextManifest(
-          [...input.headState.messages, ...prepared.stagedMessages],
+          checkpointHeadState.messages,
           input.headState.manifest.extensions
         ),
         [],
@@ -1004,18 +1019,27 @@ async function completePreparedIteration(
         [...input.loopState.carriedStateUpdates],
         []
       );
-  const cleanManifest = withoutInterruptedToolBatchDescriptor(manifest);
+  const cleanManifest = manifest;
   input.loopState.carriedStateUpdates = [];
   const turnNodeHash = await host.completeIterationArtifacts(
     input.handle,
     input.schemaId,
     input.loopState,
-    input.headState,
+    checkpointHeadState,
     input.iterationCount,
     iterationRunId,
     resolution,
     cleanManifest,
-    prepared.stagedMessageHashes
+    checkpointAppendedHashes,
+    resolution.type === "pause" &&
+      prepared.assistantMessageHash !== undefined &&
+      prepared.requestedToolCalls.length > 0
+      ? {
+          assistantMessageHash: prepared.assistantMessageHash,
+          executable: true,
+          toolExecutionMode: prepared.toolExecutionMode,
+        }
+      : undefined
   );
   const checkpointedPause = resolution.type === "pause";
   input.handle.updateStatus({
@@ -1066,6 +1090,103 @@ async function completePreparedIteration(
       toolExecutionMode: prepared.toolExecutionMode,
       toolResults: prepared.toolResults,
       turnNodeHash,
+    },
+  };
+}
+
+function canonicalizeRecoveredToolBatchHistory(
+  headState: {
+    branchHeadHash: HashString;
+    manifest: ContextManifest;
+    messageHashes: HashString[];
+    messages: TuvrenMessage[];
+    turnNode: { turnTreeHash: HashString };
+  },
+  recoveryPlan: InterruptedIterationRecoveryPlan | undefined,
+  stagedHashes: HashString[],
+  stagedMessages: TuvrenMessage[]
+):
+  | {
+      headState: {
+        branchHeadHash: HashString;
+        manifest: ContextManifest;
+        messageHashes: HashString[];
+        messages: TuvrenMessage[];
+        turnNode: { turnTreeHash: HashString };
+      };
+    }
+  | undefined {
+  if (
+    recoveryPlan === undefined ||
+    recoveryPlan.disposition === "re_infer" ||
+    recoveryPlan.assistantMessageHash === undefined
+  ) {
+    return undefined;
+  }
+
+  const hashes = [...headState.messageHashes, ...stagedHashes];
+  const messagesByHash = new Map<HashString, TuvrenMessage>();
+  for (const [index, hash] of headState.messageHashes.entries()) {
+    const message = headState.messages[index];
+    if (message !== undefined) {
+      messagesByHash.set(hash, message);
+    }
+  }
+  for (const [index, hash] of stagedHashes.entries()) {
+    const message = stagedMessages[index];
+    if (message !== undefined) {
+      messagesByHash.set(hash, message);
+    }
+  }
+
+  const resultHashByCallId = new Map<string, HashString>();
+  const originalCallIds = new Set(
+    recoveryPlan.originalToolCalls.map((toolCall) => toolCall.callId)
+  );
+  for (const [hash, message] of messagesByHash) {
+    if (message.role !== "tool") {
+      continue;
+    }
+    for (const part of message.parts) {
+      if (
+        part.type === "tool_result" &&
+        originalCallIds.has(part.callId) &&
+        !resultHashByCallId.has(part.callId)
+      ) {
+        resultHashByCallId.set(part.callId, hash);
+      }
+    }
+  }
+
+  const orderedResultHashes = recoveryPlan.originalToolCalls.flatMap(
+    (toolCall) => {
+      const hash = resultHashByCallId.get(toolCall.callId);
+      return hash === undefined ? [] : [hash];
+    }
+  );
+  const uniqueResultHashes = [...new Set(orderedResultHashes)];
+  const assistantIndex = hashes.indexOf(recoveryPlan.assistantMessageHash);
+  if (assistantIndex < 0 || uniqueResultHashes.length < 2) {
+    return undefined;
+  }
+
+  const withoutResults = hashes.filter(
+    (hash) => !uniqueResultHashes.includes(hash)
+  );
+  const orderedAssistantIndex = withoutResults.indexOf(
+    recoveryPlan.assistantMessageHash
+  );
+  withoutResults.splice(orderedAssistantIndex + 1, 0, ...uniqueResultHashes);
+  const messages = withoutResults.flatMap((hash) => {
+    const message = messagesByHash.get(hash);
+    return message === undefined ? [] : [message];
+  });
+
+  return {
+    headState: {
+      ...headState,
+      messageHashes: withoutResults,
+      messages,
     },
   };
 }

@@ -345,7 +345,7 @@ test("keeps earlier iteration count when an interrupted assistant is uncommitted
     signal: textSignal("Recover count"),
     config: {
       name: "primary",
-      maxIterations: 2,
+      maxIterations: 1,
       tools: [
         {
           name: "lookup",
@@ -741,11 +741,7 @@ test("restores original call order after parallel results stage out of order", a
   const fixture = await prepareExpiredToolBatch(
     "parallel_recovery_order",
     "Recover order",
-    [
-      assistant,
-      toolResultMessage("fast-second", 2),
-      toolResultMessage("slow-first", 1),
-    ]
+    [assistant, toolResultMessage("fast-second", 2)]
   );
   let observedCallIds: string[] = [];
   const runtime = createTuvrenRuntime({
@@ -780,7 +776,19 @@ test("restores original call order after parallel results stage out of order", a
     branchId: fixture.thread.branchId,
     threadId: fixture.thread.threadId,
     signal: textSignal("Recover order"),
-    config: { name: "primary" },
+    config: {
+      name: "primary",
+      tools: [
+        {
+          name: "lookup",
+          description: "lookup",
+          inputSchema: { type: "object" },
+          execute() {
+            return { value: 1 };
+          },
+        },
+      ],
+    },
   });
   await collectEvents(handle.events());
 
@@ -841,7 +849,7 @@ test("recovers aroundTool state before accepting its durable tool result", async
   } satisfies RuntimeRunner;
   let sideEffectCalls = 0;
   const extension = {
-    name: "recovery-state",
+    name: "__tuvren_interrupted_tool_batch",
     aroundTool(_context, next) {
       return next().then((result) => ({
         result,
@@ -903,6 +911,7 @@ test("recovers aroundTool state before accepting its durable tool result", async
     config,
   });
   await collectEvents(second.events());
+  const stateAtRecovery = second.status().manifest?.extensions ?? {};
   releaseStage?.();
   await firstEvents;
 
@@ -925,9 +934,12 @@ test("recovers aroundTool state before accepting its durable tool result", async
     throw new Error("expected decoded context manifest record");
   }
   expect(second.status().phase).toBe("completed");
+  expect(stateAtRecovery).toMatchObject({
+    __tuvren_interrupted_tool_batch: { completedCall: "stateful-call" },
+  });
   expect(sideEffectCalls).toBe(1);
   expect(toOptionalRecord(manifest)?.extensions).toMatchObject({
-    "recovery-state": {
+    __tuvren_interrupted_tool_batch: {
       completedCall: "stateful-call",
     },
   });

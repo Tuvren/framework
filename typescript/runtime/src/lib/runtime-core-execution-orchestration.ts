@@ -195,7 +195,8 @@ interface RuntimeIterationPhaseDependencies {
     runId: string,
     resolution: RuntimeResolution,
     manifest: ContextManifest,
-    appendedMessageHashes: HashString[]
+    appendedMessageHashes: HashString[],
+    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
   ): Promise<HashString | undefined>;
   createId(): string;
   stageManifest(
@@ -275,6 +276,17 @@ interface RuntimeIterationPhaseDependencies {
     messages: TuvrenMessage[],
     iterationCount: number
   ): Promise<HashString[]>;
+  stageRuntimeStatus(
+    runId: string,
+    status: import("./runtime-core-recovery.js").DurableRuntimeStatus,
+    taskId: string
+  ): Promise<HashString>;
+  stageTurnLineage(
+    runId: string,
+    turnId: string,
+    taskId: string,
+    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
+  ): Promise<HashString>;
 }
 
 /**
@@ -400,7 +412,8 @@ export async function executeRuntimeIterationPhaseFacade(
         runId,
         resolution,
         manifest,
-        appendedMessageHashes
+        appendedMessageHashes,
+        interruptedToolBatch
       ) =>
         dependencies.completeIterationArtifacts(
           activeHandle,
@@ -411,7 +424,8 @@ export async function executeRuntimeIterationPhaseFacade(
           runId,
           resolution,
           manifest,
-          appendedMessageHashes
+          appendedMessageHashes,
+          interruptedToolBatch
         ),
       createRunnerExecutionContext: (
         activeHandle,
@@ -431,6 +445,7 @@ export async function executeRuntimeIterationPhaseFacade(
         ),
       createId: () => dependencies.createId(),
       stageManifest: (...args) => dependencies.stageManifest(...args),
+      stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
       createTrackedRun: (...args) => dependencies.createTrackedRun(...args),
       executeRunner: (...args) => dependencies.executeRunner(...args),
       failInvalidPauseResolutionIfNeeded: (...args) =>
@@ -543,7 +558,8 @@ export async function completeRuntimeIterationArtifactsFacade(
   runId: string,
   resolution: RuntimeResolution,
   manifest: ContextManifest,
-  appendedMessageHashes: HashString[]
+  appendedMessageHashes: HashString[],
+  interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
 ): Promise<HashString | undefined> {
   return await completeRuntimeIterationArtifacts(
     host,
@@ -555,7 +571,8 @@ export async function completeRuntimeIterationArtifactsFacade(
     runId,
     resolution,
     manifest,
-    appendedMessageHashes
+    appendedMessageHashes,
+    interruptedToolBatch
   );
 }
 
@@ -700,7 +717,8 @@ export async function createRuntimeIterationTreeFacade(
   baseMessageHashes: HashString[],
   appendedMessageHashes: HashString[],
   manifestHash: HashString,
-  runtimeStatusHash?: HashString
+  runtimeStatusHash?: HashString,
+  turnLineageHash?: HashString
 ): Promise<HashString> {
   return await createRuntimeIterationTree(
     host,
@@ -709,7 +727,8 @@ export async function createRuntimeIterationTreeFacade(
     baseMessageHashes,
     appendedMessageHashes,
     manifestHash,
-    runtimeStatusHash
+    runtimeStatusHash,
+    turnLineageHash
   );
 }
 

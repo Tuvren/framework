@@ -99,13 +99,17 @@ export interface RuntimeCoreStateCommitHost {
   ): Promise<HashString>;
   stageRuntimeStatus(
     runId: string,
-    status: { activeAgent?: string; state: "running" },
+    status: {
+      activeAgent?: string;
+      state: "running";
+    },
     taskId: string
   ): Promise<HashString>;
   stageTurnLineage(
     runId: string,
     turnId: string,
-    taskId: string
+    taskId: string,
+    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
   ): Promise<HashString>;
   storeEventRecord(event: Record<string, unknown>): Promise<HashString>;
   syncRunLeaseStateFromStepResult(

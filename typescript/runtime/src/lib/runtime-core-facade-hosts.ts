@@ -330,7 +330,8 @@ interface RuntimeCoreFacadeHostDependencies {
   stageTurnLineage(
     runId: string,
     turnId: string,
-    taskId: string
+    taskId: string,
+    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
   ): Promise<HashString>;
   storeEventRecord(event: KernelRecord): Promise<HashString>;
   storeKernelRecord(value: unknown, label: string): Promise<HashString>;
@@ -417,6 +418,7 @@ export function createRuntimeCoreFacadeHosts(
       stageManifest: (...args) => dependencies.stageManifest(...args),
       stageMessage: (...args) => dependencies.stageMessage(...args),
       stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
+      stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
     }),
     runnerSupport: buildRuntimeCoreRunnerSupportHost({
       cloneAgentConfigForRequest: (config) =>
@@ -664,6 +666,7 @@ export function createRuntimeCoreFacadeHosts(
       stageMessage: (runId, message, taskId) =>
         dependencies.stageMessage(runId, message, taskId),
       stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
+      stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
     }),
     turnProgress: buildRuntimeCoreTurnProgressHost({
       advanceTurnAndBranchHead: (...args) =>

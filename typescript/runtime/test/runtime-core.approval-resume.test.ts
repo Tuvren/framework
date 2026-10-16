@@ -331,6 +331,17 @@ describe("framework-runtime-core", () => {
     const pausedHandle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
+        extensions: [
+          {
+            name: "approval-around-state",
+            aroundTool(_context, next) {
+              return next().then((result) => ({
+                result,
+                state: { resumed: true },
+              }));
+            },
+          },
+        ],
         name: "primary",
         tools: [
           {
@@ -366,13 +377,17 @@ describe("framework-runtime-core", () => {
     );
     const resumedEvents = await collectEvents(resumedHandle.events());
 
+    expect(pausedHandle.status().phase).toBe("paused");
+    expect(resumedHandle.status().phase).toBe("completed");
+    expect(resumedEvents.some((event) => event.type === "turn.end")).toBe(true);
+    expect(
+      (await readBranchContextManifest(harness.kernel, thread.branchId))
+        .extensions["approval-around-state"]
+    ).toEqual({ resumed: true });
     expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
       activeAgent: "primary",
       state: "completed",
     });
-    expect(pausedHandle.status().phase).toBe("paused");
-    expect(resumedHandle.status().phase).toBe("completed");
-    expect(resumedEvents.some((event) => event.type === "turn.end")).toBe(true);
     expect(
       hasAssistantText(
         await harness.readBranchMessages(thread.branchId),

@@ -29,12 +29,9 @@ import { decodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 
 import type { PayloadCodecBinding } from "./payload-codec-seam.js";
 import { readMessage } from "./runtime-core-head-state.js";
-import {
-  readInterruptedToolBatchDescriptor,
-  type InterruptedToolBatchDescriptor,
-} from "./runtime-core-interrupted-metadata.js";
+import type { InterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
 import type { HeadState } from "./runtime-core-loop.js";
-import { isRecord } from "./runtime-core-shared.js";
+import { isTurnLineageRecord } from "./runtime-core-response.js";
 
 /** Durable action the runtime should take for a recovered iterate step. */
 export type InterruptedIterationRecoveryDisposition =
@@ -171,6 +168,31 @@ async function resolveInterruptedAssistant(
       assistantHash,
       messages
     );
+  }
+
+  if (
+    assistantHash !== undefined &&
+    !recovered.messagesByHash.has(assistantHash) &&
+    !input.recoveredHeadState.messageHashes.includes(assistantHash) &&
+    !recovered.interruptedMessageHashes.has(assistantHash)
+  ) {
+    try {
+      const assistant = await readMessage(
+        input.kernel,
+        input.payloadCodecBinding,
+        assistantHash
+      );
+      recovered.messagesByHash.set(assistantHash, assistant);
+      recovered.messages.push(assistant);
+      recovered.stagedMessages.push(assistant);
+      recovered.stagedMessageHashes.push(assistantHash);
+    } catch (error: unknown) {
+      throw createInterruptedIterationUnreadableError(
+        input.turnId,
+        input.staleRunId,
+        error
+      );
+    }
   }
 
   const descriptorAssistant =
@@ -454,46 +476,29 @@ async function readInterruptedMessages(
 async function readRecoveryDescriptor(
   input: InterruptedIterationRecoveryPlanInput
 ): Promise<InterruptedToolBatchDescriptor | undefined> {
-  const fromHead = readInterruptedToolBatchDescriptor(
-    input.recoveredHeadState.manifest
-  );
-  if (fromHead !== undefined) {
-    return fromHead;
-  }
-
-  const stagedManifests = [
+  const stagedLineageRecords = [
     ...input.recoveryState.consumedStagedResults,
     ...input.recoveryState.uncommittedStagedResults,
   ].filter(
     (result) =>
-      result.objectType === "context_manifest" &&
-      result.status !== "interrupted"
+      result.objectType === "turn_lineage" && result.status !== "interrupted"
   );
 
-  for (const stagedManifest of stagedManifests.reverse()) {
-    const payload = await input.kernel.store.get(stagedManifest.objectHash);
+  for (const stagedLineage of stagedLineageRecords.reverse()) {
+    const payload = await input.kernel.store.get(stagedLineage.objectHash);
     if (payload === null) {
       continue;
     }
-    const record: unknown = decodeDeterministicKernelRecord(payload);
-    if (!isRecord(record)) {
-      continue;
-    }
-    const extensions = record.extensions;
-    if (!isRecord(extensions)) {
-      continue;
-    }
-    const descriptorManifest = {
-      ...input.recoveredHeadState.manifest,
-      extensions,
-    };
-    const descriptor = readInterruptedToolBatchDescriptor(descriptorManifest);
-    if (descriptor !== undefined) {
-      return descriptor;
+    const lineage: unknown = decodeDeterministicKernelRecord(payload);
+    if (
+      isTurnLineageRecord(lineage) &&
+      lineage.interruptedToolBatch !== undefined
+    ) {
+      return lineage.interruptedToolBatch;
     }
   }
 
-  return undefined;
+  return input.recoveredHeadState.turnLineage?.interruptedToolBatch;
 }
 
 function isToolCallingAssistantMessage(

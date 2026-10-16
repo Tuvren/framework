@@ -23,7 +23,10 @@ import type { TuvrenMessage } from "@tuvren/core/messages";
 
 import { buildCapabilityMetadataFromTools } from "./capability-policy-engine.js";
 import { updateContextManifest } from "./context-manifest.js";
-import { runAfterIterationHooks } from "./extension-runtime.js";
+import {
+  runAfterIterationHooks,
+  type ExtensionStateUpdate,
+} from "./extension-runtime.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type { LoopOutcome } from "./runtime-core-recovery.js";
 import {
@@ -66,7 +69,8 @@ export interface RuntimeCoreToolResumeHost {
     baseMessageHashes: HashString[],
     appendedMessageHashes: HashString[],
     manifestHash: HashString,
-    runtimeStatusHash?: HashString
+    runtimeStatusHash?: HashString,
+    turnLineageHash?: HashString
   ): Promise<HashString>;
   createTrackedRun(
     handle: RuntimeExecutionHandle,
@@ -120,7 +124,8 @@ export interface RuntimeCoreToolResumeHost {
     warningContext?: {
       handle: RuntimeExecutionHandle;
       loopState: LoopState;
-    }
+    },
+    taskId?: string
   ): Promise<HashString>;
   stageMessage(
     runId: string,
@@ -135,6 +140,12 @@ export interface RuntimeCoreToolResumeHost {
       state: "completed" | "failed" | "paused" | "running";
     },
     taskId: string
+  ): Promise<HashString>;
+  stageTurnLineage(
+    runId: string,
+    turnId: string,
+    taskId: string,
+    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
   ): Promise<HashString>;
 }
 
@@ -186,6 +197,15 @@ export async function resumePausedToolExecution(
     ]
   );
   await host.beginIterationStep(runId, "iterate");
+  const interruptedToolBatch = headState.turnLineage?.interruptedToolBatch;
+  if (interruptedToolBatch !== undefined) {
+    await host.stageTurnLineage(
+      runId,
+      handle.turnId,
+      "interrupted_tool_batch_resume",
+      interruptedToolBatch
+    );
+  }
 
   let toolBatch: ToolBatchOutcome;
 
@@ -256,13 +276,20 @@ export async function resumePausedToolExecution(
           "runtime_status_paused"
         )
       : undefined;
+  const turnLineageHash = await host.stageTurnLineage(
+    runId,
+    handle.turnId,
+    "turn_lineage_resume_checkpoint",
+    toolBatch.approval === undefined ? undefined : interruptedToolBatch
+  );
   const nextTreeHash = await host.createIterationTree(
     schemaId,
     headState.turnNode.turnTreeHash,
     headState.messageHashes,
     toolBatch.resultHashes,
     manifestHash,
-    runtimeStatusHash
+    runtimeStatusHash,
+    turnLineageHash
   );
 
   const turnNodeHash = await host.completeIterationRun(
@@ -435,12 +462,19 @@ export async function finalizeRejectedPausedToolCancellation(
     handle,
     loopState,
   });
+  const turnLineageHash = await host.stageTurnLineage(
+    runId,
+    handle.turnId,
+    "turn_lineage_approval_rejection"
+  );
   const nextTreeHash = await host.createIterationTree(
     handle.schemaId,
     headState.turnNode.turnTreeHash,
     headState.messageHashes,
     toolBatch.resultHashes,
-    manifestHash
+    manifestHash,
+    undefined,
+    turnLineageHash
   );
 
   await host.completeIterationRun(
@@ -488,6 +522,8 @@ function createToolBatchEnvironment(
       : buildCapabilityMetadataFromTools(loopState.activeToolRegistry.list());
   const policyContextInputs =
     loopState.activeConfig.policyContextInputs ?? undefined;
+  const stateUpdatesByOrder = new Map<number, ExtensionStateUpdate[]>();
+  let resultStagingQueue: Promise<unknown> = Promise.resolve();
 
   return {
     activeAgent: loopState.activeConfig.name,
@@ -512,15 +548,37 @@ function createToolBatchEnvironment(
     runId,
     sanitizeToolResult: loopState.activeConfig.sanitizeToolResult,
     signal: handle.abortSignal,
-    stageResult: async (result, orderIndex) => {
-      return await host.stageMessage(
-        runId,
-        {
-          parts: [result],
-          role: "tool",
-        },
-        formatToolResultTaskId(orderIndex, result.callId)
-      );
+    stageResult: async (result, orderIndex, updates = []) => {
+      const stage = resultStagingQueue.then(async () => {
+        if (updates.length > 0) {
+          stateUpdatesByOrder.set(orderIndex, updates);
+          const orderedUpdates = [...stateUpdatesByOrder.entries()]
+            .sort(([left], [right]) => left - right)
+            .flatMap(([, callUpdates]) => callUpdates);
+          const durableManifest = updateContextManifest(
+            manifest,
+            [],
+            orderedUpdates,
+            []
+          );
+          await host.stageManifest(
+            runId,
+            durableManifest,
+            { handle, loopState },
+            `around_tool_state_${orderIndex.toString()}`
+          );
+        }
+        return await host.stageMessage(
+          runId,
+          {
+            parts: [result],
+            role: "tool",
+          },
+          formatToolResultTaskId(orderIndex, result.callId)
+        );
+      });
+      resultStagingQueue = stage;
+      return await stage;
     },
     threadId: handle.request.threadId,
     toolRegistry: loopState.activeToolRegistry,

@@ -30,7 +30,6 @@ import { TUVREN_SANDBOX_ENDPOINT_ID_PREFIX } from "./binding-resolver.js";
 import { buildCapabilityMetadataFromTools } from "./capability-policy-engine.js";
 import { updateContextManifest } from "./context-manifest.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
-import { withoutInterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import { formatToolResultTaskId } from "./runtime-core-response.js";
 import { normalizeError } from "./runtime-core-shared.js";
@@ -156,7 +155,7 @@ export function createToolBatchEnvironment(
     policyContextInputs,
     extensions: loopState.activeConfig.extensions ?? [],
     iterationCount,
-    manifest: withoutInterruptedToolBatchDescriptor(manifest),
+    manifest,
     maxParallelToolCalls: host.resolveActiveMaxParallelToolCalls(
       loopState,
       host.defaultMaxParallelToolCalls()
