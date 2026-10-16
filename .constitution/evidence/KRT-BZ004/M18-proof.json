@@ -1,0 +1,64 @@
+{
+  "milestone": "M18",
+  "ticket": "KRT-BZ003",
+  "baselineHead": "bddbd6556b4c9e73631864de6777d87c1b9ac05f",
+  "scope": {
+    "files": [
+      "typescript/runners/react/src/lib/react-runner-prompt.ts",
+      "typescript/runners/react/src/lib/react-runner-stream.ts"
+    ],
+    "additions": 488,
+    "deletions": 499,
+    "changedLines": 987
+  },
+  "hashes": {
+    "promptBefore": "614774c2574e53593e5bf6bf096f96bf4ed3e8519605da7f3b0fe449578e3751",
+    "promptAfter": "0e4cf0d3cc88db935e01b0000c79d7a2376190aec2e11623ec9b1b875042d505",
+    "streamBefore": "e691b5e06948e48e514ea237b40327f73966f35960af372a49d8856f9885324e",
+    "streamAfter": "41b62febb8dc767386ab1795be007efed6f07ea7c4cbe9e286c30ef587fcb545",
+    "independentReview": "da83ab4c01276b0913c9b91ceb200debc4af73635c102ba2f330cc116712b0ad",
+    "independentFinal": "46fb59b51025309af873a19bfcf6e1d3c9291622a51124c4647668d3f33d7129"
+  },
+  "diagnostics": {
+    "syntactic": {
+      "before": 91,
+      "after": 13,
+      "targetBefore": 78,
+      "targetAfter": 0
+    },
+    "typeAware": {
+      "before": 92,
+      "after": 14,
+      "targetBefore": 78,
+      "targetAfter": 0
+    },
+    "nonTargetSyntacticStable": true,
+    "nonTargetTypeAwareStable": true
+  },
+  "equivalence": {
+    "convertedDeclarations": 26,
+    "exactFrozenCandidatesApplied": true,
+    "independentTypeScript6Review": "preserved signatures, defaults, generics, returns, exports, async status, normalized bodies, comments/directives, imports, nonfunction/eager initialization order; static dependency order valid; no hazards",
+    "localProbe": "syntax-sensitive callable comparison reports false for declaration-to-arrow representation; narrower imports, comments/directives, and nonfunction/eager-order checks pass in structural-equivalence.json",
+    "deliberateSemanticOrBodyRepair": null,
+    "runtimeProof": "runner tests 82/82; build/import smoke, repository conformance, provider testkit and provider certification 60/60 pass"
+  },
+  "verification": {
+    "allFinalCommandsPassed": true,
+    "constitution": "0 errors; existing TS-004 warning",
+    "changeset": "direct coverage for 3 publishable packages",
+    "replayCommands": "M18-replay-commands.txt"
+  },
+  "isolation": {
+    "mainCheckoutClean": true,
+    "laneUnexpectedPaths": [],
+    "constitutionWrites": false,
+    "dependenciesAdded": [],
+    "newPatterns": [],
+    "newContracts": []
+  },
+  "drift": [
+    "Local AST probe is representation-sensitive and cannot compare function declarations directly with arrows; preserved for transparency. Independent reviewed-candidate proof and runtime gates are authoritative for this cohort."
+  ],
+  "producingCommit": "5fbe42232ca6be3a7db4fa691e33e749582963fd"
+}
