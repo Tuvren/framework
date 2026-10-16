@@ -271,6 +271,684 @@ const SQLITE_BACKEND_CAPABILITIES: BackendCapability = {
  */
 const RECLAMATION_DELETE_BATCH_SIZE = 500;
 
+/** Creates the database file's parent directory when it does not exist yet. */
+const ensureDatabaseDirectory = (databasePath: string): void => {
+  mkdirSync(dirname(databasePath), { recursive: true });
+};
+
+/**
+ * Rejects database paths that would not persist: the empty string,
+ * `:memory:`, and `file:` URIs with `mode=memory`. This package is the
+ * persistent backend baseline, so transient databases are a construction
+ * error, not a supported mode.
+ *
+ * @throws TuvrenPersistenceError
+ *   `sqlite_backend_requires_persistent_database_path`.
+ */
+const assertPersistentDatabasePath = (databasePath: string): void => {
+  if (databasePath.length === 0) {
+    throw persistenceError(
+      "sqlite persistent backend requires a non-empty filesystem database path",
+      "sqlite_backend_requires_persistent_database_path",
+      { databasePath }
+    );
+  }
+
+  if (databasePath === SQLITE_TRANSIENT_MEMORY_PATH) {
+    throw persistenceError(
+      "sqlite persistent backend requires a filesystem database path instead of :memory:",
+      "sqlite_backend_requires_persistent_database_path",
+      { databasePath }
+    );
+  }
+
+  if (!databasePath.startsWith("file:")) {
+    return;
+  }
+
+  const url = new URL(databasePath);
+  if (url.searchParams.get("mode") !== "memory") {
+    return;
+  }
+
+  throw persistenceError(
+    "sqlite persistent backend requires a filesystem database path instead of an in-memory file URI",
+    "sqlite_backend_requires_persistent_database_path",
+    { databasePath }
+  );
+};
+
+/**
+ * Converts a `file:` URI (authority or authority-less form) to a filesystem
+ * path, dropping query parameters; plain paths pass through unchanged.
+ */
+const resolveFilesystemDatabasePath = (databasePath: string): string => {
+  if (!databasePath.startsWith("file:")) {
+    return databasePath;
+  }
+
+  const [pathComponent] = databasePath.slice("file:".length).split("?", 1);
+
+  if (pathComponent.startsWith("//")) {
+    return fileURLToPath(new URL(databasePath));
+  }
+
+  return decodeURIComponent(pathComponent);
+};
+
+/**
+ * Validates that the path is persistent and resolves any `file:` URI form to
+ * a plain filesystem path.
+ */
+const normalizePersistentDatabasePath = (databasePath: string): string => {
+  assertPersistentDatabasePath(databasePath);
+  return resolveFilesystemDatabasePath(databasePath);
+};
+
+/**
+ * Applies the connection posture every backend connection requires:
+ * foreign keys on, busy timeout set, and WAL journal mode (required — the
+ * open fails if WAL cannot be enabled).
+ *
+ * @throws TuvrenPersistenceError `sqlite_backend_requires_wal_mode`.
+ */
+const configureDatabase = (db: Database.Database): void => {
+  db.pragma("foreign_keys = ON");
+  db.pragma(`busy_timeout = ${SQLITE_BUSY_TIMEOUT_MS}`);
+  const journalMode = db.pragma("journal_mode = WAL", {
+    simple: true,
+  });
+
+  if (typeof journalMode !== "string" || journalMode.toLowerCase() !== "wal") {
+    throw persistenceError(
+      "sqlite backend requires WAL journal mode",
+      "sqlite_backend_requires_wal_mode",
+      { journalMode }
+    );
+  }
+};
+
+/**
+ * Opens (creating parent directories as needed) and configures the per-Scope
+ * database file, normalizing any engine error into a backend error.
+ */
+const openConfiguredDatabase = (
+  scopedDatabasePath: string
+): Database.Database => {
+  try {
+    ensureDatabaseDirectory(scopedDatabasePath);
+    const db = new Database(scopedDatabasePath, {
+      timeout: SQLITE_BUSY_TIMEOUT_MS,
+    });
+    configureDatabase(db);
+    return db;
+  } catch (error: unknown) {
+    throw normalizeBackendError(error);
+  }
+};
+
+/**
+ * Produces a filesystem-safe, deterministic, collision-resistant filename
+ * component for an opaque host Scope by hashing it. Reopening the same Scope
+ * resolves to the same file, so a scoped database persists across the
+ * per-request backends a host reconstructs for a tenant.
+ *
+ * The 32-hex-char (128-bit) truncation is a deliberate collision budget: it is
+ * far beyond any realistic number of distinct scopes per host while keeping the
+ * derived filename short. Do not shorten it without reassessing that budget.
+ */
+const scopeFileSlug = (scope: Scope): string => {
+  return createHash("sha256").update(scope, "utf-8").digest("hex").slice(0, 32);
+};
+
+/**
+ * Derives the concrete per-Scope database file from the host-supplied base path
+ * (ADR-0048 construction-bound Scope; ADR-0049 scope-per-file isolation). The
+ * default Scope maps to the base path verbatim so existing single-scope
+ * databases keep working unchanged; any other Scope derives a deterministic
+ * sibling file, so two backends sharing a base path but bound to different
+ * Scopes address independent `(scope, hash)` spaces on separate connections and
+ * never observe each other's rows.
+ */
+const resolveScopedDatabasePath = (
+  normalizedDatabasePath: string,
+  scope: Scope
+): string => {
+  if (scope === DEFAULT_SCOPE) {
+    return normalizedDatabasePath;
+  }
+
+  const parsed = parse(normalizedDatabasePath);
+  return format({
+    dir: parsed.dir,
+    ext: parsed.ext,
+    name: `${parsed.name}.scope-${scopeFileSlug(scope)}`,
+  });
+};
+
+/**
+ * Applies any not-yet-applied checked-in migration files in name order, each
+ * inside its own transaction, recording every application in
+ * `backend_sqlite_migrations`. Validates the migration ledger against the
+ * checked-in files both before and after applying.
+ */
+const runMigrations = (db: Database.Database, now: () => number): void => {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS backend_sqlite_migrations (
+      name TEXT PRIMARY KEY,
+      applied_at_ms INTEGER NOT NULL
+    )
+  `);
+
+  const recordMigration = db.prepare(
+    `
+      INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
+      VALUES (?, ?)
+    `
+  );
+  const applyMigration = db.transaction((fileName: string, sql: string) => {
+    db.exec(sql);
+    recordMigration.run(fileName, now());
+  });
+
+  const applied = new Set(loadAppliedMigrationNames(db));
+  const migrationDirectory = resolveMigrationDirectory(persistenceError);
+  const migrationFiles = listMigrationFiles(migrationDirectory);
+
+  validateMigrationState(db, persistenceError);
+
+  for (const fileName of migrationFiles) {
+    if (applied.has(fileName)) {
+      continue;
+    }
+
+    const sql = readFileSync(`${migrationDirectory}/${fileName}`, "utf-8");
+    applyMigration(fileName, sql);
+  }
+
+  validateMigrationState(db, persistenceError);
+};
+
+/**
+ * Loads the full persisted state and runs every layer of validation over it:
+ * migration posture, per-record shape/identity, the derived lineage-root
+ * index, and the committed-state invariant suite. Used by `fsck` (issue
+ * #108 M5 — `health()` no longer runs this; see `fsck`'s doc comment) and as
+ * `reclaim`'s single pre-sweep gate (issue #108 M6 — `reclaim` no longer
+ * calls this a second time after sweeping; see `reclaim`'s doc comment and
+ * `assertReclamationSurvivorInvariants` for what replaces the post-sweep
+ * pass).
+ *
+ * @param phaseObserver - Phase-attribution seam (issue #108): the row load
+ *   (`loadState`) is charged to "load"; per-record shape/identity
+ *   re-validation (`validateLoadedState`) to "validate-loaded"; the derived
+ *   lineage-root index cross-check (`validateTurnNodeLineageRootIndex`) to
+ *   "validate-lineage-index"; and the committed-state invariant suite
+ *   (`validateCommittedState`) to "validate-committed" (M2 — these three
+ *   replace M1's single unattributed-residual-hiding "validate" phase for
+ *   this backend), so `fsck()`'s and `reclaim()`'s cost is attributable by
+ *   phase without altering either call's result.
+ * @param priorState - Baseline for cross-transaction invariants; defaults to
+ *   the loaded state itself (no-change baseline).
+ */
+const loadValidatedState = async (
+  db: Database.Database,
+  phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER,
+  priorState?: BackendState
+): Promise<BackendState> => {
+  validateMigrationState(db, persistenceError);
+
+  const endLoad = phaseObserver.startPhase("load");
+  let state: BackendState;
+  try {
+    state = loadState(db);
+  } finally {
+    endLoad();
+  }
+
+  // Issue #108 M2: `validateLoadedState` (per-record shape/identity
+  // re-validation) and `validateTurnNodeLineageRootIndex` (the derived
+  // lineage-root index cross-check) were the unattributed residual M1's
+  // phase table left as a gap between `load` and `validate` — see the M2
+  // section of `.constitution/reports/108-git-faithful-blob-persistence.md`
+  // for the bisected before/after numbers.
+  const endValidateLoaded = phaseObserver.startPhase("validate-loaded");
+  try {
+    await validateLoadedState(state);
+  } finally {
+    endValidateLoaded();
+  }
+
+  const endValidateLineageIndex = phaseObserver.startPhase(
+    "validate-lineage-index"
+  );
+  try {
+    validateTurnNodeLineageRootIndex(db, state);
+  } finally {
+    endValidateLineageIndex();
+  }
+
+  const endValidateCommitted = phaseObserver.startPhase("validate-committed");
+  try {
+    validateCommittedState(state, priorState ?? state, {
+      assertActiveRunHeadAlignment,
+      assertBackwardBranchMoveIsArchived,
+      assertChunkedTurnTreePathChunkLayout,
+      assertRunCreatedTurnNodeWithinTurnSpan,
+      assertRunCreatedTurnNodesAreCanonical,
+      assertRunStartTurnNodeWithinTurnSpan,
+      assertTurnParentLink,
+      classifyTurnNodeRelationship,
+      decodeRunCreatedTurnNodeHashes,
+      decodeTurnNodeConsumedStagedResultObjectHashes,
+      validateHashString,
+    });
+  } finally {
+    endValidateCommitted();
+  }
+
+  return state;
+};
+
+/**
+ * Snapshot of every reclaimable record family's keys taken before the
+ * in-memory sweep, so the swept projection can be diffed into row deletions.
+ */
+interface ReclamationSurvivorKeys {
+  branches: Set<string>;
+  objects: Set<string>;
+  orderedPathChunks: Set<string>;
+  runs: Set<string>;
+  turnNodes: Set<string>;
+  turns: Set<string>;
+  turnTrees: Set<string>;
+}
+
+/** Captures the pre-sweep key sets for {@link applyReclamationDeletions}. */
+const captureReclamationKeys = (
+  state: BackendState
+): ReclamationSurvivorKeys => {
+  return {
+    branches: new Set(state.branches.keys()),
+    objects: new Set(state.objects.keys()),
+    orderedPathChunks: new Set(state.orderedPathChunks.keys()),
+    runs: new Set(state.runs.keys()),
+    turnNodes: new Set(state.turnNodes.keys()),
+    turnTrees: new Set(state.turnTrees.keys()),
+    turns: new Set(state.turns.keys()),
+  };
+};
+
+/** Keys present before the sweep but absent from the swept draft. */
+const reclaimedKeys = (
+  before: Set<string>,
+  survivors: Map<string, unknown>
+): string[] => {
+  const removed: string[] = [];
+  for (const key of before) {
+    if (!survivors.has(key)) {
+      removed.push(key);
+    }
+  }
+  return removed;
+};
+
+/**
+ * Deletes rows whose primary-key column matches one of `keys`, batched under the
+ * SQLite bound-parameter ceiling. `table` and `column` are fixed internal
+ * identifiers supplied by `applyReclamationDeletions`, never caller input.
+ */
+const deleteByColumn = (
+  db: Database.Database,
+  table: string,
+  column: string,
+  keys: string[]
+): void => {
+  for (
+    let index = 0;
+    index < keys.length;
+    index += RECLAMATION_DELETE_BATCH_SIZE
+  ) {
+    const batch = keys.slice(index, index + RECLAMATION_DELETE_BATCH_SIZE);
+    const placeholders = batch.map(() => "?").join(", ");
+    db.prepare(`DELETE FROM ${table} WHERE ${column} IN (${placeholders})`).run(
+      ...batch
+    );
+  }
+};
+
+/**
+ * Deletes the rows the in-memory sweep removed. Child tables (including the
+ * derived `turn_node_lineage_roots` index and run-scoped staging/annotations)
+ * are deleted alongside their parents; with deferred foreign keys the order is
+ * not load-bearing, but children are still listed first for clarity.
+ */
+const applyReclamationDeletions = (
+  db: Database.Database,
+  before: ReclamationSurvivorKeys,
+  survivors: BackendState
+): void => {
+  const deletedRunIds = reclaimedKeys(before.runs, survivors.runs);
+  const deletedTurnIds = reclaimedKeys(before.turns, survivors.turns);
+  const deletedBranchIds = reclaimedKeys(before.branches, survivors.branches);
+  const deletedTurnTreeHashes = reclaimedKeys(
+    before.turnTrees,
+    survivors.turnTrees
+  );
+  const deletedTurnNodeHashes = reclaimedKeys(
+    before.turnNodes,
+    survivors.turnNodes
+  );
+  const deletedChunkHashes = reclaimedKeys(
+    before.orderedPathChunks,
+    survivors.orderedPathChunks
+  );
+  const deletedObjectHashes = reclaimedKeys(before.objects, survivors.objects);
+
+  deleteByColumn(db, "staged_results", "run_id", deletedRunIds);
+  deleteByColumn(db, "observe_annotations", "run_id", deletedRunIds);
+  deleteByColumn(db, "runs", "run_id", deletedRunIds);
+  deleteByColumn(db, "turns", "turn_id", deletedTurnIds);
+  deleteByColumn(db, "branches", "branch_id", deletedBranchIds);
+  deleteByColumn(
+    db,
+    "turn_tree_paths",
+    "turn_tree_hash",
+    deletedTurnTreeHashes
+  );
+  deleteByColumn(db, "turn_trees", "hash", deletedTurnTreeHashes);
+  deleteByColumn(
+    db,
+    "turn_node_lineage_roots",
+    "turn_node_hash",
+    deletedTurnNodeHashes
+  );
+  deleteByColumn(db, "turn_nodes", "hash", deletedTurnNodeHashes);
+  deleteByColumn(db, "ordered_path_chunks", "chunk_hash", deletedChunkHashes);
+  deleteByColumn(db, "objects", "hash", deletedObjectHashes);
+};
+
+/** Copies a `Uint8Array` into the `Buffer` form better-sqlite3 binds. */
+const bufferFromBytes = (bytes: Uint8Array): Buffer => {
+  return Buffer.from(bytes);
+};
+
+/**
+ * Inserts a content-addressed ordered-path chunk row, or verifies byte-level
+ * equality against the existing row for the same hash (immutable put).
+ */
+const insertOrderedPathChunk = (
+  db: Database.Database,
+  record: StoredOrderedPathChunk
+): void => {
+  const existing = selectOrderedPathChunk(db, record.chunkHash);
+
+  if (existing !== null) {
+    ensureImmutableRecordMatch(
+      existing,
+      record,
+      areStoredOrderedPathChunksEqual,
+      "ordered path chunk"
+    );
+    return;
+  }
+
+  db.prepare(
+    `
+      INSERT INTO ordered_path_chunks (
+        chunk_hash,
+        item_count,
+        items_cbor,
+        created_at_ms
+      ) VALUES (?, ?, ?, ?)
+    `
+  ).run(
+    record.chunkHash,
+    record.itemCount,
+    bufferFromBytes(record.itemsCbor),
+    record.createdAtMs
+  );
+};
+
+/**
+ * Encodes a hash array as deterministic CBOR, validating every element first
+ * so only well-formed hash strings are ever persisted.
+ */
+const encodeHashStringArray = (hashes: string[]): Uint8Array => {
+  return encodeDeterministicKernelRecord(
+    hashes.map((hash) => validateHashString(hash))
+  );
+};
+
+/**
+ * Normalizes an incoming turn-tree path record to its canonical stored
+ * encoding, mirroring the memory backend's normalization but resolving chunk
+ * references against the database: `single` and small ordered paths pass
+ * through; a flat ordered path above the promotion threshold is rewritten to
+ * `chunked` encoding, inserting (or immutably reusing) content-addressed
+ * chunk rows; an already-chunked path has its chunk layout and cardinality
+ * verified against the stored chunk rows.
+ *
+ * @param now - Clock used to stamp `createdAtMs` on newly materialized
+ *   chunks; an existing chunk keeps its original timestamp.
+ * @throws TuvrenPersistenceError
+ *   `sqlite_backend_chunked_turn_tree_path_below_threshold`,
+ *   `sqlite_backend_missing_ordered_path_chunk_reference`, or
+ *   `sqlite_backend_chunked_turn_tree_path_count_mismatch`.
+ */
+const normalizeStoredTurnTreePathInDatabase = async (
+  db: Database.Database,
+  record: StoredTurnTreePath,
+  now: () => number
+): Promise<StoredTurnTreePath> => {
+  if (record.collectionKind === "single") {
+    return cloneStoredTurnTreePath(record);
+  }
+
+  if (record.orderedEncoding === "chunked") {
+    const chunkHashes = decodeHashStringArray(
+      record.orderedChunkListCbor,
+      "record.orderedChunkListCbor"
+    );
+
+    if (record.orderedCount <= ORDERED_PATH_CHUNK_THRESHOLD) {
+      throw persistenceError(
+        "chunked ordered turn tree paths must only be used after crossing the promotion threshold",
+        "sqlite_backend_chunked_turn_tree_path_below_threshold",
+        {
+          orderedCount: record.orderedCount,
+          threshold: ORDERED_PATH_CHUNK_THRESHOLD,
+        }
+      );
+    }
+
+    let totalCount = 0;
+    for (const [index, chunkHash] of chunkHashes.entries()) {
+      const chunk = selectOrderedPathChunk(db, chunkHash);
+      if (chunk === null) {
+        throw persistenceError(
+          "chunked turn tree paths must reference existing chunk records",
+          "sqlite_backend_missing_ordered_path_chunk_reference",
+          { chunkHash, path: record.path, turnTreeHash: record.turnTreeHash }
+        );
+      }
+
+      assertChunkedTurnTreePathChunkLayout(chunk, index, chunkHashes.length);
+      totalCount += chunk.itemCount;
+    }
+
+    if (totalCount !== record.orderedCount) {
+      throw persistenceError(
+        "chunked turn tree paths must agree with the stored chunk cardinality",
+        "sqlite_backend_chunked_turn_tree_path_count_mismatch",
+        { orderedCount: record.orderedCount, totalCount }
+      );
+    }
+
+    return cloneStoredTurnTreePath(record);
+  }
+
+  if (record.orderedCount <= ORDERED_PATH_CHUNK_THRESHOLD) {
+    return cloneStoredTurnTreePath(record);
+  }
+
+  const orderedHashes = decodeHashStringArray(
+    record.orderedInlineCbor,
+    "record.orderedInlineCbor"
+  );
+  const chunkHashes: string[] = [];
+
+  for (
+    let index = 0;
+    index < orderedHashes.length;
+    index += ORDERED_PATH_CHUNK_SIZE
+  ) {
+    const chunkItems = orderedHashes.slice(
+      index,
+      index + ORDERED_PATH_CHUNK_SIZE
+    );
+    const itemsCbor = encodeHashStringArray(chunkItems);
+    const chunkHash = await hashKernelRecord(chunkItems);
+    const existingChunk = selectOrderedPathChunk(db, chunkHash);
+    const chunkRecord: StoredOrderedPathChunk = {
+      chunkHash,
+      createdAtMs: existingChunk?.createdAtMs ?? now(),
+      itemCount: chunkItems.length,
+      itemsCbor,
+    };
+
+    insertOrderedPathChunk(db, chunkRecord);
+    chunkHashes.push(chunkHash);
+  }
+
+  return {
+    collectionKind: "ordered",
+    orderedChunkListCbor: encodeHashStringArray(chunkHashes),
+    orderedCount: record.orderedCount,
+    orderedEncoding: "chunked",
+    path: record.path,
+    turnTreeHash: record.turnTreeHash,
+  };
+};
+
+/**
+ * Builds the per-transaction repository surface over the open connection by
+ * composing the core (threads/branches/turns/runs/turn-tree) and support
+ * (objects/schemas/staging/annotations/chunks) repository factories with
+ * their SQLite-specific helper dependencies. Every repository method first
+ * checks `isTransactionActive` so a handle cannot outlive its transaction,
+ * and records its writes in `writeTracker` for pre-commit validation.
+ */
+const createRepositories = (
+  db: Database.Database,
+  now: () => number,
+  isTransactionActive: () => boolean,
+  writeTracker: TransactionWriteTracker
+): MutableRepositories => {
+  const assertTransactionActive = (): void => {
+    if (!isTransactionActive()) {
+      throw persistenceError(
+        "sqlite backend transaction handles must not outlive their transaction",
+        "sqlite_backend_inactive_transaction_handle"
+      );
+    }
+  };
+
+  return {
+    now,
+    ...createSupportRepositories(
+      {
+        assertTransactionActive,
+        db,
+        writeTracker,
+      },
+      {
+        areStoredObjectsEqual,
+        areStoredSchemasEqual,
+        areStoredStagedResultsEqual,
+        areStoredThreadsEqual,
+        assertStoredObjectIdentity,
+        assertStoredOrderedPathChunkIdentity,
+        bufferFromBytes,
+        cloneStoredObject,
+        cloneStoredObserveAnnotation,
+        cloneStoredOrderedPathChunk,
+        cloneStoredSchema,
+        cloneStoredStagedResult,
+        cloneStoredThread,
+        compareStoredObserveAnnotation,
+        compareStoredStagedResult,
+        ensureImmutableRecordMatch,
+        ensureObjectExistsInDatabase,
+        ensureRunExistsInDatabase,
+        ensureSchemaExistsInDatabase,
+        ensureTurnNodeExistsInDatabase,
+        insertOrderedPathChunk,
+        nextObserveAnnotationRecordKey,
+        selectObject,
+        selectObserveAnnotationsByRun,
+        selectOrderedPathChunk,
+        selectSchema,
+        selectStagedResult,
+        selectStagedResultsByRun,
+        selectThread,
+      }
+    ),
+    ...createCoreRepositories(
+      {
+        assertTransactionActive,
+        db,
+        now,
+        writeTracker,
+      },
+      {
+        areStoredTurnNodesEqual,
+        areStoredTurnTreePathsEqual,
+        areStoredTurnTreesEqual,
+        assertBranchHeadMoveIsLinearInDatabase,
+        assertImmutableField,
+        assertImmutableOptionalField,
+        assertMonotonicUpdatedAtMs,
+        assertRunUpdateIsLegal,
+        assertStoredTurnNodeIdentity,
+        assertStoredTurnTreeIdentity,
+        bufferFromBytes,
+        cloneStoredBranch,
+        cloneStoredRun,
+        cloneStoredTurn,
+        cloneStoredTurnNode,
+        cloneStoredTurnTree,
+        cloneStoredTurnTreePath,
+        compareStoredBranch,
+        compareStoredRun,
+        compareStoredTurn,
+        ensureBranchExistsInDatabase,
+        ensureImmutableRecordMatch,
+        ensureObjectExistsInDatabase,
+        ensureSchemaExistsInDatabase,
+        ensureThreadExistsInDatabase,
+        ensureTurnExistsInDatabase,
+        ensureTurnNodeExistsInDatabase,
+        ensureTurnTreeExistsInDatabase,
+        getSchemaForSchemaIdInDatabase,
+        insertTurnNodeLineageMetadata,
+        normalizeStoredTurnTreePathInDatabase,
+        selectBranch,
+        selectBranchesByThread,
+        selectExpiredRuns,
+        selectRun,
+        selectRunsByBranch,
+        selectTurn,
+        selectTurnNode,
+        selectTurnTree,
+        selectTurnTreePath,
+        selectTurnTreePathsByTurnTree,
+        selectTurnsByThread,
+      }
+    ),
+  };
+};
+
 /**
  * SQLite-backed persistent implementation of the kernel `RuntimeBackend`
  * contract (the Epic F persistence baseline).
@@ -680,217 +1358,25 @@ class SqliteBackend implements KrakenBackend {
  * package-local migration posture, and validates persisted state before it is
  * exposed to callers.
  */
-export function createSqliteBackend(
+export const createSqliteBackend = (
   options: SqliteBackendOptions
 ): KrakenBackend & {
   close(): Promise<void>;
   fsck(): Promise<{ ok: true } | { ok: false; reason: string }>;
-} {
+} => {
   return new SqliteBackend(options);
-}
-
-/**
- * Builds the per-transaction repository surface over the open connection by
- * composing the core (threads/branches/turns/runs/turn-tree) and support
- * (objects/schemas/staging/annotations/chunks) repository factories with
- * their SQLite-specific helper dependencies. Every repository method first
- * checks `isTransactionActive` so a handle cannot outlive its transaction,
- * and records its writes in `writeTracker` for pre-commit validation.
- */
-function createRepositories(
-  db: Database.Database,
-  now: () => number,
-  isTransactionActive: () => boolean,
-  writeTracker: TransactionWriteTracker
-): MutableRepositories {
-  const assertTransactionActive = (): void => {
-    if (!isTransactionActive()) {
-      throw persistenceError(
-        "sqlite backend transaction handles must not outlive their transaction",
-        "sqlite_backend_inactive_transaction_handle"
-      );
-    }
-  };
-
-  return {
-    now,
-    ...createSupportRepositories(
-      {
-        assertTransactionActive,
-        db,
-        writeTracker,
-      },
-      {
-        areStoredObjectsEqual,
-        areStoredSchemasEqual,
-        areStoredStagedResultsEqual,
-        areStoredThreadsEqual,
-        assertStoredObjectIdentity,
-        assertStoredOrderedPathChunkIdentity,
-        bufferFromBytes,
-        cloneStoredObject,
-        cloneStoredObserveAnnotation,
-        cloneStoredOrderedPathChunk,
-        cloneStoredSchema,
-        cloneStoredStagedResult,
-        cloneStoredThread,
-        compareStoredObserveAnnotation,
-        compareStoredStagedResult,
-        ensureImmutableRecordMatch,
-        ensureObjectExistsInDatabase,
-        ensureRunExistsInDatabase,
-        ensureSchemaExistsInDatabase,
-        ensureTurnNodeExistsInDatabase,
-        insertOrderedPathChunk,
-        nextObserveAnnotationRecordKey,
-        selectObject,
-        selectObserveAnnotationsByRun,
-        selectOrderedPathChunk,
-        selectSchema,
-        selectStagedResult,
-        selectStagedResultsByRun,
-        selectThread,
-      }
-    ),
-    ...createCoreRepositories(
-      {
-        assertTransactionActive,
-        db,
-        now,
-        writeTracker,
-      },
-      {
-        areStoredTurnNodesEqual,
-        areStoredTurnTreePathsEqual,
-        areStoredTurnTreesEqual,
-        assertBranchHeadMoveIsLinearInDatabase,
-        assertImmutableField,
-        assertImmutableOptionalField,
-        assertMonotonicUpdatedAtMs,
-        assertRunUpdateIsLegal,
-        assertStoredTurnNodeIdentity,
-        assertStoredTurnTreeIdentity,
-        bufferFromBytes,
-        cloneStoredBranch,
-        cloneStoredRun,
-        cloneStoredTurn,
-        cloneStoredTurnNode,
-        cloneStoredTurnTree,
-        cloneStoredTurnTreePath,
-        compareStoredBranch,
-        compareStoredRun,
-        compareStoredTurn,
-        ensureBranchExistsInDatabase,
-        ensureImmutableRecordMatch,
-        ensureObjectExistsInDatabase,
-        ensureSchemaExistsInDatabase,
-        ensureThreadExistsInDatabase,
-        ensureTurnExistsInDatabase,
-        ensureTurnNodeExistsInDatabase,
-        ensureTurnTreeExistsInDatabase,
-        getSchemaForSchemaIdInDatabase,
-        insertTurnNodeLineageMetadata,
-        normalizeStoredTurnTreePathInDatabase,
-        selectBranch,
-        selectBranchesByThread,
-        selectExpiredRuns,
-        selectRun,
-        selectRunsByBranch,
-        selectTurn,
-        selectTurnNode,
-        selectTurnTree,
-        selectTurnTreePath,
-        selectTurnTreePathsByTurnTree,
-        selectTurnsByThread,
-      }
-    ),
-  };
-}
-
-/** Creates the database file's parent directory when it does not exist yet. */
-function ensureDatabaseDirectory(databasePath: string): void {
-  mkdirSync(dirname(databasePath), { recursive: true });
-}
-
-/**
- * Rejects database paths that would not persist: the empty string,
- * `:memory:`, and `file:` URIs with `mode=memory`. This package is the
- * persistent backend baseline, so transient databases are a construction
- * error, not a supported mode.
- *
- * @throws TuvrenPersistenceError
- *   `sqlite_backend_requires_persistent_database_path`.
- */
-function assertPersistentDatabasePath(databasePath: string): void {
-  if (databasePath.length === 0) {
-    throw persistenceError(
-      "sqlite persistent backend requires a non-empty filesystem database path",
-      "sqlite_backend_requires_persistent_database_path",
-      { databasePath }
-    );
-  }
-
-  if (databasePath === SQLITE_TRANSIENT_MEMORY_PATH) {
-    throw persistenceError(
-      "sqlite persistent backend requires a filesystem database path instead of :memory:",
-      "sqlite_backend_requires_persistent_database_path",
-      { databasePath }
-    );
-  }
-
-  if (!databasePath.startsWith("file:")) {
-    return;
-  }
-
-  const url = new URL(databasePath);
-  if (url.searchParams.get("mode") !== "memory") {
-    return;
-  }
-
-  throw persistenceError(
-    "sqlite persistent backend requires a filesystem database path instead of an in-memory file URI",
-    "sqlite_backend_requires_persistent_database_path",
-    { databasePath }
-  );
-}
-
-/**
- * Validates that the path is persistent and resolves any `file:` URI form to
- * a plain filesystem path.
- */
-function normalizePersistentDatabasePath(databasePath: string): string {
-  assertPersistentDatabasePath(databasePath);
-  return resolveFilesystemDatabasePath(databasePath);
-}
-
-/**
- * Converts a `file:` URI (authority or authority-less form) to a filesystem
- * path, dropping query parameters; plain paths pass through unchanged.
- */
-function resolveFilesystemDatabasePath(databasePath: string): string {
-  if (!databasePath.startsWith("file:")) {
-    return databasePath;
-  }
-
-  const [pathComponent] = databasePath.slice("file:".length).split("?", 1);
-
-  if (pathComponent.startsWith("//")) {
-    return fileURLToPath(new URL(databasePath));
-  }
-
-  return decodeURIComponent(pathComponent);
-}
+};
 
 /**
  * Validates, normalizes, and inserts (or immutably re-verifies) a single
  * turn-tree path row. Currently unreferenced (underscore-prefixed): the live
  * batch insert path lives in the core repositories factory.
  */
-async function _insertTurnTreePathBatchEntry(
+const _insertTurnTreePathBatchEntry = async (
   db: Database.Database,
   record: StoredTurnTreePath,
   now: () => number
-): Promise<void> {
+): Promise<void> => {
   const turnTree = ensureTurnTreeExistsInDatabase(
     db,
     record.turnTreeHash,
@@ -955,486 +1441,4 @@ async function _insertTurnTreePathBatchEntry(
       ? bufferFromBytes(normalizedRecord.orderedChunkListCbor)
       : null
   );
-}
-
-/**
- * Applies the connection posture every backend connection requires:
- * foreign keys on, busy timeout set, and WAL journal mode (required — the
- * open fails if WAL cannot be enabled).
- *
- * @throws TuvrenPersistenceError `sqlite_backend_requires_wal_mode`.
- */
-function configureDatabase(db: Database.Database): void {
-  db.pragma("foreign_keys = ON");
-  db.pragma(`busy_timeout = ${SQLITE_BUSY_TIMEOUT_MS}`);
-  const journalMode = db.pragma("journal_mode = WAL", {
-    simple: true,
-  });
-
-  if (typeof journalMode !== "string" || journalMode.toLowerCase() !== "wal") {
-    throw persistenceError(
-      "sqlite backend requires WAL journal mode",
-      "sqlite_backend_requires_wal_mode",
-      { journalMode }
-    );
-  }
-}
-
-/**
- * Opens (creating parent directories as needed) and configures the per-Scope
- * database file, normalizing any engine error into a backend error.
- */
-function openConfiguredDatabase(scopedDatabasePath: string): Database.Database {
-  try {
-    ensureDatabaseDirectory(scopedDatabasePath);
-    const db = new Database(scopedDatabasePath, {
-      timeout: SQLITE_BUSY_TIMEOUT_MS,
-    });
-    configureDatabase(db);
-    return db;
-  } catch (error: unknown) {
-    throw normalizeBackendError(error);
-  }
-}
-
-/**
- * Derives the concrete per-Scope database file from the host-supplied base path
- * (ADR-0048 construction-bound Scope; ADR-0049 scope-per-file isolation). The
- * default Scope maps to the base path verbatim so existing single-scope
- * databases keep working unchanged; any other Scope derives a deterministic
- * sibling file, so two backends sharing a base path but bound to different
- * Scopes address independent `(scope, hash)` spaces on separate connections and
- * never observe each other's rows.
- */
-function resolveScopedDatabasePath(
-  normalizedDatabasePath: string,
-  scope: Scope
-): string {
-  if (scope === DEFAULT_SCOPE) {
-    return normalizedDatabasePath;
-  }
-
-  const parsed = parse(normalizedDatabasePath);
-  return format({
-    dir: parsed.dir,
-    ext: parsed.ext,
-    name: `${parsed.name}.scope-${scopeFileSlug(scope)}`,
-  });
-}
-
-/**
- * Produces a filesystem-safe, deterministic, collision-resistant filename
- * component for an opaque host Scope by hashing it. Reopening the same Scope
- * resolves to the same file, so a scoped database persists across the
- * per-request backends a host reconstructs for a tenant.
- *
- * The 32-hex-char (128-bit) truncation is a deliberate collision budget: it is
- * far beyond any realistic number of distinct scopes per host while keeping the
- * derived filename short. Do not shorten it without reassessing that budget.
- */
-function scopeFileSlug(scope: Scope): string {
-  return createHash("sha256").update(scope, "utf-8").digest("hex").slice(0, 32);
-}
-
-/**
- * Applies any not-yet-applied checked-in migration files in name order, each
- * inside its own transaction, recording every application in
- * `backend_sqlite_migrations`. Validates the migration ledger against the
- * checked-in files both before and after applying.
- */
-function runMigrations(db: Database.Database, now: () => number): void {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS backend_sqlite_migrations (
-      name TEXT PRIMARY KEY,
-      applied_at_ms INTEGER NOT NULL
-    )
-  `);
-
-  const recordMigration = db.prepare(
-    `
-      INSERT INTO backend_sqlite_migrations (name, applied_at_ms)
-      VALUES (?, ?)
-    `
-  );
-  const applyMigration = db.transaction((fileName: string, sql: string) => {
-    db.exec(sql);
-    recordMigration.run(fileName, now());
-  });
-
-  const applied = new Set(loadAppliedMigrationNames(db));
-  const migrationDirectory = resolveMigrationDirectory(persistenceError);
-  const migrationFiles = listMigrationFiles(migrationDirectory);
-
-  validateMigrationState(db, persistenceError);
-
-  for (const fileName of migrationFiles) {
-    if (applied.has(fileName)) {
-      continue;
-    }
-
-    const sql = readFileSync(`${migrationDirectory}/${fileName}`, "utf-8");
-    applyMigration(fileName, sql);
-  }
-
-  validateMigrationState(db, persistenceError);
-}
-
-/**
- * Loads the full persisted state and runs every layer of validation over it:
- * migration posture, per-record shape/identity, the derived lineage-root
- * index, and the committed-state invariant suite. Used by `fsck` (issue
- * #108 M5 — `health()` no longer runs this; see `fsck`'s doc comment) and as
- * `reclaim`'s single pre-sweep gate (issue #108 M6 — `reclaim` no longer
- * calls this a second time after sweeping; see `reclaim`'s doc comment and
- * `assertReclamationSurvivorInvariants` for what replaces the post-sweep
- * pass).
- *
- * @param phaseObserver - Phase-attribution seam (issue #108): the row load
- *   (`loadState`) is charged to "load"; per-record shape/identity
- *   re-validation (`validateLoadedState`) to "validate-loaded"; the derived
- *   lineage-root index cross-check (`validateTurnNodeLineageRootIndex`) to
- *   "validate-lineage-index"; and the committed-state invariant suite
- *   (`validateCommittedState`) to "validate-committed" (M2 — these three
- *   replace M1's single unattributed-residual-hiding "validate" phase for
- *   this backend), so `fsck()`'s and `reclaim()`'s cost is attributable by
- *   phase without altering either call's result.
- * @param priorState - Baseline for cross-transaction invariants; defaults to
- *   the loaded state itself (no-change baseline).
- */
-async function loadValidatedState(
-  db: Database.Database,
-  phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER,
-  priorState?: BackendState
-): Promise<BackendState> {
-  validateMigrationState(db, persistenceError);
-
-  const endLoad = phaseObserver.startPhase("load");
-  let state: BackendState;
-  try {
-    state = loadState(db);
-  } finally {
-    endLoad();
-  }
-
-  // Issue #108 M2: `validateLoadedState` (per-record shape/identity
-  // re-validation) and `validateTurnNodeLineageRootIndex` (the derived
-  // lineage-root index cross-check) were the unattributed residual M1's
-  // phase table left as a gap between `load` and `validate` — see the M2
-  // section of `.constitution/reports/108-git-faithful-blob-persistence.md`
-  // for the bisected before/after numbers.
-  const endValidateLoaded = phaseObserver.startPhase("validate-loaded");
-  try {
-    await validateLoadedState(state);
-  } finally {
-    endValidateLoaded();
-  }
-
-  const endValidateLineageIndex = phaseObserver.startPhase(
-    "validate-lineage-index"
-  );
-  try {
-    validateTurnNodeLineageRootIndex(db, state);
-  } finally {
-    endValidateLineageIndex();
-  }
-
-  const endValidateCommitted = phaseObserver.startPhase("validate-committed");
-  try {
-    validateCommittedState(state, priorState ?? state, {
-      assertActiveRunHeadAlignment,
-      assertBackwardBranchMoveIsArchived,
-      assertChunkedTurnTreePathChunkLayout,
-      assertRunCreatedTurnNodeWithinTurnSpan,
-      assertRunCreatedTurnNodesAreCanonical,
-      assertRunStartTurnNodeWithinTurnSpan,
-      assertTurnParentLink,
-      classifyTurnNodeRelationship,
-      decodeRunCreatedTurnNodeHashes,
-      decodeTurnNodeConsumedStagedResultObjectHashes,
-      validateHashString,
-    });
-  } finally {
-    endValidateCommitted();
-  }
-
-  return state;
-}
-
-/**
- * Snapshot of every reclaimable record family's keys taken before the
- * in-memory sweep, so the swept projection can be diffed into row deletions.
- */
-interface ReclamationSurvivorKeys {
-  branches: Set<string>;
-  objects: Set<string>;
-  orderedPathChunks: Set<string>;
-  runs: Set<string>;
-  turnNodes: Set<string>;
-  turns: Set<string>;
-  turnTrees: Set<string>;
-}
-
-/** Captures the pre-sweep key sets for {@link applyReclamationDeletions}. */
-function captureReclamationKeys(state: BackendState): ReclamationSurvivorKeys {
-  return {
-    branches: new Set(state.branches.keys()),
-    objects: new Set(state.objects.keys()),
-    orderedPathChunks: new Set(state.orderedPathChunks.keys()),
-    runs: new Set(state.runs.keys()),
-    turnNodes: new Set(state.turnNodes.keys()),
-    turnTrees: new Set(state.turnTrees.keys()),
-    turns: new Set(state.turns.keys()),
-  };
-}
-
-/** Keys present before the sweep but absent from the swept draft. */
-function reclaimedKeys(
-  before: Set<string>,
-  survivors: Map<string, unknown>
-): string[] {
-  const removed: string[] = [];
-  for (const key of before) {
-    if (!survivors.has(key)) {
-      removed.push(key);
-    }
-  }
-  return removed;
-}
-
-/**
- * Deletes the rows the in-memory sweep removed. Child tables (including the
- * derived `turn_node_lineage_roots` index and run-scoped staging/annotations)
- * are deleted alongside their parents; with deferred foreign keys the order is
- * not load-bearing, but children are still listed first for clarity.
- */
-function applyReclamationDeletions(
-  db: Database.Database,
-  before: ReclamationSurvivorKeys,
-  survivors: BackendState
-): void {
-  const deletedRunIds = reclaimedKeys(before.runs, survivors.runs);
-  const deletedTurnIds = reclaimedKeys(before.turns, survivors.turns);
-  const deletedBranchIds = reclaimedKeys(before.branches, survivors.branches);
-  const deletedTurnTreeHashes = reclaimedKeys(
-    before.turnTrees,
-    survivors.turnTrees
-  );
-  const deletedTurnNodeHashes = reclaimedKeys(
-    before.turnNodes,
-    survivors.turnNodes
-  );
-  const deletedChunkHashes = reclaimedKeys(
-    before.orderedPathChunks,
-    survivors.orderedPathChunks
-  );
-  const deletedObjectHashes = reclaimedKeys(before.objects, survivors.objects);
-
-  deleteByColumn(db, "staged_results", "run_id", deletedRunIds);
-  deleteByColumn(db, "observe_annotations", "run_id", deletedRunIds);
-  deleteByColumn(db, "runs", "run_id", deletedRunIds);
-  deleteByColumn(db, "turns", "turn_id", deletedTurnIds);
-  deleteByColumn(db, "branches", "branch_id", deletedBranchIds);
-  deleteByColumn(
-    db,
-    "turn_tree_paths",
-    "turn_tree_hash",
-    deletedTurnTreeHashes
-  );
-  deleteByColumn(db, "turn_trees", "hash", deletedTurnTreeHashes);
-  deleteByColumn(
-    db,
-    "turn_node_lineage_roots",
-    "turn_node_hash",
-    deletedTurnNodeHashes
-  );
-  deleteByColumn(db, "turn_nodes", "hash", deletedTurnNodeHashes);
-  deleteByColumn(db, "ordered_path_chunks", "chunk_hash", deletedChunkHashes);
-  deleteByColumn(db, "objects", "hash", deletedObjectHashes);
-}
-
-/**
- * Deletes rows whose primary-key column matches one of `keys`, batched under the
- * SQLite bound-parameter ceiling. `table` and `column` are fixed internal
- * identifiers supplied by `applyReclamationDeletions`, never caller input.
- */
-function deleteByColumn(
-  db: Database.Database,
-  table: string,
-  column: string,
-  keys: string[]
-): void {
-  for (
-    let index = 0;
-    index < keys.length;
-    index += RECLAMATION_DELETE_BATCH_SIZE
-  ) {
-    const batch = keys.slice(index, index + RECLAMATION_DELETE_BATCH_SIZE);
-    const placeholders = batch.map(() => "?").join(", ");
-    db.prepare(`DELETE FROM ${table} WHERE ${column} IN (${placeholders})`).run(
-      ...batch
-    );
-  }
-}
-
-/**
- * Normalizes an incoming turn-tree path record to its canonical stored
- * encoding, mirroring the memory backend's normalization but resolving chunk
- * references against the database: `single` and small ordered paths pass
- * through; a flat ordered path above the promotion threshold is rewritten to
- * `chunked` encoding, inserting (or immutably reusing) content-addressed
- * chunk rows; an already-chunked path has its chunk layout and cardinality
- * verified against the stored chunk rows.
- *
- * @param now - Clock used to stamp `createdAtMs` on newly materialized
- *   chunks; an existing chunk keeps its original timestamp.
- * @throws TuvrenPersistenceError
- *   `sqlite_backend_chunked_turn_tree_path_below_threshold`,
- *   `sqlite_backend_missing_ordered_path_chunk_reference`, or
- *   `sqlite_backend_chunked_turn_tree_path_count_mismatch`.
- */
-async function normalizeStoredTurnTreePathInDatabase(
-  db: Database.Database,
-  record: StoredTurnTreePath,
-  now: () => number
-): Promise<StoredTurnTreePath> {
-  if (record.collectionKind === "single") {
-    return cloneStoredTurnTreePath(record);
-  }
-
-  if (record.orderedEncoding === "chunked") {
-    const chunkHashes = decodeHashStringArray(
-      record.orderedChunkListCbor,
-      "record.orderedChunkListCbor"
-    );
-
-    if (record.orderedCount <= ORDERED_PATH_CHUNK_THRESHOLD) {
-      throw persistenceError(
-        "chunked ordered turn tree paths must only be used after crossing the promotion threshold",
-        "sqlite_backend_chunked_turn_tree_path_below_threshold",
-        {
-          orderedCount: record.orderedCount,
-          threshold: ORDERED_PATH_CHUNK_THRESHOLD,
-        }
-      );
-    }
-
-    let totalCount = 0;
-    for (const [index, chunkHash] of chunkHashes.entries()) {
-      const chunk = selectOrderedPathChunk(db, chunkHash);
-      if (chunk === null) {
-        throw persistenceError(
-          "chunked turn tree paths must reference existing chunk records",
-          "sqlite_backend_missing_ordered_path_chunk_reference",
-          { chunkHash, path: record.path, turnTreeHash: record.turnTreeHash }
-        );
-      }
-
-      assertChunkedTurnTreePathChunkLayout(chunk, index, chunkHashes.length);
-      totalCount += chunk.itemCount;
-    }
-
-    if (totalCount !== record.orderedCount) {
-      throw persistenceError(
-        "chunked turn tree paths must agree with the stored chunk cardinality",
-        "sqlite_backend_chunked_turn_tree_path_count_mismatch",
-        { orderedCount: record.orderedCount, totalCount }
-      );
-    }
-
-    return cloneStoredTurnTreePath(record);
-  }
-
-  if (record.orderedCount <= ORDERED_PATH_CHUNK_THRESHOLD) {
-    return cloneStoredTurnTreePath(record);
-  }
-
-  const orderedHashes = decodeHashStringArray(
-    record.orderedInlineCbor,
-    "record.orderedInlineCbor"
-  );
-  const chunkHashes: string[] = [];
-
-  for (
-    let index = 0;
-    index < orderedHashes.length;
-    index += ORDERED_PATH_CHUNK_SIZE
-  ) {
-    const chunkItems = orderedHashes.slice(
-      index,
-      index + ORDERED_PATH_CHUNK_SIZE
-    );
-    const itemsCbor = encodeHashStringArray(chunkItems);
-    const chunkHash = await hashKernelRecord(chunkItems);
-    const existingChunk = selectOrderedPathChunk(db, chunkHash);
-    const chunkRecord: StoredOrderedPathChunk = {
-      chunkHash,
-      createdAtMs: existingChunk?.createdAtMs ?? now(),
-      itemCount: chunkItems.length,
-      itemsCbor,
-    };
-
-    insertOrderedPathChunk(db, chunkRecord);
-    chunkHashes.push(chunkHash);
-  }
-
-  return {
-    collectionKind: "ordered",
-    orderedChunkListCbor: encodeHashStringArray(chunkHashes),
-    orderedCount: record.orderedCount,
-    orderedEncoding: "chunked",
-    path: record.path,
-    turnTreeHash: record.turnTreeHash,
-  };
-}
-
-/**
- * Inserts a content-addressed ordered-path chunk row, or verifies byte-level
- * equality against the existing row for the same hash (immutable put).
- */
-function insertOrderedPathChunk(
-  db: Database.Database,
-  record: StoredOrderedPathChunk
-): void {
-  const existing = selectOrderedPathChunk(db, record.chunkHash);
-
-  if (existing !== null) {
-    ensureImmutableRecordMatch(
-      existing,
-      record,
-      areStoredOrderedPathChunksEqual,
-      "ordered path chunk"
-    );
-    return;
-  }
-
-  db.prepare(
-    `
-      INSERT INTO ordered_path_chunks (
-        chunk_hash,
-        item_count,
-        items_cbor,
-        created_at_ms
-      ) VALUES (?, ?, ?, ?)
-    `
-  ).run(
-    record.chunkHash,
-    record.itemCount,
-    bufferFromBytes(record.itemsCbor),
-    record.createdAtMs
-  );
-}
-
-/** Copies a `Uint8Array` into the `Buffer` form better-sqlite3 binds. */
-function bufferFromBytes(bytes: Uint8Array): Buffer {
-  return Buffer.from(bytes);
-}
-
-/**
- * Encodes a hash array as deterministic CBOR, validating every element first
- * so only well-formed hash strings are ever persisted.
- */
-function encodeHashStringArray(hashes: string[]): Uint8Array {
-  return encodeDeterministicKernelRecord(
-    hashes.map((hash) => validateHashString(hash))
-  );
-}
+};
