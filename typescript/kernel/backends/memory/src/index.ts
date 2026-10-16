@@ -29,7 +29,7 @@
  * backends bound to the same Scope share durable state while distinct Scopes
  * stay isolated by construction.
  *
- * @packageDocumentation
+ * Public contract surface for the in-memory kernel backend.
  */
 
 export type { MemoryBackendOptions } from "./lib/memory-backend.js";

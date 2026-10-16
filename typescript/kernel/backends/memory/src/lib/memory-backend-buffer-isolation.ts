@@ -29,9 +29,8 @@ import { decodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
  * Copies `bytes` into a fresh buffer, so a decoder that decorates the buffer it
  * reads (the `dataView` marker `cbor-x` attaches) cannot reach the original.
  */
-export const isolateBytes = (bytes: Uint8Array): Uint8Array => {
-  return Uint8Array.from(bytes);
-};
+export const isolateBytes = (bytes: Uint8Array): Uint8Array =>
+  Uint8Array.from(bytes);
 
 /**
  * True when `record` has the shape the protocol's `assertPlainObject` accepts:
@@ -56,7 +55,7 @@ const isDataRecord = (record: unknown): record is Record<string, unknown> => {
   for (const descriptor of Object.values(
     Object.getOwnPropertyDescriptors(record)
   )) {
-    if (!(descriptor.enumerable && Object.hasOwn(descriptor, "value"))) {
+    if (descriptor.enumerable !== true || !Object.hasOwn(descriptor, "value")) {
       return false;
     }
   }
@@ -99,6 +98,5 @@ export const isolateRecordBuffers = (record: unknown): unknown => {
  * marker off the stored bytes, so a stored record never carries decoder
  * metadata a read would have to explain away.
  */
-export const decodeDetachedKernelRecord = (bytes: Uint8Array): KernelRecord => {
-  return decodeDeterministicKernelRecord(isolateBytes(bytes));
-};
+export const decodeDetachedKernelRecord = (bytes: Uint8Array): KernelRecord =>
+  decodeDeterministicKernelRecord(isolateBytes(bytes));

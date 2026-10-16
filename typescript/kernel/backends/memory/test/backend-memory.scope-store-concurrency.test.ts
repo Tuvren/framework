@@ -36,23 +36,6 @@ import { describe, expect, test } from "bun:test";
 
 import { createMemoryScopeStore } from "@tuvren/backend-memory";
 
-interface Deferred<T> {
-  readonly promise: Promise<T>;
-  resolve(value: T): void;
-}
-
-const createDeferred = <T>(): Deferred<T> => {
-  let settle: ((value: T) => void) | undefined;
-  const promise = new Promise<T>((resolve) => {
-    settle = resolve;
-  });
-
-  return {
-    promise,
-    resolve: (value) => settle?.(value),
-  };
-};
-
 /**
  * Drains the microtask queue, one tick per `await Promise.resolve()`, until
  * `condition` holds or the tick budget runs out. Every hop in this test's
@@ -66,6 +49,9 @@ const flushMicrotasksUntil = async (
   maxTicks = 200
 ): Promise<void> => {
   for (let tick = 0; tick < maxTicks && !condition(); tick += 1) {
+    // Advance one deterministic microtask at a time without retaining a
+    // promise chain for the whole retry budget.
+    // oxlint-disable-next-line no-await-in-loop
     await Promise.resolve();
   }
 };
@@ -75,26 +61,24 @@ describe("@tuvren/backend-memory MemoryScopeStore purge/transact serialization (
     const store = createMemoryScopeStore();
     const scope = "tenant-purge-race";
     const orderLog: string[] = [];
-    const deferredA = createDeferred<void>();
-    const deferredB = createDeferred<void>();
+    const deferredA = Promise.withResolvers<undefined>();
+    const deferredB = Promise.withResolvers<undefined>();
 
     // Actor A: an in-flight transaction already queued via runExclusive.
-    const transactionA = store.runExclusive(scope, () => {
+    const transactionA = store.runExclusive(scope, async () => {
       orderLog.push("A-start");
-      return deferredA.promise.then(() => {
-        orderLog.push("A-done");
-      });
+      await deferredA.promise;
+      orderLog.push("A-done");
     });
 
     // Actor B: a concurrent purge, queued immediately behind A (mirrors
     // MemoryBackend#purgeScope, which calls dropScope from inside
     // runExclusive's `work`).
-    const transactionB = store.runExclusive(scope, () => {
+    const transactionB = store.runExclusive(scope, async () => {
       store.dropScope(scope);
       orderLog.push("drop-ran");
-      return deferredB.promise.then(() => {
-        orderLog.push("B-done");
-      });
+      await deferredB.promise;
+      orderLog.push("B-done");
     });
 
     // A runs first; B must stay queued behind it and not touch the store yet.
@@ -112,9 +96,9 @@ describe("@tuvren/backend-memory MemoryScopeStore purge/transact serialization (
     // releases the queue — exactly the window the bug opened. Kick this off
     // without awaiting it yet: the fixed store must make D wait for B, so
     // awaiting D here (before B is released) would deadlock the test.
-    const transactionD = store.runExclusive(scope, () => {
+    const transactionD = store.runExclusive(scope, async () => {
+      await deferredB.promise;
       orderLog.push("D-ran");
-      return Promise.resolve();
     });
 
     // Release B. If the single-writer-per-scope guarantee holds, D is still

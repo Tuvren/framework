@@ -132,9 +132,9 @@ interface MutableRepositories extends KrakenBackendTx {
  * runs after publication but before the transaction resolves.
  */
 interface BackendFaultHooks {
-  afterCommitBeforeAck?(): Promise<void>;
-  beforeCommit?(): Promise<void>;
-  midCommit?(commit: () => Promise<void>): Promise<void>;
+  afterCommitBeforeAck?: () => Promise<void>;
+  beforeCommit?: () => Promise<void>;
+  midCommit?: (commit: () => Promise<void>) => Promise<void>;
 }
 
 /**
@@ -143,8 +143,8 @@ interface BackendFaultHooks {
  * part of the public backend contract.
  */
 interface BackendFaultInjectionControl {
-  setFaultHooks(hooks: BackendFaultHooks | null): void;
-  supportsFaultPoint(point: string): boolean;
+  setFaultHooks: (hooks: BackendFaultHooks | null) => void;
+  supportsFaultPoint: (point: string) => boolean;
 }
 
 /** Construction options for {@link createMemoryBackend}. */
@@ -153,7 +153,7 @@ export interface MemoryBackendOptions {
    * Clock used to stamp backend-generated timestamps and evaluate lease
    * expiry.
    *
-   * @defaultValue `Date.now`
+   * Defaults to `Date.now`.
    */
   now?: () => EpochMs;
   /**
@@ -185,6 +185,14 @@ const MEMORY_BACKEND_CAPABILITIES: BackendCapability = {
   "shared-lease-clock": false,
   "thread.enumeration": true,
 };
+
+/** Returns the static capability set shared by every memory backend. */
+const getMemoryBackendCapabilities = (): BackendCapability =>
+  MEMORY_BACKEND_CAPABILITIES;
+
+/** Reports the health of the dependency-free memory backend. */
+const getMemoryBackendHealth = async (): Promise<{ ok: true }> =>
+  await Promise.resolve({ ok: true });
 /**
  * Well-known symbol under which the backend exposes its
  * {@link BackendFaultInjectionControl}. The kernel testkit constructs the
@@ -223,14 +231,14 @@ const createRepositories = (
 
   return {
     branches: {
-      get(branchId) {
+      async get(branchId) {
         assertTransactionActive();
         const branch = state.branches.get(branchId);
-        return Promise.resolve(
+        return await Promise.resolve(
           branch === undefined ? null : cloneStoredBranch(branch)
         );
       },
-      listByThread(threadId) {
+      async listByThread(threadId) {
         assertTransactionActive();
         const branches: StoredBranch[] = [];
 
@@ -241,9 +249,9 @@ const createRepositories = (
         }
 
         branches.sort(compareStoredBranch);
-        return Promise.resolve(branches);
+        return await Promise.resolve(branches);
       },
-      set(record) {
+      async set(record) {
         assertTransactionActive();
         assertStoredBranch(record, "record");
         const thread = ensureThreadExists(
@@ -321,21 +329,21 @@ const createRepositories = (
         }
 
         state.branches.set(record.branchId, cloneStoredBranch(record));
-        return Promise.resolve();
+        await Promise.resolve();
       },
     },
     now,
     objects: {
-      get(hash) {
+      async get(hash) {
         assertTransactionActive();
         const record = state.objects.get(hash);
-        return Promise.resolve(
+        return await Promise.resolve(
           record === undefined ? null : cloneStoredObject(record)
         );
       },
-      has(hash) {
+      async has(hash) {
         assertTransactionActive();
-        return Promise.resolve(state.objects.has(hash));
+        return await Promise.resolve(state.objects.has(hash));
       },
       async put(record) {
         assertTransactionActive();
@@ -353,16 +361,16 @@ const createRepositories = (
       },
     },
     observeAnnotations: {
-      listByRun(runId) {
+      async listByRun(runId) {
         assertTransactionActive();
         const records = state.observeAnnotations.get(runId) ?? [];
-        return Promise.resolve(
+        return await Promise.resolve(
           records
             .map(cloneStoredObserveAnnotation)
-            .sort(compareStoredObserveAnnotation)
+            .toSorted(compareStoredObserveAnnotation)
         );
       },
-      set(record) {
+      async set(record) {
         assertTransactionActive();
         const candidate = isolateRecordBuffers(record);
         assertStoredObserveAnnotation(candidate, "record");
@@ -381,14 +389,14 @@ const createRepositories = (
         // must survive as distinct records instead of being deduplicated.
         records.push(cloneStoredObserveAnnotation(candidate));
         state.observeAnnotations.set(candidate.runId, records);
-        return Promise.resolve();
+        await Promise.resolve();
       },
     },
     orderedPathChunks: {
-      get(chunkHash) {
+      async get(chunkHash) {
         assertTransactionActive();
         const record = state.orderedPathChunks.get(chunkHash);
-        return Promise.resolve(
+        return await Promise.resolve(
           record === undefined ? null : cloneStoredOrderedPathChunk(record)
         );
       },
@@ -408,14 +416,14 @@ const createRepositories = (
       },
     },
     runs: {
-      get(runId) {
+      async get(runId) {
         assertTransactionActive();
         const record = state.runs.get(runId);
-        return Promise.resolve(
+        return await Promise.resolve(
           record === undefined ? null : cloneStoredRun(record)
         );
       },
-      listByBranch(branchId) {
+      async listByBranch(branchId) {
         assertTransactionActive();
         const runs: StoredRun[] = [];
 
@@ -426,9 +434,9 @@ const createRepositories = (
         }
 
         runs.sort(compareStoredRun);
-        return Promise.resolve(runs);
+        return await Promise.resolve(runs);
       },
-      listExpired(nowMs) {
+      async listExpired(nowMs) {
         assertTransactionActive();
         const runs: StoredRun[] = [];
 
@@ -439,9 +447,9 @@ const createRepositories = (
         }
 
         runs.sort(compareStoredRun);
-        return Promise.resolve(runs);
+        return await Promise.resolve(runs);
       },
-      set(record) {
+      async set(record) {
         assertTransactionActive();
         const candidate = isolateRecordBuffers(record);
         assertStoredRun(candidate, "record");
@@ -526,18 +534,18 @@ const createRepositories = (
         }
 
         state.runs.set(candidate.runId, cloneStoredRun(candidate));
-        return Promise.resolve();
+        await Promise.resolve();
       },
     },
     schemas: {
-      get(schemaId) {
+      async get(schemaId) {
         assertTransactionActive();
         const record = state.schemas.get(schemaId);
-        return Promise.resolve(
+        return await Promise.resolve(
           record === undefined ? null : cloneStoredSchema(record)
         );
       },
-      put(record) {
+      async put(record) {
         assertTransactionActive();
         const candidate = isolateRecordBuffers(record);
         assertStoredSchema(candidate, "record");
@@ -549,30 +557,30 @@ const createRepositories = (
           areStoredSchemasEqual,
           "stored schema"
         );
-        return Promise.resolve();
+        await Promise.resolve();
       },
     },
     stagedResults: {
-      clearRun(runId) {
+      async clearRun(runId) {
         assertTransactionActive();
         state.stagedResults.delete(runId);
-        return Promise.resolve();
+        await Promise.resolve();
       },
-      get(runId, taskId) {
+      async get(runId, taskId) {
         assertTransactionActive();
         const runResults = state.stagedResults.get(runId);
         const record = runResults?.get(taskId);
 
-        return Promise.resolve(
+        return await Promise.resolve(
           record === undefined ? null : cloneStoredStagedResult(record)
         );
       },
-      listByRun(runId) {
+      async listByRun(runId) {
         assertTransactionActive();
         const runResults = state.stagedResults.get(runId);
 
         if (runResults === undefined) {
-          return Promise.resolve([]);
+          return await Promise.resolve([]);
         }
 
         const stagedResults = Array.from(
@@ -580,9 +588,9 @@ const createRepositories = (
           cloneStoredStagedResult
         );
         stagedResults.sort(compareStoredStagedResult);
-        return Promise.resolve(stagedResults);
+        return await Promise.resolve(stagedResults);
       },
-      set(record) {
+      async set(record) {
         assertTransactionActive();
         const candidate = isolateRecordBuffers(record);
         assertStoredStagedResult(candidate, "record");
@@ -617,18 +625,18 @@ const createRepositories = (
         }
 
         state.stagedResults.set(candidate.runId, runResults);
-        return Promise.resolve();
+        await Promise.resolve();
       },
     },
     threads: {
-      get(threadId) {
+      async get(threadId) {
         assertTransactionActive();
         const record = state.threads.get(threadId);
-        return Promise.resolve(
+        return await Promise.resolve(
           record === undefined ? null : cloneStoredThread(record)
         );
       },
-      list(options) {
+      async list(options) {
         assertTransactionActive();
         let threads: StoredThread[] = Array.from(
           state.threads.values(),
@@ -665,18 +673,18 @@ const createRepositories = (
           const last = threads.at(-1);
           if (last !== undefined) {
             nextCursor = {
-              v: 1,
-              kind: "list-threads",
-              lastThreadId: last.threadId,
-              lastCreatedAtMs: last.createdAtMs,
               filter: options?.filter,
+              kind: "list-threads",
+              lastCreatedAtMs: last.createdAtMs,
+              lastThreadId: last.threadId,
+              v: 1,
             };
           }
         }
 
-        return Promise.resolve({ threads, nextCursor });
+        return await Promise.resolve({ nextCursor, threads });
       },
-      put(record) {
+      async put(record) {
         assertTransactionActive();
         assertStoredThread(record, "record");
         ensureSchemaRecordExists(state, record.schemaId, "record.schemaId");
@@ -704,14 +712,14 @@ const createRepositories = (
           areStoredThreadsEqual,
           "stored thread"
         );
-        return Promise.resolve();
+        await Promise.resolve();
       },
     },
     turnNodes: {
-      get(hash) {
+      async get(hash) {
         assertTransactionActive();
         const record = state.turnNodes.get(hash);
-        return Promise.resolve(
+        return await Promise.resolve(
           record === undefined ? null : cloneStoredTurnNode(record)
         );
       },
@@ -760,25 +768,25 @@ const createRepositories = (
       },
     },
     turnTreePaths: {
-      get(turnTreeHash, path) {
+      async get(turnTreeHash, path) {
         assertTransactionActive();
         const treePaths = state.turnTreePaths.get(turnTreeHash);
         const record = treePaths?.get(path);
-        return Promise.resolve(
+        return await Promise.resolve(
           record === undefined ? null : cloneStoredTurnTreePath(record)
         );
       },
-      listByTurnTree(turnTreeHash) {
+      async listByTurnTree(turnTreeHash) {
         assertTransactionActive();
         const treePaths = state.turnTreePaths.get(turnTreeHash);
 
         if (treePaths === undefined) {
-          return Promise.resolve([]);
+          return await Promise.resolve([]);
         }
 
         const records = Array.from(treePaths.values(), cloneStoredTurnTreePath);
         records.sort((left, right) => left.path.localeCompare(right.path));
-        return Promise.resolve(records);
+        return await Promise.resolve(records);
       },
       async putMany(records) {
         assertTransactionActive();
@@ -805,6 +813,9 @@ const createRepositories = (
 
           seenCompositeKeys.add(compositeKey);
 
+          // Preserve input order and stop at the first invalid path without
+          // retaining a promise for every record.
+          // oxlint-disable-next-line no-await-in-loop
           const normalizedRecord = await normalizeStoredTurnTreePath(
             state,
             candidate,
@@ -834,10 +845,10 @@ const createRepositories = (
       },
     },
     turnTrees: {
-      get(hash) {
+      async get(hash) {
         assertTransactionActive();
         const record = state.turnTrees.get(hash);
-        return Promise.resolve(
+        return await Promise.resolve(
           record === undefined ? null : cloneStoredTurnTree(record)
         );
       },
@@ -862,20 +873,20 @@ const createRepositories = (
       },
     },
     turns: {
-      get(turnId) {
+      async get(turnId) {
         assertTransactionActive();
         const record = state.turns.get(turnId);
-        return Promise.resolve(
+        return await Promise.resolve(
           record === undefined ? null : cloneStoredTurn(record)
         );
       },
-      listByThread(threadId) {
+      async listByThread(threadId) {
         assertTransactionActive();
-        return Promise.resolve(
+        return await Promise.resolve(
           listTurnsByThread(state, threadId).map(cloneStoredTurn)
         );
       },
-      set(record) {
+      async set(record) {
         assertTransactionActive();
         assertStoredTurn(record, "record");
         const thread = ensureThreadExists(
@@ -954,7 +965,7 @@ const createRepositories = (
         }
 
         state.turns.set(record.turnId, cloneStoredTurn(record));
-        return Promise.resolve();
+        await Promise.resolve();
       },
     },
   };
@@ -1006,14 +1017,10 @@ class MemoryBackend implements KrakenBackend {
   }
 
   /** Reports the memory backend's static capability set. */
-  capabilities(): BackendCapability {
-    return MEMORY_BACKEND_CAPABILITIES;
-  }
+  readonly capabilities = getMemoryBackendCapabilities;
 
   /** Always healthy: the backend has no external dependency to probe. */
-  health(): Promise<{ ok: true }> {
-    return Promise.resolve({ ok: true });
-  }
+  readonly health = getMemoryBackendHealth;
 
   /**
    * Runs the §9.4 reachability reclamation sweep over this Scope's committed
@@ -1024,11 +1031,11 @@ class MemoryBackend implements KrakenBackend {
    *   expiry evaluation; omitted fields fall back to the constructor clock.
    * @returns Counts of released and retained records.
    */
-  reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
+  async reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
     // Reclamation serializes against this Scope exactly like a transaction:
     // clone the committed state, sweep the unreachable remainder, validate the
     // referential invariants of the result, then swap it in atomically.
-    return this.store.runExclusive(this.scope, () => {
+    return await this.store.runExclusive(this.scope, async () => {
       const baseState = this.store.getState(this.scope);
       const draftState = cloneState(baseState);
       const summary = reclaimBackendState(
@@ -1037,7 +1044,7 @@ class MemoryBackend implements KrakenBackend {
       );
       validateCommittedState(draftState, baseState);
       this.store.setState(this.scope, draftState);
-      return Promise.resolve(summary);
+      return await Promise.resolve(summary);
     });
   }
 
@@ -1045,14 +1052,14 @@ class MemoryBackend implements KrakenBackend {
    * Drops the bound Scope's entire partition (full tenant offboarding,
    * kernel spec §9.4). Other Scopes sharing the same store are unaffected.
    */
-  purgeScope(): Promise<void> {
+  async purgeScope(): Promise<void> {
     // Full tenant offboarding (§9.4): drop the bound Scope's entire partition.
     // Serialize against this Scope exactly like a transaction so the drop never
     // races an in-flight commit; distinct Scopes sharing this store are left
     // untouched, so offboarding one tenant is invisible to every other.
-    return this.store.runExclusive(this.scope, () => {
+    await this.store.runExclusive(this.scope, async () => {
       this.store.dropScope(this.scope);
-      return Promise.resolve();
+      await Promise.resolve();
     });
   }
 
@@ -1066,11 +1073,11 @@ class MemoryBackend implements KrakenBackend {
    * transaction settles — retaining and using one afterwards raises
    * `memory_backend_inactive_transaction_handle`.
    *
-   * @throws TuvrenPersistenceError with code
+   * @throws {TuvrenPersistenceError} with code
    *   `memory_backend_nested_transaction` when called from inside another
    *   transaction on this backend.
    */
-  transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {
+  async transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {
     if (this.transactionContext.getStore() === true) {
       throw persistenceError(
         "memory backend transactions must not be nested",
@@ -1081,7 +1088,7 @@ class MemoryBackend implements KrakenBackend {
     // Per-Scope serialization lives in the store, so every transaction for this
     // Scope is serialized across all backend instances sharing the store while
     // distinct Scopes never contend (ADR-0049 scope-keyed substrate).
-    return this.store.runExclusive(this.scope, async () => {
+    return await this.store.runExclusive(this.scope, async () => {
       const baseState = this.store.getState(this.scope);
       const draftState = cloneState(baseState);
       let active = true;
@@ -1093,8 +1100,9 @@ class MemoryBackend implements KrakenBackend {
       let result: T;
 
       try {
-        result = await this.transactionContext.run(true, () =>
-          work(repositories)
+        result = await this.transactionContext.run(
+          true,
+          async () => await work(repositories)
         );
       } finally {
         active = false;
@@ -1104,14 +1112,14 @@ class MemoryBackend implements KrakenBackend {
       await this.faultState.hooks?.beforeCommit?.();
 
       let committed = false;
-      const commit = (): Promise<void> => {
+      const commit = async (): Promise<void> => {
         if (committed) {
           throw new Error("memory backend commit hook attempted double commit");
         }
 
         this.store.setState(this.scope, draftState);
         committed = true;
-        return Promise.resolve();
+        await Promise.resolve();
       };
 
       if (this.faultState.hooks?.midCommit === undefined) {
@@ -1144,10 +1152,8 @@ class MemoryBackend implements KrakenBackend {
  *
  * @param options - Optional clock, Scope binding, and shared scope store.
  * @returns A `RuntimeBackend` bound to the resolved Scope.
- * @throws TypeError when `options.scope` is not a valid Scope.
+ * @throws {TypeError} when `options.scope` is not a valid Scope.
  */
 export const createMemoryBackend = (
   options?: MemoryBackendOptions
-): KrakenBackend => {
-  return new MemoryBackend(options);
-};
+): KrakenBackend => new MemoryBackend(options);

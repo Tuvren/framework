@@ -84,11 +84,12 @@ export class MemoryScopeStore {
    */
   async runExclusive<T>(scope: Scope, work: () => Promise<T>): Promise<T> {
     const priorTransaction = this.scopeQueues.get(scope) ?? Promise.resolve();
-    let releaseQueue: (() => void) | undefined;
-    const gate = new Promise<void>((resolve) => {
-      releaseQueue = resolve;
-    });
-    const chainedTransaction = priorTransaction.then(() => gate);
+    const { promise: gate, resolve: releaseQueue } =
+      Promise.withResolvers<undefined>();
+    const chainedTransaction = (async (): Promise<void> => {
+      await priorTransaction;
+      await gate;
+    })();
 
     this.scopeQueues.set(scope, chainedTransaction);
 
@@ -97,7 +98,7 @@ export class MemoryScopeStore {
     try {
       return await work();
     } finally {
-      releaseQueue?.();
+      releaseQueue();
 
       // Only retire the queue slot if it still holds the entry this call
       // installed. A later caller may have already chained onto it (or,
@@ -116,6 +117,5 @@ export class MemoryScopeStore {
  * multiple `createMemoryBackend({ scope, store })` calls so each Scope is
  * isolated by construction while persisting across per-request backends.
  */
-export const createMemoryScopeStore = (): MemoryScopeStore => {
-  return new MemoryScopeStore();
-};
+export const createMemoryScopeStore = (): MemoryScopeStore =>
+  new MemoryScopeStore();
