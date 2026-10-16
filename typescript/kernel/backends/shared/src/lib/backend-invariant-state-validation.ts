@@ -240,54 +240,39 @@ const validateLoadedStateCore = async (
     label: string
   ) => TurnTreeSchema
 ): Promise<void> => {
-  const objectRecords = state.objects.values();
-  const validateNextObject = async (): Promise<void> => {
-    const next = objectRecords.next();
-    if (next.done === true) {
-      return;
-    }
-    await assertStoredObjectIdentity(next.value, "stored object row");
-    await validateNextObject();
-  };
-  await validateNextObject();
+  for (const objectRecord of state.objects.values()) {
+    // Preserve first-failure order without retaining promises for all rows.
+    // oxlint-disable-next-line no-await-in-loop
+    await assertStoredObjectIdentity(objectRecord, "stored object row");
+  }
 
   for (const schemaRecord of state.schemas.values()) {
     assertStoredSchema(schemaRecord, "stored schema row");
   }
 
-  const turnTrees = state.turnTrees.values();
-  const validateNextTurnTree = async (): Promise<void> => {
-    const next = turnTrees.next();
-    if (next.done === true) {
-      return;
-    }
+  for (const turnTree of state.turnTrees.values()) {
     const schema = getSchemaForSchemaId(
       state,
-      next.value.schemaId,
+      turnTree.schemaId,
       "turnTree.schemaId"
     );
+    // Preserve first-failure order without retaining promises for all rows.
+    // oxlint-disable-next-line no-await-in-loop
     await assertStoredTurnTreeIdentity(
-      next.value,
+      turnTree,
       schema,
       "stored turn tree row"
     );
-    await validateNextTurnTree();
-  };
-  await validateNextTurnTree();
+  }
 
-  const orderedPathChunks = state.orderedPathChunks.values();
-  const validateNextOrderedPathChunk = async (): Promise<void> => {
-    const next = orderedPathChunks.next();
-    if (next.done === true) {
-      return;
-    }
+  for (const chunkRecord of state.orderedPathChunks.values()) {
+    // Preserve first-failure order without retaining promises for all rows.
+    // oxlint-disable-next-line no-await-in-loop
     await assertStoredOrderedPathChunkIdentity(
-      next.value,
+      chunkRecord,
       "stored ordered path chunk row"
     );
-    await validateNextOrderedPathChunk();
-  };
-  await validateNextOrderedPathChunk();
+  }
 
   for (const storedPaths of state.turnTreePaths.values()) {
     for (const storedPath of storedPaths.values()) {
@@ -305,16 +290,11 @@ const validateLoadedStateCore = async (
     }
   }
 
-  const turnNodes = state.turnNodes.values();
-  const validateNextTurnNode = async (): Promise<void> => {
-    const next = turnNodes.next();
-    if (next.done === true) {
-      return;
-    }
-    await assertStoredTurnNodeIdentity(next.value, "stored turn node row");
-    await validateNextTurnNode();
-  };
-  await validateNextTurnNode();
+  for (const turnNode of state.turnNodes.values()) {
+    // Preserve first-failure order without retaining promises for all rows.
+    // oxlint-disable-next-line no-await-in-loop
+    await assertStoredTurnNodeIdentity(turnNode, "stored turn node row");
+  }
 
   for (const thread of state.threads.values()) {
     assertStoredThread(thread, "stored thread row");
