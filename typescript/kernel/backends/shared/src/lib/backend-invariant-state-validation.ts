@@ -75,9 +75,8 @@ import type {
 // call.
 
 /** Builds a fully-formed `<prefix>_backend_<reason>` error code. */
-const errorCode = (errorPrefix: string, suffix: string): string => {
-  return `${errorPrefix}_backend_${suffix}`;
-};
+const errorCode = (errorPrefix: string, suffix: string): string =>
+  `${errorPrefix}_backend_${suffix}`;
 
 /**
  * Configuration for {@link createBackendInvariantStateValidation}: the
@@ -90,13 +89,13 @@ export interface BackendInvariantStateValidationConfig extends BackendInvariantR
    * element. This stays backend-owned (each backend has its own records
    * module) and is injected here rather than imported.
    */
-  decodeHashStringArray(bytes: Uint8Array, label: string): string[];
+  decodeHashStringArray: (bytes: Uint8Array, label: string) => string[];
   /**
    * Decodes deterministic-CBOR bytes into a validated `TurnTreeSchema`. This
    * stays backend-owned (each backend has its own records module) and is
    * injected here rather than imported.
    */
-  decodeTurnTreeSchema(bytes: Uint8Array, label: string): TurnTreeSchema;
+  decodeTurnTreeSchema: (bytes: Uint8Array, label: string) => TurnTreeSchema;
 }
 
 /**
@@ -172,10 +171,10 @@ export interface BackendInvariantStateValidation {
    * ordered paths, or the concatenation of all referenced chunks' items for
    * `chunked` ordered paths.
    */
-  resolveStoredTurnTreePathValue(
+  resolveStoredTurnTreePathValue: (
     state: BackendState,
     storedPath: StoredTurnTreePath
-  ): string[] | string | null;
+  ) => string[] | string | null;
   /**
    * Validates the full committed-state invariant suite over a loaded state
    * projection before it may be persisted: thread roots are unique genesis
@@ -188,15 +187,15 @@ export interface BackendInvariantStateValidation {
    * @param baseState - The state projection loaded before the transaction;
    *   used for cross-transaction invariants such as backward branch moves
    *   requiring an archive branch created in the same transaction.
-   * @throws The injected persistence error with a `<prefix>_backend_*` code
+   * @throws {TuvrenPersistenceError} The injected persistence error with a `<prefix>_backend_*` code
    *   on the first violated invariant; the caller must then abort the
    *   transaction.
    */
-  validateCommittedState(
+  validateCommittedState: (
     state: BackendState,
     baseState: BackendState,
     helpers: ValidationHelpers
-  ): void;
+  ) => void;
   /**
    * Re-validates every record in a loaded state projection against the
    * kernel-protocol schema/identity assertions (`assertStored*`), the same
@@ -206,7 +205,7 @@ export interface BackendInvariantStateValidation {
    * well-formed and, for content-addressed families, that its identity still
    * matches its content.
    */
-  validateLoadedState(state: BackendState): Promise<void>;
+  validateLoadedState: (state: BackendState) => Promise<void>;
   /**
    * Validates every stored turn-tree path collection: no turn tree
    * references an empty path collection, every ordered path's
@@ -214,13 +213,13 @@ export interface BackendInvariantStateValidation {
    * and every turn tree's decoded manifest matches its indexed path rows
    * exactly.
    *
-   * @throws The injected persistence error with a `<prefix>_backend_*` code
+   * @throws {TuvrenPersistenceError} The injected persistence error with a `<prefix>_backend_*` code
    *   on the first violated invariant.
    */
-  validateTurnTreePathInvariants(
+  validateTurnTreePathInvariants: (
     state: BackendState,
     helpers: ValidationHelpers
-  ): void;
+  ) => void;
 }
 
 /**
@@ -241,33 +240,54 @@ const validateLoadedStateCore = async (
     label: string
   ) => TurnTreeSchema
 ): Promise<void> => {
-  for (const objectRecord of state.objects.values()) {
-    await assertStoredObjectIdentity(objectRecord, "stored object row");
-  }
+  const objectRecords = state.objects.values();
+  const validateNextObject = async (): Promise<void> => {
+    const next = objectRecords.next();
+    if (next.done === true) {
+      return;
+    }
+    await assertStoredObjectIdentity(next.value, "stored object row");
+    await validateNextObject();
+  };
+  await validateNextObject();
 
   for (const schemaRecord of state.schemas.values()) {
     assertStoredSchema(schemaRecord, "stored schema row");
   }
 
-  for (const turnTree of state.turnTrees.values()) {
+  const turnTrees = state.turnTrees.values();
+  const validateNextTurnTree = async (): Promise<void> => {
+    const next = turnTrees.next();
+    if (next.done === true) {
+      return;
+    }
     const schema = getSchemaForSchemaId(
       state,
-      turnTree.schemaId,
+      next.value.schemaId,
       "turnTree.schemaId"
     );
     await assertStoredTurnTreeIdentity(
-      turnTree,
+      next.value,
       schema,
       "stored turn tree row"
     );
-  }
+    await validateNextTurnTree();
+  };
+  await validateNextTurnTree();
 
-  for (const chunkRecord of state.orderedPathChunks.values()) {
+  const orderedPathChunks = state.orderedPathChunks.values();
+  const validateNextOrderedPathChunk = async (): Promise<void> => {
+    const next = orderedPathChunks.next();
+    if (next.done === true) {
+      return;
+    }
     await assertStoredOrderedPathChunkIdentity(
-      chunkRecord,
+      next.value,
       "stored ordered path chunk row"
     );
-  }
+    await validateNextOrderedPathChunk();
+  };
+  await validateNextOrderedPathChunk();
 
   for (const storedPaths of state.turnTreePaths.values()) {
     for (const storedPath of storedPaths.values()) {
@@ -285,9 +305,16 @@ const validateLoadedStateCore = async (
     }
   }
 
-  for (const turnNode of state.turnNodes.values()) {
-    await assertStoredTurnNodeIdentity(turnNode, "stored turn node row");
-  }
+  const turnNodes = state.turnNodes.values();
+  const validateNextTurnNode = async (): Promise<void> => {
+    const next = turnNodes.next();
+    if (next.done === true) {
+      return;
+    }
+    await assertStoredTurnNodeIdentity(next.value, "stored turn node row");
+    await validateNextTurnNode();
+  };
+  await validateNextTurnNode();
 
   for (const thread of state.threads.values()) {
     assertStoredThread(thread, "stored thread row");
@@ -693,9 +720,8 @@ export const createBackendInvariantStateValidation = (
     persistenceError,
   } = recordUtils;
 
-  const code = (suffix: string): string => {
-    return errorCode(config.errorPrefix, suffix);
-  };
+  const code = (suffix: string): string =>
+    errorCode(config.errorPrefix, suffix);
 
   // One memoized root+depth index shared across every thread-membership/
   // descent check this pass runs (issue #108 M2): a shared ancestor prefix
@@ -709,9 +735,7 @@ export const createBackendInvariantStateValidation = (
   const decodeSchemaRecord = (
     bytes: Uint8Array,
     label: string
-  ): TurnTreeSchema => {
-    return config.decodeTurnTreeSchema(bytes, label);
-  };
+  ): TurnTreeSchema => config.decodeTurnTreeSchema(bytes, label);
 
   /** Loads and decodes the turn-tree schema stored under `schemaId`. */
   const getSchemaForSchemaId = (
@@ -723,8 +747,8 @@ export const createBackendInvariantStateValidation = (
     return decodeSchemaRecord(schemaRecord.schemaCbor, `${label} schema`);
   };
 
-  const validateLoadedState = (state: BackendState): Promise<void> => {
-    return validateLoadedStateCore(state, recordUtils, getSchemaForSchemaId);
+  const validateLoadedState = async (state: BackendState): Promise<void> => {
+    await validateLoadedStateCore(state, recordUtils, getSchemaForSchemaId);
   };
 
   /** Every annotation must reference its owning run and optional turn node. */
@@ -939,7 +963,7 @@ export const createBackendInvariantStateValidation = (
    * Asserts a `flat` ordered path's `orderedCount` matches its decoded
    * inline hash array length.
    *
-   * @throws The injected persistence error with code
+   * @throws {TuvrenPersistenceError} The injected persistence error with code
    *   `<prefix>_backend_turn_tree_path_ordered_count_mismatch`.
    */
   const validateOrderedFlatPathCardinality = (
@@ -973,7 +997,7 @@ export const createBackendInvariantStateValidation = (
    * each chunk's `itemCount` matches its decoded items, and the chunks'
    * summed item count matches the path's `orderedCount`.
    *
-   * @throws The injected persistence error with code
+   * @throws {TuvrenPersistenceError} The injected persistence error with code
    *   `<prefix>_backend_ordered_path_chunk_item_count_mismatch` or
    *   `<prefix>_backend_turn_tree_path_ordered_count_mismatch`.
    */
@@ -1061,9 +1085,8 @@ export const createBackendInvariantStateValidation = (
   const getSchemaForTurnTree = (
     state: BackendState,
     turnTree: StoredTurnTree
-  ): TurnTreeSchema => {
-    return getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
-  };
+  ): TurnTreeSchema =>
+    getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
 
   /**
    * Resolves a stored turn-tree path to its logical value: the single hash
@@ -1113,7 +1136,7 @@ export const createBackendInvariantStateValidation = (
    * and no fewer, and each stored path resolves to the same logical value
    * the manifest records for that path.
    *
-   * @throws The injected persistence error with code
+   * @throws {TuvrenPersistenceError} The injected persistence error with code
    *   `<prefix>_backend_invalid_turn_tree_manifest`,
    *   `<prefix>_backend_missing_turn_tree_paths`,
    *   `<prefix>_backend_turn_tree_path_count_mismatch`,

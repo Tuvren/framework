@@ -50,9 +50,7 @@ export interface TurnNodeLineagePosition {
 export type TurnNodeLineageIndex = Map<string, TurnNodeLineagePosition>;
 
 /** Creates a fresh, empty {@link TurnNodeLineageIndex} for one validation pass. */
-export const createTurnNodeLineageIndex = (): TurnNodeLineageIndex => {
-  return new Map();
-};
+export const createTurnNodeLineageIndex = (): TurnNodeLineageIndex => new Map();
 
 /**
  * Resolves `startTurnNode`'s {@link TurnNodeLineagePosition} — its thread
@@ -82,8 +80,8 @@ export const resolveTurnNodeLineagePosition = (
   startTurnNode: StoredTurnNode,
   index: TurnNodeLineageIndex,
   hooks: {
-    onCycle(): never;
-    onMissingPreviousTurnNode(missingTurnNodeHash: string): never;
+    onCycle: () => never;
+    onMissingPreviousTurnNode: (missingTurnNodeHash: string) => never;
   }
 ): TurnNodeLineagePosition => {
   const cached = index.get(startTurnNode.hash);
@@ -144,14 +142,14 @@ export const resolveTurnNodeLineagePosition = (
       );
     }
 
-    rootTurnNodeHash = anchor.rootTurnNodeHash;
+    ({ rootTurnNodeHash } = anchor);
     depth = anchor.depth + 1;
   }
 
   index.set(last.hash, { depth, rootTurnNodeHash });
 
   for (let position = path.length - 2; position >= 0; position -= 1) {
-    const node = path[position];
+    const node = path.at(position);
 
     if (node === undefined) {
       throw new Error(
@@ -192,19 +190,19 @@ export interface BackendInvariantTurnNodeLineage {
    * than merely existing in the store. Reuses `index`'s memoized positions
    * across every call in the same validation pass.
    *
-   * @throws TuvrenPersistenceError `<prefix>_backend_missing_turn_node_reference`
+   * @throws {TuvrenPersistenceError} `<prefix>_backend_missing_turn_node_reference`
    *   when `turnNodeHash` or an ancestor along its lineage does not exist,
    *   `<prefix>_backend_cyclic_turn_node_lineage` on a lineage cycle, or
    *   `<prefix>_backend_thread_lineage_mismatch` when the walk reaches a
    *   different root than `thread.rootTurnNodeHash`.
    */
-  assertTurnNodeBelongsToThread(
+  assertTurnNodeBelongsToThread: (
     state: BackendState,
     turnNodeHash: string,
     thread: StoredThread,
     label: string,
     index: TurnNodeLineageIndex
-  ): void;
+  ) => void;
   /**
    * Asserts that `descendantTurnNodeHash` is `ancestorTurnNodeHash` itself
    * or a descendant of it along `previousTurnNodeHash` lineage. Used to keep
@@ -214,19 +212,19 @@ export interface BackendInvariantTurnNodeLineage {
    * a genuine walk to exactly the depth difference between the two nodes
    * rather than continuing all the way to the thread root.
    *
-   * @throws TuvrenPersistenceError `<prefix>_backend_missing_turn_node_reference`
+   * @throws {TuvrenPersistenceError} `<prefix>_backend_missing_turn_node_reference`
    *   when either node or an ancestor along the walk does not exist,
    *   `<prefix>_backend_cyclic_turn_node_lineage` on a lineage cycle, or
    *   `<prefix>_backend_turn_node_not_descendant` when the ancestor is not
    *   on the descendant's lineage.
    */
-  assertTurnNodeDescendsFrom(
+  assertTurnNodeDescendsFrom: (
     state: BackendState,
     descendantTurnNodeHash: string,
     ancestorTurnNodeHash: string,
     label: string,
     index: TurnNodeLineageIndex
-  ): void;
+  ) => void;
 }
 
 /**
@@ -241,9 +239,8 @@ export const createBackendInvariantTurnNodeLineage = (
   const { ensureTurnNodeExists, persistenceError } =
     createBackendInvariantRecordUtils(config);
 
-  const code = (suffix: string): string => {
-    return `${config.errorPrefix}_backend_${suffix}`;
-  };
+  const code = (suffix: string): string =>
+    `${config.errorPrefix}_backend_${suffix}`;
 
   /**
    * Rethrows the exact `ensureTurnNodeExists` error for a hash already known

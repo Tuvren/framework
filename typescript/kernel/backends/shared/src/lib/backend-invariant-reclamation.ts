@@ -55,18 +55,18 @@ interface KeepClosure {
  */
 export interface BackendInvariantReclamationDeps {
   /** Decodes a deterministically-encoded hash array (e.g. an ordered path chunk's `itemsCbor`). */
-  decodeHashStringArray(bytes: Uint8Array, label: string): string[];
+  decodeHashStringArray: (bytes: Uint8Array, label: string) => string[];
   /** Decodes a stored run's `createdTurnNodesCbor` into its append-only turn node hash lineage. */
-  decodeRunCreatedTurnNodeHashes(run: StoredRun): string[];
+  decodeRunCreatedTurnNodeHashes: (run: StoredRun) => string[];
   /** Decodes a turn node's `consumedStagedResultsCbor` into the object hashes of the staged results it consumed. */
-  decodeTurnNodeConsumedStagedResultObjectHashes(
+  decodeTurnNodeConsumedStagedResultObjectHashes: (
     turnNode: StoredTurnNode
-  ): string[];
+  ) => string[];
   /** Resolves a stored turn tree path's logical value (single hash, flat hash array, or chunked hash array) against `state`. */
-  resolveStoredTurnTreePathValue(
+  resolveStoredTurnTreePathValue: (
     state: BackendState,
     storedPath: StoredTurnTreePath
-  ): string[] | string | null;
+  ) => string[] | string | null;
 }
 
 const isRunRetained = (
@@ -119,9 +119,8 @@ const collectSurvivingRunAnnotationRoots = (
 };
 
 /** Running and paused runs are the active executions that pin reclamation. */
-const isActiveRun = (status: string): boolean => {
-  return status === "running" || status === "paused";
-};
+const isActiveRun = (status: string): boolean =>
+  status === "running" || status === "paused";
 
 /**
  * The grace horizon is the createdAtMs of the oldest active execution (running
@@ -243,7 +242,10 @@ const closeTurnNodeReachability = (
   deps: BackendInvariantReclamationDeps
 ): void => {
   while (turnNodeStack.length > 0) {
-    const hash = turnNodeStack.pop() as string;
+    const hash = turnNodeStack.pop();
+    if (hash === undefined) {
+      break;
+    }
     if (keep.turnNodes.has(hash)) {
       continue;
     }
@@ -306,7 +308,10 @@ const closeTurnTreeReachability = (
   deps: BackendInvariantReclamationDeps
 ): void => {
   while (turnTreeStack.length > 0) {
-    const hash = turnTreeStack.pop() as string;
+    const hash = turnTreeStack.pop();
+    if (hash === undefined) {
+      break;
+    }
     if (keep.turnTrees.has(hash) || !state.turnTrees.has(hash)) {
       continue;
     }
@@ -377,7 +382,7 @@ const sweepRuns = (
   deps: BackendInvariantReclamationDeps
 ): number => {
   let released = 0;
-  for (const [runId, run] of [...state.runs]) {
+  for (const [runId, run] of state.runs) {
     if (!isRunRetained(run, keepTurnNodes, keepTurnIds, deps)) {
       state.runs.delete(runId);
       state.stagedResults.delete(runId);
@@ -390,7 +395,7 @@ const sweepRuns = (
 
 const sweepTurns = (state: BackendState, keepTurnIds: Set<string>): number => {
   let released = 0;
-  for (const turnId of [...state.turns.keys()]) {
+  for (const turnId of state.turns.keys()) {
     if (!keepTurnIds.has(turnId)) {
       state.turns.delete(turnId);
       released += 1;
@@ -408,7 +413,7 @@ const sweepArchivedBranches = (
   keepTurnNodes: Set<string>
 ): number => {
   let released = 0;
-  for (const [branchId, branch] of [...state.branches]) {
+  for (const [branchId, branch] of state.branches) {
     if (
       branch.archivedFromBranchId !== undefined &&
       !keepTurnNodes.has(branch.headTurnNodeHash)
@@ -426,7 +431,7 @@ const sweepTurnNodes = (
   graceHorizonMs: number
 ): number => {
   let released = 0;
-  for (const [hash, turnNode] of [...state.turnNodes]) {
+  for (const [hash, turnNode] of state.turnNodes) {
     if (!keepTurnNodes.has(hash) && turnNode.createdAtMs < graceHorizonMs) {
       state.turnNodes.delete(hash);
       released += 1;
@@ -441,7 +446,7 @@ const sweepTurnTrees = (
   graceHorizonMs: number
 ): number => {
   let released = 0;
-  for (const [hash, turnTree] of [...state.turnTrees]) {
+  for (const [hash, turnTree] of state.turnTrees) {
     if (!keepTurnTrees.has(hash) && turnTree.createdAtMs < graceHorizonMs) {
       state.turnTrees.delete(hash);
       state.turnTreePaths.delete(hash);
@@ -457,7 +462,7 @@ const sweepChunks = (
   graceHorizonMs: number
 ): number => {
   let released = 0;
-  for (const [hash, chunk] of [...state.orderedPathChunks]) {
+  for (const [hash, chunk] of state.orderedPathChunks) {
     if (!keepChunks.has(hash) && chunk.createdAtMs < graceHorizonMs) {
       state.orderedPathChunks.delete(hash);
       released += 1;
@@ -472,7 +477,7 @@ const sweepObjects = (
   graceHorizonMs: number
 ): number => {
   let released = 0;
-  for (const [hash, object] of [...state.objects]) {
+  for (const [hash, object] of state.objects) {
     if (!keepObjects.has(hash) && object.createdAtMs < graceHorizonMs) {
       state.objects.delete(hash);
       released += 1;
@@ -492,30 +497,20 @@ const sweep = (
   keepTurnIds: Set<string>,
   graceHorizonMs: number,
   deps: BackendInvariantReclamationDeps
-): ReclamationSummary => {
-  return {
-    releasedArchivedBranchCount: sweepArchivedBranches(state, keep.turnNodes),
-    releasedObjectCount: sweepObjects(state, keep.objects, graceHorizonMs),
-    releasedOrderedPathChunkCount: sweepChunks(
-      state,
-      keep.chunks,
-      graceHorizonMs
-    ),
-    releasedRunCount: sweepRuns(state, keep.turnNodes, keepTurnIds, deps),
-    releasedTurnCount: sweepTurns(state, keepTurnIds),
-    releasedTurnNodeCount: sweepTurnNodes(
-      state,
-      keep.turnNodes,
-      graceHorizonMs
-    ),
-    releasedTurnTreeCount: sweepTurnTrees(
-      state,
-      keep.turnTrees,
-      graceHorizonMs
-    ),
-    retainedObjectCount: state.objects.size,
-  };
-};
+): ReclamationSummary => ({
+  releasedArchivedBranchCount: sweepArchivedBranches(state, keep.turnNodes),
+  releasedObjectCount: sweepObjects(state, keep.objects, graceHorizonMs),
+  releasedOrderedPathChunkCount: sweepChunks(
+    state,
+    keep.chunks,
+    graceHorizonMs
+  ),
+  releasedRunCount: sweepRuns(state, keep.turnNodes, keepTurnIds, deps),
+  releasedTurnCount: sweepTurns(state, keepTurnIds),
+  releasedTurnNodeCount: sweepTurnNodes(state, keep.turnNodes, graceHorizonMs),
+  releasedTurnTreeCount: sweepTurnTrees(state, keep.turnTrees, graceHorizonMs),
+  retainedObjectCount: state.objects.size,
+});
 
 /**
  * Realizes the §9.4 reachability reclamation primitive shared by the

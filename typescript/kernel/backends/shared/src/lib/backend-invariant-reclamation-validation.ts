@@ -35,18 +35,18 @@ import {
  */
 export interface BackendInvariantReclamationValidationConfig extends BackendInvariantRecordUtilsConfig {
   /** Decodes a deterministically-encoded hash array (e.g. an ordered path chunk's `itemsCbor`). */
-  decodeHashStringArray(bytes: Uint8Array, label: string): string[];
+  decodeHashStringArray: (bytes: Uint8Array, label: string) => string[];
   /** Decodes a stored run's `createdTurnNodesCbor` into its append-only turn node hash lineage. */
-  decodeRunCreatedTurnNodeHashes(run: StoredRun): string[];
+  decodeRunCreatedTurnNodeHashes: (run: StoredRun) => string[];
   /** Decodes a turn node's `consumedStagedResultsCbor` into the object hashes of the staged results it consumed. */
-  decodeTurnNodeConsumedStagedResultObjectHashes(
+  decodeTurnNodeConsumedStagedResultObjectHashes: (
     turnNode: StoredTurnNode
-  ): string[];
+  ) => string[];
   /** Resolves a stored turn tree path's logical value (single hash, flat hash array, or chunked hash array) against `state`. */
-  resolveStoredTurnTreePathValue(
+  resolveStoredTurnTreePathValue: (
     state: BackendState,
     storedPath: StoredTurnTreePath
-  ): string[] | string | null;
+  ) => string[] | string | null;
 }
 
 /**
@@ -156,10 +156,10 @@ export interface BackendInvariantReclamationValidation {
    * proven for every surviving record by `loadValidatedState`'s full,
    * pre-sweep validation.
    *
-   * @throws The injected persistence error with a `<prefix>_backend_*` code
+   * @throws {TuvrenPersistenceError} The injected persistence error with a `<prefix>_backend_*` code
    *   on the first invariant a defective sweep violated.
    */
-  assertReclamationSurvivorInvariants(state: BackendState): void;
+  assertReclamationSurvivorInvariants: (state: BackendState) => void;
 }
 
 /**
@@ -186,9 +186,8 @@ export const createBackendInvariantReclamationValidation = (
     persistenceError,
   } = createBackendInvariantRecordUtils(config);
 
-  const code = (suffix: string): string => {
-    return `${config.errorPrefix}_backend_${suffix}`;
-  };
+  const code = (suffix: string): string =>
+    `${config.errorPrefix}_backend_${suffix}`;
 
   /** Branch heads and thread roots must still resolve to surviving turn nodes. */
   const assertSurvivingRootReferences = (state: BackendState): void => {

@@ -28,7 +28,10 @@ const captureThrownCode = (fn: () => void): string => {
     fn();
   } catch (error) {
     expect(error).toBeInstanceOf(TuvrenPersistenceError);
-    return (error as TuvrenPersistenceError).code;
+    if (!(error instanceof TuvrenPersistenceError)) {
+      throw error;
+    }
+    return error.code;
   }
   throw new Error("expected fn() to throw a TuvrenPersistenceError");
 };
@@ -43,14 +46,14 @@ describe("@tuvren/backend-shared createBackendInvariantRecordUtils", () => {
     });
 
     expect(
-      captureThrownCode(() =>
-        memoryRecordUtils.assertRunStatusTransition("completed", "running")
-      )
+      captureThrownCode(() => {
+        memoryRecordUtils.assertRunStatusTransition("completed", "running");
+      })
     ).toBe("memory_backend_run_status_transition_illegal");
     expect(
-      captureThrownCode(() =>
-        sqliteRecordUtils.assertRunStatusTransition("completed", "running")
-      )
+      captureThrownCode(() => {
+        sqliteRecordUtils.assertRunStatusTransition("completed", "running");
+      })
     ).toBe("sqlite_backend_run_status_transition_illegal");
   });
 });
@@ -66,7 +69,7 @@ describe("@tuvren/backend-shared createBackendInvariantRunLogic", () => {
       errorPrefix: "sqlite",
     });
 
-    const existingRun = {
+    const existingRun: StoredRun = {
       branchId: "branch_1",
       createdAtMs: 1,
       createdTurnNodesCbor: new Uint8Array(),
@@ -78,27 +81,27 @@ describe("@tuvren/backend-shared createBackendInvariantRunLogic", () => {
       stepSequenceCbor: new Uint8Array(),
       turnId: "turn_1",
       updatedAtMs: 1,
-    } as unknown as StoredRun;
-    const nextRunWithDifferentBranch = {
+    };
+    const nextRunWithDifferentBranch: StoredRun = {
       ...existingRun,
       branchId: "branch_2",
-    } as StoredRun;
+    };
 
     expect(
-      captureThrownCode(() =>
+      captureThrownCode(() => {
         memoryRunLogic.assertRunUpdateIsLegal(
           existingRun,
           nextRunWithDifferentBranch
-        )
-      )
+        );
+      })
     ).toBe("memory_backend_run_branch_immutable");
     expect(
-      captureThrownCode(() =>
+      captureThrownCode(() => {
         sqliteRunLogic.assertRunUpdateIsLegal(
           existingRun,
           nextRunWithDifferentBranch
-        )
-      )
+        );
+      })
     ).toBe("sqlite_backend_run_branch_immutable");
   });
 });
