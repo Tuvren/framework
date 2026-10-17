@@ -101,7 +101,7 @@ tickets:
       evidence: "Assert the regenerated UserMessage and InputSignal JSON Schemas under spec/core/artifacts/json-schema, spec/host/artifacts/json-schema, and spec/host/session/artifacts/json-schema allow an optional non-empty string admissionKey and nothing else new; normalization carries the key from the signal onto the user message for executeTurn and steer() signals, rejects an empty or non-string key with the existing invalid-signal error, and returns a keyless user message whose payload-codec bytes and message hash equal a fixture captured before this change. Gate tests assert that stable-signature drift is blocked and cannot update the snapshot by default; bun run api-freeze --minor records exactly the five reviewed InputSignal and TuvrenMessage findings with bump minor; allowed public drift records PATCH; --major, unknown flags, --check --minor, and an unnecessary --minor fail; the experimental consistency floor remains non-overridable; canonical metadata cites ADR-0069 and --minor; and historical ledger rows remain unchanged. The refreshed snapshot contains only the five reviewed stable-signature findings, and bun run api-freeze:check then passes."
     flows: [flow-context-engineering-steering]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-CS002
     title: Stage the keyed user message for initial input and steering
     type: Feature

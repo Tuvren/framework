@@ -73,6 +73,72 @@ describe("framework-runtime-core", () => {
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([]);
   });
 
+  test("preserves the host admission key on initial input", async () => {
+    const harness = createFakeKernelHarness();
+    const runner = {
+      async execute() {
+        return {
+          messages: [assistantText("Admission key observed.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "fake",
+    } satisfies RuntimeRunner;
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      runnerRegistry: createRunnerRegistry([runner]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: JSON.parse(
+        '{"admissionKey":"  host-key-initial  ","parts":[{"text":"Keyed initial input","type":"text"}]}'
+      ),
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect((await harness.readBranchMessages(thread.branchId))[0]).toEqual({
+      admissionKey: "  host-key-initial  ",
+      parts: [{ text: "Keyed initial input", type: "text" }],
+      role: "user",
+    });
+  });
+
+  test("rejects empty and non-string admission keys before staging", async () => {
+    for (const admissionKey of ["", 7]) {
+      const harness = createFakeKernelHarness();
+      const runtime = createTuvrenRuntime({
+        defaultRunnerId: "fake",
+        runnerRegistry: createRunnerRegistry([]),
+        kernel: harness.kernel,
+      });
+      const thread = await runtime.createThread({});
+      const signal = JSON.parse(
+        JSON.stringify({
+          admissionKey,
+          parts: [{ text: "Invalid keyed input", type: "text" }],
+        })
+      );
+
+      expect(() =>
+        runtime.executeTurn({
+          branchId: thread.branchId,
+          config: { name: "primary" },
+          signal,
+          threadId: thread.threadId,
+        })
+      ).toThrow("request.signal must be a valid TuvrenMessage");
+      expect(await harness.readBranchMessages(thread.branchId)).toEqual([]);
+    }
+  });
+
   test("does not start a fresh handle when it is canceled before the first stream pull", async () => {
     const harness = createFakeKernelHarness();
     let executeCalls = 0;

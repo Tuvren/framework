@@ -145,6 +145,9 @@ export async function incorporateInput(
   const runId = host.createId();
   const headState = await host.loadHeadState(handle.request.branchId);
   const userMessage: TuvrenMessage = {
+    ...(handle.request.signal.admissionKey === undefined
+      ? {}
+      : { admissionKey: handle.request.signal.admissionKey }),
     parts: handle.request.signal.parts,
     role: "user",
   };
@@ -234,6 +237,9 @@ export async function incorporateSteering(
   const runId = host.createId();
   const headState = await host.loadHeadState(handle.request.branchId);
   const steeringMessage: TuvrenMessage = {
+    ...(signal.admissionKey === undefined
+      ? {}
+      : { admissionKey: signal.admissionKey }),
     parts: signal.parts,
     role: "user",
   };

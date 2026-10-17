@@ -124,7 +124,7 @@ const TOOL_AUDIT_LIFECYCLES = new Set([
 ]);
 const EXECUTION_PHASES = new Set(["running", "paused", "completed", "failed"]);
 const SYSTEM_MESSAGE_KEYS = new Set(["role", "content"]);
-const USER_MESSAGE_KEYS = new Set(["role", "parts"]);
+const USER_MESSAGE_KEYS = new Set(["role", "parts", "admissionKey"]);
 const ASSISTANT_MESSAGE_KEYS = new Set(["role", "parts", "providerMetadata"]);
 const TOOL_MESSAGE_KEYS = new Set(["role", "parts"]);
 const PROVIDER_TEXT_DELTA_KEYS = new Set(["type", "text"]);
@@ -361,6 +361,9 @@ export function isTuvrenMessage(value: unknown): value is TuvrenMessage {
       case "user":
         return (
           hasOnlyAllowedKeys(value, USER_MESSAGE_KEYS) &&
+          (value.admissionKey === undefined ||
+            (typeof value.admissionKey === "string" &&
+              value.admissionKey.length > 0)) &&
           isNonEmptyArray(value.parts) &&
           value.parts.every(isContentPart)
         );

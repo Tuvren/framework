@@ -104,6 +104,8 @@ model SystemMessage {
 
 model UserMessage {
   role: "user";
+  @minLength(1)
+  admissionKey?: string;
   @minItems(1)
   parts: ContentPart[];
 }
@@ -129,6 +131,8 @@ union TuvrenMessage {
 }
 
 model InputSignal {
+  @minLength(1)
+  admissionKey?: string;
   @minItems(1)
   parts: ContentPart[];
 }
