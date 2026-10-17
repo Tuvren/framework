@@ -293,8 +293,9 @@ async function executeKeyedRecovery(retryKey: string) {
 
 async function executeKeyedRecoveryAfterEmptyInputPreemption() {
   let nowMs = 1;
+  const backend = createMemoryBackend({ now: () => nowMs });
   const kernel = createRuntimeKernel({
-    backend: createMemoryBackend({ now: () => nowMs }),
+    backend,
   });
   const runner = {
     execute: () =>
@@ -308,6 +309,7 @@ async function executeKeyedRecoveryAfterEmptyInputPreemption() {
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
     kernel,
+    now: () => nowMs,
     runLiveness: {
       executionOwnerId: "recovery-owner-empty-checkpoint",
       leaseDurationMs: 50,
@@ -378,12 +380,12 @@ async function executeKeyedRecoveryAfterEmptyInputPreemption() {
   });
   await kernel.run.beginStep(laterRunId, "iterate");
   nowMs = 21;
-  await kernel.runLiveness.preemptExpired(
-    laterRunId,
-    "recovery-owner-empty-checkpoint",
-    nowMs,
-    "stale_running_recovery"
+  const expiredBeforeRecovery = await kernel.runLiveness.listExpired(nowMs);
+  expect(expiredBeforeRecovery.map((run) => run.runId)).toContain(laterRunId);
+  const runBeforeRecovery = await backend.transact(async (tx) =>
+    tx.runs.get(laterRunId)
   );
+  expect(runBeforeRecovery?.status).toBe("running");
   const recoveredUsers = (
     await runtime.readBranchMessages({
       branchId: thread.branchId,
@@ -400,6 +402,11 @@ async function executeKeyedRecoveryAfterEmptyInputPreemption() {
     threadId: thread.threadId,
   });
   const events = await collectEvents(handle.events());
+  const runAfterRecovery = await backend.transact(async (tx) =>
+    tx.runs.get(laterRunId)
+  );
+  expect(runAfterRecovery?.status).toBe("failed");
+  expect(runAfterRecovery?.preemptionReason).toBe("stale_running_recovery");
   const freshUsers = (
     await runtime.readBranchMessages({
       branchId: thread.branchId,
