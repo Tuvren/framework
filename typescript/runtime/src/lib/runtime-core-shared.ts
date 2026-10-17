@@ -273,6 +273,9 @@ export function normalizeInputSignal(
   label: string
 ): InputSignal {
   const candidateMessage: unknown = {
+    ...(signal.admissionKey === undefined
+      ? {}
+      : { admissionKey: signal.admissionKey }),
     parts: cloneValue(signal.parts),
     role: "user",
   };
@@ -288,6 +291,9 @@ export function normalizeInputSignal(
   }
 
   return {
+    ...(candidateMessage.admissionKey === undefined
+      ? {}
+      : { admissionKey: candidateMessage.admissionKey }),
     parts: candidateMessage.parts,
   };
 }

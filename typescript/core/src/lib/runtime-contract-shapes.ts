@@ -175,7 +175,11 @@ export type ContentPart =
  */
 export type TuvrenMessage =
   | { role: "system"; content: string }
-  | { role: "user"; parts: NonEmptyArray<ContentPart> }
+  | {
+      admissionKey?: string;
+      role: "user";
+      parts: NonEmptyArray<ContentPart>;
+    }
   | {
       role: "assistant";
       parts: NonEmptyArray<ContentPart>;
@@ -191,6 +195,7 @@ export type TuvrenMessage =
  * boundary.
  */
 export interface InputSignal {
+  admissionKey?: string;
   parts: NonEmptyArray<ContentPart>;
 }
 

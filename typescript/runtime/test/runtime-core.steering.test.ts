@@ -99,6 +99,20 @@ describe("framework-runtime-core", () => {
     expect(() => handle.steer(JSON.parse('{"parts":[123]}'))).toThrow(
       "steering signal must be a valid TuvrenMessage"
     );
+    expect(() =>
+      handle.steer(
+        JSON.parse(
+          '{"admissionKey":"","parts":[{"text":"Empty key","type":"text"}]}'
+        )
+      )
+    ).toThrow("steering signal must be a valid TuvrenMessage");
+    expect(() =>
+      handle.steer(
+        JSON.parse(
+          '{"admissionKey":7,"parts":[{"text":"Non-string key","type":"text"}]}'
+        )
+      )
+    ).toThrow("steering signal must be a valid TuvrenMessage");
     handle.steer(textSignal("Injected steering"));
     await eventsPromise;
     const manifest = await readBranchContextManifest(
@@ -154,6 +168,71 @@ describe("framework-runtime-core", () => {
         return message.parts.some((part) => typeof part === "number");
       })
     ).toBe(false);
+  });
+
+  test("preserves the host admission key on steering input", async () => {
+    const harness = createFakeKernelHarness();
+    const runner = {
+      async execute(context) {
+        const keyedSteering = context.messages.find(
+          (message) =>
+            message.role === "user" &&
+            "admissionKey" in message &&
+            message.admissionKey === "  host-key-steering  "
+        );
+
+        if (keyedSteering !== undefined) {
+          return {
+            messages: [assistantText("Saw keyed steering.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        await delay(10);
+        return {
+          messages: [assistantText("Waiting for keyed steering.")],
+          resolution: {
+            type: "continue_iteration",
+          },
+        };
+      },
+      id: "fake",
+    } satisfies RuntimeRunner;
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      runnerRegistry: createRunnerRegistry([runner]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Start keyed steering test"),
+      threadId: thread.threadId,
+    });
+    const eventsPromise = collectEvents(handle.events());
+
+    await waitForAsync(async () =>
+      hasAssistantText(
+        await harness.readBranchMessages(thread.branchId),
+        "Waiting for keyed steering."
+      )
+    );
+    handle.steer(
+      JSON.parse(
+        '{"admissionKey":"  host-key-steering  ","parts":[{"text":"Keyed steering","type":"text"}]}'
+      )
+    );
+    await eventsPromise;
+
+    expect(await harness.readBranchMessages(thread.branchId)).toContainEqual({
+      admissionKey: "  host-key-steering  ",
+      parts: [{ text: "Keyed steering", type: "text" }],
+      role: "user",
+    });
   });
 
   test("emits steering.incorporated with the steering message hash", async () => {

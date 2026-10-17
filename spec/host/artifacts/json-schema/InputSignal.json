@@ -3,6 +3,10 @@
   "$id": "https://tuvren.dev/schemas/framework/runtime-api/InputSignal.json",
   "type": "object",
   "properties": {
+    "admissionKey": {
+      "type": "string",
+      "minLength": 1
+    },
     "parts": {
       "type": "array",
       "items": {

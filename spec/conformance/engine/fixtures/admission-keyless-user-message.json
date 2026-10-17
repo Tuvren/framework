@@ -1,0 +1,16 @@
+{
+  "$comment": "Captured before KRT-CS001 from the TypeScript deterministic kernel-record encoder through the identity payload codec. The bytes and SHA-256 hash were cross-validated with Go kernel.EncodeCanonical and kernel.HashBytesToHex.",
+  "message": {
+    "role": "user",
+    "parts": [
+      {
+        "type": "text",
+        "text": "Admission keyless user message"
+      }
+    ]
+  },
+  "identityPayloadCodec": {
+    "encodedBytesHex": "a264726f6c65647573657265706172747381a26474657874781e41646d697373696f6e206b65796c6573732075736572206d65737361676564747970656474657874",
+    "messageHash": "2844fba9fabe1b325638ef4dd1b911c29573870c16f8a9e10ac70d48135b0833"
+  }
+}

@@ -162,6 +162,25 @@ describe("runtime-contract-guards execution shape contracts", () => {
     ).toBe(false);
   });
 
+  test("accepts only non-empty host admission keys on user messages", () => {
+    const keyedUserMessage = {
+      admissionKey: " host-key-1 ",
+      parts: [{ text: "hi", type: "text" }],
+      role: "user",
+    };
+
+    expect(isTuvrenMessage(keyedUserMessage)).toBe(true);
+    expect(isTuvrenMessage({ ...keyedUserMessage, admissionKey: "   " })).toBe(
+      true
+    );
+    expect(isTuvrenMessage({ ...keyedUserMessage, admissionKey: "" })).toBe(
+      false
+    );
+    expect(isTuvrenMessage({ ...keyedUserMessage, admissionKey: 7 })).toBe(
+      false
+    );
+  });
+
   test("rejects assistant messages with malformed provider metadata", () => {
     expect(
       isTuvrenMessage({

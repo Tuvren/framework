@@ -127,6 +127,8 @@ union ContentPart {
  * (`spec/host/typespec/main.tsp`). Must stay in sync with that declaration.
  */
 model InputSignal {
+  @minLength(1)
+  admissionKey?: string;
   @minItems(1)
   parts: ContentPart[];
 }
