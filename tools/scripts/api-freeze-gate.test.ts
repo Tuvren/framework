@@ -362,7 +362,7 @@ describe("admission-key release intent", () => {
           await mkdir(path.dirname(absolutePath), { recursive: true });
           await writeFile(
             absolutePath,
-            `# Package\n\n## 0.3.0\n\n### Minor Changes\n\n- Preserve the host-owned \`admissionKey\`.\n\n## 0.2.0\n\n### Patch Changes\n\n- Earlier release.\n`
+            "# Package\n\n## 0.3.0\n\n### Minor Changes\n\n- Preserve the host-owned `admissionKey`.\n\n## 0.2.0\n\n### Patch Changes\n\n- Earlier release.\n"
           );
         })
       );
@@ -375,7 +375,7 @@ describe("admission-key release intent", () => {
       );
       await writeFile(
         coreChangelogPath,
-        `# Package\n\n## 0.3.0\n\nThe \`admissionKey\` marker is outside the subsection.\n\n### Minor Changes\n\n- Another change.\n`
+        "# Package\n\n## 0.3.0\n\nThe `admissionKey` marker is outside the subsection.\n\n### Minor Changes\n\n- Another change.\n"
       );
       expect(() => assertAdmissionKeyReleaseIntent(directory)).toThrow(
         "inside a Minor Changes subsection"
