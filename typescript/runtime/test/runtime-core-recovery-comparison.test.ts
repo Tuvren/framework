@@ -33,6 +33,7 @@
 
 import { describe, expect, test } from "bun:test";
 
+import { createMemoryBackend } from "@tuvren/backend-memory";
 import type { KernelRecord } from "@tuvren/core";
 import type { InputSignal } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
@@ -42,6 +43,7 @@ import {
   type RuntimeKernel,
   type RuntimeKernelRunLiveness,
 } from "@tuvren/kernel-protocol";
+import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
 import {
   createRunnerRegistry,
@@ -143,6 +145,7 @@ function keyedUserMessage(admissionKey: string): TuvrenMessage {
 async function checkpointUserMessage(
   kernel: RuntimeKernel,
   input: {
+    activeTurnId?: string;
     branchId: string;
     message: TuvrenMessage;
     runId: string;
@@ -168,7 +171,36 @@ async function checkpointUserMessage(
     "message",
     "completed"
   );
-  const checkpoint = await kernel.run.completeStep(input.runId, input.stepId);
+  let treeHash: string | undefined;
+
+  if (input.activeTurnId !== undefined) {
+    const startNode = await kernel.node.get(input.startTurnNodeHash);
+
+    if (startNode === null) {
+      throw new Error("expected checkpoint start node");
+    }
+
+    const lineageHash = await kernel.store.put(
+      encodeDeterministicKernelRecord({ activeTurnId: input.activeTurnId })
+    );
+    const incorporatedTreeHash = await kernel.tree.incorporate(
+      startNode.turnTreeHash,
+      await kernel.staging.current(input.runId)
+    );
+    treeHash = await kernel.tree.create(
+      DEFAULT_AGENT_SCHEMA.schemaId,
+      { "turn.lineage": lineageHash },
+      incorporatedTreeHash
+    );
+  }
+
+  const checkpoint = await kernel.run.completeStep(
+    input.runId,
+    input.stepId,
+    undefined,
+    undefined,
+    treeHash
+  );
   await kernel.run.complete(input.runId, "completed");
 
   if (checkpoint.turnNodeHash === undefined) {
@@ -254,6 +286,132 @@ async function executeKeyedRecovery(retryKey: string) {
 
   expect(handle.status().phase).toBe("completed");
   return {
+    recoveredTurnId: staleTurn.turnId,
+    resultTurnId: extractTurnId(events),
+  };
+}
+
+async function executeKeyedRecoveryAfterEmptyInputPreemption() {
+  let nowMs = 1;
+  const kernel = createRuntimeKernel({
+    backend: createMemoryBackend({ now: () => nowMs }),
+  });
+  const runner = {
+    execute: () =>
+      Promise.resolve({
+        messages: [assistantText("Completed the fresh keyed request.")],
+        resolution: { reason: "done", type: "end_turn" as const },
+      }),
+    id: "fake",
+    resume: () => Promise.reject(new Error("resume was not expected")),
+  } satisfies RuntimeRunner;
+  const runtime = createTuvrenRuntime({
+    defaultRunnerId: "fake",
+    kernel,
+    runLiveness: {
+      executionOwnerId: "recovery-owner-empty-checkpoint",
+      leaseDurationMs: 50,
+    },
+    runnerRegistry: createRunnerRegistry([runner]),
+  });
+  const thread = await runtime.createThread({});
+  const staleTurn = await kernel.turn.create(
+    "turn_keyed_recovery_after_empty_checkpoint",
+    thread.threadId,
+    thread.branchId,
+    null,
+    thread.rootTurnNodeHash
+  );
+  const preInputRunId = "run_keyed_recovery_before_input";
+  await kernel.runLiveness.createLeasedRun({
+    branchId: thread.branchId,
+    executionOwnerId: "worker-crashed-before-input",
+    leaseExpiresAtMs: 10,
+    runId: preInputRunId,
+    schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
+    startTurnNodeHash: thread.rootTurnNodeHash,
+    steps: [
+      { deterministic: false, id: "incorporate_input", sideEffects: true },
+    ],
+    turnId: staleTurn.turnId,
+  });
+  await kernel.run.beginStep(preInputRunId, "incorporate_input");
+
+  nowMs = 11;
+  const emptyPreemption = await kernel.runLiveness.preemptExpired(
+    preInputRunId,
+    "recovery-owner-empty-checkpoint",
+    nowMs,
+    "stale_running_recovery"
+  );
+  const inputCheckpoint = await checkpointUserMessage(kernel, {
+    activeTurnId: staleTurn.turnId,
+    branchId: thread.branchId,
+    message: keyedUserMessage("A"),
+    runId: "run_keyed_recovery_input_after_empty_checkpoint",
+    startTurnNodeHash: emptyPreemption.lastTurnNodeHash,
+    stepId: "incorporate_input",
+    taskId: "initial_input",
+    turnId: staleTurn.turnId,
+  });
+  const steeringCheckpoint = await checkpointUserMessage(kernel, {
+    activeTurnId: staleTurn.turnId,
+    branchId: thread.branchId,
+    message: keyedUserMessage("C"),
+    runId: "run_keyed_recovery_steering_after_empty_checkpoint",
+    startTurnNodeHash: inputCheckpoint,
+    stepId: "incorporate_steering",
+    taskId: "steering_input",
+    turnId: staleTurn.turnId,
+  });
+
+  const laterRunId = "run_keyed_recovery_after_steering";
+  await kernel.runLiveness.createLeasedRun({
+    branchId: thread.branchId,
+    executionOwnerId: "worker-crashed-after-steering",
+    leaseExpiresAtMs: 20,
+    runId: laterRunId,
+    schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
+    startTurnNodeHash: steeringCheckpoint,
+    steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+    turnId: staleTurn.turnId,
+  });
+  await kernel.run.beginStep(laterRunId, "iterate");
+  nowMs = 21;
+  await kernel.runLiveness.preemptExpired(
+    laterRunId,
+    "recovery-owner-empty-checkpoint",
+    nowMs,
+    "stale_running_recovery"
+  );
+  const recoveredUsers = (
+    await runtime.readBranchMessages({
+      branchId: thread.branchId,
+    })
+  ).messages.filter(
+    (message): message is Extract<TuvrenMessage, { role: "user" }> =>
+      "role" in message && message.role === "user"
+  );
+
+  const handle = runtime.executeTurn({
+    branchId: thread.branchId,
+    config: { name: "primary" },
+    signal: keyedSignal("B"),
+    threadId: thread.threadId,
+  });
+  const events = await collectEvents(handle.events());
+  const freshUsers = (
+    await runtime.readBranchMessages({
+      branchId: thread.branchId,
+    })
+  ).messages.filter(
+    (message): message is Extract<TuvrenMessage, { role: "user" }> =>
+      "role" in message && message.role === "user"
+  );
+
+  return {
+    freshUsers,
+    recoveredUsers,
     recoveredTurnId: staleTurn.turnId,
     resultTurnId: extractTurnId(events),
   };
@@ -438,6 +596,21 @@ describe("framework-runtime-core", () => {
     const result = await executeKeyedRecovery("B");
 
     expect(result.resultTurnId).not.toBe(result.recoveredTurnId);
+  });
+
+  test("finds the original keyed input across an empty preemption checkpoint and later steering", async () => {
+    const result = await executeKeyedRecoveryAfterEmptyInputPreemption();
+
+    expect(result.resultTurnId).not.toBe(result.recoveredTurnId);
+    expect(
+      result.recoveredUsers.map((message) => message.admissionKey)
+    ).toContain("A");
+    expect(
+      result.recoveredUsers.map((message) => message.admissionKey)
+    ).toContain("C");
+    expect(result.freshUsers.map((message) => message.admissionKey)).toContain(
+      "B"
+    );
   });
 
   test("resumes the recovered turn for a retry with its initial input key", async () => {
