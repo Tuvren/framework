@@ -436,13 +436,25 @@ describe("createSessionClient: inbound frame shapes", () => {
     expect(typeof sent.correlationId).toBe("string");
     expect(requiredString(sent.correlationId).length).toBeGreaterThan(0);
 
-    client.steer({ parts: [{ text: "keep going", type: "text" }] });
+    client.steer({
+      admissionKey: "  admission-key  ",
+      parts: [{ text: "keep going", type: "text" }],
+    });
     sent = socket.lastFrame();
     expect(sent.kind).toBe("steer");
     expect(sent.protocolVersion).toBe("1");
     expect(sent.sessionId).toBe("test-session");
     expect(typeof sent.correlationId).toBe("string");
     expect(requiredString(sent.correlationId).length).toBeGreaterThan(0);
+    expect(requiredRecord(sent.signal).admissionKey).toBe("  admission-key  ");
+
+    client.steer({ parts: [{ text: "still going", type: "text" }] });
+    sent = socket.lastFrame();
+    expect(sent.kind).toBe("steer");
+    expect(sent.protocolVersion).toBe("1");
+    expect(Object.hasOwn(requiredRecord(sent.signal), "admissionKey")).toBe(
+      false
+    );
 
     client.cancel();
     sent = socket.lastFrame();

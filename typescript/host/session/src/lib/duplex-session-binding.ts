@@ -315,6 +315,9 @@ const isContentPart = (value: unknown): value is ContentPart => {
 
 const isInputSignal = (value: unknown): value is InputSignal =>
   isRecord(value) &&
+  (value.admissionKey === undefined ||
+    (typeof value.admissionKey === "string" &&
+      value.admissionKey.length > 0)) &&
   isUnknownArray(value.parts) &&
   value.parts.length > 0 &&
   [...value.parts].every(isContentPart);
@@ -447,7 +450,7 @@ const validateInboundFrame = (
         return {
           correlationId,
           message:
-            "steer frame requires a signal payload with a non-empty parts array",
+            "steer frame requires a signal payload with a non-empty parts array and an optional non-empty string admissionKey",
           ok: false,
         };
       }
