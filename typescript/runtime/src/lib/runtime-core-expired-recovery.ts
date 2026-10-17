@@ -20,12 +20,14 @@ import {
   TuvrenRuntimeError,
 } from "@tuvren/core";
 import type { InputSignal } from "@tuvren/core/execution";
+import type { TuvrenMessage } from "@tuvren/core/messages";
 import type {
   RuntimeKernel,
   RuntimeKernelRunLiveness,
 } from "@tuvren/kernel-protocol";
 
 import type { PayloadCodecBinding } from "./payload-codec-seam.js";
+import { readMessage } from "./runtime-core-head-state.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import {
   createInterruptedIterationUnreadableError,
@@ -97,8 +99,9 @@ export interface RuntimeCoreExpiredRecoveryHost {
  * stale run died in (see `classifyRecoveredExecutionMode`):
  *
  * - `reuse_turn`: the incoming signal is compared against the recovered
- *   turn's last user message to decide whether input must be
- *   re-incorporated; a mismatch yields a bare `preempted` result.
+ *   turn's initial input key when both are keyed, otherwise against its last
+ *   user message parts, to decide whether input must be re-incorporated; a
+ *   mismatch yields a bare `preempted` result.
  * - Other modes require the signal to match the recovered turn; on match
  *   the recovered agent name, estimated iteration count, and durable
  *   runtime status are returned alongside the mode.
@@ -173,9 +176,23 @@ export async function recoverExpiredExecutionBranchIfNeeded(
     throw error;
   }
 
+  const initialInputMessage =
+    signal.admissionKey === undefined
+      ? undefined
+      : await readRecoveredTurnInitialInputMessage(
+          kernel,
+          host.getPayloadCodecBinding(),
+          expiredRun.turnId,
+          recoveryState.lastTurnNodeHash
+        );
+
   if (recoveredMode === "reuse_turn") {
     switch (
-      classifyRecoveredTurnSignalState(signal, recoveredHeadState.messages)
+      classifyRecoveredTurnSignalState(
+        signal,
+        recoveredHeadState.messages,
+        initialInputMessage
+      )
     ) {
       case "match":
         return {
@@ -204,7 +221,13 @@ export async function recoverExpiredExecutionBranchIfNeeded(
     }
   }
 
-  if (!doesSignalMatchRecoveredTurn(signal, recoveredHeadState.messages)) {
+  if (
+    !doesSignalMatchRecoveredTurn(
+      signal,
+      recoveredHeadState.messages,
+      initialInputMessage
+    )
+  ) {
     return {
       preempted: true,
     };
@@ -246,6 +269,59 @@ export async function recoverExpiredExecutionBranchIfNeeded(
     ),
     turnId: expiredRun.turnId,
   };
+}
+
+/**
+ * Read the user message consumed by the recovered turn's first checkpoint.
+ *
+ * A turn's `startTurnNodeHash` is its pre-input boundary. Walking from the
+ * recovered head to the first child of that boundary identifies the
+ * `incorporate_input` checkpoint even when later checkpoints rewrote the
+ * current messages path or appended steering messages.
+ */
+async function readRecoveredTurnInitialInputMessage(
+  kernel: RuntimeKernel,
+  payloadCodecBinding: PayloadCodecBinding,
+  turnId: string,
+  recoveredHeadTurnNodeHash: HashString
+): Promise<TuvrenMessage | undefined> {
+  const turn = await kernel.turn.get(turnId);
+
+  if (turn === null) {
+    return undefined;
+  }
+
+  for await (const turnNode of kernel.node.walkBack(
+    recoveredHeadTurnNodeHash
+  )) {
+    if (turnNode.hash === turn.startTurnNodeHash) {
+      return undefined;
+    }
+
+    if (turnNode.previousTurnNodeHash !== turn.startTurnNodeHash) {
+      continue;
+    }
+
+    for (const stagedResult of turnNode.consumedStagedResults) {
+      if (stagedResult.objectType !== "message") {
+        continue;
+      }
+
+      const message = await readMessage(
+        kernel,
+        payloadCodecBinding,
+        stagedResult.objectHash
+      );
+
+      if (message.role === "user") {
+        return message;
+      }
+    }
+
+    return undefined;
+  }
+
+  return undefined;
 }
 
 /**

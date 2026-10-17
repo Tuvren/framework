@@ -170,7 +170,7 @@ tickets:
       evidence: "Given a turn whose initial input committed with key A and a later steer committed with key C before the process died, When the host re-submits an equal-text input with key B, Then recovery treats it as a mismatch and starts a fresh turn; When it re-submits with key A, Then recovery resumes the original turn; When it re-submits with key C, Then recovery treats it as a mismatch because C belongs to a steer, not the turn's initial input. Given keyless signals, Then every existing case in runtime-core.recovery.test.ts and runtime-core-recovery-comparison.test.ts keeps its current outcome."
     flows: [flow-crash-mid-checkpoint-recovery]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-CS005
     title: Carry the admission key through the duplex session steer frame
     type: Feature

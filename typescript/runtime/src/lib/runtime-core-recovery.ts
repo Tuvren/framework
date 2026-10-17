@@ -228,21 +228,31 @@ export function isRunLeaseLostError(error: unknown): boolean {
 }
 
 /**
- * Report whether the incoming input signal matches the last user message of
- * a recovered turn (convenience wrapper over
+ * Report whether the incoming input signal matches a recovered turn.
+ *
+ * When both the signal and the recovered turn's initial input carry an
+ * admission key, the keys define the match. Otherwise this preserves the
+ * legacy last-user-parts comparison. This is a convenience wrapper over
  * {@link classifyRecoveredTurnSignalState} that treats only `"match"` as
- * true).
+ * true.
  */
 export function doesSignalMatchRecoveredTurn(
   signal: InputSignal,
-  messages: readonly TuvrenMessage[]
+  messages: readonly TuvrenMessage[],
+  initialInputMessage?: TuvrenMessage
 ): boolean {
-  return classifyRecoveredTurnSignalState(signal, messages) === "match";
+  return (
+    classifyRecoveredTurnSignalState(signal, messages, initialInputMessage) ===
+    "match"
+  );
 }
 
 /**
- * Compare the incoming input signal against the most recent user message in
- * a recovered turn's messages.
+ * Compare the incoming input signal against a recovered turn's input.
+ *
+ * When both inputs carry an admission key, compare the signal key with the
+ * recovered turn's initial input key. When either key is absent, compare the
+ * signal parts with the most recent recovered user message exactly as before.
  *
  * The recovered message was decoded from a durable kernel record, and the
  * deterministic decoder materializes every stored map as an
@@ -252,13 +262,24 @@ export function doesSignalMatchRecoveredTurn(
  * matching; content, structure, and value types are still compared strictly.
  *
  * @returns `"missing"` when the recovered turn has no user message,
- *   `"match"` when the last user message's parts deep-equal the signal's
- *   parts, and `"mismatch"` otherwise.
+ *   `"match"` when both present keys are equal or the legacy parts fallback
+ *   matches, and `"mismatch"` otherwise.
  */
 export function classifyRecoveredTurnSignalState(
   signal: InputSignal,
-  messages: readonly TuvrenMessage[]
+  messages: readonly TuvrenMessage[],
+  initialInputMessage?: TuvrenMessage
 ): "match" | "mismatch" | "missing" {
+  if (
+    signal.admissionKey !== undefined &&
+    initialInputMessage?.role === "user" &&
+    initialInputMessage.admissionKey !== undefined
+  ) {
+    return signal.admissionKey === initialInputMessage.admissionKey
+      ? "match"
+      : "mismatch";
+  }
+
   const recoveredUserMessage = [...messages]
     .reverse()
     .find((message) => message.role === "user");
