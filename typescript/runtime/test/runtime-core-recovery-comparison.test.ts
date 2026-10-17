@@ -37,7 +37,11 @@ import type { KernelRecord } from "@tuvren/core";
 import type { InputSignal } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { RuntimeRunner } from "@tuvren/core/runner";
-import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import {
+  encodeDeterministicKernelRecord,
+  type RuntimeKernel,
+  type RuntimeKernelRunLiveness,
+} from "@tuvren/kernel-protocol";
 
 import {
   createRunnerRegistry,
@@ -60,6 +64,7 @@ import {
 } from "./runtime-core-test-helpers.ts";
 
 const RESUME_TEXT = "Resume with the same payload";
+const KEYED_RECOVERY_TEXT = "Recover this keyed request";
 
 function nestedResumeData() {
   return {
@@ -118,6 +123,140 @@ function requireUserMessage(message: TuvrenMessage) {
   }
 
   return message;
+}
+
+function keyedSignal(admissionKey: string): InputSignal {
+  return {
+    admissionKey,
+    parts: [{ text: KEYED_RECOVERY_TEXT, type: "text" }],
+  };
+}
+
+function keyedUserMessage(admissionKey: string): TuvrenMessage {
+  return {
+    admissionKey,
+    parts: [{ text: KEYED_RECOVERY_TEXT, type: "text" }],
+    role: "user",
+  };
+}
+
+async function checkpointUserMessage(
+  kernel: RuntimeKernel,
+  input: {
+    branchId: string;
+    message: TuvrenMessage;
+    runId: string;
+    startTurnNodeHash: string;
+    stepId: "incorporate_input" | "incorporate_steering";
+    taskId: string;
+    turnId: string;
+  }
+): Promise<string> {
+  await kernel.run.create(
+    input.runId,
+    input.turnId,
+    input.branchId,
+    DEFAULT_AGENT_SCHEMA.schemaId,
+    input.startTurnNodeHash,
+    [{ deterministic: false, id: input.stepId, sideEffects: false }]
+  );
+  await kernel.run.beginStep(input.runId, input.stepId);
+  await kernel.staging.stage(
+    input.runId,
+    encodeDeterministicKernelRecord(input.message as unknown as KernelRecord),
+    input.taskId,
+    "message",
+    "completed"
+  );
+  const checkpoint = await kernel.run.completeStep(input.runId, input.stepId);
+  await kernel.run.complete(input.runId, "completed");
+
+  if (checkpoint.turnNodeHash === undefined) {
+    throw new Error(`${input.stepId} did not create a checkpoint`);
+  }
+
+  await kernel.turn.updateHead(input.turnId, checkpoint.turnNodeHash);
+  await kernel.branch.setHead(input.branchId, checkpoint.turnNodeHash);
+  return checkpoint.turnNodeHash;
+}
+
+async function executeKeyedRecovery(retryKey: string) {
+  const suffix = retryKey.toLowerCase();
+  const harness = createFakeKernelHarness();
+  const livenessHarness = createFakeRunLivenessKernelHarness(harness);
+  const kernel: RuntimeKernel & RuntimeKernelRunLiveness =
+    livenessHarness.kernel;
+  const runner = {
+    execute: () =>
+      Promise.resolve({
+        messages: [assistantText(`Recovery result for key ${retryKey}.`)],
+        resolution: {
+          reason: "done",
+          type: "end_turn" as const,
+        },
+      }),
+    id: "fake",
+    resume: () => Promise.reject(new Error("resume was not expected")),
+  } satisfies RuntimeRunner;
+  const runtime = createTuvrenRuntime({
+    defaultRunnerId: "fake",
+    kernel,
+    runLiveness: {
+      executionOwnerId: `recovery-owner-${suffix}`,
+      leaseDurationMs: 50,
+    },
+    runnerRegistry: createRunnerRegistry([runner]),
+  });
+  const thread = await runtime.createThread({});
+  const staleTurn = await kernel.turn.create(
+    `turn_keyed_recovery_${suffix}`,
+    thread.threadId,
+    thread.branchId,
+    null,
+    thread.rootTurnNodeHash
+  );
+  const inputCheckpoint = await checkpointUserMessage(kernel, {
+    branchId: thread.branchId,
+    message: keyedUserMessage("A"),
+    runId: `run_keyed_input_${suffix}`,
+    startTurnNodeHash: thread.rootTurnNodeHash,
+    stepId: "incorporate_input",
+    taskId: "input_message",
+    turnId: staleTurn.turnId,
+  });
+  const steeringCheckpoint = await checkpointUserMessage(kernel, {
+    branchId: thread.branchId,
+    message: keyedUserMessage("C"),
+    runId: `run_keyed_steering_${suffix}`,
+    startTurnNodeHash: inputCheckpoint,
+    stepId: "incorporate_steering",
+    taskId: "steering_message",
+    turnId: staleTurn.turnId,
+  });
+  await kernel.runLiveness.createLeasedRun({
+    branchId: thread.branchId,
+    executionOwnerId: "worker-that-crashed",
+    leaseExpiresAtMs: 1,
+    runId: `run_keyed_stale_${suffix}`,
+    schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
+    startTurnNodeHash: steeringCheckpoint,
+    steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+    turnId: staleTurn.turnId,
+  });
+
+  const handle = runtime.executeTurn({
+    branchId: thread.branchId,
+    config: { name: "primary" },
+    signal: keyedSignal(retryKey),
+    threadId: thread.threadId,
+  });
+  const events = await collectEvents(handle.events());
+
+  expect(handle.status().phase).toBe("completed");
+  return {
+    recoveredTurnId: staleTurn.turnId,
+    resultTurnId: extractTurnId(events),
+  };
 }
 
 describe("framework-runtime-core", () => {
@@ -228,6 +367,89 @@ describe("framework-runtime-core", () => {
         "missing"
       );
     });
+
+    test("matches keyed retries against the initial input instead of a later steer", () => {
+      const initialInput: TuvrenMessage = {
+        admissionKey: "A",
+        parts: [{ text: "Original text can differ", type: "text" }],
+        role: "user",
+      };
+      const laterSteer = keyedUserMessage("C");
+
+      expect(
+        classifyRecoveredTurnSignalState(
+          keyedSignal("A"),
+          [initialInput, laterSteer],
+          initialInput
+        )
+      ).toBe("match");
+      expect(
+        doesSignalMatchRecoveredTurn(
+          keyedSignal("A"),
+          [initialInput, laterSteer],
+          initialInput
+        )
+      ).toBe(true);
+      expect(
+        classifyRecoveredTurnSignalState(
+          keyedSignal("B"),
+          [initialInput, laterSteer],
+          initialInput
+        )
+      ).toBe("mismatch");
+      expect(
+        classifyRecoveredTurnSignalState(
+          keyedSignal("C"),
+          [initialInput, laterSteer],
+          initialInput
+        )
+      ).toBe("mismatch");
+    });
+
+    test("keeps the last-user parts fallback when either input lacks a key", () => {
+      const keyedInitialInput = keyedUserMessage("A");
+      const keylessInitialInput: TuvrenMessage = {
+        parts: [{ text: "Different initial text", type: "text" }],
+        role: "user",
+      };
+      const latestUserMessage: TuvrenMessage = {
+        parts: keyedSignal("unused").parts,
+        role: "user",
+      };
+
+      expect(
+        classifyRecoveredTurnSignalState(
+          keyedSignal("B"),
+          [keylessInitialInput, latestUserMessage],
+          keylessInitialInput
+        )
+      ).toBe("match");
+      expect(
+        classifyRecoveredTurnSignalState(
+          { parts: keyedSignal("unused").parts },
+          [keyedInitialInput, latestUserMessage],
+          keyedInitialInput
+        )
+      ).toBe("match");
+    });
+  });
+
+  test("starts a fresh turn for an equal-text retry with a different key", async () => {
+    const result = await executeKeyedRecovery("B");
+
+    expect(result.resultTurnId).not.toBe(result.recoveredTurnId);
+  });
+
+  test("resumes the recovered turn for a retry with its initial input key", async () => {
+    const result = await executeKeyedRecovery("A");
+
+    expect(result.resultTurnId).toBe(result.recoveredTurnId);
+  });
+
+  test("starts a fresh turn when the retry uses a later steering key", async () => {
+    const result = await executeKeyedRecovery("C");
+
+    expect(result.resultTurnId).not.toBe(result.recoveredTurnId);
   });
 
   test("resumes the durable turn when key-reordered nested JSON signal data matches", async () => {
