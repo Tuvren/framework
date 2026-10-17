@@ -86,8 +86,8 @@ tickets:
         - tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json
         - spec/conformance/engine/fixtures/admission-keyless-user-message.json
     verification:
-      command: bun run codegen
-      expected: "Generated core, host, and session JSON Schema artifacts are fresh and carry the optional admissionKey on UserMessage and InputSignal. The API freeze gate refuses the five stable-signature findings by default, bun run api-freeze --minor records the reviewed findings as a 0.x MINOR snapshot update, and bun run api-freeze:check passes against the refreshed snapshot."
+      command: bun run verify
+      expected: "The full verification gate passes, including codegen freshness and execution of tools/scripts/api-freeze-gate.test.ts in the tooling-acceptance phase. Generated core, host, and session JSON Schema artifacts are fresh and carry the optional admissionKey on UserMessage and InputSignal. The gate test proves the five stable-signature findings are refused by default without a snapshot write; bun run api-freeze --minor records exactly those five reviewed InputSignal and TuvrenMessage findings as a 0.x MINOR snapshot update; and bun run api-freeze:check passes against the refreshed snapshot."
     stop_conditions:
       - "STOP if adding the field changes the encoded bytes or the message hash of a user message that carries no key; don't improvise."
       - "STOP if blocked stable drift can update the API snapshot without the explicit --minor approval, if the approval records anything other than a 0.x MINOR bump, or if the experimental consistency floor becomes overridable; don't improvise."
@@ -235,16 +235,17 @@ tickets:
         - .constitution/reports/epic-ad-kernel-backend-provider-local-surface-decisions.md
         - .constitution/reports/epic-ad-typescript-freeze-gate-report.md
         - .constitution/reports/epic-ad-docs-to-authority-freeze-gate-closure-inventory.md
+        - tools/scripts/api-freeze-gate.test.ts
         - .changeset/runtime-cs-host-admission-key.md
     verification:
-      command: "bun run docs:authority-freeze:check"
-      expected: "The docs-to-authority freeze gate accepts the amended text with the regenerated .constitution/reports/epic-ad-* outputs committed, and bun run changeset:check passes."
+      command: bun run verify
+      expected: "The full verification gate passes, including the docs-to-authority freeze gate and tools/scripts/api-freeze-gate.test.ts. The gate test proves .changeset/runtime-cs-host-admission-key.md lists the exact set of affected public packages, each with release type minor, with no missing, additional, or differently typed package entries."
     stop_conditions:
       - "STOP if the freeze gate requires a new authority packet entry rather than citing the extended plans; don't improvise."
     description: "Amend the framework specification: 1.2 Messages and 1.3 InputSignal (the optional opaque host-owned admissionKey on the user message and the signal), 3 Provider Contract (the field is never sent to a provider), 4.2 Phase 1 Incorporate Input and 4.4 Steering Injection (the key is staged on the incorporated user message, so it is durable exactly when the message is, under completeStep or a reactive preemption checkpoint), 4.9 Recovery Protocol (recovery matches on the key of the turn's initial input message when both sides carry one), 7.1 ExecutionHandle (steer accepts the key), 7.3 Lifecycle (executeTurn input accepts the key), and 10.6 OrchestrationRuntime (executeTurn and steer accept and keep the key, including queued steering). State that the framework never deduplicates by key or content and that hosts read keys back through readBranchMessages. Regenerate the docs freeze gate outputs with bun run docs:authority-freeze. Add a MINOR changeset for the affected publishable packages because ADR-0056 and ADR-0069 classify this explicitly approved stable-signature break as MINOR during 0.x."
     acceptance:
       mode: contract_test
-      evidence: "The amended sections name the field, the staged-with-the-message guarantee, the readBranchMessages read path, the provider exclusion, the no-dedup rule, and the initial-input recovery matching rule, each citing the conformance checks from KRT-CS006; the changeset lists every publishable package whose public types changed, with a MINOR bump."
+      evidence: "The amended sections name the field, the staged-with-the-message guarantee, the readBranchMessages read path, the provider exclusion, the no-dedup rule, and the initial-input recovery matching rule, each citing the conformance checks from KRT-CS006. An extended tools/scripts/api-freeze-gate.test.ts assertion verifies .changeset/runtime-cs-host-admission-key.md lists exactly every affected public package at minor, with no missing package, extra package, or wrong release type."
     flows: [flow-context-engineering-steering]
     certainty: assumed
     status: planned

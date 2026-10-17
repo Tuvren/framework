@@ -7,7 +7,7 @@ entries:
       architecture: v0.16.0
       tech-spec: v0.47.7
     changed:
-      - "Align EPIC-CS with ADR-0056's 0.x baseline-approval amendment: KRT-CS001 owns the API freeze gate and its existing test, keeps stable-signature drift blocked by default, and permits only the explicit bun run api-freeze --minor path to record the five reviewed admission-key findings as MINOR. KRT-CS007 now requires a MINOR changeset for every affected public package."
+      - "Align EPIC-CS with ADR-0056's 0.x baseline-approval amendment: KRT-CS001 owns the API freeze gate and its existing test, keeps stable-signature drift blocked by default, and permits only the explicit bun run api-freeze --minor path to record the five reviewed admission-key findings as MINOR. Route KRT-CS001 verification through bun run verify so it executes both codegen freshness and the declared API-freeze gate test; KRT-CS007 adds that existing gate test to its scope for an exact assertion that every affected public package has a MINOR changeset and no package has a wrong release type."
       - "Increase KRT-CS001 from 5 to 8 points for the gate-policy implementation and tests inside the same contract milestone. Preserve all ticket IDs, dependencies, statuses, schema and runtime acceptance, the keyless byte-and-hash guarantee, the 3000-line epic estimate, and every other product decision. INFO-CAL was 1.36 across 12 eligible completed epics before this correction."
   - version: v0.48.2
     date: 2026-10-17
