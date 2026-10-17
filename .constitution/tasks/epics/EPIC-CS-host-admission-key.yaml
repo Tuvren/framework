@@ -148,7 +148,7 @@ tickets:
       evidence: "A test in typescript/runtime/test drives a turn with a keyed initial input and a keyed steer through the ReAct runner against a recording provider and asserts no message in any captured provider request carries admissionKey, while readBranchMessages still returns both keys."
     flows: [flow-context-engineering-steering]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-CS004
     title: Match a recovered turn's input by admission key when one is present
     type: Feature
