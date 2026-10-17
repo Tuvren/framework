@@ -92,23 +92,10 @@ export interface OrchestrationRuntimeNodeHost {
  * One node of the orchestration execution tree, wrapping a framework
  * execution (its {@link ExecutionBinding}) and the node's spawned children.
  *
- * Responsibilities:
- *
- * - **Lazy binding.** A child node starts from a binding *promise*; steering
- *   signals queued before the binding resolves are replayed onto the handle,
- *   and a pre-ready `cancel()` is honored once the binding arrives. A binding
- *   failure settles the node as failed.
- * - **Event fan-out.** `events()` streams this node's own (decorated) events;
- *   `allEvents()` streams the whole subtree by forwarding each child's
- *   subtree stream into this node's. Both are single-consumer, lazy-start
- *   streams (`event_stream_already_consumed` on a second claim).
- * - **Generations.** `replaceAfterApproval` swaps in the resumed handle and
- *   bumps the binding generation so the watcher of the superseded binding
- *   stops publishing; unclaimed stream surfaces reopen for the new
- *   generation.
- * - **Backpressure on observation.** When execution is running but no event
- *   stream or result awaiter observes it anymore, the node cancels the
- *   unobserved execution.
+ * Child bindings are lazy: queued steering is replayed after the bound handle
+ * starts, while pre-ready cancellation is honored when the binding arrives.
+ * The node also owns single-consumer self/subtree event fan-out, approval
+ * generations, child tracking, and cancellation of unobserved execution.
  */
 export class OrchestrationNode {
   private activeEventStreams = 0;
@@ -171,29 +158,15 @@ export class OrchestrationNode {
     } else if (options.bindingPromise === undefined) {
       throw new Error("orchestration nodes require an execution binding");
     } else {
-      this.currentBindingPromise = options.bindingPromise
-        .then((binding) => {
-          this.currentBinding = binding;
-
-          for (const pendingSignal of this.pendingSteering) {
-            binding.handle.steer(pendingSignal);
-          }
-
-          this.pendingSteering.length = 0;
-
-          if (this.cancelledBeforeReady) {
-            binding.handle.cancel();
-          }
-
-          return binding;
-        })
-        .catch((error: unknown) => {
+      this.currentBindingPromise = options.bindingPromise.catch(
+        (error: unknown) => {
           this.initializationFailed = true;
           const normalizedError = normalizeError(error);
           this.lastErrorProjection = projectError(normalizedError);
           this.selfPhase = "failed";
           throw normalizedError;
-        });
+        }
+      );
     }
   }
 
@@ -844,12 +817,30 @@ export class OrchestrationNode {
   ): Promise<void> {
     try {
       const binding = await bindingPromise;
+      const eventIterator = binding.handle.events()[Symbol.asyncIterator]();
 
-      for await (const event of binding.handle.events()) {
+      if (this.cancelledBeforeReady) {
+        this.pendingSteering.length = 0;
+        this.currentBinding = binding;
+        binding.handle.cancel();
+      }
+
+      const firstEventPromise = eventIterator.next();
+      this.currentBinding = binding;
+
+      for (const pendingSignal of this.pendingSteering) {
+        binding.handle.steer(pendingSignal);
+      }
+      this.pendingSteering.length = 0;
+
+      let nextEvent = await firstEventPromise;
+      while (!nextEvent.done) {
         if (generation !== this.bindingGeneration) {
+          await eventIterator.return?.();
           return;
         }
 
+        const event = nextEvent.value;
         if (event.type === "error") {
           this.lastErrorProjection = event.error;
         }
@@ -857,6 +848,7 @@ export class OrchestrationNode {
         const decoratedEvent = this.decorateEvent(event, binding);
         this.selfEventsQueue?.push(cloneValue(decoratedEvent));
         this.publishSubtreeEvent(decoratedEvent);
+        nextEvent = await eventIterator.next();
       }
 
       this.selfEventsQueue?.close();
