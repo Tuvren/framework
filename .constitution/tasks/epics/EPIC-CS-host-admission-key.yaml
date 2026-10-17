@@ -31,6 +31,8 @@ scope:
     - spec/conformance/engine/plans/runtime-api-lifecycle-extended.json
     - spec/conformance/engine/plans/host-session.json
     - spec/conformance/engine/scenarios/runtime-api-scenarios.json
+    - tools/scripts/api-freeze-gate.ts
+    - tools/scripts/api-freeze-gate.test.ts
     - tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json
     - spec/conformance/engine/fixtures/admission-keyless-user-message.json
     - reports/compatibility
@@ -65,7 +67,7 @@ tickets:
   - id: KRT-CS001
     title: Add an optional admission key to the user message and input signal contracts
     type: Feature
-    effort: 5
+    effort: 8
     depends_on: []
     scope:
       in:
@@ -79,19 +81,21 @@ tickets:
         - typescript/core/test
         - typescript/runtime/src/lib
         - typescript/runtime/test
+        - tools/scripts/api-freeze-gate.ts
+        - tools/scripts/api-freeze-gate.test.ts
         - tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json
         - spec/conformance/engine/fixtures/admission-keyless-user-message.json
     verification:
       command: bun run codegen
-      expected: "Generated core, host, and session JSON Schema artifacts are fresh and carry the optional admissionKey on UserMessage and InputSignal; bun run api-freeze:check accepts the additive change with the regenerated api-surface snapshot."
+      expected: "Generated core, host, and session JSON Schema artifacts are fresh and carry the optional admissionKey on UserMessage and InputSignal. The API freeze gate refuses the five stable-signature findings by default, bun run api-freeze --minor records the reviewed findings as a 0.x MINOR snapshot update, and bun run api-freeze:check passes against the refreshed snapshot."
     stop_conditions:
       - "STOP if adding the field changes the encoded bytes or the message hash of a user message that carries no key; don't improvise."
-      - "STOP if the API freeze gate classifies an optional UserMessage or InputSignal field as a breaking change to a stable export; don't improvise."
+      - "STOP if blocked stable drift can update the API snapshot without the explicit --minor approval, if the approval records anything other than a 0.x MINOR bump, or if the experimental consistency floor becomes overridable; don't improvise."
       - "STOP if keeping the core, host, and session copies of UserMessage and InputSignal in sync requires merging the contracts; don't improvise."
-    description: "As ruled for issue 155 (R2), the user message record itself carries the key, so message and key are one staged kernel object. UserMessage gains an optional host-owned admissionKey in spec/core/typespec/main.tsp and its mirror in spec/host/typespec/main.tsp, with regenerated JSON Schema and the typescript/core message types; InputSignal gains the same optional field in the host contract and the session contract's InputSignal. The key is an opaque, non-empty string the framework never interprets, deduplicates, or derives from content. Signal normalization, which today discards every field except parts, preserves it into the user message it builds for executeTurn initial input and steer(). A keyless signal normalizes to a user message with no admissionKey property at all, so its encoding and hash are unchanged."
+    description: "As ruled for issue 155 (R2), the user message record itself carries the key, so message and key are one staged kernel object. UserMessage gains an optional host-owned admissionKey in spec/core/typespec/main.tsp and its mirror in spec/host/typespec/main.tsp, with regenerated JSON Schema and the typescript/core message types; InputSignal gains the same optional field in the host contract and the session contract's InputSignal. The key is an opaque, non-empty string the framework never interprets, deduplicates, or derives from content. Signal normalization, which today discards every field except parts, preserves it into the user message it builds for executeTurn initial input and steer(). A keyless signal normalizes to a user message with no admissionKey property at all, so its encoding and hash are unchanged. Under ADR-0056's 0.x amendment, the exact-signature gate keeps these stable changes blocked by default and admits the complete reviewed finding set only through bun run api-freeze --minor, which records a MINOR snapshot update."
     acceptance:
       mode: contract_test
-      evidence: "Assert the regenerated UserMessage and InputSignal JSON Schemas under spec/core/artifacts/json-schema, spec/host/artifacts/json-schema, and spec/host/session/artifacts/json-schema allow an optional non-empty string admissionKey and nothing else new; normalization carries the key from the signal onto the user message for executeTurn and steer() signals, rejects an empty or non-string key with the existing invalid-signal error, and returns a keyless user message whose payload-codec bytes and message hash equal a fixture captured before this change; the api-surface snapshot shows only the additive optional fields."
+      evidence: "Assert the regenerated UserMessage and InputSignal JSON Schemas under spec/core/artifacts/json-schema, spec/host/artifacts/json-schema, and spec/host/session/artifacts/json-schema allow an optional non-empty string admissionKey and nothing else new; normalization carries the key from the signal onto the user message for executeTurn and steer() signals, rejects an empty or non-string key with the existing invalid-signal error, and returns a keyless user message whose payload-codec bytes and message hash equal a fixture captured before this change. Gate tests assert that stable-signature drift is blocked and cannot update the snapshot by default; bun run api-freeze --minor records exactly the five reviewed InputSignal and TuvrenMessage findings with bump minor; allowed public drift records PATCH; --major, unknown flags, --check --minor, and an unnecessary --minor fail; the experimental consistency floor remains non-overridable; canonical metadata cites ADR-0069 and --minor; and historical ledger rows remain unchanged. The refreshed snapshot contains only the five reviewed stable-signature findings, and bun run api-freeze:check then passes."
     flows: [flow-context-engineering-steering]
     certainty: assumed
     status: planned
@@ -237,10 +241,10 @@ tickets:
       expected: "The docs-to-authority freeze gate accepts the amended text with the regenerated .constitution/reports/epic-ad-* outputs committed, and bun run changeset:check passes."
     stop_conditions:
       - "STOP if the freeze gate requires a new authority packet entry rather than citing the extended plans; don't improvise."
-    description: "Amend the framework specification: 1.2 Messages and 1.3 InputSignal (the optional opaque host-owned admissionKey on the user message and the signal), 3 Provider Contract (the field is never sent to a provider), 4.2 Phase 1 Incorporate Input and 4.4 Steering Injection (the key is staged on the incorporated user message, so it is durable exactly when the message is, under completeStep or a reactive preemption checkpoint), 4.9 Recovery Protocol (recovery matches on the key of the turn's initial input message when both sides carry one), 7.1 ExecutionHandle (steer accepts the key), 7.3 Lifecycle (executeTurn input accepts the key), and 10.6 OrchestrationRuntime (executeTurn and steer accept and keep the key, including queued steering). State that the framework never deduplicates by key or content and that hosts read keys back through readBranchMessages. Regenerate the docs freeze gate outputs with bun run docs:authority-freeze. Add a PATCH changeset for the affected publishable packages per ADR-0069 decision 3 (additive change during 0.x)."
+    description: "Amend the framework specification: 1.2 Messages and 1.3 InputSignal (the optional opaque host-owned admissionKey on the user message and the signal), 3 Provider Contract (the field is never sent to a provider), 4.2 Phase 1 Incorporate Input and 4.4 Steering Injection (the key is staged on the incorporated user message, so it is durable exactly when the message is, under completeStep or a reactive preemption checkpoint), 4.9 Recovery Protocol (recovery matches on the key of the turn's initial input message when both sides carry one), 7.1 ExecutionHandle (steer accepts the key), 7.3 Lifecycle (executeTurn input accepts the key), and 10.6 OrchestrationRuntime (executeTurn and steer accept and keep the key, including queued steering). State that the framework never deduplicates by key or content and that hosts read keys back through readBranchMessages. Regenerate the docs freeze gate outputs with bun run docs:authority-freeze. Add a MINOR changeset for the affected publishable packages because ADR-0056 and ADR-0069 classify this explicitly approved stable-signature break as MINOR during 0.x."
     acceptance:
       mode: contract_test
-      evidence: "The amended sections name the field, the staged-with-the-message guarantee, the readBranchMessages read path, the provider exclusion, the no-dedup rule, and the initial-input recovery matching rule, each citing the conformance checks from KRT-CS006; the changeset lists every publishable package whose public types changed, with a patch bump."
+      evidence: "The amended sections name the field, the staged-with-the-message guarantee, the readBranchMessages read path, the provider exclusion, the no-dedup rule, and the initial-input recovery matching rule, each citing the conformance checks from KRT-CS006; the changeset lists every publishable package whose public types changed, with a MINOR bump."
     flows: [flow-context-engineering-steering]
     certainty: assumed
     status: planned
