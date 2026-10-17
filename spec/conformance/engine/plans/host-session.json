@@ -1,6 +1,6 @@
 {
   "planId": "tuvren.framework.host-session.core",
-  "planVersion": "0.3.0",
+  "planVersion": "0.4.0",
   "packetId": "tuvren.framework.host-session",
   "applicability": {
     "capabilities": ["framework.host-session"]
@@ -9,6 +9,32 @@
     "host-session-fixtures": "../fixtures/host-session-fixtures.json"
   },
   "checks": [
+    {
+      "checkId": "host-session.admission-key-steer-carried-to-committed-message",
+      "operation": "host-session.admission-key-steer-carriage",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.dispatchedFrame.signal.admissionKey",
+          "equals": "host-session-admission-key"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.committedMessages.2",
+          "equals": {
+            "role": "user",
+            "parts": [
+              {
+                "type": "text",
+                "text": "Host-session keyed steering"
+              }
+            ],
+            "admissionKey": "host-session-admission-key"
+          }
+        }
+      ],
+      "evidence": ["dispatchedFrame", "committedMessages"]
+    },
     {
       "checkId": "host-session.stale-client-result-rejected",
       "operation": "host-session.stale-client-result",
