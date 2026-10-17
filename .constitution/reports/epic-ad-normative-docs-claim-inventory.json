@@ -293,7 +293,7 @@
     },
     {
       "affectedBoundary": "framework",
-      "nonNormativeLineCount": 9,
+      "nonNormativeLineCount": 8,
       "sectionAnchor": "#49-recovery-protocol",
       "sectionHeading": "4.9 Recovery Protocol",
       "sectionKey": "4.9",
@@ -1328,8 +1328,8 @@
     "docs/KrakenFrameworkSpecification.md",
     "docs/KrakenKernelSpecification.md"
   ],
-  "totalIndependentClaims": 272,
-  "totalNormativeClaims": 274,
+  "totalIndependentClaims": 273,
+  "totalNormativeClaims": 275,
   "claims": [
     {
       "affectedBoundary": "framework",
@@ -2260,6 +2260,21 @@
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
       "surface": "approval and cancellation control",
       "text": "Paused approval Runs are not stale-running candidates. Host-configured approval timeouts, if any, must be modeled as explicit approval rejection, abandonment, or a future approval-expiry outcome; they are not execution lease expiry."
+    },
+    {
+      "affectedBoundary": "framework",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
+      "claimFingerprint": "29c5be46541879779062cb28c8e56364a91b4b452a96b4be40f5e82ff797077f",
+      "claimId": "FWK-29C5BE465418",
+      "duplicateOf": null,
+      "line": 1029,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#49-recovery-protocol",
+      "sectionHeading": "4.9 Recovery Protocol",
+      "sectionKey": "4.9",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "surface": "runtime lifecycle recovery",
+      "text": "**Crash during input incorporation**: Recovery MUST determine input incorporation from the recovered user-message state for the Turn, scanning its bounded checkpoint lineage for the initial user message. A TurnNode alone does not establish incorporation because preemption can create an empty checkpoint before input staging. If recovered messages contain no user message, `reuse_turn` marks the signal for re-incorporation into that Turn; other modes start a fresh Turn."
     },
     {
       "affectedBoundary": "framework",
