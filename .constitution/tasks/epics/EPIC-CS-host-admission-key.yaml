@@ -254,4 +254,4 @@ tickets:
       evidence: "The amended sections name the field, the staged-with-the-message guarantee, the readBranchMessages read path, the provider exclusion, the no-dedup rule, and the initial-input recovery matching rule, each citing the conformance checks from KRT-CS006. An extended tools/scripts/api-freeze-gate.test.ts assertion verifies .changeset/runtime-cs-host-admission-key.md lists exactly every affected public package at minor, with no missing package, extra package, or wrong release type."
     flows: [flow-context-engineering-steering]
     certainty: assumed
-    status: planned
+    status: in_progress

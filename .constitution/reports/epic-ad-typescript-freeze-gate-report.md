@@ -8,8 +8,8 @@ Rust framework product work remains blocked until a later TechSpec/Tasks revisio
 
 ## Authority-Backed and Conformance-Covered Claims
 
-- Independent claims currently classified as authority-backed and conformance-covered: 227
-- Duplicate matrix rows linked by `duplicateOf`: 3
+- Independent claims currently classified as authority-backed and conformance-covered: 235
+- Duplicate matrix rows linked by `duplicateOf`: 2
 - Evidence anchors: framework, provider, and kernel authority packets; shared conformance plans; boundary fixtures/scenarios; adapter capabilities; and compatibility evidence under `reports/compatibility/evidence/`.
 
 ## Remaining Surfaces

@@ -95,12 +95,16 @@ NonEmptyArray<T> = [T, ...T[]]
 
 TuvrenMessage =
   | { role: "system",    content: string }
-  | { role: "user",      parts: NonEmptyArray<ContentPart> }
+  | { role: "user",      parts: NonEmptyArray<ContentPart>, admissionKey?: string }
   | { role: "assistant", parts: NonEmptyArray<ContentPart>, providerMetadata?: Record<string, unknown> }
   | { role: "tool",      parts: NonEmptyArray<ToolResultPart> }
 ```
 
 Separate `tool` role even though some providers merge tool results into user messages. Each adapter handles the merge or split.
+
+For a `user` message, `admissionKey` is an optional, opaque, non-empty string owned by the host. The framework MUST preserve its exact value with the durable message. Hosts read the value through `readBranchMessages`. The framework MUST NOT interpret it or deduplicate messages by key or content.
+
+The promoted checks `runtime-lifecycle-ext.admission-key.crash-staged-classification` and `runtime-lifecycle-ext.admission-key.recovery-distinguishes-equal-text-key` verify these guarantees in `spec/conformance/engine/plans/runtime-api-lifecycle-extended.json`.
 
 ### 1.3 InputSignal
 
@@ -108,11 +112,13 @@ Canonical inbound signal accepted by the framework and its runners.
 
 ```
 InputSignal
-└─ parts: NonEmptyArray<ContentPart>  // Canonical inbound user content.
-                                      // Extend only if a future extra is irreducible.
+├─ parts: NonEmptyArray<ContentPart>  // Canonical inbound user content.
+└─ admissionKey?: string              // Opaque, non-empty host admission identity.
 ```
 
-`InputSignal` is not a persisted message. The framework normalizes it into a `TuvrenMessage` during input incorporation. Empty `parts` arrays are invalid at the shared contract boundary.
+`InputSignal` is not a persisted message. The framework normalizes it into a `TuvrenMessage` during input incorporation. Normalization MUST preserve an `admissionKey` exactly. If the signal has no key, normalization MUST omit the property. Empty `parts` arrays and empty `admissionKey` values are invalid at the shared contract boundary.
+
+The promoted check `host-session.admission-key-steer-carried-to-committed-message` verifies signal carriage in `spec/conformance/engine/plans/host-session.json`. The check `runtime-lifecycle-ext.admission-key.keyless-identity-unchanged` verifies keyless identity in `spec/conformance/engine/plans/runtime-api-lifecycle-extended.json`.
 
 ### 1.4 Prompt and Response
 
@@ -447,6 +453,8 @@ TuvrenProvider
 
 The provider never generates framework execution identity (`messageId`, `timestamp`). Those are runner concerns. The provider translates between its native wire format and the normalized `ProviderStreamChunk` / `TuvrenModelResponse` types.
 
+The framework MUST remove the host-owned `admissionKey` before it supplies messages to a runner or provider. Durable messages retain the key. The promoted check `runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key` verifies both sides of this boundary in `spec/conformance/engine/plans/runtime-api-lifecycle-extended.json`.
+
 ### 3.2 ProviderStreamChunk
 
 The normalized intermediate type yielded by `provider.stream()`. Carries content deltas and tool call fragments without framework identity.
@@ -612,7 +620,7 @@ function incorporateInput(signal, turnId, branchId, schemaId, agentName?):
 
   kernel.run.beginStep(inputRunId, "incorporate_input")
 
-  userMsg = buildUserMessage(signal)
+  userMsg = buildUserMessage(signal)  // Preserves admissionKey exactly when present.
   kernel.staging.stage(inputRunId, serialize(userMsg), "msg_user", "message", completed)
 
   manifest = readManifest(branch.headTurnNodeHash)
@@ -629,6 +637,10 @@ function incorporateInput(signal, turnId, branchId, schemaId, agentName?):
   kernel.run.complete(inputRunId, completed)
   kernel.turn.updateHead(turnId, latestHead())
 ```
+
+The framework stages `admissionKey` on the same serialized user message as `parts`. The key and message therefore become durable together under normal `completeStep` checkpointing or a reactive preemption checkpoint. Neither path creates a separate admission record.
+
+The promoted checks `runtime-lifecycle-ext.admission-key.crash-queued-classification`, `runtime-lifecycle-ext.admission-key.crash-staged-classification`, and `runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification` verify the checkpoint states in `spec/conformance/engine/plans/runtime-api-lifecycle-extended.json`.
 
 ### 4.3 Phase 2: Iteration Loop
 
@@ -719,6 +731,10 @@ function incorporateSteering(steerSignal, turnId, branchId, schemaId):
 ```
 
 **Timing**: After previous iteration’s checkpoint, before beforeIteration hooks. **What the model sees**: Steering appears as a user message after the most recent tool results. **No cancellation**: Waits for current iteration to complete.
+
+If `steerSignal` carries `admissionKey`, steering stages the exact key on that user message. The message and key commit together under normal `completeStep` checkpointing or a reactive preemption checkpoint. Each steering call creates its own message. The framework MUST NOT deduplicate equal keys or equal content.
+
+The promoted checks `runtime-lifecycle-ext.admission-key.crash-staged-classification` and `runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification` verify durable steering in `spec/conformance/engine/plans/runtime-api-lifecycle-extended.json`. The check `host-session.admission-key-steer-carried-to-committed-message` verifies session-frame carriage in `spec/conformance/engine/plans/host-session.json`.
 
 **Validity**: Steering is only accepted while a Turn is running (between iterations). The host’s `steer()` call is rejected if the Turn is paused or completed.
 
@@ -1012,6 +1028,10 @@ Paused approval Runs are not stale-running candidates. Host-configured approval 
 
 **Crash during input incorporation**: If TurnNode exists, input is durable — proceed. If not, re-incorporate from original signal.
 
+When recovery decides whether the original input was already incorporated, it compares `admissionKey` values only if both the original signal and the turn's initial user message have a key. It compares the original signal only with that initial input key, never with a steering key. If either side has no key, recovery preserves the legacy behavior and compares `parts` with the last recovered user message. A mismatch starts a fresh Turn; the framework does not deduplicate by key or content.
+
+The promoted checks `runtime-lifecycle-ext.admission-key.recovery-matches-initial-key`, `runtime-lifecycle-ext.admission-key.recovery-distinguishes-equal-text-key`, and `runtime-lifecycle-ext.admission-key.recovery-does-not-match-steering-key` verify this rule in `spec/conformance/engine/plans/runtime-api-lifecycle-extended.json`.
+
 **Crash during context engineering**: If TurnNode exists (completeStep succeeded), restructured state is durable. If not, re-run from unchanged messages path.
 
 **Crash during iteration (before model call)**: Re-create iteration Run. Context assembly is deterministic.
@@ -1216,7 +1236,7 @@ RunnerExecutionContext
 ├─ schemaId: string
 ├─ iterationCount: number
 ├─ config: AgentConfig                 // read-only snapshot
-├─ messages: TuvrenMessage[]           // read-only snapshot
+├─ messages: TuvrenMessage[]           // read-only, provider-safe snapshot
 ├─ manifest: ContextManifest           // read-only snapshot
 ├─ toolRegistry: ToolRegistry          // read-only runner-facing view
 ├─ runtime: RunnerRuntimePort
@@ -1237,6 +1257,8 @@ RunnerExecutionResult
 ```
 
 The runner does not mutate framework-owned state by aliasing context objects in place. If a runner needs to influence framework state, it does so through explicit returned outputs such as `messages`, `resolution`, `partial`, and `stateUpdates`, not through mutation of the execution context.
+
+The immutable runner message snapshot is a provider-safe projection of durable history. The framework removes `admissionKey` from user messages before constructing this snapshot. The promoted check `runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key` verifies the resulting provider request in `spec/conformance/engine/plans/runtime-api-lifecycle-extended.json`.
 
 The shared core does not require a runner-owned approval-resume path. Approval resume is handled by the framework around the paused tool batch, so any runner `resume(...)` method is optional and outside the current shared-core execution path.
 
@@ -1480,7 +1502,9 @@ If the active Run lease is lost or preempted, `events()` terminates through the 
 
 **`cancel()`** — while the Turn is running, triggers the AbortSignal. The runner handles staging partial content and failing the Run. If the Turn is already paused for approval, `cancel()` is treated as rejection of the pending tool calls rather than as an automatic failed terminal state. The shared-core `cancel()` path stages those rejection outcomes durably and stops the paused execution without re-entering the model on the same Turn. This is distinct from `resolveApproval(...)` with explicit `reject` decisions, which continues the same Turn through the normal iteration loop.
 
-**`steer(signal)`** — pushes a signal into the steering channel. The runner consumes it at the next iteration boundary. Only valid when `status().phase === "running"`. Rejected if the Turn is paused or completed.
+**`steer(signal)`** — pushes an `InputSignal`, including its optional `admissionKey`, into the steering channel. The handle MUST preserve the key exactly until input incorporation. The runner consumes the signal at the next iteration boundary. Only valid when `status().phase === "running"`. Rejected if the Turn is paused or completed.
+
+The promoted check `runtime-lifecycle-ext.admission-key.crash-queued-classification` covers queued steering in `spec/conformance/engine/plans/runtime-api-lifecycle-extended.json`. The check `host-session.admission-key-steer-carried-to-committed-message` verifies session steering carriage in `spec/conformance/engine/plans/host-session.json`.
 
 **`resolveApproval(response)`** — provides the human’s decision for a paused approval. Triggers the approval decision path (§4.8): closes the paused Run, applies decisions, resumes only unfinished approved or edited tool calls through the normal execution path, and returns a **new** `ExecutionHandle` for the continued Turn. Reject decisions produce canonical rejection `ToolResultPart` outcomes for the pending calls and then continue the same Turn through the normal iteration loop. Only valid when `status().phase === "paused"` and `status().approval` is present.
 
@@ -1517,7 +1541,7 @@ The host is responsible for:
 ```
 // Start a Turn
 handle = framework.executeTurn({
-  signal,
+  signal: { parts, admissionKey },
   threadId,
   branchId,
   schemaId,
@@ -1549,8 +1573,13 @@ while (handle) {
 handle.cancel()
 
 // Or inject steering (only while running)
-handle.steer({ parts: [{ type: "text", text: "Focus on the budget section" }] })
+handle.steer({
+  parts: [{ type: "text", text: "Focus on the budget section" }],
+  admissionKey: "host-request-43"
+})
 ```
+
+Both `executeTurn` and `steer` accept the optional `InputSignal.admissionKey`. They preserve it until the framework incorporates the corresponding user message. The promoted crash-classification checks in `spec/conformance/engine/plans/runtime-api-lifecycle-extended.json`, including `runtime-lifecycle-ext.admission-key.crash-queued-classification`, verify initial-input and steering carriage across lifecycle boundaries.
 
 ---
 
@@ -2204,7 +2233,7 @@ The framework-provided orchestration primitive is minimal and handle/tree-based 
 
 ```
 OrchestrationRuntime
-└─ executeTurn(input: { agent: string, signal, threadId, branchId, schemaId?, runnerId?, tools?, parentTurnId? }) → OrchestrationHandle
+└─ executeTurn(input: { agent: string, signal: InputSignal, threadId, branchId, schemaId?, runnerId?, tools?, parentTurnId? }) → OrchestrationHandle
 ```
 
 ```
@@ -2235,6 +2264,10 @@ const orchestration = createOrchestrationRuntime({
 ```
 
 The authoritative shared-core semantics define orchestration by composition over an existing framework runtime. More elaborate construction modes are outside current core scope until a concrete use case justifies them.
+
+`executeTurn` and the inherited `steer(signal)` method accept `InputSignal.admissionKey`. The orchestration layer MUST preserve the key exactly, including when `steer` queues the signal before the underlying execution handle binds. The runtime then applies the input-incorporation and provider-exclusion rules from sections 4.2, 4.4, and 5.6.
+
+The promoted check `runtime-lifecycle-ext.admission-key.crash-queued-classification` covers the shared runtime's queued-steering state in `spec/conformance/engine/plans/runtime-api-lifecycle-extended.json`. The section classifier does not establish this semantic guarantee by itself.
 
 **Internal mechanics**: The runtime composes existing primitives:
 
