@@ -101,11 +101,12 @@ async function runCrashRecoveryScenario(
   dependencies: AdmissionKeyScenarioDependencies,
   input: unknown
 ): Promise<AdapterProjection> {
-  const operation = "runtime.admission-key.crash-recovery";
   const scenario = readCrashScenario(
     dependencies,
-    dependencies.readOperationScenario(input, operation),
-    operation
+    dependencies.readOperationScenario(
+      input,
+      "runtime.admission-key.crash-recovery"
+    )
   );
   const temporaryDirectory = await mkdtemp(TEMPORARY_PREFIX);
   const databasePath = join(temporaryDirectory, "runtime.sqlite");
@@ -181,27 +182,29 @@ async function runProviderExclusionScenario(
   dependencies: AdmissionKeyScenarioDependencies,
   input: unknown
 ): Promise<AdapterProjection> {
-  const operation = "runtime.admission-key.provider-exclusion";
-  const scenario = dependencies.readOperationScenario(input, operation);
+  const scenario = dependencies.readOperationScenario(
+    input,
+    "runtime.admission-key.provider-exclusion"
+  );
   const initialText = dependencies.readStringProperty(
     scenario,
     "initialText",
-    `${operation}.initialText`
+    "providerExclusion.initialText"
   );
   const initialKey = dependencies.readStringProperty(
     scenario,
     "initialKey",
-    `${operation}.initialKey`
+    "providerExclusion.initialKey"
   );
   const steeringText = dependencies.readStringProperty(
     scenario,
     "steeringText",
-    `${operation}.steeringText`
+    "providerExclusion.steeringText"
   );
   const steeringKey = dependencies.readStringProperty(
     scenario,
     "steeringKey",
-    `${operation}.steeringKey`
+    "providerExclusion.steeringKey"
   );
   const capturedPrompts: TuvrenMessage[][] = [];
   const firstRequestReceived = Promise.withResolvers<void>();
@@ -291,32 +294,34 @@ async function runInitialInputRecoveryScenario(
   dependencies: AdmissionKeyScenarioDependencies,
   input: unknown
 ): Promise<AdapterProjection> {
-  const operation = "runtime.admission-key.initial-input-recovery";
-  const scenario = dependencies.readOperationScenario(input, operation);
+  const scenario = dependencies.readOperationScenario(
+    input,
+    "runtime.admission-key.initial-input-recovery"
+  );
   const recoveryCase = dependencies.readStringProperty(
     scenario,
     "recoveryCase",
-    `${operation}.recoveryCase`
+    "initialInputRecovery.recoveryCase"
   );
   const text = dependencies.readStringProperty(
     scenario,
     "text",
-    `${operation}.text`
+    "initialInputRecovery.text"
   );
   const initialKey = dependencies.readStringProperty(
     scenario,
     "initialKey",
-    `${operation}.initialKey`
+    "initialInputRecovery.initialKey"
   );
   const steeringKey = dependencies.readStringProperty(
     scenario,
     "steeringKey",
-    `${operation}.steeringKey`
+    "initialInputRecovery.steeringKey"
   );
   const retryKey = dependencies.readStringProperty(
     scenario,
     "retryKey",
-    `${operation}.retryKey`
+    "initialInputRecovery.retryKey"
   );
   let nowMs = 1;
   const backend = createMemoryBackend({ now: () => nowMs });
@@ -418,12 +423,14 @@ async function runKeylessIdentityScenario(
   dependencies: AdmissionKeyScenarioDependencies,
   input: unknown
 ): Promise<AdapterProjection> {
-  const operation = "runtime.admission-key.keyless-identity";
-  const scenario = dependencies.readOperationScenario(input, operation);
+  const scenario = dependencies.readOperationScenario(
+    input,
+    "runtime.admission-key.keyless-identity"
+  );
   const text = dependencies.readStringProperty(
     scenario,
     "text",
-    `${operation}.text`
+    "keylessIdentity.text"
   );
   const runtime = createTuvrenRuntime({
     defaultRunnerId: RUNNER_ID,
@@ -585,20 +592,19 @@ function assertOwnedTemporaryDirectory(directory: string): void {
 }
 function readCrashScenario(
   dependencies: AdmissionKeyScenarioDependencies,
-  scenario: Record<string, unknown>,
-  operation: string
+  scenario: Record<string, unknown>
 ): CrashScenario {
   const crashPointValue = dependencies.readStringProperty(
     scenario,
     "crashPoint",
-    `${operation}.crashPoint`
+    "crashRecovery.crashPoint"
   );
   if (
     crashPointValue !== "queued" &&
     crashPointValue !== "staged" &&
     crashPointValue !== "committed_before_event"
   ) {
-    throw new Error(`${operation}.crashPoint is unsupported`);
+    throw new Error("crashRecovery.crashPoint is unsupported");
   }
   const steeringKeysValue = scenario.steeringKeys;
   if (
@@ -607,20 +613,20 @@ function readCrashScenario(
     typeof steeringKeysValue[0] !== "string" ||
     typeof steeringKeysValue[1] !== "string"
   ) {
-    throw new Error(`${operation}.steeringKeys must contain two strings`);
+    throw new Error("crashRecovery.steeringKeys must contain two strings");
   }
   return {
     crashPoint: crashPointValue,
     initialKey: dependencies.readStringProperty(
       scenario,
       "initialKey",
-      `${operation}.initialKey`
+      "crashRecovery.initialKey"
     ),
     steeringKeys: [steeringKeysValue[0], steeringKeysValue[1]],
     text: dependencies.readStringProperty(
       scenario,
       "text",
-      `${operation}.text`
+      "crashRecovery.text"
     ),
   };
 }
