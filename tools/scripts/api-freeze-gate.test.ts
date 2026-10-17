@@ -16,10 +16,12 @@
 
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
+import yaml from "yaml";
 
 import oxfmtConfig from "../../oxfmt.config.js";
 import {
@@ -41,6 +43,20 @@ const REPOSITORY_SNAPSHOT_PATH = path.join(
   "tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json"
 );
 const CACHE_IGNORE_PATTERN = "**/.cache";
+const ADMISSION_KEY_CHANGESET_PATH = path.join(
+  ".changeset",
+  "runtime-cs-host-admission-key.md"
+);
+const ADMISSION_KEY_MARKER = "admissionKey";
+const ADMISSION_KEY_RELEASES = {
+  "@tuvren/core": path.join("typescript", "core", "CHANGELOG.md"),
+  "@tuvren/runtime": path.join("typescript", "runtime", "CHANGELOG.md"),
+  "@tuvren/sdk": path.join("typescript", "sdk", "CHANGELOG.md"),
+} as const;
+const CHANGESET_FRONTMATTER_PATTERN =
+  /^---\r?\n(?<frontmatter>[\s\S]*?)\r?\n---\r?\n(?<body>[\s\S]*)$/u;
+const MINOR_CHANGES_PATTERN =
+  /^### Minor Changes[ \t]*$(?<body>[\s\S]*?)(?=^#{1,6}[ \t]|(?![\s\S]))/gmu;
 const EXPECTED_LEDGER_ENTRY: SnapshotLedgerEntry = {
   bump: "patch",
   changes: ["@tuvren/core/testing#WriterProbe: export-added"],
@@ -92,6 +108,67 @@ const surfaceDiff = (
     hasDrift: allowed.length > 0 || blocked.length > 0,
     impliedBump,
   };
+};
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const assertPendingAdmissionKeyChangeset = (contents: string): void => {
+  const match = CHANGESET_FRONTMATTER_PATTERN.exec(contents);
+  if (match === null) {
+    throw new Error("admission-key changeset must contain YAML frontmatter");
+  }
+
+  const frontmatterSource = match.groups?.frontmatter;
+  const body = match.groups?.body;
+  if (frontmatterSource === undefined || body === undefined) {
+    throw new Error("admission-key changeset frontmatter must be readable");
+  }
+
+  const frontmatter = yaml.parse(frontmatterSource);
+  if (!isObject(frontmatter)) {
+    throw new Error(
+      "admission-key changeset frontmatter must be a YAML mapping"
+    );
+  }
+
+  const expectedPackages = Object.keys(ADMISSION_KEY_RELEASES).toSorted();
+  expect(Object.keys(frontmatter).toSorted()).toEqual(expectedPackages);
+  for (const packageName of expectedPackages) {
+    expect(frontmatter[packageName]).toBe("minor");
+  }
+  expect(body).toContain(ADMISSION_KEY_MARKER);
+};
+
+const assertConsumedAdmissionKeyChangeset = (rootDirectory: string): void => {
+  for (const [packageName, changelogPath] of Object.entries(
+    ADMISSION_KEY_RELEASES
+  )) {
+    const contents = readFileSync(
+      path.join(rootDirectory, changelogPath),
+      "utf-8"
+    );
+    const minorChangesSections = Array.from(
+      contents.matchAll(MINOR_CHANGES_PATTERN),
+      (match) => match.groups?.body ?? ""
+    );
+    expect(
+      minorChangesSections.some((section) =>
+        section.includes(ADMISSION_KEY_MARKER)
+      ),
+      `${packageName} must mention ${ADMISSION_KEY_MARKER} inside a Minor Changes subsection`
+    ).toBe(true);
+  }
+};
+
+const assertAdmissionKeyReleaseIntent = (rootDirectory: string): void => {
+  const changesetPath = path.join(rootDirectory, ADMISSION_KEY_CHANGESET_PATH);
+  if (existsSync(changesetPath)) {
+    assertPendingAdmissionKeyChangeset(readFileSync(changesetPath, "utf-8"));
+    return;
+  }
+
+  assertConsumedAdmissionKeyChangeset(rootDirectory);
 };
 
 describe("API freeze CLI policy", () => {
@@ -148,11 +225,11 @@ describe("API freeze CLI policy", () => {
       finding("blocked", "stable-signature-changed", "InputSignal"),
       finding("blocked", "stable-signature-changed", "TuvrenMessage"),
     ];
-    const writes: Array<{
+    const writes: {
       bump: string;
       changes: string[];
       live: ApiSurface;
-    }> = [];
+    }[] = [];
 
     const result = await applySnapshotUpdate({
       diff: surfaceDiff({ blocked }),
@@ -178,7 +255,7 @@ describe("API freeze CLI policy", () => {
   });
 
   test("records allowed public drift as PATCH", async () => {
-    const writes: Array<{ bump: string; changes: string[] }> = [];
+    const writes: { bump: string; changes: string[] }[] = [];
 
     const result = await applySnapshotUpdate({
       diff: surfaceDiff({
@@ -245,6 +322,71 @@ describe("API freeze CLI policy", () => {
       })
     ).rejects.toThrow("consistency floor");
     expect(writes).toBe(0);
+  });
+});
+
+describe("admission-key release intent", () => {
+  test("requires the exact MINOR changeset while release intent is pending", async () => {
+    const directory = await mkdtemp(
+      path.join(tmpdir(), "admission-key-changeset-")
+    );
+
+    try {
+      await mkdir(path.join(directory, ".changeset"), { recursive: true });
+      await writeFile(
+        path.join(directory, ADMISSION_KEY_CHANGESET_PATH),
+        `---\n"@tuvren/core": minor\n"@tuvren/sdk": minor\n"@tuvren/runtime": minor\n---\n\nPreserve the host-owned \`admissionKey\`.\n`
+      );
+
+      expect(() => assertAdmissionKeyReleaseIntent(directory)).not.toThrow();
+
+      await writeFile(
+        path.join(directory, ADMISSION_KEY_CHANGESET_PATH),
+        `---\n"@tuvren/core": minor\n"@tuvren/sdk": patch\n"@tuvren/runtime": minor\n"@tuvren/extra": minor\n---\n\nNo release marker.\n`
+      );
+      expect(() => assertAdmissionKeyReleaseIntent(directory)).toThrow();
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  test("requires the marker inside each consumed Minor Changes subsection", async () => {
+    const directory = await mkdtemp(
+      path.join(tmpdir(), "admission-key-changelog-")
+    );
+
+    try {
+      await Promise.all(
+        Object.values(ADMISSION_KEY_RELEASES).map(async (changelogPath) => {
+          const absolutePath = path.join(directory, changelogPath);
+          await mkdir(path.dirname(absolutePath), { recursive: true });
+          await writeFile(
+            absolutePath,
+            `# Package\n\n## 0.3.0\n\n### Minor Changes\n\n- Preserve the host-owned \`admissionKey\`.\n\n## 0.2.0\n\n### Patch Changes\n\n- Earlier release.\n`
+          );
+        })
+      );
+
+      expect(() => assertAdmissionKeyReleaseIntent(directory)).not.toThrow();
+
+      const coreChangelogPath = path.join(
+        directory,
+        ADMISSION_KEY_RELEASES["@tuvren/core"]
+      );
+      await writeFile(
+        coreChangelogPath,
+        `# Package\n\n## 0.3.0\n\nThe \`admissionKey\` marker is outside the subsection.\n\n### Minor Changes\n\n- Another change.\n`
+      );
+      expect(() => assertAdmissionKeyReleaseIntent(directory)).toThrow(
+        "inside a Minor Changes subsection"
+      );
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  test("records release intent in the pending changeset or generated changelogs", () => {
+    expect(() => assertAdmissionKeyReleaseIntent(REPO_ROOT)).not.toThrow();
   });
 });
 
