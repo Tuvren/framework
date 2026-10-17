@@ -34,6 +34,7 @@ import {
   createAdapterErrorEnvelope,
   type OperationOutcome,
 } from "../../../tools/conformance/adapter-protocol/index.js";
+import { createFrameworkAdapterAdmissionKeyScenarios } from "./framework-adapter-admission-key.ts";
 import { createFrameworkAdapterBatteriesIncluded } from "./framework-adapter-batteries-included.ts";
 import { runCapabilityOrchestrationIntegration } from "./framework-adapter-capability-orchestration-integration.ts";
 import {
@@ -177,7 +178,10 @@ const eventStreamScenarios = createFrameworkAdapterEventStream({
 const batteriesIncludedScenarios = createFrameworkAdapterBatteriesIncluded();
 const provingHostScenarios = createFrameworkAdapterProvingHost();
 const schemaAuthoringScenarios = createFrameworkAdapterSchemaAuthoring();
-
+const admissionKeyScenarios = createFrameworkAdapterAdmissionKeyScenarios({
+  readOperationScenario,
+  readStringProperty,
+});
 const runtimeScenarios = createFrameworkAdapterRuntimeScenarios({
   isRecord,
   readApprovalDecisions,
@@ -382,6 +386,14 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runtimeScenarios.runRecoverStaleRun(input);
       case "runtime.client-result-as-proposal":
         return runtimeScenarios.runClientResultAsProposal(input);
+      case "runtime.admission-key.crash-recovery":
+        return admissionKeyScenarios.runCrashRecovery(input);
+      case "runtime.admission-key.provider-exclusion":
+        return admissionKeyScenarios.runProviderExclusion(input);
+      case "runtime.admission-key.initial-input-recovery":
+        return admissionKeyScenarios.runInitialInputRecovery(input);
+      case "runtime.admission-key.keyless-identity":
+        return admissionKeyScenarios.runKeylessIdentity(input);
       case "runtime.orchestration.launch-preconditions":
         return orchestrationScenarios.runOrchestrationLaunchPreconditions(
           input

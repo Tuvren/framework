@@ -132,7 +132,7 @@
     },
     {
       "planId": "tuvren.framework.runtime-api.lifecycle-extended",
-      "planVersion": "0.3.0",
+      "planVersion": "0.4.0",
       "path": "spec/conformance/engine/plans/runtime-api-lifecycle-extended.json"
     },
     {
