@@ -114,6 +114,7 @@ export type SessionClientContentPart =
 
 /** Mirrors `InputSignal`. @experimental */
 export interface SessionClientInputSignal {
+  admissionKey?: string;
   parts: SessionClientContentPart[];
 }
 

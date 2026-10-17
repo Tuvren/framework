@@ -722,27 +722,75 @@ describe("createDuplexSessionBinding", () => {
     expect(rej.details?.runtimeErrorCode).toBe("invalid_approval_resolution");
   });
 
-  test("steer delivers the signal verbatim to the current handle", () => {
+  test("steer delivers keyed and keyless signals verbatim to the current handle", () => {
     const fake = makeFakeHandle();
     const binding = createDuplexSessionBinding(fake.handle, {
       sessionId: "sess-6",
     });
     binding.outbound();
 
-    const signal: InputSignal = {
+    const keyedSignal: InputSignal = {
+      admissionKey: "  admission-key  ",
       parts: [{ providerMetadata: undefined, text: "hello", type: "text" }],
+    };
+    const keylessSignal: InputSignal = {
+      parts: [{ text: "continue", type: "text" }],
     };
 
     binding.dispatchInbound({
-      correlationId: "corr-6",
+      correlationId: "corr-6-keyed",
       kind: "steer",
       protocolVersion: "1",
       sessionId: "sess-6",
-      signal,
+      signal: keyedSignal,
+    });
+    binding.dispatchInbound({
+      correlationId: "corr-6-keyless",
+      kind: "steer",
+      protocolVersion: "1",
+      sessionId: "sess-6",
+      signal: keylessSignal,
     });
 
-    expect(fake.calls.steer).toHaveLength(1);
-    expect(fake.calls.steer[0]).toEqual(signal);
+    expect(fake.calls.steer).toHaveLength(2);
+    expect(fake.calls.steer[0]).toBe(keyedSignal);
+    expect(fake.calls.steer[0]?.admissionKey).toBe("  admission-key  ");
+    expect(fake.calls.steer[1]).toBe(keylessSignal);
+    expect(Object.hasOwn(fake.calls.steer[1] ?? {}, "admissionKey")).toBe(
+      false
+    );
+  });
+
+  test("steer rejects empty and non-string admission keys", async () => {
+    const fake = makeFakeHandle();
+    const binding = createDuplexSessionBinding(fake.handle, {
+      sessionId: "sess-6-invalid-keys",
+    });
+    const outbound = binding.outbound();
+
+    for (const [index, admissionKey] of ["", 42].entries()) {
+      binding.dispatchInbound({
+        correlationId: `corr-6-invalid-${index}`,
+        kind: "steer",
+        protocolVersion: "1",
+        sessionId: "sess-6-invalid-keys",
+        signal: {
+          admissionKey,
+          parts: [{ text: "hello", type: "text" }],
+        },
+      });
+    }
+
+    const frames = await collectFrames(outbound, 2);
+    expect(frames.map((frame) => rejection(frame).code)).toEqual([
+      "session_frame_invalid",
+      "session_frame_invalid",
+    ]);
+    expect(frames.map((frame) => rejection(frame).correlationId)).toEqual([
+      "corr-6-invalid-0",
+      "corr-6-invalid-1",
+    ]);
+    expect(fake.calls.steer).toEqual([]);
   });
 
   test("steer that throws TuvrenRuntimeError yields session_frame_wrong_state", async () => {

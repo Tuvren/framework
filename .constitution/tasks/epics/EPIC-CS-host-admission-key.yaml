@@ -193,7 +193,7 @@ tickets:
       evidence: "Binding tests assert a steer frame whose signal carries admissionKey reaches the held handle's steer() with the key intact, an invalid key is rejected with the existing rejection frame, and a keyless frame is routed unchanged; session-client tests assert the frame it emits carries the key when supplied and omits it otherwise."
     flows: [flow-duplex-session-inbound-routing]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-CS006
     title: Certify committed-or-not classification across every crash point
     type: Feature
