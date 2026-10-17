@@ -26,6 +26,7 @@ scope:
     - typescript/host/session-client/test
     - typescript/conformance-adapter/src/framework-adapter.ts
     - typescript/conformance-adapter/src/framework-adapter-admission-key.ts
+    - typescript/conformance-adapter/src/framework-adapter-admission-key-session.ts
     - typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts
     - typescript/conformance-adapter/src/framework-adapter-session.ts
     - spec/conformance/engine/plans/runtime-api-lifecycle-extended.json
@@ -200,6 +201,7 @@ tickets:
       in:
         - typescript/conformance-adapter/src/framework-adapter.ts
         - typescript/conformance-adapter/src/framework-adapter-admission-key.ts
+        - typescript/conformance-adapter/src/framework-adapter-admission-key-session.ts
         - typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts
         - typescript/conformance-adapter/src/framework-adapter-session.ts
         - spec/conformance/engine/plans/runtime-api-lifecycle-extended.json
