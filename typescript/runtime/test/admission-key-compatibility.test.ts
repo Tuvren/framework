@@ -17,21 +17,35 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 
+import type { KernelRecord } from "@tuvren/core";
 import { createIdentityPayloadCodec } from "@tuvren/core/lifecycle";
 import {
   encodeDeterministicKernelRecord,
   hashOpaqueObjectBytes,
 } from "@tuvren/kernel-protocol";
 
+import { normalizeInputSignal } from "../src/lib/runtime-core-shared.ts";
+
 describe("admission-keyless message compatibility", () => {
   test("preserves the pre-admission-key identity bytes and message hash", async () => {
     const fixture = readAdmissionKeylessFixture();
-    const encoded = encodeDeterministicKernelRecord(fixture.message);
+    const normalizedSignal = normalizeInputSignal(
+      { parts: fixture.message.parts },
+      "fixture.message"
+    );
+    const normalizedMessage = {
+      ...normalizedSignal,
+      role: "user" as const,
+    };
+    const encoded = encodeDeterministicKernelRecord(
+      normalizedMessage as unknown as KernelRecord
+    );
     const stored = await createIdentityPayloadCodec().encrypt(encoded, {
       edge: "message",
       scope: "tuvren.scope.default",
     });
 
+    expect("admissionKey" in normalizedMessage).toBe(false);
     expect(Buffer.from(stored).toString("hex")).toBe(
       fixture.identityPayloadCodec.encodedBytesHex
     );
