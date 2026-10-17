@@ -734,7 +734,10 @@ describe("framework-runtime-core", () => {
     const pausedEventsPromise = collectEvents(handle.events());
 
     await delay(0);
-    handle.steer(textSignal("Late steering"));
+    handle.steer({
+      admissionKey: "approval-resume-key",
+      ...textSignal("Late steering"),
+    });
     await waitFor(() => handle.status().phase === "paused");
 
     const resumedHandle = handle.resolveApproval({
@@ -747,6 +750,7 @@ describe("framework-runtime-core", () => {
     expect(await harness.readBranchMessages(thread.branchId)).toEqual(
       expect.arrayContaining([
         {
+          admissionKey: "approval-resume-key",
           parts: [{ text: "Late steering", type: "text" }],
           role: "user",
         },

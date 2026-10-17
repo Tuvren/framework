@@ -123,7 +123,7 @@ tickets:
       evidence: "Tests on memory and SQLite backends assert readBranchMessages returns the incorporated user message with the supplied admissionKey for the initial input and for a steered input; two steered inputs with equal parts and distinct keys yield two user messages carrying their own keys; an orchestration-runtime steer() on a bound handle and a signal queued in pendingSteering before the handle binds both land with their keys; a keyless input's stored message hash equals the hash produced before this change; a crash after the user message is staged and before completeStep, followed by preemptExpired, leaves the message and its key on the branch together; and a fault before staging leaves neither."
     flows: [flow-context-engineering-steering, flow-host-lists-threads-reads-state]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-CS008
     title: Keep the admission key out of every provider request
     type: Feature
