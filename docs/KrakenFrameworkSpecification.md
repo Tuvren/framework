@@ -1026,7 +1026,7 @@ Paused approval Runs are not stale-running candidates. Host-configured approval 
 
 ### 4.9 Recovery Protocol
 
-**Crash during input incorporation**: If TurnNode exists, input is durable — proceed. If not, re-incorporate from original signal.
+**Crash during input incorporation**: Recovery MUST determine input incorporation from the recovered user-message state for the Turn, scanning its bounded checkpoint lineage for the initial user message. A TurnNode alone does not establish incorporation because preemption can create an empty checkpoint before input staging. If recovered messages contain no user message, `reuse_turn` marks the signal for re-incorporation into that Turn; other modes start a fresh Turn.
 
 When recovery decides whether the original input was already incorporated, it compares `admissionKey` values only if both the original signal and the turn's initial user message have a key. It compares the original signal only with that initial input key, never with a steering key. If either side has no key, recovery preserves the legacy behavior and compares `parts` with the last recovered user message. A mismatch starts a fresh Turn; the framework does not deduplicate by key or content.
 

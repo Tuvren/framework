@@ -2,8 +2,8 @@
   "duplicateClaims": 2,
   "generatedBy": "bun tools/scripts/docs-authority-freeze-gate.ts",
   "primaryClassificationRule": "Each normative claim receives exactly one primary classification derived from its source section and explicit text markers.",
-  "totalClaims": 274,
-  "totalIndependentClaims": 272,
+  "totalClaims": 275,
+  "totalIndependentClaims": 273,
   "unclassifiedClaims": 0,
   "entries": [
     {
@@ -1555,6 +1555,31 @@
       "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
+    },
+    {
+      "affectedBoundary": "framework",
+      "claimFingerprint": "29c5be46541879779062cb28c8e56364a91b4b452a96b4be40f5e82ff797077f",
+      "claimId": "FWK-29C5BE465418",
+      "duplicateOf": null,
+      "line": 1029,
+      "rationaleContext": "normative",
+      "sectionAnchor": "#49-recovery-protocol",
+      "sectionHeading": "4.9 Recovery Protocol",
+      "sectionKey": "4.9",
+      "sourceFile": "docs/KrakenFrameworkSpecification.md",
+      "text": "**Crash during input incorporation**: Recovery MUST determine input incorporation from the recovered user-message state for the Turn, scanning its bounded checkpoint lineage for the initial user message. A TurnNode alone does not establish incorporation because preemption can create an empty checkpoint before input staging. If recovered messages contain no user message, `reuse_turn` marks the signal for re-incorporation into that Turn; other modes start a fresh Turn.",
+      "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
+      "authorityPacket": "spec/kernel/authority-packet.json",
+      "classification": "authority-backed-conformance-covered",
+      "compatibilityEvidence": "reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
+      "conformancePlan": "spec/conformance/kernel/plans/kernel-run-liveness.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json",
+      "deferralRationale": "N/A",
+      "docsCorrection": "N/A",
+      "fixture": "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
+      "followUpTicket": "N/A",
+      "generatedArtifact": "N/A - run-liveness is conformance-plan authority without generated schema artifacts",
+      "implementationEvidence": "N/A - measured through shared conformance evidence",
+      "surface": "runtime lifecycle recovery"
     },
     {
       "affectedBoundary": "framework",
