@@ -1,7 +1,7 @@
 {
   "generatedBy": "bun tools/scripts/epic-af-conformance-gap-plan.ts",
   "matrixPath": ".constitution/reports/epic-ad-docs-to-authority-coverage-matrix.json",
-  "promoteNowClaims": 103,
+  "promoteNowClaims": 105,
   "surfaces": [
     {
       "adapterOperation": "runtime.approval-resolve; runtime.cancel-execution",
@@ -376,14 +376,16 @@
       "adapterCapability": "framework.runtime-api",
       "authorityPacket": "spec/core/authority-packet.json",
       "claimIds": [
+        "FWK-1415A08CA7D4",
+        "FWK-1A0C90A0B002",
         "FWK-4B0A4D61DDBF",
         "FWK-550E41A79A79",
-        "FWK-5ED37780C4CA",
         "FWK-7715165A3F79",
+        "FWK-7B7A0939B5FD",
         "FWK-8E41AD74D58F",
-        "FWK-A694947F2BE6",
         "FWK-AB9BE971F3F8",
-        "FWK-D1C028C77A54"
+        "FWK-D1C028C77A54",
+        "FWK-FDDA3EE2C737"
       ],
       "classifications": ["authority-backed-conformance-covered"],
       "compatibilityEvidence": "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
