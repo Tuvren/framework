@@ -1,4 +1,13 @@
 entries:
+  - version: v0.48.4
+    date: 2026-10-17
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.7
+    changed:
+      - "Add typescript/conformance-adapter/src/framework-adapter-admission-key-session.ts to EPIC-CS and KRT-CS006 ownership so the host-session admission-key observations can use a dedicated helper without pushing the existing adapter files past the TypeScript 1000-line limit. Preserve all ticket acceptance, effort, status, dependencies, release requirements, and the 3000-line epic estimate."
   - version: v0.48.3
     date: 2026-10-17
     by: stage
