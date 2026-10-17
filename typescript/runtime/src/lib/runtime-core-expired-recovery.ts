@@ -272,12 +272,13 @@ export async function recoverExpiredExecutionBranchIfNeeded(
 }
 
 /**
- * Read the user message consumed by the recovered turn's first checkpoint.
+ * Read the earliest user message incorporated into the recovered turn.
  *
- * A turn's `startTurnNodeHash` is its pre-input boundary. Walking from the
- * recovered head to the first child of that boundary identifies the
- * `incorporate_input` checkpoint even when later checkpoints rewrote the
- * current messages path or appended steering messages.
+ * A turn's `startTurnNodeHash` is its pre-input boundary. Recovery may add an
+ * empty checkpoint before input is incorporated, so scan the full lineage
+ * back to that boundary and retain the oldest user message found. This keeps
+ * later steering messages from replacing the original input used for keyed
+ * retry matching.
  */
 async function readRecoveredTurnInitialInputMessage(
   kernel: RuntimeKernel,
@@ -291,15 +292,13 @@ async function readRecoveredTurnInitialInputMessage(
     return undefined;
   }
 
+  let initialInputMessage: TuvrenMessage | undefined;
+
   for await (const turnNode of kernel.node.walkBack(
     recoveredHeadTurnNodeHash
   )) {
     if (turnNode.hash === turn.startTurnNodeHash) {
-      return undefined;
-    }
-
-    if (turnNode.previousTurnNodeHash !== turn.startTurnNodeHash) {
-      continue;
+      return initialInputMessage;
     }
 
     for (const stagedResult of turnNode.consumedStagedResults) {
@@ -314,11 +313,10 @@ async function readRecoveredTurnInitialInputMessage(
       );
 
       if (message.role === "user") {
-        return message;
+        initialInputMessage = message;
+        break;
       }
     }
-
-    return undefined;
   }
 
   return undefined;
