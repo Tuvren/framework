@@ -98,6 +98,24 @@ function createFilteredToolRegistry(
 }
 
 /**
+ * Removes host-owned admission metadata from the message snapshot supplied to
+ * runners. Durable messages retain the key; model-request assembly receives a
+ * separate projection that cannot forward it to a provider.
+ */
+function projectMessagesForRunner(
+  messages: readonly TuvrenMessage[]
+): TuvrenMessage[] {
+  return messages.map((message) => {
+    if (message.role !== "user") {
+      return message;
+    }
+
+    const { admissionKey: _admissionKey, ...projectedMessage } = message;
+    return projectedMessage;
+  });
+}
+
+/**
  * Host capabilities required by the runner-facing helpers in this module:
  * artifact staging (messages, manifests, runtime status, iteration trees),
  * run completion and failure, event publication, tool-batch environment
@@ -205,11 +223,12 @@ export interface RuntimeCoreRunnerHost {
  * When a capability policy engine is configured, exposure decisions are
  * evaluated first (BB001) and denied tools are filtered out of the registry
  * snapshot so neither the runner nor the model (via the provider bridge)
- * ever sees withheld capabilities. Head messages and the manifest are
- * exposed as frozen snapshots. `runtime.emit` clones each runner-emitted
- * event (rejecting non-cloneable events with `invalid_stream_event`),
- * records the published form in `emittedRunnerEvents` for post-execution
- * validation, and publishes it on the handle.
+ * ever sees withheld capabilities. Head messages are projected without
+ * host-owned admission keys, then exposed with the manifest as frozen
+ * snapshots. `runtime.emit` clones each runner-emitted event (rejecting
+ * non-cloneable events with `invalid_stream_event`), records the published
+ * form in `emittedRunnerEvents` for post-execution validation, and publishes
+ * it on the handle.
  */
 export function createRunnerExecutionContext(
   host: RuntimeCoreRunnerHost,
@@ -287,7 +306,9 @@ export function createRunnerExecutionContext(
     },
     iterationCount,
     manifest: createFrozenSnapshot(headState.manifest),
-    messages: createFrozenSnapshot(headState.messages),
+    messages: createFrozenSnapshot(
+      projectMessagesForRunner(headState.messages)
+    ),
     runtime: {
       emit: (event) => {
         let clonedEvent: TuvrenStreamEvent;
