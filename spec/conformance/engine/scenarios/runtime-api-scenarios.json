@@ -408,6 +408,62 @@
     "capabilityId": "cap.side-effect",
     "prompt": "Invoke the side-effecting client capability"
   },
+  "admission-key-crash-queued": {
+    "operation": "runtime.admission-key.crash-recovery",
+    "crashPoint": "queued",
+    "text": "Equal admission text",
+    "initialKey": "admission-initial",
+    "steeringKeys": ["admission-steer-a", "admission-steer-b"]
+  },
+  "admission-key-crash-staged": {
+    "operation": "runtime.admission-key.crash-recovery",
+    "crashPoint": "staged",
+    "text": "Equal admission text",
+    "initialKey": "admission-initial",
+    "steeringKeys": ["admission-steer-a", "admission-steer-b"]
+  },
+  "admission-key-crash-committed-before-event": {
+    "operation": "runtime.admission-key.crash-recovery",
+    "crashPoint": "committed_before_event",
+    "text": "Equal admission text",
+    "initialKey": "admission-initial",
+    "steeringKeys": ["admission-steer-a", "admission-steer-b"]
+  },
+  "admission-key-provider-exclusion": {
+    "operation": "runtime.admission-key.provider-exclusion",
+    "initialText": "Initial provider input",
+    "initialKey": "provider-initial-key",
+    "steeringText": "Provider steering input",
+    "steeringKey": "provider-steering-key"
+  },
+  "admission-key-recovery-initial-key": {
+    "operation": "runtime.admission-key.initial-input-recovery",
+    "recoveryCase": "initial_key",
+    "text": "Equal recovery text",
+    "initialKey": "recovery-key-a",
+    "steeringKey": "recovery-key-c",
+    "retryKey": "recovery-key-a"
+  },
+  "admission-key-recovery-distinct-key": {
+    "operation": "runtime.admission-key.initial-input-recovery",
+    "recoveryCase": "distinct_key",
+    "text": "Equal recovery text",
+    "initialKey": "recovery-key-a",
+    "steeringKey": "recovery-key-c",
+    "retryKey": "recovery-key-b"
+  },
+  "admission-key-recovery-steering-key": {
+    "operation": "runtime.admission-key.initial-input-recovery",
+    "recoveryCase": "steering_key",
+    "text": "Equal recovery text",
+    "initialKey": "recovery-key-a",
+    "steeringKey": "recovery-key-c",
+    "retryKey": "recovery-key-c"
+  },
+  "admission-key-keyless-identity": {
+    "operation": "runtime.admission-key.keyless-identity",
+    "text": "Admission keyless user message"
+  },
   "orchestration-launch-preconditions": {
     "operation": "runtime.orchestration.launch-preconditions",
     "childText": "Worker complete.",

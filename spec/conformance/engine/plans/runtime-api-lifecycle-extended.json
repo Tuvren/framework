@@ -678,11 +678,441 @@
         "result.proposal.clientDispatchCount",
         "result.proposal.clientSuccessCommitted"
       ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "queued",
+          "field": "$.admissionKeyCrash.crashPoint",
+          "kind": "resultField"
+        },
+        {
+          "equals": [
+            {
+              "admissionKey": "admission-initial",
+              "parts": [{ "text": "Equal admission text", "type": "text" }]
+            },
+            {
+              "admissionKey": "admission-steer-a",
+              "parts": [{ "text": "Equal admission text", "type": "text" }]
+            },
+            {
+              "admissionKey": "admission-steer-b",
+              "parts": [{ "text": "Equal admission text", "type": "text" }]
+            }
+          ],
+          "field": "$.admissionKeyCrash.suppliedSignals",
+          "kind": "resultField"
+        },
+        {
+          "equals": [
+            {
+              "admissionKey": "admission-initial",
+              "parts": [{ "text": "Equal admission text", "type": "text" }],
+              "role": "user"
+            }
+          ],
+          "field": "$.admissionKeyCrash.recovery.branchMessages",
+          "kind": "resultField"
+        },
+        {
+          "equals": "running",
+          "field": "$.admissionKeyCrash.recovery.expiredRunsBefore.0.status",
+          "kind": "resultField"
+        },
+        {
+          "equals": "iterate",
+          "field": "$.admissionKeyCrash.recovery.expiredRunsBefore.0.stepSequence.0.id",
+          "kind": "resultField"
+        },
+        {
+          "equals": "iterate",
+          "field": "$.admissionKeyCrash.recovery.preemptions.0.stepSequence.0.id",
+          "kind": "resultField"
+        },
+        {
+          "equals": "SIGKILL",
+          "field": "$.admissionKeyCrash.writerProcess.signalCode",
+          "kind": "resultField"
+        },
+        { "eventType": "steering.incorporated", "kind": "noEvent" },
+        { "contains": "turn.start", "kind": "eventSequence" }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.admission-key.crash-queued-classification",
+      "input": { "scenarioPath": "$.admission-key-crash-queued" },
+      "operation": "runtime.admission-key.crash-recovery",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.admissionKeyCrash.suppliedSignals",
+        "result.admissionKeyCrash.recovery.branchMessages",
+        "result.admissionKeyCrash.recovery.expiredRunsBefore",
+        "result.admissionKeyCrash.recovery.preemptions",
+        "result.admissionKeyCrash.writerProcess.signalCode",
+        "events"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "staged",
+          "field": "$.admissionKeyCrash.crashPoint",
+          "kind": "resultField"
+        },
+        {
+          "equals": [
+            {
+              "admissionKey": "admission-initial",
+              "parts": [{ "text": "Equal admission text", "type": "text" }]
+            },
+            {
+              "admissionKey": "admission-steer-a",
+              "parts": [{ "text": "Equal admission text", "type": "text" }]
+            },
+            {
+              "admissionKey": "admission-steer-b",
+              "parts": [{ "text": "Equal admission text", "type": "text" }]
+            }
+          ],
+          "field": "$.admissionKeyCrash.suppliedSignals",
+          "kind": "resultField"
+        },
+        {
+          "equals": [
+            {
+              "admissionKey": "admission-initial",
+              "parts": [{ "text": "Equal admission text", "type": "text" }],
+              "role": "user"
+            },
+            {
+              "admissionKey": "admission-steer-a",
+              "parts": [{ "text": "Equal admission text", "type": "text" }],
+              "role": "user"
+            }
+          ],
+          "field": "$.admissionKeyCrash.recovery.branchMessages",
+          "kind": "resultField"
+        },
+        {
+          "equals": "incorporate_steering",
+          "field": "$.admissionKeyCrash.recovery.expiredRunsBefore.0.stepSequence.0.id",
+          "kind": "resultField"
+        },
+        {
+          "equals": "context_manifest",
+          "field": "$.admissionKeyCrash.recovery.preemptions.0.consumedStagedResults.0.objectType",
+          "kind": "resultField"
+        },
+        {
+          "equals": "message",
+          "field": "$.admissionKeyCrash.recovery.preemptions.0.consumedStagedResults.1.objectType",
+          "kind": "resultField"
+        },
+        {
+          "equals": "SIGKILL",
+          "field": "$.admissionKeyCrash.writerProcess.signalCode",
+          "kind": "resultField"
+        },
+        { "eventType": "steering.incorporated", "kind": "noEvent" },
+        { "contains": "turn.start", "kind": "eventSequence" }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.admission-key.crash-staged-classification",
+      "input": { "scenarioPath": "$.admission-key-crash-staged" },
+      "operation": "runtime.admission-key.crash-recovery",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.admissionKeyCrash.suppliedSignals",
+        "result.admissionKeyCrash.recovery.branchMessages",
+        "result.admissionKeyCrash.recovery.expiredRunsBefore",
+        "result.admissionKeyCrash.recovery.preemptions",
+        "result.admissionKeyCrash.writerProcess.signalCode",
+        "events"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "committed_before_event",
+          "field": "$.admissionKeyCrash.crashPoint",
+          "kind": "resultField"
+        },
+        {
+          "equals": [
+            {
+              "admissionKey": "admission-initial",
+              "parts": [{ "text": "Equal admission text", "type": "text" }]
+            },
+            {
+              "admissionKey": "admission-steer-a",
+              "parts": [{ "text": "Equal admission text", "type": "text" }]
+            },
+            {
+              "admissionKey": "admission-steer-b",
+              "parts": [{ "text": "Equal admission text", "type": "text" }]
+            }
+          ],
+          "field": "$.admissionKeyCrash.suppliedSignals",
+          "kind": "resultField"
+        },
+        {
+          "equals": [
+            {
+              "admissionKey": "admission-initial",
+              "parts": [{ "text": "Equal admission text", "type": "text" }],
+              "role": "user"
+            },
+            {
+              "admissionKey": "admission-steer-a",
+              "parts": [{ "text": "Equal admission text", "type": "text" }],
+              "role": "user"
+            },
+            {
+              "parts": [{ "text": "Equal admission text", "type": "text" }],
+              "role": "user"
+            }
+          ],
+          "field": "$.admissionKeyCrash.recovery.branchMessages",
+          "kind": "resultField"
+        },
+        {
+          "equals": [],
+          "field": "$.admissionKeyCrash.recovery.expiredRunsBefore",
+          "kind": "resultField"
+        },
+        {
+          "equals": [],
+          "field": "$.admissionKeyCrash.recovery.preemptions",
+          "kind": "resultField"
+        },
+        {
+          "equals": "SIGKILL",
+          "field": "$.admissionKeyCrash.writerProcess.signalCode",
+          "kind": "resultField"
+        },
+        { "eventType": "steering.incorporated", "kind": "noEvent" },
+        { "contains": "turn.start", "kind": "eventSequence" }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification",
+      "input": {
+        "scenarioPath": "$.admission-key-crash-committed-before-event"
+      },
+      "operation": "runtime.admission-key.crash-recovery",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.admissionKeyCrash.suppliedSignals",
+        "result.admissionKeyCrash.recovery.branchMessages",
+        "result.admissionKeyCrash.recovery.expiredRunsBefore",
+        "result.admissionKeyCrash.recovery.preemptions",
+        "result.admissionKeyCrash.writerProcess.signalCode",
+        "events"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": {
+            "parts": [{ "text": "Initial provider input", "type": "text" }],
+            "role": "user"
+          },
+          "field": "$.providerExclusion.capturedPrompts.0.0",
+          "kind": "resultField"
+        },
+        {
+          "equals": {
+            "parts": [{ "text": "Initial provider input", "type": "text" }],
+            "role": "user"
+          },
+          "field": "$.providerExclusion.capturedPrompts.1.0",
+          "kind": "resultField"
+        },
+        {
+          "equals": {
+            "parts": [{ "text": "Provider steering input", "type": "text" }],
+            "role": "user"
+          },
+          "field": "$.providerExclusion.capturedPrompts.1.2",
+          "kind": "resultField"
+        },
+        {
+          "equals": "provider-initial-key",
+          "field": "$.providerExclusion.durableMessages.0.admissionKey",
+          "kind": "resultField"
+        },
+        {
+          "equals": "provider-steering-key",
+          "field": "$.providerExclusion.durableMessages.2.admissionKey",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key",
+      "input": { "scenarioPath": "$.admission-key-provider-exclusion" },
+      "operation": "runtime.admission-key.provider-exclusion",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.providerExclusion.capturedPrompts",
+        "result.providerExclusion.durableMessages"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "turn-admission-recovery-initial_key",
+          "field": "$.initialInputRecovery.recoveryEvents.0.turnId",
+          "kind": "resultField"
+        },
+        {
+          "equals": [
+            {
+              "admissionKey": "recovery-key-a",
+              "parts": [{ "text": "Equal recovery text", "type": "text" }],
+              "role": "user"
+            },
+            {
+              "admissionKey": "recovery-key-c",
+              "parts": [{ "text": "Equal recovery text", "type": "text" }],
+              "role": "user"
+            }
+          ],
+          "field": "$.initialInputRecovery.branchMessages",
+          "kind": "resultField"
+        },
+        {
+          "equals": "iterate",
+          "field": "$.initialInputRecovery.preemptions.0.stepSequence.0.id",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.admission-key.recovery-matches-initial-key",
+      "input": { "scenarioPath": "$.admission-key-recovery-initial-key" },
+      "operation": "runtime.admission-key.initial-input-recovery",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.initialInputRecovery.recoveryEvents",
+        "result.initialInputRecovery.branchMessages",
+        "result.initialInputRecovery.preemptions"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "matches": "^recovery-distinct_key-0$",
+          "field": "$.initialInputRecovery.recoveryEvents.0.turnId",
+          "kind": "resultField"
+        },
+        {
+          "equals": [
+            {
+              "admissionKey": "recovery-key-a",
+              "parts": [{ "text": "Equal recovery text", "type": "text" }],
+              "role": "user"
+            },
+            {
+              "admissionKey": "recovery-key-c",
+              "parts": [{ "text": "Equal recovery text", "type": "text" }],
+              "role": "user"
+            },
+            {
+              "admissionKey": "recovery-key-b",
+              "parts": [{ "text": "Equal recovery text", "type": "text" }],
+              "role": "user"
+            }
+          ],
+          "field": "$.initialInputRecovery.branchMessages",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.admission-key.recovery-distinguishes-equal-text-key",
+      "input": { "scenarioPath": "$.admission-key-recovery-distinct-key" },
+      "operation": "runtime.admission-key.initial-input-recovery",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.initialInputRecovery.recoveryEvents",
+        "result.initialInputRecovery.branchMessages",
+        "result.initialInputRecovery.preemptions"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "matches": "^recovery-steering_key-0$",
+          "field": "$.initialInputRecovery.recoveryEvents.0.turnId",
+          "kind": "resultField"
+        },
+        {
+          "equals": [
+            {
+              "admissionKey": "recovery-key-a",
+              "parts": [{ "text": "Equal recovery text", "type": "text" }],
+              "role": "user"
+            },
+            {
+              "admissionKey": "recovery-key-c",
+              "parts": [{ "text": "Equal recovery text", "type": "text" }],
+              "role": "user"
+            },
+            {
+              "admissionKey": "recovery-key-c",
+              "parts": [{ "text": "Equal recovery text", "type": "text" }],
+              "role": "user"
+            }
+          ],
+          "field": "$.initialInputRecovery.branchMessages",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.admission-key.recovery-does-not-match-steering-key",
+      "input": { "scenarioPath": "$.admission-key-recovery-steering-key" },
+      "operation": "runtime.admission-key.initial-input-recovery",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.initialInputRecovery.recoveryEvents",
+        "result.initialInputRecovery.branchMessages",
+        "result.initialInputRecovery.preemptions"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": [
+            {
+              "parts": [
+                {
+                  "text": "Admission keyless user message",
+                  "type": "text"
+                }
+              ],
+              "role": "user"
+            }
+          ],
+          "field": "$.keylessIdentity.branchMessages",
+          "kind": "resultField"
+        },
+        {
+          "equals": [
+            "2844fba9fabe1b325638ef4dd1b911c29573870c16f8a9e10ac70d48135b0833"
+          ],
+          "field": "$.keylessIdentity.messageHashes",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.admission-key.keyless-identity-unchanged",
+      "input": { "scenarioPath": "$.admission-key-keyless-identity" },
+      "operation": "runtime.admission-key.keyless-identity",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.keylessIdentity.branchMessages",
+        "result.keylessIdentity.messageHashes"
+      ]
     }
   ],
   "packetId": "tuvren.shared.core",
   "planId": "tuvren.framework.runtime-api.lifecycle-extended",
-  "planVersion": "0.3.0",
+  "planVersion": "0.4.0",
   "scenarios": {
     "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json"
   }

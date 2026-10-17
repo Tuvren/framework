@@ -223,7 +223,7 @@ tickets:
       evidence: "New checks in spec/conformance/engine/plans/runtime-api-lifecycle-extended.json assert, for each crash point, that every supplied key is classified exactly once and unambiguously as committed or not committed from readBranchMessages, including the staged-before-completeStep point, that equal-text distinct-key inputs remain distinct, and that keyless inputs keep today's behavior; a new check in spec/conformance/engine/plans/host-session.json asserts the steer frame carries the key into the committed user message. Both plans and their packets carry the bumped planVersion. Evidence is graded only by tools/conformance/harness/run.ts."
     flows: [flow-context-engineering-steering, flow-duplex-session-inbound-routing, flow-crash-mid-checkpoint-recovery]
     certainty: assumed
-    status: planned
+    status: in_progress
   - id: KRT-CS007
     title: State the admission key rules in the framework specification
     type: Chore
