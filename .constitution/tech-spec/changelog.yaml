@@ -1,4 +1,12 @@
 entries:
+  - version: v0.47.7
+    date: 2026-10-17
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+    changed:
+      - "ADR-0056 aligns API-freeze baseline approval with ADR-0069 for the 0.x package line: exact stable-signature drift remains blocked by default, an explicit `--minor` update may admit a reviewed pre-adoption break with a MINOR ledger entry, allowed drift records PATCH, and the experimental consistency floor remains non-overridable. The admission-key signature change uses the explicit MINOR path, while keyless bytes and hashes remain a storage-identity invariant. Two independent designs converged on retaining exact signatures; the selected gate-only implementation requires `tools/scripts/api-freeze-gate.ts` and its test, with no parser, allowlist, dependency, extractor, or pure-model change."
   - version: v0.47.6
     date: 2026-10-16
     by: reconcile
