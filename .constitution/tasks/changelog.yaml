@@ -1,4 +1,14 @@
 entries:
+  - version: v0.48.2
+    date: 2026-10-17
+    by: patch-lane
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.6
+    changed:
+      - "Correct EPIC-CS ownership before execution by adding the keyless user-message compatibility fixture to the epic and KRT-CS001 scopes, and the dedicated admission-key conformance adapter helper to the epic and KRT-CS006 scopes."
+      - "Preserve every ticket id, status, acceptance criterion, effort, dependency, priority, estimate, and product-scope decision; this bounded Stage 4 patch creates neither planned implementation path."
   - version: v0.48.1
     date: 2026-10-16
     changed:
