@@ -46,6 +46,8 @@ scope:
     - .constitution/reports/epic-ad-kernel-backend-provider-local-surface-decisions.md
     - .constitution/reports/epic-ad-typescript-freeze-gate-report.md
     - .constitution/reports/epic-ad-docs-to-authority-freeze-gate-closure-inventory.md
+    - .constitution/reports/epic-af-conformance-gap-plan.json
+    - .constitution/reports/epic-af-conformance-gap-plan.md
     - .changeset/runtime-cs-host-admission-key.md
   out_of_scope:
     - typescript/kernel
@@ -237,6 +239,8 @@ tickets:
         - .constitution/reports/epic-ad-kernel-backend-provider-local-surface-decisions.md
         - .constitution/reports/epic-ad-typescript-freeze-gate-report.md
         - .constitution/reports/epic-ad-docs-to-authority-freeze-gate-closure-inventory.md
+        - .constitution/reports/epic-af-conformance-gap-plan.json
+        - .constitution/reports/epic-af-conformance-gap-plan.md
         - tools/scripts/api-freeze-gate.test.ts
         - .changeset/runtime-cs-host-admission-key.md
     verification:
