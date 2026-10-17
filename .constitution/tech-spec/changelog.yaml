@@ -7,6 +7,7 @@ entries:
       architecture: v0.16.0
     changed:
       - "ADR-0056 aligns API-freeze baseline approval with ADR-0069 for the 0.x package line: exact stable-signature drift remains blocked by default, an explicit `--minor` update may admit a reviewed pre-adoption break with a MINOR ledger entry, allowed drift records PATCH, and the experimental consistency floor remains non-overridable. The admission-key signature change uses the explicit MINOR path, while keyless bytes and hashes remain a storage-identity invariant. Two independent designs converged on retaining exact signatures; the selected gate-only implementation requires `tools/scripts/api-freeze-gate.ts` and its test, with no parser, allowlist, dependency, extractor, or pure-model change."
+      - "Before EPIC-CS resumes, Stage 4 must update the Tasks authority separately: revise KRT-CS001's breaking-classification stop rule to permit the approved explicit 0.x MINOR refresh; change KRT-CS007's changeset requirement from PATCH to MINOR; and add `tools/scripts/api-freeze-gate.ts` plus `tools/scripts/api-freeze-gate.test.ts` to EPIC-CS and KRT-CS001 ownership."
   - version: v0.47.6
     date: 2026-10-16
     by: reconcile
