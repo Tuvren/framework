@@ -1,4 +1,13 @@
 entries:
+  - version: v0.48.5
+    date: 2026-10-17
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.7
+    changed:
+      - "Add .constitution/reports/epic-af-conformance-gap-plan.json and .constitution/reports/epic-af-conformance-gap-plan.md to EPIC-CS and KRT-CS007 ownership. The nine admission-key checks promoted by KRT-CS006 make these generated gap-plan outputs stale, so CS007 must commit their generator refresh with its other owned documentation outputs. Preserve all acceptance, effort, status, dependencies, release requirements, helper ownership, and the 3000-line epic estimate."
   - version: v0.48.4
     date: 2026-10-17
     by: stage
