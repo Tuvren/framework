@@ -208,6 +208,7 @@
             "event-stream-ext.sse.resumed-approval-turn-source-events-include-text-delta",
             "event-stream-ext.sse.resumed-approval-turn-source-thread-id-present",
             "event-stream-ext.sse.resumed-approval-turn-thread-id-present",
+            "host-session.admission-key-steer-carried-to-committed-message",
             "host-session.approval-response-resumes-from-checkpoint",
             "host-session.cancel-propagates-cooperatively",
             "host-session.cancel-while-paused-terminates-stream",
@@ -402,6 +403,14 @@
             "runtime-lifecycle-af.context-transform-creates-new-tree-heads",
             "runtime-lifecycle-af.context-transform-preserves-source-checkpoint",
             "runtime-lifecycle-af.context-transform-runner-sees-rewritten-context",
+            "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification",
+            "runtime-lifecycle-ext.admission-key.crash-queued-classification",
+            "runtime-lifecycle-ext.admission-key.crash-staged-classification",
+            "runtime-lifecycle-ext.admission-key.keyless-identity-unchanged",
+            "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key",
+            "runtime-lifecycle-ext.admission-key.recovery-distinguishes-equal-text-key",
+            "runtime-lifecycle-ext.admission-key.recovery-does-not-match-steering-key",
+            "runtime-lifecycle-ext.admission-key.recovery-matches-initial-key",
             "runtime-lifecycle-ext.approval-resolve.paused-phase-trace",
             "runtime-lifecycle-ext.approval-resolve.resumed-phase-trace",
             "runtime-lifecycle-ext.branch-create.created-head-hash-format",
@@ -512,9 +521,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 502,
-            "totalChecks": 514,
-            "applicableChecks": 502,
+            "passedChecks": 511,
+            "totalChecks": 523,
+            "applicableChecks": 511,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -558,9 +567,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 12,
-            "totalChecks": 514,
+            "totalChecks": 523,
             "applicableChecks": 12,
-            "nonApplicableChecks": 502
+            "nonApplicableChecks": 511
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json",
@@ -1386,9 +1395,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 514,
+            "totalChecks": 523,
             "applicableChecks": 0,
-            "nonApplicableChecks": 514
+            "nonApplicableChecks": 523
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/certification-harness.framework-rust-certification.json",

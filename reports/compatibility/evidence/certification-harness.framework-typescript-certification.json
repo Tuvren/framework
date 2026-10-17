@@ -4091,6 +4091,40 @@
     {
       "assertionResults": [
         {
+          "assertionId": "host-session.admission-key-steer-carried-to-committed-message.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.admission-key-steer-carried-to-committed-message.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.admission-key-steer-carried-to-committed-message.requiredEvidence.committedMessages",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.admission-key-steer-carried-to-committed-message.requiredEvidence.dispatchedFrame",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.admission-key-steer-carried-to-committed-message.requiredEvidence.result.committedMessages.2",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.admission-key-steer-carried-to-committed-message.requiredEvidence.result.dispatchedFrame.signal.admissionKey",
+          "status": "pass"
+        }
+      ],
+      "checkId": "host-session.admission-key-steer-carried-to-committed-message",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.host-session.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "host-session.approval-response-resumes-from-checkpoint.1.resultField",
           "status": "pass"
         },
@@ -9306,6 +9340,442 @@
     {
       "assertionResults": [
         {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.7.noEvent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.8.eventSequence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.requiredEvidence.events",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.requiredEvidence.result.admissionKeyCrash.crashPoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.requiredEvidence.result.admissionKeyCrash.recovery.branchMessages",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.requiredEvidence.result.admissionKeyCrash.recovery.expiredRunsBefore",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.requiredEvidence.result.admissionKeyCrash.recovery.preemptions",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.requiredEvidence.result.admissionKeyCrash.suppliedSignals",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification.requiredEvidence.result.admissionKeyCrash.writerProcess.signalCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.admission-key.crash-committed-before-event-classification",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.8.noEvent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.9.eventSequence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.requiredEvidence.events",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.requiredEvidence.result.admissionKeyCrash.crashPoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.requiredEvidence.result.admissionKeyCrash.recovery.branchMessages",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.requiredEvidence.result.admissionKeyCrash.recovery.expiredRunsBefore",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.requiredEvidence.result.admissionKeyCrash.recovery.expiredRunsBefore.0.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.requiredEvidence.result.admissionKeyCrash.recovery.expiredRunsBefore.0.stepSequence.0.id",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.requiredEvidence.result.admissionKeyCrash.recovery.preemptions",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.requiredEvidence.result.admissionKeyCrash.recovery.preemptions.0.stepSequence.0.id",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.requiredEvidence.result.admissionKeyCrash.suppliedSignals",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-queued-classification.requiredEvidence.result.admissionKeyCrash.writerProcess.signalCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.admission-key.crash-queued-classification",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.8.noEvent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.9.eventSequence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.requiredEvidence.events",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.requiredEvidence.result.admissionKeyCrash.crashPoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.requiredEvidence.result.admissionKeyCrash.recovery.branchMessages",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.requiredEvidence.result.admissionKeyCrash.recovery.expiredRunsBefore",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.requiredEvidence.result.admissionKeyCrash.recovery.expiredRunsBefore.0.stepSequence.0.id",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.requiredEvidence.result.admissionKeyCrash.recovery.preemptions",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.requiredEvidence.result.admissionKeyCrash.recovery.preemptions.0.consumedStagedResults.0.objectType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.requiredEvidence.result.admissionKeyCrash.recovery.preemptions.0.consumedStagedResults.1.objectType",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.requiredEvidence.result.admissionKeyCrash.suppliedSignals",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.crash-staged-classification.requiredEvidence.result.admissionKeyCrash.writerProcess.signalCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.admission-key.crash-staged-classification",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.keyless-identity-unchanged.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.keyless-identity-unchanged.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.keyless-identity-unchanged.requiredEvidence.result.keylessIdentity.branchMessages",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.keyless-identity-unchanged.requiredEvidence.result.keylessIdentity.messageHashes",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.admission-key.keyless-identity-unchanged",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.requiredEvidence.result.providerExclusion.capturedPrompts",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.requiredEvidence.result.providerExclusion.capturedPrompts.0.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.requiredEvidence.result.providerExclusion.capturedPrompts.1.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.requiredEvidence.result.providerExclusion.capturedPrompts.1.2",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.requiredEvidence.result.providerExclusion.durableMessages",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.requiredEvidence.result.providerExclusion.durableMessages.0.admissionKey",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.requiredEvidence.result.providerExclusion.durableMessages.2.admissionKey",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-distinguishes-equal-text-key.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-distinguishes-equal-text-key.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-distinguishes-equal-text-key.requiredEvidence.result.initialInputRecovery.branchMessages",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-distinguishes-equal-text-key.requiredEvidence.result.initialInputRecovery.preemptions",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-distinguishes-equal-text-key.requiredEvidence.result.initialInputRecovery.recoveryEvents",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-distinguishes-equal-text-key.requiredEvidence.result.initialInputRecovery.recoveryEvents.0.turnId",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.admission-key.recovery-distinguishes-equal-text-key",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-does-not-match-steering-key.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-does-not-match-steering-key.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-does-not-match-steering-key.requiredEvidence.result.initialInputRecovery.branchMessages",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-does-not-match-steering-key.requiredEvidence.result.initialInputRecovery.preemptions",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-does-not-match-steering-key.requiredEvidence.result.initialInputRecovery.recoveryEvents",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-does-not-match-steering-key.requiredEvidence.result.initialInputRecovery.recoveryEvents.0.turnId",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.admission-key.recovery-does-not-match-steering-key",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-matches-initial-key.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-matches-initial-key.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-matches-initial-key.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-matches-initial-key.requiredEvidence.result.initialInputRecovery.branchMessages",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-matches-initial-key.requiredEvidence.result.initialInputRecovery.preemptions",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-matches-initial-key.requiredEvidence.result.initialInputRecovery.preemptions.0.stepSequence.0.id",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-matches-initial-key.requiredEvidence.result.initialInputRecovery.recoveryEvents",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-lifecycle-ext.admission-key.recovery-matches-initial-key.requiredEvidence.result.initialInputRecovery.recoveryEvents.0.turnId",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.admission-key.recovery-matches-initial-key",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.lifecycle-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "runtime-lifecycle-ext.approval-resolve.paused-phase-trace.1.stateField",
           "status": "pass"
         },
@@ -11916,9 +12386,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 502,
-    "totalChecks": 514,
-    "applicableChecks": 502,
+    "passedChecks": 511,
+    "totalChecks": 523,
+    "applicableChecks": 511,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

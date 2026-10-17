@@ -34,6 +34,7 @@ import {
   createAdapterErrorEnvelope,
   type OperationOutcome,
 } from "../../../tools/conformance/adapter-protocol/index.js";
+import { runAdmissionKeySteerCarriage } from "./framework-adapter-admission-key-session.ts";
 import { createFrameworkAdapterAdmissionKeyScenarios } from "./framework-adapter-admission-key.ts";
 import { createFrameworkAdapterBatteriesIncluded } from "./framework-adapter-batteries-included.ts";
 import { runCapabilityOrchestrationIntegration } from "./framework-adapter-capability-orchestration-integration.ts";
@@ -130,15 +131,12 @@ export interface ImplementationAdapter {
   inspectState?(query: unknown): Promise<unknown | null>;
   shutdown(): Promise<void>;
 }
-
 interface OperationObservation {
   adapterEvents: number;
   initialized: boolean;
   status: OperationStatus;
 }
-
 type OperationStatus = "completed" | "failed" | "paused";
-
 const runnerScenarios = createFrameworkAdapterRunner({
   errorToEnvelope,
   readApprovalDecisions,
@@ -525,6 +523,8 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runDispatchTimeout();
       case "host-session.sequence-continuity":
         return runSequenceContinuity();
+      case "host-session.admission-key-steer-carriage":
+        return runAdmissionKeySteerCarriage();
       case "event-stream-ws.decode-trace":
         return eventStreamWsScenarios.runDecodeTrace(input);
       case "event-stream-ws.session-roundtrip":
