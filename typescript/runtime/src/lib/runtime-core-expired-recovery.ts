@@ -64,24 +64,24 @@ export interface RuntimeCoreExpiredRecoveryOptions {
  * {@link completeRecoveredTerminalExecution}.
  */
 export interface RuntimeCoreExpiredRecoveryHost {
-  getNow(): EpochMs;
-  getPayloadCodecBinding(): PayloadCodecBinding;
-  getRunLivenessOptions(): RuntimeCoreExpiredRecoveryOptions | undefined;
-  getRuntimeKernel():
+  getNow: () => EpochMs;
+  getPayloadCodecBinding: () => PayloadCodecBinding;
+  getRunLivenessOptions: () => RuntimeCoreExpiredRecoveryOptions | undefined;
+  getRuntimeKernel: () =>
     | (RuntimeKernel & RuntimeKernelRunLiveness)
     | RuntimeKernel;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  publishTurnEnd(
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  publishTurnEnd: (
     handle: RuntimeExecutionHandle,
     status: "completed" | "failed",
     loopState: LoopState
-  ): void;
-  readRecoveredActiveAgentName(
+  ) => void;
+  readRecoveredActiveAgentName: (
     turnTreeHash: string
-  ): Promise<string | undefined>;
-  readRecoveredRuntimeStatus(
+  ) => Promise<string | undefined>;
+  readRecoveredRuntimeStatus: (
     turnTreeHash: string
-  ): Promise<DurableRuntimeStatus | undefined>;
+  ) => Promise<DurableRuntimeStatus | undefined>;
 }
 
 /**
@@ -105,21 +105,31 @@ const readRecoveredTurnInitialInputMessage = async (
     return undefined;
   }
 
-  let initialInputMessage: TuvrenMessage | undefined;
+  const turnNodes = kernel.node.walkBack(recoveredHeadTurnNodeHash);
+  const turnNodeIterator = turnNodes[Symbol.asyncIterator]();
 
-  for await (const turnNode of kernel.node.walkBack(
-    recoveredHeadTurnNodeHash
-  )) {
-    if (turnNode.hash === turn.startTurnNodeHash) {
+  const readNextTurnNode = async (
+    initialInputMessage?: TuvrenMessage
+  ): Promise<TuvrenMessage | undefined> => {
+    const nextTurnNode = await turnNodeIterator.next();
+    if (nextTurnNode.done === true) {
+      return undefined;
+    }
+    if (nextTurnNode.value.hash === turn.startTurnNodeHash) {
       return initialInputMessage;
     }
 
-    for (const stagedResult of turnNode.consumedStagedResults) {
-      if (
-        stagedResult.objectType !== "message" ||
-        stagedResult.taskId !== "input_message"
-      ) {
-        continue;
+    const stagedInputs = nextTurnNode.value.consumedStagedResults.filter(
+      (stagedResult) =>
+        stagedResult.objectType === "message" &&
+        stagedResult.taskId === "input_message"
+    );
+    const readStagedInput = async (
+      index: number
+    ): Promise<TuvrenMessage | undefined> => {
+      const stagedResult = stagedInputs[index];
+      if (stagedResult === undefined) {
+        return undefined;
       }
 
       const message = await readMessage(
@@ -127,15 +137,16 @@ const readRecoveredTurnInitialInputMessage = async (
         payloadCodecBinding,
         stagedResult.objectHash
       );
+      return message.role === "user"
+        ? message
+        : await readStagedInput(index + 1);
+    };
 
-      if (message.role === "user") {
-        initialInputMessage = message;
-        break;
-      }
-    }
-  }
+    const recoveredInput = await readStagedInput(0);
+    return await readNextTurnNode(recoveredInput ?? initialInputMessage);
+  };
 
-  return undefined;
+  return await readNextTurnNode();
 };
 
 /**
@@ -237,9 +248,10 @@ export const recoverExpiredExecutionBranchIfNeeded = async (
     return undefined;
   }
 
-  const expiredRun = (await kernel.runLiveness.listExpired(host.getNow()))
-    .filter((candidate) => candidate.branchId === branchId)
-    .at(0);
+  const expiredRuns = await kernel.runLiveness.listExpired(host.getNow());
+  const expiredRun = expiredRuns.find(
+    (candidate) => candidate.branchId === branchId
+  );
 
   if (expiredRun === undefined) {
     return undefined;
@@ -397,7 +409,7 @@ export const recoverExpiredExecutionBranchIfNeeded = async (
  * replaced with the recovered agent, manifest, and terminal phase, and the
  * matching turn-end event is published — no new iterations run.
  *
- * @throws TuvrenRuntimeError with code `missing_recovered_terminal_status`
+ * @throws {TuvrenRuntimeError} With code `missing_recovered_terminal_status`
  *   when the recovery lacks a durable `completed`/`failed` runtime status.
  */
 export const completeRecoveredTerminalExecution = async (

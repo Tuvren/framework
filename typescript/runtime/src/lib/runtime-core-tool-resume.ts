@@ -29,6 +29,7 @@ import {
 } from "./context-manifest.js";
 import { runAfterIterationHooks } from "./extension-runtime.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
+import type { InterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type { LoopOutcome } from "./runtime-core-recovery.js";
 import {
@@ -55,8 +56,8 @@ import type {
  * the runtime-core orchestration layer.
  */
 export interface RuntimeCoreToolResumeHost {
-  beginIterationStep(runId: string, stepId: string): Promise<void>;
-  completeIterationRun(
+  beginIterationStep: (runId: string, stepId: string) => Promise<void>;
+  completeIterationRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     resolution: RuntimeResolution,
@@ -64,9 +65,9 @@ export interface RuntimeCoreToolResumeHost {
     iterationCount: number,
     loopState: LoopState,
     nextTreeHash: HashString | undefined
-  ): Promise<HashString | undefined>;
-  createId(): string;
-  createIterationTree(
+  ) => Promise<HashString | undefined>;
+  createId: () => string;
+  createIterationTree: (
     schemaId: string,
     baseTurnTreeHash: HashString,
     baseMessageHashes: HashString[],
@@ -74,8 +75,8 @@ export interface RuntimeCoreToolResumeHost {
     manifestHash: HashString,
     runtimeStatusHash?: HashString,
     turnLineageHash?: HashString
-  ): Promise<HashString>;
-  createTrackedRun(
+  ) => Promise<HashString>;
+  createTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     turnId: string,
@@ -87,20 +88,20 @@ export interface RuntimeCoreToolResumeHost {
       id: string;
       sideEffects: boolean;
     }[]
-  ): Promise<void>;
-  failTrackedRunWithoutBranchAdvance(
+  ) => Promise<void>;
+  failTrackedRunWithoutBranchAdvance: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stableHeadTurnNodeHash: HashString
-  ): Promise<void>;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  now(): number;
-  publishCustomEvent(
+  ) => Promise<void>;
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  now: () => number;
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  publishEvent(
+  ) => void;
+  publishEvent: (
     handle: RuntimeExecutionHandle,
     event: {
       messageId?: HashString;
@@ -108,20 +109,20 @@ export interface RuntimeCoreToolResumeHost {
       type: string;
     },
     loopState: LoopState
-  ): void;
-  publishProjectedError(
+  ) => void;
+  publishProjectedError: (
     handle: RuntimeExecutionHandle,
     error: Error,
     fatal: boolean,
     loopState: LoopState
-  ): void;
-  resolveActiveMaxParallelToolCalls(loopState: LoopState): number;
-  resolveCheckpointedPausedRun(
+  ) => void;
+  resolveActiveMaxParallelToolCalls: (loopState: LoopState) => number;
+  resolveCheckpointedPausedRun: (
     runId: string,
     turnId: string,
     resolution: RuntimeResolution
-  ): Promise<void>;
-  stageManifest(
+  ) => Promise<void>;
+  stageManifest: (
     runId: string,
     manifest: ContextManifest,
     warningContext?: {
@@ -129,13 +130,13 @@ export interface RuntimeCoreToolResumeHost {
       loopState: LoopState;
     },
     taskId?: string
-  ): Promise<HashString>;
-  stageMessage(
+  ) => Promise<HashString>;
+  stageMessage: (
     runId: string,
     message: TuvrenMessage,
     taskId: string
-  ): Promise<HashString>;
-  stageRuntimeStatus(
+  ) => Promise<HashString>;
+  stageRuntimeStatus: (
     runId: string,
     status: {
       activeAgent?: string;
@@ -143,13 +144,13 @@ export interface RuntimeCoreToolResumeHost {
       state: "completed" | "failed" | "paused" | "running";
     },
     taskId: string
-  ): Promise<HashString>;
-  stageTurnLineage(
+  ) => Promise<HashString>;
+  stageTurnLineage: (
     runId: string,
     turnId: string,
     taskId: string,
-    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
-  ): Promise<HashString>;
+    interruptedToolBatch?: InterruptedToolBatchDescriptor
+  ) => Promise<HashString>;
 }
 
 /** Keeps durable Turn boundaries attached to their messages after projection. */
@@ -241,11 +242,13 @@ const createToolBatchEnvironment = (
     sanitizeToolResult: loopState.activeConfig.sanitizeToolResult,
     signal: handle.abortSignal,
     stageResult: async (result, orderIndex, updates = []) => {
-      const stage = resultStagingQueue.then(async () => {
+      const previousStage = resultStagingQueue;
+      const stage = (async () => {
+        await previousStage;
         if (updates.length > 0) {
           stateUpdatesByOrder.set(orderIndex, updates);
           const orderedUpdates = [...stateUpdatesByOrder.entries()]
-            .sort(([left], [right]) => left - right)
+            .toSorted(([left], [right]) => left - right)
             .flatMap(([, callUpdates]) => callUpdates);
           const durableManifest = updateContextManifest(
             manifest,
@@ -268,7 +271,7 @@ const createToolBatchEnvironment = (
           },
           formatToolResultTaskId(orderIndex, result.callId)
         );
-      });
+      })();
       resultStagingQueue = stage;
       return await stage;
     },
@@ -397,17 +400,14 @@ export const resumePausedToolExecution = async (
     loopState,
   });
 
-  let resolution: RuntimeResolution;
-
-  if (toolBatch.approval === undefined) {
-    resolution = { type: "continue_iteration" };
-  } else {
-    resolution = {
-      approval: toolBatch.approval,
-      reason: "approval_required",
-      type: "pause",
-    };
-  }
+  let resolution: RuntimeResolution =
+    toolBatch.approval === undefined
+      ? { type: "continue_iteration" }
+      : {
+          approval: toolBatch.approval,
+          reason: "approval_required",
+          type: "pause",
+        };
 
   const runtimeStatusHash =
     resolution.type === "pause"

@@ -110,11 +110,10 @@ export interface LoopOutcome {
  */
 export const inferFinishReason = (
   message: Extract<TuvrenMessage, { role: "assistant" }>
-): "content_filter" | "error" | "length" | "stop" | "tool_call" => {
-  return message.parts.some((part) => part.type === "tool_call")
+): "content_filter" | "error" | "length" | "stop" | "tool_call" =>
+  message.parts.some((part) => part.type === "tool_call")
     ? "tool_call"
     : "stop";
-};
 
 /**
  * Narrow a context-policy evaluation result to an actionable
@@ -122,9 +121,7 @@ export const inferFinishReason = (
  */
 export const isContextEngineeringPlan = (
   value: ContextEngineeringPlan | { action: "none" }
-): value is ContextEngineeringPlan => {
-  return value.action !== "none";
-};
+): value is ContextEngineeringPlan => value.action !== "none";
 
 /**
  * Decode a deterministic kernel record payload into a {@link TuvrenMessage}.
@@ -132,7 +129,8 @@ export const isContextEngineeringPlan = (
  * @param payload - Encoded kernel record bytes.
  * @param label - Diagnostic label used in the assertion error on shape
  *   mismatch.
- * @throws When the decoded value is not a valid Tuvren message.
+ * @throws {TuvrenRuntimeError} When the decoded value is not a valid Tuvren
+ *   message.
  */
 export const decodeKrakenMessageRecord = (
   payload: Uint8Array,
@@ -263,7 +261,7 @@ export const classifyRecoveredTurnSignalState = (
   }
 
   const recoveredUserMessage = [...messages]
-    .reverse()
+    .toReversed()
     .find((message) => message.role === "user");
 
   if (recoveredUserMessage === undefined) {
@@ -290,12 +288,9 @@ export const doesSignalMatchRecoveredTurn = (
   signal: InputSignal,
   messages: readonly TuvrenMessage[],
   initialInputMessage?: TuvrenMessage
-): boolean => {
-  return (
-    classifyRecoveredTurnSignalState(signal, messages, initialInputMessage) ===
-    "match"
-  );
-};
+): boolean =>
+  classifyRecoveredTurnSignalState(signal, messages, initialInputMessage) ===
+  "match";
 
 /**
  * Map a preempted run's recovered step sequence to a resumption mode.
@@ -307,7 +302,7 @@ export const doesSignalMatchRecoveredTurn = (
  * the fresh-turn prelude; `finalize_turn_status` only completes the terminal
  * status.
  *
- * @throws TuvrenRuntimeError with code
+ * @throws {TuvrenRuntimeError} With code
  *   `unsupported_stale_run_recovery_phase` when the recovered step is not a
  *   phase that can be safely resumed.
  */
@@ -408,14 +403,11 @@ export const shouldSuppressBufferedRunnerEvents = (
 /** Report whether any message in the list is an assistant message. */
 export const hasAssistantOutputMessages = (
   messages: TuvrenMessage[]
-): boolean => {
-  return messages.some((message) => message.role === "assistant");
-};
+): boolean => messages.some((message) => message.role === "assistant");
 
 /**
  * Normalize an unknown recovery failure into an `Error` instance
  * (delegates to the shared runtime error normalizer).
  */
-export const normalizeRecoveryError = (error: unknown): Error => {
-  return normalizeError(error);
-};
+export const normalizeRecoveryError = (error: unknown): Error =>
+  normalizeError(error);

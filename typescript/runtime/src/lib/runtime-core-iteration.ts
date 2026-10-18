@@ -45,6 +45,7 @@ import {
 } from "./context-manifest.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import { validateRunnerAssistantEvents } from "./runtime-core-assistant-validation.js";
+import type { InterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
 import type { InterruptedIterationRecoveryPlan } from "./runtime-core-recovery-plan.js";
 import {
   createCancelledResolution,
@@ -122,7 +123,7 @@ export interface ExecutedIterationResult {
  * itself stays dependency-injected and testable.
  */
 export interface RuntimeCoreIterationHost {
-  applyAfterIterationResolution(
+  applyAfterIterationResolution: (
     handle: RuntimeExecutionHandle,
     loopState: {
       activeConfig: AgentConfig;
@@ -140,8 +141,8 @@ export interface RuntimeCoreIterationHost {
     headMessages: TuvrenMessage[],
     stagedMessages: TuvrenMessage[],
     manifest: ContextManifest
-  ): Promise<RuntimeResolution>;
-  applyRequestedToolBatchIfNeeded(input: {
+  ) => Promise<RuntimeResolution>;
+  applyRequestedToolBatchIfNeeded: (input: {
     handle: RuntimeExecutionHandle;
     headState: {
       branchHeadHash: HashString;
@@ -168,9 +169,9 @@ export interface RuntimeCoreIterationHost {
     stagedMessages: TuvrenMessage[];
     toolExecutionMode: "parallel" | "sequential";
     toolResults: ToolResultPart[];
-  }): Promise<LoopOutcome | RuntimeResolution>;
-  beginIterationStep(runId: string, stepId: string): Promise<void>;
-  completeIterationArtifacts(
+  }) => Promise<LoopOutcome | RuntimeResolution>;
+  beginIterationStep: (runId: string, stepId: string) => Promise<void>;
+  completeIterationArtifacts: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: {
@@ -194,21 +195,21 @@ export interface RuntimeCoreIterationHost {
     resolution: RuntimeResolution,
     manifest: ContextManifest,
     appendedMessageHashes: HashString[],
-    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
-  ): Promise<HashString | undefined>;
-  createId(): string;
-  stageManifest(
+    interruptedToolBatch?: InterruptedToolBatchDescriptor
+  ) => Promise<HashString | undefined>;
+  createId: () => string;
+  stageManifest: (
     runId: string,
     manifest: ContextManifest,
     taskId?: string
-  ): Promise<HashString>;
-  stageTurnLineage(
+  ) => Promise<HashString>;
+  stageTurnLineage: (
     runId: string,
     turnId: string,
     taskId: string,
-    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
-  ): Promise<HashString>;
-  createRunnerExecutionContext(
+    interruptedToolBatch?: InterruptedToolBatchDescriptor
+  ) => Promise<HashString>;
+  createRunnerExecutionContext: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: {
@@ -229,8 +230,8 @@ export interface RuntimeCoreIterationHost {
     },
     iterationCount: number,
     emittedRunnerEvents: TuvrenStreamEvent[]
-  ): RunnerExecutionContext;
-  createTrackedRun(
+  ) => RunnerExecutionContext;
+  createTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     turnId: string,
@@ -242,8 +243,8 @@ export interface RuntimeCoreIterationHost {
       id: string;
       sideEffects: boolean;
     }[]
-  ): Promise<void>;
-  ensureRunnerAssistantEvents(
+  ) => Promise<void>;
+  ensureRunnerAssistantEvents: (
     handle: RuntimeExecutionHandle,
     messages: TuvrenMessage[],
     emittedEvents: TuvrenStreamEvent[],
@@ -254,36 +255,36 @@ export interface RuntimeCoreIterationHost {
       carriedStateUpdates: ExtensionStateUpdate[];
       enteredIterationLoop: boolean;
     }
-  ): TuvrenStreamEvent[];
-  executeRunner(
+  ) => TuvrenStreamEvent[];
+  executeRunner: (
     runner: RuntimeRunner,
     context: RunnerExecutionContext
-  ): Promise<RunnerExecutionResult>;
-  failInvalidPauseResolutionIfNeeded(
+  ) => Promise<RunnerExecutionResult>;
+  failInvalidPauseResolutionIfNeeded: (
     handle: RuntimeExecutionHandle,
     iterationRunId: string,
     stableHeadTurnNodeHash: HashString,
     requestedToolCallCount: number,
     resolution: RuntimeResolution
-  ): Promise<IterationPhaseResult | undefined>;
-  failTrackedRunWithoutBranchAdvance(
+  ) => Promise<IterationPhaseResult | undefined>;
+  failTrackedRunWithoutBranchAdvance: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stableHeadTurnNodeHash: HashString
-  ): Promise<void>;
-  flushBufferedRunnerEventsIfNeeded(
+  ) => Promise<void>;
+  flushBufferedRunnerEventsIfNeeded: (
     handle: RuntimeExecutionHandle,
     resolution: RuntimeResolution,
     events: TuvrenStreamEvent[]
-  ): TuvrenStreamEvent[];
-  materializeRunner(runnerId: string): RuntimeRunner;
-  now(): number;
+  ) => TuvrenStreamEvent[];
+  materializeRunner: (runnerId: string) => RuntimeRunner;
+  now: () => number;
   /**
    * Publish an event through the full runtime event + telemetry path. Used by
    * provider-tool attribution to ensure telemetry observes the same events as
    * the canonical stream (KRT-BA002: taxonomy consistent across stream and telemetry).
    */
-  publishEvent(
+  publishEvent: (
     handle: RuntimeExecutionHandle,
     event: TuvrenStreamEvent,
     loopState: {
@@ -293,18 +294,18 @@ export interface RuntimeCoreIterationHost {
       carriedStateUpdates: ExtensionStateUpdate[];
       enteredIterationLoop: boolean;
     }
-  ): void;
-  reconcileCheckpointedPauseResolution(
+  ) => void;
+  reconcileCheckpointedPauseResolution: (
     checkpointedPause: boolean,
     runId: string,
     turnId: string,
     resolution: RuntimeResolution
-  ): Promise<RuntimeResolution>;
-  stageRunnerMessages(
+  ) => Promise<RuntimeResolution>;
+  stageRunnerMessages: (
     runId: string,
     messages: TuvrenMessage[],
     iterationCount: number
-  ): Promise<HashString[]>;
+  ) => Promise<HashString[]>;
 }
 
 interface PreparedIteration {
@@ -522,7 +523,7 @@ const emitProviderToolAttributionEvents = (
       if (
         typeof meta !== "object" ||
         meta === null ||
-        (meta as Record<string, unknown>).owner !== "provider"
+        meta.owner !== "provider"
       ) {
         // Invariant: isPrestagedProviderToolMessage in runner-contract-guards.ts
         // uses parts.every(owner==="provider"), so a mixed tool message (some parts
@@ -532,7 +533,7 @@ const emitProviderToolAttributionEvents = (
         continue;
       }
       const executionClass: "provider-native" | "provider-mediated" =
-        (meta as Record<string, unknown>).executionClass === "provider-mediated"
+        meta.executionClass === "provider-mediated"
           ? "provider-mediated"
           : "provider-native";
       const observation = observationForClass(executionClass);
@@ -607,7 +608,7 @@ const applySanitizeToPrestagedProviderMessages = (
       if (
         typeof meta !== "object" ||
         meta === null ||
-        (meta as Record<string, unknown>).owner !== "provider"
+        meta.owner !== "provider"
       ) {
         // Same invariant emitProviderToolAttributionEvents relies on: a mixed
         // tool message is rejected before reaching here by
@@ -616,7 +617,7 @@ const applySanitizeToPrestagedProviderMessages = (
       }
 
       const executionClass: "provider-native" | "provider-mediated" =
-        (meta as Record<string, unknown>).executionClass === "provider-mediated"
+        meta.executionClass === "provider-mediated"
           ? "provider-mediated"
           : "provider-native";
 
@@ -640,6 +641,32 @@ const applySanitizeToPrestagedProviderMessages = (
 
     return changed ? { ...message, parts } : message;
   });
+};
+
+const createCompletedIterationManifest = (
+  prepared: PreparedIteration,
+  input: Parameters<typeof executeIterationPhase>[1],
+  checkpointHeadState: { messages: TuvrenMessage[] }
+): ContextManifest => {
+  const stateUpdates = [...input.loopState.carriedStateUpdates];
+  if (prepared.rebuildManifestFromHistory === true) {
+    return updateContextManifest(
+      createContextManifest(
+        checkpointHeadState.messages,
+        input.headState.manifest.extensions
+      ),
+      [],
+      stateUpdates,
+      []
+    );
+  }
+
+  return updateContextManifest(
+    input.headState.manifest,
+    prepared.stagedMessages,
+    stateUpdates,
+    []
+  );
 };
 
 const completePreparedIteration = async (
@@ -727,22 +754,11 @@ const completePreparedIteration = async (
   const afterIterationStagedMessages =
     finalizedProjection === undefined ? prepared.stagedMessages : [];
 
-  const manifest = prepared.rebuildManifestFromHistory
-    ? updateContextManifest(
-        createContextManifest(
-          checkpointHeadState.messages,
-          input.headState.manifest.extensions
-        ),
-        [],
-        [...input.loopState.carriedStateUpdates],
-        []
-      )
-    : updateContextManifest(
-        input.headState.manifest,
-        prepared.stagedMessages,
-        [...input.loopState.carriedStateUpdates],
-        []
-      );
+  const manifest = createCompletedIterationManifest(
+    prepared,
+    input,
+    checkpointHeadState
+  );
   const cleanManifest = manifest;
   input.loopState.carriedStateUpdates = [];
   const turnNodeHash = await host.completeIterationArtifacts(
@@ -845,6 +861,10 @@ const executeRecoveredIterationPhase = async (
   await host.beginIterationStep(iterationRunId, "iterate");
 
   const resolution: RuntimeResolution = { type: "continue_iteration" };
+  const recoveredRunnerResult: Pick<
+    RunnerExecutionResult,
+    "assistantEventReconciliation"
+  > = {};
   return await completePreparedIteration(host, input, iterationRunId, {
     ...(recoveryPlan.assistantMessageHash === undefined
       ? {}
@@ -858,7 +878,7 @@ const executeRecoveredIterationPhase = async (
       [assistantMessage],
       resolution,
       [],
-      undefined
+      recoveredRunnerResult.assistantEventReconciliation
     ),
     stagedMessageHashes: [...recoveryPlan.stagedMessageHashes],
     stagedMessages: [...recoveryPlan.stagedMessages],
@@ -1077,7 +1097,9 @@ export const executeIterationPhase = async (
   emitProviderToolAttributionEvents(
     stagedMessages,
     () => host.now(),
-    (event) => host.publishEvent(input.handle, event, input.loopState)
+    (event) => {
+      host.publishEvent(input.handle, event, input.loopState);
+    }
   );
   const runnerResponse = synthesizeResponse(
     stagedMessages,
