@@ -1,0 +1,82 @@
+{
+  "status": "pass",
+  "delivery_commit": "4befa79e4db85afdf0443ea64a910e1e8b3e5aca",
+  "source": {
+    "tag": "evidence/wave-1-ca-source-freeze-20261018",
+    "frozen_commit": "d67b9b8d2bb370e25d03415d6573ace25b4fa46b",
+    "measured_tree": "798188ab5aaa5f4a54c6eca142b1048aa3f2b524",
+    "union_tree": "32fd3ce665f6e54b6311363bb876e13f4f6756b8",
+    "historical_evidence_tree": "6872015b02cb86565bfe47dcc558eb7dbb87474a"
+  },
+  "diff": {
+    "files": 46,
+    "insertions": 5562,
+    "deletions": 3569,
+    "raw_lines": 9131,
+    "imported_files": 45,
+    "new_changesets": 1
+  },
+  "provenance": {
+    "all_imported_modes_and_blobs_match_frozen_and_measured_sources": true,
+    "historical_krt_ca002_copied_whole": true,
+    "early_removal_identities_proven": 7,
+    "protected_final_owned_directives": 29,
+    "excluded_runtime_contract_shapes_bridge_untouched": true,
+    "project_targets_untouched": true,
+    "coverage_metadata_untouched": true
+  },
+  "checks": [
+    {
+      "command": "bun run nx run-many -t typecheck -p shared-core sdk mcp-client --parallel=3",
+      "exit_code": 0
+    },
+    {
+      "command": "bun run nx run-many -t lint -p shared-core sdk mcp-client --parallel=3",
+      "exit_code": 0,
+      "files_checked": { "core": 55, "sdk": 21, "mcp_client": 13 }
+    },
+    {
+      "command": "bun run nx run-many -t test -p shared-core sdk mcp-client --parallel=3",
+      "exit_code": 0,
+      "tests": { "core": 119, "sdk": 91, "mcp_client": 9 },
+      "assertions": { "core": 260, "sdk": 230, "mcp_client": 38 }
+    },
+    {
+      "command": "fresh Bun imports of the core, SDK, and MCP client entrypoints",
+      "exit_code": 0
+    },
+    {
+      "command": "TypeScript --listFilesOnly for core lib/spec, SDK, and MCP client",
+      "exit_code": 0,
+      "compiler_entries": 1545,
+      "live_sibling_or_workspace_dist_entries": 0
+    },
+    {
+      "command": "bun run typecheck",
+      "exit_code": 0,
+      "projects": 33,
+      "dependencies": 1
+    },
+    {
+      "command": "bun run changeset:check --base=HEAD",
+      "exit_code": 0,
+      "direct_patch_packages": ["@tuvren/core", "@tuvren/sdk", "@tuvren/mcp-client"]
+    },
+    {
+      "command": "bun run api-freeze:check",
+      "exit_code": 0,
+      "entrypoints": 14,
+      "exports": 404
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "review": {
+    "model": "gpt-6.1-sol",
+    "coverage_complete": true,
+    "files_reviewed": 46,
+    "act_on_findings": 0
+  }
+}

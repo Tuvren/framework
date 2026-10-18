@@ -1,0 +1,55 @@
+{
+  "milestone": "M8",
+  "owner": "KRT-CA002",
+  "result": "pass",
+  "source_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
+  "scope": [
+    "typescript/sdk",
+    "typescript/streaming/agui",
+    "typescript/streaming/core",
+    "typescript/streaming/sse",
+    "typescript/streaming/ws"
+  ],
+  "ticket_status": "partial-until-M9",
+  "identities": {
+    "baseline": 17,
+    "planned_source": 17,
+    "live": 17,
+    "ledger": 17,
+    "added": 0,
+    "removed": 0,
+    "reason_changed": 0
+  },
+  "retained_biome": {
+    "needed": 13,
+    "currently_non_firing": 4,
+    "early_deletions": 0,
+    "directives_added": 0
+  },
+  "native": {
+    "syntactic_diagnostics": 513,
+    "type_aware_diagnostics": 688,
+    "equivalent_counterparts": 7,
+    "no_counterpart_dispositions": 10,
+    "suppressions_added": 0
+  },
+  "handoff": {
+    "probe_sha256": "a3abc0d2cd8df330bcc18248fc4c18b5e5a1567bfe17a48333b772ab4d51f360",
+    "suppressions_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b",
+    "summary_sha256": "1cc7bb45fddab52d40119eb5ae865114b220e796af9fa3f93fee92c6663305c8",
+    "commands_sha256": "408d68f729a9950ee7a14f3f2f24c67d35dc58655d5ac02aee7ddae2304fffd6",
+    "raw_report_index_sha256": "23efcf1c9a77d0529b5353af733e871f50521bef3033c0468c0a5e8b80ebc0ec"
+  },
+  "checks": {
+    "project_typechecks": "pass",
+    "project_tests": "pass",
+    "project_retained_lint": "pass",
+    "full_lint": "pass",
+    "changeset_check": "pass"
+  },
+  "wrapper": {
+    "sha256": "33b4542c1451927c267e7748849b2d3cc34032d88257de7e3f2ad04a777b1079",
+    "directives": 0,
+    "retained_ca_coverage": true
+  }
+}
