@@ -88,7 +88,7 @@ function findCanonicalErrorCode(events: readonly unknown[]): string | null {
   for (const event of events) {
     const record = asRecord(event);
     if (record.type === "error" && typeof record.error === "object") {
-      const code = asRecord(record.error).code;
+      const { code } = asRecord(record.error);
       if (typeof code === "string") {
         return code;
       }
@@ -188,9 +188,9 @@ export async function runExecutionBoundsMaxIterations(): Promise<AdapterProjecti
     bounds: { maxIterations: 3 },
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runawayTextRunner]),
     kernel: harness.kernel,
     now: createDeterministicClock(),
+    runnerRegistry: createRunnerRegistry([runawayTextRunner]),
     telemetry: capture.sink,
   });
   const thread = await runtime.createThread({});
@@ -233,9 +233,9 @@ export async function runExecutionBoundsMaxToolCalls(): Promise<AdapterProjectio
     bounds: { maxIterations: 100, maxToolCalls: 2 },
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
     now: createDeterministicClock(),
+    runnerRegistry: createRunnerRegistry([runner]),
     telemetry: capture.sink,
   });
   const thread = await runtime.createThread({});
@@ -270,9 +270,9 @@ export async function runExecutionBoundsMaxWallClock(): Promise<AdapterProjectio
     bounds: { maxIterations: 100_000, maxWallClockMs: 50 },
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runawayTextRunner]),
     kernel: harness.kernel,
     now: createDeterministicClock(),
+    runnerRegistry: createRunnerRegistry([runawayTextRunner]),
     telemetry: capture.sink,
   });
   const thread = await runtime.createThread({});
@@ -305,7 +305,7 @@ export async function runExecutionBoundsWallClockSignalDelivery(): Promise<Adapt
   const hangingTool: TuvrenToolDefinition = {
     description: "awaits the cooperative cancellation signal",
     async execute(_input, context) {
-      const signal = (context as { signal?: AbortSignal }).signal;
+      const { signal } = context as { signal?: AbortSignal };
       await new Promise<void>((resolve) => {
         if (signal === undefined || signal.aborted) {
           resolve();
@@ -469,8 +469,8 @@ export async function runExecutionBoundsInvalidConfig(): Promise<AdapterProjecti
         bounds: { maxIterations: value },
         createId: createConformanceIdFactory(),
         defaultRunnerId: RUNNER_ID,
-        runnerRegistry: createRunnerRegistry([runawayTextRunner]),
         kernel: harness.kernel,
+        runnerRegistry: createRunnerRegistry([runawayTextRunner]),
       });
       return { code: null, rejected: false, value: String(value) };
     } catch (error: unknown) {
@@ -502,9 +502,9 @@ export async function runExecutionBoundsWithinBounds(): Promise<AdapterProjectio
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
     now: createDeterministicClock(),
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({

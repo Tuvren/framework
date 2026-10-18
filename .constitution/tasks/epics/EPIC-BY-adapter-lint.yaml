@@ -34,7 +34,7 @@ tickets:
       evidence: "Assert each scoped project typechecks after each safe-fix batch, existing runtime assertions pass, and no signature or collection semantics change. Record changed files and the before/after diagnostic count per project."
     flows: []
     certainty: settled
-    status: in_progress
+    status: done
   - id: KRT-BY002
     title: Migrate live suppressions and delete dead ones
     type: Chore
@@ -132,6 +132,11 @@ decisions:
         - typescript/conformance-adapter/src/framework-adapter-event-stream-resume.ts
         - typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts
         - typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-runner.ts
+        - typescript/conformance-adapter/src/framework-adapter-session.ts
+        - typescript/conformance-adapter/src/framework-adapter-trust-boundary.ts
+        - typescript/conformance-adapter/src/framework-adapter.ts
     status: proposed
     asked:
       date: 2026-10-18

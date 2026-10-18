@@ -107,8 +107,8 @@ async function runTurn(
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
 
   const thread = await runtime.createThread({});
@@ -151,17 +151,17 @@ export async function runTuvrenServerLifecycle(): Promise<AdapterProjection> {
   // --- 1. Input validation failure ---
   const INPUT_VALIDATION_TOOL = "ax006-input-validation";
   const strictTool: TuvrenToolDefinition = {
-    name: INPUT_VALIDATION_TOOL,
     description: "strict input schema",
-    inputSchema: {
-      type: "object",
-      properties: { value: { type: "number" } },
-      required: ["value"],
-      additionalProperties: false,
-    },
     execute() {
       return { result: 1 };
     },
+    inputSchema: {
+      additionalProperties: false,
+      properties: { value: { type: "number" } },
+      required: ["value"],
+      type: "object",
+    },
+    name: INPUT_VALIDATION_TOOL,
   };
 
   const invalidRunner = createStaticRunner(async (context) => {
@@ -191,8 +191,8 @@ export async function runTuvrenServerLifecycle(): Promise<AdapterProjection> {
   const inputValidationRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([invalidRunner]),
     kernel: inputValidationHarness.kernel,
+    runnerRegistry: createRunnerRegistry([invalidRunner]),
   });
   const inputThread = await inputValidationRuntime.createThread({});
   const inputHandle = inputValidationRuntime.executeTurn({
@@ -212,17 +212,17 @@ export async function runTuvrenServerLifecycle(): Promise<AdapterProjection> {
   // --- 2. Output validation failure ---
   const OUTPUT_VALIDATION_TOOL = "ax006-output-validation";
   const outputSchemaTool: TuvrenToolDefinition = {
-    name: OUTPUT_VALIDATION_TOOL,
     description: "output schema tool",
-    inputSchema: { type: "object" },
-    outputSchema: {
-      type: "object",
-      properties: { count: { type: "number" } },
-      required: ["count"],
-      additionalProperties: false,
-    },
     execute() {
       return { wrongField: "bad" };
+    },
+    inputSchema: { type: "object" },
+    name: OUTPUT_VALIDATION_TOOL,
+    outputSchema: {
+      additionalProperties: false,
+      properties: { count: { type: "number" } },
+      required: ["count"],
+      type: "object",
     },
   };
   const outputEvents = await runTurn(outputSchemaTool);
@@ -237,13 +237,13 @@ export async function runTuvrenServerLifecycle(): Promise<AdapterProjection> {
   const WITHIN_CONTRACT_TOOL = "ax006-within-contract";
   let withinContractExecuted = false;
   const withinContractTool: TuvrenToolDefinition = {
-    name: WITHIN_CONTRACT_TOOL,
     description: "within-contract tool",
-    inputSchema: { type: "object" },
     execute() {
       withinContractExecuted = true;
       return { result: "ok" };
     },
+    inputSchema: { type: "object" },
+    name: WITHIN_CONTRACT_TOOL,
   };
   const withinEvents = await runTurn(withinContractTool);
   const withinToolResult = findEvent(withinEvents, "tool.result") as
@@ -254,11 +254,7 @@ export async function runTuvrenServerLifecycle(): Promise<AdapterProjection> {
   const RETRY_TOOL = "ax006-idempotent-retry";
   let retryCallCount = 0;
   const retryTool: TuvrenToolDefinition = {
-    name: RETRY_TOOL,
     description: "idempotent tool",
-    idempotent: true,
-    maxRetries: 1,
-    inputSchema: { type: "object" },
     execute() {
       retryCallCount += 1;
       if (retryCallCount === 1) {
@@ -266,6 +262,10 @@ export async function runTuvrenServerLifecycle(): Promise<AdapterProjection> {
       }
       return { result: "retried-ok" };
     },
+    idempotent: true,
+    inputSchema: { type: "object" },
+    maxRetries: 1,
+    name: RETRY_TOOL,
   };
   const retryEvents = await runTurn(retryTool);
   const retryToolResult = findEvent(retryEvents, "tool.result") as
@@ -279,25 +279,25 @@ export async function runTuvrenServerLifecycle(): Promise<AdapterProjection> {
   const NO_RETRY_TOOL = "ax006-non-idempotent";
   let noRetryCallCount = 0;
   const noRetryTool: TuvrenToolDefinition = {
-    name: NO_RETRY_TOOL,
     description: "non-idempotent tool",
-    inputSchema: { type: "object" },
     execute() {
       noRetryCallCount += 1;
       throw new Error("failure");
     },
+    inputSchema: { type: "object" },
+    name: NO_RETRY_TOOL,
   };
   await runTurn(noRetryTool);
 
   // --- 6. Rate limit ---
   const RATE_LIMIT_TOOL = "ax006-rate-limit";
   const rateLimitTool: TuvrenToolDefinition = {
-    name: RATE_LIMIT_TOOL,
     description: "rate limited tool",
-    inputSchema: { type: "object" },
     execute() {
       return { ok: true };
     },
+    inputSchema: { type: "object" },
+    name: RATE_LIMIT_TOOL,
   };
   const rateLimitEvents = await runTurn(rateLimitTool, {
     serverExecution: { rateLimit: { maxCalls: 0, windowMs: 60_000 } },
@@ -311,36 +311,36 @@ export async function runTuvrenServerLifecycle(): Promise<AdapterProjection> {
 
   const evidence = {
     tuvrenServer: {
-      inputValidation: {
-        resultIsError: inputToolResult?.isError,
-        resultOutputCode: inputToolResult?.output?.code,
-        auditLifecycle: inputAuditEvent?.lifecycle,
-        auditValidationPassed: inputAuditEvent?.validationPassed,
-      },
-      outputValidation: {
-        resultIsError: outputToolResult?.isError,
-        resultOutputCode: outputToolResult?.output?.code,
-        auditLifecycle: outputAuditEvent?.lifecycle,
-        auditValidationPassed: outputAuditEvent?.validationPassed,
-      },
-      withinContract: {
-        toolExecuted: withinContractExecuted,
-        resultIsError: withinToolResult?.isError,
-        resultOutput: withinToolResult?.output,
-      },
       idempotentRetry: {
         callCount: retryCallCount,
+        firstRetryAttemptNumber: retryAuditEvents[0]?.attempt,
         resultIsError: retryToolResult?.isError,
         retryAuditCount: retryAuditEvents.length,
-        firstRetryAttemptNumber: retryAuditEvents[0]?.attempt,
+      },
+      inputValidation: {
+        auditLifecycle: inputAuditEvent?.lifecycle,
+        auditValidationPassed: inputAuditEvent?.validationPassed,
+        resultIsError: inputToolResult?.isError,
+        resultOutputCode: inputToolResult?.output?.code,
       },
       nonIdempotentNoRetry: {
         callCount: noRetryCallCount,
       },
+      outputValidation: {
+        auditLifecycle: outputAuditEvent?.lifecycle,
+        auditValidationPassed: outputAuditEvent?.validationPassed,
+        resultIsError: outputToolResult?.isError,
+        resultOutputCode: outputToolResult?.output?.code,
+      },
       rateLimit: {
+        auditLifecycle: rateLimitAuditEvent?.lifecycle,
         resultIsError: rateLimitToolResult?.isError,
         resultOutputCode: rateLimitToolResult?.output?.code,
-        auditLifecycle: rateLimitAuditEvent?.lifecycle,
+      },
+      withinContract: {
+        resultIsError: withinToolResult?.isError,
+        resultOutput: withinToolResult?.output,
+        toolExecuted: withinContractExecuted,
       },
     },
   };
@@ -362,25 +362,25 @@ export async function runTuvrenServerBindingClassification(): Promise<AdapterPro
 
   // MCP tool
   const mcpTool: TuvrenToolDefinition = {
-    name: "ax006-mcp-tool",
     description: "mcp tool",
-    inputSchema: { type: "object" },
     execute() {
       return {};
     },
+    inputSchema: { type: "object" },
     metadata: { mcp: { serverName: "ax006-server" } },
+    name: "ax006-mcp-tool",
   };
   const mcpBinding = resolver.resolveFromToolDefinition(mcpTool);
 
   // Sandbox tool
   const sandboxTool: TuvrenToolDefinition = {
-    name: "ax006-sandbox-tool",
     description: "sandbox tool",
-    inputSchema: { type: "object" },
     execute() {
       return {};
     },
+    inputSchema: { type: "object" },
     metadata: { sandbox: { endpointId: "ax006-sandbox" } },
+    name: "ax006-sandbox-tool",
   };
   const sandboxBinding = resolver.resolveFromToolDefinition(sandboxTool);
 
@@ -401,26 +401,26 @@ export async function runTuvrenServerBindingClassification(): Promise<AdapterPro
   const evidence = {
     tuvrenServer: {
       mcpBinding: {
-        executionClass: mcpBinding.executionClass,
-        endpointKind: mcpBinding.endpoint.kind,
         capabilityId: mcpBinding.capabilityId,
+        endpointKind: mcpBinding.endpoint.kind,
+        executionClass: mcpBinding.executionClass,
       },
-      sandboxBinding: {
-        executionClass: sandboxBinding.executionClass,
-        endpointKind: sandboxBinding.endpoint.kind,
-        capabilityId: sandboxBinding.capabilityId,
+      mcpToolResultAttribution: {
+        executionClass: mcpAttribution?.executionClass,
       },
       observation: {
-        executionClass: productionObservation?.executionClass,
         canAudit: productionObservation?.canAudit,
         canCancel: productionObservation?.canCancel,
         canObserveIntermediate: productionObservation?.canObserveIntermediate,
         canPersistResult: productionObservation?.canPersistResult,
         canResume: productionObservation?.canResume,
         canRetry: productionObservation?.canRetry,
+        executionClass: productionObservation?.executionClass,
       },
-      mcpToolResultAttribution: {
-        executionClass: mcpAttribution?.executionClass,
+      sandboxBinding: {
+        capabilityId: sandboxBinding.capabilityId,
+        endpointKind: sandboxBinding.endpoint.kind,
+        executionClass: sandboxBinding.executionClass,
       },
     },
   };
@@ -469,8 +469,8 @@ export async function runTuvrenServerCancellation(): Promise<AdapterProjection> 
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
 
   const thread = await runtime.createThread({});
@@ -480,9 +480,7 @@ export async function runTuvrenServerCancellation(): Promise<AdapterProjection> 
       name: AGENT_NAME,
       tools: [
         {
-          name: TOOL_NAME,
           description: "cancellation tool",
-          inputSchema: { type: "object" },
           async execute() {
             releaseToolLatch?.();
             await new Promise<void>((resolve) => {
@@ -490,6 +488,8 @@ export async function runTuvrenServerCancellation(): Promise<AdapterProjection> 
             });
             return { value: LATE_VALUE };
           },
+          inputSchema: { type: "object" },
+          name: TOOL_NAME,
         },
       ],
     },
@@ -512,12 +512,12 @@ export async function runTuvrenServerCancellation(): Promise<AdapterProjection> 
     (m) => (m as Record<string, unknown>).role === "tool"
   );
   const lateResultPresent = toolMessages.some((m) => {
-    const parts = (m as Record<string, unknown>).parts;
+    const { parts } = m as Record<string, unknown>;
     if (!Array.isArray(parts)) {
       return false;
     }
     return parts.some((p) => {
-      const output = (p as Record<string, unknown>).output;
+      const { output } = p as Record<string, unknown>;
       return (
         output !== null &&
         typeof output === "object" &&
@@ -578,24 +578,24 @@ export async function runTuvrenServerTenantIsolation(): Promise<AdapterProjectio
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const tool: TuvrenToolDefinition = {
-      name: TOOL_NAME,
       description: "isolation tool",
-      inputSchema: { type: "object" },
       execute() {
         return { ok: true };
       },
+      inputSchema: { type: "object" },
+      name: TOOL_NAME,
     };
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
         name: AGENT_NAME,
-        tools: [tool],
         serverExecution: { rateLimit: { maxCalls, windowMs: 60_000 } },
+        tools: [tool],
       },
       signal: textSignal("isolation test"),
       threadId: thread.threadId,

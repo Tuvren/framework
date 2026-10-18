@@ -65,7 +65,6 @@ function buildProviderToolMessage(
   executionClass: "provider-native" | "provider-mediated"
 ): TuvrenMessage {
   return {
-    role: "tool",
     parts: [
       {
         callId,
@@ -79,6 +78,7 @@ function buildProviderToolMessage(
         type: "tool_result",
       },
     ],
+    role: "tool",
   };
 }
 
@@ -133,7 +133,6 @@ function makeOkEndpoint(
   capabilityId: string
 ): AttachedClientEndpoint {
   return {
-    endpointId,
     advertisedCapabilities: [
       {
         capabilityId,
@@ -150,6 +149,7 @@ function makeOkEndpoint(
         leaseToken: envelope.leaseToken,
       });
     },
+    endpointId,
   };
 }
 
@@ -158,7 +158,6 @@ function makeStaleEndpoint(
   capabilityId: string
 ): AttachedClientEndpoint {
   return {
-    endpointId,
     advertisedCapabilities: [
       {
         capabilityId,
@@ -175,13 +174,14 @@ function makeStaleEndpoint(
         leaseToken: "wrong-token-ba005",
       });
     },
+    endpointId,
   };
 }
 
 function extractAttribution(event: Record<string, unknown>) {
   const attr = event.attribution as Record<string, unknown> | undefined;
   if (!attr) {
-    return undefined;
+    return;
   }
   const obs = attr.observation as Record<string, unknown> | undefined;
   return {
@@ -208,8 +208,8 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const serverRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(SERVER_TOOL)]),
     kernel: serverHarness.kernel,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(SERVER_TOOL)]),
   });
   const serverThread = await serverRuntime.createThread({});
   const serverHandle = serverRuntime.executeTurn({
@@ -218,10 +218,10 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
       name: AGENT_NAME,
       tools: [
         {
-          name: SERVER_TOOL,
           description: "ba005 server",
-          inputSchema: { type: "object" },
           execute: async () => ({ ok: true }),
+          inputSchema: { type: "object" },
+          name: SERVER_TOOL,
         },
       ],
     },
@@ -240,10 +240,10 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const pnRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
+    kernel: pnHarness.kernel,
     runnerRegistry: createRunnerRegistry([
       makeProviderRunner("provider-native", PN_TOOL),
     ]),
-    kernel: pnHarness.kernel,
   });
   const pnThread = await pnRuntime.createThread({});
   const pnHandle = pnRuntime.executeTurn({
@@ -264,10 +264,10 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const pmRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
+    kernel: pmHarness.kernel,
     runnerRegistry: createRunnerRegistry([
       makeProviderRunner("provider-mediated", PM_TOOL),
     ]),
-    kernel: pmHarness.kernel,
   });
   const pmThread = await pmRuntime.createThread({});
   const pmHandle = pmRuntime.executeTurn({
@@ -290,16 +290,16 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const clientRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(CLIENT_CAP)]),
     kernel: clientHarness.kernel,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(CLIENT_CAP)]),
   });
   const clientThread = await clientRuntime.createThread({});
   const clientHandle = clientRuntime.executeTurn({
     branchId: clientThread.branchId,
     config: {
-      name: AGENT_NAME,
-      clientEndpoints: [clientEndpoint],
       clientEndpointBoundary: clientBoundary,
+      clientEndpoints: [clientEndpoint],
+      name: AGENT_NAME,
     },
     signal: textSignal("ba005 client"),
     threadId: clientThread.threadId,
@@ -319,15 +319,15 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const deniedRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(DENIED_TOOL)]),
     kernel: deniedHarness.kernel,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(DENIED_TOOL)]),
   });
   const deniedThread = await deniedRuntime.createThread({});
   const deniedHandle = deniedRuntime.executeTurn({
     branchId: deniedThread.branchId,
     config: {
-      name: AGENT_NAME,
       capabilityPolicyEngine: denyEngine,
+      name: AGENT_NAME,
       tools: [
         {
           name: DENIED_TOOL,
@@ -355,16 +355,16 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const staleRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(STALE_CAP)]),
     kernel: staleHarness.kernel,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(STALE_CAP)]),
   });
   const staleThread = await staleRuntime.createThread({});
   const staleHandle = staleRuntime.executeTurn({
     branchId: staleThread.branchId,
     config: {
-      name: AGENT_NAME,
-      clientEndpoints: [staleEndpoint],
       clientEndpointBoundary: staleBoundary,
+      clientEndpoints: [staleEndpoint],
+      name: AGENT_NAME,
     },
     signal: textSignal("ba005 stale"),
     threadId: staleThread.threadId,
@@ -384,8 +384,8 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const errorRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(ERROR_TOOL)]),
     kernel: errorHarness.kernel,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(ERROR_TOOL)]),
   });
   const errorThread = await errorRuntime.createThread({});
   const errorHandle = errorRuntime.executeTurn({
@@ -423,16 +423,16 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
   const unavailRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(UNAVAIL_CAP)]),
     kernel: unavailHarness.kernel,
+    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(UNAVAIL_CAP)]),
   });
   const unavailThread = await unavailRuntime.createThread({});
   const unavailHandle = unavailRuntime.executeTurn({
     branchId: unavailThread.branchId,
     config: {
-      name: AGENT_NAME,
-      clientEndpoints: [unavailEndpoint],
       clientEndpointBoundary: unavailBoundary,
+      clientEndpoints: [unavailEndpoint],
+      name: AGENT_NAME,
     },
     signal: textSignal("ba005 unavail"),
     threadId: unavailThread.threadId,
@@ -451,69 +451,69 @@ export async function runInvocationLifecycleCrossClass(): Promise<AdapterProject
     result: {
       invocationLifecycle: {
         tuvrenServer: {
-          toolStartCount: serverStarts.length,
-          toolResultCount: serverResults.length,
-          toolAuditCount: serverAudits.length,
-          owner: serverAttr?.owner,
-          executionClass: serverAttr?.executionClass,
           canAudit: serverAttr?.canAudit,
           canCancel: serverAttr?.canCancel,
           canResume: serverAttr?.canResume,
           canRetry: serverAttr?.canRetry,
+          executionClass: serverAttr?.executionClass,
+          owner: serverAttr?.owner,
+          toolAuditCount: serverAudits.length,
+          toolResultCount: serverResults.length,
+          toolStartCount: serverStarts.length,
         },
         providerNative: {
-          toolStartCount: pnStarts.length,
-          toolResultCount: pnResults.length,
-          toolAuditCount: pnAudits.length,
-          owner: pnAttr?.owner,
-          executionClass: pnAttr?.executionClass,
           canAudit: pnAttr?.canAudit,
           canCancel: pnAttr?.canCancel,
           canResume: pnAttr?.canResume,
           canRetry: pnAttr?.canRetry,
+          executionClass: pnAttr?.executionClass,
+          owner: pnAttr?.owner,
+          toolAuditCount: pnAudits.length,
+          toolResultCount: pnResults.length,
+          toolStartCount: pnStarts.length,
         },
         providerMediated: {
-          toolStartCount: pmStarts.length,
-          toolResultCount: pmResults.length,
-          toolAuditCount: pmAudits.length,
-          owner: pmAttr?.owner,
-          executionClass: pmAttr?.executionClass,
           canAudit: pmAttr?.canAudit,
           canCancel: pmAttr?.canCancel,
           canResume: pmAttr?.canResume,
           canRetry: pmAttr?.canRetry,
+          executionClass: pmAttr?.executionClass,
+          owner: pmAttr?.owner,
+          toolAuditCount: pmAudits.length,
+          toolResultCount: pmResults.length,
+          toolStartCount: pmStarts.length,
         },
         tuvrenClient: {
-          toolStartCount: clientStarts.length,
-          toolResultCount: clientResults.length,
-          toolAuditCount: clientAudits.length,
-          owner: clientAttr?.owner,
-          executionClass: clientAttr?.executionClass,
           canAudit: clientAttr?.canAudit,
           canCancel: clientAttr?.canCancel,
           canResume: clientAttr?.canResume,
           canRetry: clientAttr?.canRetry,
+          executionClass: clientAttr?.executionClass,
+          owner: clientAttr?.owner,
+          toolAuditCount: clientAudits.length,
+          toolResultCount: clientResults.length,
+          toolStartCount: clientStarts.length,
         },
         policyDenied: {
-          toolStartCount: deniedStarts.length,
-          toolResultCount: deniedResults.length,
           resultIsError: deniedResultEvent?.isError,
+          toolResultCount: deniedResults.length,
+          toolStartCount: deniedStarts.length,
         },
         staleLateCompletion: {
-          toolResultIsError: staleResultEvent?.isError,
           toolResultCode: staleOutput?.code,
+          toolResultIsError: staleResultEvent?.isError,
         },
         // BA003 fail-clean proofs: non-fabricated clean failures
         serverErrorFailClean: {
-          toolStartCount: errorStarts.length,
-          toolResultCount: errorResults.length,
           resultIsError: errorResultEvent?.isError,
+          toolResultCount: errorResults.length,
+          toolStartCount: errorStarts.length,
         },
         clientUnavailableFailClean: {
-          toolStartCount: unavailStarts.length,
+          toolResultCode: unavailOutput?.code,
           toolResultCount: unavailResults.length,
           toolResultIsError: unavailResultEvent?.isError,
-          toolResultCode: unavailOutput?.code,
+          toolStartCount: unavailStarts.length,
         },
       },
     },

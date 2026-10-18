@@ -25,14 +25,14 @@ import type { ApprovalDecision } from "@tuvren/core/tools";
 import {
   assertProviderStreamChunk,
   assertTuvrenModelResponse,
-  type ProviderStreamChunk,
 } from "@tuvren/provider-api";
+import type { ProviderStreamChunk } from "@tuvren/provider-api";
 
-import {
-  type AdapterCapabilities,
-  type AdapterControls,
-  createAdapterErrorEnvelope,
-  type OperationOutcome,
+import { createAdapterErrorEnvelope } from "../../../tools/conformance/adapter-protocol/index.js";
+import type {
+  AdapterCapabilities,
+  AdapterControls,
+  OperationOutcome,
 } from "../../../tools/conformance/adapter-protocol/index.js";
 import { runAdmissionKeySteerCarriage } from "./framework-adapter-admission-key-session.ts";
 import { createFrameworkAdapterAdmissionKeyScenarios } from "./framework-adapter-admission-key.ts";
@@ -310,7 +310,7 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
     const observation = this.observations.get(query.operation);
 
     return Promise.resolve({
-      ...(this.latestState ?? {}),
+      ...this.latestState,
       adapter: observation,
     });
   }
@@ -338,103 +338,149 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
     // This switch is language-local adapter routing only; shared plans own the
     // assertions and expected semantics, and this file must only measure TS behavior.
     switch (operation) {
-      case "runtime.execute-turn":
+      case "runtime.execute-turn": {
         return runtimeScenarios.runCompletedRuntimeTurn(input);
-      case "runtime.cancel-execution":
+      }
+      case "runtime.cancel-execution": {
         return runtimeScenarios.runCancelledRuntimeTurn(controls);
-      case "runtime.approval-resolve":
+      }
+      case "runtime.approval-resolve": {
         return runtimeScenarios.runApprovalResume(input);
-      case "runtime.operational-telemetry":
+      }
+      case "runtime.operational-telemetry": {
         return runtimeScenarios.runOperationalTelemetry(input);
-      case "runtime.branch-create":
+      }
+      case "runtime.branch-create": {
         return runtimeScenarios.runBranchCreate();
-      case "runtime.durable-read.list-threads":
+      }
+      case "runtime.durable-read.list-threads": {
         return runtimeScenarios.runDurableReadListThreads();
-      case "runtime.durable-read.list-threads-paginate":
+      }
+      case "runtime.durable-read.list-threads-paginate": {
         return runtimeScenarios.runDurableReadListThreadsPaginate();
-      case "runtime.durable-read.list-threads-capability-rejected":
+      }
+      case "runtime.durable-read.list-threads-capability-rejected": {
         return runtimeScenarios.runDurableReadListThreadsCapabilityRejected();
-      case "runtime.durable-read.list-branches":
+      }
+      case "runtime.durable-read.list-branches": {
         return runtimeScenarios.runDurableReadListBranches();
-      case "runtime.durable-read.get-turn-state":
+      }
+      case "runtime.durable-read.get-turn-state": {
         return runtimeScenarios.runDurableReadGetTurnState();
-      case "runtime.durable-read.get-turn-state-lineage":
+      }
+      case "runtime.durable-read.get-turn-state-lineage": {
         return runtimeScenarios.runDurableReadGetTurnStateLineage();
-      case "runtime.durable-read.get-turn-history":
+      }
+      case "runtime.durable-read.get-turn-history": {
         return runtimeScenarios.runDurableReadGetTurnHistory();
-      case "runtime.durable-read.read-branch-messages":
+      }
+      case "runtime.durable-read.read-branch-messages": {
         return runtimeScenarios.runDurableReadReadBranchMessages();
-      case "runtime.durable-read.read-branch-messages-head-drift":
+      }
+      case "runtime.durable-read.read-branch-messages-head-drift": {
         return runtimeScenarios.runDurableReadReadBranchMessagesHeadDrift();
-      case "runtime.handle-terminal-value":
+      }
+      case "runtime.handle-terminal-value": {
         return runtimeScenarios.runHandleTerminalValue(input);
-      case "runtime.provider-generate":
+      }
+      case "runtime.provider-generate": {
         return runtimeScenarios.runProviderGenerate(input);
-      case "runtime.provider-stream":
+      }
+      case "runtime.provider-stream": {
         return runtimeScenarios.runProviderStream(input);
-      case "runtime.tool-execute":
+      }
+      case "runtime.tool-execute": {
         return runtimeScenarios.runToolExecution(input);
-      case "runtime.validate-structured-output":
+      }
+      case "runtime.validate-structured-output": {
         return runtimeScenarios.runStructuredValidationFailure(input);
-      case "runtime.context-transform":
+      }
+      case "runtime.context-transform": {
         return runtimeScenarios.runContextTransform(input);
-      case "runtime.recover-result":
+      }
+      case "runtime.recover-result": {
         return runtimeScenarios.runRecoverResult(input);
-      case "runtime.recover-stale-run":
+      }
+      case "runtime.recover-stale-run": {
         return runtimeScenarios.runRecoverStaleRun(input);
-      case "runtime.client-result-as-proposal":
+      }
+      case "runtime.client-result-as-proposal": {
         return runtimeScenarios.runClientResultAsProposal(input);
-      case "runtime.admission-key.crash-recovery":
+      }
+      case "runtime.admission-key.crash-recovery": {
         return admissionKeyScenarios.runCrashRecovery(input);
-      case "runtime.admission-key.provider-exclusion":
+      }
+      case "runtime.admission-key.provider-exclusion": {
         return admissionKeyScenarios.runProviderExclusion(input);
-      case "runtime.admission-key.initial-input-recovery":
+      }
+      case "runtime.admission-key.initial-input-recovery": {
         return admissionKeyScenarios.runInitialInputRecovery(input);
-      case "runtime.admission-key.keyless-identity":
+      }
+      case "runtime.admission-key.keyless-identity": {
         return admissionKeyScenarios.runKeylessIdentity(input);
-      case "runtime.orchestration.launch-preconditions":
+      }
+      case "runtime.orchestration.launch-preconditions": {
         return orchestrationScenarios.runOrchestrationLaunchPreconditions(
           input
         );
-      case "runtime.orchestration.lifecycle-locality":
+      }
+      case "runtime.orchestration.lifecycle-locality": {
         return orchestrationScenarios.runOrchestrationLifecycleLocality(input);
-      case "runtime.orchestration.event-surfaces":
+      }
+      case "runtime.orchestration.event-surfaces": {
         return orchestrationScenarios.runOrchestrationEventSurfaces(input);
-      case "runtime.orchestration.execution-inheritance":
+      }
+      case "runtime.orchestration.execution-inheritance": {
         return orchestrationScenarios.runOrchestrationExecutionInheritance(
           input
         );
-      case "runtime.orchestration.nested-attribution":
+      }
+      case "runtime.orchestration.nested-attribution": {
         return orchestrationScenarios.runOrchestrationNestedAttribution(input);
-      case "runtime.batteries-included.lifecycle":
+      }
+      case "runtime.batteries-included.lifecycle": {
         return batteriesIncludedScenarios.runBatteriesIncludedLifecycle(input);
-      case "runtime.proving-host.headless-transcript-replay":
+      }
+      case "runtime.proving-host.headless-transcript-replay": {
         return provingHostScenarios.runHeadlessTranscriptReplay(input);
-      case "runtime.schema-authoring.route":
+      }
+      case "runtime.schema-authoring.route": {
         return schemaAuthoringScenarios.runSchemaAuthoringRoute(input);
-      case "runtime.schema-authoring.define-tool":
+      }
+      case "runtime.schema-authoring.define-tool": {
         return schemaAuthoringScenarios.runSchemaAuthoringDefineTool(input);
-      case "runner.execute":
+      }
+      case "runner.execute": {
         return runnerScenarios.runRunnerExecute(input);
-      case "runner.resume":
+      }
+      case "runner.resume": {
         return runnerScenarios.runRunnerResume(input);
-      case "runner.checkpoint":
+      }
+      case "runner.checkpoint": {
         return runnerScenarios.runRunnerCheckpoint(input);
-      case "event-stream.runtime-agui-projection":
+      }
+      case "event-stream.runtime-agui-projection": {
         return eventStreamScenarios.runAgUiProjection(input);
-      case "event-stream.runtime-sse-eager-subscription":
+      }
+      case "event-stream.runtime-sse-eager-subscription": {
         return eventStreamScenarios.runSseEagerSubscription(input);
-      case "event-stream.runtime-sse-projection":
+      }
+      case "event-stream.runtime-sse-projection": {
         return eventStreamScenarios.runSseProjection(input);
-      case "event-stream-sse.decode-trace":
+      }
+      case "event-stream-sse.decode-trace": {
         return eventStreamSseScenarios.runDecodeTrace(input);
-      case "event-stream-sse.report-wire-compliance":
+      }
+      case "event-stream-sse.report-wire-compliance": {
         return eventStreamSseScenarios.runReportWireCompliance(input);
-      case "event-stream-resume.replay-scenario":
+      }
+      case "event-stream-resume.replay-scenario": {
         return eventStreamResumeScenarios.runReplayScenario(input);
-      case "event-stream-resume.sse-reconnect":
+      }
+      case "event-stream-resume.sse-reconnect": {
         return eventStreamResumeScenarios.runSseReconnect(input);
-      case "runtime.capability-orchestration.foundation":
+      }
+      case "runtime.capability-orchestration.foundation": {
         return runCapabilityOrchestrationFoundation(
           readStringProperty(
             readOperationScenario(
@@ -445,100 +491,147 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
             "runtime.capability-orchestration.foundation.toolName"
           )
         );
-      case "runtime.capability-orchestration.policy-decisions":
+      }
+      case "runtime.capability-orchestration.policy-decisions": {
         return runCapabilityOrchestrationPolicyDecisions();
-      case "runtime.capability-orchestration.integration":
+      }
+      case "runtime.capability-orchestration.integration": {
         return runCapabilityOrchestrationIntegration();
-      case "runtime.invocation-lifecycle.cross-class":
+      }
+      case "runtime.invocation-lifecycle.cross-class": {
         return runInvocationLifecycleCrossClass();
-      case "runtime.execution-bounds.max-iterations":
+      }
+      case "runtime.execution-bounds.max-iterations": {
         return runExecutionBoundsMaxIterations();
-      case "runtime.execution-bounds.max-tool-calls":
+      }
+      case "runtime.execution-bounds.max-tool-calls": {
         return runExecutionBoundsMaxToolCalls();
-      case "runtime.execution-bounds.max-wall-clock":
+      }
+      case "runtime.execution-bounds.max-wall-clock": {
         return runExecutionBoundsMaxWallClock();
-      case "runtime.execution-bounds.wall-clock-signal-delivery":
+      }
+      case "runtime.execution-bounds.wall-clock-signal-delivery": {
         return runExecutionBoundsWallClockSignalDelivery();
-      case "runtime.execution-bounds.concurrency-throttle":
+      }
+      case "runtime.execution-bounds.concurrency-throttle": {
         return runExecutionBoundsConcurrencyThrottle();
-      case "runtime.execution-bounds.invalid-config":
+      }
+      case "runtime.execution-bounds.invalid-config": {
         return runExecutionBoundsInvalidConfig();
-      case "runtime.execution-bounds.within-bounds":
+      }
+      case "runtime.execution-bounds.within-bounds": {
         return runExecutionBoundsWithinBounds();
-      case "runtime.secret-isolation.surfaces":
+      }
+      case "runtime.secret-isolation.surfaces": {
         return runSecretIsolationRuntimeApi(input);
-      case "runtime.secret-isolation.telemetry":
+      }
+      case "runtime.secret-isolation.telemetry": {
         return runSecretIsolationTelemetry(input);
-      case "runtime.secret-isolation.provider-bridge":
+      }
+      case "runtime.secret-isolation.provider-bridge": {
         return runSecretIsolationProviderBridge(input);
-      case "runtime.sanitize-seam.tool-result":
+      }
+      case "runtime.sanitize-seam.tool-result": {
         return runSanitizeSeamToolResult(input);
-      case "runtime.scope-isolation.surfaces":
+      }
+      case "runtime.scope-isolation.surfaces": {
         return runScopeIsolationSurfaces(input);
-      case "runtime.trust-boundary.approval-gate":
+      }
+      case "runtime.trust-boundary.approval-gate": {
         return runTrustBoundaryApprovalNonBypassable(input);
-      case "runtime.trust-boundary.local-tool-input":
+      }
+      case "runtime.trust-boundary.local-tool-input": {
         return runTrustBoundaryLocalToolInput(input);
-      case "runtime.tuvren-client.lifecycle":
+      }
+      case "runtime.tuvren-client.lifecycle": {
         return runTuvrenClientLifecycle();
-      case "runtime.tuvren-client.network-reconnect-redelivery":
+      }
+      case "runtime.tuvren-client.network-reconnect-redelivery": {
         return runTuvrenClientNetworkReconnectRedelivery();
-      case "runtime.tuvren-client.result-durability":
+      }
+      case "runtime.tuvren-client.result-durability": {
         return runTuvrenClientResultDurability();
-      case "runtime.tuvren-server.lifecycle":
+      }
+      case "runtime.tuvren-server.lifecycle": {
         return runTuvrenServerLifecycle();
-      case "runtime.tuvren-server.binding-classification":
+      }
+      case "runtime.tuvren-server.binding-classification": {
         return runTuvrenServerBindingClassification();
-      case "runtime.tuvren-server.cancellation":
+      }
+      case "runtime.tuvren-server.cancellation": {
         return runTuvrenServerCancellation();
-      case "runtime.tuvren-server.tenant-isolation":
+      }
+      case "runtime.tuvren-server.tenant-isolation": {
         return runTuvrenServerTenantIsolation();
-      case "runtime.capability-policy.exposure-dimensions":
+      }
+      case "runtime.capability-policy.exposure-dimensions": {
         return runCapabilityPolicyExposureDimensions();
-      case "runtime.capability-policy.invocation-dimensions":
+      }
+      case "runtime.capability-policy.invocation-dimensions": {
         return runCapabilityPolicyInvocationDimensions();
-      case "runtime.capability-policy.composition":
+      }
+      case "runtime.capability-policy.composition": {
         return runCapabilityPolicyComposition();
-      case "runtime.capability-policy.wired-invocation-denial":
+      }
+      case "runtime.capability-policy.wired-invocation-denial": {
         return runCapabilityPolicyWiredInvocationDenial();
-      case "runtime.capability-policy.nonretryable-policy":
+      }
+      case "runtime.capability-policy.nonretryable-policy": {
         return runCapabilityPolicyNonretryablePolicy();
-      case "runtime.capability-policy.wired-risk-approval":
+      }
+      case "runtime.capability-policy.wired-risk-approval": {
         return runCapabilityPolicyWiredRiskApproval();
-      case "host-session.stale-client-result":
+      }
+      case "host-session.stale-client-result": {
         return runStaleClientResult();
-      case "host-session.approval-response-resume":
+      }
+      case "host-session.approval-response-resume": {
         return runApprovalResponseResume();
-      case "host-session.cancel-cooperative":
+      }
+      case "host-session.cancel-cooperative": {
         return runCancelCooperative();
-      case "host-session.cancel-while-paused":
+      }
+      case "host-session.cancel-while-paused": {
         return runCancelWhilePaused();
-      case "host-session.validate-frame-fixtures":
+      }
+      case "host-session.validate-frame-fixtures": {
         return runValidateFrameFixtures(input);
-      case "host-session.reattach-redelivery":
+      }
+      case "host-session.reattach-redelivery": {
         return runReattachRedelivery();
-      case "host-session.grace-window-expiry":
+      }
+      case "host-session.grace-window-expiry": {
         return runGraceWindowExpiry();
-      case "host-session.dispatch-timeout":
+      }
+      case "host-session.dispatch-timeout": {
         return runDispatchTimeout();
-      case "host-session.sequence-continuity":
+      }
+      case "host-session.sequence-continuity": {
         return runSequenceContinuity();
-      case "host-session.admission-key-steer-carriage":
+      }
+      case "host-session.admission-key-steer-carriage": {
         return runAdmissionKeySteerCarriage();
-      case "event-stream-ws.decode-trace":
+      }
+      case "event-stream-ws.decode-trace": {
         return eventStreamWsScenarios.runDecodeTrace(input);
-      case "event-stream-ws.session-roundtrip":
+      }
+      case "event-stream-ws.session-roundtrip": {
         return eventStreamWsScenarios.runSessionRoundtrip();
-      case "event-stream-ws.reconnect-with-cursor":
+      }
+      case "event-stream-ws.reconnect-with-cursor": {
         return eventStreamWsScenarios.runReconnectWithCursor();
-      case "event-stream-ws.handshake-rejections":
+      }
+      case "event-stream-ws.handshake-rejections": {
         return eventStreamWsScenarios.runHandshakeRejections(input);
-      case "event-stream-ws.policy-closures":
+      }
+      case "event-stream-ws.policy-closures": {
         return eventStreamWsScenarios.runPolicyClosures(input);
-      default:
+      }
+      default: {
         throw new Error(
           `unsupported promoted framework operation ${operation}`
         );
+      }
     }
   }
 }
@@ -854,7 +947,7 @@ function readAssistantText(
       continue;
     }
 
-    const parts = message.parts;
+    const { parts } = message;
 
     if (!Array.isArray(parts)) {
       continue;
@@ -896,7 +989,7 @@ function readArrayProperty(
   const value = readProperty(source, key, label);
 
   if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array`);
+    throw new TypeError(`${label} must be an array`);
   }
 
   return value;
@@ -918,7 +1011,7 @@ function readStringProperty(
   const value = readProperty(source, key, label);
 
   if (typeof value !== "string") {
-    throw new Error(`${label} must be a string`);
+    throw new TypeError(`${label} must be a string`);
   }
 
   return value;
@@ -932,7 +1025,7 @@ function readBooleanProperty(
   const value = readProperty(source, key, label);
 
   if (typeof value !== "boolean") {
-    throw new Error(`${label} must be a boolean`);
+    throw new TypeError(`${label} must be a boolean`);
   }
 
   return value;
@@ -983,9 +1076,9 @@ function readJsonValue(value: unknown, label: string): JsonValue {
 function readJsonObject(
   value: unknown,
   label: string
-): { [key: string]: JsonValue } {
+): Record<string, JsonValue> {
   const record = readRecord(value, label);
-  const object: { [key: string]: JsonValue } = {};
+  const object: Record<string, JsonValue> = {};
 
   for (const [key, item] of Object.entries(record)) {
     object[key] = readJsonValue(item, `${label}.${key}`);

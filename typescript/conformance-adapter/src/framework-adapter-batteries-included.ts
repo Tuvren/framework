@@ -110,8 +110,8 @@ async function runBatteriesIncludedLifecycle(
 
   const instance = await createTuvren({
     backend: backendSpec,
-    runner: createReActRunner({ providerCallMode: "generate" }),
     provider,
+    runner: createReActRunner({ providerCallMode: "generate" }),
   });
 
   let turnCompleted = false;
@@ -166,11 +166,11 @@ function readBackendKind(input: unknown): string {
   if (!isRecord(input)) {
     return "memory";
   }
-  const checkInput = input.checkInput;
+  const { checkInput } = input;
   if (!isRecord(checkInput)) {
     return "memory";
   }
-  const backend = checkInput.backend;
+  const { backend } = checkInput;
   return typeof backend === "string" ? backend : "memory";
 }
 
@@ -184,12 +184,13 @@ function buildBackendSpec(kind: string): {
   cleanupBackend: (() => Promise<void>) | undefined;
 } {
   switch (kind) {
-    case "memory":
+    case "memory": {
       return {
         backendSpec: createMemoryBackend(),
         cleanupBackend: undefined,
         cleanupPath: undefined,
       };
+    }
     case "sqlite": {
       const dir = join(tmpdir(), `tuvren-bi-${randomUUID()}`);
       const databasePath = join(dir, "kernel.sqlite");
@@ -224,9 +225,10 @@ function buildBackendSpec(kind: string): {
         cleanupPath: undefined,
       };
     }
-    default:
+    default: {
       throw new Error(
         `batteries-included.lifecycle: unknown backend kind "${kind}"`
       );
+    }
   }
 }
