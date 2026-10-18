@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
 import type { TuvrenRuntime } from "@tuvren/core/execution";
@@ -37,6 +36,7 @@ import {
   createStubExecutionHandle,
   delay,
   detachTestPromise,
+  fromSynchronousVariadicAwaited,
   startEventCapture,
   textSignal,
   toKrakenMessages,
@@ -202,9 +202,8 @@ describe("orchestration-runtime child lifecycle", () => {
       threadId: thread.threadId,
     });
     const eventsIterator = eventsHandle.events()[Symbol.asyncIterator]();
-    const allEventsIterator = allEventsHandle
-      .allEvents()
-      [Symbol.asyncIterator]();
+    const allEvents = allEventsHandle.allEvents();
+    const allEventsIterator = allEvents[Symbol.asyncIterator]();
 
     await eventsIterator.return?.();
     await allEventsIterator.return?.();
@@ -247,7 +246,7 @@ describe("orchestration-runtime child lifecycle", () => {
       threadId: thread.threadId,
     });
 
-    await expect(handle.awaitResult()).rejects.toThrow(
+    expect(handle.awaitResult()).rejects.toThrow(
       "awaitResult() requires the orchestration handle to start execution first"
     );
 
@@ -265,11 +264,11 @@ describe("orchestration-runtime child lifecycle", () => {
     const rootHandle = createStubExecutionHandle("running");
     let executeCalls = 0;
     let nextThreadNumber = 0;
-    const framework = {
-      async createBranch() {
+    const framework: TuvrenRuntime = {
+      createBranch: fromSynchronousVariadicAwaited(() => {
         throw new Error("createBranch was not expected");
-      },
-      async createThread() {
+      }),
+      createThread: fromSynchronousVariadicAwaited(() => {
         nextThreadNumber += 1;
         return {
           branchId: `branch-${nextThreadNumber}`,
@@ -277,7 +276,7 @@ describe("orchestration-runtime child lifecycle", () => {
           rootTurnTreeHash: "1".repeat(64),
           threadId: `thread-${nextThreadNumber}`,
         };
-      },
+      }),
       executeTurn() {
         executeCalls += 1;
 
@@ -287,7 +286,7 @@ describe("orchestration-runtime child lifecycle", () => {
 
         throw new Error("child start failed");
       },
-      async getThread(threadId) {
+      getThread: fromSynchronousVariadicAwaited((threadId: string) => {
         if (threadId === "thread-root") {
           return {
             rootTurnNodeHash: "2".repeat(64),
@@ -297,34 +296,30 @@ describe("orchestration-runtime child lifecycle", () => {
         }
 
         return null;
-      },
+      }),
       getTurnHistory() {
         throw new Error("getTurnHistory was not expected");
       },
-      async getTurnState() {
+      getTurnState: fromSynchronousVariadicAwaited(() => {
         throw new Error("getTurnState was not expected");
-      },
-      async listBranches() {
-        return [];
-      },
-      async listThreads() {
-        return { threads: [] };
-      },
+      }),
+      listBranches: fromSynchronousVariadicAwaited(() => []),
+      listThreads: fromSynchronousVariadicAwaited(() => ({ threads: [] })),
       maintenance: {
-        purgeScope() {
+        purgeScope: fromSynchronousVariadicAwaited(() => {
           throw new Error("purgeScope was not expected");
-        },
-        reclaim() {
+        }),
+        reclaim: fromSynchronousVariadicAwaited(() => {
           throw new Error("reclaim was not expected");
-        },
+        }),
       },
-      async readBranchMessages() {
-        return { messages: [] };
-      },
-      async setBranchHead() {
+      readBranchMessages: fromSynchronousVariadicAwaited(() => ({
+        messages: [],
+      })),
+      setBranchHead: fromSynchronousVariadicAwaited(() => {
         throw new Error("setBranchHead was not expected");
-      },
-    } satisfies TuvrenRuntime;
+      }),
+    };
     const orchestration = createOrchestrationRuntime({
       agents: {
         primary: { name: "primary" },

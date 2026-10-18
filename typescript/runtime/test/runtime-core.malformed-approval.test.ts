@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
+import { setTimeout as sleep } from "node:timers/promises";
 
 import type {
   RunnerExecutionResult,
@@ -40,19 +40,48 @@ import {
   textSignal,
 } from "./runtime-core-test-helpers.ts";
 
-const isKrakenRunnerFactory = (
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory => {
-  return "create" in entry && typeof entry.create === "function";
+const waitForSearchCompletion = async (
+  signal: AbortSignal | undefined
+): Promise<void> => {
+  if (signal === undefined) {
+    await sleep(40);
+    return;
+  }
+
+  try {
+    await sleep(40, undefined, { signal });
+  } catch (error: unknown) {
+    if (signal.aborted) {
+      throw new Error("search aborted", { cause: error });
+    }
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("search timer failed", { cause: error });
+  }
 };
 
-const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
-  return (result.messages ?? []).some(
+interface TestRuntimeRunner {
+  execute: (
+    context: Parameters<RuntimeRunner["execute"]>[0]
+  ) => RunnerExecutionResult | Promise<RunnerExecutionResult>;
+  id: string;
+  resume?: (
+    context: Parameters<NonNullable<RuntimeRunner["resume"]>>[0]
+  ) => RunnerExecutionResult | Promise<RunnerExecutionResult>;
+}
+
+const isKrakenRunnerFactory = (
+  entry: TestRuntimeRunner | RuntimeRunnerFactory
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
+
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&
       message.parts.some((part) => part.type === "tool_call")
   );
-};
 
 const normalizeRunnerResult = (
   result: RunnerExecutionResult
@@ -70,7 +99,7 @@ const normalizeRunnerResult = (
   };
 };
 
-const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
+const wrapRunner = (runner: TestRuntimeRunner): RuntimeRunner => {
   const { resume } = runner;
 
   return {
@@ -89,7 +118,7 @@ const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
 };
 
 const wrapRunnerEntry = (
-  entry: RuntimeRunner | RuntimeRunnerFactory
+  entry: TestRuntimeRunner | RuntimeRunnerFactory
 ): RuntimeRunner | RuntimeRunnerFactory => {
   if (isKrakenRunnerFactory(entry)) {
     return {
@@ -104,15 +133,13 @@ const wrapRunnerEntry = (
 };
 
 const createRunnerRegistry = (
-  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) => {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-};
+  runners: (TestRuntimeRunner | RuntimeRunnerFactory)[] = []
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("rejects malformed aroundTool approval requests before pause state is published", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(_context) {
+      execute(_context) {
         return {
           messages: [
             assistantToolCalls([
@@ -129,10 +156,10 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       kernel: harness.kernel,
@@ -211,7 +238,7 @@ describe("framework-runtime-core", () => {
   test("does not hang mixed batches when malformed approvals race immediate tool errors", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(_context) {
+      execute(_context) {
         return {
           messages: [
             assistantToolCalls([
@@ -233,10 +260,10 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       kernel: harness.kernel,
@@ -324,7 +351,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let searchSideEffectCount = 0;
     const runner = {
-      async execute(_context) {
+      execute(_context) {
         return {
           messages: [
             assistantToolCalls([
@@ -346,10 +373,10 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       kernel: harness.kernel,
@@ -361,7 +388,7 @@ describe("framework-runtime-core", () => {
       config: {
         extensions: [
           {
-            aroundTool(context, next) {
+            async aroundTool(context, next) {
               if (context.tool.name === "review") {
                 return {
                   approval: {
@@ -387,7 +414,7 @@ describe("framework-runtime-core", () => {
                 };
               }
 
-              return next();
+              return await next();
             },
             name: "broken-initial-review-gate",
           },
@@ -397,19 +424,7 @@ describe("framework-runtime-core", () => {
           {
             description: "Search docs slowly",
             async execute(_input, context) {
-              await new Promise<void>((resolve, reject) => {
-                const timer = setTimeout(() => {
-                  resolve();
-                }, 40);
-                context.signal?.addEventListener(
-                  "abort",
-                  () => {
-                    clearTimeout(timer);
-                    reject(new Error("search aborted"));
-                  },
-                  { once: true }
-                );
-              });
+              await waitForSearchCompletion(context.signal);
               searchSideEffectCount += 1;
               return {
                 ok: true,
@@ -465,7 +480,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let slowSideEffectCount = 0;
     const runner = {
-      async execute(_context) {
+      execute(_context) {
         return {
           messages: [
             assistantToolCalls([
@@ -487,10 +502,10 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       kernel: harness.kernel,
@@ -502,7 +517,7 @@ describe("framework-runtime-core", () => {
       config: {
         extensions: [
           {
-            aroundTool(context, next) {
+            async aroundTool(context, next) {
               if (context.tool.name === "review") {
                 return {
                   approval: {
@@ -528,7 +543,7 @@ describe("framework-runtime-core", () => {
                 };
               }
 
-              return next();
+              return await next();
             },
             name: "broken-initial-review-gate",
           },
@@ -592,7 +607,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let searchCalls = 0;
     const runner = {
-      async execute(context) {
+      execute(context) {
         const toolMessages = extractToolMessages(context.messages);
 
         if (toolMessages.length === 0) {
@@ -626,10 +641,10 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       kernel: harness.kernel,
@@ -641,7 +656,7 @@ describe("framework-runtime-core", () => {
       config: {
         extensions: [
           {
-            aroundTool(context, next) {
+            async aroundTool(context, next) {
               if (
                 context.tool.name === "review" &&
                 context.approvalDecision?.type === "approve"
@@ -670,7 +685,7 @@ describe("framework-runtime-core", () => {
                 };
               }
 
-              return next();
+              return await next();
             },
             name: "broken-resume-review-gate",
           },
@@ -765,7 +780,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let searchSideEffectCount = 0;
     const runner = {
-      async execute(context) {
+      execute(context) {
         const toolMessages = extractToolMessages(context.messages);
 
         if (toolMessages.length === 0) {
@@ -799,10 +814,10 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       kernel: harness.kernel,
@@ -814,7 +829,7 @@ describe("framework-runtime-core", () => {
       config: {
         extensions: [
           {
-            aroundTool(context, next) {
+            async aroundTool(context, next) {
               if (
                 context.tool.name === "review" &&
                 context.approvalDecision?.type === "approve"
@@ -843,7 +858,7 @@ describe("framework-runtime-core", () => {
                 };
               }
 
-              return next();
+              return await next();
             },
             name: "broken-resume-review-abort-gate",
           },
@@ -854,19 +869,7 @@ describe("framework-runtime-core", () => {
             approval: true,
             description: "Search docs slowly",
             async execute(_input, context) {
-              await new Promise<void>((resolve, reject) => {
-                const timer = setTimeout(() => {
-                  resolve();
-                }, 40);
-                context.signal?.addEventListener(
-                  "abort",
-                  () => {
-                    clearTimeout(timer);
-                    reject(new Error("search aborted"));
-                  },
-                  { once: true }
-                );
-              });
+              await waitForSearchCompletion(context.signal);
               searchSideEffectCount += 1;
               return {
                 ok: true,
