@@ -97,8 +97,66 @@ tickets:
       evidence: Assert the assembled runtime matches frozen provenance; all 59 original identities remain accounted for as 30 prior removals plus 29 atomic removals; no runtime biome-ignore comment remains; and native selection is complete and diagnostic-free. Prove the exact commands, cwd, serial execution, literal false forwarding, root-default inputs plus ^production, caller-argument isolation, checker failure propagation, JSON integrity, coverage removal, typecheck, cold import, full runtime tests, Changeset coverage, and bun run verify. Preserve capability-policy-engine.test.ts as the approved byte-identical reduced inherited debt and resolve no live sibling source.
     flows: []
     certainty: settled
-    status: planned
+    status: done
     deviations:
       - files:
           - typescript/runtime/test/runtime-core-expired-recovery.test.ts
         justification: "Plan amendment A61 authorized a bounded integration correction to the two CY-delivered empty reader callbacks after atomic native admission exposed no-useless-undefined diagnostics. The correction preserves the existing Promise adapter and iterator-cleanup behavior without changing helpers, APIs, fixtures, deadlines, dependencies, or lint policy."
+decisions:
+  - id: OD-11
+    question: Should KRT-BT004 convert internal runtime interface methods to function-valued properties when the shipped native preset requires it?
+    blocks: [KRT-BT004]
+    options:
+      - name: Convert internal methods
+        pros:
+          - Clears the shipped method-signature-style rule without an override.
+          - Produces the canonical strictFunctionTypes surface selected by the approved lint preset.
+        cons:
+          - Changes internal TypeScript assignability and requires full source and declaration verification.
+      - name: Preserve method signatures and stop admission
+        pros:
+          - Preserves the current bivariant TypeScript method surface.
+        cons:
+          - Leaves the runtime project noncompliant with the unchanged shipped preset and blocks KRT-BT004.
+    recommendation: Convert internal methods
+    closure: ruling
+    ruler: wave lead
+    status: closed
+    asked:
+      date: 2026-10-18
+      in: EPIC-BT
+    ruling:
+      ref: "EPIC-BT source plan amendment A26, 2026-10-18"
+      date: 2026-10-18
+      summary: TypeChecker reachability found none of the 63 converted method signatures reachable from supported runtime, core, or SDK exports; ADR-0057 excludes the internal runtime shape from stable guarantees. Apply the required internal function-property convention with direct patch changeset coverage and reassess only if later cleanup changes supported exports or behavior.
+      chosen: Convert internal methods
+closeout:
+  tickets_completed: [KRT-BT004]
+  tickets_deferred: []
+  points_completed: 8
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-BT: assembled the reviewed runtime slice, reconciled all 59 suppression identities, removed the final 29 directives atomically, and admitted the complete runtime package to native type-aware lint and JSON checks."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tasks
+      item: "EPIC-CB suppression aggregation should consume .constitution/evidence/KRT-BT004/suppressions.json while preserving its links to KRT-BT002 and the distinction between 30 prior behavior-proven removals and 29 atomic admission removals."
+  follow_ups:
+    - "Have EPIC-CB aggregate the final KRT-BT004 suppression ledger without replacing its historical identity evidence with final counts."
+    - "Schedule the byte-identical typescript/runtime/test/capability-policy-engine.test.ts file-size debt in an owned future refactor."
+    - "The wave lead must require hosted verify and Bazel to pass on the exact rebased PR head before merge."
+  code_decisions:
+    - summary: "Lift synchronous test callbacks into required Promise ports with Promise.try.bind, an explicit undefined receiver and variadic arguments while preserving synchronous throws, thenables and receiver behavior."
+      kind: pattern
+      paths:
+        - typescript/runtime/test/fake-kernel.ts
+        - typescript/runtime/test/orchestration-runtime-runner-helpers.ts
+      commit: af3c0e6a526fdaa6e2fe5012aafc5b8433ebcdcc
+    - summary: "When a type-aware lint target declares project-level inputs, preserve every inherited checker and configuration input and include transitive production sources so dependency-only type changes invalidate the Nx cache."
+      kind: convention
+      paths:
+        - typescript/runtime/project.json
+      commit: af3c0e6a526fdaa6e2fe5012aafc5b8433ebcdcc
+  settled: []
