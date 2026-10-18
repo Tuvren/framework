@@ -39,10 +39,10 @@ const HASH_REAL = "d".repeat(64);
 const HASH_FOREIGN = "0".repeat(64);
 const HASH_A = "a".repeat(64);
 
-function turnEvents(
+const turnEvents = (
   turnId: string,
   withCheckpoint?: { turnNodeHash: string; afterIndex: number }
-): TuvrenStreamEvent[] {
+): TuvrenStreamEvent[] => {
   const events: TuvrenStreamEvent[] = [
     { threadId: "thread-1", timestamp: 1, turnId, type: "turn.start" },
     {
@@ -70,11 +70,11 @@ function turnEvents(
   }
 
   return events;
-}
+};
 
-async function collect(
+const collect = async (
   sequenced: AsyncIterable<SequencedTuvrenStreamEvent>
-): Promise<SequencedTuvrenStreamEvent[]> {
+): Promise<SequencedTuvrenStreamEvent[]> => {
   const frames: SequencedTuvrenStreamEvent[] = [];
 
   for await (const frame of sequenced) {
@@ -82,7 +82,7 @@ async function collect(
   }
 
   return frames;
-}
+};
 
 describe("resume cursor codec", () => {
   test("round-trips a payload with and without a checkpoint anchor", () => {
@@ -218,13 +218,12 @@ describe("createSequencedTuvrenStreamEvents", () => {
 });
 
 describe("createReplayBuffer", () => {
-  async function sequencedFixture(
+  const sequencedFixture = async (
     events: TuvrenStreamEvent[]
-  ): Promise<SequencedTuvrenStreamEvent[]> {
-    return await collect(
+  ): Promise<SequencedTuvrenStreamEvent[]> =>
+    await collect(
       createSequencedTuvrenStreamEvents(createFixtureStream(events))
     );
-  }
 
   test("replays retained frames strictly after the cursor position", async () => {
     const frames = await sequencedFixture(turnEvents("turn-1"));

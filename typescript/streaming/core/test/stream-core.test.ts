@@ -31,6 +31,101 @@ const EVENT_STREAMS_CONSUMED_PATTERN =
   /event streams may only be consumed once/;
 const LATE_SUBSCRIPTION_PATTERN =
   /must subscribe before source consumption begins/;
+
+const collectIteratorEvents = async <T>(
+  iterator: AsyncIterator<T>
+): Promise<T[]> => {
+  const collected: T[] = [];
+
+  for (;;) {
+    const nextEvent = await iterator.next();
+
+    if (nextEvent.done) {
+      return collected;
+    }
+
+    collected.push(nextEvent.value);
+  }
+};
+
+const readErrorCode = (error: unknown): unknown => {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return undefined;
+  }
+
+  return error.code;
+};
+
+const createInstrumentedSource = (
+  events: readonly TuvrenStreamEvent[]
+): {
+  events: AsyncIterable<TuvrenStreamEvent>;
+  produced: number;
+  returned: number;
+} => {
+  let index = 0;
+  let produced = 0;
+  let returned = 0;
+
+  return {
+    get events(): AsyncIterable<TuvrenStreamEvent> {
+      return {
+        [Symbol.asyncIterator](): AsyncIterator<TuvrenStreamEvent> {
+          return {
+            next(): Promise<IteratorResult<TuvrenStreamEvent>> {
+              const event = events[index];
+
+              if (event === undefined) {
+                return Promise.resolve({
+                  done: true,
+                  value: undefined,
+                });
+              }
+
+              index += 1;
+              produced += 1;
+
+              return Promise.resolve({
+                done: false,
+                value: cloneTuvrenStreamEvent(event),
+              });
+            },
+            return(): Promise<IteratorResult<TuvrenStreamEvent>> {
+              returned += 1;
+              return Promise.resolve({
+                done: true,
+                value: undefined,
+              });
+            },
+          };
+        },
+      };
+    },
+    get produced(): number {
+      return produced;
+    },
+    get returned(): number {
+      return returned;
+    },
+  };
+};
+
+const collectStreamValues = async <T>(
+  values: AsyncIterable<T>
+): Promise<T[]> => {
+  const collected: T[] = [];
+
+  for await (const value of values) {
+    collected.push(value);
+  }
+
+  return collected;
+};
+
+const waitForAsyncTurn = async (): Promise<void> => {
+  await Promise.resolve();
+};
+
 const frameworkStreamFixtures = await readFrameworkStreamFixtures();
 
 describe("stream-core", () => {
@@ -234,93 +329,3 @@ describe("stream-core", () => {
     await leftIterator.return?.();
   });
 });
-
-async function collectIteratorEvents<T>(
-  iterator: AsyncIterator<T>
-): Promise<T[]> {
-  const collected: T[] = [];
-
-  for (;;) {
-    const nextEvent = await iterator.next();
-
-    if (nextEvent.done) {
-      return collected;
-    }
-
-    collected.push(nextEvent.value);
-  }
-}
-
-function readErrorCode(error: unknown): unknown {
-  if (typeof error !== "object" || error === null || !("code" in error)) {
-    return undefined;
-  }
-
-  return error.code;
-}
-
-function createInstrumentedSource(events: readonly TuvrenStreamEvent[]): {
-  events: AsyncIterable<TuvrenStreamEvent>;
-  produced: number;
-  returned: number;
-} {
-  let index = 0;
-  let produced = 0;
-  let returned = 0;
-
-  return {
-    get events(): AsyncIterable<TuvrenStreamEvent> {
-      return {
-        [Symbol.asyncIterator](): AsyncIterator<TuvrenStreamEvent> {
-          return {
-            next(): Promise<IteratorResult<TuvrenStreamEvent>> {
-              const event = events[index];
-
-              if (event === undefined) {
-                return Promise.resolve({
-                  done: true,
-                  value: undefined,
-                });
-              }
-
-              index += 1;
-              produced += 1;
-
-              return Promise.resolve({
-                done: false,
-                value: cloneTuvrenStreamEvent(event),
-              });
-            },
-            return(): Promise<IteratorResult<TuvrenStreamEvent>> {
-              returned += 1;
-              return Promise.resolve({
-                done: true,
-                value: undefined,
-              });
-            },
-          };
-        },
-      };
-    },
-    get produced(): number {
-      return produced;
-    },
-    get returned(): number {
-      return returned;
-    },
-  };
-}
-
-async function collectStreamValues<T>(values: AsyncIterable<T>): Promise<T[]> {
-  const collected: T[] = [];
-
-  for await (const value of values) {
-    collected.push(value);
-  }
-
-  return collected;
-}
-
-async function waitForAsyncTurn(): Promise<void> {
-  await Promise.resolve();
-}
