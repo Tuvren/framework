@@ -20,10 +20,8 @@ import {
   DEFAULT_AGENT_SCHEMA,
 } from "../src/index.ts";
 import { encryptMessageRecord } from "../src/lib/payload-codec-seam.ts";
-import {
-  createFakeKernelHarness,
-  createFakeRunLivenessKernelHarness,
-} from "./fake-kernel.ts";
+import { createFakeKernelHarness } from "./fake-kernel.ts";
+import { createFakeRunLivenessKernelHarness } from "./fake-run-liveness-kernel.ts";
 import {
   assistantText,
   assistantToolCalls,

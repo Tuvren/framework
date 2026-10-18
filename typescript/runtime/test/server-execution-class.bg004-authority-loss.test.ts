@@ -61,10 +61,8 @@ import {
 } from "../src/index.ts";
 import { createClientEndpointBoundary } from "../src/lib/client-endpoint-boundary.ts";
 import { buildClientEndpointTools } from "../src/lib/tool-registry.ts";
-import {
-  createFakeKernelHarness,
-  createFakeRunLivenessKernelHarness,
-} from "./fake-kernel.ts";
+import { createFakeKernelHarness } from "./fake-kernel.ts";
+import { createFakeRunLivenessKernelHarness } from "./fake-run-liveness-kernel.ts";
 import {
   assistantText,
   assistantToolCalls,

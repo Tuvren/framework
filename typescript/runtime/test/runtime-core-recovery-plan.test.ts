@@ -32,10 +32,8 @@ import { encryptMessageRecord } from "../src/lib/payload-codec-seam.ts";
 import type { HeadState } from "../src/lib/runtime-core-loop.ts";
 import { deriveInterruptedIterationRecoveryPlan } from "../src/lib/runtime-core-recovery-plan.ts";
 import type { InterruptedIterationRecoveryPlan } from "../src/lib/runtime-core-recovery-plan.ts";
-import {
-  createFakeKernelHarness,
-  createFakeRunLivenessKernelHarness,
-} from "./fake-kernel.ts";
+import { createFakeKernelHarness } from "./fake-kernel.ts";
+import { createFakeRunLivenessKernelHarness } from "./fake-run-liveness-kernel.ts";
 import {
   assistantToolCalls,
   fromSynchronousVariadicAwaited,

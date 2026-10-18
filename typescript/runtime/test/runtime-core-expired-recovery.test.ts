@@ -27,10 +27,8 @@ import { encryptMessageRecord } from "../src/lib/payload-codec-seam.ts";
 import { recoverExpiredExecutionBranchIfNeeded } from "../src/lib/runtime-core-expired-recovery.ts";
 import type { RuntimeCoreExpiredRecoveryHost } from "../src/lib/runtime-core-expired-recovery.ts";
 import { loadHeadState } from "../src/lib/runtime-core-head-state.ts";
-import {
-  createFakeKernelHarness,
-  createFakeRunLivenessKernelHarness,
-} from "./fake-kernel.ts";
+import { createFakeKernelHarness } from "./fake-kernel.ts";
+import { createFakeRunLivenessKernelHarness } from "./fake-run-liveness-kernel.ts";
 
 const payloadCodecBinding = {
   codec: IDENTITY_PAYLOAD_CODEC,

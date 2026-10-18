@@ -21,10 +21,8 @@ import {
   createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
 } from "../src/index.ts";
-import {
-  createFakeKernelHarness,
-  createFakeRunLivenessKernelHarness,
-} from "./fake-kernel.ts";
+import { createFakeKernelHarness } from "./fake-kernel.ts";
+import { createFakeRunLivenessKernelHarness } from "./fake-run-liveness-kernel.ts";
 import { prepareExpiredToolBatch } from "./runtime-core-cold-recovery-test-helpers.ts";
 import {
   assistantText,

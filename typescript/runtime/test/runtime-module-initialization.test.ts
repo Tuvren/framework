@@ -20,6 +20,10 @@ import { spawnSync } from "node:child_process";
 import type * as Runtime from "../src/index.ts";
 
 const firstModules = [
+  "./fake-kernel.ts",
+  "./fake-run-liveness-kernel.ts",
+  "./runtime-core-cold-recovery-test-helpers.ts",
+  "./runtime-core-recovery-test-helpers.ts",
   "../src/index.ts",
   "../src/lib/binding-resolver.ts",
   "../src/lib/capability-attribution.ts",

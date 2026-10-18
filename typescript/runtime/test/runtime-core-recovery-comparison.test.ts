@@ -56,10 +56,8 @@ import {
   decodeKrakenMessageRecord,
   doesSignalMatchRecoveredTurn,
 } from "../src/lib/runtime-core-recovery.ts";
-import {
-  createFakeKernelHarness,
-  createFakeRunLivenessKernelHarness,
-} from "./fake-kernel.ts";
+import { createFakeKernelHarness } from "./fake-kernel.ts";
+import { createFakeRunLivenessKernelHarness } from "./fake-run-liveness-kernel.ts";
 import {
   assistantText,
   collectEvents,
