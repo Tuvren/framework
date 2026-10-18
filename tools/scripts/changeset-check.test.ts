@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
+  access,
   appendFile,
   mkdir,
   mkdtemp,
@@ -37,6 +38,11 @@ interface Fixture {
     description: string,
     isPrivate?: boolean
   ) => Promise<void>;
+}
+
+interface FixtureOptions {
+  readonly dependencyReplay?: boolean;
+  readonly includeSecondPublicPackage?: boolean;
 }
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../");
@@ -101,11 +107,12 @@ const hasChangesetReader = (
 const run = async (
   executable: string,
   args: readonly string[],
-  cwd: string
+  cwd: string,
+  env: typeof process.env = process.env
 ): Promise<CommandResult> => {
   const subprocess = spawn([executable, ...args], {
     cwd,
-    env: process.env,
+    env,
     stderr: "pipe",
     stdin: "ignore",
     stdout: "pipe",
@@ -130,9 +137,16 @@ const generateRelease = async (fixture: Fixture): Promise<void> => {
 };
 
 const createFixture = async (
-  includeSecondPublicPackage = false
+  options: FixtureOptions = {}
 ): Promise<Fixture> => {
   const root = await mkdtemp(path.join(tmpdir(), "tuvren-changeset-check-"));
+  const commitEnv = options.dependencyReplay
+    ? {
+        ...process.env,
+        GIT_AUTHOR_DATE: "2026-01-01T00:00:00Z",
+        GIT_COMMITTER_DATE: "2026-01-01T00:00:00Z",
+      }
+    : process.env;
   fixtureRoots.push(root);
   await writeFixtureFile(
     root,
@@ -154,7 +168,8 @@ const createFixture = async (
         baseBranch: "master",
         changelog: "@changesets/cli/changelog",
         commit: false,
-        fixed: [["@tuvren/*"]],
+        fixed: options.dependencyReplay ? [] : [["@tuvren/*"]],
+        format: false,
         ignore: [],
         linked: [],
         privatePackages: { tag: false, version: true },
@@ -163,6 +178,11 @@ const createFixture = async (
       null,
       2
     )
+  );
+  await writeFixtureFile(
+    root,
+    "oxfmt.config.ts",
+    'import { defineConfig } from "oxfmt";\n\nexport default defineConfig({});\n'
   );
   await writeFixtureFile(root, ".changeset/README.md", "fixture metadata\n");
   await writeFixtureFile(
@@ -189,13 +209,16 @@ const createFixture = async (
     "packages/private-a/src.ts",
     "export const initial = true;\n"
   );
-  if (includeSecondPublicPackage) {
+  if (options.includeSecondPublicPackage) {
     await writeFixtureFile(
       root,
       "packages/public-b/package.json",
       JSON.stringify(
         {
           name: "@tuvren/public-b",
+          ...(options.dependencyReplay
+            ? { dependencies: { "@tuvren/public-a": "^1.0.0" } }
+            : {}),
           version: "1.0.0",
         },
         null,
@@ -212,14 +235,19 @@ const createFixture = async (
   await run("git", ["config", "user.email", "fixture@example.test"], root);
   await run("git", ["config", "user.name", "Fixture"], root);
   await run("git", ["add", "."], root);
-  await run("git", ["commit", "-m", "initial"], root);
+  await run("git", ["commit", "-m", "initial"], root, commitEnv);
   await run("git", ["checkout", "-b", "feature"], root);
 
   return {
     commit: async (message: string): Promise<void> => {
       const add = await run("git", ["add", "."], root);
       expect(add.exitCode).toBe(0);
-      const commit = await run("git", ["commit", "-m", message], root);
+      const commit = await run(
+        "git",
+        ["commit", "-m", message],
+        root,
+        commitEnv
+      );
       expect(commit.exitCode).toBe(0);
     },
     movePublicSource: async (destination: string): Promise<void> => {
@@ -280,9 +308,57 @@ const createGeneratedReleaseFixture = async (): Promise<Fixture> => {
   await fixture.commit("record release intent");
   await run("git", ["branch", "-f", "feature", "master"], fixture.root);
   await run("git", ["checkout", "feature"], fixture.root);
+  await expect(
+    access(path.join(fixture.root, "node_modules"))
+  ).rejects.toMatchObject({ code: "ENOENT" });
+  expect(() =>
+    createRequire(path.join(fixture.root, "package.json")).resolve("oxfmt")
+  ).toThrow();
   await generateRelease(fixture);
   return fixture;
 };
+
+const createOrderedDependencyRelease = async (
+  filenames: readonly string[]
+): Promise<Fixture> => {
+  const fixture = await createFixture({
+    dependencyReplay: true,
+    includeSecondPublicPackage: true,
+  });
+  await run("git", ["checkout", "master"], fixture.root);
+
+  for (const filename of filenames) {
+    const summary =
+      filename === "alpha.md"
+        ? "Alpha note"
+        : filename === "middle.md"
+          ? "Middle note"
+          : "Zebra note";
+    const packageName = filename === "middle.md" ? "public-b" : "public-a";
+    await fixture.writeChangesetContents(
+      filename,
+      `---\n"@tuvren/${packageName}": patch\n---\n\n${summary}\n`
+    );
+  }
+
+  await fixture.commit("record release notes");
+  await run("git", ["branch", "-f", "feature", "master"], fixture.root);
+  await run("git", ["checkout", "feature"], fixture.root);
+  await generateRelease(fixture);
+  return fixture;
+};
+
+const readPublicReleaseBytes = async (fixture: Fixture): Promise<string[]> =>
+  await Promise.all(
+    [
+      "packages/public-a/package.json",
+      "packages/public-a/CHANGELOG.md",
+      "packages/public-b/package.json",
+      "packages/public-b/CHANGELOG.md",
+    ].map((relativePath) =>
+      readFile(path.join(fixture.root, relativePath), "utf-8")
+    )
+  );
 
 const assertPublicSourceMoveRequiresIntent = async (
   destination: string
@@ -939,8 +1015,40 @@ describe("changeset-check", () => {
     expect(check(fixture)).resolves.toBeUndefined();
   });
 
+  test("replays release output independent of changeset creation order", async () => {
+    const reverseOrder = await createOrderedDependencyRelease([
+      "zebra.md",
+      "middle.md",
+      "alpha.md",
+    ]);
+    const sortedOrder = await createOrderedDependencyRelease([
+      "alpha.md",
+      "middle.md",
+      "zebra.md",
+    ]);
+    const reverseBytes = await readPublicReleaseBytes(reverseOrder);
+    const sortedBytes = await readPublicReleaseBytes(sortedOrder);
+
+    expect(reverseBytes).toEqual(sortedBytes);
+    expect(reverseBytes[0]).toContain('"version": "1.0.1"');
+    expect(reverseBytes[2]).toContain('"version": "1.0.1"');
+    expect(reverseBytes[2]).toContain('"@tuvren/public-a": "^1.0.1"');
+    expect(reverseBytes[3]).toContain("@tuvren/public-a@1.0.1");
+    const publicAChangelog = reverseBytes[1] ?? "";
+    expect(publicAChangelog).toContain("Alpha note");
+    expect(publicAChangelog).toContain("Zebra note");
+    expect(publicAChangelog.indexOf("Alpha note")).toBeLessThan(
+      publicAChangelog.indexOf("Zebra note")
+    );
+
+    await expect(check(reverseOrder)).resolves.toBeUndefined();
+    await expect(check(sortedOrder)).resolves.toBeUndefined();
+    expect(await readPublicReleaseBytes(reverseOrder)).toEqual(reverseBytes);
+    expect(await readPublicReleaseBytes(sortedOrder)).toEqual(sortedBytes);
+  });
+
   test("reports a generated-output mismatch in a later public package", async () => {
-    const fixture = await createFixture(true);
+    const fixture = await createFixture({ includeSecondPublicPackage: true });
     await run("git", ["checkout", "master"], fixture.root);
     await fixture.writeChangeset("release.md", '"@tuvren/public-a": patch');
     await fixture.commit("record release intent");

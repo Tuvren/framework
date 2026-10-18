@@ -84,6 +84,9 @@
     "zod": "4.4.3"
   },
   "packageManager": "bun@1.4.2",
+  "patchedDependencies": {
+    "@changesets/read@1.0.1": "patches/@changesets%2Fread@1.0.1.patch"
+  },
   "trustedDependencies": [
     "better-sqlite3"
   ]
