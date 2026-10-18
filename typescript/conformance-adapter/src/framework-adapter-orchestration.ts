@@ -56,7 +56,7 @@ export interface FrameworkAdapterOrchestrationDependencies {
   ): string;
 }
 
-export function createFrameworkAdapterOrchestration(
+export const createFrameworkAdapterOrchestration = (
   dependencies: FrameworkAdapterOrchestrationDependencies
 ): {
   runOrchestrationEventSurfaces(input: unknown): Promise<AdapterProjection>;
@@ -68,16 +68,115 @@ export function createFrameworkAdapterOrchestration(
   ): Promise<AdapterProjection>;
   runOrchestrationLifecycleLocality(input: unknown): Promise<AdapterProjection>;
   runOrchestrationNestedAttribution(input: unknown): Promise<AdapterProjection>;
-} {
+} => {
   const lifecycleScenarios = createFrameworkAdapterOrchestrationLifecycle({
     createObservedErrorEnvelope: dependencies.createObservedErrorEnvelope,
     readOperationScenario: dependencies.readOperationScenario,
     readStringProperty: dependencies.readStringProperty,
   });
 
-  async function runOrchestrationLaunchPreconditions(
+  const sleep = (ms: number): Promise<void> => {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  };
+
+  const captureActionError = (
+    action: () => unknown
+  ): Record<string, unknown> | undefined => {
+    try {
+      action();
+      return undefined;
+    } catch (error: unknown) {
+      return dependencies.createObservedErrorEnvelope(error);
+    }
+  };
+
+  const captureAsyncActionError = async (
+    action: () => Promise<unknown>
+  ): Promise<Record<string, unknown> | undefined> => {
+    try {
+      await action();
+      return undefined;
+    } catch (error: unknown) {
+      return dependencies.createObservedErrorEnvelope(error);
+    }
+  };
+
+  const spawnWhenRunning = async (
+    handle: Pick<OrchestrationHandle, "spawn" | "status">,
+    input: {
+      agent: string;
+      signal: ReturnType<typeof textSignal>;
+    },
+    timeoutMs = 1000
+  ): Promise<OrchestrationHandle> => {
+    const start = Date.now();
+
+    while (true) {
+      try {
+        return handle.spawn(input);
+      } catch (error: unknown) {
+        const { phase } = handle.status();
+        const shouldRetry =
+          error instanceof TuvrenRuntimeError &&
+          error.code === "orchestration_parent_inactive" &&
+          phase === "running";
+
+        if (!shouldRetry) {
+          throw error;
+        }
+
+        // Only retry the brief "running but not ready yet" race; if the phase
+        // has already moved away from running, retrying would turn a real
+        // pause/completion into a false positive.
+        if (Date.now() - start > timeoutMs) {
+          throw error;
+        }
+
+        await sleep(5);
+      }
+    }
+  };
+
+  const findThreadId = (events: readonly unknown[]): string | undefined => {
+    for (const event of events) {
+      const threadId = dependencies.readRecordString(event, "threadId");
+
+      if (threadId !== undefined) {
+        return threadId;
+      }
+    }
+
+    return undefined;
+  };
+
+  const findDescendantThreadId = (
+    events: readonly unknown[]
+  ): string | undefined => {
+    for (const event of events) {
+      if (
+        !(dependencies.isRecord(event) && dependencies.isRecord(event.source))
+      ) {
+        continue;
+      }
+
+      const threadId =
+        typeof event.source.threadId === "string"
+          ? event.source.threadId
+          : undefined;
+
+      if (threadId !== undefined) {
+        return threadId;
+      }
+    }
+
+    return undefined;
+  };
+
+  const runOrchestrationLaunchPreconditions = async (
     input: unknown
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runtime.orchestration.launch-preconditions"
@@ -182,17 +281,428 @@ export function createFrameworkAdapterOrchestration(
       evidence: { orchestration: { launch } },
       result: { orchestration: { launch } },
     };
-  }
+  };
 
-  async function runOrchestrationLifecycleLocality(
+  const runOrchestrationLifecycleLocality = async (
     input: unknown
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     return await lifecycleScenarios.runOrchestrationLifecycleLocality(input);
-  }
+  };
 
-  async function runOrchestrationEventSurfaces(
+  const readFirstUserText = (
+    messages: readonly unknown[]
+  ): string | undefined => {
+    for (const message of messages) {
+      if (
+        !dependencies.isRecord(message) ||
+        message.role !== "user" ||
+        !Array.isArray(message.parts)
+      ) {
+        continue;
+      }
+
+      for (const part of message.parts) {
+        if (
+          dependencies.isRecord(part) &&
+          part.type === "text" &&
+          typeof part.text === "string"
+        ) {
+          return part.text;
+        }
+      }
+    }
+
+    return undefined;
+  };
+
+  const isHandoffControlPart = (part: unknown): boolean => {
+    return (
+      dependencies.isRecord(part) &&
+      part.name === "handoff" &&
+      (part.type === "tool_call" || part.type === "structured")
+    );
+  };
+
+  const containsHandoffControlEntry = (
+    messages: readonly unknown[]
+  ): boolean => {
+    for (const message of messages) {
+      if (!(dependencies.isRecord(message) && Array.isArray(message.parts))) {
+        continue;
+      }
+
+      for (const part of message.parts) {
+        if (isHandoffControlPart(part)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  const messageTextIncludes = (
+    messages: readonly unknown[],
+    expectedText: string
+  ): boolean => {
+    for (const message of messages) {
+      if (!(dependencies.isRecord(message) && Array.isArray(message.parts))) {
+        continue;
+      }
+
+      for (const part of message.parts) {
+        if (
+          dependencies.isRecord(part) &&
+          part.type === "text" &&
+          part.text === expectedText
+        ) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  const runLastOutputOnlyDirectEvidence = async (): Promise<{
+    firstUserText?: string;
+    historyControlEntryAbsent: boolean;
+    noSourceSignal: boolean;
+  }> => {
+    const harness = createConformanceKernelHarness();
+    const framework = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      resolveAgentConfig(agentName) {
+        return agentName === "reviewer" ? { name: "reviewer" } : undefined;
+      },
+      runnerRegistry: createRunnerRegistry([
+        createStaticRunner((context) => {
+          if (context.config.name === "primary") {
+            return {
+              messages: [assistantText("Passing this to reviewer.")],
+              resolution: {
+                contextPlan: context.handoff.createContextPlan({
+                  mode: "last_output_only",
+                  reason: "review_handoff",
+                  targetAgent: "reviewer",
+                }),
+                targetAgent: "reviewer",
+                type: "handoff",
+              },
+            };
+          }
+
+          return {
+            messages: [assistantText("Reviewer done.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }),
+      ]),
+    });
+    const thread = await framework.createThread({});
+    const handle = framework.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("handoff child"),
+      threadId: thread.threadId,
+    });
+
+    await collectValues(handle.events());
+
+    const messages = await harness.readBranchMessages(thread.branchId);
+    return {
+      firstUserText: readFirstUserText(messages),
+      historyControlEntryAbsent: !containsHandoffControlEntry(messages),
+      noSourceSignal: !messageTextIncludes(messages, "handoff child"),
+    };
+  };
+
+  const findTextEvent = (
+    events: readonly unknown[],
+    text: string
+  ): Record<string, unknown> | undefined => {
+    for (const event of events) {
+      if (
+        dependencies.isRecord(event) &&
+        event.type === "text.done" &&
+        typeof event.text === "string" &&
+        event.text === text
+      ) {
+        return event;
+      }
+    }
+
+    return undefined;
+  };
+
+  const readSourceAgent = (event: unknown): string | undefined => {
+    return dependencies.isRecord(event) && dependencies.isRecord(event.source)
+      ? dependencies.readRecordString(event.source, "agent")
+      : undefined;
+  };
+
+  const readFirstErrorEnvelope = (
+    events: readonly unknown[]
+  ): Record<string, unknown> | undefined => {
+    for (const event of events) {
+      if (dependencies.isRecord(event) && dependencies.isRecord(event.error)) {
+        return event.error;
+      }
+    }
+
+    return undefined;
+  };
+
+  const runInvalidHandoffCompositionError = async (): Promise<
+    Record<string, unknown> | undefined
+  > => {
+    const harness = createConformanceKernelHarness();
+    const framework = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      resolveAgentConfig(agentName) {
+        return agentName === "reviewer" ? { name: "reviewer" } : undefined;
+      },
+      runnerRegistry: createRunnerRegistry([
+        createStaticRunner((context) => ({
+          messages: [
+            assistantToolCalls([
+              {
+                callId: "call-search",
+                input: { query: "invalid handoff composition" },
+                name: "search",
+              },
+            ]),
+          ],
+          resolution: {
+            contextPlan: context.handoff.createContextPlan({
+              mode: "last_output_only",
+              reason: "invalid_composition",
+              targetAgent: "reviewer",
+            }),
+            targetAgent: "reviewer",
+            type: "handoff",
+          },
+          toolExecutionMode: "parallel",
+        })),
+      ]),
+    });
+    const thread = await framework.createThread({});
+    const handle = framework.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            description: "Search docs",
+            execute() {
+              return { ok: true };
+            },
+            inputSchema: { type: "object" },
+            name: "search",
+          },
+        ],
+      },
+      signal: textSignal("invalid handoff composition"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectValues(handle.events());
+    return readFirstErrorEnvelope(events);
+  };
+
+  const runOrchestrationHandoffAttribution = async (
+    parentText: string,
+    reviewerText: string
+  ): Promise<AdapterProjection> => {
+    const harness = createConformanceKernelHarness();
+    const agents: Record<string, AgentConfig> = {
+      primary: { name: "primary" },
+      reviewer: { name: "reviewer" },
+      worker: { name: "worker" },
+    };
+    const framework = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      resolveAgentConfig(agentName) {
+        return agents[agentName];
+      },
+      runnerRegistry: createRunnerRegistry([
+        createStaticRunner(async (context) => {
+          if (context.config.name === "worker") {
+            return {
+              messages: [assistantText("Passing this to reviewer.")],
+              resolution: {
+                contextPlan: context.handoff.createContextPlan({
+                  mode: "last_output_only",
+                  reason: "review_handoff",
+                  targetAgent: "reviewer",
+                }),
+                targetAgent: "reviewer",
+                type: "handoff",
+              },
+            };
+          }
+
+          if (context.config.name === "reviewer") {
+            return {
+              messages: [assistantText(reviewerText)],
+              resolution: {
+                reason: "done",
+                type: "end_turn",
+              },
+            };
+          }
+
+          await sleep(20);
+          return {
+            messages: [assistantText(parentText)],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }),
+      ]),
+    });
+    const orchestration = createOrchestrationRuntime({
+      agents,
+      framework,
+    });
+    const thread = await framework.createThread({});
+    const handle = orchestration.executeTurn({
+      agent: "primary",
+      branchId: thread.branchId,
+      signal: textSignal("Start root"),
+      threadId: thread.threadId,
+    });
+    const rootEventsPromise = collectValues(handle.allEvents());
+
+    await sleep(0);
+
+    const childHandle = handle.spawn({
+      agent: "worker",
+      signal: textSignal("handoff child"),
+    });
+    const childEvents = await collectValues(childHandle.events());
+    const childResult = await childHandle.awaitResult();
+    const rootEvents = await rootEventsPromise;
+    const lastOutputOnlyEvidence = await runLastOutputOnlyDirectEvidence();
+    const childReviewerEvent = findTextEvent(childEvents, reviewerText);
+    const rootReviewerEvent = rootEvents.find(
+      (event) =>
+        dependencies.isRecord(event) &&
+        event.type === "text.done" &&
+        event.text === reviewerText &&
+        dependencies.isRecord(event.source) &&
+        typeof event.source.workerId === "string"
+    );
+
+    const surfaces = {
+      childResult,
+      handoffDescendantAgentPreserved:
+        readSourceAgent(childReviewerEvent) === "reviewer" &&
+        readSourceAgent(rootReviewerEvent) === "reviewer",
+      handoffHistoryControlEntryAbsent:
+        lastOutputOnlyEvidence.historyControlEntryAbsent,
+      handoffInvalidCompositionError: await runInvalidHandoffCompositionError(),
+      handoffLastOutputOnlyNoSourceSignal:
+        lastOutputOnlyEvidence.noSourceSignal,
+      handoffLastOutputOnlyText: lastOutputOnlyEvidence.firstUserText,
+      handoffRootSource: dependencies.isRecord(rootReviewerEvent)
+        ? rootReviewerEvent.source
+        : undefined,
+    };
+
+    return {
+      evidence: { orchestration: { surfaces } },
+      result: { orchestration: { surfaces } },
+    };
+  };
+
+  const findTextEventWithWorker = (
+    events: readonly unknown[],
+    text: string
+  ): Record<string, unknown> | undefined => {
+    for (const event of events) {
+      if (
+        !(dependencies.isRecord(event) && dependencies.isRecord(event.source))
+      ) {
+        continue;
+      }
+
+      if (
+        event.type === "text.done" &&
+        typeof event.text === "string" &&
+        event.text === text &&
+        typeof event.source.workerId === "string"
+      ) {
+        return event;
+      }
+    }
+
+    return undefined;
+  };
+
+  const readOrchestrationResultText = (
+    result: OrchestrationResult
+  ): string | undefined => {
+    if (
+      result.status !== "completed" ||
+      result.finalAssistantMessage === undefined
+    ) {
+      return undefined;
+    }
+
+    const msg = result.finalAssistantMessage;
+
+    if (msg.role !== "assistant") {
+      return undefined;
+    }
+
+    const textPart = msg.parts.find((p) => p.type === "text");
+
+    if (textPart?.type !== "text") {
+      return undefined;
+    }
+
+    return textPart.text;
+  };
+
+  const containsWorkerResult = (messages: readonly unknown[]): boolean => {
+    for (const message of messages) {
+      if (
+        !dependencies.isRecord(message) ||
+        message.role !== "user" ||
+        !Array.isArray(message.parts)
+      ) {
+        continue;
+      }
+
+      for (const part of message.parts) {
+        if (
+          dependencies.isRecord(part) &&
+          part.type === "structured" &&
+          part.name === "worker_result"
+        ) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  const runOrchestrationEventSurfaces = async (
     input: unknown
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runtime.orchestration.event-surfaces"
@@ -311,11 +821,11 @@ export function createFrameworkAdapterOrchestration(
       evidence: { orchestration: { surfaces } },
       result: { orchestration: { surfaces } },
     };
-  }
+  };
 
-  async function runOrchestrationExecutionInheritance(
+  const runOrchestrationExecutionInheritance = async (
     input: unknown
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runtime.orchestration.execution-inheritance"
@@ -475,11 +985,11 @@ export function createFrameworkAdapterOrchestration(
       evidence: { orchestration: { inheritance } },
       result: { orchestration: { inheritance } },
     };
-  }
+  };
 
-  async function runOrchestrationNestedAttribution(
+  const runOrchestrationNestedAttribution = async (
     input: unknown
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runtime.orchestration.nested-attribution"
@@ -579,8 +1089,7 @@ export function createFrameworkAdapterOrchestration(
       evidence: { orchestration: { nested } },
       result: { orchestration: { nested } },
     };
-  }
-
+  };
   return {
     runOrchestrationEventSurfaces,
     runOrchestrationExecutionInheritance,
@@ -588,510 +1097,4 @@ export function createFrameworkAdapterOrchestration(
     runOrchestrationLifecycleLocality,
     runOrchestrationNestedAttribution,
   };
-
-  async function runOrchestrationHandoffAttribution(
-    parentText: string,
-    reviewerText: string
-  ): Promise<AdapterProjection> {
-    const harness = createConformanceKernelHarness();
-    const agents: Record<string, AgentConfig> = {
-      primary: { name: "primary" },
-      reviewer: { name: "reviewer" },
-      worker: { name: "worker" },
-    };
-    const framework = createTuvrenRuntimeCore({
-      createId: createConformanceIdFactory(),
-      defaultRunnerId: RUNNER_ID,
-      kernel: harness.kernel,
-      resolveAgentConfig(agentName) {
-        return agents[agentName];
-      },
-      runnerRegistry: createRunnerRegistry([
-        createStaticRunner(async (context) => {
-          if (context.config.name === "worker") {
-            return {
-              messages: [assistantText("Passing this to reviewer.")],
-              resolution: {
-                contextPlan: context.handoff.createContextPlan({
-                  mode: "last_output_only",
-                  reason: "review_handoff",
-                  targetAgent: "reviewer",
-                }),
-                targetAgent: "reviewer",
-                type: "handoff",
-              },
-            };
-          }
-
-          if (context.config.name === "reviewer") {
-            return {
-              messages: [assistantText(reviewerText)],
-              resolution: {
-                reason: "done",
-                type: "end_turn",
-              },
-            };
-          }
-
-          await sleep(20);
-          return {
-            messages: [assistantText(parentText)],
-            resolution: {
-              reason: "done",
-              type: "end_turn",
-            },
-          };
-        }),
-      ]),
-    });
-    const orchestration = createOrchestrationRuntime({
-      agents,
-      framework,
-    });
-    const thread = await framework.createThread({});
-    const handle = orchestration.executeTurn({
-      agent: "primary",
-      branchId: thread.branchId,
-      signal: textSignal("Start root"),
-      threadId: thread.threadId,
-    });
-    const rootEventsPromise = collectValues(handle.allEvents());
-
-    await sleep(0);
-
-    const childHandle = handle.spawn({
-      agent: "worker",
-      signal: textSignal("handoff child"),
-    });
-    const childEvents = await collectValues(childHandle.events());
-    const childResult = await childHandle.awaitResult();
-    const rootEvents = await rootEventsPromise;
-    const lastOutputOnlyEvidence = await runLastOutputOnlyDirectEvidence();
-    const childReviewerEvent = findTextEvent(childEvents, reviewerText);
-    const rootReviewerEvent = rootEvents.find(
-      (event) =>
-        dependencies.isRecord(event) &&
-        event.type === "text.done" &&
-        event.text === reviewerText &&
-        dependencies.isRecord(event.source) &&
-        typeof event.source.workerId === "string"
-    );
-
-    const surfaces = {
-      childResult,
-      handoffDescendantAgentPreserved:
-        readSourceAgent(childReviewerEvent) === "reviewer" &&
-        readSourceAgent(rootReviewerEvent) === "reviewer",
-      handoffHistoryControlEntryAbsent:
-        lastOutputOnlyEvidence.historyControlEntryAbsent,
-      handoffInvalidCompositionError: await runInvalidHandoffCompositionError(),
-      handoffLastOutputOnlyNoSourceSignal:
-        lastOutputOnlyEvidence.noSourceSignal,
-      handoffLastOutputOnlyText: lastOutputOnlyEvidence.firstUserText,
-      handoffRootSource: dependencies.isRecord(rootReviewerEvent)
-        ? rootReviewerEvent.source
-        : undefined,
-    };
-
-    return {
-      evidence: { orchestration: { surfaces } },
-      result: { orchestration: { surfaces } },
-    };
-  }
-
-  async function runInvalidHandoffCompositionError(): Promise<
-    Record<string, unknown> | undefined
-  > {
-    const harness = createConformanceKernelHarness();
-    const framework = createTuvrenRuntimeCore({
-      createId: createConformanceIdFactory(),
-      defaultRunnerId: RUNNER_ID,
-      kernel: harness.kernel,
-      resolveAgentConfig(agentName) {
-        return agentName === "reviewer" ? { name: "reviewer" } : undefined;
-      },
-      runnerRegistry: createRunnerRegistry([
-        createStaticRunner((context) => ({
-          messages: [
-            assistantToolCalls([
-              {
-                callId: "call-search",
-                input: { query: "invalid handoff composition" },
-                name: "search",
-              },
-            ]),
-          ],
-          resolution: {
-            contextPlan: context.handoff.createContextPlan({
-              mode: "last_output_only",
-              reason: "invalid_composition",
-              targetAgent: "reviewer",
-            }),
-            targetAgent: "reviewer",
-            type: "handoff",
-          },
-          toolExecutionMode: "parallel",
-        })),
-      ]),
-    });
-    const thread = await framework.createThread({});
-    const handle = framework.executeTurn({
-      branchId: thread.branchId,
-      config: {
-        name: "primary",
-        tools: [
-          {
-            description: "Search docs",
-            execute() {
-              return { ok: true };
-            },
-            inputSchema: { type: "object" },
-            name: "search",
-          },
-        ],
-      },
-      signal: textSignal("invalid handoff composition"),
-      threadId: thread.threadId,
-    });
-
-    const events = await collectValues(handle.events());
-    return readFirstErrorEnvelope(events);
-  }
-
-  async function runLastOutputOnlyDirectEvidence(): Promise<{
-    firstUserText?: string;
-    historyControlEntryAbsent: boolean;
-    noSourceSignal: boolean;
-  }> {
-    const harness = createConformanceKernelHarness();
-    const framework = createTuvrenRuntimeCore({
-      createId: createConformanceIdFactory(),
-      defaultRunnerId: RUNNER_ID,
-      kernel: harness.kernel,
-      resolveAgentConfig(agentName) {
-        return agentName === "reviewer" ? { name: "reviewer" } : undefined;
-      },
-      runnerRegistry: createRunnerRegistry([
-        createStaticRunner((context) => {
-          if (context.config.name === "primary") {
-            return {
-              messages: [assistantText("Passing this to reviewer.")],
-              resolution: {
-                contextPlan: context.handoff.createContextPlan({
-                  mode: "last_output_only",
-                  reason: "review_handoff",
-                  targetAgent: "reviewer",
-                }),
-                targetAgent: "reviewer",
-                type: "handoff",
-              },
-            };
-          }
-
-          return {
-            messages: [assistantText("Reviewer done.")],
-            resolution: {
-              reason: "done",
-              type: "end_turn",
-            },
-          };
-        }),
-      ]),
-    });
-    const thread = await framework.createThread({});
-    const handle = framework.executeTurn({
-      branchId: thread.branchId,
-      config: { name: "primary" },
-      signal: textSignal("handoff child"),
-      threadId: thread.threadId,
-    });
-
-    await collectValues(handle.events());
-
-    const messages = await harness.readBranchMessages(thread.branchId);
-    return {
-      firstUserText: readFirstUserText(messages),
-      historyControlEntryAbsent: !containsHandoffControlEntry(messages),
-      noSourceSignal: !messageTextIncludes(messages, "handoff child"),
-    };
-  }
-
-  function findThreadId(events: readonly unknown[]): string | undefined {
-    for (const event of events) {
-      const threadId = dependencies.readRecordString(event, "threadId");
-
-      if (threadId !== undefined) {
-        return threadId;
-      }
-    }
-
-    return undefined;
-  }
-
-  function findDescendantThreadId(
-    events: readonly unknown[]
-  ): string | undefined {
-    for (const event of events) {
-      if (
-        !(dependencies.isRecord(event) && dependencies.isRecord(event.source))
-      ) {
-        continue;
-      }
-
-      const threadId =
-        typeof event.source.threadId === "string"
-          ? event.source.threadId
-          : undefined;
-
-      if (threadId !== undefined) {
-        return threadId;
-      }
-    }
-
-    return undefined;
-  }
-
-  function findTextEvent(
-    events: readonly unknown[],
-    text: string
-  ): Record<string, unknown> | undefined {
-    for (const event of events) {
-      if (
-        dependencies.isRecord(event) &&
-        event.type === "text.done" &&
-        typeof event.text === "string" &&
-        event.text === text
-      ) {
-        return event;
-      }
-    }
-
-    return undefined;
-  }
-
-  function findTextEventWithWorker(
-    events: readonly unknown[],
-    text: string
-  ): Record<string, unknown> | undefined {
-    for (const event of events) {
-      if (
-        !(dependencies.isRecord(event) && dependencies.isRecord(event.source))
-      ) {
-        continue;
-      }
-
-      if (
-        event.type === "text.done" &&
-        typeof event.text === "string" &&
-        event.text === text &&
-        typeof event.source.workerId === "string"
-      ) {
-        return event;
-      }
-    }
-
-    return undefined;
-  }
-
-  function readSourceAgent(event: unknown): string | undefined {
-    return dependencies.isRecord(event) && dependencies.isRecord(event.source)
-      ? dependencies.readRecordString(event.source, "agent")
-      : undefined;
-  }
-
-  function readFirstErrorEnvelope(
-    events: readonly unknown[]
-  ): Record<string, unknown> | undefined {
-    for (const event of events) {
-      if (dependencies.isRecord(event) && dependencies.isRecord(event.error)) {
-        return event.error;
-      }
-    }
-
-    return undefined;
-  }
-
-  function containsWorkerResult(messages: readonly unknown[]): boolean {
-    for (const message of messages) {
-      if (
-        !dependencies.isRecord(message) ||
-        message.role !== "user" ||
-        !Array.isArray(message.parts)
-      ) {
-        continue;
-      }
-
-      for (const part of message.parts) {
-        if (
-          dependencies.isRecord(part) &&
-          part.type === "structured" &&
-          part.name === "worker_result"
-        ) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  function containsHandoffControlEntry(messages: readonly unknown[]): boolean {
-    for (const message of messages) {
-      if (!(dependencies.isRecord(message) && Array.isArray(message.parts))) {
-        continue;
-      }
-
-      for (const part of message.parts) {
-        if (isHandoffControlPart(part)) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  function isHandoffControlPart(part: unknown): boolean {
-    return (
-      dependencies.isRecord(part) &&
-      part.name === "handoff" &&
-      (part.type === "tool_call" || part.type === "structured")
-    );
-  }
-
-  function messageTextIncludes(
-    messages: readonly unknown[],
-    expectedText: string
-  ): boolean {
-    for (const message of messages) {
-      if (!(dependencies.isRecord(message) && Array.isArray(message.parts))) {
-        continue;
-      }
-
-      for (const part of message.parts) {
-        if (
-          dependencies.isRecord(part) &&
-          part.type === "text" &&
-          part.text === expectedText
-        ) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  function readFirstUserText(messages: readonly unknown[]): string | undefined {
-    for (const message of messages) {
-      if (
-        !dependencies.isRecord(message) ||
-        message.role !== "user" ||
-        !Array.isArray(message.parts)
-      ) {
-        continue;
-      }
-
-      for (const part of message.parts) {
-        if (
-          dependencies.isRecord(part) &&
-          part.type === "text" &&
-          typeof part.text === "string"
-        ) {
-          return part.text;
-        }
-      }
-    }
-
-    return undefined;
-  }
-
-  function readOrchestrationResultText(
-    result: OrchestrationResult
-  ): string | undefined {
-    if (
-      result.status !== "completed" ||
-      result.finalAssistantMessage === undefined
-    ) {
-      return undefined;
-    }
-
-    const msg = result.finalAssistantMessage;
-
-    if (msg.role !== "assistant") {
-      return undefined;
-    }
-
-    const textPart = msg.parts.find((p) => p.type === "text");
-
-    if (textPart?.type !== "text") {
-      return undefined;
-    }
-
-    return textPart.text;
-  }
-
-  function captureActionError(
-    action: () => unknown
-  ): Record<string, unknown> | undefined {
-    try {
-      action();
-      return undefined;
-    } catch (error: unknown) {
-      return dependencies.createObservedErrorEnvelope(error);
-    }
-  }
-
-  async function captureAsyncActionError(
-    action: () => Promise<unknown>
-  ): Promise<Record<string, unknown> | undefined> {
-    try {
-      await action();
-      return undefined;
-    } catch (error: unknown) {
-      return dependencies.createObservedErrorEnvelope(error);
-    }
-  }
-
-  function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
-  }
-
-  async function spawnWhenRunning(
-    handle: Pick<OrchestrationHandle, "spawn" | "status">,
-    input: {
-      agent: string;
-      signal: ReturnType<typeof textSignal>;
-    },
-    timeoutMs = 1000
-  ): Promise<OrchestrationHandle> {
-    const start = Date.now();
-
-    while (true) {
-      try {
-        return handle.spawn(input);
-      } catch (error: unknown) {
-        const { phase } = handle.status();
-        const shouldRetry =
-          error instanceof TuvrenRuntimeError &&
-          error.code === "orchestration_parent_inactive" &&
-          phase === "running";
-
-        if (!shouldRetry) {
-          throw error;
-        }
-
-        // Only retry the brief "running but not ready yet" race; if the phase
-        // has already moved away from running, retrying would turn a real
-        // pause/completion into a false positive.
-        if (Date.now() - start > timeoutMs) {
-          throw error;
-        }
-
-        await sleep(5);
-      }
-    }
-  }
-}
+};
