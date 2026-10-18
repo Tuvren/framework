@@ -172,6 +172,28 @@ describe("stream-core", () => {
     );
   });
 
+  test("treats a truthy external iterator done value as completion", async () => {
+    const source = {
+      [Symbol.asyncIterator]() {
+        return {
+          async next() {
+            const done = await Promise.resolve(1);
+            return { done };
+          },
+        };
+      },
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This external iterator deliberately violates the TypeScript IteratorResult type to exercise ECMAScript ToBoolean completion semantics.
+    } as unknown as AsyncIterable<TuvrenStreamEvent>;
+    const [branch] = teeTuvrenStreamEvents(source, 1);
+    const iterator = branch[Symbol.asyncIterator]();
+    const result = await iterator.next();
+
+    expect(result).toEqual({
+      done: true,
+      value: undefined,
+    });
+  });
+
   test("dedupes warnings by code and swallows observer failures", () => {
     const warnings: string[] = [];
     const reportWarning = createStreamAdapterWarningReporter({

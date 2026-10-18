@@ -447,7 +447,7 @@
     }
   ],
   "final_inventory": {
-    "native_exception_regions": 160,
+    "native_exception_regions": 162,
     "legacy_biome_removals": 36,
     "native_projects": 12,
     "selected_code_files": 107,
@@ -531,12 +531,15 @@
   },
   "drift_and_followups": {
     "relevant_directive_drift": [],
-    "source_drift_after_freeze": false,
+    "source_drift_after_freeze": true,
     "final_unresolved_failures": 0,
     "followups": [
       "A19 aggregate reviewability is routed to the wave lead and Stage 4.",
       "CB retains ownership of tools/run-nx.mjs until whole-tools admission.",
       "The M30 shared-service lifecycle deviation remains recorded for closeout."
+    ],
+    "post_freeze_review_fixes": [
+      "PR round 1 restores ECMAScript ToBoolean iterator completion and adds an external-iterator regression test; focused stream-core typecheck, tests, lint, JSON and formatting checks pass."
     ]
   }
 }
