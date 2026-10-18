@@ -34,6 +34,7 @@ import type { ToolRegistry } from "@tuvren/core/tools";
 import { isClientEndpointTool } from "./binding-resolver.js";
 import { buildCapabilityMetadataFromTools } from "./capability-policy-engine.js";
 import { runAfterIterationHooks } from "./extension-runtime.js";
+import { projectMessagesForRunner } from "./runtime-core-context.js";
 import type { InterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type { LoopOutcome } from "./runtime-core-recovery.js";
@@ -95,24 +96,6 @@ function createFilteredToolRegistry(
     register: (tool) => base.register(tool),
     toDefinitions: () => base.toDefinitions().filter((d) => byName.has(d.name)),
   };
-}
-
-/**
- * Removes host-owned admission metadata from the message snapshot supplied to
- * runners. Durable messages retain the key; model-request assembly receives a
- * separate projection that cannot forward it to a provider.
- */
-function projectMessagesForRunner(
-  messages: readonly TuvrenMessage[]
-): TuvrenMessage[] {
-  return messages.map((message) => {
-    if (message.role !== "user") {
-      return message;
-    }
-
-    const { admissionKey: _admissionKey, ...projectedMessage } = message;
-    return projectedMessage;
-  });
 }
 
 /**

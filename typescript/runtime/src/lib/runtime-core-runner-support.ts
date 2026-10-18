@@ -30,6 +30,10 @@ import { TUVREN_SANDBOX_ENDPOINT_ID_PREFIX } from "./binding-resolver.js";
 import { buildCapabilityMetadataFromTools } from "./capability-policy-engine.js";
 import { updateContextManifest } from "./context-manifest.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
+import {
+  projectContextEngineeringHelpersForRunner,
+  projectMessagesForRunner,
+} from "./runtime-core-context.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import { formatToolResultTaskId } from "./runtime-core-response.js";
 import { normalizeError } from "./runtime-core-shared.js";
@@ -265,9 +269,9 @@ export function createRunnerHandoffContextPlan(
         reason: input.reason,
         targetAgent: input.targetAgent,
       },
-      helpers: helperBundle.helpers,
+      helpers: projectContextEngineeringHelpersForRunner(helperBundle.helpers),
       manifest: structuredClone(headState.manifest),
-      messages: structuredClone(headState.messages),
+      messages: structuredClone(projectMessagesForRunner(headState.messages)),
       sourceAgent: host.createFrozenSnapshot(
         host.cloneAgentConfigForRequest(loopState.activeConfig)
       ),

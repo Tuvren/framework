@@ -67,6 +67,42 @@ export interface RuntimeCoreContextHost {
 }
 
 /**
+ * Removes host-owned admission metadata from messages exposed to runners.
+ * Durable messages remain untouched; callers receive projected message
+ * objects for runner-facing snapshots and helper lookups.
+ */
+export function projectMessagesForRunner(
+  messages: readonly TuvrenMessage[]
+): TuvrenMessage[] {
+  return messages.map((message) => {
+    if (message.role !== "user") {
+      return message;
+    }
+
+    const { admissionKey: _admissionKey, ...projectedMessage } = message;
+    return projectedMessage;
+  });
+}
+
+/**
+ * Projects message reads from context helpers before exposing them to a
+ * runner supplied builder. Writes still use the original helper bundle so
+ * persistence and canonical hash resolution retain their existing behavior.
+ */
+export function projectContextEngineeringHelpersForRunner(
+  helpers: ContextEngineeringHelpers
+): ContextEngineeringHelpers {
+  return {
+    loadMessage(hash) {
+      const message = helpers.loadMessage(hash);
+      return message === null ? null : projectMessagesForRunner([message])[0];
+    },
+    storeMessage: (message) => helpers.storeMessage(message),
+    storeMessages: (messages) => helpers.storeMessages(messages),
+  };
+}
+
+/**
  * Create a {@link HelperBundle} over the current head messages.
  *
  * The existing messages are cloned into an in-memory index keyed by their
@@ -172,9 +208,9 @@ export function resolveHandoffSourceContext(
 ): HandoffSourceContext {
   return {
     handoffIntent: cloneValue(plan.sourceContext.handoffIntent),
-    helpers,
+    helpers: projectContextEngineeringHelpersForRunner(helpers),
     manifest: cloneValue(headState.manifest),
-    messages: cloneValue(headState.messages),
+    messages: cloneValue(projectMessagesForRunner(headState.messages)),
     sourceAgent: host.createFrozenAgentConfig(
       host.cloneAgentConfigForRequest(loopState.activeConfig)
     ),
