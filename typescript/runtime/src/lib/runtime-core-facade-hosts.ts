@@ -356,9 +356,9 @@ interface RuntimeCoreFacadeHostDependencies {
  * slices share the same kernel, clock, and id source, which keeps event
  * timestamps and identifiers consistent across execution phases.
  */
-export function createRuntimeCoreFacadeHosts(
+export const createRuntimeCoreFacadeHosts = (
   dependencies: RuntimeCoreFacadeHostDependencies
-): RuntimeCoreFacadeHosts {
+): RuntimeCoreFacadeHosts => {
   return {
     contextOps: buildRuntimeCoreContextOpsHost({
       advanceTurnAndBranchHead: (...args) =>
@@ -680,4 +680,4 @@ export function createRuntimeCoreFacadeHosts(
         dependencies.syncRunLeaseStateFromStepResult(...args),
     }),
   };
-}
+};

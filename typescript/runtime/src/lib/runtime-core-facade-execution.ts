@@ -90,16 +90,16 @@ import type {
  *
  * Delegates to the startup host slice of {@link RuntimeCoreFacadeHosts}.
  */
-export async function resolveRuntimeCoreExecutionBranchHead(
+export const resolveRuntimeCoreExecutionBranchHead = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle
-): Promise<HashString> {
+): Promise<HashString> => {
   return await resolveRuntimeExecutionBranchHead(
     hosts.startup,
     handle.request.branchId,
     handle.request.threadId
   );
-}
+};
 
 /**
  * Creates the kernel turn for this execution when one is needed.
@@ -108,19 +108,19 @@ export async function resolveRuntimeCoreExecutionBranchHead(
  * paused turn or when `reuseRecoveredTurn` indicates an expired-execution
  * recovery already owns the turn.
  */
-export async function createRuntimeCoreExecutionTurnIfNeeded(
+export const createRuntimeCoreExecutionTurnIfNeeded = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   branchHeadHash: HashString,
   reuseRecoveredTurn: boolean
-): Promise<void> {
+): Promise<void> => {
   await createRuntimeExecutionTurnIfNeeded(
     hosts.startup,
     handle,
     branchHeadHash,
     reuseRecoveredTurn
   );
-}
+};
 
 /**
  * Builds the initial {@link LoopState} for an execution session, restoring
@@ -130,29 +130,29 @@ export async function createRuntimeCoreExecutionTurnIfNeeded(
  * @param recoveredExecution - Recovery record from an expired execution, used
  *   by the startup host when resolving the active config.
  */
-export function createRuntimeCoreExecutionLoopState(
+export const createRuntimeCoreExecutionLoopState = (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   recoveredExecution?: ExpiredExecutionRecovery
-): LoopState {
+): LoopState => {
   return createRuntimeExecutionLoopState(
     hosts.startup,
     handle,
     recoveredExecution
   );
-}
+};
 
 /**
  * Publishes the `turn.start` stream event for the execution, carrying the
  * paused turn-node hash as `resumedFrom` when the handle resumes a pause.
  */
-export function publishRuntimeCoreTurnStart(
+export const publishRuntimeCoreTurnStart = (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   loopState: LoopState
-): void {
+): void => {
   publishRuntimeTurnStart(hosts.startup, handle, loopState);
-}
+};
 
 /**
  * Runs the fresh (non-resumed) execution start prelude: input incorporation,
@@ -169,7 +169,7 @@ export function publishRuntimeCoreTurnStart(
  *   the execution was completed during the prelude; `false` when the caller
  *   should continue into the iteration loop.
  */
-export async function prepareRuntimeCoreFreshExecutionStart(
+export const prepareRuntimeCoreFreshExecutionStart = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -182,7 +182,7 @@ export async function prepareRuntimeCoreFreshExecutionStart(
     schemaId: string,
     loopState: LoopState
   ) => Promise<void>
-): Promise<boolean> {
+): Promise<boolean> => {
   return await prepareRuntimeFreshExecutionStart(
     hosts.startup,
     handle,
@@ -193,7 +193,7 @@ export async function prepareRuntimeCoreFreshExecutionStart(
     needsInputReincorporation ?? false,
     incorporateInput
   );
-}
+};
 
 /**
  * Finishes the startup path for an execution that resumes a paused turn:
@@ -204,19 +204,19 @@ export async function prepareRuntimeCoreFreshExecutionStart(
  *   completed, cancelled, or paused again); `false` when the execution should
  *   continue into the iteration loop. Always `false` for non-resumed handles.
  */
-export async function finishRuntimeCoreResumedExecutionStart(
+export const finishRuntimeCoreResumedExecutionStart = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState
-): Promise<boolean> {
+): Promise<boolean> => {
   return await finishRuntimeResumedExecutionStart(
     hosts.startup,
     handle,
     schemaId,
     loopState
   );
-}
+};
 
 /**
  * Publishes the pause outcome for an approval pause: remembers the pause
@@ -226,48 +226,48 @@ export async function finishRuntimeCoreResumedExecutionStart(
  * @returns `true` when a pause context was present and published; `false`
  *   when `pauseContext` is `undefined` and nothing was emitted.
  */
-export function publishRuntimeCorePauseOutcome(
+export const publishRuntimeCorePauseOutcome = (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   pauseContext: PauseContext | undefined,
   loopState: LoopState
-): boolean {
+): boolean => {
   return publishRuntimePauseOutcome(
     hosts.finalization,
     handle,
     pauseContext,
     loopState
   );
-}
+};
 
 /**
  * Publishes the `approval.resolved` stream event for a resolved approval
  * response; a no-op when `response` is `undefined`.
  */
-export function publishRuntimeCoreApprovalResolved(
+export const publishRuntimeCoreApprovalResolved = (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   response: ApprovalResponse | undefined,
   loopState: LoopState
-): void {
+): void => {
   publishRuntimeApprovalResolved(
     hosts.finalization,
     handle,
     response,
     loopState
   );
-}
+};
 
 /**
  * Handles a fatal execution failure: fails the active tracked run (if any)
  * through the status host, then routes the error through the finalization
  * host so the failure is projected and the turn ends with status `failed`.
  */
-export async function handleRuntimeCoreExecutionFailure(
+export const handleRuntimeCoreExecutionFailure = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   error: unknown
-): Promise<void> {
+): Promise<void> => {
   await handleRuntimeExecutionFailure(
     hosts.finalization,
     handle,
@@ -275,7 +275,7 @@ export async function handleRuntimeCoreExecutionFailure(
     async (failedHandle) =>
       await failRuntimeActiveRunIfNeeded(hosts.status, failedHandle)
   );
-}
+};
 
 /**
  * Completes the execution with a terminal runner resolution via the
@@ -285,14 +285,14 @@ export async function handleRuntimeCoreExecutionFailure(
  * @param enteredIterationLoop - Whether the iteration loop actually ran; the
  *   finalization path uses this to distinguish prelude-only completions.
  */
-export async function completeRuntimeCoreExecution(
+export const completeRuntimeCoreExecution = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   resolution: RuntimeResolution,
   partial: boolean,
   loopState: LoopState,
   enteredIterationLoop: boolean
-): Promise<void> {
+): Promise<void> => {
   await completeRuntimeExecution(
     hosts.finalization,
     handle,
@@ -301,7 +301,7 @@ export async function completeRuntimeCoreExecution(
     loopState,
     enteredIterationLoop
   );
-}
+};
 
 /**
  * Rejects a runner `pause` resolution that did not originate from requested
@@ -317,7 +317,7 @@ export async function completeRuntimeCoreExecution(
  *   or `undefined` when the resolution is not a pause (or is a valid pause)
  *   and normal processing should continue.
  */
-export async function failRuntimeCoreInvalidPauseResolutionIfNeeded(
+export const failRuntimeCoreInvalidPauseResolutionIfNeeded = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   iterationRunId: string,
@@ -330,7 +330,7 @@ export async function failRuntimeCoreInvalidPauseResolutionIfNeeded(
       outcome: LoopOutcome;
     }
   | undefined
-> {
+> => {
   if (resolution.type !== "pause" || requestedToolCallCount > 0) {
     return undefined;
   }
@@ -361,7 +361,7 @@ export async function failRuntimeCoreInvalidPauseResolutionIfNeeded(
       },
     },
   };
-}
+};
 
 /**
  * Builds the {@link RunnerExecutionContext} handed to a runner for one
@@ -370,7 +370,7 @@ export async function failRuntimeCoreInvalidPauseResolutionIfNeeded(
  * @param emittedRunnerEvents - Sink array that collects the stream events the
  *   runner emits during the iteration.
  */
-export function createRuntimeCoreRunnerExecutionContext(
+export const createRuntimeCoreRunnerExecutionContext = (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -378,7 +378,7 @@ export function createRuntimeCoreRunnerExecutionContext(
   headState: HeadState,
   iterationCount: number,
   emittedRunnerEvents: TuvrenStreamEvent[]
-): RunnerExecutionContext {
+): RunnerExecutionContext => {
   return createRuntimeRunnerExecutionContextFacade(
     hosts.runner,
     handle,
@@ -388,26 +388,26 @@ export function createRuntimeCoreRunnerExecutionContext(
     iterationCount,
     emittedRunnerEvents
   );
-}
+};
 
 /**
  * Stages the messages produced by a runner iteration into the kernel store.
  *
  * @returns The kernel hashes of the staged messages, in input order.
  */
-export async function stageRuntimeCoreRunnerMessages(
+export const stageRuntimeCoreRunnerMessages = async (
   hosts: RuntimeCoreFacadeHosts,
   runId: string,
   messages: TuvrenMessage[],
   iterationCount: number
-): Promise<HashString[]> {
+): Promise<HashString[]> => {
   return await stageRuntimeRunnerMessagesFacade(
     hosts.runner,
     runId,
     messages,
     iterationCount
   );
-}
+};
 
 /**
  * Applies the tool batch a runner requested for the current iteration, if
@@ -418,7 +418,7 @@ export async function stageRuntimeCoreRunnerMessages(
  *   {@link RuntimeResolution} when the loop should keep processing the
  *   iteration result.
  */
-export async function applyRuntimeCoreRequestedToolBatchIfNeeded(
+export const applyRuntimeCoreRequestedToolBatchIfNeeded = async (
   hosts: RuntimeCoreFacadeHosts,
   input: {
     handle: RuntimeExecutionHandle;
@@ -433,12 +433,12 @@ export async function applyRuntimeCoreRequestedToolBatchIfNeeded(
     toolExecutionMode: ToolExecutionMode;
     toolResults: ToolResultPart[];
   }
-): Promise<LoopOutcome | RuntimeResolution> {
+): Promise<LoopOutcome | RuntimeResolution> => {
   return await applyRuntimeRequestedToolBatchIfNeededFacade(
     hosts.runner,
     input
   );
-}
+};
 
 /**
  * Persists the durable artifacts of a finished iteration (staged manifest,
@@ -447,7 +447,7 @@ export async function applyRuntimeCoreRequestedToolBatchIfNeeded(
  * @returns The new iteration tree hash, or `undefined` when no tree was
  *   produced for this iteration.
  */
-export async function completeRuntimeCoreIterationArtifacts(
+export const completeRuntimeCoreIterationArtifacts = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -459,7 +459,7 @@ export async function completeRuntimeCoreIterationArtifacts(
   manifest: ContextManifest,
   appendedMessageHashes: HashString[],
   interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
-): Promise<HashString | undefined> {
+): Promise<HashString | undefined> => {
   return await completeRuntimeIterationArtifactsFacade(
     hosts.runner,
     handle,
@@ -473,7 +473,7 @@ export async function completeRuntimeCoreIterationArtifacts(
     appendedMessageHashes,
     interruptedToolBatch
   );
-}
+};
 
 /**
  * Runs the after-iteration processing for a runner resolution (extension
@@ -483,7 +483,7 @@ export async function completeRuntimeCoreIterationArtifacts(
  * @returns The resolution to continue the loop with, which may differ from
  *   the runner's original resolution when a hook overrides it.
  */
-export async function applyRuntimeCoreAfterIterationResolution(
+export const applyRuntimeCoreAfterIterationResolution = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
@@ -495,7 +495,7 @@ export async function applyRuntimeCoreAfterIterationResolution(
   headMessages: TuvrenMessage[],
   stagedMessages: TuvrenMessage[],
   manifest: ContextManifest
-): Promise<RuntimeResolution> {
+): Promise<RuntimeResolution> => {
   return await applyRuntimeAfterIterationResolutionFacade(
     hosts.runner,
     handle,
@@ -509,7 +509,7 @@ export async function applyRuntimeCoreAfterIterationResolution(
     stagedMessages,
     manifest
   );
-}
+};
 
 /**
  * Resumes a tool execution that paused for approval, replaying the paused
@@ -517,13 +517,13 @@ export async function applyRuntimeCoreAfterIterationResolution(
  *
  * Delegates to the tool-resume host slice.
  */
-export async function resumeRuntimeCorePausedToolExecution(
+export const resumeRuntimeCorePausedToolExecution = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
   resumeContext: ResumeContext
-): Promise<LoopOutcome> {
+): Promise<LoopOutcome> => {
   return await resumeRuntimePausedToolExecutionFacade(
     hosts.toolResume,
     handle,
@@ -531,20 +531,20 @@ export async function resumeRuntimeCorePausedToolExecution(
     loopState,
     resumeContext
   );
-}
+};
 
 /**
  * Builds the {@link ToolBatchEnvironment} used to execute a batch of tool
  * calls for the given iteration, delegating to the runner-support host slice.
  */
-export function createRuntimeCoreToolBatchEnvironment(
+export const createRuntimeCoreToolBatchEnvironment = (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
   manifest: ContextManifest,
   iterationCount: number,
   runId: string
-): ToolBatchEnvironment {
+): ToolBatchEnvironment => {
   return createRuntimeToolBatchEnvironmentFacade(
     hosts.runnerSupport,
     handle,
@@ -553,7 +553,7 @@ export function createRuntimeCoreToolBatchEnvironment(
     iterationCount,
     runId
   );
-}
+};
 
 /**
  * Builds the {@link HandoffContextPlan} for a runner-initiated agent handoff,
@@ -563,7 +563,7 @@ export function createRuntimeCoreToolBatchEnvironment(
  * @param input - Handoff request fields: the target agent name, a reason
  *   string, and an optional explicit builder, mode, and payload.
  */
-export function createRuntimeCoreRunnerHandoffContextPlan(
+export const createRuntimeCoreRunnerHandoffContextPlan = (
   hosts: RuntimeCoreFacadeHosts,
   input: {
     builder?: HandoffContextBuilder;
@@ -574,25 +574,25 @@ export function createRuntimeCoreRunnerHandoffContextPlan(
   },
   headState: HeadState,
   loopState: LoopState
-): HandoffContextPlan {
+): HandoffContextPlan => {
   return createRuntimeRunnerHandoffContextPlanFacade(
     hosts.runnerSupport,
     input,
     headState,
     loopState
   );
-}
+};
 
 /**
  * Executes a single runner call against the prepared execution context,
  * delegating to the shared runner-support execution path.
  */
-export async function executeRuntimeCoreRunnerCall(
+export const executeRuntimeCoreRunnerCall = async (
   runner: RuntimeRunner,
   context: RunnerExecutionContext
-) {
+) => {
   return await executeRuntimeRunner(runner, context);
-}
+};
 
 /**
  * Completes the tracked kernel run for an iteration and advances turn
@@ -601,7 +601,7 @@ export async function executeRuntimeCoreRunnerCall(
  * @returns The turn-node hash the branch advanced to, or `undefined` when the
  *   completion did not advance the branch head.
  */
-export async function completeRuntimeCoreIterationRun(
+export const completeRuntimeCoreIterationRun = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   runId: string,
@@ -610,7 +610,7 @@ export async function completeRuntimeCoreIterationRun(
   iterationCount: number,
   loopState: LoopState,
   treeHash?: HashString
-): Promise<HashString | undefined> {
+): Promise<HashString | undefined> => {
   return await completeRuntimeIterationRunFacade(
     hosts.turnProgress,
     handle,
@@ -621,7 +621,7 @@ export async function completeRuntimeCoreIterationRun(
     loopState,
     treeHash
   );
-}
+};
 
 /**
  * Creates the kernel tree node for an iteration from the base turn tree, the
@@ -630,7 +630,7 @@ export async function completeRuntimeCoreIterationRun(
  *
  * @returns The hash of the created iteration tree.
  */
-export async function createRuntimeCoreIterationTree(
+export const createRuntimeCoreIterationTree = async (
   hosts: RuntimeCoreFacadeHosts,
   schemaId: string,
   baseTurnTreeHash: HashString,
@@ -639,7 +639,7 @@ export async function createRuntimeCoreIterationTree(
   manifestHash: HashString,
   runtimeStatusHash?: HashString,
   turnLineageHash?: HashString
-): Promise<HashString> {
+): Promise<HashString> => {
   return await createRuntimeIterationTreeFacade(
     hosts.turnProgress,
     schemaId,
@@ -650,37 +650,37 @@ export async function createRuntimeCoreIterationTree(
     runtimeStatusHash,
     turnLineageHash
   );
-}
+};
 
 /**
  * Commits the execution request's input into the turn as durable state via
  * the state-commit host slice.
  */
-export async function incorporateRuntimeCoreInput(
+export const incorporateRuntimeCoreInput = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState
-): Promise<void> {
+): Promise<void> => {
   await incorporateRuntimeInputFacade(
     hosts.stateCommit,
     handle,
     schemaId,
     loopState
   );
-}
+};
 
 /**
  * Commits a mid-turn steering {@link InputSignal} into the turn as durable
  * state via the state-commit host slice.
  */
-export async function incorporateRuntimeCoreSteering(
+export const incorporateRuntimeCoreSteering = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   signal: InputSignal,
   loopState: LoopState
-): Promise<void> {
+): Promise<void> => {
   await incorporateRuntimeSteeringFacade(
     hosts.stateCommit,
     handle,
@@ -688,20 +688,20 @@ export async function incorporateRuntimeCoreSteering(
     signal,
     loopState
   );
-}
+};
 
 /**
  * Commits pending {@link ExtensionStateUpdate} entries into the turn's
  * durable manifest state via the state-commit host slice.
  */
-export async function commitRuntimeCorePendingExtensionStateUpdates(
+export const commitRuntimeCorePendingExtensionStateUpdates = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
   updates: ExtensionStateUpdate[],
   iterationCount: number
-): Promise<void> {
+): Promise<void> => {
   await commitRuntimePendingExtensionStateUpdatesFacade(
     hosts.stateCommit,
     handle,
@@ -710,14 +710,14 @@ export async function commitRuntimeCorePendingExtensionStateUpdates(
     updates,
     iterationCount
   );
-}
+};
 
 /**
  * Applies a {@link ContextEngineeringPlan} (context rewriting requested by an
  * extension or host) to the turn via the context-ops host slice, committing
  * the resulting state alongside any pending extension-state updates.
  */
-export async function applyRuntimeCoreContextEngineeringPlan(
+export const applyRuntimeCoreContextEngineeringPlan = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -728,7 +728,7 @@ export async function applyRuntimeCoreContextEngineeringPlan(
     messageHashes: HashString[];
     messages: TuvrenMessage[];
   }
-): Promise<void> {
+): Promise<void> => {
   await applyRuntimeContextEngineeringPlanFacade(
     hosts.contextOps,
     handle,
@@ -738,4 +738,4 @@ export async function applyRuntimeCoreContextEngineeringPlan(
     updates,
     recoveredHistory
   );
-}
+};
