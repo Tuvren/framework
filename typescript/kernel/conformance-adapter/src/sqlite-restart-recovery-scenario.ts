@@ -41,32 +41,104 @@ const RESTART_SCHEMA = {
   schemaId: "schema_restart_recovery",
 } satisfies TurnTreeSchema;
 
-await main();
+const readRequiredStringField = (
+  value: unknown,
+  fieldName: string
+): string => {
+  if (typeof value !== "object" || value === null) {
+    throw new Error("restart metadata must be a JSON object");
+  }
 
-async function main(): Promise<void> {
-  const [, , phase, databasePath, metadataPath] = process.argv;
+  const fieldValue = Reflect.get(value, fieldName);
 
-  if (
-    (phase !== "write" && phase !== "read") ||
-    databasePath === undefined ||
-    metadataPath === undefined
-  ) {
-    throw new Error(
-      "usage: bun sqlite-restart-recovery-scenario.ts <write|read> <databasePath> <metadataPath>"
+  if (typeof fieldValue !== "string") {
+    throw new TypeError(
+      `restart metadata field "${fieldName}" must be a string`
     );
   }
 
-  const output =
-    phase === "write"
-      ? await runWritePhase(databasePath, metadataPath)
-      : await runReadPhase(databasePath, metadataPath);
-  process.stdout.write(`${JSON.stringify(output)}\n`);
-}
+  return fieldValue;
+};
 
-async function runWritePhase(
+const parseRestartMetadata = (jsonText: string): RestartMetadata => {
+  const value = JSON.parse(jsonText);
+  return {
+    branchId: readRequiredStringField(value, "branchId"),
+    committedMessageHash: readRequiredStringField(
+      value,
+      "committedMessageHash"
+    ),
+    committedTurnNodeHash: readRequiredStringField(
+      value,
+      "committedTurnNodeHash"
+    ),
+    rootTurnNodeHash: readRequiredStringField(value, "rootTurnNodeHash"),
+    runId: readRequiredStringField(value, "runId"),
+    schemaId: readRequiredStringField(value, "schemaId"),
+    threadId: readRequiredStringField(value, "threadId"),
+    turnId: readRequiredStringField(value, "turnId"),
+    uncommittedMessageHash: readRequiredStringField(
+      value,
+      "uncommittedMessageHash"
+    ),
+  };
+};
+
+const hasCreateRuntimeKernel = (
+  value: unknown
+): value is { createRuntimeKernel: typeof CreateRuntimeKernel } => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  return typeof Reflect.get(value, "createRuntimeKernel") === "function";
+};
+
+const hasCreateSqliteBackend = (
+  value: unknown
+): value is { createSqliteBackend: typeof CreateSqliteBackend } => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  return typeof Reflect.get(value, "createSqliteBackend") === "function";
+};
+
+const loadNodeRuntime = async (): Promise<{
+  createRuntimeKernel: typeof CreateRuntimeKernel;
+  createSqliteBackend: typeof CreateSqliteBackend;
+}> => {
+  const runtimeKernelModuleUrl = new URL(
+    "../../runtime/dist/index.js",
+    import.meta.url
+  );
+  const backendSqliteModuleUrl = new URL(
+    "../../backends/sqlite/dist/index.js",
+    import.meta.url
+  );
+  const [runtimeKernelModule, backendSqliteModule] = await Promise.all([
+    import(runtimeKernelModuleUrl.href),
+    import(backendSqliteModuleUrl.href),
+  ]);
+
+  if (!hasCreateRuntimeKernel(runtimeKernelModule)) {
+    throw new Error("runtime kernel module did not export createRuntimeKernel");
+  }
+
+  if (!hasCreateSqliteBackend(backendSqliteModule)) {
+    throw new Error("sqlite backend module did not export createSqliteBackend");
+  }
+
+  return {
+    createRuntimeKernel: runtimeKernelModule.createRuntimeKernel,
+    createSqliteBackend: backendSqliteModule.createSqliteBackend,
+  };
+};
+
+const runWritePhase = async (
   databasePath: string,
   metadataPath: string
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, unknown>> => {
   const { createRuntimeKernel, createSqliteBackend } = await loadNodeRuntime();
   const kernel = createRuntimeKernel({
     backend: createSqliteBackend({ databasePath }),
@@ -140,12 +212,12 @@ async function runWritePhase(
     runId: metadata.runId,
     wroteMetadata: true,
   };
-}
+};
 
-async function runReadPhase(
+const runReadPhase = async (
   databasePath: string,
   metadataPath: string
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, unknown>> => {
   const metadata = parseRestartMetadata(await readFile(metadataPath, "utf-8"));
   const { createRuntimeKernel, createSqliteBackend } = await loadNodeRuntime();
   const kernel = createRuntimeKernel({
@@ -201,95 +273,26 @@ async function runReadPhase(
           stagedResult.objectHash === metadata.uncommittedMessageHash
       ),
   };
-}
+};
 
-async function loadNodeRuntime(): Promise<{
-  createRuntimeKernel: typeof CreateRuntimeKernel;
-  createSqliteBackend: typeof CreateSqliteBackend;
-}> {
-  const runtimeKernelModuleUrl = new URL(
-    "../../runtime/dist/index.js",
-    import.meta.url
-  );
-  const backendSqliteModuleUrl = new URL(
-    "../../backends/sqlite/dist/index.js",
-    import.meta.url
-  );
-  const [runtimeKernelModule, backendSqliteModule] = await Promise.all([
-    import(runtimeKernelModuleUrl.href),
-    import(backendSqliteModuleUrl.href),
-  ]);
+const main = async (): Promise<void> => {
+  const [, , phase, databasePath, metadataPath] = process.argv;
 
-  if (!hasCreateRuntimeKernel(runtimeKernelModule)) {
-    throw new Error("runtime kernel module did not export createRuntimeKernel");
-  }
-
-  if (!hasCreateSqliteBackend(backendSqliteModule)) {
-    throw new Error("sqlite backend module did not export createSqliteBackend");
-  }
-
-  return {
-    createRuntimeKernel: runtimeKernelModule.createRuntimeKernel,
-    createSqliteBackend: backendSqliteModule.createSqliteBackend,
-  };
-}
-
-function parseRestartMetadata(jsonText: string): RestartMetadata {
-  const value = JSON.parse(jsonText);
-  return {
-    branchId: readRequiredStringField(value, "branchId"),
-    committedMessageHash: readRequiredStringField(
-      value,
-      "committedMessageHash"
-    ),
-    committedTurnNodeHash: readRequiredStringField(
-      value,
-      "committedTurnNodeHash"
-    ),
-    rootTurnNodeHash: readRequiredStringField(value, "rootTurnNodeHash"),
-    runId: readRequiredStringField(value, "runId"),
-    schemaId: readRequiredStringField(value, "schemaId"),
-    threadId: readRequiredStringField(value, "threadId"),
-    turnId: readRequiredStringField(value, "turnId"),
-    uncommittedMessageHash: readRequiredStringField(
-      value,
-      "uncommittedMessageHash"
-    ),
-  };
-}
-
-function hasCreateRuntimeKernel(
-  value: unknown
-): value is { createRuntimeKernel: typeof CreateRuntimeKernel } {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  return typeof Reflect.get(value, "createRuntimeKernel") === "function";
-}
-
-function hasCreateSqliteBackend(
-  value: unknown
-): value is { createSqliteBackend: typeof CreateSqliteBackend } {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  return typeof Reflect.get(value, "createSqliteBackend") === "function";
-}
-
-function readRequiredStringField(value: unknown, fieldName: string): string {
-  if (typeof value !== "object" || value === null) {
-    throw new Error("restart metadata must be a JSON object");
-  }
-
-  const fieldValue = Reflect.get(value, fieldName);
-
-  if (typeof fieldValue !== "string") {
-    throw new TypeError(
-      `restart metadata field "${fieldName}" must be a string`
+  if (
+    (phase !== "write" && phase !== "read") ||
+    databasePath === undefined ||
+    metadataPath === undefined
+  ) {
+    throw new Error(
+      "usage: bun sqlite-restart-recovery-scenario.ts <write|read> <databasePath> <metadataPath>"
     );
   }
 
-  return fieldValue;
-}
+  const output =
+    phase === "write"
+      ? await runWritePhase(databasePath, metadataPath)
+      : await runReadPhase(databasePath, metadataPath);
+  process.stdout.write(`${JSON.stringify(output)}\n`);
+};
+
+await main();
