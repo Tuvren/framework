@@ -148,15 +148,16 @@ closeout:
       text: "Completed EPIC-CA: core, SDK, streaming, MCP client, testkit, telemetry and certification packages use canonical native lint targets; the batteries wrapper has exact JSON-only ownership; tools/run-nx.mjs remains under Biome for EPIC-CB."
     - directory: tech-spec
       type: changed
-      text: "Execution produced final KRT-CA002 and KRT-CA004 ledgers covering 36 legacy Biome identities, 162 measured native exception regions, 12 native targets, 107 code files and 76 JSON files under ADR-0070's unchanged shipped preset."
+      text: "Execution produced final KRT-CA002 and KRT-CA004 ledgers covering 36 legacy Biome identities, 164 measured native exception regions, 12 native targets, 112 code files and 76 JSON files under ADR-0070's unchanged shipped preset; M34-M38 split the grown core guard and type families without changing the public API."
   candidate_terms: []
   routed_upstream:
     - stage: tasks
-      item: "A19 current aggregate including PR review fixes: EPIC-CA changes 127 files and 20,959 raw lines (+14,917/-6,042), comprising 12,855 implementation lines across 110 files and 8,104 bookkeeping/evidence lines across 17 files. Future lint-ratchet planning should split comparable inherited work earlier or explicitly budget aggregate review cost; the wave lead must resolve this delivery assessment before merge."
+      item: "A19 final source-freeze and evidence candidate changes 133 files and 24,447 raw lines (+16,903/-7,544): TypeScript source is 100 files and 15,914 raw lines (+8,401/-7,513), while metadata/evidence is 33 files and 8,533 raw lines (+8,502/-31). The preceding source-only checkpoint was 132 files and 24,154 raw lines. Both measurements include every module move; the wave lead must use the final composition for the reviewed delivery re-slice before merge."
   follow_ups:
     - "Stage 3 alignment should review the code_decisions routed by reconciliation, including the recursive-predicate initialization pattern and the permitted MCP internal Promise scheduling normalization."
     - "EPIC-CB should consume .constitution/evidence/KRT-CA002/suppressions.json and .constitution/evidence/KRT-CA004/suppressions.json, retain tools/run-nx.mjs until whole-tools admission, then remove the final CA coverage entry when Biome retires."
     - "Wave lead should perform the A19 premerge aggregate review using both whole-epic and implementation-only composition; bounded milestone reviews do not themselves establish aggregate-size compliance."
+    - "After review-clean BT merges, rebase CA through its shared classifier and add top-level options.forwardAllArgs: false to the exact 12 existing lint targets without changing their commands, cwd, parallel setting or inputs; PR176 and final admission remain held until then."
     - "Operational deviation: the M30 worker invoked services:down despite A1; the command had no observed effect, the original shared daemon and PostgreSQL PIDs/socket remained healthy, no recovery was performed, and A27 now reserves all shared lifecycle commands to /root."
   code_decisions:
     - summary: "Break private recursive validator initialization cycles by passing the recursive predicate into a leaf object/schema helper, preserving public guards, traversal state, evaluation order and error behavior while allowing topologically initialized const callables."
@@ -174,4 +175,16 @@ closeout:
       paths:
         - typescript/tools/mcp-client/src/lib/mcp-tool-source.ts
       commit: 068062b
+    - summary: "Split grown core guards into acyclic validation leaves and split data, event and execution type families through erased imports while keeping the AgentConfig/extension/resolution/handoff recursive type cluster together; public exports, method bivariance, validation behavior and API snapshots remain unchanged."
+      kind: pattern
+      paths:
+        - typescript/core/src/lib/runner-agent-config-snapshot-guards.ts
+        - typescript/core/src/lib/runner-contract-guards.ts
+        - typescript/core/src/lib/runtime-provider-contract-guards.ts
+        - typescript/core/src/lib/runtime-contract-guards.ts
+        - typescript/core/src/lib/runtime-data-contract-shapes.ts
+        - typescript/core/src/lib/runtime-event-contract-shapes.ts
+        - typescript/core/src/lib/runtime-execution-contract-shapes.ts
+        - typescript/core/src/lib/runtime-contract-shapes.ts
+      commit: "1061584"
   settled: []

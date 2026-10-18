@@ -1,12 +1,16 @@
 {
   "schema_version": 1,
   "ticket": "KRT-CA004",
-  "milestone": "M33-ticket-final",
+  "milestone": "M38-final-source-freeze",
   "source": {
     "authoritative_predecessor": "5b9fdbb5e1b8b972470a809586f217c2a62c3f31",
     "stale_dispatch_predecessor": "5a395892cc76e3129278d30799f1cffeb16074bc",
     "dispatch_correction": "A25 established reviewed M32 HEAD as the authoritative M33 predecessor; the stale M31 dispatch value is not a source identity.",
-    "frozen_candidate_diff_sha256": "99695038d6460a0018459d753deb07f14b6c83758a86af91c353aacee8d1d5fd"
+    "frozen_candidate_diff_sha256": "99695038d6460a0018459d753deb07f14b6c83758a86af91c353aacee8d1d5fd",
+    "m38_source_commit": "1061584080a496bb852f8c4e640524b7f2887555",
+    "m38_patch_sha256": "4edae63d580da8b1212b654cfb0c9c7a3c03b262a8c9ec4ed8ab23a9cece0815",
+    "m38_stable_patch_id": "f540f9f4671119986b949e3cf1541529f69aed05",
+    "m38_note": "M34-M38 split grown core guards and type families without changing the public API; final forwarding acceptance remains held."
   },
   "source_reports": [
     {
@@ -40,14 +44,18 @@
     {
       "path": ".constitution/evidence/KRT-CA004/M31-telemetry-readiness.json",
       "sha256": "c82b00c22ab3595f0130460800e965c91995133a036c523dd744bfcbbc4fe135"
+    },
+    {
+      "path": ".constitution/evidence/KRT-CA004/M38-final-source-summary.json",
+      "sha256": "de511416bef2e52dae7227f9bb78e91c9fb916a20c145301c1ac88e867045483"
     }
   ],
   "native_exceptions": {
-    "region_count": 162,
+    "region_count": 164,
     "all_firing": true,
     "unused_directive_diagnostics": 0,
     "config_overrides": 0,
-    "proof": "The unchanged shipped Oxlint preset, full repository lint, and the explicit certification type-aware unused-directive denial all exited zero on the frozen candidate.",
+    "proof": "The unchanged shipped Oxlint preset, exact directive probes, full lint, canonical locked check and sole canonical locked full verify all exited zero at review-clean M38 source commit 1061584; unsuppressed probes measured every retained counterpart and the event leaf no-counterpart disposition.",
     "regions": [
       {
         "identity": "typescript/certification/test/framework-typescript-conformance.test.ts:112",
@@ -190,19 +198,46 @@
         "disposition": "retained-contract-preserving-measured-firing-native-exception"
       },
       {
-        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:28",
+        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:49",
+        "original_identity": "typescript/core/src/lib/runtime-contract-shapes.ts:28",
         "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
-        "line": 28,
+        "line": 49,
         "rules": [
           "typescript/method-signature-style"
         ],
         "reason": "Preserve the frozen public method signatures and their method bivariance under strictFunctionTypes.",
-        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+        "disposition": "retained-contract-preserving-measured-firing-native-exception",
+        "measured_declarations": 13
       },
       {
-        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:50",
-        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
-        "line": 50,
+        "identity": "typescript/core/src/lib/runtime-data-contract-shapes.ts:19",
+        "original_identity": "typescript/core/src/lib/runtime-contract-shapes.ts:28",
+        "path": "typescript/core/src/lib/runtime-data-contract-shapes.ts",
+        "line": 19,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the frozen public method signatures and their method bivariance under strictFunctionTypes.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception",
+        "measured_declarations": 6
+      },
+      {
+        "identity": "typescript/core/src/lib/runtime-execution-contract-shapes.ts:33",
+        "original_identity": "typescript/core/src/lib/runtime-contract-shapes.ts:28",
+        "path": "typescript/core/src/lib/runtime-execution-contract-shapes.ts",
+        "line": 33,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the frozen public method signatures and their method bivariance under strictFunctionTypes.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception",
+        "measured_declarations": 23
+      },
+      {
+        "identity": "typescript/core/src/lib/runtime-data-contract-shapes.ts:41",
+        "original_identity": "typescript/core/src/lib/runtime-contract-shapes.ts:50",
+        "path": "typescript/core/src/lib/runtime-data-contract-shapes.ts",
+        "line": 41,
         "rules": [
           "typescript/consistent-indexed-object-style"
         ],
@@ -210,9 +245,10 @@
         "disposition": "retained-contract-preserving-measured-firing-native-exception"
       },
       {
-        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:64",
-        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
-        "line": 64,
+        "identity": "typescript/core/src/lib/runtime-data-contract-shapes.ts:55",
+        "original_identity": "typescript/core/src/lib/runtime-contract-shapes.ts:64",
+        "path": "typescript/core/src/lib/runtime-data-contract-shapes.ts",
+        "line": 55,
         "rules": [
           "typescript/ban-types"
         ],
@@ -220,9 +256,10 @@
         "disposition": "retained-contract-preserving-measured-firing-native-exception"
       },
       {
-        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:77",
+        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:62",
+        "original_identity": "typescript/core/src/lib/runtime-contract-shapes.ts:77",
         "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
-        "line": 77,
+        "line": 62,
         "rules": [
           "typescript/ban-types"
         ],
@@ -230,9 +267,10 @@
         "disposition": "retained-contract-preserving-measured-firing-native-exception"
       },
       {
-        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:1116",
+        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:211",
+        "original_identity": "typescript/core/src/lib/runtime-contract-shapes.ts:1116",
         "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
-        "line": 1116,
+        "line": 211,
         "rules": [
           "typescript/no-redundant-type-constituents"
         ],
@@ -240,9 +278,10 @@
         "disposition": "retained-contract-preserving-measured-firing-native-exception"
       },
       {
-        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:1760",
+        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:855",
+        "original_identity": "typescript/core/src/lib/runtime-contract-shapes.ts:1760",
         "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
-        "line": 1760,
+        "line": 855,
         "rules": [
           "typescript/no-redundant-type-constituents"
         ],
@@ -2086,7 +2125,7 @@
     "project_count": 12,
     "oxc_project_count": 11,
     "json_only_project_count": 1,
-    "selected_code_count": 107,
+    "selected_code_count": 112,
     "selected_code_files": [
       "typescript/certification/test/framework-typescript-conformance.test.ts",
       "typescript/core/src/capabilities/index.ts",
@@ -2099,6 +2138,7 @@
       "typescript/core/src/lib/capability-shapes.ts",
       "typescript/core/src/lib/kernel-records.ts",
       "typescript/core/src/lib/payload-codec.ts",
+      "typescript/core/src/lib/runner-agent-config-snapshot-guards.ts",
       "typescript/core/src/lib/runner-contract-guards.ts",
       "typescript/core/src/lib/runner-contract-shapes.ts",
       "typescript/core/src/lib/runner-contracts.ts",
@@ -2107,6 +2147,10 @@
       "typescript/core/src/lib/runtime-contract-guards.ts",
       "typescript/core/src/lib/runtime-contract-predicates.ts",
       "typescript/core/src/lib/runtime-contract-shapes.ts",
+      "typescript/core/src/lib/runtime-data-contract-shapes.ts",
+      "typescript/core/src/lib/runtime-event-contract-shapes.ts",
+      "typescript/core/src/lib/runtime-execution-contract-shapes.ts",
+      "typescript/core/src/lib/runtime-provider-contract-guards.ts",
       "typescript/core/src/lib/scope.ts",
       "typescript/core/src/lib/secret-pattern-screening.ts",
       "typescript/core/src/lib/tuvren-error.ts",
@@ -2290,7 +2334,7 @@
             "parallel": false
           }
         },
-        "code_count": 42,
+        "code_count": 47,
         "code_files": [
           "typescript/core/src/capabilities/index.ts",
           "typescript/core/src/errors/index.ts",
@@ -2302,6 +2346,7 @@
           "typescript/core/src/lib/capability-shapes.ts",
           "typescript/core/src/lib/kernel-records.ts",
           "typescript/core/src/lib/payload-codec.ts",
+          "typescript/core/src/lib/runner-agent-config-snapshot-guards.ts",
           "typescript/core/src/lib/runner-contract-guards.ts",
           "typescript/core/src/lib/runner-contract-shapes.ts",
           "typescript/core/src/lib/runner-contracts.ts",
@@ -2310,6 +2355,10 @@
           "typescript/core/src/lib/runtime-contract-guards.ts",
           "typescript/core/src/lib/runtime-contract-predicates.ts",
           "typescript/core/src/lib/runtime-contract-shapes.ts",
+          "typescript/core/src/lib/runtime-data-contract-shapes.ts",
+          "typescript/core/src/lib/runtime-event-contract-shapes.ts",
+          "typescript/core/src/lib/runtime-execution-contract-shapes.ts",
+          "typescript/core/src/lib/runtime-provider-contract-guards.ts",
           "typescript/core/src/lib/scope.ts",
           "typescript/core/src/lib/secret-pattern-screening.ts",
           "typescript/core/src/lib/tuvren-error.ts",

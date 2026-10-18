@@ -3,8 +3,8 @@ mode: contract_test
 result: pass
 produced:
   date: '2026-10-18'
-  commit: 5b9fdbb5e1b8b972470a809586f217c2a62c3f31
-  command: 'M24 through M33 native admission and readiness; package-native lint and JSON checking; build, source-only typecheck, tests, API freeze and export smoke; routing and partition controls; framework/provider/telemetry conformance; bun run lint; bun run check; bun run changeset:check --base=master; bun run format:check; bun run api-freeze:check; canonical locked bun run verify'
+  commit: 1061584080a496bb852f8c4e640524b7f2887555
+  command: 'M24 through M33 native admission and M34 through M38 core source correction; package-native lint and JSON checking; build, source-only typecheck, tests, API freeze and export smoke; exact native directive probes; downstream typechecks; framework/provider/telemetry conformance; bun run lint; canonical locked bun run check --base=7004e9b7b505482802ec724167aa4968587850a3; bun run changeset:check --base=master; canonical locked bun run verify'
 files:
   - path: M24-core-readiness.json
     sha256: 221d0f71aee93a43c5c5514db9ef20bc02dfe33386ff734efa749ee50ac58029
@@ -42,8 +42,12 @@ files:
     sha256: c451bb14f5bb1fd16aaa86382537e114454bb84cb4d1b15a75f49daf57394709
     bytes: 23664
     role: measurement
-  - path: suppressions.json
-    sha256: 33bebdf3086cb9966930f6a151390e69357385cfa1e75a582e734163067b5dcf
-    bytes: 126891
+  - path: M38-final-source-summary.json
+    sha256: de511416bef2e52dae7227f9bb78e91c9fb916a20c145301c1ac88e867045483
+    bytes: 7439
     role: measurement
-pass_criteria: All 12 final project targets are canonical (11 exact Oxlint-plus-JSON targets and one exact JSON-only target); the complete 107-code and 76-JSON selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics, resolution errors and unused directives; all 162 firing native exception regions and 36 legacy Biome removals are reconciled with measured reasons; ca.json retains only tools/run-nx.mjs for EPIC-CB; public API, explicitly protected Promise identities, queue and iterator behavior, MCP pagination, testkit fixture lookup and telemetry capture, transport lifecycle, telemetry attributes and operation order, event and error ordering, schema boundaries, generated artifacts and release metadata remain aligned; permitted incidental internal Promise scheduling normalization, PR review fixes and the M30 service-lifecycle deviation are recorded; lint, check, changeset, formatting, API freeze and the canonical locked full verify pass on the frozen implementation, with focused verification for later review fixes.
+  - path: suppressions.json
+    sha256: 733441cf3094c399e61339b8fd754a4a3fd2a7cba045d75a50117e2086a46503
+    bytes: 130067
+    role: measurement
+pass_criteria: The 12 project targets retain their canonical commands (11 exact Oxlint-plus-JSON targets and one exact JSON-only target); the complete 112-code and 76-JSON selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics, resolution errors and unused directives; all 164 firing native exception regions and 36 legacy Biome removals are reconciled with measured reasons; every changed core TypeScript source is at most 1000 formatter-clean physical lines; ca.json retains only tools/run-nx.mjs for EPIC-CB; public API, explicitly protected Promise identities, queue and iterator behavior, MCP pagination, testkit fixture lookup and telemetry capture, transport lifecycle, telemetry attributes and operation order, event and error ordering, schema boundaries, generated artifacts and release metadata remain aligned; lint, check, changeset, API freeze and the sole canonical locked full verify pass on the review-clean M38 source freeze. Final current acceptance remains held until review-clean BT merges, CA rebases through its shared classifier, and top-level options.forwardAllArgs false is added to the same 12 targets without changing command, cwd, parallel or inputs.
