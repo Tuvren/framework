@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 /**
  * KRT-AX005: Trace and audit signals for Tuvren-server invocations.
  *
@@ -42,38 +40,36 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   textSignal,
+  toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-const makeRunner = (toolName: string, input: unknown = {}): RuntimeRunner => {
-  return {
-    async execute(context) {
-      if (!context.messages.some((m) => m.role === "tool")) {
-        return {
-          messages: [
-            assistantToolCalls([
-              { callId: "call-ax005", input, name: toolName },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" },
-          toolExecutionMode: "parallel",
-        };
-      }
+const makeRunner = (toolName: string, input: unknown = {}): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    if (!context.messages.some((m) => m.role === "tool")) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
+        messages: [
+          assistantToolCalls([{ callId: "call-ax005", input, name: toolName }]),
+        ],
+        resolution: { type: "continue_iteration" },
+        toolExecutionMode: "parallel",
       };
-    },
-    id: "ax005-runner",
-    async resume() {
-      throw new Error("no");
-    },
-  };
-};
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    };
+  }),
+  id: "ax005-runner",
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("no");
+  }),
+});
 
 const runWithTool = async (
   tool: TuvrenToolDefinition,
@@ -93,18 +89,20 @@ const runWithTool = async (
     signal: textSignal("ax005 test"),
     threadId: thread.threadId,
   });
-  return collectEvents(handle.events());
+  return await collectEvents(handle.events());
 };
 
-const findAuditEvents = (events: unknown[]) => {
-  return events.filter(
-    (e) =>
-      typeof e === "object" &&
-      e !== null &&
-      "type" in e &&
-      (e as Record<string, unknown>).type === "tool.audit"
-  ) as Record<string, unknown>[];
-};
+const findAuditEvents = (events: unknown[]) =>
+  events
+    .filter(
+      (e) =>
+        typeof e === "object" &&
+        e !== null &&
+        "type" in e &&
+        e.type === "tool.audit"
+    )
+    .map(toOptionalRecord)
+    .filter((event) => event !== undefined);
 
 // ---------------------------------------------------------------------------
 // Lifecycle audit signals
@@ -166,33 +164,7 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
       name: "ax005-input-fail",
     };
 
-    const runner: RuntimeRunner = {
-      async execute(context) {
-        if (!context.messages.some((m) => m.role === "tool")) {
-          return {
-            messages: [
-              assistantToolCalls([
-                {
-                  callId: "call-ax005",
-                  input: { bad: "field" },
-                  name: tool.name,
-                },
-              ]),
-            ],
-            resolution: { type: "continue_iteration" },
-            toolExecutionMode: "parallel",
-          };
-        }
-        return {
-          messages: [assistantText("done")],
-          resolution: { reason: "done", type: "end_turn" },
-        };
-      },
-      id: "ax005-runner",
-      async resume() {
-        throw new Error("no");
-      },
-    };
+    const runner = makeRunner(tool.name, { bad: "field" });
 
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
@@ -276,7 +248,7 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
     };
 
     const runner: RuntimeRunner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const toolMessages = context.messages.filter((m) => m.role === "tool");
         if (toolMessages.length < 2) {
           return {
@@ -297,11 +269,11 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
           messages: [assistantText("done")],
           resolution: { reason: "done", type: "end_turn" },
         };
-      },
+      }),
       id: "ax005-runner",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("no");
-      },
+      }),
     };
 
     const runtime = createTuvrenRuntime({

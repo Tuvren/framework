@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 /**
  * KRT-BG004 — No-retry-on-authority-loss + client-result-as-proposal (ADR-0052).
  *
@@ -51,7 +49,6 @@ import type {
   ClientReportedResult,
 } from "@tuvren/core/capabilities";
 import { CAPABILITY_RESULT_STALE } from "@tuvren/core/errors";
-import type { ToolResultPart } from "@tuvren/core/messages";
 import type { RuntimeRunner } from "@tuvren/core/runner";
 import type {
   ToolExecutionContext,
@@ -73,7 +70,9 @@ import {
   assistantToolCalls,
   collectEvents,
   extractToolMessages,
+  fromSynchronousVariadicAwaited,
   textSignal,
+  toOptionalRecord,
   waitForAbort,
 } from "./runtime-core-test-helpers.ts";
 
@@ -81,31 +80,29 @@ import {
 // Shared helpers — a runner that issues exactly one tool call, then ends.
 // ---------------------------------------------------------------------------
 
-const makeRunner = (toolName: string): RuntimeRunner => {
-  return {
-    async execute(context) {
-      if (!context.messages.some((m) => m.role === "tool")) {
-        return {
-          messages: [
-            assistantToolCalls([
-              { callId: "call-bg004", input: {}, name: toolName },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" },
-          toolExecutionMode: "parallel",
-        };
-      }
+const makeRunner = (toolName: string): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    if (!context.messages.some((m) => m.role === "tool")) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
+        messages: [
+          assistantToolCalls([
+            { callId: "call-bg004", input: {}, name: toolName },
+          ]),
+        ],
+        resolution: { type: "continue_iteration" },
+        toolExecutionMode: "parallel",
       };
-    },
-    id: "bg004-runner",
-    async resume() {
-      throw new Error("resume not expected");
-    },
-  };
-};
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    };
+  }),
+  id: "bg004-runner",
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("resume not expected");
+  }),
+});
 
 /**
  * Run a single in-flight tool under a leased runtime whose lease renewal always
@@ -114,13 +111,13 @@ const makeRunner = (toolName: string): RuntimeRunner => {
  */
 const runWithLeaseLoss = async (
   tool: TuvrenToolDefinition,
-  toolStarted: Promise<void>
+  toolStarted: Promise<unknown>
 ) => {
   const harness = createFakeKernelHarness();
   const livenessHarness = createFakeRunLivenessKernelHarness(harness, {
-    onRenewLease: async () => {
+    onRenewLease: fromSynchronousVariadicAwaited(() => {
       throw new Error("lease preempted by a peer worker");
-    },
+    }),
   });
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "bg004-runner",
@@ -142,7 +139,7 @@ const runWithLeaseLoss = async (
 
   // Failure on lost authority surfaces as a rejected event stream; swallow it so
   // the assertions can inspect durable state.
-  const eventsPromise = collectEvents(handle.events()).catch(() => undefined);
+  const eventsPromise = collectEvents(handle.events()).catch(() => null);
   await toolStarted;
   await eventsPromise;
 
@@ -152,31 +149,18 @@ const runWithLeaseLoss = async (
 const committedToolOutputValue = (
   messages: Awaited<ReturnType<FakeReadBranchMessages>>,
   value: unknown
-): boolean => {
-  return extractToolMessages(messages).some((m) =>
-    m.parts.some(
-      (p) =>
-        typeof p.output === "object" &&
-        p.output !== null &&
-        "value" in (p.output as Record<string, unknown>) &&
-        (p.output as Record<string, unknown>).value === value
-    )
+): boolean =>
+  extractToolMessages(messages).some((m) =>
+    m.parts.some((p) => toOptionalRecord(p.output)?.value === value)
   );
-};
 
 /** True when any committed tool message carries a client success ({committed:true}). */
 const committedClientSuccess = (
   messages: Awaited<ReturnType<FakeReadBranchMessages>>
-): boolean => {
-  return extractToolMessages(messages).some((m) =>
-    m.parts.some(
-      (p) =>
-        typeof p.output === "object" &&
-        p.output !== null &&
-        (p.output as Record<string, unknown>).committed === true
-    )
+): boolean =>
+  extractToolMessages(messages).some((m) =>
+    m.parts.some((p) => toOptionalRecord(p.output)?.committed === true)
   );
-};
 
 /**
  * Drive a real client-endpoint dispatch through a leased runtime whose lease is
@@ -191,10 +175,9 @@ const runClientDispatchWithLeaseLoss = async (
   onDispatch: () => void
 ) => {
   const harness = createFakeKernelHarness();
-  let releaseDispatch: (() => void) | undefined;
-  const dispatchHeld = new Promise<void>((resolve) => {
-    releaseDispatch = resolve;
-  });
+  const authorityOrder: string[] = [];
+  const { promise: dispatchHeld, resolve: releaseDispatch } =
+    Promise.withResolvers<null>();
 
   const endpoint: AttachedClientEndpoint = {
     advertisedCapabilities: [
@@ -211,6 +194,7 @@ const runClientDispatchWithLeaseLoss = async (
       // Hold the in-flight dispatch open until the run loses its lease, so the
       // reported result returns into an already-aborted (dead-owner) context.
       await dispatchHeld;
+      authorityOrder.push("dispatch-released");
       return {
         callId: envelope.callId,
         content: { committed: true },
@@ -221,7 +205,8 @@ const runClientDispatchWithLeaseLoss = async (
   };
 
   const livenessHarness = createFakeRunLivenessKernelHarness(harness, {
-    onRenewLease: async () => {
+    onRenewLease: fromSynchronousVariadicAwaited(() => {
+      authorityOrder.push("lease-rejected");
       // Release the held dispatch on a macrotask so it resolves into an aborted
       // context and the run-authority gate fires. This is ordered, not raced: the
       // event loop drains all microtasks before any macrotask, and this rejection
@@ -229,9 +214,11 @@ const runClientDispatchWithLeaseLoss = async (
       // handle.abortWithError (a microtask chain), so the abort always lands
       // first. If that abort is ever deferred behind a macrotask/await boundary,
       // replace this with an explicit await-on-abort handshake.
-      setTimeout(() => releaseDispatch?.(), 0);
+      setTimeout(() => {
+        releaseDispatch(null);
+      }, 0);
       throw new Error("lease preempted by a peer worker");
-    },
+    }),
   });
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "bg004-runner",
@@ -251,9 +238,9 @@ const runClientDispatchWithLeaseLoss = async (
     threadId: thread.threadId,
   });
 
-  await collectEvents(handle.events()).catch(() => undefined);
+  await collectEvents(handle.events()).catch(() => null);
 
-  return { branchId: thread.branchId, harness };
+  return { authorityOrder, branchId: thread.branchId, harness };
 };
 
 // ---------------------------------------------------------------------------
@@ -263,39 +250,40 @@ const runClientDispatchWithLeaseLoss = async (
 const makeRecordingEndpoint = (
   capabilityId: string,
   onDispatch: () => void
-): AttachedClientEndpoint => {
-  return {
-    advertisedCapabilities: [
-      {
-        capabilityId,
-        description: "side-effecting client capability",
-        inputSchema: { type: "object" },
-      },
-    ],
-    async dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
+): AttachedClientEndpoint => ({
+  advertisedCapabilities: [
+    {
+      capabilityId,
+      description: "side-effecting client capability",
+      inputSchema: { type: "object" },
+    },
+  ],
+  dispatch: fromSynchronousVariadicAwaited(
+    (envelope: ClientInvocationEnvelope): ClientReportedResult => {
       onDispatch();
       return {
         callId: envelope.callId,
         content: { committed: true },
         leaseToken: envelope.leaseToken,
       };
-    },
-    endpointId: "bg004-endpoint",
-  };
-};
+    }
+  ),
+  endpointId: "bg004-endpoint",
+});
 
 const makeContext = (
   callId: string,
-  signal: AbortSignal | undefined
-): ToolExecutionContext => {
-  return {
-    callId,
-    name: "cap.side-effect",
-    signal,
-  };
-};
+  signal: AbortSignal
+): ToolExecutionContext => ({
+  callId,
+  name: "cap.side-effect",
+  signal,
+});
+
+const makeContextWithoutSignal = (callId: string): ToolExecutionContext => ({
+  callId,
+  name: "cap.side-effect",
+});
 type FakeReadBranchMessages = ReturnType<
   typeof createFakeKernelHarness
 >["readBranchMessages"];
@@ -308,16 +296,14 @@ describe("KRT-BG004 — no retry under lost run authority", () => {
   test("an in-flight nonRetryable invocation is not retried and its late completion is not committed when the lease is lost", async () => {
     const LATE_VALUE = "nonretryable-late-after-lease-loss";
     let callCount = 0;
-    let releaseStarted: (() => void) | undefined;
-    const toolStarted = new Promise<void>((resolve) => {
-      releaseStarted = resolve;
-    });
+    const { promise: toolStarted, resolve: releaseStarted } =
+      Promise.withResolvers<null>();
 
     const tool: TuvrenToolDefinition = {
       description: "nonRetryable side-effecting tool",
       async execute(_input, context) {
         callCount += 1;
-        releaseStarted?.();
+        releaseStarted(null);
         await waitForAbort(context.signal);
         return { value: LATE_VALUE };
       },
@@ -338,16 +324,14 @@ describe("KRT-BG004 — no retry under lost run authority", () => {
 
   test("an in-flight idempotent invocation is not retried once run authority is lost", async () => {
     let callCount = 0;
-    let releaseStarted: (() => void) | undefined;
-    const toolStarted = new Promise<void>((resolve) => {
-      releaseStarted = resolve;
-    });
+    const { promise: toolStarted, resolve: releaseStarted } =
+      Promise.withResolvers<null>();
 
     const tool: TuvrenToolDefinition = {
       description: "idempotent tool with a generous retry budget",
       async execute(_input, context) {
         callCount += 1;
-        releaseStarted?.();
+        releaseStarted(null);
         await waitForAbort(context.signal);
         // A retriable failure that WOULD consume the retry budget — but the
         // abort-break must abandon retries the moment authority is lost.
@@ -374,38 +358,37 @@ describe("KRT-BG004 — client-result-as-proposal", () => {
       dispatchCount += 1;
     });
     const boundary = createClientEndpointBoundary([endpoint]);
-    const tool = buildClientEndpointTools([endpoint], boundary)[0];
+    const [tool] = buildClientEndpointTools([endpoint], boundary);
 
-    const result = (await tool.execute(
-      {},
-      makeContext("call-proposal", AbortSignal.abort())
-    )) as ToolResultPart;
+    if (tool === undefined) {
+      throw new Error("expected a generated client endpoint tool");
+    }
+
+    const result = toOptionalRecord(
+      await tool.execute({}, makeContext("call-proposal", AbortSignal.abort()))
+    );
+    const output = toOptionalRecord(result?.output);
 
     // The side effect may have fired on the client — but the reported result is
     // a proposal that must not become committed history under the dead owner.
     expect(dispatchCount).toBe(1);
-    expect(result.isError).toBe(true);
-    expect((result.output as Record<string, unknown>).code).toBe(
-      CAPABILITY_RESULT_STALE
-    );
+    expect(result?.isError).toBe(true);
+    expect(output?.code).toBe(CAPABILITY_RESULT_STALE);
     // The run-authority rejection is distinguishable from a per-dispatch token
     // mismatch (which shares CAPABILITY_RESULT_STALE) by the reason field.
-    expect((result.output as Record<string, unknown>).reason).toBe(
-      "run_authority_lost"
-    );
+    expect(output?.reason).toBe("run_authority_lost");
   });
 
   test("a client-reported result returning after lease loss does not mutate committed history", async () => {
     let dispatchCount = 0;
-    const { branchId, harness } = await runClientDispatchWithLeaseLoss(
-      capabilityId,
-      () => {
+    const { authorityOrder, branchId, harness } =
+      await runClientDispatchWithLeaseLoss(capabilityId, () => {
         dispatchCount += 1;
-      }
-    );
+      });
 
     // The client dispatch fired its side effect exactly once...
     expect(dispatchCount).toBe(1);
+    expect(authorityOrder).toEqual(["lease-rejected", "dispatch-released"]);
     // ...but the reported result is a proposal: under the dead owner it is never
     // committed to durable history, so nothing in the branch carries the
     // client's {committed:true} success.
@@ -419,15 +402,19 @@ describe("KRT-BG004 — client-result-as-proposal", () => {
       dispatchCount += 1;
     });
     const boundary = createClientEndpointBoundary([endpoint]);
-    const tool = buildClientEndpointTools([endpoint], boundary)[0];
+    const [tool] = buildClientEndpointTools([endpoint], boundary);
 
-    const result = (await tool.execute(
-      {},
-      makeContext("call-proposal", undefined)
-    )) as ToolResultPart;
+    if (tool === undefined) {
+      throw new Error("expected a generated client endpoint tool");
+    }
+
+    const result = toOptionalRecord(
+      await tool.execute({}, makeContextWithoutSignal("call-proposal"))
+    );
+    const output = toOptionalRecord(result?.output);
 
     expect(dispatchCount).toBe(1);
-    expect(result.isError).toBe(false);
-    expect((result.output as Record<string, unknown>).committed).toBe(true);
+    expect(result?.isError).toBe(false);
+    expect(output?.committed).toBe(true);
   });
 });
