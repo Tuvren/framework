@@ -1,0 +1,12 @@
+owner: KRT-CW001
+mode: contract_test
+produced:
+  date: 2026-10-18
+  commit: 293db6ba3915e5938d4d909ce8a7b8bca8334b06
+  command: direnv exec . bun run typecheck
+  host: local devenv; Bun 1.4.2, TypeScript 6.0.2, Biome 2.5.14, Nx 22.7.12
+result: pass
+files:
+  - path: summary.json
+    role: summary
+pass_criteria: The nine owned files match measured tree 2d920ce7182804d0edadac478544c469c17de009, adapter and workspace typechecks pass, retained Biome passes with six historical directives, the framework adapter imports in a fresh process, and no live sibling source or out-of-scope file is used.

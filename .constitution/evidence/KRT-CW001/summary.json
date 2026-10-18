@@ -1,0 +1,65 @@
+{
+  "ticket": "KRT-CW001",
+  "result": "pass",
+  "source": {
+    "baseCommit": "8c4f6509078220aeb47146536455c7c3476cbf66",
+    "frozenByCommit": "0efb4c0c3b314673ece9e9ac9931c50ddce2cb6f",
+    "measuredTree": "2d920ce7182804d0edadac478544c469c17de009",
+    "milestoneCommit": "293db6ba3915e5938d4d909ce8a7b8bca8334b06",
+    "milestoneTree": "1844a290a547e408b0f7b1957eac8b3d26fafcd9",
+    "candidateDiffSha256": "92691564942d7efab5da8dcc257b15830fef411a009b25b83fc8318621dec487"
+  },
+  "scope": {
+    "filesChanged": 9,
+    "insertions": 3505,
+    "deletions": 3446,
+    "rawChangedLines": 6951,
+    "proofTreeModeAndBlobMatches": 9,
+    "outOfScopeFilesChanged": 0,
+    "liveSiblingSourceFiles": 0,
+    "retainedBiomeDirectives": 6
+  },
+  "checks": [
+    {
+      "command": "direnv exec . bun run nx run framework-typescript-conformance-adapter:typecheck",
+      "exitCode": 0,
+      "outcome": "Framework adapter typecheck and cached kernel interop prerequisite passed."
+    },
+    {
+      "command": "direnv exec . bun run nx run framework-typescript-conformance-adapter:lint",
+      "exitCode": 0,
+      "outcome": "Retained Biome checked 35 files without fixes; all six historical directives remain."
+    },
+    {
+      "command": "direnv exec . bun -e 'await import(\"./typescript/conformance-adapter/src/framework-adapter.ts\")'",
+      "exitCode": 0,
+      "outcome": "Fresh-process framework adapter import passed."
+    },
+    {
+      "command": "direnv exec . bun run typecheck",
+      "exitCode": 0,
+      "outcome": "All 33 workspace projects and the interop prerequisite passed."
+    },
+    {
+      "command": "TypeScript --listFilesOnly for typescript/conformance-adapter",
+      "exitCode": 0,
+      "outcome": "All 783 compiler files resolved inside this checkout; none resolved from a live sibling source checkout."
+    },
+    {
+      "command": "Shared conformance harness with explicit existing check IDs for the changed dispatch, orchestration, runner, execution-class, capability, and bounds surfaces",
+      "exitCode": 0,
+      "outcome": "Independent milestone review passed 123 of 123 applicable checks with zero failures."
+    },
+    {
+      "command": "direnv exec . bun run /home/oscar/.codex/skills/constitution-tooling/scripts/cli.ts validate --root .",
+      "exitCode": 0,
+      "outcome": "Constitution validation reported zero errors and zero warnings."
+    }
+  ],
+  "review": {
+    "model": "gpt-6.1-sol",
+    "commit": "293db6ba3915e5938d4d909ce8a7b8bca8334b06",
+    "coverage": "Every changed file and meaningful assertion, including cross-file initialization and async cleanup interactions.",
+    "findings": []
+  }
+}
