@@ -37,8 +37,24 @@ import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
   assistantText,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   textSignal,
 } from "./runtime-core-test-helpers.ts";
+
+const createArbitraryThrower = function* createArbitraryThrower(): Generator<
+  undefined,
+  void,
+  unknown
+> {
+  yield;
+};
+
+const throwArbitraryValue = (value: unknown): never => {
+  const thrower = createArbitraryThrower();
+  thrower.next();
+  thrower.throw(value);
+  throw new Error("expected the generator to throw the supplied value");
+};
 
 const createTelemetryCapture = (): {
   events: TelemetryEvent[];
@@ -99,16 +115,14 @@ const runTelemetryTurn = async (
 ): Promise<{ events: TuvrenStreamEvent[]; phase: string }> => {
   const harness = createFakeKernelHarness();
   const runner = {
-    execute() {
-      return Promise.resolve({
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
-      });
-    },
+    execute: fromSynchronousVariadicAwaited(() => ({
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    })),
     id: "fake",
-    resume() {
-      return Promise.reject(new Error("resume was not expected"));
-    },
+    resume: fromSynchronousVariadicAwaited(() => {
+      throw new Error("resume was not expected");
+    }),
   } satisfies RuntimeRunner;
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
@@ -141,16 +155,14 @@ describe("runtime operational telemetry", () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
     const runner = {
-      execute() {
-        return Promise.resolve({
-          messages: [assistantText("done")],
-          resolution: { reason: "done", type: "end_turn" },
-        });
-      },
+      execute: fromSynchronousVariadicAwaited(() => ({
+        messages: [assistantText("done")],
+        resolution: { reason: "done", type: "end_turn" },
+      })),
       id: "fake",
-      resume() {
-        return Promise.reject(new Error("resume was not expected"));
-      },
+      resume: fromSynchronousVariadicAwaited(() => {
+        throw new Error("resume was not expected");
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -198,16 +210,14 @@ describe("runtime operational telemetry", () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
     const runner = {
-      execute() {
-        return Promise.resolve({
-          messages: [assistantText("done")],
-          resolution: { reason: "done", type: "end_turn" },
-        });
-      },
+      execute: fromSynchronousVariadicAwaited(() => ({
+        messages: [assistantText("done")],
+        resolution: { reason: "done", type: "end_turn" },
+      })),
       id: "fake",
-      resume() {
-        return Promise.reject(new Error("resume was not expected"));
-      },
+      resume: fromSynchronousVariadicAwaited(() => {
+        throw new Error("resume was not expected");
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -251,16 +261,14 @@ describe("runtime operational telemetry", () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
     const runner = {
-      execute() {
-        return Promise.resolve({
-          messages: [assistantText("done")],
-          resolution: { reason: "done", type: "end_turn" },
-        });
-      },
+      execute: fromSynchronousVariadicAwaited(() => ({
+        messages: [assistantText("done")],
+        resolution: { reason: "done", type: "end_turn" },
+      })),
       id: "fake",
-      resume() {
-        return Promise.reject(new Error("resume was not expected"));
-      },
+      resume: fromSynchronousVariadicAwaited(() => {
+        throw new Error("resume was not expected");
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -302,16 +310,14 @@ describe("runtime operational telemetry", () => {
   test("isolates throwing telemetry sinks from runtime execution", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      execute() {
-        return Promise.resolve({
-          messages: [assistantText("done")],
-          resolution: { reason: "done", type: "end_turn" },
-        });
-      },
+      execute: fromSynchronousVariadicAwaited(() => ({
+        messages: [assistantText("done")],
+        resolution: { reason: "done", type: "end_turn" },
+      })),
       id: "fake",
-      resume() {
-        return Promise.reject(new Error("resume was not expected"));
-      },
+      resume: fromSynchronousVariadicAwaited(() => {
+        throw new Error("resume was not expected");
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -481,12 +487,11 @@ describe("runtime operational telemetry", () => {
     try {
       const destination: TelemetryDestination = {
         deliver() {
-          // biome-ignore lint/style/useThrowOnlyError: a non-Error throw whose string coercion itself throws is the regression under test (ADR-0058 §3 boundary hardening)
-          throw {
+          throwArbitraryValue({
             toString() {
               throw new Error("uncoercible");
             },
-          };
+          });
         },
         onOperationalSignal() {
           throw new Error("broken health callback");

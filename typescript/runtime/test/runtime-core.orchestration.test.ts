@@ -31,6 +31,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   buildHandoffPlan,
   collectEvents,
@@ -42,8 +43,8 @@ import {
 const _hasAssistantTextMessage = (
   messages: readonly unknown[],
   expectedText: string
-): boolean => {
-  return messages.some((message) => {
+): boolean =>
+  messages.some((message) => {
     const record = toOptionalRecord(message);
 
     if (record?.role !== "assistant" || !Array.isArray(record.parts)) {
@@ -55,13 +56,12 @@ const _hasAssistantTextMessage = (
       return partRecord?.type === "text" && partRecord.text === expectedText;
     });
   });
-};
 
 const _countUserTextMessages = (
   messages: readonly unknown[],
   expectedText: string
-): number => {
-  return messages.filter((message) => {
+): number =>
+  messages.filter((message) => {
     const record = toOptionalRecord(message);
 
     if (record?.role !== "user" || !Array.isArray(record.parts)) {
@@ -73,21 +73,18 @@ const _countUserTextMessages = (
       return partRecord?.type === "text" && partRecord.text === expectedText;
     });
   }).length;
-};
 
 const isKrakenRunnerFactory = (
   entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory => {
-  return "create" in entry && typeof entry.create === "function";
-};
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
 
-const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
-  return (result.messages ?? []).some(
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&
       message.parts.some((part) => part.type === "tool_call")
   );
-};
 
 const normalizeRunnerResult = (
   result: RunnerExecutionResult
@@ -106,7 +103,7 @@ const normalizeRunnerResult = (
 };
 
 const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
-  const { resume } = runner;
+  const resume = runner.resume?.bind(runner);
 
   return {
     async execute(context) {
@@ -140,9 +137,7 @@ const wrapRunnerEntry = (
 
 const createRunnerRegistry = (
   runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) => {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-};
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("applies handoffs through the shared runtime layer and swaps active agents", async () => {
     const harness = createFakeKernelHarness();
@@ -152,7 +147,7 @@ describe("framework-runtime-core", () => {
     };
     const handoffBuilder = createPreserveTraceHandoffContextBuilder();
     const handoffRunner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         if (context.config.name === "primary") {
           return {
             messages: [assistantText("Passing this to review.")],
@@ -176,11 +171,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -221,7 +216,7 @@ describe("framework-runtime-core", () => {
       },
     };
     const handoffRunner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         if (context.config.name === "primary") {
           return {
             messages: [assistantText("Pass this to the reviewer.")],
@@ -243,11 +238,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -285,47 +280,45 @@ describe("framework-runtime-core", () => {
       reviewer: { name: "reviewer" },
     };
     const handoffRunner = {
-      async execute(context) {
-        return {
-          messages: [],
-          resolution: {
-            contextPlan: {
-              builder() {
-                return ["missing-handoff-message"];
+      execute: fromSynchronousVariadicAwaited((context) => ({
+        messages: [],
+        resolution: {
+          contextPlan: {
+            builder() {
+              return ["missing-handoff-message"];
+            },
+            mode: "broken",
+            reason: "return a missing hash",
+            sourceContext: {
+              handoffIntent: {
+                targetAgent: "reviewer",
               },
-              mode: "broken",
-              reason: "return a missing hash",
-              sourceContext: {
-                handoffIntent: {
-                  targetAgent: "reviewer",
+              helpers: {
+                loadMessage() {
+                  return null;
                 },
-                helpers: {
-                  loadMessage() {
-                    return null;
-                  },
-                  storeMessage() {
-                    return "unused";
-                  },
-                  storeMessages() {
-                    return [];
-                  },
+                storeMessage() {
+                  return "unused";
                 },
-                manifest: context.manifest,
-                messages: context.messages,
-                sourceAgent: agents.primary,
-                targetAgent: agents.reviewer,
+                storeMessages() {
+                  return [];
+                },
               },
-              targetAgent: "reviewer",
+              manifest: context.manifest,
+              messages: context.messages,
+              sourceAgent: agents.primary,
+              targetAgent: agents.reviewer,
             },
             targetAgent: "reviewer",
-            type: "handoff",
           },
-        };
-      },
+          targetAgent: "reviewer",
+          type: "handoff",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -364,26 +357,24 @@ describe("framework-runtime-core", () => {
       reviewer: { name: "reviewer" },
     };
     const runner = {
-      async execute(context) {
-        return {
-          messages: [assistantText("Passing this to review.")],
-          resolution: {
-            contextPlan: context.handoff.createContextPlan({
-              builder() {
-                return ["missing-handoff-message"];
-              },
-              reason: "delegate",
-              targetAgent: "reviewer",
-            }),
+      execute: fromSynchronousVariadicAwaited((context) => ({
+        messages: [assistantText("Passing this to review.")],
+        resolution: {
+          contextPlan: context.handoff.createContextPlan({
+            builder() {
+              return ["missing-handoff-message"];
+            },
+            reason: "delegate",
             targetAgent: "reviewer",
-            type: "handoff",
-          },
-        };
-      },
+          }),
+          targetAgent: "reviewer",
+          type: "handoff",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -422,7 +413,7 @@ describe("framework-runtime-core", () => {
       reviewer: { name: "reviewer" },
     };
     const handoffRunner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         if (context.config.name === "primary") {
           return {
             messages: [assistantText("Passing this to review.")],
@@ -448,11 +439,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",

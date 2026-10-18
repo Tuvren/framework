@@ -29,6 +29,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   collectEvents,
   delay,
@@ -41,17 +42,15 @@ import {
 
 const isKrakenRunnerFactory = (
   entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory => {
-  return "create" in entry && typeof entry.create === "function";
-};
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
 
-const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
-  return (result.messages ?? []).some(
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&
       message.parts.some((part) => part.type === "tool_call")
   );
-};
 
 const normalizeRunnerResult = (
   result: RunnerExecutionResult
@@ -70,7 +69,7 @@ const normalizeRunnerResult = (
 };
 
 const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
-  const { resume } = runner;
+  const resume = runner.resume?.bind(runner);
 
   return {
     async execute(context) {
@@ -104,33 +103,31 @@ const wrapRunnerEntry = (
 
 const createRunnerRegistry = (
   runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) => {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-};
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("executes a runner-neutral turn and persists the input plus assistant output", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-1",
           role: "assistant",
           timestamp: context.runtime.now(),
           type: "message.start",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           delta: "Hello from Kraken.",
           messageId: "assistant-1",
           timestamp: context.runtime.now(),
           type: "text.delta",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-1",
           text: "Hello from Kraken.",
           timestamp: context.runtime.now(),
           type: "text.done",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           finishReason: "stop",
           messageId: "assistant-1",
           timestamp: context.runtime.now(),
@@ -146,9 +143,9 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -178,31 +175,25 @@ describe("framework-runtime-core", () => {
       await readBranchContextManifest(harness.kernel, thread.branchId)
     );
     expect(messages).toHaveLength(2);
-    expect(checkpointEventTypes).toEqual(
-      expect.arrayContaining([
-        "input_received",
-        "iteration_step_completed",
-        "turn_status_finalized",
-      ])
-    );
+    expect(checkpointEventTypes).toContain("input_received");
+    expect(checkpointEventTypes).toContain("iteration_step_completed");
+    expect(checkpointEventTypes).toContain("turn_status_finalized");
   });
 
   test("synthesizes assistant content events when a runner returns durable output without streaming it", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute() {
-        return {
-          messages: [assistantText("Visible without explicit runtime.emit.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited(() => ({
+        messages: [assistantText("Visible without explicit runtime.emit.")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -274,7 +265,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let executeCalls = 0;
     const runner = {
-      async execute(_context) {
+      execute: fromSynchronousVariadicAwaited((_context) => {
         executeCalls += 1;
         return {
           messages: [assistantText("Started on demand.")],
@@ -283,7 +274,7 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
@@ -344,7 +335,10 @@ describe("framework-runtime-core", () => {
     const firstEvent = await iterator.next();
 
     expect(firstEvent.done).toBe(false);
-    expect(firstEvent.value?.type).toBe("turn.start");
+    if (firstEvent.done === true) {
+      throw new Error("expected the event stream to yield turn.start");
+    }
+    expect(firstEvent.value.type).toBe("turn.start");
 
     await waitFor(() => runnerStarted);
     await iterator.return?.();

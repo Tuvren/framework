@@ -41,11 +41,13 @@ import {
 } from "../src/lib/runtime-core-bounds.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   assistantToolCalls,
   collectEvents,
   delay,
   textSignal,
+  toOptionalRecord,
   waitForAbort,
 } from "./runtime-core-test-helpers.ts";
 
@@ -67,7 +69,7 @@ const createTelemetryCapture = (): TelemetryCapture => {
         events.push(event);
       },
       span() {
-        return;
+        // This capture records events only; spans are outside this test's scope.
       },
     },
   };
@@ -102,31 +104,35 @@ const expectBoundsFailure = (
     throw new Error("expected a failed result");
   }
   expect(result.error.code).toBe("execution_bound_exceeded");
-  const details = result.error.details as ExecutionBoundExceededDetails;
-  expect(details.bound).toBe(bound);
-  expect(typeof details.limit).toBe("number");
-  expect(typeof details.observed).toBe("number");
-  return details;
+  const details = toOptionalRecord(result.error.details);
+  if (
+    details?.bound !== bound ||
+    typeof details.limit !== "number" ||
+    typeof details.observed !== "number"
+  ) {
+    throw new Error("expected typed execution-bound failure details");
+  }
+  return {
+    bound,
+    limit: details.limit,
+    observed: details.observed,
+  };
 };
 
 const eventIndex = (
   events: TuvrenStreamEvent[],
   predicate: (event: TuvrenStreamEvent) => boolean
-): number => {
-  return events.findIndex(predicate);
-};
+): number => events.findIndex(predicate);
 /** A runner that never stops — it always requests another iteration. */
 const runawayTextRunner = {
-  async execute() {
-    return {
-      messages: [assistantText("keep going")],
-      resolution: { type: "continue_iteration" as const },
-    };
-  },
+  execute: fromSynchronousVariadicAwaited(() => ({
+    messages: [assistantText("keep going")],
+    resolution: { type: "continue_iteration" as const },
+  })),
   id: "runaway",
-  async resume() {
+  resume: fromSynchronousVariadicAwaited(() => {
     throw new Error("resume was not expected");
-  },
+  }),
 } satisfies RuntimeRunner;
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -144,9 +150,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
       signal: textSignal("run"),
       threadId: thread.threadId,
     });
-    const events = (await collectEvents(
-      handle.events()
-    )) as TuvrenStreamEvent[];
+    const events = await collectEvents(handle.events());
     const result = await handle.awaitResult();
 
     const details = expectBoundsFailure(result, "maxIterations");
@@ -196,23 +200,21 @@ describe("framework execution bounds (KRT-BD006)", () => {
     // A single batch of three tool calls exceeds the cumulative cap of two,
     // tripping the bound at the tool-batch boundary.
     const batchRunner = {
-      async execute() {
-        return {
-          messages: [
-            assistantToolCalls([
-              { callId: "t1", input: {}, name: "noop" },
-              { callId: "t2", input: {}, name: "noop" },
-              { callId: "t3", input: {}, name: "noop" },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" as const },
-          toolExecutionMode: "parallel" as const,
-        };
-      },
+      execute: fromSynchronousVariadicAwaited(() => ({
+        messages: [
+          assistantToolCalls([
+            { callId: "t1", input: {}, name: "noop" },
+            { callId: "t2", input: {}, name: "noop" },
+            { callId: "t3", input: {}, name: "noop" },
+          ]),
+        ],
+        resolution: { type: "continue_iteration" as const },
+        toolExecutionMode: "parallel" as const,
+      })),
       id: "batch",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const { runtime } = createBoundsRuntime({
       bounds: { maxIterations: 100, maxToolCalls: 2 },
@@ -226,7 +228,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
         tools: [
           {
             description: "noop tool",
-            execute: async () => ({ ok: true }),
+            execute: fromSynchronousVariadicAwaited(() => ({ ok: true })),
             inputSchema: { type: "object" },
             name: "noop",
           },
@@ -247,7 +249,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
     let clock = 0;
     const now = (): EpochMs => {
       clock += 40;
-      return clock as EpochMs;
+      return clock;
     };
     const { runtime } = createBoundsRuntime({
       bounds: { maxIterations: 100_000, maxWallClockMs: 100 },
@@ -284,9 +286,9 @@ describe("framework execution bounds (KRT-BD006)", () => {
         };
       },
       id: "hanging",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const { runtime } = createBoundsRuntime({
       bounds: { maxWallClockMs: 25 },
@@ -320,7 +322,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
     // carried deadline (limit 1000). If the deadline were reset on resume it
     // would become now()+1000 = 6000 and the turn would proceed instead.
     let clockValue = 0;
-    const now = (): EpochMs => clockValue as EpochMs;
+    const now = (): EpochMs => clockValue;
 
     const highRiskTool = "dangerous.delete";
     let toolExecutedAtPause = false;
@@ -329,7 +331,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
       requireApprovalForRiskClass: "high",
     });
     const approvalRunner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
             messages: [
@@ -345,11 +347,11 @@ describe("framework execution bounds (KRT-BD006)", () => {
           messages: [assistantText("done")],
           resolution: { reason: "done", type: "end_turn" as const },
         };
-      },
+      }),
       id: "bounds-approval",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
 
     const { runtime } = createBoundsRuntime({
@@ -443,7 +445,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
       name: "probe",
     };
     const parallelRunner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const done = context.messages.some((m) => m.role === "tool");
         if (done) {
           return {
@@ -462,11 +464,11 @@ describe("framework execution bounds (KRT-BD006)", () => {
           resolution: { type: "continue_iteration" as const },
           toolExecutionMode: "parallel" as const,
         };
-      },
+      }),
       id: "parallel",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
 
     const { runtime } = createBoundsRuntime({
@@ -502,16 +504,14 @@ describe("framework execution bounds (KRT-BD006)", () => {
 
   test("a within-bounds turn completes normally under default bounds", async () => {
     const normalRunner = {
-      async execute() {
-        return {
-          messages: [assistantText("all done")],
-          resolution: { reason: "done", type: "end_turn" as const },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited(() => ({
+        messages: [assistantText("all done")],
+        resolution: { reason: "done", type: "end_turn" as const },
+      })),
       id: "normal",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const { runtime } = createBoundsRuntime({ runner: normalRunner });
     const thread = await runtime.createThread({});
@@ -527,7 +527,9 @@ describe("framework execution bounds (KRT-BD006)", () => {
   });
 
   test("normalizeExecutionBounds applies safe defaults and validates fields", () => {
-    expect(normalizeExecutionBounds(undefined)).toEqual(
+    const options: { bounds?: Parameters<typeof normalizeExecutionBounds>[0] } =
+      {};
+    expect(normalizeExecutionBounds(options.bounds)).toEqual(
       DEFAULT_EXECUTION_BOUNDS
     );
     expect(normalizeExecutionBounds({ maxIterations: 10 })).toEqual({

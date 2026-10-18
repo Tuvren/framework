@@ -32,6 +32,7 @@ import {
 import type { RuntimeWarning } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   collectEvents,
   extractTurnId,
@@ -39,21 +40,20 @@ import {
   readBranchCheckpointEventTypes,
   textSignal,
   toKrakenMessages,
+  toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
 
 const isKrakenRunnerFactory = (
   entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory => {
-  return "create" in entry && typeof entry.create === "function";
-};
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
 
-const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
-  return (result.messages ?? []).some(
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&
       message.parts.some((part) => part.type === "tool_call")
   );
-};
 
 const normalizeRunnerResult = (
   result: RunnerExecutionResult
@@ -72,7 +72,7 @@ const normalizeRunnerResult = (
 };
 
 const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
-  const { resume } = runner;
+  const resume = runner.resume?.bind(runner);
 
   return {
     async execute(context) {
@@ -106,15 +106,13 @@ const wrapRunnerEntry = (
 
 const createRunnerRegistry = (
   runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) => {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-};
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("emits context-engineering observability before the runner runs with rewritten context", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           data: {
             messageCount: context.messages.length,
           },
@@ -132,9 +130,9 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -192,19 +190,17 @@ describe("framework-runtime-core", () => {
   test("emits state snapshots only for checkpoints that change the manifest", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(_context) {
-        return {
-          messages: [assistantText("Finished.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited((_context) => ({
+        messages: [assistantText("Finished.")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -233,19 +229,17 @@ describe("framework-runtime-core", () => {
   test("rejects invalid context-engineering helper messages with a validation error", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(_context) {
-        return {
-          messages: [assistantText("This should not run.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited((_context) => ({
+        messages: [assistantText("This should not run.")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -261,9 +255,14 @@ describe("framework-runtime-core", () => {
             return {
               action: "store_invalid_message",
               execute(context) {
+                const invalidMessage = assistantText("invalid");
+                Object.defineProperty(invalidMessage, "role", {
+                  value: "banana",
+                });
+                Reflect.deleteProperty(invalidMessage, "parts");
                 return [
                   ...context.messageHashes,
-                  context.helpers.storeMessage(JSON.parse('{"role":"banana"}')),
+                  context.helpers.storeMessage(invalidMessage),
                 ];
               },
             };
@@ -292,19 +291,17 @@ describe("framework-runtime-core", () => {
       kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         {
-          async execute(_context) {
-            return {
-              messages: [assistantText("Context engineering completed.")],
-              resolution: {
-                reason: "done",
-                type: "end_turn",
-              },
-            };
-          },
+          execute: fromSynchronousVariadicAwaited((_context) => ({
+            messages: [assistantText("Context engineering completed.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          })),
           id: "fake",
-          async resume() {
+          resume: fromSynchronousVariadicAwaited(() => {
             throw new Error("resume was not expected");
-          },
+          }),
         } satisfies RuntimeRunner,
       ]),
     });
@@ -347,36 +344,32 @@ describe("framework-runtime-core", () => {
       toKrakenMessages(branchMessages)
     );
 
-    expect(branchMessages).toEqual(
-      expect.arrayContaining([
-        {
-          parts: [{ text: "Original short text", type: "text" }],
-          role: "user",
-        },
-      ])
-    );
+    expect(branchMessages).toContainEqual({
+      parts: [{ text: "Original short text", type: "text" }],
+      role: "user",
+    });
     expect(handle.status().manifest).toEqual(expectedManifest);
-    expect(
-      await readBranchCheckpointEventTypes(harness.kernel, thread.branchId)
-    ).toEqual(expect.arrayContaining(["context_engineering_applied"]));
+    const checkpointEventTypes = await readBranchCheckpointEventTypes(
+      harness.kernel,
+      thread.branchId
+    );
+    expect(checkpointEventTypes).toContain("context_engineering_applied");
   });
 
   test("fails invalid context-engineering plans before corrupting the branch head", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(_context) {
-        return {
-          messages: [assistantText("This should not run.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited((_context) => ({
+        messages: [assistantText("This should not run.")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -423,19 +416,17 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const warnings: RuntimeWarning[] = [];
     const runner = {
-      async execute() {
-        return {
-          messages: [assistantText("Oversized state persisted.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited(() => ({
+        messages: [assistantText("Oversized state persisted.")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -487,7 +478,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const runner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           data: {
             count: 1,
           },
@@ -505,9 +496,9 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -533,7 +524,7 @@ describe("framework-runtime-core", () => {
       throw new Error("expected the shared iterable consumer to be rejected");
     } catch (error: unknown) {
       expect(error).toBeInstanceOf(Error);
-      expect((error as { code?: string }).code).toBe(
+      expect(toOptionalRecord(error)?.code).toBe(
         "event_stream_already_consumed"
       );
     }
@@ -543,21 +534,18 @@ describe("framework-runtime-core", () => {
       throw new Error("expected the second consumer to be rejected");
     } catch (error: unknown) {
       expect(error).toBeInstanceOf(Error);
-      expect((error as { code?: string }).code).toBe(
+      expect(toOptionalRecord(error)?.code).toBe(
         "event_stream_already_consumed"
       );
     }
 
     const remainingEvents: TuvrenStreamEvent[] = [];
+    const remainingStream: AsyncIterable<TuvrenStreamEvent> = {
+      [Symbol.asyncIterator]: () => firstIterator,
+    };
 
-    for (;;) {
-      const nextEvent = await firstIterator.next();
-
-      if (nextEvent.done) {
-        break;
-      }
-
-      remainingEvents.push(nextEvent.value);
+    for await (const event of remainingStream) {
+      remainingEvents.push(event);
     }
 
     const customEvent = remainingEvents.find(

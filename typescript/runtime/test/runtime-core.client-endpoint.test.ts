@@ -33,26 +33,24 @@ import type {
   AttachedClientEndpoint,
   ClientEndpointBoundary,
   ClientInvocationEnvelope,
-  ClientReportedResult,
 } from "@tuvren/core/capabilities";
 import {
   CAPABILITY_BINDING_UNAVAILABLE,
   CAPABILITY_RESULT_STALE,
 } from "@tuvren/core/errors";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
-import type {
-  RunnerExecutionContext,
-  RunnerExecutionResult,
-} from "@tuvren/core/runner";
+import type { RunnerExecutionContext } from "@tuvren/core/runner";
 
 import { createRunnerRegistry, createTuvrenRuntime } from "../src/index.ts";
 import { createClientEndpointBoundary } from "../src/lib/client-endpoint-boundary.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   assistantToolCalls,
   collectEvents,
   textSignal,
+  toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
 
 // ---------------------------------------------------------------------------
@@ -71,104 +69,99 @@ const makeOkEndpoint = (
   endpointId: string,
   capabilityId: string,
   content: unknown
-): AttachedClientEndpoint => {
-  return {
-    advertisedCapabilities: [
-      {
-        capabilityId,
-        description: "test cap",
-        inputSchema: { type: "object" },
-      },
-    ],
-    async dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      return {
-        callId: envelope.callId,
-        content,
-        leaseToken: envelope.leaseToken,
-      };
+): AttachedClientEndpoint => ({
+  advertisedCapabilities: [
+    {
+      capabilityId,
+      description: "test cap",
+      inputSchema: { type: "object" },
     },
-    endpointId,
-  };
-};
+  ],
+  dispatch: fromSynchronousVariadicAwaited(
+    (envelope: ClientInvocationEnvelope) => ({
+      callId: envelope.callId,
+      content,
+      leaseToken: envelope.leaseToken,
+    })
+  ),
+  endpointId,
+});
 
 /** A mock client endpoint that returns a stale leaseToken (simulates a stale late-completion). */
 const makeStaleEndpoint = (
   endpointId: string,
   capabilityId: string
-): AttachedClientEndpoint => {
-  return {
-    advertisedCapabilities: [
-      {
-        capabilityId,
-        description: "stale cap",
-        inputSchema: { type: "object" },
-      },
-    ],
-    async dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      return {
-        callId: envelope.callId,
-        content: { stale: true },
-        leaseToken: "stale-token-from-prior-invocation", // does NOT match envelope token
-      };
+): AttachedClientEndpoint => ({
+  advertisedCapabilities: [
+    {
+      capabilityId,
+      description: "stale cap",
+      inputSchema: { type: "object" },
     },
-    endpointId,
-  };
-};
+  ],
+  dispatch: fromSynchronousVariadicAwaited(
+    (envelope: ClientInvocationEnvelope) => ({
+      callId: envelope.callId,
+      content: { stale: true },
+      // This deliberately does not match the envelope token.
+      leaseToken: "stale-token-from-prior-invocation",
+    })
+  ),
+  endpointId,
+});
 
 /** A mock client endpoint for a client-side MCP tool. */
 const makeClientMcpEndpoint = (
   endpointId: string,
   capabilityId: string,
   mcpServerName: string
-): AttachedClientEndpoint => {
-  return {
-    advertisedCapabilities: [
-      {
-        capabilityId,
-        description: "client-side MCP",
-        inputSchema: { type: "object" },
-        mcpServerName,
-      },
-    ],
-    async dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      return {
-        callId: envelope.callId,
-        content: { mcpResult: "ok" },
-        leaseToken: envelope.leaseToken,
-      };
+): AttachedClientEndpoint => ({
+  advertisedCapabilities: [
+    {
+      capabilityId,
+      description: "client-side MCP",
+      inputSchema: { type: "object" },
+      mcpServerName,
     },
-    endpointId,
-  };
-};
+  ],
+  dispatch: fromSynchronousVariadicAwaited(
+    (envelope: ClientInvocationEnvelope) => ({
+      callId: envelope.callId,
+      content: { mcpResult: "ok" },
+      leaseToken: envelope.leaseToken,
+    })
+  ),
+  endpointId,
+});
+
+const filterToolResultEvents = (
+  events: TuvrenStreamEvent[]
+): Extract<TuvrenStreamEvent, { type: "tool.result" }>[] =>
+  events.filter(
+    (event): event is Extract<TuvrenStreamEvent, { type: "tool.result" }> =>
+      event.type === "tool.result"
+  );
 
 /** Build a runner that requests one tool call then ends. */
-const makeOneCallRunner = (toolName: string, input: unknown = {}) => {
-  return {
-    execute(context: RunnerExecutionContext): Promise<RunnerExecutionResult> {
-      const hasToolResult = context.messages.some((m) => m.role === "tool");
-      if (!hasToolResult) {
-        return Promise.resolve({
-          messages: [
-            assistantToolCalls([{ callId: "call-1", input, name: toolName }]),
-          ],
-          resolution: { type: "continue_iteration" as const },
-          toolExecutionMode: "parallel" as const,
-        });
-      }
-      return Promise.resolve({
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" as const },
-      });
-    },
-    id: "test-runner",
-  };
-};
+const makeOneCallRunner = (toolName: string, input: unknown = {}) => ({
+  execute: fromSynchronousVariadicAwaited((context: RunnerExecutionContext) => {
+    const hasToolResult = context.messages.some((m) => m.role === "tool");
+    if (!hasToolResult) {
+      return {
+        messages: [
+          assistantToolCalls([{ callId: "call-1", input, name: toolName }]),
+        ],
+        resolution: { type: "continue_iteration" as const },
+        toolExecutionMode: "parallel" as const,
+      };
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" as const },
+    };
+  }),
+  id: "test-runner",
+});
 
 const runTurnWithClientEndpoint = async (
   endpoint: AttachedClientEndpoint,
@@ -221,12 +214,8 @@ describe("tuvren-client: attach and dispatch (KRT-AZ001, KRT-AZ002)", () => {
       endpoint,
       "browser.screenshot"
     );
-    const toolStartEvents = events.filter(
-      (e) => (e as TuvrenStreamEvent).type === "tool.start"
-    );
-    const toolResultEvents = events.filter(
-      (e) => (e as TuvrenStreamEvent).type === "tool.result"
-    );
+    const toolStartEvents = events.filter((e) => e.type === "tool.start");
+    const toolResultEvents = events.filter((e) => e.type === "tool.result");
     expect(toolStartEvents).toHaveLength(1);
     expect(toolResultEvents).toHaveLength(1);
   });
@@ -237,9 +226,7 @@ describe("tuvren-client: attach and dispatch (KRT-AZ001, KRT-AZ002)", () => {
       endpoint,
       "browser.navigate"
     );
-    const auditEvents = events.filter(
-      (e) => (e as TuvrenStreamEvent).type === "tool.audit"
-    );
+    const auditEvents = events.filter((e) => e.type === "tool.audit");
     expect(auditEvents).toHaveLength(0);
   });
 
@@ -254,11 +241,7 @@ describe("tuvren-client: attach and dispatch (KRT-AZ001, KRT-AZ002)", () => {
       endpoint,
       "browser.get_title"
     );
-    const toolResultEvent = events.find(
-      (e) => (e as TuvrenStreamEvent).type === "tool.result"
-    ) as
-      | (TuvrenStreamEvent & { type: "tool.result"; isError?: boolean })
-      | undefined;
+    const toolResultEvent = filterToolResultEvents(events).at(0);
     expect(toolResultEvent).toBeDefined();
     expect(toolResultEvent?.isError).toBeFalsy();
   });
@@ -275,14 +258,14 @@ describe("tuvren-client: attach and dispatch (KRT-AZ001, KRT-AZ002)", () => {
           inputSchema: { type: "object" },
         },
       ],
-      async dispatch(envelope) {
+      dispatch: fromSynchronousVariadicAwaited((envelope) => {
         received = envelope;
         return {
           callId: envelope.callId,
           content: { tracked: true },
           leaseToken: envelope.leaseToken,
         };
-      },
+      }),
       endpointId: "ep1",
     };
     await runTurnWithClientEndpoint(endpoint, "tracked.call", { param: 42 });
@@ -329,12 +312,12 @@ describe("tuvren-client: unavailability and staleness (KRT-AZ003)", () => {
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        name: "test-agent",
-        // clientEndpoints registers the capability surface so the model can see it
-        clientEndpoints: [endpoint],
         // clientEndpointBoundary provides the pre-detached boundary so invocations
         // hit the isAvailable=false branch and return capability_binding_unavailable
         clientEndpointBoundary: boundary,
+        // clientEndpoints registers the capability surface so the model can see it
+        clientEndpoints: [endpoint],
+        name: "test-agent",
       },
       signal: textSignal("unavailable test"),
       threadId: thread.threadId,
@@ -344,17 +327,11 @@ describe("tuvren-client: unavailability and staleness (KRT-AZ003)", () => {
     const result = await handle.awaitResult();
 
     expect(result.status).toBe("completed");
-    const toolResultEvents = events.filter(
-      (e) => (e as TuvrenStreamEvent).type === "tool.result"
-    ) as (TuvrenStreamEvent & {
-      type: "tool.result";
-      isError?: boolean;
-      output?: unknown;
-    })[];
-    expect(toolResultEvents).toHaveLength(1);
-    expect(toolResultEvents[0]?.isError).toBe(true);
+    const results = filterToolResultEvents(events);
+    expect(results).toHaveLength(1);
+    expect(results[0]?.isError).toBe(true);
     // Typed code is in the output object
-    const output = toolResultEvents[0]?.output as { code?: string } | undefined;
+    const output = toOptionalRecord(results[0]?.output);
     expect(output?.code).toBe(CAPABILITY_BINDING_UNAVAILABLE);
   });
 
@@ -366,19 +343,11 @@ describe("tuvren-client: unavailability and staleness (KRT-AZ003)", () => {
     );
 
     expect(result.status).toBe("completed");
-    const toolResultEvents = events.filter(
-      (e) => (e as TuvrenStreamEvent).type === "tool.result"
-    ) as (TuvrenStreamEvent & {
-      type: "tool.result";
-      isError?: boolean;
-      output?: unknown;
-    })[];
-    expect(toolResultEvents).toHaveLength(1);
-    expect(toolResultEvents[0]?.isError).toBe(true);
+    const results = filterToolResultEvents(events);
+    expect(results).toHaveLength(1);
+    expect(results[0]?.isError).toBe(true);
     // Stale result surfaces with the dedicated stale code, not capability_binding_unavailable.
-    const output = toolResultEvents[0]?.output as
-      | Record<string, unknown>
-      | undefined;
+    const output = toOptionalRecord(results[0]?.output);
     expect(output?.code).toBe(CAPABILITY_RESULT_STALE);
     // The stale endpoint's content must not reach the model — leak guard. (KRT-AZ003)
     expect(output).not.toMatchObject({ stale: true });
@@ -408,12 +377,8 @@ describe("tuvren-client: client-side MCP binding classification (KRT-AZ004)", ()
     );
     expect(result.status).toBe("completed");
     // tool.start and tool.result are emitted (client-owned invocation, tuvren orchestrates)
-    const startEvents = events.filter(
-      (e) => (e as TuvrenStreamEvent).type === "tool.start"
-    );
-    const resultEvents = events.filter(
-      (e) => (e as TuvrenStreamEvent).type === "tool.result"
-    );
+    const startEvents = events.filter((e) => e.type === "tool.start");
+    const resultEvents = events.filter((e) => e.type === "tool.result");
     expect(startEvents).toHaveLength(1);
     expect(resultEvents).toHaveLength(1);
   });
@@ -428,9 +393,7 @@ describe("tuvren-client: client-side MCP binding classification (KRT-AZ004)", ()
       endpoint,
       "client.mcp.search"
     );
-    const auditEvents = events.filter(
-      (e) => (e as TuvrenStreamEvent).type === "tool.audit"
-    );
+    const auditEvents = events.filter((e) => e.type === "tool.audit");
     expect(auditEvents).toHaveLength(0);
   });
 });
@@ -448,18 +411,14 @@ describe("tuvren-client: partial-observability model (KRT-AZ005)", () => {
       endpoint,
       "observable.cap"
     );
-    const toolResultEvents = events.filter(
-      (e) => (e as TuvrenStreamEvent).type === "tool.result"
-    );
+    const toolResultEvents = events.filter((e) => e.type === "tool.result");
     expect(toolResultEvents).toHaveLength(1);
   });
 
   test("no tool.audit events (canAudit: false for tuvren-client)", async () => {
     const endpoint = makeOkEndpoint("ep1", "partial.cap", {});
     const { events } = await runTurnWithClientEndpoint(endpoint, "partial.cap");
-    const auditEvents = events.filter(
-      (e) => (e as TuvrenStreamEvent).type === "tool.audit"
-    );
+    const auditEvents = events.filter((e) => e.type === "tool.audit");
     expect(auditEvents).toHaveLength(0);
   });
 });
@@ -480,37 +439,37 @@ describe("tuvren-client: boundary preserved through approval pause/resume", () =
     const harness = createFakeKernelHarness();
     let callCount = 0;
     const runner = {
-      execute(
-        _context: RunnerExecutionContext
-      ): Promise<RunnerExecutionResult> {
-        callCount += 1;
-        if (callCount === 1) {
-          return Promise.resolve({
-            messages: [
-              assistantToolCalls([
-                { callId: "call-gate", input: {}, name: "approval.gate" },
-              ]),
-            ],
-            resolution: { type: "continue_iteration" as const },
-            toolExecutionMode: "parallel" as const,
-          });
+      execute: fromSynchronousVariadicAwaited(
+        (_context: RunnerExecutionContext) => {
+          callCount += 1;
+          if (callCount === 1) {
+            return {
+              messages: [
+                assistantToolCalls([
+                  { callId: "call-gate", input: {}, name: "approval.gate" },
+                ]),
+              ],
+              resolution: { type: "continue_iteration" as const },
+              toolExecutionMode: "parallel" as const,
+            };
+          }
+          if (callCount === 2) {
+            return {
+              messages: [
+                assistantToolCalls([
+                  { callId: "call-client", input: {}, name: "resume.cap" },
+                ]),
+              ],
+              resolution: { type: "continue_iteration" as const },
+              toolExecutionMode: "parallel" as const,
+            };
+          }
+          return {
+            messages: [assistantText("done")],
+            resolution: { reason: "done", type: "end_turn" as const },
+          };
         }
-        if (callCount === 2) {
-          return Promise.resolve({
-            messages: [
-              assistantToolCalls([
-                { callId: "call-client", input: {}, name: "resume.cap" },
-              ]),
-            ],
-            resolution: { type: "continue_iteration" as const },
-            toolExecutionMode: "parallel" as const,
-          });
-        }
-        return Promise.resolve({
-          messages: [assistantText("done")],
-          resolution: { reason: "done", type: "end_turn" as const },
-        });
-      },
+      ),
       id: "test-runner",
     };
 
@@ -532,7 +491,7 @@ describe("tuvren-client: boundary preserved through approval pause/resume", () =
           {
             approval: true,
             description: "gate requiring approval",
-            execute: () => Promise.resolve({ gated: true }),
+            execute: fromSynchronousVariadicAwaited(() => ({ gated: true })),
             inputSchema: { type: "object" },
             name: "approval.gate",
           },
@@ -553,19 +512,12 @@ describe("tuvren-client: boundary preserved through approval pause/resume", () =
     });
     const resumedEvents = await collectEvents(resumedHandle.events());
 
-    const toolResultEvents = resumedEvents.filter(
-      (e) => (e as TuvrenStreamEvent).type === "tool.result"
-    ) as (TuvrenStreamEvent & {
-      type: "tool.result";
-      isError?: boolean;
-      name?: string;
-      output?: unknown;
-    })[];
+    const results = filterToolResultEvents(resumedEvents);
 
-    const clientResult = toolResultEvents.find((e) => e.name === "resume.cap");
+    const clientResult = results.find((event) => event.name === "resume.cap");
     expect(clientResult).toBeDefined();
     expect(clientResult?.isError).toBe(true);
-    const output = clientResult?.output as Record<string, unknown> | undefined;
+    const output = toOptionalRecord(clientResult?.output);
     expect(output?.code).toBe(CAPABILITY_BINDING_UNAVAILABLE);
   });
 });
@@ -598,7 +550,7 @@ describe("tuvren-client: tool name collision with regular tools", () => {
         tools: [
           {
             description: "a regular server tool with the same name",
-            execute: () => Promise.resolve({ server: true }),
+            execute: fromSynchronousVariadicAwaited(() => ({ server: true })),
             inputSchema: { type: "object" },
             name: "shared.tool",
           },
