@@ -1,4 +1,17 @@
 entries:
+  - version: v0.48.6
+    date: 2026-10-18
+    changed:
+      - "Completed EPIC-CS: host admission keys are preserved with durable input and steering messages, excluded from runner and provider requests, matched against the original input during recovery, carried through session steering, and certified across real SQLite process death."
+      - "EPIC-CS Persist a host admission key on the user message that incorporates an input archived: 7 tickets, 30 points, 6776 diff lines, 0 review rounds"
+    added:
+      - "Follow-up from EPIC-CS: After merge and reconciliation, publish the curated public package set through the authorized Changesets release workflow, then verify npm provenance and a fresh installed-package admission-key scenario."
+    by: reconcile
+    fast_lane_through: 8da8e6cfae3be44a238d167b23aea0837d8a7086
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.7
   - version: v0.48.5
     date: 2026-10-17
     by: stage
