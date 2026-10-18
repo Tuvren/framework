@@ -30,7 +30,6 @@ import {
 } from "@tuvren/runtime";
 
 import {
-  type AdapterProjection,
   assistantText,
   assistantToolCalls,
   collectValues,
@@ -41,6 +40,7 @@ import {
   RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
+import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterRecoveryScenarioDependencies {
   isRecord(value: unknown): value is Record<string, unknown>;
@@ -114,6 +114,7 @@ export function createFrameworkAdapterRecoveryScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("recovery placeholder")],
@@ -123,7 +124,6 @@ export function createFrameworkAdapterRecoveryScenarios(
           },
         })),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const recoveryTurnId = "shared-recovery-turn";
@@ -234,18 +234,18 @@ export function createFrameworkAdapterRecoveryScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       resolveAgentConfig(agentName) {
         if (agentName === "primary" || agentName === "reviewer") {
           return { name: agentName };
         }
-        return undefined;
+        return;
       },
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const staleTurn = await livenessHarness.kernel.turn.create(
@@ -296,7 +296,7 @@ export function createFrameworkAdapterRecoveryScenarios(
     );
 
     switch (recoveryCase) {
-      case "same_signal_iterate":
+      case "same_signal_iterate": {
         await stageRecoveredMessage(
           livenessHarness,
           staleRunId,
@@ -310,9 +310,11 @@ export function createFrameworkAdapterRecoveryScenarios(
           "assistant"
         );
         break;
-      case "signal_mismatch":
+      }
+      case "signal_mismatch": {
         break;
-      case "handoff_context":
+      }
+      case "handoff_context": {
         await stageRecoveredRuntimeStatus(
           livenessHarness,
           staleRunId,
@@ -320,7 +322,8 @@ export function createFrameworkAdapterRecoveryScenarios(
           { activeAgent: "reviewer", state: "running" }
         );
         break;
-      case "finalize_turn_status":
+      }
+      case "finalize_turn_status": {
         await stageRecoveredRuntimeStatus(
           livenessHarness,
           staleRunId,
@@ -328,10 +331,12 @@ export function createFrameworkAdapterRecoveryScenarios(
           { activeAgent: "primary", state: "completed" }
         );
         break;
-      default:
+      }
+      default: {
         throw new Error(
           `runtime.recover-stale-run declared unsupported recoveryCase ${recoveryCase}`
         );
+      }
     }
 
     const signalText =
@@ -366,7 +371,6 @@ export function createFrameworkAdapterRecoveryScenarios(
         branchRuntimeStatus,
         "activeAgent"
       ),
-      runnerExecuteCalls: executeCalls,
       freshUserMessageCount: countUserTextMessages(branchMessages, signalText),
       originalUserMessageCount: countUserTextMessages(branchMessages, prompt),
       phase: handle.status().phase,
@@ -376,6 +380,7 @@ export function createFrameworkAdapterRecoveryScenarios(
         "assistant",
         recoveredAssistantText ?? ""
       ),
+      runnerExecuteCalls: executeCalls,
       sameTurn: observedTurnId === staleTurn.turnId,
       staleRunStatus:
         branchRuns.find((run) => run.runId === staleRunId)?.status ?? null,
@@ -430,7 +435,6 @@ export function createFrameworkAdapterRecoveryScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       resolveAgentConfig(agentName) {
         return agentName === "primary" ? { name: agentName } : undefined;
@@ -439,6 +443,7 @@ export function createFrameworkAdapterRecoveryScenarios(
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const staleTurn = await livenessHarness.kernel.turn.create(
@@ -607,8 +612,8 @@ export function createFrameworkAdapterRecoveryScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -654,7 +659,9 @@ export function createFrameworkAdapterRecoveryScenarios(
   ): InterruptedToolCallScenario[] {
     const value = scenario.toolCalls;
     if (!Array.isArray(value)) {
-      throw new Error("runtime.recover-stale-run.toolCalls must be an array");
+      throw new TypeError(
+        "runtime.recover-stale-run.toolCalls must be an array"
+      );
     }
 
     return value.map((entry, index) => {
@@ -669,7 +676,7 @@ export function createFrameworkAdapterRecoveryScenarios(
         throw new Error(`${path}.state must be completed or missing`);
       }
       if (typeof entry.nonRetryable !== "boolean") {
-        throw new Error(`${path}.nonRetryable must be a boolean`);
+        throw new TypeError(`${path}.nonRetryable must be a boolean`);
       }
       return {
         callId: dependencies.readStringProperty(entry, "callId", path),
@@ -769,7 +776,6 @@ export function createFrameworkAdapterRecoveryScenarios(
           inputSchema: { type: "object" },
         },
       ],
-      endpointId: "conformance-client-endpoint",
       async dispatch(
         envelope: ClientInvocationEnvelope
       ): Promise<ClientReportedResult> {
@@ -782,6 +788,7 @@ export function createFrameworkAdapterRecoveryScenarios(
           leaseToken: envelope.leaseToken,
         };
       },
+      endpointId: "conformance-client-endpoint",
     };
 
     const runner: RuntimeRunner = {
@@ -808,7 +815,6 @@ export function createFrameworkAdapterRecoveryScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       resolveAgentConfig(agentName) {
         return agentName === "primary" ? { name: agentName } : undefined;
@@ -818,6 +824,7 @@ export function createFrameworkAdapterRecoveryScenarios(
         leaseDurationMs: 40,
         renewBeforeMs: 20,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
 
     const thread = await runtime.createThread({});
@@ -829,7 +836,9 @@ export function createFrameworkAdapterRecoveryScenarios(
     });
     // Loss of authority surfaces as a rejected event stream; swallow it so the
     // assertions can inspect durable state.
-    await collectValues(handle.events()).catch(() => undefined);
+    await collectValues(handle.events()).catch(() => {
+      // Lease loss is the expected observation for this scenario.
+    });
 
     const branchMessages = await harness.readBranchMessages(thread.branchId);
     const clientSuccessCommitted = branchMessages.some((message) =>
@@ -856,13 +865,12 @@ export function createFrameworkAdapterRecoveryScenarios(
     ) {
       return false;
     }
-    return message.parts.some((part) => {
-      return (
+    return message.parts.some(
+      (part) =>
         dependencies.isRecord(part) &&
         dependencies.isRecord(part.output) &&
         part.output.committed === true
-      );
-    });
+    );
   }
 
   return {
@@ -887,14 +895,13 @@ export function createFrameworkAdapterRecoveryScenarios(
       ) {
         return false;
       }
-      return message.parts.some((part) => {
-        return (
+      return message.parts.some(
+        (part) =>
           dependencies.isRecord(part) &&
           part.type === "text" &&
           typeof part.text === "string" &&
           part.text === expectedText
-        );
-      });
+      );
     });
   }
 

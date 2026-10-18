@@ -15,10 +15,8 @@
  */
 
 import type { RuntimeRunner } from "@tuvren/core/runner";
-import {
-  createDuplexSessionBinding,
-  type SessionSteerFrame,
-} from "@tuvren/host-session";
+import { createDuplexSessionBinding } from "@tuvren/host-session";
+import type { SessionSteerFrame } from "@tuvren/host-session";
 import { createRunnerRegistry, createTuvrenRuntime } from "@tuvren/runtime";
 
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";

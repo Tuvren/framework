@@ -21,7 +21,6 @@ import {
 } from "@tuvren/runtime";
 
 import {
-  type AdapterProjection,
   assistantText,
   assistantToolCalls,
   collectValues,
@@ -31,6 +30,7 @@ import {
   RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
+import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterOrchestrationLifecycleDependencies {
   createObservedErrorEnvelope(error: unknown): Record<string, unknown>;
@@ -64,7 +64,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     );
 
     switch (lifecycleCase) {
-      case "parent_pause_child_continues":
+      case "parent_pause_child_continues": {
         return await runOrchestrationParentPauseChildContinues(
           dependencies.readStringProperty(
             scenario,
@@ -77,7 +77,8 @@ export function createFrameworkAdapterOrchestrationLifecycle(
             "runtime.orchestration.lifecycle-locality.parentText"
           )
         );
-      case "child_pause_parent_completes":
+      }
+      case "child_pause_parent_completes": {
         return await runOrchestrationChildPauseParentCompletes(
           dependencies.readStringProperty(
             scenario,
@@ -90,7 +91,8 @@ export function createFrameworkAdapterOrchestrationLifecycle(
             "runtime.orchestration.lifecycle-locality.parentText"
           )
         );
-      case "child_cancel_parent_completes":
+      }
+      case "child_cancel_parent_completes": {
         return await runOrchestrationChildCancelParentCompletes(
           dependencies.readStringProperty(
             scenario,
@@ -103,7 +105,8 @@ export function createFrameworkAdapterOrchestrationLifecycle(
             "runtime.orchestration.lifecycle-locality.parentText"
           )
         );
-      case "parent_cancel_child_completes":
+      }
+      case "parent_cancel_child_completes": {
         return await runOrchestrationParentCancelChildCompletes(
           dependencies.readStringProperty(
             scenario,
@@ -116,12 +119,15 @@ export function createFrameworkAdapterOrchestrationLifecycle(
             "runtime.orchestration.lifecycle-locality.parentText"
           )
         );
-      case "spawn_requires_running_handle":
+      }
+      case "spawn_requires_running_handle": {
         return await runOrchestrationSpawnRequiresRunningHandle();
-      default:
+      }
+      default: {
         throw new Error(
           `runtime.orchestration.lifecycle-locality declared unsupported case ${lifecycleCase}`
         );
+      }
     }
   }
 
@@ -137,6 +143,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -181,7 +188,6 @@ export function createFrameworkAdapterOrchestrationLifecycle(
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -255,6 +261,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           const toolMessages = context.messages.filter(
@@ -299,7 +306,6 @@ export function createFrameworkAdapterOrchestrationLifecycle(
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -379,6 +385,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -402,7 +409,6 @@ export function createFrameworkAdapterOrchestrationLifecycle(
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -456,6 +462,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -479,7 +486,6 @@ export function createFrameworkAdapterOrchestrationLifecycle(
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -548,6 +554,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => {
           const toolMessages = context.messages.filter(
@@ -581,7 +588,6 @@ export function createFrameworkAdapterOrchestrationLifecycle(
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -638,6 +644,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async () => ({
           messages: [assistantText("Parent complete.")],
@@ -647,7 +654,6 @@ export function createFrameworkAdapterOrchestrationLifecycle(
           },
         })),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -692,7 +698,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     if (typeof msg !== "object" || msg === null) {
       return undefined;
     }
-    const parts = (msg as KV).parts;
+    const { parts } = msg as KV;
     if (!Array.isArray(parts)) {
       return undefined;
     }
@@ -702,7 +708,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     if (textPart === undefined) {
       return undefined;
     }
-    const text = (textPart as KV).text;
+    const { text } = textPart as KV;
     return typeof text === "string" ? text : undefined;
   }
 

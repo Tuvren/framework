@@ -22,7 +22,6 @@ import {
 } from "@tuvren/runtime";
 
 import {
-  type AdapterProjection,
   AGENT_NAME,
   assistantText,
   assistantToolCalls,
@@ -32,6 +31,7 @@ import {
   RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
+import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 /**
  * Asserts all exposure-time policy dimensions (BB001 residency, BB002 risk-class
@@ -298,8 +298,8 @@ export async function runCapabilityPolicyWiredInvocationDenial(): Promise<Adapte
 
   const runtime = createTuvrenRuntime({
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
 
   const thread = await runtime.createThread({});
@@ -377,8 +377,8 @@ export async function runCapabilityPolicyNonretryablePolicy(): Promise<AdapterPr
 
   const runtime = createTuvrenRuntime({
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
 
   const thread = await runtime.createThread({});
@@ -452,8 +452,8 @@ export async function runCapabilityPolicyWiredRiskApproval(): Promise<AdapterPro
 
   const runtime = createTuvrenRuntime({
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
 
   const thread = await runtime.createThread({});

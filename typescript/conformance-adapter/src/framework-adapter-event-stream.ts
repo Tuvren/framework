@@ -22,13 +22,13 @@ import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
 import { toSseFrames } from "@tuvren/stream-sse";
 
 import {
-  type AdapterProjection,
   AGENT_NAME,
   collectValues,
   createRuntimeWithReactRunner,
   createScenarioProvider,
   textSignal,
 } from "./framework-adapter-runtime.ts";
+import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterEventStreamDependencies {
   isRecord(value: unknown): value is Record<string, unknown>;
@@ -120,7 +120,7 @@ export function createFrameworkAdapterEventStream(
 
   async function runAgUiProjection(input: unknown): Promise<AdapterProjection> {
     const sourceEvents = await runEventStreamScenario(input, "event-stream");
-    const warnings: Array<{ code: string }> = [];
+    const warnings: { code: string }[] = [];
     const events = await collectValues(
       toAgUiEvents(createEventStream(sourceEvents), {
         onWarning(warning) {
@@ -157,16 +157,21 @@ export function createFrameworkAdapterEventStream(
     );
 
     switch (operation) {
-      case "event-stream.completed-tool-turn":
+      case "event-stream.completed-tool-turn": {
         return runCompletedToolEventStreamTurn(scenario, label);
-      case "event-stream.failed-provider-turn":
+      }
+      case "event-stream.failed-provider-turn": {
         return runFailedProviderEventStreamTurn(scenario, label);
-      case "event-stream.paused-approval-turn":
+      }
+      case "event-stream.paused-approval-turn": {
         return runPausedApprovalEventStreamTurn(scenario, label);
-      case "event-stream.resumed-approval-turn":
+      }
+      case "event-stream.resumed-approval-turn": {
         return runResumedApprovalEventStreamTurn(scenario, label);
-      default:
+      }
+      default: {
         throw new Error(`${label} scenario declared unsupported ${operation}`);
+      }
     }
   }
 
@@ -198,7 +203,9 @@ export function createFrameworkAdapterEventStream(
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        model: createScenarioProvider(providerResponses, () => undefined),
+        model: createScenarioProvider(providerResponses, () => {
+          // This scenario does not observe provider calls.
+        }),
         name: AGENT_NAME,
         tools: [
           {
@@ -237,7 +244,9 @@ export function createFrameworkAdapterEventStream(
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        model: createScenarioProvider(providerResponses, () => undefined),
+        model: createScenarioProvider(providerResponses, () => {
+          // This scenario does not observe provider calls.
+        }),
         name: AGENT_NAME,
       },
       signal: textSignal(prompt),
@@ -270,7 +279,9 @@ export function createFrameworkAdapterEventStream(
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        model: createScenarioProvider(providerResponses, () => undefined),
+        model: createScenarioProvider(providerResponses, () => {
+          // This scenario does not observe provider calls.
+        }),
         name: AGENT_NAME,
         tools: [
           {
@@ -322,7 +333,9 @@ export function createFrameworkAdapterEventStream(
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        model: createScenarioProvider(providerResponses, () => undefined),
+        model: createScenarioProvider(providerResponses, () => {
+          // This scenario does not observe provider calls.
+        }),
         name: AGENT_NAME,
         tools: [
           {

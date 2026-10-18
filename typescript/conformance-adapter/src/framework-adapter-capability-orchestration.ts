@@ -21,7 +21,6 @@ import {
 } from "@tuvren/runtime";
 
 import {
-  type AdapterProjection,
   AGENT_NAME,
   assistantText,
   assistantToolCalls,
@@ -32,6 +31,7 @@ import {
   RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
+import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 /**
  * Runs a single defineTool tool execution and returns evidence about the
@@ -74,8 +74,8 @@ export async function runCapabilityOrchestrationFoundation(
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
 
   const thread = await runtime.createThread({});
@@ -123,13 +123,10 @@ export async function runCapabilityOrchestrationFoundation(
   const evidence = {
     capabilityOrchestration: {
       backCompat: {
-        startEventCallId: (
-          toolStartEvent as Record<string, unknown> | undefined
-        )?.callId,
-        startEventName: (toolStartEvent as Record<string, unknown> | undefined)
-          ?.name,
-        startEventType: (toolStartEvent as Record<string, unknown> | undefined)
-          ?.type,
+        resultAttribution: {
+          executionClass: resultAttribution?.executionClass,
+          owner: resultAttribution?.owner,
+        },
         startAttribution: {
           capabilityId: startAttribution?.capabilityId,
           executionClass: startAttribution?.executionClass,
@@ -144,10 +141,13 @@ export async function runCapabilityOrchestrationFoundation(
           },
           owner: startAttribution?.owner,
         },
-        resultAttribution: {
-          executionClass: resultAttribution?.executionClass,
-          owner: resultAttribution?.owner,
-        },
+        startEventCallId: (
+          toolStartEvent as Record<string, unknown> | undefined
+        )?.callId,
+        startEventName: (toolStartEvent as Record<string, unknown> | undefined)
+          ?.name,
+        startEventType: (toolStartEvent as Record<string, unknown> | undefined)
+          ?.type,
         toolCallCount,
       },
     },
@@ -258,8 +258,8 @@ export async function runCapabilityOrchestrationPolicyDecisions(): Promise<Adapt
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
 
   const thread = await runtime.createThread({});

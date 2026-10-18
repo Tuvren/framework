@@ -28,8 +28,7 @@
  */
 
 import { readdir, readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 import type { AttachedClientEndpoint } from "@tuvren/core/capabilities";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
@@ -38,21 +37,18 @@ import type {
   SessionOutboundFrame,
 } from "@tuvren/host-session";
 import { createDuplexSessionBinding } from "@tuvren/host-session";
-import {
-  createRemoteClientSession,
-  type RemoteClientSession,
-} from "@tuvren/remote-session";
+import { createRemoteClientSession } from "@tuvren/remote-session";
+import type { RemoteClientSession } from "@tuvren/remote-session";
 import {
   createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
 import { decodeResumeCursor } from "@tuvren/stream-core";
-import {
-  createWsSessionTransport,
-  type ParsedWsMessage,
-  parseWsMessage,
-  type WsSessionTransport,
-  type WsSocketSink,
+import { createWsSessionTransport, parseWsMessage } from "@tuvren/stream-ws";
+import type {
+  ParsedWsMessage,
+  WsSessionTransport,
+  WsSocketSink,
 } from "@tuvren/stream-ws";
 import type { AnySchema, ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
@@ -70,7 +66,7 @@ import {
   waitFor,
 } from "./framework-adapter-session.ts";
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const WS_JSON_SCHEMA_DIR = resolve(
   REPO_ROOT,
   "spec/streaming/ws/artifacts/json-schema"
@@ -688,13 +684,13 @@ function createFakeBinding(
 }
 
 interface RecordingSink extends WsSocketSink {
-  closes: Array<{ code: number; reason: string | undefined }>;
+  closes: { code: number; reason: string | undefined }[];
   sent: unknown[];
 }
 
 function createRecordingSink(): RecordingSink {
   const sent: unknown[] = [];
-  const closes: Array<{ code: number; reason: string | undefined }> = [];
+  const closes: { code: number; reason: string | undefined }[] = [];
 
   return {
     close(code: number, reason?: string): void {
@@ -734,7 +730,7 @@ function loadWsMessageValidators(): Promise<Map<string, ValidateFunction>> {
       }
 
       const schema = JSON.parse(
-        await readFile(resolve(WS_JSON_SCHEMA_DIR, entry.name), "utf8")
+        await readFile(resolve(WS_JSON_SCHEMA_DIR, entry.name), "utf-8")
       ) as AnySchema;
       ajv.addSchema(schema);
     }
@@ -805,7 +801,7 @@ function readStringField(source: Record<string, unknown>, key: string): string {
   const value = source[key];
 
   if (typeof value !== "string") {
-    throw new Error(
+    throw new TypeError(
       `event-stream-ws fixture is missing a string "${key}" property`
     );
   }
@@ -817,7 +813,7 @@ function readNumberField(source: Record<string, unknown>, key: string): number {
   const value = source[key];
 
   if (typeof value !== "number") {
-    throw new Error(
+    throw new TypeError(
       `event-stream-ws fixture is missing a numeric "${key}" property`
     );
   }

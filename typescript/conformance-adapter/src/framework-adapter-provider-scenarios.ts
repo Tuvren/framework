@@ -21,10 +21,8 @@ import type {
   TuvrenModelResponse,
   TuvrenPrompt,
 } from "@tuvren/core/provider";
-import {
-  assertRunnerExecutionResult,
-  type RunnerExecutionContext,
-} from "@tuvren/core/runner";
+import { assertRunnerExecutionResult } from "@tuvren/core/runner";
+import type { RunnerExecutionContext } from "@tuvren/core/runner";
 import type { ProviderStreamChunk, TuvrenProvider } from "@tuvren/provider-api";
 import {
   createRunnerRegistry,
@@ -37,7 +35,6 @@ import {
   executeStreamCall,
 } from "../../runners/react/src/lib/react-runner-stream.ts";
 import {
-  type AdapterProjection,
   AGENT_NAME,
   assistantText,
   assistantToolCalls,
@@ -50,6 +47,7 @@ import {
   RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
+import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterProviderScenarioDependencies {
   readAssistantText(
@@ -101,14 +99,14 @@ export interface FrameworkAdapterProviderScenarioDependencies {
   readScenarioToolCalls(
     record: Record<string, unknown>,
     path: string
-  ): Array<{
+  ): {
     readonly callId: string;
     readonly input: unknown;
     readonly name: string;
     readonly output?: unknown;
     readonly requiresApproval?: boolean;
     readonly throwMessage?: string;
-  }>;
+  }[];
   readStringProperty(
     record: Record<string, unknown>,
     property: string,
@@ -234,6 +232,7 @@ export function createFrameworkAdapterProviderScenarios(
             callCount: streamCalls,
             chunkTypes: chunks.map((chunk) => chunk.type),
             emittedEventTypes: emittedEvents.map((event) => event.type),
+            response: sequence.response,
             structuredDeltaIndex: findEventIndex(
               emittedEvents,
               "structured.delta"
@@ -245,7 +244,6 @@ export function createFrameworkAdapterProviderScenarios(
             toolCallIdOwnedByFramework: isFirstToolCallIdOwnedByFramework(
               sequence.response
             ),
-            response: sequence.response,
           },
         },
       },
@@ -255,6 +253,7 @@ export function createFrameworkAdapterProviderScenarios(
             callCount: streamCalls,
             chunkTypes: chunks.map((chunk) => chunk.type),
             emittedEventTypes: emittedEvents.map((event) => event.type),
+            response: sequence.response,
             structuredDeltaIndex: findEventIndex(
               emittedEvents,
               "structured.delta"
@@ -266,7 +265,6 @@ export function createFrameworkAdapterProviderScenarios(
             toolCallIdOwnedByFramework: isFirstToolCallIdOwnedByFramework(
               sequence.response
             ),
-            response: sequence.response,
           },
         },
       },
@@ -323,8 +321,8 @@ export function createFrameworkAdapterProviderScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -363,7 +361,10 @@ export function createFrameworkAdapterProviderScenarios(
           execution: {
             callCount: toolCalls,
             eventTypes: events.map((event) => readEventType(event)),
+            failureNames: toolFailures,
             firstToolResultIndex: findEventIndex(events, "tool.result"),
+            inputs: toolInputs,
+            outputs: toolOutputs,
             parallelWaveStartedBeforeResults:
               didParallelWaveStartBeforeResults(events),
             secondToolStartIndex: findEventIndex(
@@ -371,9 +372,6 @@ export function createFrameworkAdapterProviderScenarios(
               "tool.start",
               "call-email"
             ),
-            failureNames: toolFailures,
-            inputs: toolInputs,
-            outputs: toolOutputs,
             toolResults: readToolResultParts(messages),
           },
         },
@@ -383,7 +381,10 @@ export function createFrameworkAdapterProviderScenarios(
           execution: {
             callCount: toolCalls,
             eventTypes: events.map((event) => readEventType(event)),
+            failureNames: toolFailures,
             firstToolResultIndex: findEventIndex(events, "tool.result"),
+            inputs: toolInputs,
+            outputs: toolOutputs,
             parallelWaveStartedBeforeResults:
               didParallelWaveStartBeforeResults(events),
             secondToolStartIndex: findEventIndex(
@@ -391,9 +392,6 @@ export function createFrameworkAdapterProviderScenarios(
               "tool.start",
               "call-email"
             ),
-            failureNames: toolFailures,
-            inputs: toolInputs,
-            outputs: toolOutputs,
             toolResults: readToolResultParts(messages),
           },
         },
@@ -450,6 +448,7 @@ export function createFrameworkAdapterProviderScenarios(
     return {
       evidence: {
         validation: {
+          dialect: resolveSchemaDialect(responseFormat.schema),
           error:
             result.resolution.type === "fail"
               ? {
@@ -457,12 +456,12 @@ export function createFrameworkAdapterProviderScenarios(
                   message: result.resolution.error.message,
                 }
               : undefined,
-          dialect: resolveSchemaDialect(responseFormat.schema),
           resolutionType: result.resolution.type,
         },
       },
       result: {
         validation: {
+          dialect: resolveSchemaDialect(responseFormat.schema),
           error:
             result.resolution.type === "fail"
               ? {
@@ -470,7 +469,6 @@ export function createFrameworkAdapterProviderScenarios(
                   message: result.resolution.error.message,
                 }
               : undefined,
-          dialect: resolveSchemaDialect(responseFormat.schema),
           resolutionType: result.resolution.type,
         },
       },
@@ -503,6 +501,7 @@ export function createFrameworkAdapterProviderScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => {
           context.runtime.emit({
@@ -523,7 +522,6 @@ export function createFrameworkAdapterProviderScenarios(
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -577,13 +575,13 @@ export function createFrameworkAdapterProviderScenarios(
             sourceTurnNodeHash !== undefined &&
             rewrittenTurnNodeHash !== undefined &&
             sourceTurnNodeHash !== rewrittenTurnNodeHash,
-          runnerObservedMessageCount: readRunnerObservedMessageCount(events),
           finalHeadChanged:
             rewrittenTurnNodeHash !== undefined &&
             finalTurnNodeHash !== undefined &&
             rewrittenTurnNodeHash !== finalTurnNodeHash,
           messageCount: messages.length,
           rewrittenMessageCount: rewrittenMessages.length,
+          runnerObservedMessageCount: readRunnerObservedMessageCount(events),
           snapshotMessageCounts: readSnapshotMessageCounts(events),
           sourceMessageCount: sourceMessages.length,
           summaryText: dependencies.readAssistantText(messages, summaryText),
@@ -599,13 +597,13 @@ export function createFrameworkAdapterProviderScenarios(
             sourceTurnNodeHash !== undefined &&
             rewrittenTurnNodeHash !== undefined &&
             sourceTurnNodeHash !== rewrittenTurnNodeHash,
-          runnerObservedMessageCount: readRunnerObservedMessageCount(events),
           finalHeadChanged:
             rewrittenTurnNodeHash !== undefined &&
             finalTurnNodeHash !== undefined &&
             rewrittenTurnNodeHash !== finalTurnNodeHash,
           messageCount: messages.length,
           rewrittenMessageCount: rewrittenMessages.length,
+          runnerObservedMessageCount: readRunnerObservedMessageCount(events),
           snapshotMessageCounts: readSnapshotMessageCounts(events),
           sourceMessageCount: sourceMessages.length,
           summaryText: dependencies.readAssistantText(messages, summaryText),
@@ -638,7 +636,7 @@ export function createFrameworkAdapterProviderScenarios(
         continue;
       }
 
-      const turnNodeHash = event.turnNodeHash;
+      const { turnNodeHash } = event;
 
       if (typeof turnNodeHash !== "string") {
         continue;
@@ -663,7 +661,7 @@ export function createFrameworkAdapterProviderScenarios(
         continue;
       }
 
-      const messageCount = event.data.messageCount;
+      const { messageCount } = event.data;
 
       if (typeof messageCount === "number") {
         return messageCount;
@@ -819,7 +817,7 @@ function readToolResultParts(
       continue;
     }
 
-    const parts = message.parts;
+    const { parts } = message;
 
     if (!Array.isArray(parts)) {
       continue;
