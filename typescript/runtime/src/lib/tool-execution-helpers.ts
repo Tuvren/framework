@@ -101,6 +101,11 @@ export class ToolPauseSignal extends Error {
   }
 }
 
+/** Coerces an arbitrary thrown value into an `Error`, stringifying non-errors. */
+export const normalizeError = (error: unknown): Error => {
+  return error instanceof Error ? error : new Error(String(error));
+};
+
 /**
  * Wraps a {@link ToolBatchEnvironment} with a fence composed from the
  * environment's own signal and a batch-level abort signal.
@@ -118,10 +123,10 @@ export class ToolPauseSignal extends Error {
  * @returns A shallow copy of the environment with fenced publication and
  *   staging seams and `signal` set to the composed fence signal.
  */
-export function createBatchScopedEnvironment(
+export const createBatchScopedEnvironment = (
   environment: ToolBatchEnvironment,
   batchSignal: AbortSignal
-): ToolBatchEnvironment {
+): ToolBatchEnvironment => {
   const fenceSignal =
     environment.signal === undefined
       ? batchSignal
@@ -170,7 +175,7 @@ export function createBatchScopedEnvironment(
       return hash;
     },
   };
-}
+};
 
 /**
  * Builds the `ToolExecutionContext` handed to `tool.execute` (and to
@@ -188,12 +193,12 @@ export function createBatchScopedEnvironment(
  * definition, and `signal` falls back to the batch signal when no per-call
  * timeout signal exists.
  */
-export function createToolExecutionContext(
+export const createToolExecutionContext = (
   toolCall: ToolCallPart,
   tool: TuvrenToolDefinition,
   environment: ToolBatchEnvironment,
   timeoutSignal: AbortSignal | undefined
-): ToolExecutionContext {
+): ToolExecutionContext => {
   return {
     callId: toolCall.callId,
     emit: (event: { data: unknown; name: string }) => {
@@ -221,7 +226,30 @@ export function createToolExecutionContext(
     name: tool.name,
     signal: timeoutSignal ?? environment.signal,
   };
-}
+};
+
+/** Returns the value as a plain record, or `{}` for non-record values. */
+const asRecord = (value: unknown): Record<string, unknown> => {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+
+  return {};
+};
+
+/**
+ * Deep-clones a value with `structuredClone`. Used to hand isolated
+ * snapshots to `aroundTool` handlers; values containing functions must use
+ * `cloneSnapshotPreservingFunctions` instead.
+ */
+export const cloneValue = <T>(value: T): T => {
+  return globalThis.structuredClone(value);
+};
+
+/** Deep-clones a value into a plain record, yielding `{}` for non-records. */
+const cloneRecord = (value: unknown): Record<string, unknown> => {
+  return asRecord(cloneValue(asRecord(value)));
+};
 
 /**
  * Builds the isolated `AroundToolContext` passed to one `aroundTool` handler.
@@ -234,13 +262,13 @@ export function createToolExecutionContext(
  * handler's timeout signal aborts. `extensionState` is this extension's own
  * slice of the context manifest.
  */
-export function createAroundToolContext(
+export const createAroundToolContext = (
   toolCall: ExecutableToolCall,
   extensionName: string,
   environment: ToolBatchEnvironment,
   sharedExports: Record<string, Record<string, unknown>>,
   timeoutSignal: AbortSignal | undefined
-): AroundToolContext {
+): AroundToolContext => {
   return {
     approvalDecision: toolCall.approvalDecision,
     callId: toolCall.toolCall.callId,
@@ -269,7 +297,7 @@ export function createAroundToolContext(
     tool: cloneSnapshotPreservingFunctions(toolCall.tool),
     toolCall: cloneValue(toolCall.toolCall),
   };
-}
+};
 
 /**
  * Applies the (optional) replacement context an `aroundTool` handler passed
@@ -282,10 +310,10 @@ export function createAroundToolContext(
  * isolation boundary (AX004) or erase edit-audit provenance. With no
  * replacement context, the base call is returned unchanged.
  */
-export function toExecutableToolCall(
+export const toExecutableToolCall = (
   base: ExecutableToolCall,
   nextContext: AroundToolContext | undefined
-): ExecutableToolCall {
+): ExecutableToolCall => {
   if (nextContext === undefined) {
     return base;
   }
@@ -300,7 +328,7 @@ export function toExecutableToolCall(
     tool: nextContext.tool,
     toolCall: nextContext.toolCall,
   };
-}
+};
 
 /**
  * Emits the call's `tool.start` event exactly once, in wave turn order.
@@ -312,12 +340,12 @@ export function toExecutableToolCall(
  * only when the framework actually enters the first executable step for the
  * call — never merely because the model requested the tool.
  */
-export async function emitToolStartIfNeeded(
+export const emitToolStartIfNeeded = async (
   toolCall: ExecutableToolCall,
   environment: ToolBatchEnvironment,
   toolStartState: ToolStartState,
   startBarrier: ToolStartBarrier
-): Promise<void> {
+): Promise<void> => {
   if (toolStartState.emitted) {
     return;
   }
@@ -340,7 +368,7 @@ export async function emitToolStartIfNeeded(
   });
   startBarrier.markSettled();
   toolStartState.releaseTurn();
-}
+};
 
 /**
  * Builds the `PendingToolCall` entry for a call awaiting host approval,
@@ -351,11 +379,11 @@ export async function emitToolStartIfNeeded(
  *   `requiresApproval` reason).
  * @defaultValue message - `Approve tool "<name>"?`
  */
-export function createPendingToolCall(
+export const createPendingToolCall = (
   toolCall: { callId: string; name: string },
   input: unknown,
   message?: string
-): PendingToolCall {
+): PendingToolCall => {
   return {
     callId: toolCall.callId,
     decisions: [...DEFAULT_APPROVAL_DECISIONS],
@@ -363,7 +391,7 @@ export function createPendingToolCall(
     message: message ?? `Approve tool "${toolCall.name}"?`,
     name: toolCall.name,
   };
-}
+};
 
 /**
  * Guarantees that an `aroundTool`-supplied `ApprovalRequest` includes the
@@ -375,11 +403,11 @@ export function createPendingToolCall(
  * impossible to pause a call without representing it in the request.
  * Returns a new request object; the input is not mutated.
  */
-export function normalizeApprovalRequest(
+export const normalizeApprovalRequest = (
   toolCall: { callId: string; name: string },
   input: unknown,
   request: ApprovalRequest
-): ApprovalRequest {
+): ApprovalRequest => {
   const existingIndex = request.toolCalls.findIndex(
     (pending) => pending.callId === toolCall.callId
   );
@@ -412,7 +440,7 @@ export function normalizeApprovalRequest(
       },
     ],
   };
-}
+};
 
 /**
  * True when the error is the `invalid_approval_request` runtime error raised
@@ -420,20 +448,20 @@ export function normalizeApprovalRequest(
  * after `next()` already ran). These are extension programming errors and
  * propagate out of the batch instead of becoming tool-failure results.
  */
-export function isApprovalRequestValidationError(error: unknown): boolean {
+export const isApprovalRequestValidationError = (error: unknown): boolean => {
   return (
     error instanceof Error &&
     "code" in error &&
     error.code === "invalid_approval_request"
   );
-}
+};
 
 /** Type guard narrowing a `Promise.allSettled` entry to a rejection. */
-export function isRejectedPromiseResult(
+export const isRejectedPromiseResult = (
   result: PromiseSettledResult<unknown>
-): result is PromiseRejectedResult {
+): result is PromiseRejectedResult => {
   return result.status === "rejected";
-}
+};
 
 /**
  * Evaluates a tool's declarative approval policy (framework spec §8.4):
@@ -442,13 +470,51 @@ export function isRejectedPromiseResult(
  *
  * @returns `true` when the invocation must pause for host approval.
  */
-export async function evaluateApprovalPolicy(
+export const evaluateApprovalPolicy = async (
   policy: NonNullable<TuvrenToolDefinition["approval"]>,
   input: unknown,
   context: ToolExecutionContext
-): Promise<boolean> {
+): Promise<boolean> => {
   return typeof policy === "function" ? await policy(input, context) : policy;
-}
+};
+
+/**
+ * Compiles a JSON Schema with the module's shared Ajv instance, memoizing
+ * object schemas in a `WeakMap` so each tool schema compiles at most once.
+ * Boolean schemas (valid JSON Schema) are compiled fresh since they cannot
+ * key a WeakMap.
+ */
+const getCompiledValidator = (
+  schema: TuvrenToolDefinition["inputSchema"]
+): ValidateFunction => {
+  if (typeof schema === "boolean") {
+    return ajv.compile(schema);
+  }
+
+  const cached = validatorCache.get(schema);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const validator = ajv.compile(schema);
+  validatorCache.set(schema, validator);
+  return validator;
+};
+
+/**
+ * Projects Ajv error objects to a stable, serializable diagnostic shape for
+ * validation-failure `output.details`.
+ */
+const formatAjvErrors = (errors: ErrorObject[] | null | undefined): unknown => {
+  return errors?.map((error) => ({
+    instancePath: error.instancePath,
+    keyword: error.keyword,
+    message: error.message,
+    params: error.params,
+    schemaPath: error.schemaPath,
+  }));
+};
 
 /**
  * Validates a tool's output value against its declared `outputSchema`
@@ -463,12 +529,12 @@ export async function evaluateApprovalPolicy(
  * @returns `{ valid: true, value }` with the value to forward, or
  *   `{ valid: false, details }` with validator diagnostics.
  */
-export function validateToolOutput(
+export const validateToolOutput = (
   schema: NonNullable<TuvrenToolDefinition["outputSchema"]>,
   output: unknown
 ):
   | { details?: unknown; valid: true; value: unknown }
-  | { details?: unknown; valid: false } {
+  | { details?: unknown; valid: false } => {
   if (
     schema !== null &&
     typeof schema === "object" &&
@@ -499,7 +565,7 @@ export function validateToolOutput(
   }
 
   return { details: formatAjvErrors(validator.errors), valid: false };
-}
+};
 
 /**
  * Validates a tool-call input against the tool's `inputSchema` (framework
@@ -514,12 +580,12 @@ export function validateToolOutput(
  * @returns `{ valid: true, value }` with the value the tool should execute
  *   with, or `{ valid: false, details }` with validator diagnostics.
  */
-export function validateToolInput(
+export const validateToolInput = (
   tool: TuvrenToolDefinition,
   input: unknown
 ):
   | { details?: unknown; valid: true; value: unknown }
-  | { details?: unknown; valid: false } {
+  | { details?: unknown; valid: false } => {
   const schema = tool.inputSchema;
 
   if (
@@ -560,159 +626,7 @@ export function validateToolInput(
     details: formatAjvErrors(validator.errors),
     valid: false,
   };
-}
-
-/**
- * Wraps a successful result's output as `{ approval, result }` when the call
- * was executed under an `approve`/`edit` decision that carries reportable
- * metadata (a host message, or the original/edited input pair of an edit).
- *
- * Plain approvals without a message produce no metadata and the result passes
- * through unchanged, as do rejections (those never reach this function with a
- * produced result). This is how a host's `ApprovalDecision.message` is folded
- * into the resulting `ToolResultPart` per framework spec §4.8.
- */
-export function applyApprovalDecisionMetadata(
-  result: ToolResultPart,
-  decision: ApprovalDecision | undefined,
-  audit: EditedApprovalAudit | undefined
-): ToolResultPart {
-  const approval = createApprovalResultMetadata(decision, audit);
-
-  if (
-    approval === undefined ||
-    decision === undefined ||
-    decision.type === "reject" ||
-    !isExecutableApprovalDecision(decision)
-  ) {
-    return result;
-  }
-
-  return {
-    ...result,
-    output: {
-      approval,
-      result: result.output,
-    },
-  };
-}
-
-/**
- * Builds the canonical `isError: true` result for a pending call the host
- * rejected (or answered with an unrecognized decision type). The output
- * carries the decision type and either the host's message or a default
- * rejection message; the call is never executed (framework spec §4.8).
- */
-export function createRejectedToolResult(
-  toolCall: PendingToolCall,
-  decision: ApprovalDecision
-): ToolResultPart {
-  const message =
-    decision.message ??
-    (decision.type === "reject"
-      ? `Tool "${toolCall.name}" was rejected during approval.`
-      : `Tool "${toolCall.name}" was blocked by approval decision "${decision.type}".`);
-
-  return {
-    callId: toolCall.callId,
-    isError: true,
-    name: toolCall.name,
-    output: {
-      decisionType: decision.type,
-      error: message,
-    },
-    type: "tool_result",
-  };
-}
-
-/**
- * Builds the `isError: true` result for a call whose execution (or
- * `aroundTool` chain) threw after exhausting its retry budget. The error
- * message is surfaced in `output.error`, with approval provenance attached
- * when the call ran under a host decision. Tool failures become results —
- * they never fail the run (framework spec §8.6).
- */
-export function createExecutionFailureResult(
-  toolCall: ToolCallPart,
-  error: unknown,
-  decision: ApprovalDecision | undefined,
-  audit: EditedApprovalAudit | undefined
-): ToolResultPart {
-  const message =
-    error instanceof Error ? error.message : `Tool "${toolCall.name}" failed.`;
-  const approval = createApprovalResultMetadata(decision, audit);
-
-  return {
-    callId: toolCall.callId,
-    isError: true,
-    name: toolCall.name,
-    output: {
-      error: message,
-      ...(approval === undefined ? {} : { approval }),
-    },
-    type: "tool_result",
-  };
-}
-
-/**
- * Builds a generic `isError: true` result for a call decided without
- * execution — unknown tool, capability-policy denial, or a malformed resume
- * decision. `details` lands next to `output.error` when provided, and
- * approval provenance is attached when a host decision led here.
- */
-export function createErrorToolResult(
-  toolCall: ToolCallPart,
-  message: string,
-  details?: unknown,
-  decision?: ApprovalDecision,
-  audit?: EditedApprovalAudit
-): ToolResultPart {
-  const approval = createApprovalResultMetadata(decision, audit);
-
-  return {
-    callId: toolCall.callId,
-    isError: true,
-    name: toolCall.name,
-    output: {
-      ...(details === undefined
-        ? { error: message }
-        : { details, error: message }),
-      ...(approval === undefined ? {} : { approval }),
-    },
-    type: "tool_result",
-  };
-}
-
-/**
- * Builds an `isError: true` result carrying a machine-readable `output.code`
- * for typed rejections: `TOOL_INPUT_VALIDATION_FAILED`,
- * `TOOL_RESULT_VALIDATION_FAILED`, and `TOOL_INVOCATION_RATE_LIMITED`.
- * Validator diagnostics ride in `output.details`, and approval provenance is
- * attached on the resume path.
- */
-export function createValidationErrorToolResult(
-  toolCall: ToolCallPart,
-  code: string,
-  message: string,
-  details?: unknown,
-  decision?: ApprovalDecision,
-  audit?: EditedApprovalAudit
-): ToolResultPart {
-  const approval = createApprovalResultMetadata(decision, audit);
-  return {
-    callId: toolCall.callId,
-    isError: true,
-    name: toolCall.name,
-    output: {
-      code,
-      ...(details === undefined
-        ? { error: message }
-        : { details, error: message }),
-      ...(approval === undefined ? {} : { approval }),
-    },
-    type: "tool_result",
-  };
-}
+};
 
 /**
  * Derives the {@link ApprovalResultMetadata} for a result produced under a
@@ -721,10 +635,10 @@ export function createValidationErrorToolResult(
  * yield metadata only when the host attached a message. Returns `undefined`
  * when there is nothing worth recording.
  */
-function createApprovalResultMetadata(
+const createApprovalResultMetadata = (
   decision: ApprovalDecision | undefined,
   audit: EditedApprovalAudit | undefined
-): ApprovalResultMetadata | undefined {
+): ApprovalResultMetadata | undefined => {
   if (decision === undefined) {
     return undefined;
   }
@@ -750,110 +664,170 @@ function createApprovalResultMetadata(
     message: decision.message,
     type: decision.type,
   };
-}
+};
 
 /**
- * Durably stages one tool result and then publishes its `tool.result` event.
- *
- * Waits on the wave's start barrier first, enforcing the §6.4 invariant that
- * no `tool.result` of a wave is emitted before every `tool.start` of that
- * wave. `environment.sanitizeToolResult` (ADR-0064), when configured, is
- * applied here before either durable staging or event emission — this is the
- * single chokepoint for both, so the scrubbed form is what lands in kernel
- * history *and* what the canonical `tool.result` event carries; the
- * pre-sanitization form never reaches either. Staging precedes emission so a
- * crash between the two loses only the event, never the durable result
- * (framework spec §8.6 incremental staging).
- *
- * @param orderIndex - Original tool-call position used as the durable order
- *   key.
- * @param executionClass - The result's resolved execution class, when known;
- *   absent for outcomes decided before a binding was resolved (unknown tool,
- *   input-validation failure, policy denial, resume rejection) per ADR-0064 §3.
- * @returns The staged (sanitized) result paired with its content hash. The
- *   returned `result` — not the caller's input — is what was durably staged
- *   and emitted; callers must thread it into every in-memory downstream
- *   consumer (batch outcomes, after-iteration hooks) so the in-memory view
- *   never diverges from durable state.
+ * Type guard for decisions that lead to execution (`approve` or `edit`);
+ * `reject` and unknown decision types fail the guard and produce rejection
+ * results instead.
  */
-export async function stageAndEmitResult(
-  environment: ToolBatchEnvironment,
+export const isExecutableApprovalDecision = (
+  decision: ApprovalDecision
+): decision is ApprovalDecision & { type: "approve" | "edit" } => {
+  return decision.type === "approve" || decision.type === "edit";
+};
+
+/**
+ * Wraps a successful result's output as `{ approval, result }` when the call
+ * was executed under an `approve`/`edit` decision that carries reportable
+ * metadata (a host message, or the original/edited input pair of an edit).
+ *
+ * Plain approvals without a message produce no metadata and the result passes
+ * through unchanged, as do rejections (those never reach this function with a
+ * produced result). This is how a host's `ApprovalDecision.message` is folded
+ * into the resulting `ToolResultPart` per framework spec §4.8.
+ */
+export const applyApprovalDecisionMetadata = (
   result: ToolResultPart,
-  orderIndex: number,
-  startBarrier: ToolStartBarrier,
-  executionClass?: ExecutionClass,
-  updates: ExtensionStateUpdate[] = []
-): Promise<StagedToolResult> {
-  await startBarrier.waitUntilReady();
-  const sanitized = applySanitizeToolResult(
-    environment,
-    result,
-    executionClass
-  );
-  const hash = await environment.stageResult(sanitized, orderIndex, updates);
-  emitToolResultEvent(environment, sanitized);
-  return { hash, result: sanitized };
-}
+  decision: ApprovalDecision | undefined,
+  audit: EditedApprovalAudit | undefined
+): ToolResultPart => {
+  const approval = createApprovalResultMetadata(decision, audit);
 
-/**
- * Sequentially stages and emits several results that share one order index —
- * e.g. the `completedResults` accompanying an approval pause.
- *
- * @param executionClass - See {@link stageAndEmitResult}; applies to every
- *   result in `results`.
- * @returns Staged (sanitized) results, index-aligned with `results`.
- */
-export async function stageAndEmitResults(
-  environment: ToolBatchEnvironment,
-  results: ToolResultPart[],
-  orderIndex: number,
-  startBarrier: ToolStartBarrier,
-  executionClass?: ExecutionClass,
-  updates: ExtensionStateUpdate[] = []
-): Promise<StagedToolResult[]> {
-  const staged: StagedToolResult[] = [];
-
-  for (const [index, result] of results.entries()) {
-    staged.push(
-      await stageAndEmitResult(
-        environment,
-        result,
-        orderIndex,
-        startBarrier,
-        executionClass,
-        index === 0 ? updates : []
-      )
-    );
-  }
-
-  return staged;
-}
-
-/**
- * Applies the host's {@link ToolBatchEnvironment.sanitizeToolResult} hook
- * (ADR-0064) to a would-be-staged result, if one is configured.
- *
- * A no-op when the hook is absent — byte-identical behavior to today.
- * Delegates the actual hook application (context construction, identity
- * re-stamp, throw handling) to {@link applySanitizeHookToPart}, the same
- * pure helper the pre-staged-provider staging path in
- * `runtime-core-iteration.ts` uses — one shared implementation, two
- * application sites (the Tool Execution Gateway chokepoint here, and the
- * AY003 pre-staged provider message path), per ADR-0064 §3.
- */
-function applySanitizeToolResult(
-  environment: ToolBatchEnvironment,
-  result: ToolResultPart,
-  executionClass: ExecutionClass | undefined
-): ToolResultPart {
-  const hook = environment.sanitizeToolResult;
-
-  if (hook === undefined) {
+  if (
+    approval === undefined ||
+    decision === undefined ||
+    decision.type === "reject" ||
+    !isExecutableApprovalDecision(decision)
+  ) {
     return result;
   }
 
-  return applySanitizeHookToPart(hook, result, executionClass);
-}
+  return {
+    ...result,
+    output: {
+      approval,
+      result: result.output,
+    },
+  };
+};
+
+/**
+ * Builds the canonical `isError: true` result for a pending call the host
+ * rejected (or answered with an unrecognized decision type). The output
+ * carries the decision type and either the host's message or a default
+ * rejection message; the call is never executed (framework spec §4.8).
+ */
+export const createRejectedToolResult = (
+  toolCall: PendingToolCall,
+  decision: ApprovalDecision
+): ToolResultPart => {
+  const message =
+    decision.message ??
+    (decision.type === "reject"
+      ? `Tool "${toolCall.name}" was rejected during approval.`
+      : `Tool "${toolCall.name}" was blocked by approval decision "${decision.type}".`);
+
+  return {
+    callId: toolCall.callId,
+    isError: true,
+    name: toolCall.name,
+    output: {
+      decisionType: decision.type,
+      error: message,
+    },
+    type: "tool_result",
+  };
+};
+
+/**
+ * Builds the `isError: true` result for a call whose execution (or
+ * `aroundTool` chain) threw after exhausting its retry budget. The error
+ * message is surfaced in `output.error`, with approval provenance attached
+ * when the call ran under a host decision. Tool failures become results —
+ * they never fail the run (framework spec §8.6).
+ */
+export const createExecutionFailureResult = (
+  toolCall: ToolCallPart,
+  error: unknown,
+  decision: ApprovalDecision | undefined,
+  audit: EditedApprovalAudit | undefined
+): ToolResultPart => {
+  const message =
+    error instanceof Error ? error.message : `Tool "${toolCall.name}" failed.`;
+  const approval = createApprovalResultMetadata(decision, audit);
+
+  return {
+    callId: toolCall.callId,
+    isError: true,
+    name: toolCall.name,
+    output: {
+      error: message,
+      ...(approval === undefined ? {} : { approval }),
+    },
+    type: "tool_result",
+  };
+};
+
+/**
+ * Builds a generic `isError: true` result for a call decided without
+ * execution — unknown tool, capability-policy denial, or a malformed resume
+ * decision. `details` lands next to `output.error` when provided, and
+ * approval provenance is attached when a host decision led here.
+ */
+export const createErrorToolResult = (
+  toolCall: ToolCallPart,
+  message: string,
+  details?: unknown,
+  decision?: ApprovalDecision,
+  audit?: EditedApprovalAudit
+): ToolResultPart => {
+  const approval = createApprovalResultMetadata(decision, audit);
+
+  return {
+    callId: toolCall.callId,
+    isError: true,
+    name: toolCall.name,
+    output: {
+      ...(details === undefined
+        ? { error: message }
+        : { details, error: message }),
+      ...(approval === undefined ? {} : { approval }),
+    },
+    type: "tool_result",
+  };
+};
+
+/**
+ * Builds an `isError: true` result carrying a machine-readable `output.code`
+ * for typed rejections: `TOOL_INPUT_VALIDATION_FAILED`,
+ * `TOOL_RESULT_VALIDATION_FAILED`, and `TOOL_INVOCATION_RATE_LIMITED`.
+ * Validator diagnostics ride in `output.details`, and approval provenance is
+ * attached on the resume path.
+ */
+export const createValidationErrorToolResult = (
+  toolCall: ToolCallPart,
+  code: string,
+  message: string,
+  details?: unknown,
+  decision?: ApprovalDecision,
+  audit?: EditedApprovalAudit
+): ToolResultPart => {
+  const approval = createApprovalResultMetadata(decision, audit);
+  return {
+    callId: toolCall.callId,
+    isError: true,
+    name: toolCall.name,
+    output: {
+      code,
+      ...(details === undefined
+        ? { error: message }
+        : { details, error: message }),
+      ...(approval === undefined ? {} : { approval }),
+    },
+    type: "tool_result",
+  };
+};
 
 /**
  * Pure application of the ADR-0064 host sanitization hook to a single
@@ -878,11 +852,11 @@ function applySanitizeToolResult(
  * {@link stageAndEmitResult} and the pre-staged provider message path in
  * `runtime-core-iteration.ts`) shares byte-identical semantics.
  */
-export function applySanitizeHookToPart(
+export const applySanitizeHookToPart = (
   hook: SanitizeToolResultHook,
   result: ToolResultPart,
   executionClass: ExecutionClass | undefined
-): ToolResultPart {
+): ToolResultPart => {
   const context: SanitizeToolResultContext = {
     callId: result.callId,
     toolName: result.name,
@@ -915,7 +889,131 @@ export function applySanitizeHookToPart(
       type: "tool_result",
     };
   }
-}
+};
+
+/**
+ * Applies the host's {@link ToolBatchEnvironment.sanitizeToolResult} hook
+ * (ADR-0064) to a would-be-staged result, if one is configured.
+ *
+ * A no-op when the hook is absent — byte-identical behavior to today.
+ * Delegates the actual hook application (context construction, identity
+ * re-stamp, throw handling) to {@link applySanitizeHookToPart}, the same
+ * pure helper the pre-staged-provider staging path in
+ * `runtime-core-iteration.ts` uses — one shared implementation, two
+ * application sites (the Tool Execution Gateway chokepoint here, and the
+ * AY003 pre-staged provider message path), per ADR-0064 §3.
+ */
+const applySanitizeToolResult = (
+  environment: ToolBatchEnvironment,
+  result: ToolResultPart,
+  executionClass: ExecutionClass | undefined
+): ToolResultPart => {
+  const hook = environment.sanitizeToolResult;
+
+  if (hook === undefined) {
+    return result;
+  }
+
+  return applySanitizeHookToPart(hook, result, executionClass);
+};
+
+/**
+ * Publishes the `tool.result` stream event for a staged result, attaching
+ * capability attribution when the tool is still resolvable from the registry
+ * (immediate error results for unregistered tools have no attribution).
+ */
+const emitToolResultEvent = (
+  environment: ToolBatchEnvironment,
+  result: ToolResultPart
+): void => {
+  const tool = environment.toolRegistry.get(result.name);
+  environment.publishEvent({
+    attribution: tool === undefined ? undefined : buildToolAttribution(tool),
+    callId: result.callId,
+    isError: result.isError,
+    name: result.name,
+    output: result.output,
+    timestamp: environment.now(),
+    type: "tool.result",
+  });
+};
+
+/**
+ * Durably stages one tool result and then publishes its `tool.result` event.
+ *
+ * Waits on the wave's start barrier first, enforcing the §6.4 invariant that
+ * no `tool.result` of a wave is emitted before every `tool.start` of that
+ * wave. `environment.sanitizeToolResult` (ADR-0064), when configured, is
+ * applied here before either durable staging or event emission — this is the
+ * single chokepoint for both, so the scrubbed form is what lands in kernel
+ * history *and* what the canonical `tool.result` event carries; the
+ * pre-sanitization form never reaches either. Staging precedes emission so a
+ * crash between the two loses only the event, never the durable result
+ * (framework spec §8.6 incremental staging).
+ *
+ * @param orderIndex - Original tool-call position used as the durable order
+ *   key.
+ * @param executionClass - The result's resolved execution class, when known;
+ *   absent for outcomes decided before a binding was resolved (unknown tool,
+ *   input-validation failure, policy denial, resume rejection) per ADR-0064 §3.
+ * @returns The staged (sanitized) result paired with its content hash. The
+ *   returned `result` — not the caller's input — is what was durably staged
+ *   and emitted; callers must thread it into every in-memory downstream
+ *   consumer (batch outcomes, after-iteration hooks) so the in-memory view
+ *   never diverges from durable state.
+ */
+export const stageAndEmitResult = async (
+  environment: ToolBatchEnvironment,
+  result: ToolResultPart,
+  orderIndex: number,
+  startBarrier: ToolStartBarrier,
+  executionClass?: ExecutionClass,
+  updates: ExtensionStateUpdate[] = []
+): Promise<StagedToolResult> => {
+  await startBarrier.waitUntilReady();
+  const sanitized = applySanitizeToolResult(
+    environment,
+    result,
+    executionClass
+  );
+  const hash = await environment.stageResult(sanitized, orderIndex, updates);
+  emitToolResultEvent(environment, sanitized);
+  return { hash, result: sanitized };
+};
+
+/**
+ * Sequentially stages and emits several results that share one order index —
+ * e.g. the `completedResults` accompanying an approval pause.
+ *
+ * @param executionClass - See {@link stageAndEmitResult}; applies to every
+ *   result in `results`.
+ * @returns Staged (sanitized) results, index-aligned with `results`.
+ */
+export const stageAndEmitResults = async (
+  environment: ToolBatchEnvironment,
+  results: ToolResultPart[],
+  orderIndex: number,
+  startBarrier: ToolStartBarrier,
+  executionClass?: ExecutionClass,
+  updates: ExtensionStateUpdate[] = []
+): Promise<StagedToolResult[]> => {
+  const staged: StagedToolResult[] = [];
+
+  for (const [index, result] of results.entries()) {
+    staged.push(
+      await stageAndEmitResult(
+        environment,
+        result,
+        orderIndex,
+        startBarrier,
+        executionClass,
+        index === 0 ? updates : []
+      )
+    );
+  }
+
+  return staged;
+};
 
 /**
  * Stages and emits the batch's immediate (non-executing) outcomes — unknown
@@ -926,12 +1024,12 @@ export function applySanitizeHookToPart(
  * immediate `tool.result` events wait for the first wave's `tool.start`
  * events; with none, callers pass a zero-count (already-ready) barrier.
  */
-export async function stageImmediateResults(
+export const stageImmediateResults = async (
   environment: ToolBatchEnvironment,
   immediateResults: ToolResultPart[][],
   orderedResults: StagedToolResult[][],
   startBarrier: ToolStartBarrier
-): Promise<void> {
+): Promise<void> => {
   for (const [index, results] of immediateResults.entries()) {
     if (results.length === 0) {
       continue;
@@ -945,7 +1043,43 @@ export async function stageImmediateResults(
     );
     orderedResults[index].push(...staged);
   }
-}
+};
+
+/**
+ * Creates a countdown latch over `totalCalls` calls (see
+ * {@link ToolStartBarrier}). A count of `0` yields an immediately-ready
+ * barrier; extra `markSettled` calls beyond the count are ignored.
+ */
+export const createToolStartBarrier = (
+  totalCalls: number
+): ToolStartBarrier => {
+  let pendingCalls = totalCalls;
+  let resolveReady: (() => void) | undefined;
+  const ready = new Promise<void>((resolve) => {
+    resolveReady = resolve;
+
+    if (pendingCalls === 0) {
+      resolve();
+    }
+  });
+
+  return {
+    markSettled() {
+      if (pendingCalls === 0) {
+        return;
+      }
+
+      pendingCalls -= 1;
+
+      if (pendingCalls === 0) {
+        resolveReady?.();
+      }
+    },
+    async waitUntilReady() {
+      await ready;
+    },
+  };
+};
 
 /**
  * Runs a parallel batch's executable calls while concurrently staging its
@@ -963,7 +1097,7 @@ export async function stageImmediateResults(
  *   cycle with tool-execution.ts.
  * @returns Outcomes of the executable calls, aligned with `executable`.
  */
-export async function stageImmediateResultsWhileExecuting(
+export const stageImmediateResultsWhileExecuting = async (
   environment: ToolBatchEnvironment,
   immediateResults: ToolResultPart[][],
   orderedResults: StagedToolResult[][],
@@ -973,7 +1107,7 @@ export async function stageImmediateResultsWhileExecuting(
     scopedEnvironment: ToolBatchEnvironment,
     startBarrier: ToolStartBarrier
   ) => Promise<SingleToolOutcome[]>
-): Promise<SingleToolOutcome[]> {
+): Promise<SingleToolOutcome[]> => {
   const startBarrier = createToolStartBarrier(
     Math.min(executable.length, environment.maxParallelToolCalls)
   );
@@ -1003,24 +1137,24 @@ export async function stageImmediateResultsWhileExecuting(
   }
 
   return result.outcomes;
-}
+};
 
 /**
  * Appends an extension's returned `state` (if any) to the updates gathered
  * from nested `aroundTool` layers, tagging it with the extension name so the
  * iteration checkpoint can merge it into the right manifest slice.
  */
-export function collectExtensionStateUpdate(
+export const collectExtensionStateUpdate = (
   extensionName: string,
   state: Record<string, unknown> | undefined,
   nestedUpdates: ExtensionStateUpdate[]
-): ExtensionStateUpdate[] {
+): ExtensionStateUpdate[] => {
   if (state === undefined) {
     return nestedUpdates;
   }
 
   return [...nestedUpdates, { extensionName, state }];
-}
+};
 
 /**
  * Collects the `aroundTool` handlers that apply to a given tool, in extension
@@ -1032,7 +1166,7 @@ export function collectExtensionStateUpdate(
  * with the spec as receiver). Each entry carries the extension's `timeout`
  * for per-handler timeout enforcement in the chain.
  */
-export function getAroundToolHandlers(
+export const getAroundToolHandlers = (
   extensions: TuvrenExtension[],
   toolName: string
 ): {
@@ -1043,7 +1177,7 @@ export function getAroundToolHandlers(
   ) => Promise<AroundToolResult> | AroundToolResult;
   receiver: object;
   timeout?: number;
-}[] {
+}[] => {
   const handlers: {
     extensionName: string;
     handler: (
@@ -1082,7 +1216,54 @@ export function getAroundToolHandlers(
   }
 
   return handlers;
-}
+};
+
+/**
+ * Type guard for the `aroundTool` pause verdict
+ * (`{ verdict: "pause", approval }`), the imperative approval-gating
+ * mechanism of framework spec §8.4/§8.7.
+ */
+export const isPauseResult = (
+  result: AroundToolResult
+): result is Extract<AroundToolResult, { verdict: "pause" }> => {
+  return "verdict" in result && result.verdict === "pause";
+};
+
+/**
+ * Marks a call as settled without emitting `tool.start` — used when a call
+ * pauses for approval or fails before execution begins. Waits for the call's
+ * turn (so start ordering stays intact for siblings), decrements the wave
+ * barrier, and releases the next call's turn; no-op when the call already
+ * emitted or settled.
+ */
+export const settleToolStartIfNeeded = async (
+  toolStartState: ToolStartState,
+  startBarrier: ToolStartBarrier
+): Promise<void> => {
+  if (toolStartState.settled) {
+    return;
+  }
+
+  await toolStartState.waitForTurn();
+
+  if (toolStartState.settled) {
+    return;
+  }
+
+  toolStartState.settled = true;
+  startBarrier.markSettled();
+  toolStartState.releaseTurn();
+};
+
+/**
+ * Type guard for the `{ result, state }` form of `AroundToolResult`, where a
+ * handler returns a result part together with an extension-state update.
+ */
+export const isResultWithState = (
+  result: AroundToolResult
+): result is Extract<AroundToolResult, { result: ToolResultPart }> => {
+  return "result" in result;
+};
 
 /**
  * Normalizes the value returned by an `aroundTool` handler into a
@@ -1102,7 +1283,7 @@ export function getAroundToolHandlers(
  *   through with the accumulated updates; a different part is treated as a
  *   substitution and likewise triggers `tool.start` emission when needed.
  */
-export function normalizeAroundToolResult(
+export const normalizeAroundToolResult = (
   extensionName: string,
   result: AroundToolResult,
   nestedUpdates: ExtensionStateUpdate[],
@@ -1111,7 +1292,7 @@ export function normalizeAroundToolResult(
   environment: ToolBatchEnvironment,
   toolStartState: ToolStartState,
   startBarrier: ToolStartBarrier
-): Promise<RawSingleToolOutcome> {
+): Promise<RawSingleToolOutcome> => {
   if (isPauseResult(result)) {
     if (nestedResult !== undefined) {
       return Promise.reject(
@@ -1199,67 +1380,7 @@ export function normalizeAroundToolResult(
     result,
     updates: nestedUpdates,
   }));
-}
-
-/**
- * Creates a countdown latch over `totalCalls` calls (see
- * {@link ToolStartBarrier}). A count of `0` yields an immediately-ready
- * barrier; extra `markSettled` calls beyond the count are ignored.
- */
-export function createToolStartBarrier(totalCalls: number): ToolStartBarrier {
-  let pendingCalls = totalCalls;
-  let resolveReady: (() => void) | undefined;
-  const ready = new Promise<void>((resolve) => {
-    resolveReady = resolve;
-
-    if (pendingCalls === 0) {
-      resolve();
-    }
-  });
-
-  return {
-    markSettled() {
-      if (pendingCalls === 0) {
-        return;
-      }
-
-      pendingCalls -= 1;
-
-      if (pendingCalls === 0) {
-        resolveReady?.();
-      }
-    },
-    async waitUntilReady() {
-      await ready;
-    },
-  };
-}
-
-/**
- * Marks a call as settled without emitting `tool.start` — used when a call
- * pauses for approval or fails before execution begins. Waits for the call's
- * turn (so start ordering stays intact for siblings), decrements the wave
- * barrier, and releases the next call's turn; no-op when the call already
- * emitted or settled.
- */
-export async function settleToolStartIfNeeded(
-  toolStartState: ToolStartState,
-  startBarrier: ToolStartBarrier
-): Promise<void> {
-  if (toolStartState.settled) {
-    return;
-  }
-
-  await toolStartState.waitForTurn();
-
-  if (toolStartState.settled) {
-    return;
-  }
-
-  toolStartState.settled = true;
-  startBarrier.markSettled();
-  toolStartState.releaseTurn();
-}
+};
 
 /**
  * Combines two optional abort signals into one that aborts when either does
@@ -1267,10 +1388,10 @@ export async function settleToolStartIfNeeded(
  * `undefined` when neither does. Used to compose the batch signal with
  * per-call timeout signals.
  */
-export function composeAbortSignals(
+export const composeAbortSignals = (
   left: AbortSignal | undefined,
   right: AbortSignal | undefined
-): AbortSignal | undefined {
+): AbortSignal | undefined => {
   if (left === undefined) {
     return right;
   }
@@ -1280,112 +1401,7 @@ export function composeAbortSignals(
   }
 
   return AbortSignal.any([left, right]);
-}
-
-/**
- * Deep-clones a value with `structuredClone`. Used to hand isolated
- * snapshots to `aroundTool` handlers; values containing functions must use
- * `cloneSnapshotPreservingFunctions` instead.
- */
-export function cloneValue<T>(value: T): T {
-  return globalThis.structuredClone(value);
-}
-
-/** Coerces an arbitrary thrown value into an `Error`, stringifying non-errors. */
-export function normalizeError(error: unknown): Error {
-  return error instanceof Error ? error : new Error(String(error));
-}
-
-/**
- * Type guard for decisions that lead to execution (`approve` or `edit`);
- * `reject` and unknown decision types fail the guard and produce rejection
- * results instead.
- */
-export function isExecutableApprovalDecision(
-  decision: ApprovalDecision
-): decision is ApprovalDecision & { type: "approve" | "edit" } {
-  return decision.type === "approve" || decision.type === "edit";
-}
-
-/**
- * Type guard for the `aroundTool` pause verdict
- * (`{ verdict: "pause", approval }`), the imperative approval-gating
- * mechanism of framework spec §8.4/§8.7.
- */
-export function isPauseResult(
-  result: AroundToolResult
-): result is Extract<AroundToolResult, { verdict: "pause" }> {
-  return "verdict" in result && result.verdict === "pause";
-}
-
-/**
- * Type guard for the `{ result, state }` form of `AroundToolResult`, where a
- * handler returns a result part together with an extension-state update.
- */
-export function isResultWithState(
-  result: AroundToolResult
-): result is Extract<AroundToolResult, { result: ToolResultPart }> {
-  return "result" in result;
-}
-
-/**
- * Compiles a JSON Schema with the module's shared Ajv instance, memoizing
- * object schemas in a `WeakMap` so each tool schema compiles at most once.
- * Boolean schemas (valid JSON Schema) are compiled fresh since they cannot
- * key a WeakMap.
- */
-function getCompiledValidator(
-  schema: TuvrenToolDefinition["inputSchema"]
-): ValidateFunction {
-  if (typeof schema === "boolean") {
-    return ajv.compile(schema);
-  }
-
-  const cached = validatorCache.get(schema);
-
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  const validator = ajv.compile(schema);
-  validatorCache.set(schema, validator);
-  return validator;
-}
-
-/**
- * Projects Ajv error objects to a stable, serializable diagnostic shape for
- * validation-failure `output.details`.
- */
-function formatAjvErrors(errors: ErrorObject[] | null | undefined): unknown {
-  return errors?.map((error) => ({
-    instancePath: error.instancePath,
-    keyword: error.keyword,
-    message: error.message,
-    params: error.params,
-    schemaPath: error.schemaPath,
-  }));
-}
-
-/**
- * Publishes the `tool.result` stream event for a staged result, attaching
- * capability attribution when the tool is still resolvable from the registry
- * (immediate error results for unregistered tools have no attribution).
- */
-function emitToolResultEvent(
-  environment: ToolBatchEnvironment,
-  result: ToolResultPart
-): void {
-  const tool = environment.toolRegistry.get(result.name);
-  environment.publishEvent({
-    attribution: tool === undefined ? undefined : buildToolAttribution(tool),
-    callId: result.callId,
-    isError: result.isError,
-    name: result.name,
-    output: result.output,
-    timestamp: environment.now(),
-    type: "tool.result",
-  });
-}
+};
 
 /**
  * Emits a `tool.audit` lifecycle event carrying only structural lineage keys
@@ -1399,7 +1415,7 @@ function emitToolResultEvent(
  * false (KRT-AZ005); the execution class defaults to `tuvren-server` when the
  * tool is no longer resolvable from the registry.
  */
-export function emitToolAuditEvent(
+export const emitToolAuditEvent = (
   environment: ToolBatchEnvironment,
   callId: string,
   toolName: string,
@@ -1408,7 +1424,7 @@ export function emitToolAuditEvent(
     attempt?: number;
     validationPassed?: boolean;
   }
-): void {
+): void => {
   const tool = environment.toolRegistry.get(toolName);
   const executionClass =
     tool === undefined
@@ -1435,18 +1451,4 @@ export function emitToolAuditEvent(
   }
 
   environment.publishEvent(event);
-}
-
-/** Returns the value as a plain record, or `{}` for non-record values. */
-function asRecord(value: unknown): Record<string, unknown> {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-
-  return {};
-}
-
-/** Deep-clones a value into a plain record, yielding `{}` for non-records. */
-function cloneRecord(value: unknown): Record<string, unknown> {
-  return asRecord(cloneValue(asRecord(value)));
-}
+};
