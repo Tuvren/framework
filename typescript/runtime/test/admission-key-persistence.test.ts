@@ -16,7 +16,14 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, rm, symlink } from "node:fs/promises";
+import {
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -45,6 +52,7 @@ import {
 } from "./runtime-core-test-helpers.ts";
 
 const BACKEND_NAMES = ["memory", "sqlite"] as const;
+const SQLITE_READY_PREFIX = "READY\n";
 
 describe("KRT-CS002 admission-key persistence", () => {
   for (const backendName of BACKEND_NAMES) {
@@ -155,6 +163,37 @@ describe("KRT-CS002 admission-key persistence", () => {
 
     expect(Array.isArray(messageHashes)).toBe(true);
     expect(messageHashes).toEqual([fixture.identityPayloadCodec.messageHash]);
+  });
+
+  test("reaps a child that misses the SQLite process deadline and removes only its directory", async () => {
+    const temporaryParent = await mkdtemp(
+      join(tmpdir(), "tuvren-cs002-timeout-parent-")
+    );
+    const unrelatedFile = join(temporaryParent, "keep.txt");
+    await writeFile(unrelatedFile, "unrelated");
+    let childReaped = false;
+
+    try {
+      await expect(
+        runSqlitePersistenceScenario({
+          childMode: "hang-after-ready",
+          onChildReaped: () => {
+            childReaped = true;
+          },
+          processTimeoutMs: 150,
+          readinessTimeoutMs: 1000,
+          temporaryDirectoryParent: temporaryParent,
+        })
+      ).rejects.toThrow(
+        "SQLite child scenario exceeded its 150ms process deadline"
+      );
+
+      expect(childReaped).toBe(true);
+      expect(await readdir(temporaryParent)).toEqual(["keep.txt"]);
+      expect(await readFile(unrelatedFile, "utf8")).toBe("unrelated");
+    } finally {
+      await rm(temporaryParent, { force: true, recursive: true });
+    }
   });
 
   test("keeps a keyed staged steering message atomic through stale-run preemption", async () => {
@@ -467,10 +506,27 @@ function expectedKeyedUserMessages(): UserMessage[] {
   ];
 }
 
-async function runSqlitePersistenceScenario(): Promise<TuvrenMessage[]> {
+interface SqlitePersistenceScenarioOptions {
+  childMode?: "hang-after-ready";
+  onChildReaped?: () => void;
+  processTimeoutMs?: number;
+  readinessTimeoutMs?: number;
+  temporaryDirectoryParent?: string;
+}
+
+const SQLITE_READINESS_TIMEOUT_MS = 1000;
+const SQLITE_PROCESS_TIMEOUT_MS = 1500;
+
+async function runSqlitePersistenceScenario(
+  options: SqlitePersistenceScenarioOptions = {}
+): Promise<TuvrenMessage[]> {
   const temporaryDirectory = await mkdtemp(
-    join(tmpdir(), "tuvren-cs002-sqlite-")
+    join(options.temporaryDirectoryParent ?? tmpdir(), "tuvren-cs002-sqlite-")
   );
+  let child: ReturnType<typeof spawn> | undefined;
+  let childExit: Promise<number> | undefined;
+  let stdoutTask: Promise<string> | undefined;
+  let stderrTask: Promise<string> | undefined;
 
   try {
     const buildResult = await build({
@@ -504,21 +560,56 @@ async function runSqlitePersistenceScenario(): Promise<TuvrenMessage[]> {
       "dir"
     );
 
-    const child = spawn(
+    child = spawn(
       [
         "node",
         join(temporaryDirectory, "sqlite-scenario.mjs"),
         join(temporaryDirectory, "runtime.sqlite"),
+        options.childMode ?? "",
       ],
       {
         stderr: "pipe",
         stdout: "pipe",
       }
     );
-    const [exitCode, standardError, standardOutput] = await Promise.all([
-      child.exited,
-      new Response(child.stderr).text(),
-      new Response(child.stdout).text(),
+    childExit = child.exited;
+    const stdout = child.stdout;
+    const stderr = child.stderr;
+    if (
+      !(stdout instanceof ReadableStream && stderr instanceof ReadableStream)
+    ) {
+      throw new Error("SQLite child scenario did not create output pipes");
+    }
+
+    let ready = false;
+    const readiness = Promise.withResolvers<void>();
+    stdoutTask = readTextStream(stdout, (accumulatedText) => {
+      if (!ready && accumulatedText.includes(SQLITE_READY_PREFIX)) {
+        ready = true;
+        readiness.resolve();
+      }
+    });
+    stderrTask = new Response(stderr).text();
+    const exit = childExit;
+
+    await withTimeout(
+      Promise.race([
+        readiness.promise,
+        exit.then(() => {
+          throw new Error("SQLite child exited before becoming ready");
+        }),
+      ]),
+      options.readinessTimeoutMs ?? SQLITE_READINESS_TIMEOUT_MS,
+      `SQLite child scenario exceeded its ${options.readinessTimeoutMs ?? SQLITE_READINESS_TIMEOUT_MS}ms readiness deadline`
+    );
+    const exitCode = await withTimeout(
+      exit,
+      options.processTimeoutMs ?? SQLITE_PROCESS_TIMEOUT_MS,
+      `SQLite child scenario exceeded its ${options.processTimeoutMs ?? SQLITE_PROCESS_TIMEOUT_MS}ms process deadline`
+    );
+    const [standardOutput, standardError] = await Promise.all([
+      stdoutTask,
+      stderrTask,
     ]);
 
     if (exitCode !== 0) {
@@ -527,7 +618,11 @@ async function runSqlitePersistenceScenario(): Promise<TuvrenMessage[]> {
       );
     }
 
-    const messages: unknown = JSON.parse(standardOutput);
+    const messages: unknown = JSON.parse(
+      standardOutput.startsWith(SQLITE_READY_PREFIX)
+        ? standardOutput.slice(SQLITE_READY_PREFIX.length)
+        : standardOutput
+    );
     if (!Array.isArray(messages)) {
       throw new Error("SQLite child scenario returned malformed messages");
     }
@@ -540,7 +635,68 @@ async function runSqlitePersistenceScenario(): Promise<TuvrenMessage[]> {
 
     return validatedMessages;
   } finally {
-    await rm(temporaryDirectory, { force: true, recursive: true });
+    try {
+      if (child !== undefined && childExit !== undefined) {
+        if (child.exitCode === null) {
+          child.kill();
+        }
+        await childExit;
+        options.onChildReaped?.();
+        await Promise.allSettled(
+          [stdoutTask, stderrTask].filter(
+            (task): task is Promise<string> => task !== undefined
+          )
+        );
+      }
+    } finally {
+      await rm(temporaryDirectory, { force: true, recursive: true });
+    }
+  }
+}
+
+async function readTextStream(
+  stream: ReadableStream<Uint8Array>,
+  onText: (accumulatedText: string) => void
+): Promise<string> {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let accumulatedText = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        accumulatedText += decoder.decode();
+        return accumulatedText;
+      }
+
+      const chunk = decoder.decode(value, { stream: true });
+      accumulatedText += chunk;
+      onText(accumulatedText);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  message: string
+): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_resolve, reject) => {
+        timeout = setTimeout(() => reject(new Error(message)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout !== undefined) {
+      clearTimeout(timeout);
+    }
   }
 }
 
