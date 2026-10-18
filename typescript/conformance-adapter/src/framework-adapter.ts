@@ -86,13 +86,15 @@ import {
   runSecretIsolationTelemetry,
 } from "./framework-adapter-secret-isolation.ts";
 import {
-  runApprovalResponseResume,
-  runCancelCooperative,
-  runCancelWhilePaused,
   runDispatchTimeout,
   runGraceWindowExpiry,
   runReattachRedelivery,
   runSequenceContinuity,
+} from "./framework-adapter-session-lifecycle.ts";
+import {
+  runApprovalResponseResume,
+  runCancelCooperative,
+  runCancelWhilePaused,
   runStaleClientResult,
   runValidateFrameFixtures,
 } from "./framework-adapter-session.ts";
