@@ -56,13 +56,13 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function findEvents(events: unknown[], type: string) {
+const findEvents = (events: unknown[], type: string) => {
   return events.filter(
     (e) => (e as Record<string, unknown>).type === type
   ) as Record<string, unknown>[];
-}
+};
 
-function extractAttr(event: Record<string, unknown> | undefined) {
+const extractAttr = (event: Record<string, unknown> | undefined) => {
   const attr = event?.attribution as Record<string, unknown> | undefined;
   const obs = attr?.observation as Record<string, unknown> | undefined;
   return {
@@ -72,13 +72,13 @@ function extractAttr(event: Record<string, unknown> | undefined) {
       canPersistResult: obs?.canPersistResult as boolean | undefined,
     },
   };
-}
+};
 
-function buildProviderMsg(
+const buildProviderMsg = (
   callId: string,
   name: string,
   executionClass: "provider-native" | "provider-mediated"
-): TuvrenMessage {
+): TuvrenMessage => {
   return {
     parts: [
       {
@@ -95,9 +95,9 @@ function buildProviderMsg(
     ],
     role: "tool",
   };
-}
+};
 
-function makeSingleCallRunner(toolName: string) {
+const makeSingleCallRunner = (toolName: string) => {
   return createStaticRunner(async (ctx) => {
     await Promise.resolve();
     if (!ctx.messages.some((m) => m.role === "tool")) {
@@ -116,12 +116,12 @@ function makeSingleCallRunner(toolName: string) {
       resolution: { reason: "done", type: "end_turn" as const },
     };
   });
-}
+};
 
-function makeProviderRunner(
+const makeProviderRunner = (
   executionClass: "provider-native" | "provider-mediated",
   toolName: string
-) {
+) => {
   return createStaticRunner(async (ctx) => {
     await Promise.resolve();
     if (!ctx.messages.some((m) => m.role === "tool")) {
@@ -141,7 +141,7 @@ function makeProviderRunner(
       resolution: { reason: "done", type: "end_turn" as const },
     };
   });
-}
+};
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.capability-orchestration.integration
@@ -151,253 +151,254 @@ function makeProviderRunner(
 // invocation-time policy application, and per-class observation limits.
 // ---------------------------------------------------------------------------
 
-export async function runCapabilityOrchestrationIntegration(): Promise<AdapterProjection> {
-  // === 1. tuvren-server ===
-  const SERVER_TOOL = "bc001.integration.server";
-  const serverHarness = createConformanceKernelHarness();
-  const serverRuntime = createTuvrenRuntimeCore({
-    createId: createConformanceIdFactory(),
-    defaultRunnerId: RUNNER_ID,
-    kernel: serverHarness.kernel,
-    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(SERVER_TOOL)]),
-  });
-  const serverThread = await serverRuntime.createThread({});
-  const serverHandle = serverRuntime.executeTurn({
-    branchId: serverThread.branchId,
-    config: {
-      name: AGENT_NAME,
-      tools: [
+export const runCapabilityOrchestrationIntegration =
+  async (): Promise<AdapterProjection> => {
+    // === 1. tuvren-server ===
+    const SERVER_TOOL = "bc001.integration.server";
+    const serverHarness = createConformanceKernelHarness();
+    const serverRuntime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: serverHarness.kernel,
+      runnerRegistry: createRunnerRegistry([makeSingleCallRunner(SERVER_TOOL)]),
+    });
+    const serverThread = await serverRuntime.createThread({});
+    const serverHandle = serverRuntime.executeTurn({
+      branchId: serverThread.branchId,
+      config: {
+        name: AGENT_NAME,
+        tools: [
+          {
+            description: "bc001 tuvren-server capability",
+            execute: async () => ({ ok: true }),
+            inputSchema: { type: "object" },
+            name: SERVER_TOOL,
+          },
+        ],
+      },
+      signal: textSignal("bc001 tuvren-server"),
+      threadId: serverThread.threadId,
+    });
+    const serverEvents = await collectValues(serverHandle.events());
+    const serverStarts = findEvents(serverEvents, "tool.start");
+    const serverResults = findEvents(serverEvents, "tool.result");
+    const serverAttr = extractAttr(serverStarts[0]);
+
+    // === 2. provider-native ===
+    const PN_TOOL = "bc001.integration.provider_native";
+    const pnHarness = createConformanceKernelHarness();
+    const pnRuntime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: pnHarness.kernel,
+      runnerRegistry: createRunnerRegistry([
+        makeProviderRunner("provider-native", PN_TOOL),
+      ]),
+    });
+    const pnThread = await pnRuntime.createThread({});
+    const pnHandle = pnRuntime.executeTurn({
+      branchId: pnThread.branchId,
+      config: { name: AGENT_NAME },
+      signal: textSignal("bc001 provider-native"),
+      threadId: pnThread.threadId,
+    });
+    const pnEvents = await collectValues(pnHandle.events());
+    const pnStarts = findEvents(pnEvents, "tool.start");
+    const pnResults = findEvents(pnEvents, "tool.result");
+    const pnAttr = extractAttr(pnStarts[0]);
+
+    // === 3. provider-mediated ===
+    const PM_TOOL = "bc001.integration.provider_mediated";
+    const pmHarness = createConformanceKernelHarness();
+    const pmRuntime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: pmHarness.kernel,
+      runnerRegistry: createRunnerRegistry([
+        makeProviderRunner("provider-mediated", PM_TOOL),
+      ]),
+    });
+    const pmThread = await pmRuntime.createThread({});
+    const pmHandle = pmRuntime.executeTurn({
+      branchId: pmThread.branchId,
+      config: { name: AGENT_NAME },
+      signal: textSignal("bc001 provider-mediated"),
+      threadId: pmThread.threadId,
+    });
+    const pmEvents = await collectValues(pmHandle.events());
+    const pmStarts = findEvents(pmEvents, "tool.start");
+    const pmResults = findEvents(pmEvents, "tool.result");
+    const pmAttr = extractAttr(pmStarts[0]);
+
+    // === 4. tuvren-client ===
+    const CLIENT_CAP = "bc001.integration.client";
+    const clientEndpoint: AttachedClientEndpoint = {
+      advertisedCapabilities: [
         {
-          description: "bc001 tuvren-server capability",
-          execute: async () => ({ ok: true }),
+          capabilityId: CLIENT_CAP,
+          description: "bc001 tuvren-client capability",
           inputSchema: { type: "object" },
-          name: SERVER_TOOL,
         },
       ],
-    },
-    signal: textSignal("bc001 tuvren-server"),
-    threadId: serverThread.threadId,
-  });
-  const serverEvents = await collectValues(serverHandle.events());
-  const serverStarts = findEvents(serverEvents, "tool.start");
-  const serverResults = findEvents(serverEvents, "tool.result");
-  const serverAttr = extractAttr(serverStarts[0]);
-
-  // === 2. provider-native ===
-  const PN_TOOL = "bc001.integration.provider_native";
-  const pnHarness = createConformanceKernelHarness();
-  const pnRuntime = createTuvrenRuntimeCore({
-    createId: createConformanceIdFactory(),
-    defaultRunnerId: RUNNER_ID,
-    kernel: pnHarness.kernel,
-    runnerRegistry: createRunnerRegistry([
-      makeProviderRunner("provider-native", PN_TOOL),
-    ]),
-  });
-  const pnThread = await pnRuntime.createThread({});
-  const pnHandle = pnRuntime.executeTurn({
-    branchId: pnThread.branchId,
-    config: { name: AGENT_NAME },
-    signal: textSignal("bc001 provider-native"),
-    threadId: pnThread.threadId,
-  });
-  const pnEvents = await collectValues(pnHandle.events());
-  const pnStarts = findEvents(pnEvents, "tool.start");
-  const pnResults = findEvents(pnEvents, "tool.result");
-  const pnAttr = extractAttr(pnStarts[0]);
-
-  // === 3. provider-mediated ===
-  const PM_TOOL = "bc001.integration.provider_mediated";
-  const pmHarness = createConformanceKernelHarness();
-  const pmRuntime = createTuvrenRuntimeCore({
-    createId: createConformanceIdFactory(),
-    defaultRunnerId: RUNNER_ID,
-    kernel: pmHarness.kernel,
-    runnerRegistry: createRunnerRegistry([
-      makeProviderRunner("provider-mediated", PM_TOOL),
-    ]),
-  });
-  const pmThread = await pmRuntime.createThread({});
-  const pmHandle = pmRuntime.executeTurn({
-    branchId: pmThread.branchId,
-    config: { name: AGENT_NAME },
-    signal: textSignal("bc001 provider-mediated"),
-    threadId: pmThread.threadId,
-  });
-  const pmEvents = await collectValues(pmHandle.events());
-  const pmStarts = findEvents(pmEvents, "tool.start");
-  const pmResults = findEvents(pmEvents, "tool.result");
-  const pmAttr = extractAttr(pmStarts[0]);
-
-  // === 4. tuvren-client ===
-  const CLIENT_CAP = "bc001.integration.client";
-  const clientEndpoint: AttachedClientEndpoint = {
-    advertisedCapabilities: [
-      {
-        capabilityId: CLIENT_CAP,
-        description: "bc001 tuvren-client capability",
-        inputSchema: { type: "object" },
+      dispatch(
+        envelope: ClientInvocationEnvelope
+      ): Promise<ClientReportedResult> {
+        return Promise.resolve({
+          callId: envelope.callId,
+          content: { ok: true },
+          leaseToken: envelope.leaseToken,
+        });
       },
-    ],
-    dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      return Promise.resolve({
-        callId: envelope.callId,
-        content: { ok: true },
-        leaseToken: envelope.leaseToken,
-      });
-    },
-    endpointId: "ep-bc001-client",
-  };
-  const clientBoundary = createClientEndpointBoundary([clientEndpoint]);
-  const clientHarness = createConformanceKernelHarness();
-  const clientRuntime = createTuvrenRuntimeCore({
-    createId: createConformanceIdFactory(),
-    defaultRunnerId: RUNNER_ID,
-    kernel: clientHarness.kernel,
-    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(CLIENT_CAP)]),
-  });
-  const clientThread = await clientRuntime.createThread({});
-  const clientHandle = clientRuntime.executeTurn({
-    branchId: clientThread.branchId,
-    config: {
-      clientEndpointBoundary: clientBoundary,
-      clientEndpoints: [clientEndpoint],
-      name: AGENT_NAME,
-    },
-    signal: textSignal("bc001 tuvren-client"),
-    threadId: clientThread.threadId,
-  });
-  const clientEvents = await collectValues(clientHandle.events());
-  const clientStarts = findEvents(clientEvents, "tool.start");
-  const clientResults = findEvents(clientEvents, "tool.result");
-  const clientAttr = extractAttr(clientStarts[0]);
-
-  // === 5. MCP-as-binding: resolve endpoint kind via BindingResolver ===
-  const resolver = createBindingResolver();
-  const mcpTool: TuvrenToolDefinition = {
-    description: "bc001 mcp-server binding",
-    execute() {
-      return {};
-    },
-    inputSchema: { type: "object" },
-    metadata: { mcp: { serverName: "bc001-mcp-server" } },
-    name: "bc001-mcp-tool",
-  };
-  const mcpBinding = resolver.resolveFromToolDefinition(mcpTool);
-
-  // === 6. Policy: exposure-time (standalone API) + invocation-time (wired turn) ===
-  const WITHHELD_SURFACE = "bc001-withheld";
-  const DENIED_CAP = "bc001-denied";
-
-  const policyEngine = createCapabilityPolicyEngine({
-    deniedCapabilityIds: new Set([DENIED_CAP]),
-    deniedSurfaceNames: new Set([WITHHELD_SURFACE]),
-  });
-
-  // Exposure-time: evaluate policy API directly to capture withheld decision
-  const exposureCtx = {
-    modelId: "bc001-model",
-    permissions: [] as string[],
-    providerId: "bc001-provider",
-  };
-  const exposureDecisions = policyEngine.evaluateExposure(
-    [
-      {
-        capabilityId: "bc001-withheld-cap",
-        description: "bc001 withheld surface",
-        inputSchema: { type: "object" },
-        name: WITHHELD_SURFACE,
+      endpointId: "ep-bc001-client",
+    };
+    const clientBoundary = createClientEndpointBoundary([clientEndpoint]);
+    const clientHarness = createConformanceKernelHarness();
+    const clientRuntime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: clientHarness.kernel,
+      runnerRegistry: createRunnerRegistry([makeSingleCallRunner(CLIENT_CAP)]),
+    });
+    const clientThread = await clientRuntime.createThread({});
+    const clientHandle = clientRuntime.executeTurn({
+      branchId: clientThread.branchId,
+      config: {
+        clientEndpointBoundary: clientBoundary,
+        clientEndpoints: [clientEndpoint],
+        name: AGENT_NAME,
       },
-    ],
-    exposureCtx
-  );
-  const withheldDecision = exposureDecisions.find(
-    (d) => d.surfaceName === WITHHELD_SURFACE
-  );
+      signal: textSignal("bc001 tuvren-client"),
+      threadId: clientThread.threadId,
+    });
+    const clientEvents = await collectValues(clientHandle.events());
+    const clientStarts = findEvents(clientEvents, "tool.start");
+    const clientResults = findEvents(clientEvents, "tool.result");
+    const clientAttr = extractAttr(clientStarts[0]);
 
-  // Invocation-time: wired turn where runner calls the denied capability
-  const policyHarness = createConformanceKernelHarness();
-  const policyRuntime = createTuvrenRuntimeCore({
-    createId: createConformanceIdFactory(),
-    defaultRunnerId: RUNNER_ID,
-    kernel: policyHarness.kernel,
-    runnerRegistry: createRunnerRegistry([makeSingleCallRunner(DENIED_CAP)]),
-  });
-  const policyThread = await policyRuntime.createThread({});
-  const policyHandle = policyRuntime.executeTurn({
-    branchId: policyThread.branchId,
-    config: {
-      capabilityPolicyEngine: policyEngine,
-      name: AGENT_NAME,
-      tools: [
+    // === 5. MCP-as-binding: resolve endpoint kind via BindingResolver ===
+    const resolver = createBindingResolver();
+    const mcpTool: TuvrenToolDefinition = {
+      description: "bc001 mcp-server binding",
+      execute() {
+        return {};
+      },
+      inputSchema: { type: "object" },
+      metadata: { mcp: { serverName: "bc001-mcp-server" } },
+      name: "bc001-mcp-tool",
+    };
+    const mcpBinding = resolver.resolveFromToolDefinition(mcpTool);
+
+    // === 6. Policy: exposure-time (standalone API) + invocation-time (wired turn) ===
+    const WITHHELD_SURFACE = "bc001-withheld";
+    const DENIED_CAP = "bc001-denied";
+
+    const policyEngine = createCapabilityPolicyEngine({
+      deniedCapabilityIds: new Set([DENIED_CAP]),
+      deniedSurfaceNames: new Set([WITHHELD_SURFACE]),
+    });
+
+    // Exposure-time: evaluate policy API directly to capture withheld decision
+    const exposureCtx = {
+      modelId: "bc001-model",
+      permissions: [] as string[],
+      providerId: "bc001-provider",
+    };
+    const exposureDecisions = policyEngine.evaluateExposure(
+      [
         {
-          description: "bc001 invocation-denied capability",
-          execute: async () => ({ ok: true }),
+          capabilityId: "bc001-withheld-cap",
+          description: "bc001 withheld surface",
           inputSchema: { type: "object" },
-          name: DENIED_CAP,
+          name: WITHHELD_SURFACE,
         },
       ],
-    },
-    signal: textSignal("bc001 policy invocation"),
-    threadId: policyThread.threadId,
-  });
-  const policyEvents = await collectValues(policyHandle.events());
-  const deniedResults = findEvents(policyEvents, "tool.result").filter(
-    (e) => e.name === DENIED_CAP
-  );
-  const deniedResultEvent = deniedResults[0] as
-    | Record<string, unknown>
-    | undefined;
+      exposureCtx
+    );
+    const withheldDecision = exposureDecisions.find(
+      (d) => d.surfaceName === WITHHELD_SURFACE
+    );
 
-  return {
-    result: {
-      integration: {
-        policy: {
-          // false when exposure-time policy correctly withholds the surface
-          withheldToolReachedModel: withheldDecision?.exposed ?? true,
-          // true when invocation-time denial produces isError on tool.result
-          deniedToolResultIsError: deniedResultEvent?.isError === true,
-        },
-        providerMediated: {
-          executionClass: pmAttr.executionClass,
-          observation: {
-            canAudit: pmAttr.observation.canAudit,
-            canPersistResult: pmAttr.observation.canPersistResult,
+    // Invocation-time: wired turn where runner calls the denied capability
+    const policyHarness = createConformanceKernelHarness();
+    const policyRuntime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: policyHarness.kernel,
+      runnerRegistry: createRunnerRegistry([makeSingleCallRunner(DENIED_CAP)]),
+    });
+    const policyThread = await policyRuntime.createThread({});
+    const policyHandle = policyRuntime.executeTurn({
+      branchId: policyThread.branchId,
+      config: {
+        capabilityPolicyEngine: policyEngine,
+        name: AGENT_NAME,
+        tools: [
+          {
+            description: "bc001 invocation-denied capability",
+            execute: async () => ({ ok: true }),
+            inputSchema: { type: "object" },
+            name: DENIED_CAP,
           },
-          toolResultCount: pmResults.length,
-          toolStartCount: pmStarts.length,
-        },
-        providerNative: {
-          executionClass: pnAttr.executionClass,
-          observation: {
-            canAudit: pnAttr.observation.canAudit,
-            canPersistResult: pnAttr.observation.canPersistResult,
+        ],
+      },
+      signal: textSignal("bc001 policy invocation"),
+      threadId: policyThread.threadId,
+    });
+    const policyEvents = await collectValues(policyHandle.events());
+    const deniedResults = findEvents(policyEvents, "tool.result").filter(
+      (e) => e.name === DENIED_CAP
+    );
+    const deniedResultEvent = deniedResults[0] as
+      | Record<string, unknown>
+      | undefined;
+
+    return {
+      result: {
+        integration: {
+          policy: {
+            // false when exposure-time policy correctly withholds the surface
+            withheldToolReachedModel: withheldDecision?.exposed ?? true,
+            // true when invocation-time denial produces isError on tool.result
+            deniedToolResultIsError: deniedResultEvent?.isError === true,
           },
-          toolResultCount: pnResults.length,
-          toolStartCount: pnStarts.length,
-        },
-        tuvrenClient: {
-          executionClass: clientAttr.executionClass,
-          observation: {
-            canAudit: clientAttr.observation.canAudit,
-            canPersistResult: clientAttr.observation.canPersistResult,
+          providerMediated: {
+            executionClass: pmAttr.executionClass,
+            observation: {
+              canAudit: pmAttr.observation.canAudit,
+              canPersistResult: pmAttr.observation.canPersistResult,
+            },
+            toolResultCount: pmResults.length,
+            toolStartCount: pmStarts.length,
           },
-          toolResultCount: clientResults.length,
-          toolStartCount: clientStarts.length,
-        },
-        tuvrenServer: {
-          executionClass: serverAttr.executionClass,
-          mcpEndpointKind: mcpBinding.endpoint.kind,
-          observation: {
-            canAudit: serverAttr.observation.canAudit,
-            canPersistResult: serverAttr.observation.canPersistResult,
+          providerNative: {
+            executionClass: pnAttr.executionClass,
+            observation: {
+              canAudit: pnAttr.observation.canAudit,
+              canPersistResult: pnAttr.observation.canPersistResult,
+            },
+            toolResultCount: pnResults.length,
+            toolStartCount: pnStarts.length,
           },
-          toolResultCount: serverResults.length,
-          toolStartCount: serverStarts.length,
+          tuvrenClient: {
+            executionClass: clientAttr.executionClass,
+            observation: {
+              canAudit: clientAttr.observation.canAudit,
+              canPersistResult: clientAttr.observation.canPersistResult,
+            },
+            toolResultCount: clientResults.length,
+            toolStartCount: clientStarts.length,
+          },
+          tuvrenServer: {
+            executionClass: serverAttr.executionClass,
+            mcpEndpointKind: mcpBinding.endpoint.kind,
+            observation: {
+              canAudit: serverAttr.observation.canAudit,
+              canPersistResult: serverAttr.observation.canPersistResult,
+            },
+            toolResultCount: serverResults.length,
+            toolStartCount: serverStarts.length,
+          },
         },
       },
-    },
+    };
   };
-}
