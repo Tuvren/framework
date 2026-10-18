@@ -84,7 +84,7 @@ tickets:
         - tools/biome-coverage/bt.json
         - ".changeset/toolchain-bt-runtime-lint.md"
     verification:
-      command: bun run lint
+      command: bun run verify
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if a project isn't clean, type-aware lint skips a rule, or an admitted path loses a needed Biome directive before the same commit switches its lint target and coverage ownership; do not improvise."
