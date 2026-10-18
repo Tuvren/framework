@@ -25,9 +25,13 @@
  * about whether a bound "held". Raw observations only.
  */
 
+import { once } from "node:events";
+import { setTimeout as delay } from "node:timers/promises";
+
 import type { ExecutionResult } from "@tuvren/core/execution";
 import type {
   TelemetryEvent,
+  TelemetrySpan,
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
@@ -56,18 +60,21 @@ import {
 const createBoundsTelemetryCapture = (): {
   events: TelemetryEvent[];
   sink: TuvrenTelemetrySink;
+  spans: TelemetrySpan[];
 } => {
   const events: TelemetryEvent[] = [];
+  const spans: TelemetrySpan[] = [];
   return {
     events,
     sink: {
       event: (event) => {
         events.push(event);
       },
-      span: () => {
-        return;
+      span: (span) => {
+        spans.push(span);
       },
     },
+    spans,
   };
 };
 
@@ -80,15 +87,21 @@ const createDeterministicClock = (): (() => number) => {
   };
 };
 
-const asRecord = (value: unknown): Record<string, unknown> => {
-  return value as Record<string, unknown>;
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const fromSynchronousWithoutArguments = <Value>(
+  operation: () => Value
+): (() => Promise<Value>) =>
+  Promise.try.bind<typeof Promise, [() => Value], [], Promise<Value>>(
+    Promise,
+    operation
+  );
 
 const findCanonicalErrorCode = (events: readonly unknown[]): string | null => {
   for (const event of events) {
-    const record = asRecord(event);
-    if (record.type === "error" && typeof record.error === "object") {
-      const { code } = asRecord(record.error);
+    if (isRecord(event) && event.type === "error" && isRecord(event.error)) {
+      const { code } = event.error;
       if (typeof code === "string") {
         return code;
       }
@@ -101,10 +114,10 @@ const findTerminalTurnEndStatus = (
   events: readonly unknown[]
 ): string | null => {
   const turnEnds = events.filter(
-    (event) => asRecord(event).type === "turn.end"
+    (event): event is Record<string, unknown> =>
+      isRecord(event) && event.type === "turn.end"
   );
-  const last = turnEnds.at(-1);
-  const status = last === undefined ? undefined : asRecord(last).status;
+  const status = turnEnds.at(-1)?.status;
   return typeof status === "string" ? status : null;
 };
 
@@ -114,7 +127,7 @@ const summarizeBoundedTelemetry = (
   const bounded = telemetryEvents.filter(
     (event) => event.kind === "execution.bounded"
   );
-  const first = bounded[0];
+  const [first] = bounded;
   return {
     bound: first?.attributes["tuvren.runtime.bound"] ?? null,
     count: bounded.length,
@@ -146,35 +159,28 @@ const summarizeBoundsTurn = (
   telemetryEvents: readonly TelemetryEvent[],
   result: ExecutionResult,
   extra: Record<string, unknown> = {}
-): BoundsTurnObservation => {
-  return {
-    events,
-    result: {
-      ...summarizeExecutionResult(result),
-      boundedTelemetry: summarizeBoundedTelemetry(telemetryEvents),
-      fatalErrorEventCode: findCanonicalErrorCode(events),
-      terminalTurnEndStatus: findTerminalTurnEndStatus(events),
-      ...extra,
-    },
-  };
-};
-
-const runawayTextRunner = createStaticRunner(async () => {
-  await Promise.resolve();
-  return {
-    messages: [assistantText("keep going")],
-    resolution: { type: "continue_iteration" as const },
-  };
+): BoundsTurnObservation => ({
+  events,
+  result: {
+    ...summarizeExecutionResult(result),
+    boundedTelemetry: summarizeBoundedTelemetry(telemetryEvents),
+    fatalErrorEventCode: findCanonicalErrorCode(events),
+    terminalTurnEndStatus: findTerminalTurnEndStatus(events),
+    ...extra,
+  },
 });
 
-const noopTool = (name: string): TuvrenToolDefinition => {
-  return {
-    description: "noop bounds tool",
-    execute: async () => ({ ok: true }),
-    inputSchema: { type: "object" },
-    name,
-  };
-};
+const runawayTextRunner = createStaticRunner(() => ({
+  messages: [assistantText("keep going")],
+  resolution: { type: "continue_iteration" as const },
+}));
+
+const noopTool = (name: string): TuvrenToolDefinition => ({
+  description: "noop bounds tool",
+  execute: () => ({ ok: true }),
+  inputSchema: { type: "object" },
+  name,
+});
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.execution-bounds.max-iterations
@@ -219,20 +225,17 @@ export const runExecutionBoundsMaxToolCalls =
   async (): Promise<AdapterProjection> => {
     const capture = createBoundsTelemetryCapture();
     const harness = createConformanceKernelHarness();
-    const runner = createStaticRunner(async () => {
-      await Promise.resolve();
-      return {
-        messages: [
-          assistantToolCalls([
-            { callId: "t1", input: {}, name: "noop" },
-            { callId: "t2", input: {}, name: "noop" },
-            { callId: "t3", input: {}, name: "noop" },
-          ]),
-        ],
-        resolution: { type: "continue_iteration" as const },
-        toolExecutionMode: "parallel" as const,
-      };
-    });
+    const runner = createStaticRunner(() => ({
+      messages: [
+        assistantToolCalls([
+          { callId: "t1", input: {}, name: "noop" },
+          { callId: "t2", input: {}, name: "noop" },
+          { callId: "t3", input: {}, name: "noop" },
+        ]),
+      ],
+      resolution: { type: "continue_iteration" as const },
+      toolExecutionMode: "parallel" as const,
+    }));
     const runtime = createTuvrenRuntimeCore({
       bounds: { maxIterations: 100, maxToolCalls: 2 },
       createId: createConformanceIdFactory(),
@@ -311,14 +314,10 @@ export const runExecutionBoundsWallClockSignalDelivery =
     const hangingTool: TuvrenToolDefinition = {
       description: "awaits the cooperative cancellation signal",
       async execute(_input, context) {
-        const { signal } = context as { signal?: AbortSignal };
-        await new Promise<void>((resolve) => {
-          if (signal === undefined || signal.aborted) {
-            resolve();
-            return;
-          }
-          signal.addEventListener("abort", () => resolve(), { once: true });
-        });
+        const { signal } = context;
+        if (signal !== undefined && !signal.aborted) {
+          await once(signal, "abort");
+        }
         toolObservedAbort = signal?.aborted === true;
         toolCompletedAfterAbort = true;
         return { ok: true };
@@ -327,8 +326,7 @@ export const runExecutionBoundsWallClockSignalDelivery =
       name: "hang",
     };
 
-    const runner = createStaticRunner(async (context) => {
-      await Promise.resolve();
+    const runner = createStaticRunner((context) => {
       if (context.messages.some((message) => message.role === "tool")) {
         return {
           messages: [assistantText("late")],
@@ -351,8 +349,8 @@ export const runExecutionBoundsWallClockSignalDelivery =
       bounds: { maxWallClockMs: 150 },
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -396,9 +394,7 @@ export const runExecutionBoundsConcurrencyThrottle =
       async execute() {
         active += 1;
         maxObservedConcurrency = Math.max(maxObservedConcurrency, active);
-        await new Promise<void>((resolve) => {
-          setTimeout(resolve, 15);
-        });
+        await delay(15);
         active -= 1;
         return { ok: true };
       },
@@ -406,8 +402,7 @@ export const runExecutionBoundsConcurrencyThrottle =
       name: "probe",
     };
 
-    const runner = createStaticRunner(async (context) => {
-      await Promise.resolve();
+    const runner = createStaticRunner((context) => {
       if (context.messages.some((message) => message.role === "tool")) {
         return {
           messages: [assistantText("done")],
@@ -435,8 +430,8 @@ export const runExecutionBoundsConcurrencyThrottle =
       // parallelism to 1.
       defaultMaxParallelToolCalls: 10,
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -466,31 +461,31 @@ export const runExecutionBoundsConcurrencyThrottle =
 // rejected and with which error code. The runner grades.
 // ---------------------------------------------------------------------------
 
-export const runExecutionBoundsInvalidConfig =
-  async (): Promise<AdapterProjection> => {
-    await Promise.resolve();
-    const invalidValues = [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY];
-    const rejections = invalidValues.map((value) => {
-      try {
-        const harness = createConformanceKernelHarness();
-        createTuvrenRuntimeCore({
-          bounds: { maxIterations: value },
-          createId: createConformanceIdFactory(),
-          defaultRunnerId: RUNNER_ID,
-          kernel: harness.kernel,
-          runnerRegistry: createRunnerRegistry([runawayTextRunner]),
-        });
-        return { code: null, rejected: false, value: String(value) };
-      } catch (error: unknown) {
-        const code =
-          typeof (error as { code?: unknown }).code === "string"
-            ? (error as { code: string }).code
-            : null;
-        return { code, rejected: true, value: String(value) };
-      }
-    });
-    return { result: { rejections } };
-  };
+const runExecutionBoundsInvalidConfigSynchronous = (): AdapterProjection => {
+  const invalidValues = [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY];
+  const rejections = invalidValues.map((value) => {
+    try {
+      const harness = createConformanceKernelHarness();
+      createTuvrenRuntimeCore({
+        bounds: { maxIterations: value },
+        createId: createConformanceIdFactory(),
+        defaultRunnerId: RUNNER_ID,
+        kernel: harness.kernel,
+        runnerRegistry: createRunnerRegistry([runawayTextRunner]),
+      });
+      return { code: null, rejected: false, value: String(value) };
+    } catch (error: unknown) {
+      const code =
+        isRecord(error) && typeof error.code === "string" ? error.code : null;
+      return { code, rejected: true, value: String(value) };
+    }
+  });
+  return { result: { rejections } };
+};
+
+export const runExecutionBoundsInvalidConfig = fromSynchronousWithoutArguments(
+  runExecutionBoundsInvalidConfigSynchronous
+);
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.execution-bounds.within-bounds
@@ -501,13 +496,10 @@ export const runExecutionBoundsInvalidConfig =
 export const runExecutionBoundsWithinBounds =
   async (): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
-    const runner = createStaticRunner(async () => {
-      await Promise.resolve();
-      return {
-        messages: [assistantText("all done")],
-        resolution: { reason: "done", type: "end_turn" as const },
-      };
-    });
+    const runner = createStaticRunner(() => ({
+      messages: [assistantText("all done")],
+      resolution: { reason: "done", type: "end_turn" as const },
+    }));
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,

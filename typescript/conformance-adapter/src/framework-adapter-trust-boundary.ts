@@ -49,21 +49,14 @@ interface ObservedToolResult {
   name: unknown;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
-const hasToolMessage = (messages: readonly unknown[]): boolean => {
-  return messages.some(
-    (message) => isRecord(message) && message.role === "tool"
-  );
-};
+const hasToolMessage = (messages: readonly unknown[]): boolean =>
+  messages.some((message) => isRecord(message) && message.role === "tool");
 
-const readEventType = (event: unknown): string | undefined => {
-  return isRecord(event) && typeof event.type === "string"
-    ? event.type
-    : undefined;
-};
+const readEventType = (event: unknown): string | undefined =>
+  isRecord(event) && typeof event.type === "string" ? event.type : undefined;
 
 const readToolResults = (
   messages: readonly unknown[]
@@ -119,22 +112,19 @@ export const runTrustBoundaryApprovalNonBypassable = async (
   const harness = createConformanceKernelHarness();
   const executedToolNames: string[] = [];
   const gatedToolName = "trust-boundary-gated-tool";
-  const runner = createStaticRunner(async () => {
-    await Promise.resolve();
-    return {
-      messages: [
-        assistantToolCalls([
-          {
-            callId: "call-gated",
-            input: { confirm: true },
-            name: gatedToolName,
-          },
-        ]),
-      ],
-      resolution: { type: "continue_iteration" },
-      toolExecutionMode: "parallel",
-    };
-  });
+  const runner = createStaticRunner(() => ({
+    messages: [
+      assistantToolCalls([
+        {
+          callId: "call-gated",
+          input: { confirm: true },
+          name: gatedToolName,
+        },
+      ]),
+    ],
+    resolution: { type: "continue_iteration" },
+    toolExecutionMode: "parallel",
+  }));
   const tools: TuvrenToolDefinition[] = [
     {
       approval: true,
@@ -206,9 +196,7 @@ export const runTrustBoundaryLocalToolInput = async (
   const harness = createConformanceKernelHarness();
   let toolExecuted = false;
   const toolName = "trust-boundary-strict-tool";
-  const runner = createStaticRunner(async (context) => {
-    await Promise.resolve();
-
+  const runner = createStaticRunner((context) => {
     if (!hasToolMessage(context.messages)) {
       return {
         messages: [

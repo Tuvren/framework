@@ -53,41 +53,57 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const findEvents = (events: unknown[], type: string) => {
-  return events.filter(
-    (e) => (e as Record<string, unknown>).type === type
-  ) as Record<string, unknown>[];
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const findEvents = (
+  events: unknown[],
+  type: string
+): Record<string, unknown>[] =>
+  events.filter(
+    (event): event is Record<string, unknown> =>
+      isRecord(event) && event.type === type
+  );
+
+const readRecordField = (value: unknown, key: string): unknown =>
+  isRecord(value) ? value[key] : undefined;
+
+const fromSynchronous = <Argument, Value>(
+  operation: (argument: Argument) => Value
+): ((argument: Argument) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(argument: Argument) => Value],
+    [Argument],
+    Promise<Value>
+  >(Promise, operation);
 
 const buildProviderToolMessage = (
   callId: string,
   name: string,
   executionClass: "provider-native" | "provider-mediated"
-): TuvrenMessage => {
-  return {
-    parts: [
-      {
-        callId,
-        name,
-        output: { conformanceValue: executionClass },
-        providerMetadata: {
-          executionClass,
-          owner: "provider",
-          providerCallId: callId,
-        },
-        type: "tool_result",
+): TuvrenMessage => ({
+  parts: [
+    {
+      callId,
+      name,
+      output: { conformanceValue: executionClass },
+      providerMetadata: {
+        executionClass,
+        owner: "provider",
+        providerCallId: callId,
       },
-    ],
-    role: "tool",
-  };
-};
+      type: "tool_result",
+    },
+  ],
+  role: "tool",
+});
 
 const makeProviderRunner = (
   executionClass: "provider-native" | "provider-mediated",
   toolName: string
-) => {
-  return createStaticRunner(async (context) => {
-    await Promise.resolve();
+) =>
+  createStaticRunner((context) => {
     if (!context.messages.some((m) => m.role === "tool")) {
       return {
         messages: [
@@ -105,11 +121,9 @@ const makeProviderRunner = (
       resolution: { reason: "done", type: "end_turn" as const },
     };
   });
-};
 
-const makeSingleCallRunner = (toolName: string) => {
-  return createStaticRunner(async (context) => {
-    await Promise.resolve();
+const makeSingleCallRunner = (toolName: string) =>
+  createStaticRunner((context) => {
     if (!context.messages.some((m) => m.role === "tool")) {
       return {
         messages: [
@@ -126,71 +140,59 @@ const makeSingleCallRunner = (toolName: string) => {
       resolution: { reason: "done", type: "end_turn" as const },
     };
   });
-};
 
 const makeOkEndpoint = (
   endpointId: string,
   capabilityId: string
-): AttachedClientEndpoint => {
-  return {
-    advertisedCapabilities: [
-      {
-        capabilityId,
-        description: "ba005 cap",
-        inputSchema: { type: "object" },
-      },
-    ],
-    dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      return Promise.resolve({
-        callId: envelope.callId,
-        content: { ok: true },
-        leaseToken: envelope.leaseToken,
-      });
+): AttachedClientEndpoint => ({
+  advertisedCapabilities: [
+    {
+      capabilityId,
+      description: "ba005 cap",
+      inputSchema: { type: "object" },
     },
-    endpointId,
-  };
-};
+  ],
+  dispatch: fromSynchronous(
+    (envelope: ClientInvocationEnvelope): ClientReportedResult => ({
+      callId: envelope.callId,
+      content: { ok: true },
+      leaseToken: envelope.leaseToken,
+    })
+  ),
+  endpointId,
+});
 
 const makeStaleEndpoint = (
   endpointId: string,
   capabilityId: string
-): AttachedClientEndpoint => {
-  return {
-    advertisedCapabilities: [
-      {
-        capabilityId,
-        description: "ba005 stale cap",
-        inputSchema: { type: "object" },
-      },
-    ],
-    dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      return Promise.resolve({
-        callId: envelope.callId,
-        content: { stale: true },
-        leaseToken: "wrong-token-ba005",
-      });
+): AttachedClientEndpoint => ({
+  advertisedCapabilities: [
+    {
+      capabilityId,
+      description: "ba005 stale cap",
+      inputSchema: { type: "object" },
     },
-    endpointId,
-  };
-};
+  ],
+  dispatch: fromSynchronous(
+    (envelope: ClientInvocationEnvelope): ClientReportedResult => ({
+      callId: envelope.callId,
+      content: { stale: true },
+      leaseToken: "wrong-token-ba005",
+    })
+  ),
+  endpointId,
+});
 
 const extractAttribution = (event: Record<string, unknown>) => {
-  const attr = event.attribution as Record<string, unknown> | undefined;
-  if (!attr) {
-    return;
-  }
-  const obs = attr.observation as Record<string, unknown> | undefined;
+  const attribution = readRecordField(event, "attribution");
+  const observation = readRecordField(attribution, "observation");
   return {
-    canAudit: obs?.canAudit,
-    canCancel: obs?.canCancel,
-    canResume: obs?.canResume,
-    canRetry: obs?.canRetry,
-    executionClass: attr.executionClass,
-    owner: attr.owner,
+    canAudit: readRecordField(observation, "canAudit"),
+    canCancel: readRecordField(observation, "canCancel"),
+    canResume: readRecordField(observation, "canResume"),
+    canRetry: readRecordField(observation, "canRetry"),
+    executionClass: readRecordField(attribution, "executionClass"),
+    owner: readRecordField(attribution, "owner"),
   };
 };
 
@@ -220,7 +222,7 @@ export const runInvocationLifecycleCrossClass =
         tools: [
           {
             description: "ba005 server",
-            execute: async () => ({ ok: true }),
+            execute: () => ({ ok: true }),
             inputSchema: { type: "object" },
             name: SERVER_TOOL,
           },
@@ -331,10 +333,10 @@ export const runInvocationLifecycleCrossClass =
         name: AGENT_NAME,
         tools: [
           {
-            name: DENIED_TOOL,
             description: "ba005 denied",
+            execute: () => ({ ok: true }),
             inputSchema: { type: "object" },
-            execute: async () => ({ ok: true }),
+            name: DENIED_TOOL,
           },
         ],
       },
@@ -344,9 +346,7 @@ export const runInvocationLifecycleCrossClass =
     const deniedEvents = await collectValues(deniedHandle.events());
     const deniedStarts = findEvents(deniedEvents, "tool.start");
     const deniedResults = findEvents(deniedEvents, "tool.result");
-    const deniedResultEvent = deniedResults[0] as
-      | Record<string, unknown>
-      | undefined;
+    const [deniedResultEvent] = deniedResults;
 
     // --- 6. stale late-completion (tuvren-client) ---
     const STALE_CAP = "ba005.lifecycle.stale";
@@ -372,12 +372,8 @@ export const runInvocationLifecycleCrossClass =
     });
     const staleEvents = await collectValues(staleHandle.events());
     const staleResults = findEvents(staleEvents, "tool.result");
-    const staleResultEvent = staleResults[0] as
-      | Record<string, unknown>
-      | undefined;
-    const staleOutput = staleResultEvent?.output as
-      | Record<string, unknown>
-      | undefined;
+    const [staleResultEvent] = staleResults;
+    const staleOutput = readRecordField(staleResultEvent, "output");
 
     // --- 7. tuvren-server fail-clean: tool that throws an error → isError: true ---
     const ERROR_TOOL = "ba005.lifecycle.server.error";
@@ -395,13 +391,12 @@ export const runInvocationLifecycleCrossClass =
         name: AGENT_NAME,
         tools: [
           {
-            name: ERROR_TOOL,
             description: "ba005 error tool",
-            inputSchema: { type: "object" },
-            // biome-ignore lint/suspicious/useAwait: async required by TuvrenToolDefinition.execute contract
-            execute: async () => {
+            execute: () => {
               throw new Error("ba005 deliberate error");
             },
+            inputSchema: { type: "object" },
+            name: ERROR_TOOL,
           },
         ],
       },
@@ -411,15 +406,14 @@ export const runInvocationLifecycleCrossClass =
     const errorEvents = await collectValues(errorHandle.events());
     const errorStarts = findEvents(errorEvents, "tool.start");
     const errorResults = findEvents(errorEvents, "tool.result");
-    const errorResultEvent = errorResults[0] as
-      | Record<string, unknown>
-      | undefined;
+    const [errorResultEvent] = errorResults;
 
     // --- 8. tuvren-client unavailable endpoint: fail-clean without fabricating ---
     const UNAVAIL_CAP = "ba005.lifecycle.client.unavail";
     const unavailEndpoint = makeOkEndpoint("ep-ba005-unavail", UNAVAIL_CAP);
     const unavailBoundary = createClientEndpointBoundary([unavailEndpoint]);
-    unavailBoundary.detach("ep-ba005-unavail"); // pre-detach to trigger unavailability
+    // Pre-detach to trigger unavailability.
+    unavailBoundary.detach("ep-ba005-unavail");
     const unavailHarness = createConformanceKernelHarness();
     const unavailRuntime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
@@ -441,80 +435,76 @@ export const runInvocationLifecycleCrossClass =
     const unavailEvents = await collectValues(unavailHandle.events());
     const unavailStarts = findEvents(unavailEvents, "tool.start");
     const unavailResults = findEvents(unavailEvents, "tool.result");
-    const unavailResultEvent = unavailResults[0] as
-      | Record<string, unknown>
-      | undefined;
-    const unavailOutput = unavailResultEvent?.output as
-      | Record<string, unknown>
-      | undefined;
+    const [unavailResultEvent] = unavailResults;
+    const unavailOutput = readRecordField(unavailResultEvent, "output");
 
     return {
       result: {
         invocationLifecycle: {
-          tuvrenServer: {
-            canAudit: serverAttr?.canAudit,
-            canCancel: serverAttr?.canCancel,
-            canResume: serverAttr?.canResume,
-            canRetry: serverAttr?.canRetry,
-            executionClass: serverAttr?.executionClass,
-            owner: serverAttr?.owner,
-            toolAuditCount: serverAudits.length,
-            toolResultCount: serverResults.length,
-            toolStartCount: serverStarts.length,
+          clientUnavailableFailClean: {
+            toolResultCode: readRecordField(unavailOutput, "code"),
+            toolResultCount: unavailResults.length,
+            toolResultIsError: readRecordField(unavailResultEvent, "isError"),
+            toolStartCount: unavailStarts.length,
           },
-          providerNative: {
-            canAudit: pnAttr?.canAudit,
-            canCancel: pnAttr?.canCancel,
-            canResume: pnAttr?.canResume,
-            canRetry: pnAttr?.canRetry,
-            executionClass: pnAttr?.executionClass,
-            owner: pnAttr?.owner,
-            toolAuditCount: pnAudits.length,
-            toolResultCount: pnResults.length,
-            toolStartCount: pnStarts.length,
+          policyDenied: {
+            resultIsError: readRecordField(deniedResultEvent, "isError"),
+            toolResultCount: deniedResults.length,
+            toolStartCount: deniedStarts.length,
           },
           providerMediated: {
-            canAudit: pmAttr?.canAudit,
-            canCancel: pmAttr?.canCancel,
-            canResume: pmAttr?.canResume,
-            canRetry: pmAttr?.canRetry,
-            executionClass: pmAttr?.executionClass,
-            owner: pmAttr?.owner,
+            canAudit: pmAttr.canAudit,
+            canCancel: pmAttr.canCancel,
+            canResume: pmAttr.canResume,
+            canRetry: pmAttr.canRetry,
+            executionClass: pmAttr.executionClass,
+            owner: pmAttr.owner,
             toolAuditCount: pmAudits.length,
             toolResultCount: pmResults.length,
             toolStartCount: pmStarts.length,
           },
+          providerNative: {
+            canAudit: pnAttr.canAudit,
+            canCancel: pnAttr.canCancel,
+            canResume: pnAttr.canResume,
+            canRetry: pnAttr.canRetry,
+            executionClass: pnAttr.executionClass,
+            owner: pnAttr.owner,
+            toolAuditCount: pnAudits.length,
+            toolResultCount: pnResults.length,
+            toolStartCount: pnStarts.length,
+          },
+          // BA003 fail-clean proofs: non-fabricated clean failures
+          serverErrorFailClean: {
+            resultIsError: readRecordField(errorResultEvent, "isError"),
+            toolResultCount: errorResults.length,
+            toolStartCount: errorStarts.length,
+          },
+          staleLateCompletion: {
+            toolResultCode: readRecordField(staleOutput, "code"),
+            toolResultIsError: readRecordField(staleResultEvent, "isError"),
+          },
           tuvrenClient: {
-            canAudit: clientAttr?.canAudit,
-            canCancel: clientAttr?.canCancel,
-            canResume: clientAttr?.canResume,
-            canRetry: clientAttr?.canRetry,
-            executionClass: clientAttr?.executionClass,
-            owner: clientAttr?.owner,
+            canAudit: clientAttr.canAudit,
+            canCancel: clientAttr.canCancel,
+            canResume: clientAttr.canResume,
+            canRetry: clientAttr.canRetry,
+            executionClass: clientAttr.executionClass,
+            owner: clientAttr.owner,
             toolAuditCount: clientAudits.length,
             toolResultCount: clientResults.length,
             toolStartCount: clientStarts.length,
           },
-          policyDenied: {
-            resultIsError: deniedResultEvent?.isError,
-            toolResultCount: deniedResults.length,
-            toolStartCount: deniedStarts.length,
-          },
-          staleLateCompletion: {
-            toolResultCode: staleOutput?.code,
-            toolResultIsError: staleResultEvent?.isError,
-          },
-          // BA003 fail-clean proofs: non-fabricated clean failures
-          serverErrorFailClean: {
-            resultIsError: errorResultEvent?.isError,
-            toolResultCount: errorResults.length,
-            toolStartCount: errorStarts.length,
-          },
-          clientUnavailableFailClean: {
-            toolResultCode: unavailOutput?.code,
-            toolResultCount: unavailResults.length,
-            toolResultIsError: unavailResultEvent?.isError,
-            toolStartCount: unavailStarts.length,
+          tuvrenServer: {
+            canAudit: serverAttr.canAudit,
+            canCancel: serverAttr.canCancel,
+            canResume: serverAttr.canResume,
+            canRetry: serverAttr.canRetry,
+            executionClass: serverAttr.executionClass,
+            owner: serverAttr.owner,
+            toolAuditCount: serverAudits.length,
+            toolResultCount: serverResults.length,
+            toolStartCount: serverStarts.length,
           },
         },
       },
