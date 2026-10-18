@@ -56,20 +56,42 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const findEvents = (events: unknown[], type: string) => {
-  return events.filter(
-    (e) => (e as Record<string, unknown>).type === type
-  ) as Record<string, unknown>[];
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const fromSynchronous = <Argument, Value>(
+  operation: (argument: Argument) => Value
+): ((argument: Argument) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(argument: Argument) => Value],
+    [Argument],
+    Promise<Value>
+  >(Promise, operation);
+
+const findEvents = (
+  events: readonly unknown[],
+  type: string
+): Record<string, unknown>[] =>
+  events.filter(
+    (event): event is Record<string, unknown> =>
+      isRecord(event) && event.type === type
+  );
 
 const extractAttr = (event: Record<string, unknown> | undefined) => {
-  const attr = event?.attribution as Record<string, unknown> | undefined;
-  const obs = attr?.observation as Record<string, unknown> | undefined;
+  const attr = isRecord(event?.attribution) ? event.attribution : undefined;
+  const obs = isRecord(attr?.observation) ? attr.observation : undefined;
   return {
-    executionClass: attr?.executionClass as string | undefined,
+    executionClass:
+      typeof attr?.executionClass === "string"
+        ? attr.executionClass
+        : undefined,
     observation: {
-      canAudit: obs?.canAudit as boolean | undefined,
-      canPersistResult: obs?.canPersistResult as boolean | undefined,
+      canAudit: typeof obs?.canAudit === "boolean" ? obs.canAudit : undefined,
+      canPersistResult:
+        typeof obs?.canPersistResult === "boolean"
+          ? obs.canPersistResult
+          : undefined,
     },
   };
 };
@@ -78,70 +100,68 @@ const buildProviderMsg = (
   callId: string,
   name: string,
   executionClass: "provider-native" | "provider-mediated"
-): TuvrenMessage => {
-  return {
-    parts: [
-      {
-        callId,
-        name,
-        output: { conformanceValue: executionClass },
-        providerMetadata: {
-          executionClass,
-          owner: "provider",
-          providerCallId: callId,
-        },
-        type: "tool_result",
+): TuvrenMessage => ({
+  parts: [
+    {
+      callId,
+      name,
+      output: { conformanceValue: executionClass },
+      providerMetadata: {
+        executionClass,
+        owner: "provider",
+        providerCallId: callId,
       },
-    ],
-    role: "tool",
-  };
-};
+      type: "tool_result",
+    },
+  ],
+  role: "tool",
+});
 
-const makeSingleCallRunner = (toolName: string) => {
-  return createStaticRunner(async (ctx) => {
-    await Promise.resolve();
-    if (!ctx.messages.some((m) => m.role === "tool")) {
+const makeSingleCallRunner = (toolName: string) =>
+  createStaticRunner(
+    fromSynchronous((ctx) => {
+      if (!ctx.messages.some((m) => m.role === "tool")) {
+        return {
+          messages: [
+            assistantToolCalls([
+              { callId: `bc001-call-${toolName}`, input: {}, name: toolName },
+            ]),
+          ],
+          resolution: { type: "continue_iteration" as const },
+          toolExecutionMode: "parallel" as const,
+        };
+      }
       return {
-        messages: [
-          assistantToolCalls([
-            { callId: `bc001-call-${toolName}`, input: {}, name: toolName },
-          ]),
-        ],
-        resolution: { type: "continue_iteration" as const },
-        toolExecutionMode: "parallel" as const,
+        messages: [assistantText("bc001 done")],
+        resolution: { reason: "done", type: "end_turn" as const },
       };
-    }
-    return {
-      messages: [assistantText("bc001 done")],
-      resolution: { reason: "done", type: "end_turn" as const },
-    };
-  });
-};
+    })
+  );
 
 const makeProviderRunner = (
   executionClass: "provider-native" | "provider-mediated",
   toolName: string
-) => {
-  return createStaticRunner(async (ctx) => {
-    await Promise.resolve();
-    if (!ctx.messages.some((m) => m.role === "tool")) {
+) =>
+  createStaticRunner(
+    fromSynchronous((ctx) => {
+      if (!ctx.messages.some((m) => m.role === "tool")) {
+        return {
+          messages: [
+            buildProviderMsg(
+              `bc001-call-${executionClass}`,
+              toolName,
+              executionClass
+            ),
+          ],
+          resolution: { type: "continue_iteration" as const },
+        };
+      }
       return {
-        messages: [
-          buildProviderMsg(
-            `bc001-call-${executionClass}`,
-            toolName,
-            executionClass
-          ),
-        ],
-        resolution: { type: "continue_iteration" as const },
+        messages: [assistantText("bc001 provider done")],
+        resolution: { reason: "done", type: "end_turn" as const },
       };
-    }
-    return {
-      messages: [assistantText("bc001 provider done")],
-      resolution: { reason: "done", type: "end_turn" as const },
-    };
-  });
-};
+    })
+  );
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.capability-orchestration.integration
@@ -170,7 +190,7 @@ export const runCapabilityOrchestrationIntegration =
         tools: [
           {
             description: "bc001 tuvren-server capability",
-            execute: async () => ({ ok: true }),
+            execute: () => ({ ok: true }),
             inputSchema: { type: "object" },
             name: SERVER_TOOL,
           },
@@ -240,15 +260,13 @@ export const runCapabilityOrchestrationIntegration =
           inputSchema: { type: "object" },
         },
       ],
-      dispatch(
-        envelope: ClientInvocationEnvelope
-      ): Promise<ClientReportedResult> {
-        return Promise.resolve({
+      dispatch: fromSynchronous(
+        (envelope: ClientInvocationEnvelope): ClientReportedResult => ({
           callId: envelope.callId,
           content: { ok: true },
           leaseToken: envelope.leaseToken,
-        });
-      },
+        })
+      ),
       endpointId: "ep-bc001-client",
     };
     const clientBoundary = createClientEndpointBoundary([clientEndpoint]);
@@ -335,7 +353,7 @@ export const runCapabilityOrchestrationIntegration =
         tools: [
           {
             description: "bc001 invocation-denied capability",
-            execute: async () => ({ ok: true }),
+            execute: () => ({ ok: true }),
             inputSchema: { type: "object" },
             name: DENIED_CAP,
           },
@@ -345,21 +363,18 @@ export const runCapabilityOrchestrationIntegration =
       threadId: policyThread.threadId,
     });
     const policyEvents = await collectValues(policyHandle.events());
-    const deniedResults = findEvents(policyEvents, "tool.result").filter(
+    const deniedResultEvent = findEvents(policyEvents, "tool.result").find(
       (e) => e.name === DENIED_CAP
     );
-    const deniedResultEvent = deniedResults[0] as
-      | Record<string, unknown>
-      | undefined;
 
     return {
       result: {
         integration: {
           policy: {
-            // false when exposure-time policy correctly withholds the surface
-            withheldToolReachedModel: withheldDecision?.exposed ?? true,
             // true when invocation-time denial produces isError on tool.result
             deniedToolResultIsError: deniedResultEvent?.isError === true,
+            // false when exposure-time policy correctly withholds the surface
+            withheldToolReachedModel: withheldDecision?.exposed ?? true,
           },
           providerMediated: {
             executionClass: pmAttr.executionClass,

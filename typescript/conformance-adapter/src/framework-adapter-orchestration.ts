@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { setTimeout as sleep } from "node:timers/promises";
+
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type {
   AgentConfig,
@@ -42,44 +44,98 @@ import {
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterOrchestrationDependencies {
-  createObservedErrorEnvelope(error: unknown): Record<string, unknown>;
-  isRecord(value: unknown): value is Record<string, unknown>;
-  readOperationScenario(
+  createObservedErrorEnvelope: (error: unknown) => Record<string, unknown>;
+  isRecord: (value: unknown) => value is Record<string, unknown>;
+  readOperationScenario: (
     input: unknown,
     operation: string
-  ): Record<string, unknown>;
-  readRecordString(record: unknown, key: string): string | undefined;
-  readStringProperty(
+  ) => Record<string, unknown>;
+  readRecordString: (record: unknown, key: string) => string | undefined;
+  readStringProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): string;
+  ) => string;
 }
+
+const readOrchestrationResultText = (
+  result: OrchestrationResult
+): string | undefined => {
+  if (
+    result.status !== "completed" ||
+    result.finalAssistantMessage === undefined
+  ) {
+    return undefined;
+  }
+
+  const message = result.finalAssistantMessage;
+  if (message.role !== "assistant") {
+    return undefined;
+  }
+
+  const textPart = message.parts.find((part) => part.type === "text");
+  return textPart?.type === "text" ? textPart.text : undefined;
+};
+
+const spawnWhenRunning = async (
+  handle: Pick<OrchestrationHandle, "spawn" | "status">,
+  input: {
+    agent: string;
+    signal: ReturnType<typeof textSignal>;
+  },
+  timeoutMs = 1000,
+  start = Date.now()
+): Promise<OrchestrationHandle> => {
+  try {
+    return handle.spawn(input);
+  } catch (error: unknown) {
+    const { phase } = handle.status();
+    const shouldRetry =
+      error instanceof TuvrenRuntimeError &&
+      error.code === "orchestration_parent_inactive" &&
+      phase === "running";
+
+    if (!shouldRetry) {
+      throw error;
+    }
+
+    // Only retry the brief "running but not ready yet" race; if the phase
+    // has already moved away from running, retrying would turn a real
+    // pause/completion into a false positive.
+    if (Date.now() - start > timeoutMs) {
+      throw error;
+    }
+
+    await sleep(5);
+    return await spawnWhenRunning(handle, input, timeoutMs, start);
+  }
+};
 
 export const createFrameworkAdapterOrchestration = (
   dependencies: FrameworkAdapterOrchestrationDependencies
 ): {
-  runOrchestrationEventSurfaces(input: unknown): Promise<AdapterProjection>;
-  runOrchestrationExecutionInheritance(
+  runOrchestrationEventSurfaces: (input: unknown) => Promise<AdapterProjection>;
+  runOrchestrationExecutionInheritance: (
     input: unknown
-  ): Promise<AdapterProjection>;
-  runOrchestrationLaunchPreconditions(
+  ) => Promise<AdapterProjection>;
+  runOrchestrationLaunchPreconditions: (
     input: unknown
-  ): Promise<AdapterProjection>;
-  runOrchestrationLifecycleLocality(input: unknown): Promise<AdapterProjection>;
-  runOrchestrationNestedAttribution(input: unknown): Promise<AdapterProjection>;
+  ) => Promise<AdapterProjection>;
+  runOrchestrationLifecycleLocality: (
+    input: unknown
+  ) => Promise<AdapterProjection>;
+  runOrchestrationNestedAttribution: (
+    input: unknown
+  ) => Promise<AdapterProjection>;
 } => {
   const lifecycleScenarios = createFrameworkAdapterOrchestrationLifecycle({
-    createObservedErrorEnvelope: dependencies.createObservedErrorEnvelope,
-    readOperationScenario: dependencies.readOperationScenario,
-    readStringProperty: dependencies.readStringProperty,
+    createObservedErrorEnvelope: (error) =>
+      dependencies.createObservedErrorEnvelope(error),
+    readOperationScenario: (input, operation) =>
+      dependencies.readOperationScenario(input, operation),
+    readStringProperty: (record, property, path) =>
+      dependencies.readStringProperty(record, property, path),
   });
-
-  const sleep = (ms: number): Promise<void> => {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
-  };
 
   const captureActionError = (
     action: () => unknown
@@ -100,42 +156,6 @@ export const createFrameworkAdapterOrchestration = (
       return undefined;
     } catch (error: unknown) {
       return dependencies.createObservedErrorEnvelope(error);
-    }
-  };
-
-  const spawnWhenRunning = async (
-    handle: Pick<OrchestrationHandle, "spawn" | "status">,
-    input: {
-      agent: string;
-      signal: ReturnType<typeof textSignal>;
-    },
-    timeoutMs = 1000
-  ): Promise<OrchestrationHandle> => {
-    const start = Date.now();
-
-    while (true) {
-      try {
-        return handle.spawn(input);
-      } catch (error: unknown) {
-        const { phase } = handle.status();
-        const shouldRetry =
-          error instanceof TuvrenRuntimeError &&
-          error.code === "orchestration_parent_inactive" &&
-          phase === "running";
-
-        if (!shouldRetry) {
-          throw error;
-        }
-
-        // Only retry the brief "running but not ready yet" race; if the phase
-        // has already moved away from running, retrying would turn a real
-        // pause/completion into a false positive.
-        if (Date.now() - start > timeoutMs) {
-          throw error;
-        }
-
-        await sleep(5);
-      }
     }
   };
 
@@ -283,12 +303,6 @@ export const createFrameworkAdapterOrchestration = (
     };
   };
 
-  const runOrchestrationLifecycleLocality = async (
-    input: unknown
-  ): Promise<AdapterProjection> => {
-    return await lifecycleScenarios.runOrchestrationLifecycleLocality(input);
-  };
-
   const readFirstUserText = (
     messages: readonly unknown[]
   ): string | undefined => {
@@ -315,13 +329,10 @@ export const createFrameworkAdapterOrchestration = (
     return undefined;
   };
 
-  const isHandoffControlPart = (part: unknown): boolean => {
-    return (
-      dependencies.isRecord(part) &&
-      part.name === "handoff" &&
-      (part.type === "tool_call" || part.type === "structured")
-    );
-  };
+  const isHandoffControlPart = (part: unknown): boolean =>
+    dependencies.isRecord(part) &&
+    part.name === "handoff" &&
+    (part.type === "tool_call" || part.type === "structured");
 
   const containsHandoffControlEntry = (
     messages: readonly unknown[]
@@ -440,11 +451,10 @@ export const createFrameworkAdapterOrchestration = (
     return undefined;
   };
 
-  const readSourceAgent = (event: unknown): string | undefined => {
-    return dependencies.isRecord(event) && dependencies.isRecord(event.source)
+  const readSourceAgent = (event: unknown): string | undefined =>
+    dependencies.isRecord(event) && dependencies.isRecord(event.source)
       ? dependencies.readRecordString(event.source, "agent")
       : undefined;
-  };
 
   const readFirstErrorEnvelope = (
     events: readonly unknown[]
@@ -649,31 +659,6 @@ export const createFrameworkAdapterOrchestration = (
     }
 
     return undefined;
-  };
-
-  const readOrchestrationResultText = (
-    result: OrchestrationResult
-  ): string | undefined => {
-    if (
-      result.status !== "completed" ||
-      result.finalAssistantMessage === undefined
-    ) {
-      return undefined;
-    }
-
-    const msg = result.finalAssistantMessage;
-
-    if (msg.role !== "assistant") {
-      return undefined;
-    }
-
-    const textPart = msg.parts.find((p) => p.type === "text");
-
-    if (textPart?.type !== "text") {
-      return undefined;
-    }
-
-    return textPart.text;
   };
 
   const containsWorkerResult = (messages: readonly unknown[]): boolean => {
@@ -1055,7 +1040,7 @@ export const createFrameworkAdapterOrchestration = (
     });
     const rootEventsPromise = collectValues(handle.allEvents());
 
-    await Promise.resolve();
+    await sleep(0);
 
     const childHandle = handle.spawn({
       agent: "worker",
@@ -1063,7 +1048,7 @@ export const createFrameworkAdapterOrchestration = (
     });
     const childEventsPromise = collectValues(childHandle.allEvents());
 
-    await Promise.resolve();
+    await sleep(0);
 
     const grandchildHandle = await spawnWhenRunning(childHandle, {
       agent: "worker-2",
@@ -1094,7 +1079,8 @@ export const createFrameworkAdapterOrchestration = (
     runOrchestrationEventSurfaces,
     runOrchestrationExecutionInheritance,
     runOrchestrationLaunchPreconditions,
-    runOrchestrationLifecycleLocality,
+    runOrchestrationLifecycleLocality:
+      lifecycleScenarios.runOrchestrationLifecycleLocality,
     runOrchestrationNestedAttribution,
   };
 };
