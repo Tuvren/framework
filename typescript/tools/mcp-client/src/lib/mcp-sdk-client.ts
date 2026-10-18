@@ -38,10 +38,10 @@ export type McpSdkToolResult = Awaited<ReturnType<Client["callTool"]>>;
  * `McpToolSourcePrivateOptions.client`).
  */
 export interface MCPClient {
-  close(): Promise<void>;
-  initialize(): Promise<{ serverName: string }>;
-  invokeTool(name: string, input: unknown): Promise<McpSdkToolResult>;
-  listTools(): Promise<McpSdkTool[]>;
+  close: () => Promise<void>;
+  initialize: () => Promise<{ serverName: string }>;
+  invokeTool: (name: string, input: unknown) => Promise<McpSdkToolResult>;
+  listTools: () => Promise<McpSdkTool[]>;
 }
 
 /** Client identity reported to MCP servers during connection handshake. */
@@ -125,7 +125,7 @@ const createHttpHeaders = (
  * for `stdio`, `StreamableHTTPClientTransport` (with auth/extra headers via
  * {@link createHttpHeaders}) for `http-sse`.
  *
- * @throws TuvrenProviderError with code `mcp_connection_failed` for an
+ * @throws {TuvrenProviderError} With code `mcp_connection_failed` for an
  *   unrecognized transport kind.
  */
 const createTransport = (config: McpTransportConfig): Transport => {
@@ -176,7 +176,7 @@ class SdkMcpClient implements MCPClient {
    * Creates and connects the transport, returning the server's advertised
    * name (or `"mcp-server"` when it does not report one).
    *
-   * @throws TuvrenProviderError with code `mcp_initialize_failed` when the
+   * @throws {TuvrenProviderError} With code `mcp_initialize_failed` when the
    *   transport connection fails.
    */
   async initialize(): Promise<{ serverName: string }> {
@@ -199,7 +199,7 @@ class SdkMcpClient implements MCPClient {
    * Lists all of the server's tools, following `nextCursor` pagination until
    * exhausted.
    *
-   * @throws TuvrenProviderError with code `mcp_tool_list_failed` when
+   * @throws {TuvrenProviderError} With code `mcp_tool_list_failed` when
    *   listing fails.
    */
   async listTools(): Promise<McpSdkTool[]> {
@@ -208,6 +208,7 @@ class SdkMcpClient implements MCPClient {
       let cursor: string | undefined;
 
       do {
+        // oxlint-disable-next-line eslint/no-await-in-loop -- Each request needs the previous page's cursor, so MCP pagination is necessarily sequential.
         const result: McpSdkListToolsResult = await this.client.listTools(
           cursor === undefined ? undefined : { cursor }
         );
@@ -229,7 +230,7 @@ class SdkMcpClient implements MCPClient {
    * Invokes one named tool with `input` normalized via
    * {@link normalizeToolArguments}.
    *
-   * @throws TuvrenProviderError with code `mcp_transport_failure` when the
+   * @throws {TuvrenProviderError} With code `mcp_transport_failure` when the
    *   call fails.
    */
   async invokeTool(name: string, input: unknown): Promise<McpSdkToolResult> {

@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CA004",
+  "milestone": "M29-mcp-client-cleanup-and-atomic-native-admission",
+  "result": "pass",
+  "reviewed_predecessor": "bcc91a77439a21ce244fb9d5e27dc27bfdada8ee",
+  "branch": "epic/ca-small-package-lint",
+  "working_tree_candidate": true,
+  "scope": [
+    "typescript/tools/mcp-client",
+    "tools/biome-coverage/ca.json"
+  ],
+  "toolchain": {
+    "bun": "1.4.2",
+    "typescript": "6.0.2",
+    "oxlint": "1.86.0",
+    "oxfmt": "0.71.0",
+    "biome": "2.5.14",
+    "nx": "22.7.12"
+  },
+  "selection": {
+    "code_count": 6,
+    "code_files": [
+      "typescript/tools/mcp-client/smoke/package-exports.ts",
+      "typescript/tools/mcp-client/src/index.ts",
+      "typescript/tools/mcp-client/src/lib/mcp-sdk-client.ts",
+      "typescript/tools/mcp-client/src/lib/mcp-tool-source.ts",
+      "typescript/tools/mcp-client/test/mcp-client.test.ts",
+      "typescript/tools/mcp-client/tsup.config.ts"
+    ],
+    "json_count": 7,
+    "json_files": [
+      "typescript/tools/mcp-client/package.json",
+      "typescript/tools/mcp-client/project.json",
+      "typescript/tools/mcp-client/tsconfig.dts.json",
+      "typescript/tools/mcp-client/tsconfig.json",
+      "typescript/tools/mcp-client/tsconfig.lib.json",
+      "typescript/tools/mcp-client/tsconfig.tsup.json",
+      "typescript/tools/mcp-client/tsconfig.typecheck.json"
+    ],
+    "debug_files_exact": true,
+    "json_files_exact": true,
+    "nonempty": true
+  },
+  "native_diagnostics": {
+    "baseline": 52,
+    "final": 0,
+    "project_resolution_errors": 0,
+    "unused_disable_directives": 0,
+    "unused_directives_reported_and_denied": true,
+    "shipped_type_aware_preset_unchanged": true,
+    "local_config_override": false
+  },
+  "measured_native_exceptions": [
+    {
+      "rule": "eslint/no-await-in-loop",
+      "scope": "MCP cursor pagination request",
+      "reason": "Each request requires the previous response's cursor, so page requests must remain sequential."
+    },
+    {
+      "rule": "typescript/method-signature-style",
+      "scope": "McpToolSource.close and McpToolSource.refresh",
+      "reason": "Preserve the published method declaration spelling while native lint owns the package."
+    },
+    {
+      "rule": "typescript/promise-function-async",
+      "scope": "createMcpToolSource",
+      "reason": "Return the internal connection promise unchanged to preserve its identity and settlement timing."
+    },
+    {
+      "rule": "typescript/promise-function-async",
+      "scope": "MCP client test doubles",
+      "reason": "Preserve exact settled and rejected promise fixtures used to exercise transport lifecycle and rejection timing."
+    }
+  ],
+  "code_decisions": [
+    {
+      "pattern": "sequential-cursor-pagination",
+      "rule": "eslint/no-await-in-loop",
+      "reason": "Each MCP listTools request consumes the preceding response's nextCursor, so parallelizing page requests would break protocol ordering."
+    },
+    {
+      "pattern": "published-method-declaration-spelling",
+      "rule": "typescript/method-signature-style",
+      "reason": "Keep McpToolSource.close and McpToolSource.refresh as published method declarations so native admission does not change the public API shape."
+    },
+    {
+      "pattern": "direct-connection-promise",
+      "rule": "typescript/promise-function-async",
+      "reason": "Return createMcpToolSourceInternal's Promise directly so createMcpToolSource preserves the established Promise identity and settlement timing."
+    },
+    {
+      "pattern": "settled-and-rejected-test-promises",
+      "rule": "typescript/promise-function-async",
+      "reason": "Keep MCP client test doubles returning their exact resolved or rejected Promise fixtures so lifecycle and rejection timing remain observable."
+    }
+  ],
+  "retained_biome_reconciliation": {
+    "source_ledger": ".constitution/evidence/KRT-CA002/suppressions.json",
+    "mcp_identities": 1,
+    "identity": "typescript/tools/mcp-client/src/index.ts::lint/performance/noBarrelFile::1",
+    "original_reason": "This package entrypoint is the intentional MCP client surface.",
+    "fresh_unsuppressed_category": "lint/performance/noBarrelFile",
+    "fresh_unsuppressed_count": 1,
+    "native_candidate_rule": "oxc/no-barrel-file",
+    "native_counterpart_fired": false,
+    "disposition": "removed at atomic native admission with no firing native counterpart",
+    "remaining_biome_directives_in_admitted_root": 0
+  },
+  "atomic_admission": {
+    "project": "mcp-client",
+    "executor": "nx:run-commands",
+    "cwd": ".",
+    "commands": [
+      "bunx --bun oxlint --type-aware typescript/tools/mcp-client",
+      "bun tools/scripts/json-check.ts typescript/tools/mcp-client"
+    ],
+    "parallel": false,
+    "inputs": "inherited",
+    "removed_coverage_entries": ["typescript/tools"],
+    "retained_coverage_entry": "tools/run-nx.mjs"
+  },
+  "behavior_and_api": {
+    "mcp_tests": { "passed": 9, "failed": 0 },
+    "exports_smoke": { "passed": 1, "failed": 0 },
+    "core_tests": { "passed": 119, "failed": 0 },
+    "sdk_tests": { "passed": 91, "failed": 0 },
+    "runtime_tests": { "passed": 566, "failed": 0 },
+    "provider_mcp_conformance": {
+      "applicable": 60,
+      "passed": 60,
+      "failed": 0
+    },
+    "api_freeze": {
+      "entrypoints": 14,
+      "exports": 404,
+      "status": "pass"
+    },
+    "transport_lifecycle": "preserved",
+    "schema_validation": "preserved",
+    "provider_error_shapes": "preserved",
+    "public_api": "preserved"
+  },
+  "gates": {
+    "mcp_lint_typecheck_test_build_exports": "pass",
+    "routing_partition_controls": { "passed": 90, "failed": 0 },
+    "full_lint": "pass",
+    "full_typecheck": { "projects": 33, "status": "pass" },
+    "format_check": { "files": 1336, "status": "pass" },
+    "changeset_check": {
+      "direct_publishable_packages": 8,
+      "status": "pass"
+    },
+    "constitution_validate": {
+      "errors": 0,
+      "warnings": 0,
+      "info": 78,
+      "status": "pass"
+    },
+    "diff_check": "pass"
+  },
+  "verification_notes": {
+    "runtime": "The first combined run lacked the repository environment and hit two known SQLite child-start timing failures; the isolated direnv-backed retry passed 566 of 566 tests.",
+    "routing": "The first run shared CPU with full workspace lint and timed out four native-selection controls; the isolated direnv-backed retry passed 90 of 90 tests.",
+    "constitution": "The first run lacked the repository environment and could not resolve declared doctor commands; the direnv-backed validation passed with zero errors and zero warnings.",
+    "final_unresolved_failures": 0
+  },
+  "a19_composition": {
+    "files": 6,
+    "insertions": 151,
+    "deletions": 114,
+    "total_lines": 265,
+    "production": {
+      "files": 2,
+      "insertions": 25,
+      "deletions": 15
+    },
+    "tests": {
+      "files": 1,
+      "insertions": 121,
+      "deletions": 93
+    },
+    "metadata": {
+      "files": 3,
+      "insertions": 5,
+      "deletions": 6
+    },
+    "reviewability": "The production delta is limited to MCP client lint cleanup and contract-preserving exceptions in two implementation files. Test changes replace unsafe matcher and assertion boundaries with runtime narrowing. Three small metadata files carry the package-documentation cleanup and atomic native-lint ownership transfer."
+  },
+  "drift": {
+    "changed_files_outside_scope": 0,
+    "constitution_files": 0,
+    "dependency_files": 0,
+    "generated_tracked_files": 0,
+    "api_snapshot_files": 0,
+    "config_overrides": 0,
+    "changeset_files": 0,
+    "release_files": 0
+  }
+}

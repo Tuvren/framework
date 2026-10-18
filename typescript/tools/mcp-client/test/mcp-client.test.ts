@@ -17,7 +17,11 @@
 import { describe, expect, test } from "bun:test";
 
 import { TuvrenProviderError } from "@tuvren/core/errors";
-import type { ToolExecutionContext, ToolResultPart } from "@tuvren/core/tools";
+import type {
+  ToolExecutionContext,
+  ToolResultPart,
+  TuvrenToolDefinition,
+} from "@tuvren/core/tools";
 import {
   createMockMcpStdioCommand,
   createOfficialMcpEverythingStdioCommand,
@@ -36,15 +40,9 @@ const createToolContext = (
 ): ToolExecutionContext => ({ callId, name });
 
 const requireTool = (
-  tools: readonly {
-    name: string;
-    execute: (
-      input: unknown,
-      context: ToolExecutionContext
-    ) => Promise<unknown> | unknown;
-  }[],
+  tools: readonly TuvrenToolDefinition[],
   name: string
-) => {
+): TuvrenToolDefinition => {
   const tool = tools.find((candidate) => candidate.name === name);
 
   if (tool === undefined) {
@@ -54,19 +52,52 @@ const requireTool = (
   return tool;
 };
 
+const executeTool = async (
+  tool: TuvrenToolDefinition,
+  input: unknown,
+  context: ToolExecutionContext
+): Promise<unknown> => await Promise.resolve(tool.execute(input, context));
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 const asToolResultPart = (value: unknown): ToolResultPart => {
   if (
-    typeof value === "object" &&
-    value !== null &&
-    "type" in value &&
-    value.type === "tool_result"
+    isRecord(value) &&
+    value.type === "tool_result" &&
+    typeof value.callId === "string" &&
+    typeof value.name === "string" &&
+    "output" in value &&
+    (value.isError === undefined || typeof value.isError === "boolean")
   ) {
-    return value as ToolResultPart;
+    return {
+      callId: value.callId,
+      ...(value.isError === undefined ? {} : { isError: value.isError }),
+      name: value.name,
+      output: value.output,
+      type: "tool_result",
+    };
   }
 
   throw new Error("expected tool result part");
 };
 
+const requireRecord = (value: unknown): Record<string, unknown> => {
+  if (isRecord(value)) {
+    return value;
+  }
+
+  throw new Error("expected record");
+};
+
+const requireSerializedProviderError = (
+  result: ToolResultPart
+): Record<string, unknown> => {
+  const output = requireRecord(result.output);
+  return requireRecord(output.error);
+};
+
+/* oxlint-disable typescript/promise-function-async -- MCP test doubles return exact settled or rejected promises so transport lifecycle and rejection timing remain explicit. */
 const createFailingMcpClient = (): MCPClient => ({
   close() {
     return Promise.resolve();
@@ -210,6 +241,7 @@ const createInvalidToolSchemaMcpClient = (): MCPClient & {
     ]);
   },
 });
+/* oxlint-enable typescript/promise-function-async */
 
 describe("@tuvren/mcp-client", () => {
   test("connects over stdio, lists tools, invokes, refreshes, and closes", async () => {
@@ -227,18 +259,15 @@ describe("@tuvren/mcp-client", () => {
         "mock.get-structured-content"
       );
 
-      const echo = source.tools.find((tool) => tool.name === "mock.echo");
-      expect(echo?.description).toBe("Echoes back the input string");
-      expect(echo?.metadata).toEqual(
-        expect.objectContaining({
-          mcp: expect.objectContaining({
-            originalName: "echo",
-            serverName: "mock",
-          }),
-        })
-      );
+      const echo = requireTool(source.tools, "mock.echo");
+      expect(echo.description).toBe("Echoes back the input string");
+      const metadata = requireRecord(echo.metadata);
+      const mcpMetadata = requireRecord(metadata.mcp);
+      expect(mcpMetadata.originalName).toBe("echo");
+      expect(mcpMetadata.serverName).toBe("mock");
 
-      const output = await echo?.execute(
+      const output = await executeTool(
+        echo,
         { message: "hello" },
         createToolContext("call-stdio", "mock.echo")
       );
@@ -247,12 +276,11 @@ describe("@tuvren/mcp-client", () => {
         isError: false,
       });
 
-      await expect(source.refresh()).resolves.toEqual({
-        tools: expect.arrayContaining([
-          expect.objectContaining({ name: "mock.echo" }),
-          expect.objectContaining({ name: "mock.get-structured-content" }),
-        ]),
-      });
+      const refreshed = await source.refresh();
+      expect(refreshed.tools.map((tool) => tool.name)).toContain("mock.echo");
+      expect(refreshed.tools.map((tool) => tool.name)).toContain(
+        "mock.get-structured-content"
+      );
     } finally {
       await source.close();
     }
@@ -267,10 +295,12 @@ describe("@tuvren/mcp-client", () => {
     });
 
     try {
-      const structured = source.tools.find(
-        (tool) => tool.name === "http.get-structured-content"
+      const structured = requireTool(
+        source.tools,
+        "http.get-structured-content"
       );
-      const output = await structured?.execute(
+      const output = await executeTool(
+        structured,
         { location: "Chicago" },
         createToolContext("call-http", "http.get-structured-content")
       );
@@ -301,8 +331,9 @@ describe("@tuvren/mcp-client", () => {
     });
 
     try {
-      const echo = source.tools.find((tool) => tool.name === "http.echo");
-      const output = await echo?.execute(
+      const echo = requireTool(source.tools, "http.echo");
+      const output = await executeTool(
+        echo,
         { message: "streamable" },
         createToolContext("call-http", "http.echo")
       );
@@ -325,17 +356,17 @@ describe("@tuvren/mcp-client", () => {
 
     try {
       const echo = requireTool(source.tools, "invalid.echo");
-      const inputError = await echo.execute(
+      const inputError = await executeTool(
+        echo,
         { message: 1 },
         createToolContext("call-input", "invalid.echo")
       );
-      expect(asToolResultPart(inputError).isError).toBe(true);
-      expect(asToolResultPart(inputError).output).toEqual({
-        error: expect.objectContaining({
-          code: "mcp_tool_input_invalid",
-          name: "TuvrenProviderError",
-        }),
-      });
+      const inputErrorResult = asToolResultPart(inputError);
+      const inputProviderError =
+        requireSerializedProviderError(inputErrorResult);
+      expect(inputErrorResult.isError).toBe(true);
+      expect(inputProviderError.code).toBe("mcp_tool_input_invalid");
+      expect(inputProviderError.name).toBe("TuvrenProviderError");
     } finally {
       await source.close();
     }
@@ -351,17 +382,17 @@ describe("@tuvren/mcp-client", () => {
     const echo = requireTool(source.tools, "invalid.echo");
 
     try {
-      const outputError = await echo.execute(
+      const outputError = await executeTool(
+        echo,
         { message: "bad-output" },
         createToolContext("call-output", "invalid.echo")
       );
-      expect(asToolResultPart(outputError).isError).toBe(true);
-      expect(asToolResultPart(outputError).output).toEqual({
-        error: expect.objectContaining({
-          code: "mcp_tool_output_invalid",
-          name: "TuvrenProviderError",
-        }),
-      });
+      const outputErrorResult = asToolResultPart(outputError);
+      const outputProviderError =
+        requireSerializedProviderError(outputErrorResult);
+      expect(outputErrorResult.isError).toBe(true);
+      expect(outputProviderError.code).toBe("mcp_tool_output_invalid");
+      expect(outputProviderError.name).toBe("TuvrenProviderError");
     } finally {
       await source.close();
     }
@@ -382,24 +413,20 @@ describe("@tuvren/mcp-client", () => {
 
     try {
       const result = asToolResultPart(
-        await echo.execute(
+        await executeTool(
+          echo,
           { message: "after-close" },
           createToolContext("call-closed", "closed.echo")
         )
       );
 
-      expect(result).toEqual({
-        callId: "call-closed",
-        isError: true,
-        name: "closed.echo",
-        output: {
-          error: expect.objectContaining({
-            code: "mcp_transport_failure",
-            name: "TuvrenProviderError",
-          }),
-        },
-        type: "tool_result",
-      });
+      const providerError = requireSerializedProviderError(result);
+      expect(result.callId).toBe("call-closed");
+      expect(result.isError).toBe(true);
+      expect(result.name).toBe("closed.echo");
+      expect(result.type).toBe("tool_result");
+      expect(providerError.code).toBe("mcp_transport_failure");
+      expect(providerError.name).toBe("TuvrenProviderError");
       expect(observedErrors).toHaveLength(1);
       expect(observedErrors[0]).toBeInstanceOf(TuvrenProviderError);
     } finally {
@@ -418,25 +445,21 @@ describe("@tuvren/mcp-client", () => {
 
     try {
       const result = asToolResultPart(
-        await failing.execute(
+        await executeTool(
+          failing,
           { message: "fail" },
           createToolContext("call-tool-error", "server.failing")
         )
       );
 
-      expect(result).toEqual({
-        callId: "call-tool-error",
-        isError: true,
-        name: "server.failing",
-        output: {
-          error: expect.objectContaining({
-            code: "mcp_tool_error",
-            message: expect.stringContaining("tool said no"),
-            name: "TuvrenProviderError",
-          }),
-        },
-        type: "tool_result",
-      });
+      const providerError = requireSerializedProviderError(result);
+      expect(result.callId).toBe("call-tool-error");
+      expect(result.isError).toBe(true);
+      expect(result.name).toBe("server.failing");
+      expect(result.type).toBe("tool_result");
+      expect(providerError.code).toBe("mcp_tool_error");
+      expect(providerError.message).toContain("tool said no");
+      expect(providerError.name).toBe("TuvrenProviderError");
     } finally {
       await source.close();
     }
@@ -453,18 +476,16 @@ describe("@tuvren/mcp-client", () => {
 
     try {
       const result = asToolResultPart(
-        await failing.execute(
+        await executeTool(
+          failing,
           { message: "fail" },
           createToolContext("call-schema-error", "server.failing")
         )
       );
 
-      expect(result.output).toEqual({
-        error: expect.objectContaining({
-          code: "mcp_tool_error",
-          name: "TuvrenProviderError",
-        }),
-      });
+      const providerError = requireSerializedProviderError(result);
+      expect(providerError.code).toBe("mcp_tool_error");
+      expect(providerError.name).toBe("TuvrenProviderError");
     } finally {
       await source.close();
     }
@@ -473,16 +494,23 @@ describe("@tuvren/mcp-client", () => {
   test("closes the MCP client when initial refresh fails", async () => {
     const client = createInvalidToolSchemaMcpClient();
 
-    await expect(
-      createMcpToolSourceInternal({
+    let rejection: unknown;
+    try {
+      await createMcpToolSourceInternal({
         client,
         command: "unused",
         transport: "stdio",
-      })
-    ).rejects.toMatchObject({
-      code: "mcp_tool_list_failed",
-      name: "TuvrenProviderError",
-    });
+      });
+    } catch (error: unknown) {
+      rejection = error;
+    }
+
+    expect(rejection).toBeInstanceOf(TuvrenProviderError);
+    if (!(rejection instanceof TuvrenProviderError)) {
+      throw new Error("expected TuvrenProviderError rejection");
+    }
+    expect(rejection.code).toBe("mcp_tool_list_failed");
+    expect(rejection.name).toBe("TuvrenProviderError");
     expect(client.closed).toBe(true);
   });
 });

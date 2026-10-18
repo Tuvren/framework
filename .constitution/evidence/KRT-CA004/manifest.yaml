@@ -3,8 +3,8 @@ mode: contract_test
 result: pass
 produced:
   date: '2026-10-18'
-  commit: 53447895fa0300200bd77f2def1b3d6be4feec1e
-  command: 'M24 core, M25 SDK and M28 streaming native admission plus M26/M27 readiness; package-native lint and JSON checking; build, source-only typecheck, tests, API freeze and export smoke; admission controls; focused framework conformance; bun run lint; bun run typecheck; bun run changeset:check --base=master'
+  commit: bcc91a77439a21ce244fb9d5e27dc27bfdada8ee
+  command: 'M24 core, M25 SDK, M28 streaming and M29 MCP native admission plus M26/M27 readiness; package-native lint and JSON checking; build, source-only typecheck, tests, API freeze and export smoke; admission controls; focused framework/provider conformance; bun run lint; bun run typecheck; bun run changeset:check --base=master'
 files:
   - path: M24-core-readiness.json
     sha256: 221d0f71aee93a43c5c5514db9ef20bc02dfe33386ff734efa749ee50ac58029
@@ -26,4 +26,8 @@ files:
     sha256: f13fb21d92f1553a03e507733d8721b0378ed2e32fd2df32689ada3f6977a379
     bytes: 6247
     role: measurement
-pass_criteria: The complete core, SDK and four streaming admission selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics and no unused directive; every contract-preserving native exception is measured and reasoned; each admitted root removes its legacy Biome directives in the same change as canonical target and coverage transfer; public API, Promise timing, queue and iterator behavior, transport sequencing, event and error ordering, schema boundaries and release metadata remain unchanged; focused and repository gates pass. KRT-CA004 remains in progress until all later package admissions complete.
+  - path: M29-mcp-readiness.json
+    sha256: aef0e12d152831c7242e15b1c99335ea511f1b01f86c3b6122b553c6884bf4c1
+    bytes: 7603
+    role: measurement
+pass_criteria: The complete core, SDK, four streaming and MCP admission selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics and no unused directive; every contract-preserving native exception is measured and reasoned; each admitted root removes its legacy Biome directives in the same change as canonical target and coverage transfer; public API, Promise timing, queue and iterator behavior, MCP pagination and transport lifecycle, event and error ordering, schema boundaries and release metadata remain unchanged; focused and repository gates pass. KRT-CA004 remains in progress until all later package admissions complete.

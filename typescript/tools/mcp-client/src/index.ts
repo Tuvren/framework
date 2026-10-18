@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional MCP client surface.
-
 /**
  * `@tuvren/mcp-client` — a Model Context Protocol (MCP) tool source for the
  * Tuvren runtime.
@@ -31,8 +29,6 @@
  * runtime surface — see this package's README ("Secret Isolation — Edge
  * Confinement", ADR-0044) and the `secret-isolation` conformance check set
  * (KRT-BD004).
- *
- * @packageDocumentation
  */
 export type {
   CreateMcpToolSourceOptions,
