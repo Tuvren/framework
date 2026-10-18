@@ -17,7 +17,11 @@
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type { ExecutionClass } from "@tuvren/core/capabilities";
 import { TOOL_RESULT_SANITIZATION_FAILED } from "@tuvren/core/errors";
-import type { EventSource, TuvrenStreamEvent } from "@tuvren/core/events";
+import type {
+  EventSource,
+  ToolAuditEvent,
+  TuvrenStreamEvent,
+} from "@tuvren/core/events";
 import type {
   SanitizeToolResultContext,
   SanitizeToolResultHook,
@@ -90,21 +94,21 @@ interface ApprovalResultMetadata {
 // This remains throw-based intentionally: aroundTool handlers receive
 // `next(): Promise<ToolResultPart>`, so a nested pause has no value-level way to
 // short-circuit that contract without widening the public handler surface.
-export class ToolPauseSignal extends Error {
+export class ToolPauseSignalError extends Error {
   readonly approval: ApprovalRequest;
   readonly updates: ExtensionStateUpdate[];
 
   constructor(approval: ApprovalRequest, updates: ExtensionStateUpdate[]) {
     super("tool execution paused");
+    this.name = "ToolPauseSignalError";
     this.approval = approval;
     this.updates = updates;
   }
 }
 
 /** Coerces an arbitrary thrown value into an `Error`, stringifying non-errors. */
-export const normalizeError = (error: unknown): Error => {
-  return error instanceof Error ? error : new Error(String(error));
-};
+export const normalizeError = (error: unknown): Error =>
+  error instanceof Error ? error : new Error(String(error));
 
 /**
  * Wraps a {@link ToolBatchEnvironment} with a fence composed from the
@@ -198,58 +202,51 @@ export const createToolExecutionContext = (
   tool: TuvrenToolDefinition,
   environment: ToolBatchEnvironment,
   timeoutSignal: AbortSignal | undefined
-): ToolExecutionContext => {
-  return {
-    callId: toolCall.callId,
-    emit: (event: { data: unknown; name: string }) => {
-      if (timeoutSignal?.aborted) {
-        return;
-      }
+): ToolExecutionContext => ({
+  callId: toolCall.callId,
+  emit: (event: { data: unknown; name: string }) => {
+    if (timeoutSignal?.aborted === true) {
+      return;
+    }
 
-      environment.publishCustom(event);
-    },
-    forward: (event: TuvrenStreamEvent, source: EventSource) => {
-      if (timeoutSignal?.aborted) {
-        return;
-      }
+    environment.publishCustom(event);
+  },
+  forward: (event: TuvrenStreamEvent, source: EventSource) => {
+    if (timeoutSignal?.aborted === true) {
+      return;
+    }
 
-      environment.publishEvent({
-        ...event,
-        source,
-      });
-    },
-    idempotencyKey: deriveIdempotencyKey(environment.turnId, toolCall.callId),
-    metadata:
-      tool.metadata === undefined
-        ? undefined
-        : cloneSnapshotPreservingFunctions(tool.metadata),
-    name: tool.name,
-    signal: timeoutSignal ?? environment.signal,
-  };
-};
+    environment.publishEvent({
+      ...event,
+      source,
+    });
+  },
+  idempotencyKey: deriveIdempotencyKey(environment.turnId, toolCall.callId),
+  metadata:
+    tool.metadata === undefined
+      ? undefined
+      : cloneSnapshotPreservingFunctions(tool.metadata),
+  name: tool.name,
+  signal: timeoutSignal ?? environment.signal,
+});
 
 /** Returns the value as a plain record, or `{}` for non-record values. */
-const asRecord = (value: unknown): Record<string, unknown> => {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
 
-  return {};
-};
+const asRecord = (value: unknown): Record<string, unknown> =>
+  isRecord(value) ? value : {};
 
 /**
  * Deep-clones a value with `structuredClone`. Used to hand isolated
  * snapshots to `aroundTool` handlers; values containing functions must use
  * `cloneSnapshotPreservingFunctions` instead.
  */
-export const cloneValue = <T>(value: T): T => {
-  return globalThis.structuredClone(value);
-};
+export const cloneValue = <T>(value: T): T => globalThis.structuredClone(value);
 
 /** Deep-clones a value into a plain record, yielding `{}` for non-records. */
-const cloneRecord = (value: unknown): Record<string, unknown> => {
-  return asRecord(cloneValue(asRecord(value)));
-};
+const cloneRecord = (value: unknown): Record<string, unknown> =>
+  asRecord(cloneValue(asRecord(value)));
 
 /**
  * Builds the isolated `AroundToolContext` passed to one `aroundTool` handler.
@@ -268,36 +265,34 @@ export const createAroundToolContext = (
   environment: ToolBatchEnvironment,
   sharedExports: Record<string, Record<string, unknown>>,
   timeoutSignal: AbortSignal | undefined
-): AroundToolContext => {
-  return {
-    approvalDecision: toolCall.approvalDecision,
-    callId: toolCall.toolCall.callId,
-    emit: (event: { data: unknown; name: string }) => {
-      if (timeoutSignal?.aborted) {
-        return;
-      }
+): AroundToolContext => ({
+  approvalDecision: toolCall.approvalDecision,
+  callId: toolCall.toolCall.callId,
+  emit: (event: { data: unknown; name: string }) => {
+    if (timeoutSignal?.aborted === true) {
+      return;
+    }
 
-      environment.publishCustom(event);
-    },
-    extensionState: cloneRecord(environment.manifest.extensions[extensionName]),
-    forward: (event: TuvrenStreamEvent, source: EventSource) => {
-      if (timeoutSignal?.aborted) {
-        return;
-      }
+    environment.publishCustom(event);
+  },
+  extensionState: cloneRecord(environment.manifest.extensions[extensionName]),
+  forward: (event: TuvrenStreamEvent, source: EventSource) => {
+    if (timeoutSignal?.aborted === true) {
+      return;
+    }
 
-      environment.publishEvent({
-        ...event,
-        source,
-      });
-    },
-    input: cloneValue(toolCall.input),
-    iterationCount: environment.iterationCount,
-    manifest: cloneValue(environment.manifest),
-    sharedExports: cloneValue(sharedExports),
-    tool: cloneSnapshotPreservingFunctions(toolCall.tool),
-    toolCall: cloneValue(toolCall.toolCall),
-  };
-};
+    environment.publishEvent({
+      ...event,
+      source,
+    });
+  },
+  input: cloneValue(toolCall.input),
+  iterationCount: environment.iterationCount,
+  manifest: cloneValue(environment.manifest),
+  sharedExports: cloneValue(sharedExports),
+  tool: cloneSnapshotPreservingFunctions(toolCall.tool),
+  toolCall: cloneValue(toolCall.toolCall),
+});
 
 /**
  * Applies the (optional) replacement context an `aroundTool` handler passed
@@ -312,7 +307,7 @@ export const createAroundToolContext = (
  */
 export const toExecutableToolCall = (
   base: ExecutableToolCall,
-  nextContext: AroundToolContext | undefined
+  nextContext?: AroundToolContext
 ): ExecutableToolCall => {
   if (nextContext === undefined) {
     return base;
@@ -377,21 +372,19 @@ export const emitToolStartIfNeeded = async (
  * @param input - The validated input the call would execute with.
  * @param message - Optional prompt override (e.g. the policy engine's
  *   `requiresApproval` reason).
- * @defaultValue message - `Approve tool "<name>"?`
+ * The default message is `Approve tool "<name>"?`.
  */
 export const createPendingToolCall = (
   toolCall: { callId: string; name: string },
   input: unknown,
   message?: string
-): PendingToolCall => {
-  return {
-    callId: toolCall.callId,
-    decisions: [...DEFAULT_APPROVAL_DECISIONS],
-    input,
-    message: message ?? `Approve tool "${toolCall.name}"?`,
-    name: toolCall.name,
-  };
-};
+): PendingToolCall => ({
+  callId: toolCall.callId,
+  decisions: [...DEFAULT_APPROVAL_DECISIONS],
+  input,
+  message: message ?? `Approve tool "${toolCall.name}"?`,
+  name: toolCall.name,
+});
 
 /**
  * Guarantees that an `aroundTool`-supplied `ApprovalRequest` includes the
@@ -448,20 +441,15 @@ export const normalizeApprovalRequest = (
  * after `next()` already ran). These are extension programming errors and
  * propagate out of the batch instead of becoming tool-failure results.
  */
-export const isApprovalRequestValidationError = (error: unknown): boolean => {
-  return (
-    error instanceof Error &&
-    "code" in error &&
-    error.code === "invalid_approval_request"
-  );
-};
+export const isApprovalRequestValidationError = (error: unknown): boolean =>
+  error instanceof Error &&
+  "code" in error &&
+  error.code === "invalid_approval_request";
 
 /** Type guard narrowing a `Promise.allSettled` entry to a rejection. */
 export const isRejectedPromiseResult = (
   result: PromiseSettledResult<unknown>
-): result is PromiseRejectedResult => {
-  return result.status === "rejected";
-};
+): result is PromiseRejectedResult => result.status === "rejected";
 
 /**
  * Evaluates a tool's declarative approval policy (framework spec §8.4):
@@ -474,9 +462,8 @@ export const evaluateApprovalPolicy = async (
   policy: NonNullable<TuvrenToolDefinition["approval"]>,
   input: unknown,
   context: ToolExecutionContext
-): Promise<boolean> => {
-  return typeof policy === "function" ? await policy(input, context) : policy;
-};
+): Promise<boolean> =>
+  typeof policy === "function" ? await policy(input, context) : policy;
 
 /**
  * Compiles a JSON Schema with the module's shared Ajv instance, memoizing
@@ -506,15 +493,14 @@ const getCompiledValidator = (
  * Projects Ajv error objects to a stable, serializable diagnostic shape for
  * validation-failure `output.details`.
  */
-const formatAjvErrors = (errors: ErrorObject[] | null | undefined): unknown => {
-  return errors?.map((error) => ({
+const formatAjvErrors = (errors: ErrorObject[] | null | undefined): unknown =>
+  errors?.map((error) => ({
     instancePath: error.instancePath,
     keyword: error.keyword,
     message: error.message,
     params: error.params,
     schemaPath: error.schemaPath,
   }));
-};
 
 /**
  * Validates a tool's output value against its declared `outputSchema`
@@ -673,9 +659,8 @@ const createApprovalResultMetadata = (
  */
 export const isExecutableApprovalDecision = (
   decision: ApprovalDecision
-): decision is ApprovalDecision & { type: "approve" | "edit" } => {
-  return decision.type === "approve" || decision.type === "edit";
-};
+): decision is ApprovalDecision & { type: "approve" | "edit" } =>
+  decision.type === "approve" || decision.type === "edit";
 
 /**
  * Wraps a successful result's output as `{ approval, result }` when the call
@@ -998,8 +983,11 @@ export const stageAndEmitResults = async (
   updates: ExtensionStateUpdate[] = []
 ): Promise<StagedToolResult[]> => {
   const staged: StagedToolResult[] = [];
-
-  for (const [index, result] of results.entries()) {
+  const stageResultAtIndex = async (index: number): Promise<void> => {
+    if (index >= results.length) {
+      return;
+    }
+    const result = results[index];
     staged.push(
       await stageAndEmitResult(
         environment,
@@ -1010,7 +998,10 @@ export const stageAndEmitResults = async (
         index === 0 ? updates : []
       )
     );
-  }
+    await stageResultAtIndex(index + 1);
+  };
+
+  await stageResultAtIndex(0);
 
   return staged;
 };
@@ -1030,9 +1021,14 @@ export const stageImmediateResults = async (
   orderedResults: StagedToolResult[][],
   startBarrier: ToolStartBarrier
 ): Promise<void> => {
-  for (const [index, results] of immediateResults.entries()) {
+  const stageResultsAtIndex = async (index: number): Promise<void> => {
+    if (index >= immediateResults.length) {
+      return;
+    }
+    const results = immediateResults[index];
     if (results.length === 0) {
-      continue;
+      await stageResultsAtIndex(index + 1);
+      return;
     }
 
     const staged = await stageAndEmitResults(
@@ -1042,7 +1038,10 @@ export const stageImmediateResults = async (
       startBarrier
     );
     orderedResults[index].push(...staged);
-  }
+    await stageResultsAtIndex(index + 1);
+  };
+
+  await stageResultsAtIndex(0);
 };
 
 /**
@@ -1054,14 +1053,11 @@ export const createToolStartBarrier = (
   totalCalls: number
 ): ToolStartBarrier => {
   let pendingCalls = totalCalls;
-  let resolveReady: (() => void) | undefined;
-  const ready = new Promise<void>((resolve) => {
-    resolveReady = resolve;
-
-    if (pendingCalls === 0) {
-      resolve();
-    }
-  });
+  const { promise: ready, resolve: resolveReady } =
+    Promise.withResolvers<boolean>();
+  if (pendingCalls === 0) {
+    resolveReady(true);
+  }
 
   return {
     markSettled() {
@@ -1072,7 +1068,7 @@ export const createToolStartBarrier = (
       pendingCalls -= 1;
 
       if (pendingCalls === 0) {
-        resolveReady?.();
+        resolveReady(true);
       }
     },
     async waitUntilReady() {
@@ -1111,14 +1107,21 @@ export const stageImmediateResultsWhileExecuting = async (
   const startBarrier = createToolStartBarrier(
     Math.min(executable.length, environment.maxParallelToolCalls)
   );
-  const executablePromise = executeConcurrent(
-    executable,
-    environment,
-    startBarrier
-  ).then(
-    (outcomes) => ({ outcomes, rejected: false as const }),
-    (error: unknown) => ({ error, rejected: true as const })
-  );
+  const captureExecutableOutcome = async () => {
+    try {
+      return {
+        outcomes: await executeConcurrent(
+          executable,
+          environment,
+          startBarrier
+        ),
+        rejected: false as const,
+      };
+    } catch (error: unknown) {
+      return { error, rejected: true as const };
+    }
+  };
+  const executablePromise = captureExecutableOutcome();
 
   // Known non-executing outcomes are staged before slower siblings finish so they
   // survive crashes, but they still wait for the first execution wave to emit
@@ -1225,9 +1228,8 @@ export const getAroundToolHandlers = (
  */
 export const isPauseResult = (
   result: AroundToolResult
-): result is Extract<AroundToolResult, { verdict: "pause" }> => {
-  return "verdict" in result && result.verdict === "pause";
-};
+): result is Extract<AroundToolResult, { verdict: "pause" }> =>
+  "verdict" in result && result.verdict === "pause";
 
 /**
  * Marks a call as settled without emitting `tool.start` — used when a call
@@ -1261,9 +1263,8 @@ export const settleToolStartIfNeeded = async (
  */
 export const isResultWithState = (
   result: AroundToolResult
-): result is Extract<AroundToolResult, { result: ToolResultPart }> => {
-  return "result" in result;
-};
+): result is Extract<AroundToolResult, { result: ToolResultPart }> =>
+  "result" in result;
 
 /**
  * Normalizes the value returned by an `aroundTool` handler into a
@@ -1283,7 +1284,7 @@ export const isResultWithState = (
  *   through with the accumulated updates; a different part is treated as a
  *   substitution and likewise triggers `tool.start` emission when needed.
  */
-export const normalizeAroundToolResult = (
+export const normalizeAroundToolResult = async (
   extensionName: string,
   result: AroundToolResult,
   nestedUpdates: ExtensionStateUpdate[],
@@ -1295,91 +1296,84 @@ export const normalizeAroundToolResult = (
 ): Promise<RawSingleToolOutcome> => {
   if (isPauseResult(result)) {
     if (nestedResult !== undefined) {
-      return Promise.reject(
-        new TuvrenRuntimeError(
-          `aroundTool extension "${extensionName}" must request approval before calling next()`,
-          {
-            code: "invalid_approval_request",
-            details: {
-              callId: context.callId,
-              extensionName,
-              toolName: context.tool.name,
-            },
-          }
-        )
+      throw new TuvrenRuntimeError(
+        `aroundTool extension "${extensionName}" must request approval before calling next()`,
+        {
+          code: "invalid_approval_request",
+          details: {
+            callId: context.callId,
+            extensionName,
+            toolName: context.tool.name,
+          },
+        }
       );
     }
 
-    return settleToolStartIfNeeded(toolStartState, startBarrier).then(() => {
-      const approval = normalizeApprovalRequest(
-        context.toolCall,
-        context.input,
-        result.approval
-      );
-      assertApprovalRequest(
-        approval,
-        `aroundTool approval from extension "${extensionName}"`
-      );
+    await settleToolStartIfNeeded(toolStartState, startBarrier);
+    const approval = normalizeApprovalRequest(
+      context.toolCall,
+      context.input,
+      result.approval
+    );
+    assertApprovalRequest(
+      approval,
+      `aroundTool approval from extension "${extensionName}"`
+    );
 
-      return {
-        approval,
-        updates: collectExtensionStateUpdate(
-          extensionName,
-          result.state,
-          nestedUpdates
-        ),
-      };
-    });
+    return {
+      approval,
+      updates: collectExtensionStateUpdate(
+        extensionName,
+        result.state,
+        nestedUpdates
+      ),
+    };
   }
 
   if (isResultWithState(result)) {
-    return emitToolStartIfNeeded(
-      toExecutableToolCall(
-        {
-          approvalDecision: context.approvalDecision,
-          input: context.input,
-          tool: context.tool,
-          toolCall: context.toolCall,
-        },
-        undefined
-      ),
+    await emitToolStartIfNeeded(
+      toExecutableToolCall({
+        approvalDecision: context.approvalDecision,
+        input: context.input,
+        tool: context.tool,
+        toolCall: context.toolCall,
+      }),
       environment,
       toolStartState,
       startBarrier
-    ).then(() => ({
+    );
+    return {
       result: result.result,
       updates: collectExtensionStateUpdate(
         extensionName,
         result.state,
         nestedUpdates
       ),
-    }));
+    };
   }
 
   if (nestedResult !== undefined && result === nestedResult) {
-    return Promise.resolve({
+    return {
       result,
       updates: nestedUpdates,
-    });
+    };
   }
 
-  return emitToolStartIfNeeded(
-    toExecutableToolCall(
-      {
-        approvalDecision: context.approvalDecision,
-        input: context.input,
-        tool: context.tool,
-        toolCall: context.toolCall,
-      },
-      undefined
-    ),
+  await emitToolStartIfNeeded(
+    toExecutableToolCall({
+      approvalDecision: context.approvalDecision,
+      input: context.input,
+      tool: context.tool,
+      toolCall: context.toolCall,
+    }),
     environment,
     toolStartState,
     startBarrier
-  ).then(() => ({
+  );
+  return {
     result,
     updates: nestedUpdates,
-  }));
+  };
 };
 
 /**
@@ -1419,7 +1413,7 @@ export const emitToolAuditEvent = (
   environment: ToolBatchEnvironment,
   callId: string,
   toolName: string,
-  lifecycle: import("@tuvren/core/events").ToolAuditEvent["lifecycle"],
+  lifecycle: ToolAuditEvent["lifecycle"],
   extras?: {
     attempt?: number;
     validationPassed?: boolean;
@@ -1431,7 +1425,7 @@ export const emitToolAuditEvent = (
       ? ("tuvren-server" as const)
       : buildToolAttribution(tool).executionClass;
 
-  const event: import("@tuvren/core/events").ToolAuditEvent = {
+  const event: ToolAuditEvent = {
     callId,
     capabilityId: toolName,
     executionClass,

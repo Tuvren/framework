@@ -16,8 +16,9 @@
 
 import type { EpochMs, HashString } from "@tuvren/core";
 import type {
-  ExecutionClass,
   CapabilityPolicyEngine,
+  ExecutionClass,
+  PolicyCapabilityMetadata,
   TuvrenSandboxExecutor,
 } from "@tuvren/core/capabilities";
 import {
@@ -27,6 +28,7 @@ import {
 } from "@tuvren/core/errors";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
+  CapabilityPolicyContextInputs,
   ContextManifest,
   SanitizeToolResultHook,
 } from "@tuvren/core/execution";
@@ -78,7 +80,7 @@ import {
   stageAndEmitResults,
   stageImmediateResults,
   stageImmediateResultsWhileExecuting,
-  ToolPauseSignal,
+  ToolPauseSignalError,
   toExecutableToolCall,
   validateToolInput,
   validateToolOutput,
@@ -133,43 +135,40 @@ export interface ToolBatchEnvironment {
    */
   maxParallelToolCalls: number;
   /** Clock used to timestamp emitted `tool.start`/`tool.result`/`tool.audit` events. */
-  now(): EpochMs;
+  now: () => EpochMs;
   /**
    * Per-capability policy metadata keyed by capabilityId. Built by the runtime
    * from TuvrenToolDefinition policy fields for the wired invocation-time check.
    * Populated when capabilityPolicyEngine is set. BB001–BB004.
    */
-  policyCapabilityMetadata?: ReadonlyMap<
-    string,
-    import("@tuvren/core/capabilities").PolicyCapabilityMetadata
-  >;
+  policyCapabilityMetadata?: ReadonlyMap<string, PolicyCapabilityMetadata>;
   /**
    * Session-level policy context inputs from AgentConfig.policyContextInputs.
    * Used to populate the CapabilityPolicyContext for the wired invocation-time
    * check. BB001–BB004.
    */
-  policyContextInputs?: import("@tuvren/core/execution").CapabilityPolicyContextInputs;
+  policyContextInputs?: CapabilityPolicyContextInputs;
   /** Publishes a tool- or extension-emitted custom event onto the turn stream. */
-  publishCustom(event: { data: unknown; name: string }): void;
+  publishCustom: (event: { data: unknown; name: string }) => void;
   /**
    * Publishes a framework stream event (`tool.start`, `tool.result`,
    * `tool.audit`) onto the turn's event stream.
    */
-  publishEvent(event: TuvrenStreamEvent): void;
+  publishEvent: (event: TuvrenStreamEvent) => void;
   /**
    * Reports a non-fatal error (for example an `aroundTool` handler that threw
    * after its `next()` call already produced a result) without failing the
    * batch or the run.
    */
-  reportSoftError(error: Error): void;
+  reportSoftError: (error: Error) => void;
   /**
    * Optional sandbox executor registry keyed by endpoint id. When a tool
    * declares metadata.sandbox.endpointId, the gateway looks up the executor
    * here and calls it instead of tool.execute. (AX004)
    */
-  resolveSandboxExecutor?(
+  resolveSandboxExecutor?: (
     endpointId: string
-  ): TuvrenSandboxExecutor | undefined;
+  ) => TuvrenSandboxExecutor | undefined;
   /** Kernel run this batch executes under; stamped onto `tool.audit` events. */
   runId: string;
   /**
@@ -202,11 +201,11 @@ export interface ToolBatchEnvironment {
    *
    * @returns The content hash of the staged `{ role: "tool" }` message.
    */
-  stageResult(
+  stageResult: (
     result: ToolResultPart,
     orderIndex: number,
     updates?: ExtensionStateUpdate[]
-  ): Promise<HashString>;
+  ) => Promise<HashString>;
   /** Kernel thread the run belongs to. */
   threadId: string;
   /** Registry used to resolve each requested tool call by name (spec §8.5). */
@@ -329,15 +328,26 @@ export interface ToolStartState {
   /** True once this call's `tool.start` event has been published. */
   emitted: boolean;
   /** Unblocks the next call in the wave's `tool.start` turn order. */
-  releaseTurn(): void;
+  releaseTurn: () => void;
   /**
    * True once the call has either emitted `tool.start` or been marked as
    * never-starting; the wave barrier counts settled calls, not emissions.
    */
   settled: boolean;
   /** Resolves when it is this call's turn to emit `tool.start`. */
-  waitForTurn(): Promise<void>;
+  waitForTurn: () => void | Promise<void>;
 }
+
+const createSequentialToolStartState = (): ToolStartState => ({
+  emitted: false,
+  releaseTurn: () => {
+    // There is no following call in sequential mode.
+  },
+  settled: false,
+  waitForTurn: () => {
+    // There is no predecessor call in sequential mode.
+  },
+});
 
 /**
  * Countdown latch enforcing the wave-ordering invariant of framework spec
@@ -353,9 +363,9 @@ export interface ToolStartState {
  */
 export interface ToolStartBarrier {
   /** Records that one call of the wave has settled its `tool.start` phase. */
-  markSettled(): void;
+  markSettled: () => void;
   /** Resolves once every call in the wave has settled. */
-  waitUntilReady(): Promise<void>;
+  waitUntilReady: () => Promise<void>;
 }
 
 /**
@@ -421,13 +431,20 @@ type ResolvedToolBatchStep =
   | { pendingToolCall: PendingToolCall }
   | { result: ToolResultPart };
 
+type ToolBatchStepResolver = (
+  index: number
+) =>
+  | ResolvedToolBatchStep
+  | undefined
+  | Promise<ResolvedToolBatchStep | undefined>;
+
 const prepareToolAttempt = (
   attempt: number,
   toolCall: ExecutableToolCall,
   environment: ToolBatchEnvironment
 ): boolean => {
   // Authority loss aborts retries; a running call keeps its existing outcome.
-  if (attempt > 0 && environment.signal?.aborted) {
+  if (attempt > 0 && environment.signal?.aborted === true) {
     return false;
   }
   // Client calls cannot retry, so this event is only for auditable server tools.
@@ -454,19 +471,16 @@ const prepareToolAttempt = (
 const isDirectToolResult = (
   value: unknown,
   toolCall: ExecutableToolCall
-): value is ToolResultPart => {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "type" in value &&
-    value.type === "tool_result" &&
-    "callId" in value &&
-    value.callId === toolCall.toolCall.callId &&
-    "name" in value &&
-    value.name === toolCall.tool.name &&
-    "output" in value
-  );
-};
+): value is ToolResultPart =>
+  typeof value === "object" &&
+  value !== null &&
+  "type" in value &&
+  value.type === "tool_result" &&
+  "callId" in value &&
+  value.callId === toolCall.toolCall.callId &&
+  "name" in value &&
+  value.name === toolCall.tool.name &&
+  "output" in value;
 
 /**
  * Validates a tool's raw `execute` output against its `outputSchema` when one
@@ -490,14 +504,11 @@ const applyOutputValidation = (
     return { ok: true, resolved: output };
   }
   const isDirectResult = isDirectToolResult(output, toolCall);
-  const isErrorResult =
-    isDirectResult && (output as ToolResultPart).isError === true;
+  const isErrorResult = isDirectResult && output.isError === true;
   if (isErrorResult) {
     return { ok: true, resolved: output };
   }
-  const valueToValidate = isDirectResult
-    ? (output as ToolResultPart).output
-    : output;
+  const valueToValidate = isDirectResult ? output.output : output;
   const outputValidation = validateToolOutput(
     toolCall.tool.outputSchema,
     valueToValidate
@@ -531,7 +542,7 @@ const applyOutputValidation = (
   // Forward the (potentially coerced) validated value, mirroring the
   // input path which uses validation.value at resolveExecutableToolCall.
   const resolved = isDirectResult
-    ? { ...(output as ToolResultPart), output: outputValidation.value }
+    ? { ...output, output: outputValidation.value }
     : outputValidation.value;
   return { ok: true, resolved };
 };
@@ -553,7 +564,7 @@ const applyOutputValidation = (
  * semantics:
  *
  * - A pause verdict from the handler, or a nested pause surfacing through
- *   `next()`, propagates as {@link ToolPauseSignal} with accumulated
+ *   `next()`, propagates as {@link ToolPauseSignalError} with accumulated
  *   extension state updates.
  * - Handler results are normalized via `normalizeAroundToolResult`, merging
  *   returned `state` into the update list.
@@ -597,14 +608,11 @@ const runAroundToolHandlers = async (
     );
     // Sandbox tools (endpoint.kind === "tuvren-sandbox") use the registered
     // sandbox executor instead of tool.execute. (AX004)
+    const { sandboxExecutor } = toolCall;
     const executeFunction =
-      toolCall.sandboxExecutor === undefined
+      sandboxExecutor === undefined
         ? (input: unknown) => toolCall.tool.execute(input, executionContext)
-        : (input: unknown) =>
-            (toolCall.sandboxExecutor as TuvrenSandboxExecutor).execute(
-              input,
-              executionContext
-            );
+        : (input: unknown) => sandboxExecutor.execute(input, executionContext);
 
     try {
       output = await runWithTimeout(
@@ -637,7 +645,7 @@ const runAroundToolHandlers = async (
 
     if (isDirectToolResult(resolvedOutput, toolCall)) {
       return {
-        result: resolvedOutput as ToolResultPart,
+        result: resolvedOutput,
         updates: [],
       };
     }
@@ -667,8 +675,8 @@ const runAroundToolHandlers = async (
 
   try {
     const handlerResult = await runWithTimeout(
-      () =>
-        handler.call(receiver, context, async (nextContext) => {
+      async () =>
+        await handler.call(receiver, context, async (nextContext) => {
           const outcome = await runAroundToolHandlers(
             handlers,
             index + 1,
@@ -680,7 +688,7 @@ const runAroundToolHandlers = async (
           );
 
           if (outcome.approval !== undefined) {
-            throw new ToolPauseSignal(outcome.approval, outcome.updates);
+            throw new ToolPauseSignalError(outcome.approval, outcome.updates);
           }
 
           nestedUpdates.push(...outcome.updates);
@@ -710,8 +718,8 @@ const runAroundToolHandlers = async (
       startBarrier
     );
   } catch (error: unknown) {
-    if (error instanceof ToolPauseSignal) {
-      throw new ToolPauseSignal(error.approval, [
+    if (error instanceof ToolPauseSignalError) {
+      throw new ToolPauseSignalError(error.approval, [
         ...nestedUpdates,
         ...error.updates,
       ]);
@@ -799,7 +807,7 @@ const stageSingleToolOutcome = async (
  * - A completed result is annotated with approval-decision metadata (resume
  *   path), staged via `stageAndEmitResult`, and returned with its hash.
  * - An approval pause — returned by the chain or thrown as
- *   {@link ToolPauseSignal} from a nested `next()` — stages any
+ *   {@link ToolPauseSignalError} from a nested `next()` — stages any
  *   `completedResults` it carries and returns the approval arm.
  * - When all attempts fail, the last error becomes an `isError: true`
  *   execution-failure result; tool failures never fail the run (framework
@@ -813,7 +821,7 @@ const stageSingleToolOutcome = async (
  *   order key.
  * @param toolStartState - Wave-ordering state; the default value used by the
  *   sequential path emits immediately without turn chaining.
- * @throws An `invalid_approval_request` error from a malformed `aroundTool`
+ * @throws {Error} An `invalid_approval_request` error from a malformed `aroundTool`
  *   approval propagates (it is an extension programming error, not a tool
  *   failure). Staging failures from the batch-scoped authority fence also
  *   propagate.
@@ -823,17 +831,9 @@ const executeSingleTool = async (
   orderIndex: number,
   environment: ToolBatchEnvironment,
   startBarrier: ToolStartBarrier,
-  toolStartState: ToolStartState = {
-    emitted: false,
-    releaseTurn() {
-      return undefined;
-    },
-    settled: false,
-    waitForTurn() {
-      return Promise.resolve();
-    },
-  }
+  toolStartState?: ToolStartState
 ): Promise<SingleToolOutcome> => {
+  const startState = toolStartState ?? createSequentialToolStartState();
   // Resolved once per call: this ExecutableToolCall's binding is already
   // settled (registry lookup, input validation, policy admission, approval
   // all cleared), so every result this call produces — success, approval
@@ -855,10 +855,14 @@ const executeSingleTool = async (
       : 1;
 
   let lastError: unknown;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    if (!prepareToolAttempt(attempt, toolCall, environment)) {
-      break;
+  const executeAttempt = async (
+    attempt: number
+  ): Promise<SingleToolOutcome | undefined> => {
+    if (
+      attempt >= maxAttempts ||
+      !prepareToolAttempt(attempt, toolCall, environment)
+    ) {
+      return undefined;
     }
 
     try {
@@ -872,7 +876,7 @@ const executeSingleTool = async (
         toolCall,
         environment,
         sharedExports,
-        toolStartState,
+        startState,
         startBarrier
       );
 
@@ -889,8 +893,8 @@ const executeSingleTool = async (
         throw error;
       }
 
-      if (error instanceof ToolPauseSignal) {
-        await settleToolStartIfNeeded(toolStartState, startBarrier);
+      if (error instanceof ToolPauseSignalError) {
+        await settleToolStartIfNeeded(startState, startBarrier);
         const completedStagedResults = await stageAndEmitResults(
           environment,
           error.approval.completedResults,
@@ -907,14 +911,18 @@ const executeSingleTool = async (
       }
 
       if (isApprovalRequestValidationError(error)) {
-        await settleToolStartIfNeeded(toolStartState, startBarrier);
+        await settleToolStartIfNeeded(startState, startBarrier);
         throw error;
       }
 
       lastError = error;
-      // Continue to next attempt if retries remain; fall through to
-      // failure path after the loop when this was the last attempt.
+      return await executeAttempt(attempt + 1);
     }
+  };
+
+  const attemptOutcome = await executeAttempt(0);
+  if (attemptOutcome !== undefined) {
+    return attemptOutcome;
   }
 
   const result = createExecutionFailureResult(
@@ -923,7 +931,7 @@ const executeSingleTool = async (
     toolCall.approvalDecision,
     toolCall.approvalAudit
   );
-  await settleToolStartIfNeeded(toolStartState, startBarrier);
+  await settleToolStartIfNeeded(startState, startBarrier);
   const staged = await stageAndEmitResult(
     environment,
     result,
@@ -978,7 +986,7 @@ const buildToolBatchOutcome = (
 const runSequentialToolBatch = async (
   totalCalls: number,
   environment: ToolBatchEnvironment,
-  resolveStep: (index: number) => Promise<ResolvedToolBatchStep | undefined>
+  resolveStep: ToolBatchStepResolver
 ): Promise<ToolBatchOutcome> => {
   const orderedResults = Array.from(
     { length: totalCalls },
@@ -986,17 +994,20 @@ const runSequentialToolBatch = async (
   );
   const pendingToolCalls: PendingToolCall[] = [];
   const updates: ExtensionStateUpdate[] = [];
-
-  for (let index = 0; index < totalCalls; index += 1) {
+  const runCallAtIndex = async (index: number): Promise<void> => {
+    if (index >= totalCalls) {
+      return;
+    }
     const resolved = await resolveStep(index);
 
     if (resolved === undefined) {
-      continue;
+      await runCallAtIndex(index + 1);
+      return;
     }
 
     if ("pendingToolCall" in resolved) {
       pendingToolCalls.push(resolved.pendingToolCall);
-      break;
+      return;
     }
 
     if ("result" in resolved) {
@@ -1007,7 +1018,8 @@ const runSequentialToolBatch = async (
         createToolStartBarrier(0)
       );
       orderedResults[index].push(...staged);
-      continue;
+      await runCallAtIndex(index + 1);
+      return;
     }
 
     const outcome = await executeSingleTool(
@@ -1021,14 +1033,17 @@ const runSequentialToolBatch = async (
     if (outcome.approval !== undefined) {
       pendingToolCalls.push(...outcome.approval.toolCalls);
       orderedResults[index].push(...outcome.completedStagedResults);
-      break;
+      return;
     }
 
     orderedResults[index].push({
       hash: outcome.resultHash,
       result: outcome.result,
     });
-  }
+    await runCallAtIndex(index + 1);
+  };
+
+  await runCallAtIndex(0);
 
   return buildToolBatchOutcome(orderedResults, pendingToolCalls, updates);
 };
@@ -1041,13 +1056,18 @@ const runSequentialToolBatch = async (
  */
 const resolveToolBatchSteps = async (
   totalCalls: number,
-  resolveStep: (index: number) => Promise<ResolvedToolBatchStep | undefined>
+  resolveStep: ToolBatchStepResolver
 ): Promise<(ResolvedToolBatchStep | undefined)[]> => {
   const resolvedSteps: (ResolvedToolBatchStep | undefined)[] = [];
-
-  for (let index = 0; index < totalCalls; index += 1) {
+  const resolveAtIndex = async (index: number): Promise<void> => {
+    if (index >= totalCalls) {
+      return;
+    }
     resolvedSteps[index] = await resolveStep(index);
-  }
+    await resolveAtIndex(index + 1);
+  };
+
+  await resolveAtIndex(0);
 
   return resolvedSteps;
 };
@@ -1071,40 +1091,35 @@ const executeToolCallWave = async (
 ): Promise<SingleToolOutcome[]> => {
   let previousTurn = Promise.resolve();
   const toolStartStates = executable.map(() => {
-    let releaseTurn: (() => void) | undefined;
-    const turnPromise = new Promise<void>((resolve) => {
-      releaseTurn = resolve;
-    });
+    const turn: PromiseWithResolvers<void> = Promise.withResolvers();
     const waitForTurn = previousTurn;
-    previousTurn = turnPromise;
+    previousTurn = turn.promise;
 
     return {
       emitted: false,
       releaseTurn() {
-        releaseTurn?.();
-        releaseTurn = undefined;
+        turn.resolve();
       },
       settled: false,
-      waitForTurn() {
-        return waitForTurn;
-      },
+      waitForTurn: (): void | Promise<void> => waitForTurn,
     } satisfies ToolStartState;
   });
 
-  const outcomes = executable.map((toolCall, index) =>
-    executeSingleTool(
-      toolCall.executable,
-      toolCall.index,
-      environment,
-      startBarrier,
-      toolStartStates[index]
-    ).catch((error: unknown) => {
-      if (!batchAbortController.signal.aborted) {
-        batchAbortController.abort(normalizeError(error));
-      }
+  const outcomes = executable.map(
+    async (toolCall, index) =>
+      await executeSingleTool(
+        toolCall.executable,
+        toolCall.index,
+        environment,
+        startBarrier,
+        toolStartStates[index]
+      ).catch((error: unknown) => {
+        if (!batchAbortController.signal.aborted) {
+          batchAbortController.abort(normalizeError(error));
+        }
 
-      throw error;
-    })
+        throw error;
+      })
   );
   const settledOutcomes = await Promise.allSettled(outcomes);
   const successfulOutcomes: SingleToolOutcome[] = [];
@@ -1142,12 +1157,10 @@ const executeConcurrentToolCalls = async (
     batchAbortController.signal
   );
   const outcomes: SingleToolOutcome[] = [];
-
-  for (
-    let index = 0;
-    index < executable.length;
-    index += environment.maxParallelToolCalls
-  ) {
+  const executeWaveAtIndex = async (index: number): Promise<void> => {
+    if (index >= executable.length) {
+      return;
+    }
     const wave = executable.slice(
       index,
       index + environment.maxParallelToolCalls
@@ -1163,7 +1176,10 @@ const executeConcurrentToolCalls = async (
         batchAbortController
       ))
     );
-  }
+    await executeWaveAtIndex(index + environment.maxParallelToolCalls);
+  };
+
+  await executeWaveAtIndex(0);
 
   return outcomes;
 };
@@ -1267,7 +1283,7 @@ const runToolBatch = async (
   totalCalls: number,
   environment: ToolBatchEnvironment,
   mode: ToolExecutionMode,
-  resolveStep: (index: number) => Promise<ResolvedToolBatchStep | undefined>
+  resolveStep: ToolBatchStepResolver
 ): Promise<ToolBatchOutcome> => {
   if (mode === "sequential") {
     return await runSequentialToolBatch(totalCalls, environment, resolveStep);
@@ -1499,15 +1515,14 @@ export const executeToolBatch = async (
   toolCalls: ToolCallPart[],
   environment: ToolBatchEnvironment,
   mode: ToolExecutionMode
-): Promise<ToolBatchOutcome> => {
-  return await runToolBatch(
+): Promise<ToolBatchOutcome> =>
+  await runToolBatch(
     toolCalls.length,
     environment,
     mode,
     async (index) =>
       await resolveExecutableToolCall(toolCalls[index], environment)
   );
-};
 
 /**
  * Result of {@link applyOutputValidation}: the (possibly coerced) value to
@@ -1748,19 +1763,13 @@ export const resumeToolBatch = async (
     request.toolCalls.length,
     environment,
     mode,
-    async (index) => {
+    (index) => {
       const pendingToolCall = request.toolCalls[index];
       const decision = responseMap.get(pendingToolCall.callId);
 
-      if (decision === undefined) {
-        return;
-      }
-
-      return await resolveResumeDecision(
-        pendingToolCall,
-        decision,
-        environment
-      );
+      return decision === undefined
+        ? undefined
+        : resolveResumeDecision(pendingToolCall, decision, environment);
     }
   );
 };
