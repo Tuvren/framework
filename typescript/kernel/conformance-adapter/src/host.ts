@@ -93,161 +93,9 @@ interface CrashRecoveryBackendHarness {
   createBackend(): Promise<ManagedRuntimeBackend>;
 }
 
-const ADAPTER_CONFIG = readAdapterConfig(process.argv.slice(2));
-
-class TypeScriptKernelAdapter {
-  initialize(
-    packetId: string,
-    planVersion: string
-  ): Promise<AdapterCapabilities> {
-    return Promise.resolve({
-      adapterId: ADAPTER_CONFIG.adapterId,
-      capabilities: ADAPTER_CONFIG.capabilities,
-      packetId,
-      planVersion,
-    });
-  }
-
-  async dispatch(
-    operation: string,
-    input: unknown,
-    _controls: AdapterControls
-  ): Promise<OperationOutcome> {
-    try {
-      switch (operation) {
-        case "kernel.protocol.deterministic-hashing": {
-          return result(await deterministicHashing(readFixture(input)));
-        }
-        case "kernel.protocol.schema-roundtrip": {
-          return result(schemaRoundtrip(readFixture(input)));
-        }
-        case "kernel.protocol.modify-composition": {
-          return result(await runModifyComposition(input));
-        }
-        case "kernel.protocol.canonical-rejection": {
-          return result(runCanonicalRejection(readFixture(input)));
-        }
-        case "kernel.protocol.edge-validation": {
-          return result(await runProtocolEdgeValidation());
-        }
-        case "kernel.logical.diff-paths": {
-          return result(await runLogicalDiff(readFixture(input)));
-        }
-        case "kernel.logical.branch-list": {
-          return result(await runBranchList(readFixture(input)));
-        }
-        case "kernel.logical.recovery-state": {
-          return result(await runRecoveryState(readFixture(input)));
-        }
-        case "kernel.logical.thread-list": {
-          return result(await runThreadList());
-        }
-        case "kernel.lineage.cross-thread-rejection": {
-          return result(await runCrossThreadLineage());
-        }
-        case "kernel.run-liveness.lease-renewal": {
-          return result(await runLeaseRenewal());
-        }
-        case "kernel.run-liveness.expired-listing": {
-          return result(await runExpiredListing());
-        }
-        case "kernel.run-liveness.stale-preemption": {
-          return result(await runStalePreemption());
-        }
-        case "kernel.run-liveness.clock-skew-preemption": {
-          return result(await runClockSkewPreemption());
-        }
-        case "kernel.restart-recovery.close-reopen-checkpoint": {
-          return result(await runRestartRecovery());
-        }
-        case "kernel.restart-recovery.crash-recovery-durable": {
-          return result(await runDurableCrashRecovery());
-        }
-        case "kernel.restart-recovery.crash-recovery-in-process": {
-          return result(await runInProcessCrashRecovery());
-        }
-        case "kernel.restart-recovery.concurrent-writer": {
-          return result(await runConcurrentWriterConflict());
-        }
-        case "kernel.scope-isolation.cross-scope-probe": {
-          return result(await runCrossScopeProbe());
-        }
-        case "kernel.reclamation.reclaim-probe": {
-          return result(await runReclamationProbe());
-        }
-        case "kernel.reclamation.erasure-probe": {
-          return result(await runErasureProbe());
-        }
-        default: {
-          return {
-            error: {
-              code: "adapter_operation_not_implemented",
-              message: `${ADAPTER_CONFIG.adapterId} does not implement ${operation}`,
-            },
-            kind: "error",
-          };
-        }
-      }
-    } catch (error: unknown) {
-      return {
-        error: createAdapterErrorEnvelope(error),
-        kind: "error",
-      };
-    }
-  }
-}
-
-await serveStdioAdapter(new TypeScriptKernelAdapter());
-
-function readAdapterConfig(args: readonly string[]): KernelAdapterConfig {
-  const capabilities: string[] = [];
-  let adapterId = "typescript-kernel-memory";
-  let backend: KernelAdapterConfig["backend"] = "memory";
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-
-    if (arg === "--adapter-id") {
-      const value = args[index + 1];
-      if (value === undefined) {
-        throw new Error("--adapter-id requires a value");
-      }
-      adapterId = value;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--backend") {
-      const value = args[index + 1];
-      if (value !== "memory" && value !== "postgres" && value !== "sqlite") {
-        throw new Error("--backend must be memory, postgres, or sqlite");
-      }
-      backend = value;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--capability") {
-      const value = args[index + 1];
-      if (value === undefined) {
-        throw new Error("--capability requires a value");
-      }
-      capabilities.push(value);
-      index += 1;
-    }
-  }
-
-  return {
-    adapterId,
-    backend,
-    capabilities:
-      capabilities.length > 0 ? capabilities : defaultCapabilities(backend),
-  };
-}
-
-function defaultCapabilities(
+const defaultCapabilities = (
   backend: KernelAdapterConfig["backend"]
-): string[] {
+): string[] => {
   if (backend === "postgres") {
     return [
       "kernel.protocol",
@@ -292,56 +140,668 @@ function defaultCapabilities(
     "kernel.reclamation",
     "kernel-protocol.thread.enumeration",
   ];
-}
+};
 
-async function deterministicHashing(
-  fixture: Record<string, unknown>
-): Promise<Record<string, unknown>> {
-  const rawOpaqueBytes = readNumberArray(
-    fixture.rawOpaqueBytes,
-    "rawOpaqueBytes"
-  );
-  const schemaRecord = decodeDeterministicKernelRecord(
-    hexToBytes(readString(fixture.turnTreeSchemaRecordCborHex, "schema cbor"))
-  );
-  const turnNodeIdentityRecord = readRecord(
-    fixture.turnNodeIdentityRecord,
-    "turnNodeIdentityRecord"
-  );
-  const turnNodeHash = await hashTurnNodeIdentity({
-    consumedStagedResults: readStagedResults(
-      turnNodeIdentityRecord.consumedStagedResults,
-      "consumedStagedResults"
-    ),
-    eventHash: readNullableString(
-      turnNodeIdentityRecord.eventHash,
-      "eventHash"
-    ),
-    previousTurnNodeHash: readNullableString(
-      turnNodeIdentityRecord.previousTurnNodeHash,
-      "previousTurnNodeHash"
-    ),
-    schemaId: readString(turnNodeIdentityRecord.schemaId, "schemaId"),
-    turnTreeHash: readString(
-      turnNodeIdentityRecord.turnTreeHash,
-      "turnTreeHash"
-    ),
+const readAdapterConfig = (args: readonly string[]): KernelAdapterConfig => {
+  const capabilities: string[] = [];
+  let adapterId = "typescript-kernel-memory";
+  let backend: KernelAdapterConfig["backend"] = "memory";
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+
+    if (arg === "--adapter-id") {
+      const value = args[index + 1];
+      if (value === undefined) {
+        throw new Error("--adapter-id requires a value");
+      }
+      adapterId = value;
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--backend") {
+      const value = args[index + 1];
+      if (value !== "memory" && value !== "postgres" && value !== "sqlite") {
+        throw new Error("--backend must be memory, postgres, or sqlite");
+      }
+      backend = value;
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--capability") {
+      const value = args[index + 1];
+      if (value === undefined) {
+        throw new Error("--capability requires a value");
+      }
+      capabilities.push(value);
+      index += 1;
+    }
+  }
+
+  return {
+    adapterId,
+    backend,
+    capabilities:
+      capabilities.length > 0 ? capabilities : defaultCapabilities(backend),
+  };
+};
+
+const ADAPTER_CONFIG = readAdapterConfig(process.argv.slice(2));
+
+const readVerdicts = (value: unknown, caseName: string): Verdict[] => {
+  if (!Array.isArray(value)) {
+    throw new TypeError(`cases.${caseName}.verdicts must be an array`);
+  }
+
+  return value.map((entry, index) => {
+    assertVerdict(entry, `cases.${caseName}.verdicts[${index}]`);
+    return entry;
   });
+};
 
-  return createProjection({
-    hashes: {
-      rawOpaqueBytes: await hashOpaqueObjectBytes(
-        Uint8Array.from(rawOpaqueBytes)
-      ),
-      turnNodeIdentity: turnNodeHash,
-      turnTreeSchema: await hashKernelRecord(schemaRecord),
+/**
+ * Runs one non-deterministic checkpoint step that stages `messageBytes` as a
+ * `message`, so the schema incorporates it into the branch-head turn tree's
+ * `messages` path (and a checkpoint chained on top inherits it). Returns the
+ * checkpoint turn node, its owning turn id, and the stored message object hash so
+ * a caller can chain a second checkpoint and reason about the shared object.
+ */
+const checkpointMessageIntoHead = async (
+  kernel: ReturnType<typeof createRuntimeKernel>,
+  input: {
+    branchId: string;
+    messageBytes: Uint8Array;
+    parentTurnId: string | null;
+    runId: string;
+    schemaId: string;
+    startTurnNodeHash: string;
+    taskId: string;
+    threadId: string;
+    turnId: string;
+  }
+): Promise<{ objectHash: string; turnId: string; turnNodeHash: string }> => {
+  const turn = await kernel.turn.create(
+    input.turnId,
+    input.threadId,
+    input.branchId,
+    input.parentTurnId,
+    input.startTurnNodeHash
+  );
+  await kernel.run.create(
+    input.runId,
+    turn.turnId,
+    input.branchId,
+    input.schemaId,
+    input.startTurnNodeHash,
+    [{ deterministic: false, id: "checkpoint", sideEffects: false }]
+  );
+  await kernel.run.beginStep(input.runId, "checkpoint");
+  const staged = await kernel.staging.stage(
+    input.runId,
+    input.messageBytes,
+    input.taskId,
+    "message",
+    "completed"
+  );
+  const completed = await kernel.run.completeStep(input.runId, "checkpoint");
+  if (completed.turnNodeHash === undefined) {
+    throw new Error("expected checkpoint turn node hash");
+  }
+  await kernel.run.complete(input.runId, "completed");
+  return {
+    objectHash: staged.objectHash,
+    turnId: turn.turnId,
+    turnNodeHash: completed.turnNodeHash,
+  };
+};
+
+const bytesEqual = (left: Uint8Array, right: Uint8Array): boolean => {
+  if (left.length !== right.length) {
+    return false;
+  }
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const isRecoverable = async (
+  codec: ReturnType<typeof createAesGcmPayloadCodec>,
+  stored: Uint8Array | null,
+  context: { edge: string; scope: string },
+  expectedPlaintext: Uint8Array
+): Promise<boolean> => {
+  if (stored === null) {
+    return false;
+  }
+  const decrypted = await codec.decrypt(stored, context);
+  return (
+    decrypted.status === "available" &&
+    bytesEqual(decrypted.plaintext, expectedPlaintext)
+  );
+};
+
+const captureSemanticErrorCode = async (
+  execute: () => Promise<unknown>
+): Promise<string> => {
+  try {
+    await execute();
+    return "unexpected_success";
+  } catch (error: unknown) {
+    return normalizeLogicalErrorCode(readErrorCode(error));
+  }
+};
+
+const runConcurrentWriterConflictOnBackends = async (
+  primaryBackend: RuntimeBackend,
+  secondaryBackend: RuntimeBackend
+): Promise<Record<string, unknown>> => {
+  const schema = createCanonicalKernelTestSchema();
+  const schemaRecord = createStoredSchemaRecord(schema, 1);
+  const turnTree = await createStoredTurnTreeRecord(
+    schema,
+    {
+      "context.manifest": null,
+      messages: [],
     },
+    2
+  );
+  const eventObjectA = await createStoredObjectRecord(new Uint8Array([1]), 3);
+  const eventObjectB = await createStoredObjectRecord(new Uint8Array([2]), 4);
+  const rootNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 5,
+    eventHash: null,
+    previousTurnNodeHash: null,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
   });
-}
+  const siblingNodeA = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 6,
+    eventHash: eventObjectA.hash,
+    previousTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const siblingNodeB = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 7,
+    eventHash: eventObjectB.hash,
+    previousTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const thread: StoredThread = {
+    createdAtMs: 8,
+    rootTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    threadId: "thread_concurrent_branch_head",
+  };
+  const branch: StoredBranch = {
+    branchId: "branch_concurrent_branch_head",
+    createdAtMs: 9,
+    headTurnNodeHash: rootNode.hash,
+    threadId: thread.threadId,
+    updatedAtMs: 9,
+  };
 
-function schemaRoundtrip(
+  await primaryBackend.transact(async (tx) => {
+    await tx.schemas.put(schemaRecord);
+    await tx.turnTrees.put(turnTree);
+    await tx.turnTreePaths.putMany(
+      createCanonicalTurnTreePaths(turnTree, {
+        "context.manifest": null,
+        messages: [],
+      })
+    );
+    await tx.objects.put(eventObjectA);
+    await tx.objects.put(eventObjectB);
+    await tx.turnNodes.put(rootNode);
+    await tx.turnNodes.put(siblingNodeA);
+    await tx.turnNodes.put(siblingNodeB);
+    await tx.threads.put(thread);
+    await tx.branches.set(branch);
+  });
+
+  const [firstResult, secondResult] = await Promise.allSettled([
+    primaryBackend.transact(async (tx) => {
+      await tx.branches.set({
+        ...branch,
+        headTurnNodeHash: siblingNodeA.hash,
+        updatedAtMs: 10,
+      });
+    }),
+    secondaryBackend.transact(async (tx) => {
+      await tx.branches.set({
+        ...branch,
+        headTurnNodeHash: siblingNodeB.hash,
+        updatedAtMs: 11,
+      });
+    }),
+  ]);
+
+  let finalHead: string | null = null;
+
+  await primaryBackend.transact(async (tx) => {
+    finalHead =
+      (await tx.branches.get(branch.branchId))?.headTurnNodeHash ?? null;
+  });
+
+  const winningHead =
+    firstResult.status === "fulfilled" ? siblingNodeA.hash : siblingNodeB.hash;
+  const losingResult =
+    firstResult.status === "rejected" ? firstResult : secondResult;
+  const losingErrorCode =
+    losingResult.status === "rejected"
+      ? readErrorCode(losingResult.reason)
+      : "missing_rejection";
+  let retryAfterLossErrorCode: string | null = null;
+
+  if (!losingErrorCode.endsWith("_branch_head_lateral_move")) {
+    const losingBackend =
+      firstResult.status === "rejected" ? primaryBackend : secondaryBackend;
+    const losingHead =
+      firstResult.status === "rejected" ? siblingNodeA.hash : siblingNodeB.hash;
+    const followUpUpdatedAtMs = firstResult.status === "rejected" ? 12 : 13;
+
+    try {
+      await losingBackend.transact(async (tx) => {
+        await tx.branches.set({
+          ...branch,
+          headTurnNodeHash: losingHead,
+          updatedAtMs: followUpUpdatedAtMs,
+        });
+      });
+    } catch (error: unknown) {
+      retryAfterLossErrorCode = readErrorCode(error);
+    }
+  }
+
+  return {
+    finalHeadIsCommittedSibling:
+      finalHead === siblingNodeA.hash || finalHead === siblingNodeB.hash,
+    finalHeadMatchesWinner: finalHead === winningHead,
+    losingErrorCode,
+    retryAfterLossErrorCode,
+    singleWriterRejected:
+      [firstResult, secondResult].filter(
+        (result) => result.status === "rejected"
+      ).length === 1,
+    typedLateralConflictObserved:
+      losingErrorCode.endsWith("_branch_head_lateral_move") ||
+      retryAfterLossErrorCode?.endsWith("_branch_head_lateral_move") === true,
+  };
+};
+
+const runFaultPlanConcurrentWriterExercise = async (
+  baseBackend: RuntimeBackend
+): Promise<Record<string, unknown>> => {
+  const schema = {
+    ...createCanonicalKernelTestSchema(),
+    schemaId: "schema_fault_plan_concurrent_writer",
+  } satisfies TurnTreeSchema;
+  const schemaRecord = createStoredSchemaRecord(schema, 21);
+  const turnTree = await createStoredTurnTreeRecord(
+    schema,
+    {
+      "context.manifest": null,
+      messages: [],
+    },
+    22
+  );
+  const rootNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 23,
+    eventHash: null,
+    previousTurnNodeHash: null,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const childNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 24,
+    eventHash: null,
+    previousTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const thread: StoredThread = {
+    createdAtMs: 25,
+    rootTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    threadId: "thread_fault_plan_concurrent_writer",
+  };
+  const branch: StoredBranch = {
+    branchId: "branch_fault_plan_concurrent_writer",
+    createdAtMs: 26,
+    headTurnNodeHash: rootNode.hash,
+    threadId: thread.threadId,
+    updatedAtMs: 26,
+  };
+
+  await baseBackend.transact(async (tx) => {
+    await tx.schemas.put(schemaRecord);
+    await tx.turnTrees.put(turnTree);
+    await tx.turnTreePaths.putMany(
+      createCanonicalTurnTreePaths(turnTree, {
+        "context.manifest": null,
+        messages: [],
+      })
+    );
+    await tx.turnNodes.put(rootNode);
+    await tx.threads.put(thread);
+    await tx.branches.set(branch);
+  });
+
+  const faultBackend = createFaultInjectingBackend(baseBackend, {
+    concurrentWriter: {
+      branchId: branch.branchId,
+    },
+    match: {
+      branchId: branch.branchId,
+      operation: "checkpoint",
+    },
+    point: "before-commit",
+    policy: "once",
+  });
+
+  let injectedErrorCode = "no_error";
+
+  try {
+    await faultBackend.transact(async (tx) => {
+      await tx.turnNodes.put(childNode);
+      await tx.branches.set({
+        ...branch,
+        headTurnNodeHash: childNode.hash,
+        updatedAtMs: 27,
+      });
+    });
+  } catch (error: unknown) {
+    injectedErrorCode = readErrorCode(error);
+  }
+
+  const inspection = await baseBackend.transact(async (tx) => {
+    const currentBranch = await tx.branches.get(branch.branchId);
+    const currentHead =
+      currentBranch === null
+        ? null
+        : await tx.turnNodes.get(currentBranch.headTurnNodeHash);
+
+    return {
+      branch: currentBranch,
+      head: currentHead,
+    };
+  });
+
+  return {
+    injectedErrorCode,
+    writerAdvancedHead:
+      inspection.branch !== null &&
+      inspection.branch.headTurnNodeHash !== branch.headTurnNodeHash &&
+      inspection.branch.headTurnNodeHash !== childNode.hash,
+    writerProducedSiblingHead:
+      inspection.head !== null &&
+      inspection.head.previousTurnNodeHash === rootNode.hash,
+  };
+};
+
+const closeManagedBackend = async (
+  backend: ManagedRuntimeBackend,
+  ignoreErrors = false
+): Promise<void> => {
+  if (typeof backend.close !== "function") {
+    return;
+  }
+
+  try {
+    await backend.close();
+  } catch (error: unknown) {
+    if (!ignoreErrors) {
+      throw error;
+    }
+  }
+};
+
+const runCrashRecoveryFaultPoint = async (
+  harness: CrashRecoveryBackendHarness,
+  point: FaultPoint,
+  reopenDurably: boolean
+): Promise<Record<string, unknown>> => {
+  const baseBackend = await harness.createBackend();
+  const kernel = createRuntimeKernel({ backend: baseBackend });
+  const schema = {
+    ...createCanonicalKernelTestSchema(),
+    schemaId: `schema_fault_${point.replaceAll("-", "_")}`,
+  } satisfies TurnTreeSchema;
+  const schemaId = await kernel.schema.register(schema);
+  const thread = await kernel.thread.create(
+    `thread_fault_${point.replaceAll("-", "_")}`,
+    schemaId,
+    `branch_fault_${point.replaceAll("-", "_")}`
+  );
+  const turn = await kernel.turn.create(
+    `turn_fault_${point.replaceAll("-", "_")}`,
+    thread.threadId,
+    thread.branchId,
+    null,
+    thread.rootTurnNodeHash
+  );
+  const runId = `run_fault_${point.replaceAll("-", "_")}`;
+
+  await kernel.run.create(
+    runId,
+    turn.turnId,
+    thread.branchId,
+    schemaId,
+    thread.rootTurnNodeHash,
+    [
+      { deterministic: false, id: "model_call", sideEffects: false },
+      { deterministic: false, id: "tool_execution", sideEffects: true },
+    ]
+  );
+
+  await kernel.run.beginStep(runId, "model_call");
+  const committed = await kernel.staging.stage(
+    runId,
+    new TextEncoder().encode(`committed output ${point}`),
+    `message_committed_${point.replaceAll("-", "_")}`,
+    "message",
+    "completed"
+  );
+  const firstCheckpoint = await kernel.run.completeStep(runId, "model_call");
+
+  if (firstCheckpoint.turnNodeHash === undefined) {
+    throw new Error(`expected baseline checkpoint for ${point}`);
+  }
+
+  const faultBackend = createFaultInjectingBackend(baseBackend, {
+    match: { operation: "checkpoint" },
+    point,
+    policy: "once",
+  }) as ManagedRuntimeBackend;
+  const faultKernel = createRuntimeKernel({ backend: faultBackend });
+
+  await faultKernel.run.beginStep(runId, "tool_execution");
+  const pending = await faultKernel.staging.stage(
+    runId,
+    new TextEncoder().encode(`pending output ${point}`),
+    `message_pending_${point.replaceAll("-", "_")}`,
+    "message",
+    "completed"
+  );
+
+  let injectedErrorCode = "no_error";
+
+  try {
+    await faultKernel.run.completeStep(runId, "tool_execution");
+  } catch (error: unknown) {
+    injectedErrorCode = readErrorCode(error);
+  }
+
+  let inspectionBackend: ManagedRuntimeBackend = baseBackend;
+
+  if (reopenDurably) {
+    await closeManagedBackend(baseBackend);
+    inspectionBackend = await harness.createBackend();
+  }
+
+  try {
+    const inspectionKernel = createRuntimeKernel({
+      backend: inspectionBackend,
+    });
+    const branch = await inspectionKernel.branch.get(thread.branchId);
+
+    if (branch === null) {
+      throw new Error(`expected branch "${thread.branchId}" after ${point}`);
+    }
+
+    const headNode = await inspectionKernel.node.get(branch.headTurnNodeHash);
+
+    if (headNode === null) {
+      throw new Error(
+        `expected branch head "${branch.headTurnNodeHash}" after ${point}`
+      );
+    }
+
+    const manifest = await inspectionKernel.tree.manifest(
+      headNode.turnTreeHash
+    );
+    const messages = Array.isArray(manifest.messages) ? manifest.messages : [];
+    const recovery = await inspectionKernel.run.recover(runId);
+    const walkBackHashes: string[] = [];
+
+    for await (const turnNode of inspectionKernel.node.walkBack(
+      branch.headTurnNodeHash
+    )) {
+      walkBackHashes.push(turnNode.hash);
+
+      if (walkBackHashes.length === 3) {
+        break;
+      }
+    }
+
+    const committedFaultCheckpoint = point !== "before-commit";
+
+    return {
+      headMatchesExpectedCheckpoint: committedFaultCheckpoint
+        ? branch.headTurnNodeHash !== firstCheckpoint.turnNodeHash
+        : branch.headTurnNodeHash === firstCheckpoint.turnNodeHash,
+      injectedErrorCode,
+      lineageConsistent: committedFaultCheckpoint
+        ? walkBackHashes[1] === firstCheckpoint.turnNodeHash &&
+          walkBackHashes[2] === thread.rootTurnNodeHash
+        : walkBackHashes[0] === firstCheckpoint.turnNodeHash &&
+          walkBackHashes[1] === thread.rootTurnNodeHash,
+      pendingMessageCommitted: messages.includes(pending.objectHash),
+      recoveryStateConsistent: committedFaultCheckpoint
+        ? recovery.lastCompletedStepId === "tool_execution" &&
+          recovery.lastTurnNodeHash === branch.headTurnNodeHash &&
+          recovery.uncommittedStagedResults.length === 0
+        : recovery.lastCompletedStepId === "model_call" &&
+          recovery.lastTurnNodeHash === firstCheckpoint.turnNodeHash &&
+          recovery.uncommittedStagedResults.some(
+            (stagedResult) => stagedResult.objectHash === pending.objectHash
+          ),
+      visibleCommittedMessageCount: messages.filter(
+        (hash) => hash === committed.objectHash || hash === pending.objectHash
+      ).length,
+    };
+  } finally {
+    if (inspectionBackend !== baseBackend) {
+      await closeManagedBackend(inspectionBackend);
+    }
+  }
+};
+
+const createCrashRecoveryHarness = async (
+  backend: KernelAdapterConfig["backend"]
+): Promise<CrashRecoveryBackendHarness> => {
+  if (backend === "memory") {
+    const { createMemoryBackend } = await import(
+      new URL("../../backends/memory/dist/index.js", import.meta.url).href
+    );
+
+    return {
+      cleanup: async () => {
+        // Memory harnesses have no external resources to release.
+      },
+      createBackend: async () => createMemoryBackend() as ManagedRuntimeBackend,
+    };
+  }
+
+  if (backend === "sqlite") {
+    const { createSqliteBackend } = await import(
+      new URL("../../backends/sqlite/dist/index.js", import.meta.url).href
+    );
+    const tempDirectory = await mkdtemp(
+      join(tmpdir(), `tuvren-crash-recovery-${process.pid}-`)
+    );
+    const databasePath = join(tempDirectory, "kernel.sqlite");
+    const handles = new Set<ManagedRuntimeBackend>();
+
+    return {
+      cleanup: async () => {
+        for (const handle of handles) {
+          await closeManagedBackend(handle, true);
+        }
+
+        await rm(tempDirectory, { force: true, recursive: true });
+      },
+      createBackend: () => {
+        const handle = createSqliteBackend({
+          databasePath,
+        }) as ManagedRuntimeBackend;
+        handles.add(handle);
+        return Promise.resolve(handle);
+      },
+    };
+  }
+
+  const postgresBackendModule = await import(
+    new URL("../../backends/postgres/dist/index.js", import.meta.url).href
+  );
+  const schemaName = `crash_${randomUUID().replaceAll("-", "_")}`;
+  const options = {
+    database: process.env.PGDATABASE ?? "tuvren_runtime",
+    schemaName,
+  };
+  const handles = new Set<ManagedRuntimeBackend>();
+
+  return {
+    cleanup: async () => {
+      for (const handle of handles) {
+        await closeManagedBackend(handle, true);
+      }
+
+      await postgresBackendModule.destroyPostgresBackend(options);
+    },
+    createBackend: () => {
+      const handle = postgresBackendModule.createPostgresBackend(
+        options
+      ) as ManagedRuntimeBackend;
+      handles.add(handle);
+      return Promise.resolve(handle);
+    },
+  };
+};
+
+const createProjection = <T extends Record<string, unknown>>(
+  evidence: T
+): Record<string, unknown> => {
+  return {
+    evidence,
+    result: evidence,
+  };
+};
+
+const schemaRoundtrip = (
   fixture: Record<string, unknown>
-): Record<string, unknown> {
+): Record<string, unknown> => {
   return createProjection({
     roundtrip: {
       turnNodeIdentityRecord: decodeDeterministicKernelRecord(
@@ -362,11 +822,11 @@ function schemaRoundtrip(
       ),
     },
   });
-}
+};
 
-async function runModifyComposition(
+const runModifyComposition = async (
   input: unknown
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, unknown>> => {
   const fixture = readFixtureOptional(input);
 
   if (fixture === undefined) {
@@ -416,49 +876,11 @@ async function runModifyComposition(
 
     return createProjection({ composition });
   });
-}
+};
 
-function readVerdicts(value: unknown, caseName: string): Verdict[] {
-  if (!Array.isArray(value)) {
-    throw new TypeError(`cases.${caseName}.verdicts must be an array`);
-  }
-
-  return value.map((entry, index) => {
-    assertVerdict(entry, `cases.${caseName}.verdicts[${index}]`);
-    return entry;
-  });
-}
-
-function runCanonicalRejection(
+const runLogicalDiff = async (
   fixture: Record<string, unknown>
-): Record<string, unknown> {
-  const cases = readRecord(fixture.cases, "cases");
-  const rejection: Record<string, unknown> = {};
-
-  for (const [caseName, caseValue] of Object.entries(cases)) {
-    const caseRecord = readRecord(caseValue, `cases.${caseName}`);
-    const cborBytes = readNumberArray(
-      caseRecord.cborBytes,
-      `cases.${caseName}.cborBytes`
-    );
-
-    let rejected: boolean;
-    try {
-      decodeDeterministicKernelRecord(Uint8Array.from(cborBytes));
-      rejected = false;
-    } catch {
-      rejected = true;
-    }
-
-    rejection[caseName] = { rejected };
-  }
-
-  return createProjection({ rejection });
-}
-
-async function runLogicalDiff(
-  fixture: Record<string, unknown>
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, unknown>> => {
   const schema = await loadCanonicalSchema();
   const logical = readLogicalFixture(fixture, schema);
   return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
@@ -478,11 +900,11 @@ async function runLogicalDiff(
 
     return createProjection({ diffPaths });
   });
-}
+};
 
-async function runBranchList(
+const runBranchList = async (
   fixture: Record<string, unknown>
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, unknown>> => {
   const schema = await loadCanonicalSchema();
   const logical = readLogicalFixture(fixture, schema);
   return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
@@ -495,9 +917,9 @@ async function runBranchList(
 
     return createProjection({ branchEntries });
   });
-}
+};
 
-async function runThreadList(): Promise<Record<string, unknown>> {
+const runThreadList = async (): Promise<Record<string, unknown>> => {
   const schema = await loadCanonicalSchema();
   return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
     await kernel.thread.create(
@@ -523,14 +945,14 @@ async function runThreadList(): Promise<Record<string, unknown>> {
       },
     });
   });
-}
+};
 
 // KRT-BE007 cross-scope isolation probe. Constructs two kernels over two
 // Scopes bound to one shared substrate, seeds content and an enumerable thread
 // under scope A, then reports — as raw observations, never graded here — what
 // each Scope can see. The plan's assertions decide pass/fail; this host only
 // measures store.has / store.get / enumeration across the scope boundary.
-async function runCrossScopeProbe(): Promise<Record<string, unknown>> {
+const runCrossScopeProbe = async (): Promise<Record<string, unknown>> => {
   const schema = await loadCanonicalSchema();
 
   return await withScopedBackendPair(
@@ -575,7 +997,7 @@ async function runCrossScopeProbe(): Promise<Record<string, unknown>> {
       });
     }
   );
-}
+};
 
 // KRT-BF007 reachability reclamation probe. Constructs decisive scenarios over a
 // reclamation-capable backend and reports — as raw observations, never graded
@@ -585,7 +1007,7 @@ async function runCrossScopeProbe(): Promise<Record<string, unknown>> {
 // structurally shared object survives via the live branch while the
 // archive-exclusive payload is released); (2) a deterministic clock orders writes
 // around an active execution lease to prove the grace window is the lease horizon.
-async function runReclamationProbe(): Promise<Record<string, unknown>> {
+const runReclamationProbe = async (): Promise<Record<string, unknown>> => {
   const schema = await loadCanonicalSchema();
 
   const reachabilityObservations = await withConformanceKernel(
@@ -862,7 +1284,7 @@ async function runReclamationProbe(): Promise<Record<string, unknown>> {
       ...leaselessActiveObservations,
     },
   });
-}
+};
 
 // KRT-BF007 crypto-shredding erasure probe. The adapter plays the §4.17 host
 // role: it owns a payload codec and the key, encrypts at the edge, and hands the
@@ -871,7 +1293,7 @@ async function runReclamationProbe(): Promise<Record<string, unknown>> {
 // observations — that the payload is recoverable before and unrecoverable after
 // key destruction, while the referencing kernel lineage stays byte/hash-identical
 // (the kernel never held the key, so nothing structural changes).
-async function runErasureProbe(): Promise<Record<string, unknown>> {
+const runErasureProbe = async (): Promise<Record<string, unknown>> => {
   const schema = await loadCanonicalSchema();
 
   return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
@@ -959,95 +1381,11 @@ async function runErasureProbe(): Promise<Record<string, unknown>> {
       },
     });
   });
-}
+};
 
-/**
- * Runs one non-deterministic checkpoint step that stages `messageBytes` as a
- * `message`, so the schema incorporates it into the branch-head turn tree's
- * `messages` path (and a checkpoint chained on top inherits it). Returns the
- * checkpoint turn node, its owning turn id, and the stored message object hash so
- * a caller can chain a second checkpoint and reason about the shared object.
- */
-async function checkpointMessageIntoHead(
-  kernel: ReturnType<typeof createRuntimeKernel>,
-  input: {
-    branchId: string;
-    messageBytes: Uint8Array;
-    parentTurnId: string | null;
-    runId: string;
-    schemaId: string;
-    startTurnNodeHash: string;
-    taskId: string;
-    threadId: string;
-    turnId: string;
-  }
-): Promise<{ objectHash: string; turnId: string; turnNodeHash: string }> {
-  const turn = await kernel.turn.create(
-    input.turnId,
-    input.threadId,
-    input.branchId,
-    input.parentTurnId,
-    input.startTurnNodeHash
-  );
-  await kernel.run.create(
-    input.runId,
-    turn.turnId,
-    input.branchId,
-    input.schemaId,
-    input.startTurnNodeHash,
-    [{ deterministic: false, id: "checkpoint", sideEffects: false }]
-  );
-  await kernel.run.beginStep(input.runId, "checkpoint");
-  const staged = await kernel.staging.stage(
-    input.runId,
-    input.messageBytes,
-    input.taskId,
-    "message",
-    "completed"
-  );
-  const completed = await kernel.run.completeStep(input.runId, "checkpoint");
-  if (completed.turnNodeHash === undefined) {
-    throw new Error("expected checkpoint turn node hash");
-  }
-  await kernel.run.complete(input.runId, "completed");
-  return {
-    objectHash: staged.objectHash,
-    turnId: turn.turnId,
-    turnNodeHash: completed.turnNodeHash,
-  };
-}
-
-async function isRecoverable(
-  codec: ReturnType<typeof createAesGcmPayloadCodec>,
-  stored: Uint8Array | null,
-  context: { edge: string; scope: string },
-  expectedPlaintext: Uint8Array
-): Promise<boolean> {
-  if (stored === null) {
-    return false;
-  }
-  const decrypted = await codec.decrypt(stored, context);
-  return (
-    decrypted.status === "available" &&
-    bytesEqual(decrypted.plaintext, expectedPlaintext)
-  );
-}
-
-function bytesEqual(left: Uint8Array, right: Uint8Array): boolean {
-  if (left.length !== right.length) {
-    return false;
-  }
-  for (let index = 0; index < left.length; index += 1) {
-    if (left[index] !== right[index]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-async function runRecoveryState(
+const runRecoveryState = async (
   fixture: Record<string, unknown>
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, unknown>> => {
   const schema = await loadCanonicalSchema();
   const logical = readLogicalFixture(fixture, schema);
   return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
@@ -1110,9 +1448,9 @@ async function runRecoveryState(
       },
     });
   });
-}
+};
 
-async function runCrossThreadLineage(): Promise<Record<string, unknown>> {
+const runCrossThreadLineage = async (): Promise<Record<string, unknown>> => {
   const schema = await loadCanonicalSchema();
   return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
     const threadA = await kernel.thread.create(
@@ -1164,9 +1502,11 @@ async function runCrossThreadLineage(): Promise<Record<string, unknown>> {
       });
     }
   });
-}
+};
 
-async function runProtocolEdgeValidation(): Promise<Record<string, unknown>> {
+const runProtocolEdgeValidation = async (): Promise<
+  Record<string, unknown>
+> => {
   const schema = await loadCanonicalSchema();
   return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
     const firstPath = schema.paths[0];
@@ -1405,20 +1745,9 @@ async function runProtocolEdgeValidation(): Promise<Record<string, unknown>> {
       },
     });
   });
-}
+};
 
-async function captureSemanticErrorCode(
-  execute: () => Promise<unknown>
-): Promise<string> {
-  try {
-    await execute();
-    return "unexpected_success";
-  } catch (error: unknown) {
-    return normalizeLogicalErrorCode(readErrorCode(error));
-  }
-}
-
-async function runLeaseRenewal(): Promise<Record<string, unknown>> {
+const runLeaseRenewal = async (): Promise<Record<string, unknown>> => {
   const schema = await loadCanonicalSchema();
   return await withConfiguredBackend(
     ADAPTER_CONFIG,
@@ -1495,9 +1824,9 @@ async function runLeaseRenewal(): Promise<Record<string, unknown>> {
     // and the deterministic expected lease values hold across all backends.
     { now: () => 10 }
   );
-}
+};
 
-async function runExpiredListing(): Promise<Record<string, unknown>> {
+const runExpiredListing = async (): Promise<Record<string, unknown>> => {
   const schema = await loadCanonicalSchema();
   return await withConfiguredBackend(
     ADAPTER_CONFIG,
@@ -1598,9 +1927,9 @@ async function runExpiredListing(): Promise<Record<string, unknown>> {
     // and the deterministic expected lease values hold across all backends.
     { now: () => 10 }
   );
-}
+};
 
-async function runStalePreemption(): Promise<Record<string, unknown>> {
+const runStalePreemption = async (): Promise<Record<string, unknown>> => {
   const schema = await loadCanonicalSchema();
   return await withConfiguredBackend(
     ADAPTER_CONFIG,
@@ -1681,7 +2010,7 @@ async function runStalePreemption(): Promise<Record<string, unknown>> {
     // and the deterministic expected lease values hold across all backends.
     { now: () => 10 }
   );
-}
+};
 
 /**
  * Preemption under worker clock skew against a backend-authoritative lease clock
@@ -1707,7 +2036,7 @@ async function runStalePreemption(): Promise<Record<string, unknown>> {
  * the failed run status and the cleared lease, which are asserted separately. The
  * dead owner's lease is cleared.
  */
-async function runClockSkewPreemption(): Promise<Record<string, unknown>> {
+const runClockSkewPreemption = async (): Promise<Record<string, unknown>> => {
   const schema = await loadCanonicalSchema();
   // Backend-authoritative clock (ADR-0050), mutable so the probe can advance the
   // backend's own clock between phases without relying on wall-clock sleeps.
@@ -1836,34 +2165,11 @@ async function runClockSkewPreemption(): Promise<Record<string, unknown>> {
     },
     { now: backendNow }
   );
-}
+};
 
-async function runRestartRecovery(): Promise<Record<string, unknown>> {
-  const tempDirectory = await mkdtemp(join(tmpdir(), "tuvren-kernel-restart-"));
-  const databasePath = join(tempDirectory, "kernel.sqlite");
-  const metadataPath = join(tempDirectory, "restart-metadata.json");
-
-  try {
-    if (ADAPTER_CONFIG.backend === "postgres") {
-      return await runPostgresRestartRecovery();
-    }
-
-    await runRestartRecoveryPhase("write", databasePath, metadataPath);
-    const reopened = await runRestartRecoveryPhase(
-      "read",
-      databasePath,
-      metadataPath
-    );
-
-    return createProjection({
-      restartRecovery: reopened,
-    });
-  } finally {
-    await rm(tempDirectory, { force: true, recursive: true });
-  }
-}
-
-async function runPostgresRestartRecovery(): Promise<Record<string, unknown>> {
+const runPostgresRestartRecovery = async (): Promise<
+  Record<string, unknown>
+> => {
   const { createPostgresBackend } = await import(
     new URL("../../backends/postgres/dist/index.js", import.meta.url).href
   );
@@ -2012,216 +2318,94 @@ async function runPostgresRestartRecovery(): Promise<Record<string, unknown>> {
       await reopenedBackend.destroy({ dropSchema: true });
     }
   }
-}
+};
 
-async function runDurableCrashRecovery(): Promise<Record<string, unknown>> {
-  const harness = await createCrashRecoveryHarness(ADAPTER_CONFIG.backend);
-
-  try {
-    return createProjection({
-      crashRecovery: {
-        afterCommitBeforeAck: await runCrashRecoveryFaultPoint(
-          harness,
-          "after-commit-before-ack",
-          true
-        ),
-        beforeCommit: await runCrashRecoveryFaultPoint(
-          harness,
-          "before-commit",
-          true
-        ),
-        midCommit: await runCrashRecoveryFaultPoint(
-          harness,
-          "mid-commit",
-          true
-        ),
-      },
-    });
-  } finally {
-    await harness.cleanup();
-  }
-}
-
-async function runInProcessCrashRecovery(): Promise<Record<string, unknown>> {
-  const harness = await createCrashRecoveryHarness(ADAPTER_CONFIG.backend);
+const runRestartRecovery = async (): Promise<Record<string, unknown>> => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "tuvren-kernel-restart-"));
+  const databasePath = join(tempDirectory, "kernel.sqlite");
+  const metadataPath = join(tempDirectory, "restart-metadata.json");
 
   try {
-    return createProjection({
-      crashRecovery: {
-        afterCommitBeforeAck: await runCrashRecoveryFaultPoint(
-          harness,
-          "after-commit-before-ack",
-          false
-        ),
-        beforeCommit: await runCrashRecoveryFaultPoint(
-          harness,
-          "before-commit",
-          false
-        ),
-        midCommit: await runCrashRecoveryFaultPoint(
-          harness,
-          "mid-commit",
-          false
-        ),
-      },
-    });
-  } finally {
-    await harness.cleanup();
-  }
-}
-
-async function runCrashRecoveryFaultPoint(
-  harness: CrashRecoveryBackendHarness,
-  point: FaultPoint,
-  reopenDurably: boolean
-): Promise<Record<string, unknown>> {
-  const baseBackend = await harness.createBackend();
-  const kernel = createRuntimeKernel({ backend: baseBackend });
-  const schema = {
-    ...createCanonicalKernelTestSchema(),
-    schemaId: `schema_fault_${point.replaceAll("-", "_")}`,
-  } satisfies TurnTreeSchema;
-  const schemaId = await kernel.schema.register(schema);
-  const thread = await kernel.thread.create(
-    `thread_fault_${point.replaceAll("-", "_")}`,
-    schemaId,
-    `branch_fault_${point.replaceAll("-", "_")}`
-  );
-  const turn = await kernel.turn.create(
-    `turn_fault_${point.replaceAll("-", "_")}`,
-    thread.threadId,
-    thread.branchId,
-    null,
-    thread.rootTurnNodeHash
-  );
-  const runId = `run_fault_${point.replaceAll("-", "_")}`;
-
-  await kernel.run.create(
-    runId,
-    turn.turnId,
-    thread.branchId,
-    schemaId,
-    thread.rootTurnNodeHash,
-    [
-      { deterministic: false, id: "model_call", sideEffects: false },
-      { deterministic: false, id: "tool_execution", sideEffects: true },
-    ]
-  );
-
-  await kernel.run.beginStep(runId, "model_call");
-  const committed = await kernel.staging.stage(
-    runId,
-    new TextEncoder().encode(`committed output ${point}`),
-    `message_committed_${point.replaceAll("-", "_")}`,
-    "message",
-    "completed"
-  );
-  const firstCheckpoint = await kernel.run.completeStep(runId, "model_call");
-
-  if (firstCheckpoint.turnNodeHash === undefined) {
-    throw new Error(`expected baseline checkpoint for ${point}`);
-  }
-
-  const faultBackend = createFaultInjectingBackend(baseBackend, {
-    match: { operation: "checkpoint" },
-    point,
-    policy: "once",
-  }) as ManagedRuntimeBackend;
-  const faultKernel = createRuntimeKernel({ backend: faultBackend });
-
-  await faultKernel.run.beginStep(runId, "tool_execution");
-  const pending = await faultKernel.staging.stage(
-    runId,
-    new TextEncoder().encode(`pending output ${point}`),
-    `message_pending_${point.replaceAll("-", "_")}`,
-    "message",
-    "completed"
-  );
-
-  let injectedErrorCode = "no_error";
-
-  try {
-    await faultKernel.run.completeStep(runId, "tool_execution");
-  } catch (error: unknown) {
-    injectedErrorCode = readErrorCode(error);
-  }
-
-  let inspectionBackend: ManagedRuntimeBackend = baseBackend;
-
-  if (reopenDurably) {
-    await closeManagedBackend(baseBackend);
-    inspectionBackend = await harness.createBackend();
-  }
-
-  try {
-    const inspectionKernel = createRuntimeKernel({
-      backend: inspectionBackend,
-    });
-    const branch = await inspectionKernel.branch.get(thread.branchId);
-
-    if (branch === null) {
-      throw new Error(`expected branch "${thread.branchId}" after ${point}`);
+    if (ADAPTER_CONFIG.backend === "postgres") {
+      return await runPostgresRestartRecovery();
     }
 
-    const headNode = await inspectionKernel.node.get(branch.headTurnNodeHash);
-
-    if (headNode === null) {
-      throw new Error(
-        `expected branch head "${branch.headTurnNodeHash}" after ${point}`
-      );
-    }
-
-    const manifest = await inspectionKernel.tree.manifest(
-      headNode.turnTreeHash
+    await runRestartRecoveryPhase("write", databasePath, metadataPath);
+    const reopened = await runRestartRecoveryPhase(
+      "read",
+      databasePath,
+      metadataPath
     );
-    const messages = Array.isArray(manifest.messages) ? manifest.messages : [];
-    const recovery = await inspectionKernel.run.recover(runId);
-    const walkBackHashes: string[] = [];
 
-    for await (const turnNode of inspectionKernel.node.walkBack(
-      branch.headTurnNodeHash
-    )) {
-      walkBackHashes.push(turnNode.hash);
-
-      if (walkBackHashes.length === 3) {
-        break;
-      }
-    }
-
-    const committedFaultCheckpoint = point !== "before-commit";
-
-    return {
-      headMatchesExpectedCheckpoint: committedFaultCheckpoint
-        ? branch.headTurnNodeHash !== firstCheckpoint.turnNodeHash
-        : branch.headTurnNodeHash === firstCheckpoint.turnNodeHash,
-      injectedErrorCode,
-      lineageConsistent: committedFaultCheckpoint
-        ? walkBackHashes[1] === firstCheckpoint.turnNodeHash &&
-          walkBackHashes[2] === thread.rootTurnNodeHash
-        : walkBackHashes[0] === firstCheckpoint.turnNodeHash &&
-          walkBackHashes[1] === thread.rootTurnNodeHash,
-      pendingMessageCommitted: messages.includes(pending.objectHash),
-      recoveryStateConsistent: committedFaultCheckpoint
-        ? recovery.lastCompletedStepId === "tool_execution" &&
-          recovery.lastTurnNodeHash === branch.headTurnNodeHash &&
-          recovery.uncommittedStagedResults.length === 0
-        : recovery.lastCompletedStepId === "model_call" &&
-          recovery.lastTurnNodeHash === firstCheckpoint.turnNodeHash &&
-          recovery.uncommittedStagedResults.some(
-            (stagedResult) => stagedResult.objectHash === pending.objectHash
-          ),
-      visibleCommittedMessageCount: messages.filter(
-        (hash) => hash === committed.objectHash || hash === pending.objectHash
-      ).length,
-    };
+    return createProjection({
+      restartRecovery: reopened,
+    });
   } finally {
-    if (inspectionBackend !== baseBackend) {
-      await closeManagedBackend(inspectionBackend);
-    }
+    await rm(tempDirectory, { force: true, recursive: true });
   }
-}
+};
 
-async function runConcurrentWriterConflict(): Promise<Record<string, unknown>> {
+const runDurableCrashRecovery = async (): Promise<Record<string, unknown>> => {
+  const harness = await createCrashRecoveryHarness(ADAPTER_CONFIG.backend);
+
+  try {
+    return createProjection({
+      crashRecovery: {
+        afterCommitBeforeAck: await runCrashRecoveryFaultPoint(
+          harness,
+          "after-commit-before-ack",
+          true
+        ),
+        beforeCommit: await runCrashRecoveryFaultPoint(
+          harness,
+          "before-commit",
+          true
+        ),
+        midCommit: await runCrashRecoveryFaultPoint(
+          harness,
+          "mid-commit",
+          true
+        ),
+      },
+    });
+  } finally {
+    await harness.cleanup();
+  }
+};
+
+const runInProcessCrashRecovery = async (): Promise<
+  Record<string, unknown>
+> => {
+  const harness = await createCrashRecoveryHarness(ADAPTER_CONFIG.backend);
+
+  try {
+    return createProjection({
+      crashRecovery: {
+        afterCommitBeforeAck: await runCrashRecoveryFaultPoint(
+          harness,
+          "after-commit-before-ack",
+          false
+        ),
+        beforeCommit: await runCrashRecoveryFaultPoint(
+          harness,
+          "before-commit",
+          false
+        ),
+        midCommit: await runCrashRecoveryFaultPoint(
+          harness,
+          "mid-commit",
+          false
+        ),
+      },
+    });
+  } finally {
+    await harness.cleanup();
+  }
+};
+
+const runConcurrentWriterConflict = async (): Promise<
+  Record<string, unknown>
+> => {
   if (ADAPTER_CONFIG.backend === "memory") {
     const { createMemoryBackend } = await import(
       new URL("../../backends/memory/dist/index.js", import.meta.url).href
@@ -2267,361 +2451,9 @@ async function runConcurrentWriterConflict(): Promise<Record<string, unknown>> {
   } finally {
     await harness.cleanup();
   }
-}
+};
 
-async function runConcurrentWriterConflictOnBackends(
-  primaryBackend: RuntimeBackend,
-  secondaryBackend: RuntimeBackend
-): Promise<Record<string, unknown>> {
-  const schema = createCanonicalKernelTestSchema();
-  const schemaRecord = createStoredSchemaRecord(schema, 1);
-  const turnTree = await createStoredTurnTreeRecord(
-    schema,
-    {
-      "context.manifest": null,
-      messages: [],
-    },
-    2
-  );
-  const eventObjectA = await createStoredObjectRecord(new Uint8Array([1]), 3);
-  const eventObjectB = await createStoredObjectRecord(new Uint8Array([2]), 4);
-  const rootNode = await createStoredTurnNodeRecord({
-    consumedStagedResults: [],
-    createdAtMs: 5,
-    eventHash: null,
-    previousTurnNodeHash: null,
-    schemaId: schema.schemaId,
-    turnTreeHash: turnTree.hash,
-  });
-  const siblingNodeA = await createStoredTurnNodeRecord({
-    consumedStagedResults: [],
-    createdAtMs: 6,
-    eventHash: eventObjectA.hash,
-    previousTurnNodeHash: rootNode.hash,
-    schemaId: schema.schemaId,
-    turnTreeHash: turnTree.hash,
-  });
-  const siblingNodeB = await createStoredTurnNodeRecord({
-    consumedStagedResults: [],
-    createdAtMs: 7,
-    eventHash: eventObjectB.hash,
-    previousTurnNodeHash: rootNode.hash,
-    schemaId: schema.schemaId,
-    turnTreeHash: turnTree.hash,
-  });
-  const thread: StoredThread = {
-    createdAtMs: 8,
-    rootTurnNodeHash: rootNode.hash,
-    schemaId: schema.schemaId,
-    threadId: "thread_concurrent_branch_head",
-  };
-  const branch: StoredBranch = {
-    branchId: "branch_concurrent_branch_head",
-    createdAtMs: 9,
-    headTurnNodeHash: rootNode.hash,
-    threadId: thread.threadId,
-    updatedAtMs: 9,
-  };
-
-  await primaryBackend.transact(async (tx) => {
-    await tx.schemas.put(schemaRecord);
-    await tx.turnTrees.put(turnTree);
-    await tx.turnTreePaths.putMany(
-      createCanonicalTurnTreePaths(turnTree, {
-        "context.manifest": null,
-        messages: [],
-      })
-    );
-    await tx.objects.put(eventObjectA);
-    await tx.objects.put(eventObjectB);
-    await tx.turnNodes.put(rootNode);
-    await tx.turnNodes.put(siblingNodeA);
-    await tx.turnNodes.put(siblingNodeB);
-    await tx.threads.put(thread);
-    await tx.branches.set(branch);
-  });
-
-  const [firstResult, secondResult] = await Promise.allSettled([
-    primaryBackend.transact(async (tx) => {
-      await tx.branches.set({
-        ...branch,
-        headTurnNodeHash: siblingNodeA.hash,
-        updatedAtMs: 10,
-      });
-    }),
-    secondaryBackend.transact(async (tx) => {
-      await tx.branches.set({
-        ...branch,
-        headTurnNodeHash: siblingNodeB.hash,
-        updatedAtMs: 11,
-      });
-    }),
-  ]);
-
-  let finalHead: string | null = null;
-
-  await primaryBackend.transact(async (tx) => {
-    finalHead =
-      (await tx.branches.get(branch.branchId))?.headTurnNodeHash ?? null;
-  });
-
-  const winningHead =
-    firstResult.status === "fulfilled" ? siblingNodeA.hash : siblingNodeB.hash;
-  const losingResult =
-    firstResult.status === "rejected" ? firstResult : secondResult;
-  const losingErrorCode =
-    losingResult.status === "rejected"
-      ? readErrorCode(losingResult.reason)
-      : "missing_rejection";
-  let retryAfterLossErrorCode: string | null = null;
-
-  if (!losingErrorCode.endsWith("_branch_head_lateral_move")) {
-    const losingBackend =
-      firstResult.status === "rejected" ? primaryBackend : secondaryBackend;
-    const losingHead =
-      firstResult.status === "rejected" ? siblingNodeA.hash : siblingNodeB.hash;
-    const followUpUpdatedAtMs = firstResult.status === "rejected" ? 12 : 13;
-
-    try {
-      await losingBackend.transact(async (tx) => {
-        await tx.branches.set({
-          ...branch,
-          headTurnNodeHash: losingHead,
-          updatedAtMs: followUpUpdatedAtMs,
-        });
-      });
-    } catch (error: unknown) {
-      retryAfterLossErrorCode = readErrorCode(error);
-    }
-  }
-
-  return {
-    finalHeadIsCommittedSibling:
-      finalHead === siblingNodeA.hash || finalHead === siblingNodeB.hash,
-    finalHeadMatchesWinner: finalHead === winningHead,
-    losingErrorCode,
-    retryAfterLossErrorCode,
-    singleWriterRejected:
-      [firstResult, secondResult].filter(
-        (result) => result.status === "rejected"
-      ).length === 1,
-    typedLateralConflictObserved:
-      losingErrorCode.endsWith("_branch_head_lateral_move") ||
-      retryAfterLossErrorCode?.endsWith("_branch_head_lateral_move") === true,
-  };
-}
-
-async function runFaultPlanConcurrentWriterExercise(
-  baseBackend: RuntimeBackend
-): Promise<Record<string, unknown>> {
-  const schema = {
-    ...createCanonicalKernelTestSchema(),
-    schemaId: "schema_fault_plan_concurrent_writer",
-  } satisfies TurnTreeSchema;
-  const schemaRecord = createStoredSchemaRecord(schema, 21);
-  const turnTree = await createStoredTurnTreeRecord(
-    schema,
-    {
-      "context.manifest": null,
-      messages: [],
-    },
-    22
-  );
-  const rootNode = await createStoredTurnNodeRecord({
-    consumedStagedResults: [],
-    createdAtMs: 23,
-    eventHash: null,
-    previousTurnNodeHash: null,
-    schemaId: schema.schemaId,
-    turnTreeHash: turnTree.hash,
-  });
-  const childNode = await createStoredTurnNodeRecord({
-    consumedStagedResults: [],
-    createdAtMs: 24,
-    eventHash: null,
-    previousTurnNodeHash: rootNode.hash,
-    schemaId: schema.schemaId,
-    turnTreeHash: turnTree.hash,
-  });
-  const thread: StoredThread = {
-    createdAtMs: 25,
-    rootTurnNodeHash: rootNode.hash,
-    schemaId: schema.schemaId,
-    threadId: "thread_fault_plan_concurrent_writer",
-  };
-  const branch: StoredBranch = {
-    branchId: "branch_fault_plan_concurrent_writer",
-    createdAtMs: 26,
-    headTurnNodeHash: rootNode.hash,
-    threadId: thread.threadId,
-    updatedAtMs: 26,
-  };
-
-  await baseBackend.transact(async (tx) => {
-    await tx.schemas.put(schemaRecord);
-    await tx.turnTrees.put(turnTree);
-    await tx.turnTreePaths.putMany(
-      createCanonicalTurnTreePaths(turnTree, {
-        "context.manifest": null,
-        messages: [],
-      })
-    );
-    await tx.turnNodes.put(rootNode);
-    await tx.threads.put(thread);
-    await tx.branches.set(branch);
-  });
-
-  const faultBackend = createFaultInjectingBackend(baseBackend, {
-    concurrentWriter: {
-      branchId: branch.branchId,
-    },
-    match: {
-      branchId: branch.branchId,
-      operation: "checkpoint",
-    },
-    point: "before-commit",
-    policy: "once",
-  });
-
-  let injectedErrorCode = "no_error";
-
-  try {
-    await faultBackend.transact(async (tx) => {
-      await tx.turnNodes.put(childNode);
-      await tx.branches.set({
-        ...branch,
-        headTurnNodeHash: childNode.hash,
-        updatedAtMs: 27,
-      });
-    });
-  } catch (error: unknown) {
-    injectedErrorCode = readErrorCode(error);
-  }
-
-  const inspection = await baseBackend.transact(async (tx) => {
-    const currentBranch = await tx.branches.get(branch.branchId);
-    const currentHead =
-      currentBranch === null
-        ? null
-        : await tx.turnNodes.get(currentBranch.headTurnNodeHash);
-
-    return {
-      branch: currentBranch,
-      head: currentHead,
-    };
-  });
-
-  return {
-    injectedErrorCode,
-    writerAdvancedHead:
-      inspection.branch !== null &&
-      inspection.branch.headTurnNodeHash !== branch.headTurnNodeHash &&
-      inspection.branch.headTurnNodeHash !== childNode.hash,
-    writerProducedSiblingHead:
-      inspection.head !== null &&
-      inspection.head.previousTurnNodeHash === rootNode.hash,
-  };
-}
-
-async function createCrashRecoveryHarness(
-  backend: KernelAdapterConfig["backend"]
-): Promise<CrashRecoveryBackendHarness> {
-  if (backend === "memory") {
-    const { createMemoryBackend } = await import(
-      new URL("../../backends/memory/dist/index.js", import.meta.url).href
-    );
-
-    return {
-      cleanup: async () => {
-        // Memory harnesses have no external resources to release.
-      },
-      createBackend: async () => createMemoryBackend() as ManagedRuntimeBackend,
-    };
-  }
-
-  if (backend === "sqlite") {
-    const { createSqliteBackend } = await import(
-      new URL("../../backends/sqlite/dist/index.js", import.meta.url).href
-    );
-    const tempDirectory = await mkdtemp(
-      join(tmpdir(), `tuvren-crash-recovery-${process.pid}-`)
-    );
-    const databasePath = join(tempDirectory, "kernel.sqlite");
-    const handles = new Set<ManagedRuntimeBackend>();
-
-    return {
-      cleanup: async () => {
-        for (const handle of handles) {
-          await closeManagedBackend(handle, true);
-        }
-
-        await rm(tempDirectory, { force: true, recursive: true });
-      },
-      createBackend: () => {
-        const handle = createSqliteBackend({
-          databasePath,
-        }) as ManagedRuntimeBackend;
-        handles.add(handle);
-        return Promise.resolve(handle);
-      },
-    };
-  }
-
-  const postgresBackendModule = await import(
-    new URL("../../backends/postgres/dist/index.js", import.meta.url).href
-  );
-  const schemaName = `crash_${randomUUID().replaceAll("-", "_")}`;
-  const options = {
-    database: process.env.PGDATABASE ?? "tuvren_runtime",
-    schemaName,
-  };
-  const handles = new Set<ManagedRuntimeBackend>();
-
-  return {
-    cleanup: async () => {
-      for (const handle of handles) {
-        await closeManagedBackend(handle, true);
-      }
-
-      await postgresBackendModule.destroyPostgresBackend(options);
-    },
-    createBackend: () => {
-      const handle = postgresBackendModule.createPostgresBackend(
-        options
-      ) as ManagedRuntimeBackend;
-      handles.add(handle);
-      return Promise.resolve(handle);
-    },
-  };
-}
-
-async function closeManagedBackend(
-  backend: ManagedRuntimeBackend,
-  ignoreErrors = false
-): Promise<void> {
-  if (typeof backend.close !== "function") {
-    return;
-  }
-
-  try {
-    await backend.close();
-  } catch (error: unknown) {
-    if (!ignoreErrors) {
-      throw error;
-    }
-  }
-}
-
-function createProjection<T extends Record<string, unknown>>(
-  evidence: T
-): Record<string, unknown> {
-  return {
-    evidence,
-    result: evidence,
-  };
-}
-
-function readStagedResults(value: unknown, label: string): StagedResult[] {
+const readStagedResults = (value: unknown, label: string): StagedResult[] => {
   const results = Array.isArray(value)
     ? value
     : (() => {
@@ -2635,9 +2467,9 @@ function readStagedResults(value: unknown, label: string): StagedResult[] {
   }
 
   return stagedResults;
-}
+};
 
-function readNumberArray(value: unknown, label: string): number[] {
+const readNumberArray = (value: unknown, label: string): number[] => {
   if (!Array.isArray(value)) {
     throw new TypeError(`${label} must be an array`);
   }
@@ -2649,9 +2481,36 @@ function readNumberArray(value: unknown, label: string): number[] {
   }
 
   return values;
-}
+};
 
-function readNullableString(value: unknown, label: string): string | null {
+const runCanonicalRejection = (
+  fixture: Record<string, unknown>
+): Record<string, unknown> => {
+  const cases = readRecord(fixture.cases, "cases");
+  const rejection: Record<string, unknown> = {};
+
+  for (const [caseName, caseValue] of Object.entries(cases)) {
+    const caseRecord = readRecord(caseValue, `cases.${caseName}`);
+    const cborBytes = readNumberArray(
+      caseRecord.cborBytes,
+      `cases.${caseName}.cborBytes`
+    );
+
+    let rejected: boolean;
+    try {
+      decodeDeterministicKernelRecord(Uint8Array.from(cborBytes));
+      rejected = false;
+    } catch {
+      rejected = true;
+    }
+
+    rejection[caseName] = { rejected };
+  }
+
+  return createProjection({ rejection });
+};
+
+const readNullableString = (value: unknown, label: string): string | null => {
   if (value === null) {
     return null;
   }
@@ -2661,4 +2520,153 @@ function readNullableString(value: unknown, label: string): string | null {
   }
 
   return value;
+};
+
+const deterministicHashing = async (
+  fixture: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+  const rawOpaqueBytes = readNumberArray(
+    fixture.rawOpaqueBytes,
+    "rawOpaqueBytes"
+  );
+  const schemaRecord = decodeDeterministicKernelRecord(
+    hexToBytes(readString(fixture.turnTreeSchemaRecordCborHex, "schema cbor"))
+  );
+  const turnNodeIdentityRecord = readRecord(
+    fixture.turnNodeIdentityRecord,
+    "turnNodeIdentityRecord"
+  );
+  const turnNodeHash = await hashTurnNodeIdentity({
+    consumedStagedResults: readStagedResults(
+      turnNodeIdentityRecord.consumedStagedResults,
+      "consumedStagedResults"
+    ),
+    eventHash: readNullableString(
+      turnNodeIdentityRecord.eventHash,
+      "eventHash"
+    ),
+    previousTurnNodeHash: readNullableString(
+      turnNodeIdentityRecord.previousTurnNodeHash,
+      "previousTurnNodeHash"
+    ),
+    schemaId: readString(turnNodeIdentityRecord.schemaId, "schemaId"),
+    turnTreeHash: readString(
+      turnNodeIdentityRecord.turnTreeHash,
+      "turnTreeHash"
+    ),
+  });
+
+  return createProjection({
+    hashes: {
+      rawOpaqueBytes: await hashOpaqueObjectBytes(
+        Uint8Array.from(rawOpaqueBytes)
+      ),
+      turnNodeIdentity: turnNodeHash,
+      turnTreeSchema: await hashKernelRecord(schemaRecord),
+    },
+  });
+};
+
+class TypeScriptKernelAdapter {
+  initialize(
+    packetId: string,
+    planVersion: string
+  ): Promise<AdapterCapabilities> {
+    return Promise.resolve({
+      adapterId: ADAPTER_CONFIG.adapterId,
+      capabilities: ADAPTER_CONFIG.capabilities,
+      packetId,
+      planVersion,
+    });
+  }
+
+  async dispatch(
+    operation: string,
+    input: unknown,
+    _controls: AdapterControls
+  ): Promise<OperationOutcome> {
+    try {
+      switch (operation) {
+        case "kernel.protocol.deterministic-hashing": {
+          return result(await deterministicHashing(readFixture(input)));
+        }
+        case "kernel.protocol.schema-roundtrip": {
+          return result(schemaRoundtrip(readFixture(input)));
+        }
+        case "kernel.protocol.modify-composition": {
+          return result(await runModifyComposition(input));
+        }
+        case "kernel.protocol.canonical-rejection": {
+          return result(runCanonicalRejection(readFixture(input)));
+        }
+        case "kernel.protocol.edge-validation": {
+          return result(await runProtocolEdgeValidation());
+        }
+        case "kernel.logical.diff-paths": {
+          return result(await runLogicalDiff(readFixture(input)));
+        }
+        case "kernel.logical.branch-list": {
+          return result(await runBranchList(readFixture(input)));
+        }
+        case "kernel.logical.recovery-state": {
+          return result(await runRecoveryState(readFixture(input)));
+        }
+        case "kernel.logical.thread-list": {
+          return result(await runThreadList());
+        }
+        case "kernel.lineage.cross-thread-rejection": {
+          return result(await runCrossThreadLineage());
+        }
+        case "kernel.run-liveness.lease-renewal": {
+          return result(await runLeaseRenewal());
+        }
+        case "kernel.run-liveness.expired-listing": {
+          return result(await runExpiredListing());
+        }
+        case "kernel.run-liveness.stale-preemption": {
+          return result(await runStalePreemption());
+        }
+        case "kernel.run-liveness.clock-skew-preemption": {
+          return result(await runClockSkewPreemption());
+        }
+        case "kernel.restart-recovery.close-reopen-checkpoint": {
+          return result(await runRestartRecovery());
+        }
+        case "kernel.restart-recovery.crash-recovery-durable": {
+          return result(await runDurableCrashRecovery());
+        }
+        case "kernel.restart-recovery.crash-recovery-in-process": {
+          return result(await runInProcessCrashRecovery());
+        }
+        case "kernel.restart-recovery.concurrent-writer": {
+          return result(await runConcurrentWriterConflict());
+        }
+        case "kernel.scope-isolation.cross-scope-probe": {
+          return result(await runCrossScopeProbe());
+        }
+        case "kernel.reclamation.reclaim-probe": {
+          return result(await runReclamationProbe());
+        }
+        case "kernel.reclamation.erasure-probe": {
+          return result(await runErasureProbe());
+        }
+        default: {
+          return {
+            error: {
+              code: "adapter_operation_not_implemented",
+              message: `${ADAPTER_CONFIG.adapterId} does not implement ${operation}`,
+            },
+            kind: "error",
+          };
+        }
+      }
+    } catch (error: unknown) {
+      return {
+        error: createAdapterErrorEnvelope(error),
+        kind: "error",
+      };
+    }
+  }
 }
+
+await serveStdioAdapter(new TypeScriptKernelAdapter());
