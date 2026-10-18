@@ -288,12 +288,12 @@ interface RuntimeIterationPhaseDependencies {
  * bag into the loop host seam and run the turn's iteration loop to a
  * terminal {@link LoopOutcome} using `dependencies.now()` as the clock.
  */
-export async function runRuntimeExecutionLoopFacade(
+export const runRuntimeExecutionLoopFacade = async (
   dependencies: RuntimeExecutionLoopDependencies,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState
-): Promise<LoopOutcome> {
+): Promise<LoopOutcome> => {
   return await runRuntimeExecutionLoop(
     {
       applyContextEngineeringPlan: (
@@ -342,7 +342,7 @@ export async function runRuntimeExecutionLoopFacade(
     loopState,
     () => dependencies.now()
   );
-}
+};
 
 /**
  * Facade over the iteration module's `executeIterationPhase`: adapt the
@@ -353,14 +353,14 @@ export async function runRuntimeExecutionLoopFacade(
  * @throws TuvrenRuntimeError with code `missing_head_state` when called
  *   without a head state — iteration execution always requires one.
  */
-export async function executeRuntimeIterationPhaseFacade(
+export const executeRuntimeIterationPhaseFacade = async (
   dependencies: RuntimeIterationPhaseDependencies,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
   headState: HeadState | undefined,
   iterationCount: number
-): Promise<IterationPhaseResult> {
+): Promise<IterationPhaseResult> => {
   if (headState === undefined) {
     throw new TuvrenRuntimeError("iteration execution requires head state", {
       code: "missing_head_state",
@@ -473,14 +473,14 @@ export async function executeRuntimeIterationPhaseFacade(
       schemaId,
     }
   );
-}
+};
 
 /**
  * Pass-through facade over `createRunnerExecutionContext`
  * (`runtime-core-runner.ts`): builds the context object handed to a runner's
  * `execute` for one iteration.
  */
-export function createRuntimeRunnerExecutionContextFacade(
+export const createRuntimeRunnerExecutionContextFacade = (
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -488,7 +488,7 @@ export function createRuntimeRunnerExecutionContextFacade(
   headState: HeadState,
   iterationCount: number,
   emittedRunnerEvents: TuvrenStreamEvent[]
-): RunnerExecutionContext {
+): RunnerExecutionContext => {
   return createRuntimeRunnerExecutionContext(
     host,
     handle,
@@ -498,26 +498,26 @@ export function createRuntimeRunnerExecutionContextFacade(
     iterationCount,
     emittedRunnerEvents
   );
-}
+};
 
 /**
  * Pass-through facade over `stageRunnerMessages`
  * (`runtime-core-runner.ts`): stages the runner-produced messages for a run
  * and returns their object hashes.
  */
-export async function stageRuntimeRunnerMessagesFacade(
+export const stageRuntimeRunnerMessagesFacade = async (
   host: RuntimeCoreRunnerHost,
   runId: string,
   messages: TuvrenMessage[],
   iterationCount: number
-): Promise<HashString[]> {
+): Promise<HashString[]> => {
   return await stageRuntimeRunnerMessages(
     host,
     runId,
     messages,
     iterationCount
   );
-}
+};
 
 /**
  * Pass-through facade over `applyRequestedToolBatchIfNeeded`
@@ -525,7 +525,7 @@ export async function stageRuntimeRunnerMessagesFacade(
  * when the resolution calls for it, yielding either an updated resolution or
  * a short-circuit loop outcome.
  */
-export async function applyRuntimeRequestedToolBatchIfNeededFacade(
+export const applyRuntimeRequestedToolBatchIfNeededFacade = async (
   host: RuntimeCoreRunnerHost,
   input: {
     handle: RuntimeExecutionHandle;
@@ -540,16 +540,16 @@ export async function applyRuntimeRequestedToolBatchIfNeededFacade(
     toolExecutionMode: ToolExecutionMode;
     toolResults: ToolResultPart[];
   }
-): Promise<LoopOutcome | RuntimeResolution> {
+): Promise<LoopOutcome | RuntimeResolution> => {
   return await applyRuntimeRequestedToolBatchIfNeeded(host, input);
-}
+};
 
 /**
  * Pass-through facade over `completeIterationArtifacts`
  * (`runtime-core-runner.ts`): commits the iteration's durable artifacts and
  * returns the new turn-node hash, if the iteration advanced one.
  */
-export async function completeRuntimeIterationArtifactsFacade(
+export const completeRuntimeIterationArtifactsFacade = async (
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -561,7 +561,7 @@ export async function completeRuntimeIterationArtifactsFacade(
   manifest: ContextManifest,
   appendedMessageHashes: HashString[],
   interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
-): Promise<HashString | undefined> {
+): Promise<HashString | undefined> => {
   return await completeRuntimeIterationArtifacts(
     host,
     handle,
@@ -575,14 +575,14 @@ export async function completeRuntimeIterationArtifactsFacade(
     appendedMessageHashes,
     interruptedToolBatch
   );
-}
+};
 
 /**
  * Pass-through facade over `applyAfterIterationResolution`
  * (`runtime-core-runner.ts`): runs after-iteration extension hooks and
  * returns the (possibly overridden) resolution.
  */
-export async function applyRuntimeAfterIterationResolutionFacade(
+export const applyRuntimeAfterIterationResolutionFacade = async (
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
@@ -594,7 +594,7 @@ export async function applyRuntimeAfterIterationResolutionFacade(
   headMessages: TuvrenMessage[],
   stagedMessages: TuvrenMessage[],
   manifest: ContextManifest
-): Promise<RuntimeResolution> {
+): Promise<RuntimeResolution> => {
   return await applyRuntimeAfterIterationResolution(
     host,
     handle,
@@ -608,20 +608,20 @@ export async function applyRuntimeAfterIterationResolutionFacade(
     stagedMessages,
     manifest
   );
-}
+};
 
 /**
  * Pass-through facade over `resumePausedToolExecution`
  * (`runtime-core-tool-resume.ts`): resumes a turn paused on tool approval and
  * drives it to a loop outcome.
  */
-export async function resumeRuntimePausedToolExecutionFacade(
+export const resumeRuntimePausedToolExecutionFacade = async (
   host: Parameters<typeof resumeRuntimePausedToolExecution>[0],
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
   resumeContext: ResumeContext
-): Promise<LoopOutcome> {
+): Promise<LoopOutcome> => {
   return await resumeRuntimePausedToolExecution(
     host,
     handle,
@@ -629,21 +629,21 @@ export async function resumeRuntimePausedToolExecutionFacade(
     loopState,
     resumeContext
   );
-}
+};
 
 /**
  * Pass-through facade over `createToolBatchEnvironment`
  * (`runtime-core-runner-support.ts`): assembles the environment a requested
  * tool batch executes in.
  */
-export function createRuntimeToolBatchEnvironmentFacade(
+export const createRuntimeToolBatchEnvironmentFacade = (
   host: RuntimeCoreRunnerSupportHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
   manifest: ContextManifest,
   iterationCount: number,
   runId: string
-) {
+) => {
   return createRuntimeToolBatchEnvironment(
     host,
     handle,
@@ -652,14 +652,14 @@ export function createRuntimeToolBatchEnvironmentFacade(
     iterationCount,
     runId
   );
-}
+};
 
 /**
  * Pass-through facade over `createRunnerHandoffContextPlan`
  * (`runtime-core-runner-support.ts`): builds the context plan for a
  * runner-requested agent handoff.
  */
-export function createRuntimeRunnerHandoffContextPlanFacade(
+export const createRuntimeRunnerHandoffContextPlanFacade = (
   host: RuntimeCoreRunnerSupportHost,
   input: {
     builder?: HandoffContextBuilder;
@@ -670,21 +670,21 @@ export function createRuntimeRunnerHandoffContextPlanFacade(
   },
   headState: HeadState,
   loopState: LoopState
-): HandoffContextPlan {
+): HandoffContextPlan => {
   return createRuntimeRunnerHandoffContextPlan(
     host,
     input,
     headState,
     loopState
   );
-}
+};
 
 /**
  * Pass-through facade over `completeIterationRun`
  * (`runtime-core-turn-progress.ts`): closes the iteration's kernel run and
  * returns the advanced turn-node hash, when one was produced.
  */
-export async function completeRuntimeIterationRunFacade(
+export const completeRuntimeIterationRunFacade = async (
   host: RuntimeCoreTurnProgressHost,
   handle: RuntimeExecutionHandle,
   runId: string,
@@ -693,7 +693,7 @@ export async function completeRuntimeIterationRunFacade(
   iterationCount: number,
   loopState: LoopState,
   treeHash?: HashString
-): Promise<HashString | undefined> {
+): Promise<HashString | undefined> => {
   return await completeRuntimeIterationRun(
     host,
     handle,
@@ -704,14 +704,14 @@ export async function completeRuntimeIterationRunFacade(
     loopState,
     treeHash
   );
-}
+};
 
 /**
  * Pass-through facade over `createIterationTree`
  * (`runtime-core-turn-progress.ts`): creates the turn tree that appends the
  * iteration's messages, manifest, and runtime status onto the base tree.
  */
-export async function createRuntimeIterationTreeFacade(
+export const createRuntimeIterationTreeFacade = async (
   host: RuntimeCoreTurnProgressHost,
   schemaId: string,
   baseTurnTreeHash: HashString,
@@ -720,7 +720,7 @@ export async function createRuntimeIterationTreeFacade(
   manifestHash: HashString,
   runtimeStatusHash?: HashString,
   turnLineageHash?: HashString
-): Promise<HashString> {
+): Promise<HashString> => {
   return await createRuntimeIterationTree(
     host,
     schemaId,
@@ -731,50 +731,50 @@ export async function createRuntimeIterationTreeFacade(
     runtimeStatusHash,
     turnLineageHash
   );
-}
+};
 
 /**
  * Pass-through facade over `incorporateInput`
  * (`runtime-core-state-commit.ts`): durably incorporates the request's input
  * signal into the turn before the first iteration.
  */
-export async function incorporateRuntimeInputFacade(
+export const incorporateRuntimeInputFacade = async (
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState
-): Promise<void> {
+): Promise<void> => {
   await incorporateRuntimeInput(host, handle, schemaId, loopState);
-}
+};
 
 /**
  * Pass-through facade over `incorporateSteering`
  * (`runtime-core-state-commit.ts`): durably incorporates a queued steering
  * signal between iterations.
  */
-export async function incorporateRuntimeSteeringFacade(
+export const incorporateRuntimeSteeringFacade = async (
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   signal: InputSignal,
   loopState: LoopState
-): Promise<void> {
+): Promise<void> => {
   await incorporateRuntimeSteering(host, handle, schemaId, signal, loopState);
-}
+};
 
 /**
  * Pass-through facade over `commitPendingExtensionStateUpdates`
  * (`runtime-core-state-commit.ts`): persists extension manifest-state
  * updates gathered during an iteration.
  */
-export async function commitRuntimePendingExtensionStateUpdatesFacade(
+export const commitRuntimePendingExtensionStateUpdatesFacade = async (
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
   updates: ExtensionStateUpdate[],
   iterationCount: number
-): Promise<void> {
+): Promise<void> => {
   await commitRuntimePendingExtensionStateUpdates(
     host,
     handle,
@@ -783,14 +783,14 @@ export async function commitRuntimePendingExtensionStateUpdatesFacade(
     updates,
     iterationCount
   );
-}
+};
 
 /**
  * Pass-through facade over `applyContextEngineeringPlan`
  * (`runtime-core-context-ops.ts`): executes a context-engineering plan's
  * message-set rewrite and commits it as a durable turn-state change.
  */
-export async function applyRuntimeContextEngineeringPlanFacade(
+export const applyRuntimeContextEngineeringPlanFacade = async (
   host: RuntimeCoreContextOpsHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -801,7 +801,7 @@ export async function applyRuntimeContextEngineeringPlanFacade(
     messageHashes: HashString[];
     messages: TuvrenMessage[];
   }
-): Promise<void> {
+): Promise<void> => {
   await applyRuntimeContextEngineeringPlan(
     host,
     handle,
@@ -811,14 +811,14 @@ export async function applyRuntimeContextEngineeringPlanFacade(
     updates,
     recoveredHistory
   );
-}
+};
 
 /**
  * Pass-through facade over `applyHandoff`
  * (`runtime-core-context-ops.ts`): applies an agent handoff plan and returns
  * the new active config, tool registry, and client-endpoint boundary.
  */
-export async function applyRuntimeHandoffFacade(
+export const applyRuntimeHandoffFacade = async (
   host: RuntimeCoreContextOpsHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -831,7 +831,7 @@ export async function applyRuntimeHandoffFacade(
   clientEndpointBoundary:
     | import("@tuvren/core/capabilities").ClientEndpointBoundary
     | undefined;
-}> {
+}> => {
   return await applyRuntimeHandoff(
     host,
     handle,
@@ -840,4 +840,4 @@ export async function applyRuntimeHandoffFacade(
     loopState,
     updates
   );
-}
+};

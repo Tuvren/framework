@@ -49,55 +49,6 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import { executeToolBatch } from "./tool-execution.js";
 import type { ToolBatchOutcome, ToolExecutionMode } from "./tool-execution.js";
 
-// ---------------------------------------------------------------------------
-// Exposure-time filtering helpers (BB001)
-// ---------------------------------------------------------------------------
-
-/**
- * Collects the names of client-endpoint tools whose endpoint is currently
- * unavailable on the client boundary, feeding the exposure policy context.
- *
- * @returns The unavailable capability ids, or `undefined` when no boundary
- * is configured or every client-endpoint tool is available.
- */
-function buildUnavailableCapabilityIds(
-  tools: ReturnType<ToolRegistry["list"]>,
-  boundary:
-    | import("@tuvren/core/capabilities").ClientEndpointBoundary
-    | undefined
-): ReadonlySet<string> | undefined {
-  if (boundary === undefined) {
-    return undefined;
-  }
-  const unavailable = new Set<string>();
-  for (const tool of tools) {
-    if (isClientEndpointTool(tool) && !boundary.isAvailable(tool.name)) {
-      unavailable.add(tool.name);
-    }
-  }
-  return unavailable.size > 0 ? unavailable : undefined;
-}
-
-/**
- * Wraps a tool registry so lookups, listing, and definitions only see the
- * exposed subset while `register` still writes through to the base registry.
- */
-function createFilteredToolRegistry(
-  base: ToolRegistry,
-  filteredTools: ReturnType<ToolRegistry["list"]>
-): ToolRegistry {
-  const byName = new Map(filteredTools.map((t) => [t.name, t]));
-  return {
-    get: (name) => byName.get(name),
-    has: (name) => byName.has(name),
-    list: () => [...filteredTools],
-    register: (tool) => {
-      base.register(tool);
-    },
-    toDefinitions: () => base.toDefinitions().filter((d) => byName.has(d.name)),
-  };
-}
-
 /**
  * Host capabilities required by the runner-facing helpers in this module:
  * artifact staging (messages, manifests, runtime status, iteration trees),
@@ -199,6 +150,55 @@ export interface RuntimeCoreRunnerHost {
   ): Promise<HashString>;
 }
 
+// ---------------------------------------------------------------------------
+// Exposure-time filtering helpers (BB001)
+// ---------------------------------------------------------------------------
+
+/**
+ * Collects the names of client-endpoint tools whose endpoint is currently
+ * unavailable on the client boundary, feeding the exposure policy context.
+ *
+ * @returns The unavailable capability ids, or `undefined` when no boundary
+ * is configured or every client-endpoint tool is available.
+ */
+const buildUnavailableCapabilityIds = (
+  tools: ReturnType<ToolRegistry["list"]>,
+  boundary:
+    | import("@tuvren/core/capabilities").ClientEndpointBoundary
+    | undefined
+): ReadonlySet<string> | undefined => {
+  if (boundary === undefined) {
+    return undefined;
+  }
+  const unavailable = new Set<string>();
+  for (const tool of tools) {
+    if (isClientEndpointTool(tool) && !boundary.isAvailable(tool.name)) {
+      unavailable.add(tool.name);
+    }
+  }
+  return unavailable.size > 0 ? unavailable : undefined;
+};
+
+/**
+ * Wraps a tool registry so lookups, listing, and definitions only see the
+ * exposed subset while `register` still writes through to the base registry.
+ */
+const createFilteredToolRegistry = (
+  base: ToolRegistry,
+  filteredTools: ReturnType<ToolRegistry["list"]>
+): ToolRegistry => {
+  const byName = new Map(filteredTools.map((t) => [t.name, t]));
+  return {
+    get: (name) => byName.get(name),
+    has: (name) => byName.has(name),
+    list: () => [...filteredTools],
+    register: (tool) => {
+      base.register(tool);
+    },
+    toDefinitions: () => base.toDefinitions().filter((d) => byName.has(d.name)),
+  };
+};
+
 /**
  * Builds the frozen, read-only execution context handed to a runner for one
  * iteration.
@@ -213,7 +213,7 @@ export interface RuntimeCoreRunnerHost {
  * form in `emittedRunnerEvents` for post-execution validation, and publishes
  * it on the handle.
  */
-export function createRunnerExecutionContext(
+export const createRunnerExecutionContext = (
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -221,7 +221,7 @@ export function createRunnerExecutionContext(
   headState: HeadState,
   iterationCount: number,
   emittedRunnerEvents: TuvrenStreamEvent[]
-): RunnerExecutionContext {
+): RunnerExecutionContext => {
   // BB001: Apply exposure-time policy filtering before building the readonly
   // runner snapshot. When a policy engine is configured, evaluate exposure
   // decisions over all surfaces and filter out denied tools so the runner
@@ -329,19 +329,19 @@ export function createRunnerExecutionContext(
     toolRegistry: toolRegistrySnapshot,
     turnId: handle.turnId,
   };
-}
+};
 
 /**
  * Stages each runner-returned durable message in order and returns their
  * content hashes; staging task ids encode the iteration count and message
  * index.
  */
-export async function stageRunnerMessages(
+export const stageRunnerMessages = async (
   host: RuntimeCoreRunnerHost,
   runId: string,
   messages: TuvrenMessage[],
   iterationCount: number
-): Promise<HashString[]> {
+): Promise<HashString[]> => {
   const stagedMessageHashes: HashString[] = [];
 
   for (const [index, runnerMessage] of messages.entries()) {
@@ -355,7 +355,54 @@ export async function stageRunnerMessages(
   }
 
   return stagedMessageHashes;
-}
+};
+
+/**
+ * Runs the tool batch inside the host-built environment, converting a thrown
+ * error into a hard-fail outcome after failing the tracked run without a
+ * branch advance.
+ */
+const executeRequestedToolBatch = async (
+  host: RuntimeCoreRunnerHost,
+  input: {
+    handle: RuntimeExecutionHandle;
+    headState: HeadState;
+    iterationCount: number;
+    loopState: LoopState;
+    requestedToolCalls: ToolCallPart[];
+    runId: string;
+    toolExecutionMode: ToolExecutionMode;
+  }
+): Promise<ToolBatchOutcome | { outcome: LoopOutcome }> => {
+  try {
+    return await executeToolBatch(
+      input.requestedToolCalls,
+      host.createToolBatchEnvironment(
+        input.handle,
+        input.loopState,
+        input.headState.manifest,
+        input.iterationCount,
+        input.runId
+      ),
+      input.toolExecutionMode
+    );
+  } catch (error: unknown) {
+    await host.failTrackedRunWithoutBranchAdvance(
+      input.handle,
+      input.runId,
+      input.headState.branchHeadHash
+    );
+    return {
+      outcome: {
+        resolution: {
+          error: normalizeError(error),
+          fatality: "hard",
+          type: "fail",
+        },
+      },
+    };
+  }
+};
 
 /**
  * Executes the runner's requested tool batch when the resolution is
@@ -369,7 +416,7 @@ export async function stageRunnerMessages(
  * A batch that throws fails the tracked run without a branch advance and
  * returns a hard-fail {@link LoopOutcome}.
  */
-export async function applyRequestedToolBatchIfNeeded(
+export const applyRequestedToolBatchIfNeeded = async (
   host: RuntimeCoreRunnerHost,
   input: {
     handle: RuntimeExecutionHandle;
@@ -384,7 +431,7 @@ export async function applyRequestedToolBatchIfNeeded(
     toolExecutionMode: ToolExecutionMode;
     toolResults: ToolResultPart[];
   }
-): Promise<LoopOutcome | RuntimeResolution> {
+): Promise<LoopOutcome | RuntimeResolution> => {
   if (
     input.resolution.type !== "continue_iteration" ||
     input.requestedToolCalls.length === 0
@@ -418,54 +465,7 @@ export async function applyRequestedToolBatchIfNeeded(
     reason: "approval_required",
     type: "pause",
   };
-}
-
-/**
- * Runs the tool batch inside the host-built environment, converting a thrown
- * error into a hard-fail outcome after failing the tracked run without a
- * branch advance.
- */
-async function executeRequestedToolBatch(
-  host: RuntimeCoreRunnerHost,
-  input: {
-    handle: RuntimeExecutionHandle;
-    headState: HeadState;
-    iterationCount: number;
-    loopState: LoopState;
-    requestedToolCalls: ToolCallPart[];
-    runId: string;
-    toolExecutionMode: ToolExecutionMode;
-  }
-): Promise<ToolBatchOutcome | { outcome: LoopOutcome }> {
-  try {
-    return await executeToolBatch(
-      input.requestedToolCalls,
-      host.createToolBatchEnvironment(
-        input.handle,
-        input.loopState,
-        input.headState.manifest,
-        input.iterationCount,
-        input.runId
-      ),
-      input.toolExecutionMode
-    );
-  } catch (error: unknown) {
-    await host.failTrackedRunWithoutBranchAdvance(
-      input.handle,
-      input.runId,
-      input.headState.branchHeadHash
-    );
-    return {
-      outcome: {
-        resolution: {
-          error: normalizeError(error),
-          fatality: "hard",
-          type: "fail",
-        },
-      },
-    };
-  }
-}
+};
 
 /**
  * Commits the durable artifacts for a finished iteration: stages the
@@ -476,7 +476,7 @@ async function executeRequestedToolBatch(
  * @returns The committed turn node hash, or `undefined` when the run did not
  * advance the branch.
  */
-export async function completeIterationArtifacts(
+export const completeIterationArtifacts = async (
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -488,7 +488,7 @@ export async function completeIterationArtifacts(
   manifest: ContextManifest,
   appendedMessageHashes: HashString[],
   interruptedToolBatch?: InterruptedToolBatchDescriptor
-): Promise<HashString | undefined> {
+): Promise<HashString | undefined> => {
   const manifestHash = await host.stageManifest(runId, manifest, {
     handle,
     loopState,
@@ -533,7 +533,7 @@ export async function completeIterationArtifacts(
     loopState,
     nextTreeHash
   );
-}
+};
 
 /**
  * Runs the after-iteration extension hooks and folds their resolution into
@@ -544,7 +544,7 @@ export async function completeIterationArtifacts(
  * resolution is converted to "end_turn" with reason "max_iterations" once
  * the configured iteration budget is reached.
  */
-export async function applyAfterIterationResolution(
+export const applyAfterIterationResolution = async (
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
@@ -556,7 +556,7 @@ export async function applyAfterIterationResolution(
   headMessages: TuvrenMessage[],
   stagedMessages: TuvrenMessage[],
   manifest: ContextManifest
-): Promise<RuntimeResolution> {
+): Promise<RuntimeResolution> => {
   const afterIteration = await runAfterIterationHooks({
     emit: (event) => {
       host.publishCustomEvent(handle, event, loopState);
@@ -593,4 +593,4 @@ export async function applyAfterIterationResolution(
   }
 
   return nextResolution;
-}
+};

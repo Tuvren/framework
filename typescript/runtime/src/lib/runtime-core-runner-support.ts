@@ -114,14 +114,14 @@ export interface RuntimeCoreRunnerSupportHost {
  * binding resolver so `AgentConfig.sandboxExecutors` stays keyed by raw
  * endpoint ids (AX004).
  */
-export function createToolBatchEnvironment(
+export const createToolBatchEnvironment = (
   host: RuntimeCoreRunnerSupportHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
   manifest: ContextManifest,
   iterationCount: number,
   runId: string
-): ToolBatchEnvironment {
+): ToolBatchEnvironment => {
   // Create the rate limiter once per turn (lazily on first iteration) and
   // cache it on loopState so the same budget applies across all iterations.
   // Intentional scoping: the limiter is fixed to the initiating agent's config
@@ -222,7 +222,7 @@ export function createToolBatchEnvironment(
     toolRegistry: loopState.activeToolRegistry,
     turnId: handle.turnId,
   };
-}
+};
 
 /**
  * Builds the {@link HandoffContextPlan} a runner receives from
@@ -234,7 +234,7 @@ export function createToolBatchEnvironment(
  * intent plus frozen source/target agent-config snapshots so the plan
  * cannot mutate live loop state.
  */
-export function createRunnerHandoffContextPlan(
+export const createRunnerHandoffContextPlan = (
   host: RuntimeCoreRunnerSupportHost,
   input: {
     builder?: HandoffContextBuilder;
@@ -245,7 +245,7 @@ export function createRunnerHandoffContextPlan(
   },
   headState: HeadState,
   loopState: LoopState
-): HandoffContextPlan {
+): HandoffContextPlan => {
   const mode = input.mode ?? "preserve_trace";
   const builder =
     input.builder ?? host.resolveDefaultHandoffContextBuilder(mode);
@@ -277,7 +277,7 @@ export function createRunnerHandoffContextPlan(
     },
     targetAgent: input.targetAgent,
   } satisfies HandoffContextPlan;
-}
+};
 
 /**
  * Executes a runner against its execution context and asserts the shape of
@@ -285,13 +285,13 @@ export function createRunnerHandoffContextPlan(
  * violation) into a hard "fail" resolution instead of propagating the
  * exception into the iteration loop.
  */
-export async function executeRunner(
+export const executeRunner = async (
   runner: RuntimeRunner,
   context: RunnerExecutionContext
 ): Promise<
   | Awaited<ReturnType<RuntimeRunner["execute"]>>
   | { resolution: RuntimeResolution }
-> {
+> => {
   try {
     const result = await runner.execute(context);
     assertRunnerExecutionResult(result, "runnerResult");
@@ -305,15 +305,15 @@ export async function executeRunner(
       } satisfies RuntimeResolution,
     };
   }
-}
+};
 
 /**
  * Formats the staging task id for a tool result; a thin alias over
  * {@link formatToolResultTaskId} for host wiring.
  */
-export function formatToolResultTask(
+export const formatToolResultTask = (
   orderIndex: number,
   callId: string
-): string {
+): string => {
   return formatToolResultTaskId(orderIndex, callId);
-}
+};

@@ -502,9 +502,9 @@ interface RunnerSupportHostDependencies {
  * resolution, and the kernel run-step + tree-create calls that commit context
  * changes.
  */
-export function buildRuntimeCoreContextOpsHost(
+export const buildRuntimeCoreContextOpsHost = (
   dependencies: ContextOpsHostDependencies
-): RuntimeCoreContextOpsHost {
+): RuntimeCoreContextOpsHost => {
   return {
     advanceTurnAndBranchHead: (...args) =>
       dependencies.advanceTurnAndBranchHead(...args),
@@ -558,23 +558,23 @@ export function buildRuntimeCoreContextOpsHost(
         baseTurnTreeHash
       ),
   };
-}
+};
 
 /**
  * Builds the host seam for the events module (`runtime-core-events.ts`): id
  * generation, the state-observability toggle, and the clock.
  */
-export function buildRuntimeCoreEventsHost(
+export const buildRuntimeCoreEventsHost = (
   createId: () => string,
   enableStateObservability: () => boolean,
   now: () => EpochMs
-): RuntimeCoreEventsHost {
+): RuntimeCoreEventsHost => {
   return {
     createId,
     enableStateObservability,
     now,
   };
-}
+};
 
 /**
  * Builds the host seam for the persistence module
@@ -582,9 +582,9 @@ export function buildRuntimeCoreEventsHost(
  * crypto-shredding message-encryption seam, manifest extension-state budget
  * warnings, and the kernel `staging.stage` / `store.put` writes.
  */
-export function buildRuntimeCorePersistenceHost(
+export const buildRuntimeCorePersistenceHost = (
   dependencies: PersistenceHostDependencies
-): RuntimeCorePersistenceHost {
+): RuntimeCorePersistenceHost => {
   return {
     emitWarning: (warning) => {
       dependencies.emitWarning(warning);
@@ -609,7 +609,7 @@ export function buildRuntimeCorePersistenceHost(
       ).objectHash,
     storeRecord: async (record) => await dependencies.kernel.store.put(record),
   };
-}
+};
 
 /**
  * Builds the host seam for the run-liveness module
@@ -617,9 +617,9 @@ export function buildRuntimeCorePersistenceHost(
  * active-lease bookkeeping (backed by the runtime's `WeakMap`), the active
  * run id stored on the handle, and the liveness configuration.
  */
-export function buildRuntimeCoreLivenessHost(
+export const buildRuntimeCoreLivenessHost = (
   dependencies: LivenessHostDependencies
-): RuntimeCoreLivenessHost {
+): RuntimeCoreLivenessHost => {
   return {
     clearActiveLease: (handle) => {
       dependencies.activeRunLeaseControllers.delete(handle);
@@ -662,7 +662,7 @@ export function buildRuntimeCoreLivenessHost(
     storeEventRecord: async (event) =>
       await dependencies.storeEventRecord(event),
   };
-}
+};
 
 /**
  * Builds the host seam for the expired-run recovery module
@@ -670,9 +670,9 @@ export function buildRuntimeCoreLivenessHost(
  * and active agent from a durable turn tree, head-state loading, and the
  * recovered `turn.end` event publication.
  */
-export function buildRuntimeCoreExpiredRecoveryHost(
+export const buildRuntimeCoreExpiredRecoveryHost = (
   dependencies: ExpiredRecoveryHostDependencies
-): RuntimeCoreExpiredRecoveryHost {
+): RuntimeCoreExpiredRecoveryHost => {
   return {
     getNow: () => dependencies.now(),
     getPayloadCodecBinding: () => dependencies.payloadCodecBinding,
@@ -696,7 +696,7 @@ export function buildRuntimeCoreExpiredRecoveryHost(
     readRecoveredRuntimeStatus: (turnTreeHash) =>
       dependencies.readRecoveredRuntimeStatus(turnTreeHash),
   };
-}
+};
 
 /**
  * Builds the host seam for the turn-progress module
@@ -704,9 +704,9 @@ export function buildRuntimeCoreExpiredRecoveryHost(
  * run/step completion, tree creation, and lease synchronization from step
  * results.
  */
-export function buildRuntimeCoreTurnProgressHost(
+export const buildRuntimeCoreTurnProgressHost = (
   dependencies: TurnProgressHostDependencies
-): RuntimeCoreTurnProgressHost {
+): RuntimeCoreTurnProgressHost => {
   return {
     advanceTurnAndBranchHead: (...args) =>
       dependencies.advanceTurnAndBranchHead(...args),
@@ -738,7 +738,7 @@ export function buildRuntimeCoreTurnProgressHost(
         baseTurnTreeHash
       ),
   };
-}
+};
 
 /**
  * Builds the host seam for the finalization module
@@ -746,9 +746,9 @@ export function buildRuntimeCoreTurnProgressHost(
  * paused-tool cancellation, kernel turn existence/run completion checks, and
  * the event publication paths used while a turn is being closed out.
  */
-export function buildRuntimeCoreFinalizationHost(
+export const buildRuntimeCoreFinalizationHost = (
   dependencies: FinalizationHostDependencies
-): RuntimeCoreFinalizationHost {
+): RuntimeCoreFinalizationHost => {
   return {
     createId: () => dependencies.createId(),
     defaultRunnerId: () => dependencies.defaultRunnerId,
@@ -775,7 +775,7 @@ export function buildRuntimeCoreFinalizationHost(
     storeEventRecord: async (event) =>
       await dependencies.storeEventRecord(event as KernelRecord),
   };
-}
+};
 
 /**
  * Builds the host seam for the startup module (`runtime-core-startup.ts`),
@@ -790,9 +790,9 @@ export function buildRuntimeCoreFinalizationHost(
  * head, throwing `missing_branch` / `branch_thread_mismatch` lineage errors
  * otherwise.
  */
-export function buildRuntimeCoreStartupHost(
+export const buildRuntimeCoreStartupHost = (
   dependencies: StartupHostDependencies
-): RuntimeCoreStartupHost {
+): RuntimeCoreStartupHost => {
   return {
     applyTerminalAgentTransitionIfNeeded: (...args) =>
       dependencies.applyTerminalAgentTransitionIfNeeded(...args),
@@ -894,7 +894,7 @@ export function buildRuntimeCoreStartupHost(
       );
     },
   };
-}
+};
 
 /**
  * Builds the host seam for the state-commit module
@@ -902,9 +902,9 @@ export function buildRuntimeCoreStartupHost(
  * status, and turn lineage; kernel run-step begin/complete; tracked-run
  * lifecycle; and branch-head advancement after a commit.
  */
-export function buildRuntimeCoreStateCommitHost(
+export const buildRuntimeCoreStateCommitHost = (
   dependencies: StateCommitHostDependencies
-): RuntimeCoreStateCommitHost {
+): RuntimeCoreStateCommitHost => {
   return {
     advanceTurnAndBranchHead: (...args) =>
       dependencies.advanceTurnAndBranchHead(...args),
@@ -935,7 +935,7 @@ export function buildRuntimeCoreStateCommitHost(
       dependencies.syncRunLeaseStateFromStepResult(...args);
     },
   };
-}
+};
 
 /**
  * Builds the host seam for the runner-support module
@@ -944,9 +944,9 @@ export function buildRuntimeCoreStateCommitHost(
  * resolution, and staging of tool-result messages (each wrapped as a
  * single-part `tool` role message keyed by order index and call id).
  */
-export function buildRuntimeCoreRunnerSupportHost(
+export const buildRuntimeCoreRunnerSupportHost = (
   dependencies: RunnerSupportHostDependencies
-): RuntimeCoreRunnerSupportHost {
+): RuntimeCoreRunnerSupportHost => {
   return {
     cloneAgentConfigForRequest: (config) =>
       dependencies.cloneAgentConfigForRequest(config),
@@ -990,4 +990,4 @@ export function buildRuntimeCoreRunnerSupportHost(
         `tool_result_${orderIndex}_${result.callId}`
       ),
   };
-}
+};
