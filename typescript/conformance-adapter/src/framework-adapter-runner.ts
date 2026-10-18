@@ -29,7 +29,6 @@ import {
 
 import { createReActRunner } from "../../runners/react/src/index.ts";
 import {
-  type AdapterProjection,
   AGENT_NAME,
   assistantText,
   assistantToolCalls,
@@ -40,211 +39,317 @@ import {
   createScenarioProvider,
   createStaticRunner,
   RUNNER_ID,
-  type ScenarioToolCall,
   textSignal,
+} from "./framework-adapter-runtime.ts";
+import type {
+  AdapterProjection,
+  ScenarioToolCall,
 } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterRunnerDependencies {
-  errorToEnvelope(error: unknown): Record<string, unknown>;
-  readApprovalDecisions(
+  errorToEnvelope: (error: Error) => Record<string, unknown>;
+  readApprovalDecisions: (
     scenario: Record<string, unknown>,
     path: string
-  ): ApprovalDecision[];
-  readFirstToolCallNameOptional(
+  ) => ApprovalDecision[];
+  readFirstToolCallNameOptional: (
     responses: readonly TuvrenModelResponse[],
     path: string
-  ): string | undefined;
-  readModelResponseArrayProperty(
+  ) => string | undefined;
+  readModelResponseArrayProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): TuvrenModelResponse[];
-  readOperationScenario(
+  ) => TuvrenModelResponse[];
+  readOperationScenario: (
     input: unknown,
     operation: string
-  ): Record<string, unknown>;
-  readPendingToolCalls(
+  ) => Record<string, unknown>;
+  readPendingToolCalls: (
     scenario: Record<string, unknown>,
     path: string
-  ): ScenarioToolCall[];
-  readProperty(
+  ) => ScenarioToolCall[];
+  readProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): unknown;
-  readProviderStreamChunks(
+  ) => unknown;
+  readProviderStreamChunks: (
     record: Record<string, unknown>,
     path: string
-  ): ProviderStreamChunk[];
-  readStringProperty(
+  ) => ProviderStreamChunk[];
+  readStringProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): string;
+  ) => string;
 }
 
-export function createFrameworkAdapterRunner(
-  dependencies: FrameworkAdapterRunnerDependencies
-): {
-  runRunnerCheckpoint(input: unknown): Promise<AdapterProjection>;
-  runRunnerExecute(input: unknown): Promise<AdapterProjection>;
-  runRunnerResume(input: unknown): Promise<AdapterProjection>;
-} {
-  async function runRunnerExecute(input: unknown): Promise<AdapterProjection> {
-    const scenario = dependencies.readOperationScenario(
-      input,
-      "runner.execute"
-    );
-    const providerResponses = dependencies.readModelResponseArrayProperty(
-      scenario,
-      "providerResponses",
-      "runner.execute.providerResponses"
-    );
-    const toolName = dependencies.readFirstToolCallNameOptional(
-      providerResponses,
-      "runner.execute.providerResponses"
-    );
-    const loopPolicy = readLoopPolicyOptional(scenario);
-    const caseName = readOptionalString(scenario, "case");
+interface HookCounters {
+  afterIteration: number;
+  aroundModel: number;
+  aroundModelTrace: string[];
+  aroundTool: number;
+  aroundToolTrace: string[];
+  beforeIteration: number;
+  phaseTrace: string[];
+  terminalMutationAttempted: boolean;
+}
 
-    if (caseName === "around_model_post_stream_replacement") {
-      return await runAroundModelPostStreamReplacement(scenario);
-    }
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
-    if (caseName === "around_model_retry_final_response") {
-      return await runAroundModelRetryFinalResponse(providerResponses);
-    }
+const readIterationDecision = (
+  record: Record<string, unknown>
+): IterationDecision => {
+  const continueDecision = record.continue;
+  const { executeTools } = record;
+  const { reason } = record;
 
-    if (toolName === undefined || loopPolicy !== undefined) {
-      return runDirectRunnerExecute(providerResponses, loopPolicy);
-    }
-
-    const prompt = dependencies.readStringProperty(
-      scenario,
-      "prompt",
-      "runner.execute.prompt"
-    );
-    const toolResult = dependencies.readProperty(
-      scenario,
-      "toolResult",
-      "runner.execute.toolResult"
-    );
-    const harness = createConformanceKernelHarness();
-    const hooks = createHookCounters();
-    let generateCalls = 0;
-    let toolCalls = 0;
-    const provider = createScenarioProvider(providerResponses, () => {
-      generateCalls += 1;
-    });
-    const reactRunner = createReActRunner({
-      providerCallMode: "generate",
-    }).create();
-    const runtime = createTuvrenRuntimeCore({
-      createId: createConformanceIdFactory(),
-      defaultRunnerId: reactRunner.id,
-      runnerRegistry: createRunnerRegistry([reactRunner]),
-      kernel: harness.kernel,
-    });
-    const thread = await runtime.createThread({});
-    const handle = runtime.executeTurn({
-      branchId: thread.branchId,
-      config: {
-        extensions: [createMeasuredExtension(hooks)],
-        model: provider,
-        name: AGENT_NAME,
-        tools: [
-          {
-            description: "Search docs",
-            execute() {
-              hooks.aroundToolTrace.push("tool.execute");
-              toolCalls += 1;
-              return toolResult;
-            },
-            inputSchema: { type: "object" },
-            name: toolName,
-          },
-        ],
-      },
-      signal: textSignal(prompt),
-      threadId: thread.threadId,
-    });
-
-    await collectValues(handle.events());
-    const messages = await harness.readBranchMessages(thread.branchId);
-
-    return {
-      evidence: {
-        runner: {
-          phase: handle.status().phase,
-        },
-        hooks: {
-          afterIteration: hooks.afterIteration,
-          aroundModel: hooks.aroundModel,
-          aroundModelTrace: hooks.aroundModelTrace,
-          aroundTool: hooks.aroundTool,
-          aroundToolTrace: hooks.aroundToolTrace,
-          terminalMutationAttempted: hooks.terminalMutationAttempted,
-          terminalMutationDurableText: readAssistantText(messages),
-          beforeIteration: hooks.beforeIteration,
-          phaseTrace: hooks.phaseTrace,
-        },
-        provider: {
-          generate: {
-            callCount: generateCalls,
-          },
-        },
-        tool: {
-          execution: {
-            callCount: toolCalls,
-          },
-        },
-      },
-      result: {
-        runner: {
-          phase: handle.status().phase,
-        },
-        hooks: {
-          afterIteration: hooks.afterIteration,
-          aroundModel: hooks.aroundModel,
-          aroundModelTrace: hooks.aroundModelTrace,
-          aroundTool: hooks.aroundTool,
-          aroundToolTrace: hooks.aroundToolTrace,
-          terminalMutationAttempted: hooks.terminalMutationAttempted,
-          terminalMutationDurableText: readAssistantText(messages),
-          beforeIteration: hooks.beforeIteration,
-          phaseTrace: hooks.phaseTrace,
-        },
-        provider: {
-          generate: {
-            callCount: generateCalls,
-          },
-        },
-        tool: {
-          execution: {
-            callCount: toolCalls,
-          },
-        },
-      },
-      state: {
-        hookCounts: hooks,
-      },
-    };
+  if (typeof continueDecision !== "boolean") {
+    throw new TypeError("runner.execute.loopPolicy.continue must be a boolean");
   }
 
-  async function runAroundModelPostStreamReplacement(
+  if (typeof executeTools !== "boolean") {
+    throw new TypeError(
+      "runner.execute.loopPolicy.executeTools must be a boolean"
+    );
+  }
+
+  return {
+    continue: continueDecision,
+    executeTools,
+    ...(typeof reason === "string" ? { reason } : {}),
+  };
+};
+
+const readLoopPolicyOptional = (
+  scenario: Record<string, unknown>
+): LoopPolicy | undefined => {
+  const { loopPolicy } = scenario;
+
+  if (loopPolicy === undefined) {
+    return undefined;
+  }
+
+  if (!isRecord(loopPolicy)) {
+    throw new Error("runner.execute.loopPolicy must be an object");
+  }
+
+  const decision = readIterationDecision(loopPolicy);
+
+  return {
+    evaluate() {
+      return decision;
+    },
+  };
+};
+
+const readOptionalString = (
+  record: Record<string, unknown>,
+  key: string
+): string | undefined =>
+  typeof record[key] === "string" ? record[key] : undefined;
+
+const createHookCounters = (): HookCounters => ({
+  afterIteration: 0,
+  aroundModel: 0,
+  aroundModelTrace: [],
+  aroundTool: 0,
+  aroundToolTrace: [],
+  beforeIteration: 0,
+  phaseTrace: [],
+  terminalMutationAttempted: false,
+});
+
+const createMeasuredExtension = (hooks: HookCounters): TuvrenExtension => ({
+  afterIteration(context) {
+    const [firstPart] = context.response.parts;
+
+    if (
+      firstPart?.type === "text" &&
+      firstPart.text === "runner hook turn completed"
+    ) {
+      firstPart.text = "mutated by afterIteration";
+      hooks.terminalMutationAttempted = true;
+    }
+
+    hooks.phaseTrace.push("afterIteration");
+    hooks.afterIteration += 1;
+  },
+  async aroundModel(_context, continueExecution) {
+    hooks.phaseTrace.push("aroundModel.before");
+    hooks.aroundModelTrace.push("before");
+    hooks.aroundModel += 1;
+    const result = await continueExecution();
+    hooks.aroundModelTrace.push("after");
+    hooks.phaseTrace.push("aroundModel.after");
+    return result;
+  },
+  async aroundTool(_context, continueExecution) {
+    hooks.phaseTrace.push("aroundTool.before");
+    hooks.aroundToolTrace.push("aroundTool.before");
+    hooks.aroundTool += 1;
+    const result = await continueExecution();
+    hooks.aroundToolTrace.push("aroundTool.after");
+    hooks.phaseTrace.push("aroundTool.after");
+    return result;
+  },
+  beforeIteration() {
+    hooks.phaseTrace.push("beforeIteration");
+    hooks.beforeIteration += 1;
+  },
+  name: "measured-runner-hooks",
+});
+
+const readAssistantText = (
+  messages: readonly unknown[]
+): string | undefined => {
+  for (const message of messages) {
+    if (!isRecord(message) || message.role !== "assistant") {
+      continue;
+    }
+
+    const { parts } = message;
+
+    if (!Array.isArray(parts)) {
+      continue;
+    }
+
+    for (const part of parts) {
+      if (
+        isRecord(part) &&
+        part.type === "text" &&
+        typeof part.text === "string"
+      ) {
+        return part.text;
+      }
+    }
+  }
+
+  return undefined;
+};
+
+const readResultAssistantText = (result: {
+  messages?: readonly unknown[];
+}): string | undefined => readAssistantText(result.messages ?? []);
+
+const countEventsByType = (
+  events: readonly TuvrenStreamEvent[],
+  type: string
+): number => {
+  let count = 0;
+
+  for (const event of events) {
+    if (event.type === type) {
+      count += 1;
+    }
+  }
+
+  return count;
+};
+
+const readTextDoneValues = (events: readonly TuvrenStreamEvent[]): string[] => {
+  const values: string[] = [];
+
+  for (const event of events) {
+    if (event.type === "text.done") {
+      values.push(event.text);
+    }
+  }
+
+  return values;
+};
+
+const runAroundModelRetryFinalResponse = async (
+  providerResponses: readonly TuvrenModelResponse[]
+): Promise<AdapterProjection> => {
+  let generateCalls = 0;
+  const runner = createReActRunner({
+    providerCallMode: "generate",
+  }).create();
+  const result = await runner.execute(
+    createRunnerExecutionContext({
+      config: {
+        extensions: [
+          {
+            async aroundModel(context, continueExecution) {
+              await continueExecution(context);
+              return await continueExecution({
+                ...context,
+                prompt: {
+                  ...context.prompt,
+                  messages: [
+                    ...context.prompt.messages,
+                    {
+                      content: "Retry with shared fallback behavior",
+                      role: "system" as const,
+                    },
+                  ],
+                },
+              });
+            },
+            name: "retry",
+          },
+        ],
+        model: createScenarioProvider(providerResponses, () => {
+          generateCalls += 1;
+        }),
+        name: AGENT_NAME,
+      },
+    })
+  );
+
+  assertRunnerExecutionResult(result, "runner aroundModel retry");
+
+  const projection = {
+    aroundModel: {
+      finalAssistantText: readResultAssistantText(result),
+    },
+    provider: {
+      generate: {
+        callCount: generateCalls,
+      },
+    },
+    runner: {
+      resolutionType: result.resolution.type,
+    },
+  };
+
+  return {
+    evidence: projection,
+    result: projection,
+  };
+};
+
+const rejectUnexpectedGenerate = (): TuvrenModelResponse => {
+  throw new Error("generate must not run during stream replacement");
+};
+
+const unexpectedGenerate = Promise.try.bind<
+  typeof Promise,
+  [() => TuvrenModelResponse],
+  [],
+  Promise<TuvrenModelResponse>
+>(Promise, rejectUnexpectedGenerate);
+
+export const createFrameworkAdapterRunner = (
+  dependencies: FrameworkAdapterRunnerDependencies
+): {
+  runRunnerCheckpoint: (input: unknown) => Promise<AdapterProjection>;
+  runRunnerExecute: (input: unknown) => Promise<AdapterProjection>;
+  runRunnerResume: (input: unknown) => Promise<AdapterProjection>;
+} => {
+  const runAroundModelPostStreamReplacement = async (
     scenario: Record<string, unknown>
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const chunks = dependencies.readProviderStreamChunks(
       scenario,
       "runner.execute.streamChunks"
     );
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider: TuvrenProvider = {
-      generate() {
-        return Promise.reject(
-          new Error("generate must not run during stream replacement")
-        );
-      },
+      generate: unexpectedGenerate,
       id: "provider",
       async *stream() {
         await Promise.resolve();
@@ -261,8 +366,8 @@ export function createFrameworkAdapterRunner(
         config: {
           extensions: [
             {
-              async aroundModel(_context, next) {
-                const response = await next();
+              async aroundModel(_context, continueExecution) {
+                const response = await continueExecution();
                 return {
                   ...response,
                   parts: [{ text: "modified", type: "text" }],
@@ -295,73 +400,12 @@ export function createFrameworkAdapterRunner(
       evidence: projection,
       result: projection,
     };
-  }
+  };
 
-  async function runAroundModelRetryFinalResponse(
-    providerResponses: readonly TuvrenModelResponse[]
-  ): Promise<AdapterProjection> {
-    let generateCalls = 0;
-    const runner = createReActRunner({
-      providerCallMode: "generate",
-    }).create();
-    const result = await runner.execute(
-      createRunnerExecutionContext({
-        config: {
-          extensions: [
-            {
-              async aroundModel(context, next) {
-                await next(context);
-                return await next({
-                  ...context,
-                  prompt: {
-                    ...context.prompt,
-                    messages: [
-                      ...context.prompt.messages,
-                      {
-                        content: "Retry with shared fallback behavior",
-                        role: "system" as const,
-                      },
-                    ],
-                  },
-                });
-              },
-              name: "retry",
-            },
-          ],
-          model: createScenarioProvider(providerResponses, () => {
-            generateCalls += 1;
-          }),
-          name: AGENT_NAME,
-        },
-      })
-    );
-
-    assertRunnerExecutionResult(result, "runner aroundModel retry");
-
-    const projection = {
-      aroundModel: {
-        finalAssistantText: readResultAssistantText(result),
-      },
-      runner: {
-        resolutionType: result.resolution.type,
-      },
-      provider: {
-        generate: {
-          callCount: generateCalls,
-        },
-      },
-    };
-
-    return {
-      evidence: projection,
-      result: projection,
-    };
-  }
-
-  async function runDirectRunnerExecute(
+  const runDirectRunnerExecute = async (
     providerResponses: readonly TuvrenModelResponse[],
     loopPolicy?: LoopPolicy
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const runner = createReActRunner({
       providerCallMode: "generate",
     }).create();
@@ -369,7 +413,9 @@ export function createFrameworkAdapterRunner(
       createRunnerExecutionContext({
         config: {
           ...(loopPolicy === undefined ? {} : { loopPolicy }),
-          model: createScenarioProvider(providerResponses, () => undefined),
+          model: createScenarioProvider(providerResponses, () => {
+            // Direct runner scenarios intentionally discard provider observations.
+          }),
           name: AGENT_NAME,
         },
       })
@@ -390,16 +436,160 @@ export function createFrameworkAdapterRunner(
         },
       },
       result: {
+        error,
         runner: {
           errorCode: error?.code,
           resolutionType: result.resolution.type,
         },
-        error,
       },
     };
-  }
+  };
+  const runRunnerExecute = async (
+    input: unknown
+  ): Promise<AdapterProjection> => {
+    const scenario = dependencies.readOperationScenario(
+      input,
+      "runner.execute"
+    );
+    const providerResponses = dependencies.readModelResponseArrayProperty(
+      scenario,
+      "providerResponses",
+      "runner.execute.providerResponses"
+    );
+    const toolName = dependencies.readFirstToolCallNameOptional(
+      providerResponses,
+      "runner.execute.providerResponses"
+    );
+    const loopPolicy = readLoopPolicyOptional(scenario);
+    const caseName = readOptionalString(scenario, "case");
 
-  async function runRunnerResume(input: unknown): Promise<AdapterProjection> {
+    if (caseName === "around_model_post_stream_replacement") {
+      return await runAroundModelPostStreamReplacement(scenario);
+    }
+
+    if (caseName === "around_model_retry_final_response") {
+      return await runAroundModelRetryFinalResponse(providerResponses);
+    }
+
+    if (toolName === undefined || loopPolicy !== undefined) {
+      return await runDirectRunnerExecute(providerResponses, loopPolicy);
+    }
+
+    const prompt = dependencies.readStringProperty(
+      scenario,
+      "prompt",
+      "runner.execute.prompt"
+    );
+    const toolResult = dependencies.readProperty(
+      scenario,
+      "toolResult",
+      "runner.execute.toolResult"
+    );
+    const harness = createConformanceKernelHarness();
+    const hooks = createHookCounters();
+    let generateCalls = 0;
+    let toolCalls = 0;
+    const provider = createScenarioProvider(providerResponses, () => {
+      generateCalls += 1;
+    });
+    const reactRunner = createReActRunner({
+      providerCallMode: "generate",
+    }).create();
+    const runtime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: reactRunner.id,
+      kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([reactRunner]),
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [createMeasuredExtension(hooks)],
+        model: provider,
+        name: AGENT_NAME,
+        tools: [
+          {
+            description: "Search docs",
+            execute() {
+              hooks.aroundToolTrace.push("tool.execute");
+              toolCalls += 1;
+              return toolResult;
+            },
+            inputSchema: { type: "object" },
+            name: toolName,
+          },
+        ],
+      },
+      signal: textSignal(prompt),
+      threadId: thread.threadId,
+    });
+
+    await collectValues(handle.events());
+    const messages = await harness.readBranchMessages(thread.branchId);
+
+    return {
+      evidence: {
+        hooks: {
+          afterIteration: hooks.afterIteration,
+          aroundModel: hooks.aroundModel,
+          aroundModelTrace: hooks.aroundModelTrace,
+          aroundTool: hooks.aroundTool,
+          aroundToolTrace: hooks.aroundToolTrace,
+          beforeIteration: hooks.beforeIteration,
+          phaseTrace: hooks.phaseTrace,
+          terminalMutationAttempted: hooks.terminalMutationAttempted,
+          terminalMutationDurableText: readAssistantText(messages),
+        },
+        provider: {
+          generate: {
+            callCount: generateCalls,
+          },
+        },
+        runner: {
+          phase: handle.status().phase,
+        },
+        tool: {
+          execution: {
+            callCount: toolCalls,
+          },
+        },
+      },
+      result: {
+        hooks: {
+          afterIteration: hooks.afterIteration,
+          aroundModel: hooks.aroundModel,
+          aroundModelTrace: hooks.aroundModelTrace,
+          aroundTool: hooks.aroundTool,
+          aroundToolTrace: hooks.aroundToolTrace,
+          beforeIteration: hooks.beforeIteration,
+          phaseTrace: hooks.phaseTrace,
+          terminalMutationAttempted: hooks.terminalMutationAttempted,
+          terminalMutationDurableText: readAssistantText(messages),
+        },
+        provider: {
+          generate: {
+            callCount: generateCalls,
+          },
+        },
+        runner: {
+          phase: handle.status().phase,
+        },
+        tool: {
+          execution: {
+            callCount: toolCalls,
+          },
+        },
+      },
+      state: {
+        hookCounts: hooks,
+      },
+    };
+  };
+
+  const runRunnerResume = async (
+    input: unknown
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(input, "runner.resume");
     const pendingToolCalls = dependencies.readPendingToolCalls(
       scenario,
@@ -431,7 +621,9 @@ export function createFrameworkAdapterRunner(
         decisions,
       },
       config: {
-        model: createScenarioProvider(providerResponses, () => undefined),
+        model: createScenarioProvider(providerResponses, () => {
+          // Resume scenarios intentionally discard provider observations.
+        }),
         name: AGENT_NAME,
       },
       messages: [
@@ -455,22 +647,22 @@ export function createFrameworkAdapterRunner(
         },
       },
       result: {
+        error:
+          result.resolution.type === "fail"
+            ? dependencies.errorToEnvelope(result.resolution.error)
+            : undefined,
         runner: {
           approvalDecisionCallIds: decisions.map((decision) => decision.callId),
           pendingToolCallIds: pendingToolCalls.map((call) => call.callId),
           resolutionType: result.resolution.type,
         },
-        error:
-          result.resolution.type === "fail"
-            ? dependencies.errorToEnvelope(result.resolution.error)
-            : undefined,
       },
     };
-  }
+  };
 
-  async function runRunnerCheckpoint(
+  const runRunnerCheckpoint = async (
     input: unknown
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runner.checkpoint"
@@ -484,6 +676,7 @@ export function createFrameworkAdapterRunner(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText(finalText)],
@@ -493,7 +686,6 @@ export function createFrameworkAdapterRunner(
           },
         })),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -517,191 +709,11 @@ export function createFrameworkAdapterRunner(
         },
       },
     };
-  }
+  };
 
   return {
     runRunnerCheckpoint,
     runRunnerExecute,
     runRunnerResume,
   };
-}
-
-interface HookCounters {
-  afterIteration: number;
-  aroundModel: number;
-  aroundModelTrace: string[];
-  aroundTool: number;
-  aroundToolTrace: string[];
-  beforeIteration: number;
-  phaseTrace: string[];
-  terminalMutationAttempted: boolean;
-}
-
-function createHookCounters(): HookCounters {
-  return {
-    afterIteration: 0,
-    aroundModel: 0,
-    aroundModelTrace: [],
-    aroundTool: 0,
-    aroundToolTrace: [],
-    beforeIteration: 0,
-    phaseTrace: [],
-    terminalMutationAttempted: false,
-  };
-}
-
-function readOptionalString(
-  record: Record<string, unknown>,
-  key: string
-): string | undefined {
-  return typeof record[key] === "string" ? record[key] : undefined;
-}
-
-function readLoopPolicyOptional(
-  scenario: Record<string, unknown>
-): LoopPolicy | undefined {
-  const loopPolicy = scenario.loopPolicy;
-
-  if (loopPolicy === undefined) {
-    return undefined;
-  }
-
-  if (!isRecord(loopPolicy)) {
-    throw new Error("runner.execute.loopPolicy must be an object");
-  }
-
-  const decision = readIterationDecision(loopPolicy);
-
-  return {
-    evaluate() {
-      return decision;
-    },
-  };
-}
-
-function readIterationDecision(
-  record: Record<string, unknown>
-): IterationDecision {
-  const continueDecision = record.continue;
-  const executeTools = record.executeTools;
-  const reason = record.reason;
-
-  if (typeof continueDecision !== "boolean") {
-    throw new Error("runner.execute.loopPolicy.continue must be a boolean");
-  }
-
-  if (typeof executeTools !== "boolean") {
-    throw new Error("runner.execute.loopPolicy.executeTools must be a boolean");
-  }
-
-  return {
-    continue: continueDecision,
-    executeTools,
-    ...(typeof reason === "string" ? { reason } : {}),
-  };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function countEventsByType(
-  events: readonly TuvrenStreamEvent[],
-  type: string
-): number {
-  let count = 0;
-
-  for (const event of events) {
-    if (event.type === type) {
-      count += 1;
-    }
-  }
-
-  return count;
-}
-
-function readTextDoneValues(events: readonly TuvrenStreamEvent[]): string[] {
-  const values: string[] = [];
-
-  for (const event of events) {
-    if (event.type === "text.done") {
-      values.push(event.text);
-    }
-  }
-
-  return values;
-}
-
-function readResultAssistantText(result: {
-  messages?: readonly unknown[];
-}): string | undefined {
-  return readAssistantText(result.messages ?? []);
-}
-
-function readAssistantText(messages: readonly unknown[]): string | undefined {
-  for (const message of messages) {
-    if (!isRecord(message) || message.role !== "assistant") {
-      continue;
-    }
-
-    const parts = message.parts;
-
-    if (!Array.isArray(parts)) {
-      continue;
-    }
-
-    for (const part of parts) {
-      if (
-        isRecord(part) &&
-        part.type === "text" &&
-        typeof part.text === "string"
-      ) {
-        return part.text;
-      }
-    }
-  }
-
-  return undefined;
-}
-
-function createMeasuredExtension(hooks: HookCounters): TuvrenExtension {
-  return {
-    afterIteration(context) {
-      const firstPart = context.response.parts[0];
-
-      if (
-        firstPart?.type === "text" &&
-        firstPart.text === "runner hook turn completed"
-      ) {
-        firstPart.text = "mutated by afterIteration";
-        hooks.terminalMutationAttempted = true;
-      }
-
-      hooks.phaseTrace.push("afterIteration");
-      hooks.afterIteration += 1;
-    },
-    async aroundModel(_context, next) {
-      hooks.phaseTrace.push("aroundModel.before");
-      hooks.aroundModelTrace.push("before");
-      hooks.aroundModel += 1;
-      const result = await next();
-      hooks.aroundModelTrace.push("after");
-      hooks.phaseTrace.push("aroundModel.after");
-      return result;
-    },
-    async aroundTool(_context, next) {
-      hooks.phaseTrace.push("aroundTool.before");
-      hooks.aroundToolTrace.push("aroundTool.before");
-      hooks.aroundTool += 1;
-      const result = await next();
-      hooks.aroundToolTrace.push("aroundTool.after");
-      hooks.phaseTrace.push("aroundTool.after");
-      return result;
-    },
-    beforeIteration() {
-      hooks.phaseTrace.push("beforeIteration");
-      hooks.beforeIteration += 1;
-    },
-    name: "measured-runner-hooks",
-  };
-}
+};
