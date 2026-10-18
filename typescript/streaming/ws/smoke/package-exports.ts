@@ -39,9 +39,9 @@ describe("stream-ws package exports", () => {
     const sent: string[] = [];
     const closes: { code: number; reason: string | undefined }[] = [];
 
-    async function* emptyOutbound() {
+    const emptyOutbound = async function* emptyOutbound() {
       // No frames; the session observes completion once it drains this.
-    }
+    };
 
     const session = createRemoteClientSession({
       binding: {

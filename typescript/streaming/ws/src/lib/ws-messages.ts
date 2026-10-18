@@ -162,6 +162,73 @@ const WS_RESUME_STATUSES: ReadonlySet<string> = new Set([
 
 const utf8Decoder = new TextDecoder();
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isOptionalString = (value: unknown): value is string | undefined =>
+  value === undefined || typeof value === "string";
+
+const asHandshakeRequest = (
+  candidate: Record<string, unknown>
+): WsHandshakeRequest | undefined => {
+  if (typeof candidate.protocolVersion !== "string") {
+    return undefined;
+  }
+
+  if (
+    !(
+      isOptionalString(candidate.sessionId) &&
+      isOptionalString(candidate.cursor) &&
+      isOptionalString(candidate.authToken)
+    )
+  ) {
+    return undefined;
+  }
+
+  const message: WsHandshakeRequest = {
+    kind: "handshake",
+    protocolVersion: candidate.protocolVersion,
+  };
+
+  if (candidate.sessionId !== undefined) {
+    message.sessionId = candidate.sessionId;
+  }
+  if (candidate.cursor !== undefined) {
+    message.cursor = candidate.cursor;
+  }
+  if (candidate.authToken !== undefined) {
+    message.authToken = candidate.authToken;
+  }
+
+  return message;
+};
+
+const asHandshakeAck = (
+  candidate: Record<string, unknown>
+): WsHandshakeAck | undefined => {
+  if (typeof candidate.protocolVersion !== "string") {
+    return undefined;
+  }
+
+  if (typeof candidate.sessionId !== "string") {
+    return undefined;
+  }
+
+  if (
+    typeof candidate.resumeStatus !== "string" ||
+    !WS_RESUME_STATUSES.has(candidate.resumeStatus)
+  ) {
+    return undefined;
+  }
+
+  return {
+    kind: "handshake_ack",
+    protocolVersion: candidate.protocolVersion,
+    resumeStatus: candidate.resumeStatus as WsResumeStatus,
+    sessionId: candidate.sessionId,
+  };
+};
+
 /**
  * Decodes and structurally parses one wire message: UTF-8-decodes a
  * `Uint8Array` payload, `JSON.parse`s the resulting text, and validates only
@@ -174,7 +241,7 @@ const utf8Decoder = new TextDecoder();
  *
  * @experimental
  */
-export function parseWsMessage(data: string | Uint8Array): ParsedWsMessage {
+export const parseWsMessage = (data: string | Uint8Array): ParsedWsMessage => {
   const text = typeof data === "string" ? data : utf8Decoder.decode(data);
 
   let parsed: unknown;
@@ -214,73 +281,4 @@ export function parseWsMessage(data: string | Uint8Array): ParsedWsMessage {
       return { kind: "unparseable", raw: parsed };
     }
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isOptionalString(value: unknown): value is string | undefined {
-  return value === undefined || typeof value === "string";
-}
-
-function asHandshakeRequest(
-  candidate: Record<string, unknown>
-): WsHandshakeRequest | undefined {
-  if (typeof candidate.protocolVersion !== "string") {
-    return undefined;
-  }
-
-  if (
-    !(
-      isOptionalString(candidate.sessionId) &&
-      isOptionalString(candidate.cursor) &&
-      isOptionalString(candidate.authToken)
-    )
-  ) {
-    return undefined;
-  }
-
-  const message: WsHandshakeRequest = {
-    kind: "handshake",
-    protocolVersion: candidate.protocolVersion,
-  };
-
-  if (candidate.sessionId !== undefined) {
-    message.sessionId = candidate.sessionId;
-  }
-  if (candidate.cursor !== undefined) {
-    message.cursor = candidate.cursor;
-  }
-  if (candidate.authToken !== undefined) {
-    message.authToken = candidate.authToken;
-  }
-
-  return message;
-}
-
-function asHandshakeAck(
-  candidate: Record<string, unknown>
-): WsHandshakeAck | undefined {
-  if (typeof candidate.protocolVersion !== "string") {
-    return undefined;
-  }
-
-  if (typeof candidate.sessionId !== "string") {
-    return undefined;
-  }
-
-  if (
-    typeof candidate.resumeStatus !== "string" ||
-    !WS_RESUME_STATUSES.has(candidate.resumeStatus)
-  ) {
-    return undefined;
-  }
-
-  return {
-    kind: "handshake_ack",
-    protocolVersion: candidate.protocolVersion,
-    resumeStatus: candidate.resumeStatus as WsResumeStatus,
-    sessionId: candidate.sessionId,
-  };
-}
+};

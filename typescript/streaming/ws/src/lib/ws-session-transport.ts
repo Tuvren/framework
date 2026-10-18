@@ -48,6 +48,12 @@ const WS_CLOSE_CODE_NORMAL = 1000;
 const WS_CLOSE_CODE_INTERNAL_ERROR = 1011;
 const SUPPORTED_PROTOCOL_VERSION = "1";
 
+const describeError = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+const isPositiveFiniteNumber = (value: number): boolean =>
+  Number.isFinite(value) && value > 0;
+
 /**
  * The runtime-agnostic push-model socket seam a host adapts from its real
  * socket (`Bun.serve` websockets, the browser `WebSocket` global, Node
@@ -218,9 +224,9 @@ export interface WsSessionTransport {
  *
  * @experimental
  */
-export function createWsSessionTransport(
+export const createWsSessionTransport = (
   options: WsSessionTransportOptions
-): WsSessionTransport {
+): WsSessionTransport => {
   if (options.heartbeat !== undefined) {
     if (!isPositiveFiniteNumber(options.heartbeat.intervalMs)) {
       throw new RangeError(
@@ -265,7 +271,7 @@ export function createWsSessionTransport(
   // several pings' timeouts in flight at once.
   let lastHeartbeatLivenessAt = 0;
 
-  function clearHeartbeatTimers(): void {
+  const clearHeartbeatTimers = (): void => {
     if (heartbeatIntervalTimer !== undefined) {
       clearInterval(heartbeatIntervalTimer);
       heartbeatIntervalTimer = undefined;
@@ -274,9 +280,9 @@ export function createWsSessionTransport(
       clearTimeout(timer);
     }
     heartbeatTimeoutTimers.clear();
-  }
+  };
 
-  function doClose(code: number, reason?: string): void {
+  const doClose = (code: number, reason?: string): void => {
     if (closed) {
       return;
     }
@@ -295,7 +301,7 @@ export function createWsSessionTransport(
     }
 
     options.sink.close(code, reason);
-  }
+  };
 
   /**
    * Records inbound liveness for the heartbeat's half-open detection: any
@@ -303,11 +309,11 @@ export function createWsSessionTransport(
    * the connection alive, since a peer actively sending frames is
    * demonstrably alive.
    */
-  function noteHeartbeatLiveness(): void {
+  const noteHeartbeatLiveness = (): void => {
     lastHeartbeatLivenessAt = Date.now();
-  }
+  };
 
-  function sendHeartbeatPing(): void {
+  const sendHeartbeatPing = (): void => {
     if (closed || options.heartbeat === undefined) {
       return;
     }
@@ -348,9 +354,9 @@ export function createWsSessionTransport(
     }, timeoutMs);
 
     heartbeatTimeoutTimers.add(timer);
-  }
+  };
 
-  function startHeartbeat(): void {
+  const startHeartbeat = (): void => {
     if (options.heartbeat === undefined || closed) {
       return;
     }
@@ -359,7 +365,7 @@ export function createWsSessionTransport(
       sendHeartbeatPing,
       options.heartbeat.intervalMs
     );
-  }
+  };
 
   /**
    * Enforces the configured outbound backpressure budget: returns `true`
@@ -369,7 +375,7 @@ export function createWsSessionTransport(
    * budget. Callers must not send the pending frame when this returns
    * `true` — ADR-0062 forbids a silent drop.
    */
-  function enforceBackpressure(): boolean {
+  const enforceBackpressure = (): boolean => {
     if (options.backpressure === undefined) {
       return false;
     }
@@ -396,9 +402,9 @@ export function createWsSessionTransport(
       "outbound socket buffer exceeded the configured backpressure budget"
     );
     return true;
-  }
+  };
 
-  function dispatchInboundSafely(value: unknown): void {
+  const dispatchInboundSafely = (value: unknown): void => {
     try {
       options.session.dispatchInbound(value);
     } catch (error) {
@@ -409,7 +415,7 @@ export function createWsSessionTransport(
           "session.dispatchInbound() threw for an inbound WebSocket message",
       });
     }
-  }
+  };
 
   /**
    * Sends one outbound envelope (a live frame, a replayed `event`, or a
@@ -418,10 +424,10 @@ export function createWsSessionTransport(
    * overflowed the budget and closed `4005` (backpressure already invoked
    * `doClose`).
    */
-  function sendFrameEnvelope(
+  const sendFrameEnvelope = (
     frame: SessionOutboundFrame,
     cursor: string | undefined
-  ): boolean {
+  ): boolean => {
     if (closed) {
       return false;
     }
@@ -438,7 +444,7 @@ export function createWsSessionTransport(
       )
     );
     return true;
-  }
+  };
 
   /**
    * Adapts this transport's `WsSocketSink` into the
@@ -456,10 +462,10 @@ export function createWsSessionTransport(
    * guaranteed, now produced by a session whose replay/redelivery burst is
    * not paced one frame at a time by this transport's own pump.
    */
-  function createSessionSinkAdapter(): {
+  const createSessionSinkAdapter = (): {
     release(): boolean;
     sink: RemoteClientSessionSink;
-  } {
+  } => {
     let released = false;
     const queued: {
       cursor: string | undefined;
@@ -491,7 +497,7 @@ export function createWsSessionTransport(
       },
       sink,
     };
-  }
+  };
 
   /**
    * Distinguishes `session.attach()`'s two documented throw cases by their
@@ -501,12 +507,9 @@ export function createWsSessionTransport(
    * already-attached code (including a non-Tuvren error) falls through to
    * the session-not-found close below.
    */
-  function isSinkAlreadyAttachedError(error: unknown): boolean {
-    return (
-      error instanceof TuvrenRuntimeError &&
-      error.code === REMOTE_SESSION_ALREADY_ATTACHED
-    );
-  }
+  const isSinkAlreadyAttachedError = (error: unknown): boolean =>
+    error instanceof TuvrenRuntimeError &&
+    error.code === REMOTE_SESSION_ALREADY_ATTACHED;
 
   /**
    * Attaches this transport's sink adapter to `options.session` for the
@@ -516,7 +519,7 @@ export function createWsSessionTransport(
    * branching within the lint-enforced cognitive-complexity budget — no
    * behavioral seam.
    */
-  function attachToSession(cursor: string | undefined): void {
+  const attachToSession = (cursor: string | undefined): void => {
     const adapter = createSessionSinkAdapter();
     let attachResult: RemoteClientSessionAttachResult;
 
@@ -602,9 +605,9 @@ export function createWsSessionTransport(
     // Heartbeat pings start only once the handshake has fully completed
     // (ack plus any replay/redelivery burst sent), per ADR-0062 §6.
     startHeartbeat();
-  }
+  };
 
-  async function processHandshake(parsed: ParsedWsMessage): Promise<void> {
+  const processHandshake = async (parsed: ParsedWsMessage): Promise<void> => {
     if (parsed.kind !== "handshake") {
       doClose(
         WS_CLOSE_CODE_HANDSHAKE_INVALID,
@@ -654,9 +657,9 @@ export function createWsSessionTransport(
     }
 
     attachToSession(message.cursor);
-  }
+  };
 
-  function processPostHandshake(parsed: ParsedWsMessage): void {
+  const processPostHandshake = (parsed: ParsedWsMessage): void => {
     // ANY inbound message counts as heartbeat liveness, not only pong — a
     // peer actively sending frames is demonstrably alive.
     noteHeartbeatLiveness();
@@ -701,7 +704,7 @@ export function createWsSessionTransport(
         return;
       }
     }
-  }
+  };
 
   return {
     close(code?: number, reason?: string): void {
@@ -755,12 +758,4 @@ export function createWsSessionTransport(
       // state until then — nothing is sent.
     },
   };
-}
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-function isPositiveFiniteNumber(value: number): boolean {
-  return Number.isFinite(value) && value > 0;
-}
+};
