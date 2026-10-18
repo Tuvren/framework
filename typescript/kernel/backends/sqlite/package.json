@@ -1,6 +1,6 @@
 {
   "name": "@tuvren/backend-sqlite",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Tuvren SQLite backend leaf: durable single-node session persistence, constructed by the host and passed into createTuvren.",
   "license": "Apache-2.0",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "@tuvren/mcp-client",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Tuvren MCP client leaf: createMcpToolSource for connecting Model Context Protocol servers as Tuvren tool sources.",
   "license": "Apache-2.0",
   "repository": {
