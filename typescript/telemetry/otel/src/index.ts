@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */
+
 /**
  * @packageDocumentation
  *
@@ -24,7 +26,8 @@
  * attributes on every span and event so they can be correlated across a
  * distributed trace.
  */
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public export surface.
+
+/* oxlint-enable jsdoc/check-tag-names */
 
 export type { CreateOtelTelemetrySinkOptions } from "./lib/otel-telemetry-sink.js";
 export { createOtelTelemetrySink } from "./lib/otel-telemetry-sink.js";
