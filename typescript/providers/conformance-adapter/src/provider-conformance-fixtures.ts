@@ -15,7 +15,7 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { assertTuvrenModelResponse } from "@tuvren/provider-api";
@@ -43,9 +43,8 @@ const MANIFEST_PATH_SEGMENTS = [
 const MANIFEST_SCHEMA_RELATIVE_PATH = "../schemas/suite-manifest.schema.json";
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null;
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const assertTuvrenPrompt: (
   value: unknown,
@@ -95,7 +94,7 @@ const assertSchemaValid = (
 ): void => {
   const validate = ajv.compile(schema);
 
-  if (validate(value)) {
+  if (validate(value) === true) {
     return;
   }
 
@@ -109,16 +108,16 @@ const resolveFixturePath = (
   pathSegments: readonly string[]
 ): string => {
   const currentFilePath = fileURLToPath(metaUrl);
-  let currentDirectory = dirname(currentFilePath);
+  let currentDirectory = path.dirname(currentFilePath);
 
   for (let index = 0; index < 8; index += 1) {
-    const candidatePath = join(currentDirectory, ...pathSegments);
+    const candidatePath = path.join(currentDirectory, ...pathSegments);
 
     if (existsSync(candidatePath)) {
       return candidatePath;
     }
 
-    currentDirectory = dirname(currentDirectory);
+    currentDirectory = path.dirname(currentDirectory);
   }
 
   throw new Error("unable to locate provider conformance fixture file");
@@ -130,11 +129,11 @@ const readConformanceManifest = (
   fixturePath: string;
   fixtureSchemaPath: string;
 } => {
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+  const manifest: unknown = JSON.parse(readFileSync(manifestPath, "utf-8"));
   const manifestSchema = readJsonSchema(
     JSON.parse(
       readFileSync(
-        join(dirname(manifestPath), MANIFEST_SCHEMA_RELATIVE_PATH),
+        path.join(path.dirname(manifestPath), MANIFEST_SCHEMA_RELATIVE_PATH),
         "utf-8"
       )
     )
@@ -151,7 +150,7 @@ const readConformanceManifest = (
     throw new Error("provider conformance manifest is invalid");
   }
 
-  const [fixture] = manifest.fixtures;
+  const fixture: unknown = manifest.fixtures[0];
 
   if (!isRecord(fixture) || typeof fixture.path !== "string") {
     throw new Error("provider conformance manifest fixture entry is invalid");
@@ -169,10 +168,18 @@ const loadProviderConformanceFixtures = (): ProviderConformanceFixtureSet => {
     MANIFEST_PATH_SEGMENTS
   );
   const manifest = readConformanceManifest(manifestPath);
-  const fixturePath = join(dirname(manifestPath), manifest.fixturePath);
-  const schemaPath = join(dirname(manifestPath), manifest.fixtureSchemaPath);
-  const fixture = JSON.parse(readFileSync(fixturePath, "utf-8"));
-  const schema = readJsonSchema(JSON.parse(readFileSync(schemaPath, "utf-8")));
+  const fixturePath = path.join(
+    path.dirname(manifestPath),
+    manifest.fixturePath
+  );
+  const schemaPath = path.join(
+    path.dirname(manifestPath),
+    manifest.fixtureSchemaPath
+  );
+  const fixture: unknown = JSON.parse(readFileSync(fixturePath, "utf-8"));
+  const schema = readJsonSchema(
+    JSON.parse(readFileSync(schemaPath, "utf-8")) as unknown
+  );
 
   assertSchemaValid(schema, fixture, "provider conformance fixture");
   assertProviderConformanceFixtureSet(fixture);

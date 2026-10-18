@@ -40,45 +40,49 @@ const createKernel = () => {
   return createRuntimeKernel({ backend });
 };
 
-const createMockNativeModel = (): LanguageModelV3 => {
-  return {
-    async doGenerate() {
-      await Promise.resolve();
-      return {
-        content: [
-          {
-            result: {
-              outputs: [{ text: "42", type: "text" }],
-            },
-            toolCallId: "ay007-native-call-1",
-            toolName: "code_execution",
-            type: "tool-result",
+const createMockNativeModel = (): LanguageModelV3 => ({
+  async doGenerate() {
+    await Promise.resolve();
+    return {
+      content: [
+        {
+          result: {
+            outputs: [{ text: "42", type: "text" }],
           },
-        ],
-        finishReason: { raw: "stop", unified: "stop" },
-        usage: {
-          inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 5, total: 5 },
-          outputTokens: { reasoning: 0, text: 2, total: 2 },
-          raw: {},
+          toolCallId: "ay007-native-call-1",
+          toolName: "code_execution",
+          type: "tool-result",
         },
-        warnings: [],
-      };
-    },
-    doStream() {
-      throw new Error("stream not used in generate mode");
-    },
-    modelId: "anthropic.claude-3-5-sonnet-20241022",
-    provider: "anthropic",
-    specificationVersion: "v3",
-    supportedUrls: {},
-  };
-};
+      ],
+      finishReason: { raw: "stop", unified: "stop" },
+      usage: {
+        inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 5, total: 5 },
+        outputTokens: { reasoning: 0, text: 2, total: 2 },
+        raw: {},
+      },
+      warnings: [],
+    };
+  },
+  doStream() {
+    throw new Error("stream not used in generate mode");
+  },
+  modelId: "anthropic.claude-3-5-sonnet-20241022",
+  provider: "anthropic",
+  specificationVersion: "v3",
+  supportedUrls: {},
+});
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const collectEventStream = async (
-  iterable: AsyncIterable<Record<string, unknown>>
+  iterable: AsyncIterable<unknown>
 ): Promise<Record<string, unknown>[]> => {
   const events: Record<string, unknown>[] = [];
   for await (const event of iterable) {
+    if (!isRecord(event)) {
+      throw new TypeError("provider event must be an object");
+    }
     events.push(event);
   }
   return events;
@@ -87,16 +91,12 @@ const collectEventStream = async (
 const findEventByType = (
   events: Record<string, unknown>[],
   type: string
-): Record<string, unknown> | undefined => {
-  return events.find((e) => e.type === type);
-};
+): Record<string, unknown> | undefined => events.find((e) => e.type === type);
 
 const filterEventsByType = (
   events: Record<string, unknown>[],
   type: string
-): Record<string, unknown>[] => {
-  return events.filter((e) => e.type === type);
-};
+): Record<string, unknown>[] => events.filter((e) => e.type === type);
 
 // ---------------------------------------------------------------------------
 // Operation: providers.provider-native.attribution
@@ -145,9 +145,7 @@ export const runProviderNativeAttribution = async (): Promise<
     threadId: thread.threadId,
   });
 
-  const events = await collectEventStream(
-    handle.events() as AsyncIterable<Record<string, unknown>>
-  );
+  const events = await collectEventStream(handle.events());
 
   const turnEndEvent = findEventByType(events, "turn.end");
   const toolResultEvents = filterEventsByType(events, "tool.result");
@@ -155,29 +153,19 @@ export const runProviderNativeAttribution = async (): Promise<
   const toolAuditEvents = filterEventsByType(events, "tool.audit");
 
   const providerToolResult = toolResultEvents.find(
-    (e) =>
-      typeof e.attribution === "object" &&
-      e.attribution !== null &&
-      (e.attribution as Record<string, unknown>).owner === "provider"
+    (e) => isRecord(e.attribution) && e.attribution.owner === "provider"
   );
 
-  const attribution =
-    typeof providerToolResult?.attribution === "object" &&
-    providerToolResult.attribution !== null
-      ? (providerToolResult.attribution as Record<string, unknown>)
-      : {};
+  const attribution = isRecord(providerToolResult?.attribution)
+    ? providerToolResult.attribution
+    : {};
 
-  const observation =
-    typeof attribution.observation === "object" &&
-    attribution.observation !== null
-      ? (attribution.observation as Record<string, unknown>)
-      : {};
+  const observation = isRecord(attribution.observation)
+    ? attribution.observation
+    : {};
 
   const providerToolStart = toolStartEvents.find(
-    (e) =>
-      typeof e.attribution === "object" &&
-      e.attribution !== null &&
-      (e.attribution as Record<string, unknown>).owner === "provider"
+    (e) => isRecord(e.attribution) && e.attribution.owner === "provider"
   );
 
   return {
@@ -197,11 +185,9 @@ export const runProviderNativeAttribution = async (): Promise<
       toolAuditEventCount: toolAuditEvents.length,
       toolResultEventCount: toolResultEvents.length,
       toolStartEventCount: toolStartEvents.length,
-      toolStartOwner:
-        typeof providerToolStart?.attribution === "object" &&
-        providerToolStart.attribution !== null
-          ? (providerToolStart.attribution as Record<string, unknown>).owner
-          : undefined,
+      toolStartOwner: isRecord(providerToolStart?.attribution)
+        ? providerToolStart.attribution.owner
+        : undefined,
       turnStatus: turnEndEvent?.status,
     },
     result: {
@@ -220,11 +206,9 @@ export const runProviderNativeAttribution = async (): Promise<
       toolAuditEventCount: toolAuditEvents.length,
       toolResultEventCount: toolResultEvents.length,
       toolStartEventCount: toolStartEvents.length,
-      toolStartOwner:
-        typeof providerToolStart?.attribution === "object" &&
-        providerToolStart.attribution !== null
-          ? (providerToolStart.attribution as Record<string, unknown>).owner
-          : undefined,
+      toolStartOwner: isRecord(providerToolStart?.attribution)
+        ? providerToolStart.attribution.owner
+        : undefined,
       turnStatus: turnEndEvent?.status,
     },
   };

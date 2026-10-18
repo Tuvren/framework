@@ -39,44 +39,48 @@ const createKernel = () => {
   return createRuntimeKernel({ backend });
 };
 
-const createMockMediatedModel = (): LanguageModelV3 => {
-  return {
-    async doGenerate() {
-      await Promise.resolve();
-      return {
-        content: [
-          {
-            dynamic: true,
-            result: { data: "fetched from MCP endpoint" },
-            toolCallId: "ay007-mcp-call-1",
-            toolName: "mcp_tool",
-            type: "tool-result",
-          },
-        ],
-        finishReason: { raw: "stop", unified: "stop" },
-        usage: {
-          inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 5, total: 5 },
-          outputTokens: { reasoning: 0, text: 2, total: 2 },
-          raw: {},
+const createMockMediatedModel = (): LanguageModelV3 => ({
+  async doGenerate() {
+    await Promise.resolve();
+    return {
+      content: [
+        {
+          dynamic: true,
+          result: { data: "fetched from MCP endpoint" },
+          toolCallId: "ay007-mcp-call-1",
+          toolName: "mcp_tool",
+          type: "tool-result",
         },
-        warnings: [],
-      };
-    },
-    doStream() {
-      throw new Error("stream not used in generate mode");
-    },
-    modelId: "gpt-4o",
-    provider: "openai",
-    specificationVersion: "v3",
-    supportedUrls: {},
-  };
-};
+      ],
+      finishReason: { raw: "stop", unified: "stop" },
+      usage: {
+        inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 5, total: 5 },
+        outputTokens: { reasoning: 0, text: 2, total: 2 },
+        raw: {},
+      },
+      warnings: [],
+    };
+  },
+  doStream() {
+    throw new Error("stream not used in generate mode");
+  },
+  modelId: "gpt-4o",
+  provider: "openai",
+  specificationVersion: "v3",
+  supportedUrls: {},
+});
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const collectEventStream = async (
-  iterable: AsyncIterable<Record<string, unknown>>
+  iterable: AsyncIterable<unknown>
 ): Promise<Record<string, unknown>[]> => {
   const events: Record<string, unknown>[] = [];
   for await (const event of iterable) {
+    if (!isRecord(event)) {
+      throw new TypeError("provider event must be an object");
+    }
     events.push(event);
   }
   return events;
@@ -85,16 +89,12 @@ const collectEventStream = async (
 const findEventByType = (
   events: Record<string, unknown>[],
   type: string
-): Record<string, unknown> | undefined => {
-  return events.find((e) => e.type === type);
-};
+): Record<string, unknown> | undefined => events.find((e) => e.type === type);
 
 const filterEventsByType = (
   events: Record<string, unknown>[],
   type: string
-): Record<string, unknown>[] => {
-  return events.filter((e) => e.type === type);
-};
+): Record<string, unknown>[] => events.filter((e) => e.type === type);
 
 // ---------------------------------------------------------------------------
 // Operation: providers.provider-mediated.attribution
@@ -149,9 +149,7 @@ export const runProviderMediatedAttribution = async (): Promise<
     threadId: thread.threadId,
   });
 
-  const events = await collectEventStream(
-    handle.events() as AsyncIterable<Record<string, unknown>>
-  );
+  const events = await collectEventStream(handle.events());
 
   const turnEndEvent = findEventByType(events, "turn.end");
   const toolResultEvents = filterEventsByType(events, "tool.result");
@@ -159,36 +157,24 @@ export const runProviderMediatedAttribution = async (): Promise<
   const toolAuditEvents = filterEventsByType(events, "tool.audit");
 
   const providerToolResult = toolResultEvents.find(
-    (e) =>
-      typeof e.attribution === "object" &&
-      e.attribution !== null &&
-      (e.attribution as Record<string, unknown>).owner === "provider"
+    (e) => isRecord(e.attribution) && e.attribution.owner === "provider"
   );
 
   const providerToolStart = toolStartEvents.find(
-    (e) =>
-      typeof e.attribution === "object" &&
-      e.attribution !== null &&
-      (e.attribution as Record<string, unknown>).owner === "provider"
+    (e) => isRecord(e.attribution) && e.attribution.owner === "provider"
   );
 
-  const attribution =
-    typeof providerToolResult?.attribution === "object" &&
-    providerToolResult.attribution !== null
-      ? (providerToolResult.attribution as Record<string, unknown>)
-      : {};
+  const attribution = isRecord(providerToolResult?.attribution)
+    ? providerToolResult.attribution
+    : {};
 
-  const observation =
-    typeof attribution.observation === "object" &&
-    attribution.observation !== null
-      ? (attribution.observation as Record<string, unknown>)
-      : {};
+  const observation = isRecord(attribution.observation)
+    ? attribution.observation
+    : {};
 
-  const toolStartOwner =
-    typeof providerToolStart?.attribution === "object" &&
-    providerToolStart.attribution !== null
-      ? (providerToolStart.attribution as Record<string, unknown>).owner
-      : undefined;
+  const toolStartOwner = isRecord(providerToolStart?.attribution)
+    ? providerToolStart.attribution.owner
+    : undefined;
 
   return {
     evidence: {
