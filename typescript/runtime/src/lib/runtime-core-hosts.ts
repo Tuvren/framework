@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-import { TuvrenLineageError } from "@tuvren/core";
+import { assertKernelRecord, TuvrenLineageError } from "@tuvren/core";
 import type { EpochMs, HashString, KernelRecord } from "@tuvren/core";
+import type { ClientEndpointBoundary } from "@tuvren/core/capabilities";
 import type {
   AgentConfig,
   ContextEngineeringHelpers,
   ContextManifest,
+  HandoffContextBuilder,
   HandoffContextPlan,
   HandoffSourceContext,
   RuntimeResolution,
@@ -39,13 +41,17 @@ import type { HelperBundle } from "./runtime-core-context.js";
 import type { RuntimeCoreEventsHost } from "./runtime-core-events.js";
 import type { RuntimeCoreExpiredRecoveryHost } from "./runtime-core-expired-recovery.js";
 import type { RuntimeCoreFinalizationHost } from "./runtime-core-finalization.js";
+import type { InterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
 import type {
   ActiveRunLease,
   RuntimeCoreLivenessHost,
 } from "./runtime-core-liveness.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type { RuntimeCorePersistenceHost } from "./runtime-core-persistence.js";
-import type { DurableRuntimeStatus } from "./runtime-core-recovery.js";
+import type {
+  DurableRuntimeStatus,
+  LoopOutcome,
+} from "./runtime-core-recovery.js";
 import type { RuntimeCoreRunnerSupportHost } from "./runtime-core-runner-support.js";
 import type { RuntimeCoreStartupHost } from "./runtime-core-startup.js";
 import type { RuntimeCoreStateCommitHost } from "./runtime-core-state-commit.js";
@@ -54,6 +60,7 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type {
   ExecutionSessionRequest,
   PauseContext,
+  ResumeContext,
 } from "./runtime-execution-types.js";
 
 // Each builder in this module adapts a flat dependency bag (callbacks bound by
@@ -64,31 +71,31 @@ import type {
 
 /** Dependencies for {@link buildRuntimeCoreContextOpsHost}. */
 interface ContextOpsHostDependencies {
-  advanceTurnAndBranchHead(
+  advanceTurnAndBranchHead: (
     handle: RuntimeExecutionHandle,
     turnNodeHash: HashString
-  ): Promise<void>;
-  cloneAgentConfigForRequest(config: AgentConfig): AgentConfig;
-  completeTrackedRun(
+  ) => Promise<void>;
+  cloneAgentConfigForRequest: (config: AgentConfig) => AgentConfig;
+  completeTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     status: RunCompletionStatus,
     event?: KernelRecord
-  ): Promise<{ turnNodeHash?: HashString }>;
-  createActiveToolRegistry(
+  ) => Promise<{ turnNodeHash?: HashString }>;
+  createActiveToolRegistry: (
     runtimeTools: ExecutionSessionRequest["tools"] | undefined,
     config: AgentConfig,
-    clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary
-  ): ToolRegistry;
-  createClientEndpointBoundaryFromConfig(
+    clientEndpointBoundary?: ClientEndpointBoundary
+  ) => ToolRegistry;
+  createClientEndpointBoundaryFromConfig: (
     config: AgentConfig
-  ): import("@tuvren/core/capabilities").ClientEndpointBoundary | undefined;
-  createContextEngineeringHelpers(
+  ) => ClientEndpointBoundary | undefined;
+  createContextEngineeringHelpers: (
     messageHashes: HashString[],
     messages: TuvrenMessage[]
-  ): HelperBundle;
-  createId(): string;
-  createTrackedRun(
+  ) => HelperBundle;
+  createId: () => string;
+  createTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     turnId: string,
@@ -100,53 +107,53 @@ interface ContextOpsHostDependencies {
       id: string;
       sideEffects: boolean;
     }[]
-  ): Promise<void>;
-  emitStateObservability(
+  ) => Promise<void>;
+  emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
     iterationCount: number,
     manifest?: ContextManifest
-  ): void;
+  ) => void;
   kernel: RuntimeKernel;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  materializeContextMessages(
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  materializeContextMessages: (
     hashes: HashString[],
     helpers: ContextEngineeringHelpers
-  ): TuvrenMessage[];
-  publishCustomEvent(
+  ) => TuvrenMessage[];
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  resolveAgentConfig?(name: string): AgentConfig | undefined;
-  resolveHandoffSourceContext(
+  ) => void;
+  resolveAgentConfig?: (name: string) => AgentConfig | undefined;
+  resolveHandoffSourceContext: (
     plan: HandoffContextPlan,
     headState: HeadState,
     loopState: LoopState,
     targetConfig: AgentConfig,
     helpers: ContextEngineeringHelpers
-  ): HandoffSourceContext;
-  stageRuntimeStatus(
+  ) => HandoffSourceContext;
+  stageRuntimeStatus: (
     runId: string,
     runtimeStatus: {
       activeAgent?: string;
       state: "running";
     },
     taskId: string
-  ): Promise<HashString>;
-  storeEventRecord(event: KernelRecord): Promise<HashString>;
-  storeKernelRecord(value: unknown, label: string): Promise<HashString>;
-  syncRunLeaseStateFromStepResult(
+  ) => Promise<HashString>;
+  storeEventRecord: (event: KernelRecord) => Promise<HashString>;
+  storeKernelRecord: (value: unknown, label: string) => Promise<HashString>;
+  syncRunLeaseStateFromStepResult: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stepResult: { lease?: { fencingToken: string; leaseExpiresAtMs: EpochMs } }
-  ): void;
+  ) => void;
 }
 
 /** Dependencies for {@link buildRuntimeCorePersistenceHost}. */
 interface PersistenceHostDependencies {
-  emitWarning(warning: {
+  emitWarning: (warning: {
     activeAgent: string;
     budgetBytes: number;
     code: "manifest_extension_state_budget_exceeded";
@@ -155,12 +162,12 @@ interface PersistenceHostDependencies {
     runId: string;
     threadId: string;
     turnId: string;
-  }): void;
-  encodeKernelRecord(value: unknown, label: string): Uint8Array;
-  getManifestExtensionStateWarningBudgetBytes(): false | number;
-  getOrCreateManifestExtensionStateWarningKeys(
+  }) => void;
+  encodeKernelRecord: (value: unknown, label: string) => Uint8Array;
+  getManifestExtensionStateWarningBudgetBytes: () => false | number;
+  getOrCreateManifestExtensionStateWarningKeys: (
     handle: RuntimeExecutionHandle
-  ): Set<string>;
+  ) => Set<string>;
   kernel: RuntimeKernel;
   payloadCodecBinding: PayloadCodecBinding;
 }
@@ -169,7 +176,7 @@ interface PersistenceHostDependencies {
 interface LivenessHostDependencies {
   activeRunLeaseControllers: WeakMap<RuntimeExecutionHandle, ActiveRunLease>;
   kernel: RuntimeKernel;
-  now(): EpochMs;
+  now: () => EpochMs;
   runLivenessOptions?:
     | {
         executionOwnerId: string;
@@ -177,16 +184,16 @@ interface LivenessHostDependencies {
         renewBeforeMs: number;
       }
     | undefined;
-  storeEventRecord(event: KernelRecord): Promise<HashString>;
+  storeEventRecord: (event: KernelRecord) => Promise<HashString>;
 }
 
 /** Dependencies for {@link buildRuntimeCoreExpiredRecoveryHost}. */
 interface ExpiredRecoveryHostDependencies {
   kernel: RuntimeKernel;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  now(): EpochMs;
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  now: () => EpochMs;
   payloadCodecBinding: PayloadCodecBinding;
-  publishEvent(
+  publishEvent: (
     handle: RuntimeExecutionHandle,
     event: {
       status: "completed" | "failed";
@@ -195,13 +202,13 @@ interface ExpiredRecoveryHostDependencies {
       type: "turn.end";
     },
     loopState: LoopState
-  ): void;
-  readRecoveredActiveAgentName(
+  ) => void;
+  readRecoveredActiveAgentName: (
     turnTreeHash: HashString
-  ): Promise<string | undefined>;
-  readRecoveredRuntimeStatus(
+  ) => Promise<string | undefined>;
+  readRecoveredRuntimeStatus: (
     turnTreeHash: HashString
-  ): Promise<DurableRuntimeStatus | undefined>;
+  ) => Promise<DurableRuntimeStatus | undefined>;
   runLivenessOptions?:
     | {
         executionOwnerId: string;
@@ -211,90 +218,90 @@ interface ExpiredRecoveryHostDependencies {
 
 /** Dependencies for {@link buildRuntimeCoreTurnProgressHost}. */
 interface TurnProgressHostDependencies {
-  advanceTurnAndBranchHead(
+  advanceTurnAndBranchHead: (
     handle: RuntimeExecutionHandle,
     turnNodeHash: HashString
-  ): Promise<void>;
-  completeTrackedRun(
+  ) => Promise<void>;
+  completeTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     status: RunCompletionStatus,
     event?: KernelRecord
-  ): Promise<{ turnNodeHash?: HashString }>;
-  emitStateObservability(
+  ) => Promise<{ turnNodeHash?: HashString }>;
+  emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
     iterationCount: number,
     manifest?: ContextManifest
-  ): void;
+  ) => void;
   kernel: RuntimeKernel;
-  storeEventRecord(event: KernelRecord): Promise<HashString>;
-  syncRunLeaseStateFromStepResult(
+  storeEventRecord: (event: KernelRecord) => Promise<HashString>;
+  syncRunLeaseStateFromStepResult: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stepResult: { lease?: { fencingToken: string; leaseExpiresAtMs: EpochMs } }
-  ): void;
+  ) => void;
 }
 
 /** Dependencies for {@link buildRuntimeCoreFinalizationHost}. */
 interface FinalizationHostDependencies {
-  createId(): string;
+  createId: () => string;
   defaultRunnerId: string;
-  finalizeRejectedPausedToolCancellation(
+  finalizeRejectedPausedToolCancellation: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     pauseContext: PauseContext
-  ): Promise<{
+  ) => Promise<{
     pauseContext?: PauseContext;
     partial?: boolean;
     resolution: RuntimeResolution;
   }>;
-  finalizeTurnStatus(
+  finalizeTurnStatus: (
     handle: RuntimeExecutionHandle,
     resolution: RuntimeResolution,
     partial: boolean,
     loopState: LoopState
-  ): Promise<void>;
+  ) => Promise<void>;
   kernel: RuntimeKernel;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  now(): EpochMs;
-  publishCustomEvent(
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  now: () => EpochMs;
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  publishEvent(
+  ) => void;
+  publishEvent: (
     handle: RuntimeExecutionHandle,
-    event: Record<string, unknown>,
+    event: Parameters<RuntimeExecutionHandle["publish"]>[0],
     loopState: LoopState
-  ): void;
-  publishProjectedError(
+  ) => void;
+  publishProjectedError: (
     handle: RuntimeExecutionHandle,
     error: unknown,
     fatal: boolean,
     loopState: LoopState
-  ): void;
-  resolveFailureActiveConfig(handle: RuntimeExecutionHandle): AgentConfig;
-  storeEventRecord(event: KernelRecord): Promise<HashString>;
+  ) => void;
+  resolveFailureActiveConfig: (handle: RuntimeExecutionHandle) => AgentConfig;
+  storeEventRecord: (event: KernelRecord) => Promise<HashString>;
 }
 
 /** Dependencies for {@link buildRuntimeCoreStartupHost}. */
 interface StartupHostDependencies {
-  applyTerminalAgentTransitionIfNeeded(
+  applyTerminalAgentTransitionIfNeeded: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     resolution: RuntimeResolution,
     loopState: LoopState,
     stableHeadTurnNodeHash?: HashString
-  ): Promise<boolean>;
-  checkpointResumeRunningStatus(
+  ) => Promise<boolean>;
+  checkpointResumeRunningStatus: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     iterationCount: number,
     emitObservability?: boolean
-  ): Promise<
+  ) => Promise<
     | {
         iterationCount: number;
         manifest?: ContextManifest;
@@ -302,93 +309,93 @@ interface StartupHostDependencies {
       }
     | undefined
   >;
-  commitPendingExtensionStateUpdates(
+  commitPendingExtensionStateUpdates: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     updates: ExtensionStateUpdate[],
     iterationCount: number
-  ): Promise<void>;
-  completeExecution(
+  ) => Promise<void>;
+  completeExecution: (
     handle: RuntimeExecutionHandle,
     resolution: RuntimeResolution,
     partial: boolean,
     loopState: LoopState,
     enteredIterationLoop: boolean
-  ): Promise<void>;
-  createActiveToolRegistry(
+  ) => Promise<void>;
+  createActiveToolRegistry: (
     runtimeTools: ExecutionSessionRequest["tools"] | undefined,
     config: LoopState["activeConfig"],
-    clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary
-  ): ToolRegistry;
-  createClientEndpointBoundaryFromConfig(
+    clientEndpointBoundary?: ClientEndpointBoundary
+  ) => ToolRegistry;
+  createClientEndpointBoundaryFromConfig: (
     config: LoopState["activeConfig"]
-  ): import("@tuvren/core/capabilities").ClientEndpointBoundary | undefined;
-  createId(): string;
+  ) => ClientEndpointBoundary | undefined;
+  createId: () => string;
   defaultRunnerId: string;
-  emitStateObservability(
+  emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
     iterationCount: number,
     manifest?: ContextManifest
-  ): void;
+  ) => void;
   kernel: RuntimeKernel;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  now(): EpochMs;
-  publishCustomEvent(
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  now: () => EpochMs;
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  publishEvent(
+  ) => void;
+  publishEvent: (
     handle: RuntimeExecutionHandle,
     event: Record<string, unknown>,
     loopState: LoopState
-  ): void;
-  publishPauseOutcome(
+  ) => void;
+  publishPauseOutcome: (
     handle: RuntimeExecutionHandle,
     pauseContext: PauseContext | undefined,
     loopState: LoopState
-  ): boolean;
-  publishProjectedError(
+  ) => boolean;
+  publishProjectedError: (
     handle: RuntimeExecutionHandle,
     error: unknown,
     fatal: boolean,
     loopState: LoopState
-  ): void;
-  resolveAgentConfig?(agentName: string): AgentConfig | undefined;
-  resolveParentTurnId(
+  ) => void;
+  resolveAgentConfig?: (agentName: string) => AgentConfig | undefined;
+  resolveParentTurnId: (
     threadId: string,
     branchId: string,
     explicitParentTurnId?: string | null
-  ): Promise<string | null>;
-  resumePausedToolExecution(
+  ) => Promise<string | null>;
+  resumePausedToolExecution: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
-    resumeContext: import("./runtime-execution-types.js").ResumeContext
-  ): Promise<import("./runtime-core-recovery.js").LoopOutcome>;
+    resumeContext: ResumeContext
+  ) => Promise<LoopOutcome>;
 }
 
 /** Dependencies for {@link buildRuntimeCoreStateCommitHost}. */
 interface StateCommitHostDependencies {
-  advanceTurnAndBranchHead(
+  advanceTurnAndBranchHead: (
     handle: RuntimeExecutionHandle,
     turnNodeHash: HashString
-  ): Promise<void>;
-  collectInitialExtensionStateUpdates(
+  ) => Promise<void>;
+  collectInitialExtensionStateUpdates: (
     extensions: LoopState["activeConfig"]["extensions"] | undefined,
     manifest: HeadState["manifest"]
-  ): ExtensionStateUpdate[];
-  completeTrackedRun(
+  ) => ExtensionStateUpdate[];
+  completeTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     status: RunCompletionStatus,
     event?: KernelRecord
-  ): Promise<{ turnNodeHash?: HashString }>;
-  createId(): string;
-  createTrackedRun(
+  ) => Promise<{ turnNodeHash?: HashString }>;
+  createId: () => string;
+  createTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     turnId: string,
@@ -400,99 +407,99 @@ interface StateCommitHostDependencies {
       id: string;
       sideEffects: boolean;
     }[]
-  ): Promise<void>;
-  emitStateObservability(
+  ) => Promise<void>;
+  emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
     iterationCount: number,
     manifest?: ContextManifest
-  ): void;
+  ) => void;
   kernel: RuntimeKernel;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  now(): EpochMs;
-  publishEvent(
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  now: () => EpochMs;
+  publishEvent: (
     handle: RuntimeExecutionHandle,
     event: Record<string, unknown>,
     loopState: LoopState
-  ): void;
-  stageManifest(
+  ) => void;
+  stageManifest: (
     runId: string,
     manifest: ContextManifest,
     warningContext?: { handle: RuntimeExecutionHandle; loopState: LoopState },
     taskId?: string
-  ): Promise<HashString>;
-  stageMessage(
+  ) => Promise<HashString>;
+  stageMessage: (
     runId: string,
     message: TuvrenMessage,
     taskId: string
-  ): Promise<HashString>;
-  stageRuntimeStatus(
+  ) => Promise<HashString>;
+  stageRuntimeStatus: (
     runId: string,
     runtimeStatus: {
       activeAgent?: string;
       state: "running";
     },
     taskId: string
-  ): Promise<HashString>;
-  stageTurnLineage(
+  ) => Promise<HashString>;
+  stageTurnLineage: (
     runId: string,
     turnId: string,
     taskId: string,
-    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
-  ): Promise<HashString>;
-  storeEventRecord(event: KernelRecord): Promise<HashString>;
-  syncRunLeaseStateFromStepResult(
+    interruptedToolBatch?: InterruptedToolBatchDescriptor
+  ) => Promise<HashString>;
+  storeEventRecord: (event: KernelRecord) => Promise<HashString>;
+  syncRunLeaseStateFromStepResult: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stepResult: { lease?: { fencingToken: string; leaseExpiresAtMs: EpochMs } }
-  ): void;
+  ) => void;
 }
 
 /** Dependencies for {@link buildRuntimeCoreRunnerSupportHost}. */
 interface RunnerSupportHostDependencies {
-  cloneAgentConfigForRequest(config: LoopState["activeConfig"]): AgentConfig;
-  createContextEngineeringHelpers(
+  cloneAgentConfigForRequest: (
+    config: LoopState["activeConfig"]
+  ) => AgentConfig;
+  createContextEngineeringHelpers: (
     messageHashes: HeadState["messageHashes"],
     messages: HeadState["messages"]
-  ): { helpers: ContextEngineeringHelpers };
-  createFrozenSnapshot<T>(value: T): T;
+  ) => { helpers: ContextEngineeringHelpers };
+  createFrozenSnapshot: <T>(value: T) => T;
   defaultMaxParallelToolCalls: number;
-  now(): EpochMs;
-  publishCustomEvent(
+  now: () => EpochMs;
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  publishEvent(
+  ) => void;
+  publishEvent: (
     handle: RuntimeExecutionHandle,
-    event: Record<string, unknown>,
+    event: Parameters<RuntimeExecutionHandle["publish"]>[0],
     loopState: LoopState
-  ): void;
-  publishProjectedError(
+  ) => void;
+  publishProjectedError: (
     handle: RuntimeExecutionHandle,
     error: unknown,
     fatal: boolean,
     loopState: LoopState
-  ): void;
-  resolveActiveMaxParallelToolCalls(
+  ) => void;
+  resolveActiveMaxParallelToolCalls: (
     loopState: LoopState,
     defaultMaxParallelToolCalls: number
-  ): number;
-  resolveDefaultHandoffContextBuilder(
-    mode: string
-  ): import("@tuvren/core/execution").HandoffContextBuilder;
-  resolveTargetAgent(targetAgent: string): AgentConfig;
-  stageManifest(
+  ) => number;
+  resolveDefaultHandoffContextBuilder: (mode: string) => HandoffContextBuilder;
+  resolveTargetAgent: (targetAgent: string) => AgentConfig;
+  stageManifest: (
     runId: string,
     manifest: ContextManifest,
     taskId: string
-  ): Promise<HashString>;
-  stageMessage(
+  ) => Promise<HashString>;
+  stageMessage: (
     runId: string,
     message: TuvrenMessage,
     taskId?: string
-  ): Promise<HashString>;
+  ) => Promise<HashString>;
 }
 
 /**
@@ -504,61 +511,63 @@ interface RunnerSupportHostDependencies {
  */
 export const buildRuntimeCoreContextOpsHost = (
   dependencies: ContextOpsHostDependencies
-): RuntimeCoreContextOpsHost => {
-  return {
-    advanceTurnAndBranchHead: (...args) =>
-      dependencies.advanceTurnAndBranchHead(...args),
-    beginRunStep: async (runId, stepId) => {
-      await dependencies.kernel.run.beginStep(runId, stepId);
-    },
-    completeRunStep: async (runId, stepId, eventHash, treeHash) =>
-      await dependencies.kernel.run.completeStep(
-        runId,
-        stepId,
-        eventHash,
-        undefined,
-        treeHash
-      ),
-    completeTrackedRun: (...args) => dependencies.completeTrackedRun(...args),
-    createActiveToolRegistry: (runtimeTools, config, clientEndpointBoundary) =>
-      dependencies.createActiveToolRegistry(
-        runtimeTools,
-        config,
-        clientEndpointBoundary
-      ),
-    createClientEndpointBoundaryFromConfig: (config) =>
-      dependencies.createClientEndpointBoundaryFromConfig(config),
-    createContextEngineeringHelpers: (messageHashes, messages) =>
-      dependencies.createContextEngineeringHelpers(messageHashes, messages),
-    createId: () => dependencies.createId(),
-    createTrackedRun: (...args) => dependencies.createTrackedRun(...args),
-    emitStateObservability: (...args) =>
-      Promise.resolve(dependencies.emitStateObservability(...args)),
-    loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
-    materializeContextMessages: (hashes, helpers) =>
-      dependencies.materializeContextMessages(hashes, helpers),
-    publishCustomEvent: (...args) => {
-      dependencies.publishCustomEvent(...args);
-    },
-    resolveAgentConfig: (name) => dependencies.resolveAgentConfig?.(name),
-    resolveHandoffSourceContext: (...args) =>
-      dependencies.resolveHandoffSourceContext(...args),
-    stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
-    storeEventRecord: (event) =>
-      dependencies.storeEventRecord(event as KernelRecord),
-    storeKernelRecord: (value, label) =>
-      dependencies.storeKernelRecord(value, label),
-    syncRunLeaseStateFromStepResult: (...args) => {
-      dependencies.syncRunLeaseStateFromStepResult(...args);
-    },
-    treeCreate: async (schemaId, changes, baseTurnTreeHash) =>
-      await dependencies.kernel.tree.create(
-        schemaId,
-        changes,
-        baseTurnTreeHash
-      ),
-  };
-};
+): RuntimeCoreContextOpsHost => ({
+  advanceTurnAndBranchHead: async (...args) => {
+    await dependencies.advanceTurnAndBranchHead(...args);
+  },
+  beginRunStep: async (runId, stepId) => {
+    await dependencies.kernel.run.beginStep(runId, stepId);
+  },
+  completeRunStep: async (runId, stepId, eventHash, treeHash) =>
+    await dependencies.kernel.run.completeStep(
+      runId,
+      stepId,
+      eventHash,
+      undefined,
+      treeHash
+    ),
+  completeTrackedRun: async (...args) =>
+    await dependencies.completeTrackedRun(...args),
+  createActiveToolRegistry: (runtimeTools, config, clientEndpointBoundary) =>
+    dependencies.createActiveToolRegistry(
+      runtimeTools,
+      config,
+      clientEndpointBoundary
+    ),
+  createClientEndpointBoundaryFromConfig: (config) =>
+    dependencies.createClientEndpointBoundaryFromConfig(config),
+  createContextEngineeringHelpers: (messageHashes, messages) =>
+    dependencies.createContextEngineeringHelpers(messageHashes, messages),
+  createId: () => dependencies.createId(),
+  createTrackedRun: async (...args) => {
+    await dependencies.createTrackedRun(...args);
+  },
+  emitStateObservability: (...args) => {
+    dependencies.emitStateObservability(...args);
+  },
+  loadHeadState: async (branchId) => await dependencies.loadHeadState(branchId),
+  materializeContextMessages: (hashes, helpers) =>
+    dependencies.materializeContextMessages(hashes, helpers),
+  publishCustomEvent: (...args) => {
+    dependencies.publishCustomEvent(...args);
+  },
+  resolveAgentConfig: (name) => dependencies.resolveAgentConfig?.(name),
+  resolveHandoffSourceContext: (...args) =>
+    dependencies.resolveHandoffSourceContext(...args),
+  stageRuntimeStatus: async (...args) =>
+    await dependencies.stageRuntimeStatus(...args),
+  storeEventRecord: async (event) => {
+    assertKernelRecord(event, "event");
+    return await dependencies.storeEventRecord(event);
+  },
+  storeKernelRecord: async (value, label) =>
+    await dependencies.storeKernelRecord(value, label),
+  syncRunLeaseStateFromStepResult: (...args) => {
+    dependencies.syncRunLeaseStateFromStepResult(...args);
+  },
+  treeCreate: async (schemaId, changes, baseTurnTreeHash) =>
+    await dependencies.kernel.tree.create(schemaId, changes, baseTurnTreeHash),
+});
 
 /**
  * Builds the host seam for the events module (`runtime-core-events.ts`): id
@@ -568,13 +577,11 @@ export const buildRuntimeCoreEventsHost = (
   createId: () => string,
   enableStateObservability: () => boolean,
   now: () => EpochMs
-): RuntimeCoreEventsHost => {
-  return {
-    createId,
-    enableStateObservability,
-    now,
-  };
-};
+): RuntimeCoreEventsHost => ({
+  createId,
+  enableStateObservability,
+  now,
+});
 
 /**
  * Builds the host seam for the persistence module
@@ -584,32 +591,30 @@ export const buildRuntimeCoreEventsHost = (
  */
 export const buildRuntimeCorePersistenceHost = (
   dependencies: PersistenceHostDependencies
-): RuntimeCorePersistenceHost => {
-  return {
-    emitWarning: (warning) => {
-      dependencies.emitWarning(warning);
-    },
-    encodeKernelRecord: (value, label) =>
-      dependencies.encodeKernelRecord(value, label),
-    encryptMessageRecord: (record) =>
-      encryptMessageRecord(dependencies.payloadCodecBinding, record),
-    getManifestExtensionStateWarningBudgetBytes: () =>
-      dependencies.getManifestExtensionStateWarningBudgetBytes(),
-    getOrCreateManifestExtensionStateWarningKeys: (handle) =>
-      dependencies.getOrCreateManifestExtensionStateWarningKeys(handle),
-    stageRecord: async (runId, record, taskId, objectType) =>
-      (
-        await dependencies.kernel.staging.stage(
-          runId,
-          record,
-          taskId,
-          objectType,
-          "completed"
-        )
-      ).objectHash,
-    storeRecord: async (record) => await dependencies.kernel.store.put(record),
-  };
-};
+): RuntimeCorePersistenceHost => ({
+  emitWarning: (warning) => {
+    dependencies.emitWarning(warning);
+  },
+  encodeKernelRecord: (value, label) =>
+    dependencies.encodeKernelRecord(value, label),
+  encryptMessageRecord: async (record) =>
+    await encryptMessageRecord(dependencies.payloadCodecBinding, record),
+  getManifestExtensionStateWarningBudgetBytes: () =>
+    dependencies.getManifestExtensionStateWarningBudgetBytes(),
+  getOrCreateManifestExtensionStateWarningKeys: (handle) =>
+    dependencies.getOrCreateManifestExtensionStateWarningKeys(handle),
+  stageRecord: async (runId, record, taskId, objectType) => {
+    const stageResult = await dependencies.kernel.staging.stage(
+      runId,
+      record,
+      taskId,
+      objectType,
+      "completed"
+    );
+    return stageResult.objectHash;
+  },
+  storeRecord: async (record) => await dependencies.kernel.store.put(record),
+});
 
 /**
  * Builds the host seam for the run-liveness module
@@ -619,50 +624,47 @@ export const buildRuntimeCorePersistenceHost = (
  */
 export const buildRuntimeCoreLivenessHost = (
   dependencies: LivenessHostDependencies
-): RuntimeCoreLivenessHost => {
-  return {
-    clearActiveLease: (handle) => {
-      dependencies.activeRunLeaseControllers.delete(handle);
-    },
-    completeKernelRun: async (runId, status, eventHash) =>
-      await dependencies.kernel.run.complete(runId, status, eventHash),
-    createKernelRun: async (
+): RuntimeCoreLivenessHost => ({
+  clearActiveLease: (handle) => {
+    dependencies.activeRunLeaseControllers.delete(handle);
+  },
+  completeKernelRun: async (runId, status, eventHash) =>
+    await dependencies.kernel.run.complete(runId, status, eventHash),
+  createKernelRun: async (
+    runId,
+    turnId,
+    branchId,
+    schemaId,
+    startTurnNodeHash,
+    steps
+  ) => {
+    await dependencies.kernel.run.create(
       runId,
       turnId,
       branchId,
       schemaId,
       startTurnNodeHash,
       steps
-    ) => {
-      await dependencies.kernel.run.create(
-        runId,
-        turnId,
-        branchId,
-        schemaId,
-        startTurnNodeHash,
-        steps
-      );
-    },
-    getActiveLease: (handle) =>
-      dependencies.activeRunLeaseControllers.get(handle),
-    getActiveRunId: (handle) => handle.getActiveRunId(),
-    getNow: () => dependencies.now(),
-    getRunLivenessOptions: () => dependencies.runLivenessOptions,
-    getRuntimeKernel: () => dependencies.kernel,
-    rememberActiveLease: (handle, lease) => {
-      dependencies.activeRunLeaseControllers.set(handle, lease);
-    },
-    rememberActiveRunId: (handle, runId) => {
-      handle.setActiveRunId(runId);
-    },
-    runPhase: (handle) => handle.status().phase,
-    setNoActiveRunId: (handle) => {
-      handle.takeActiveRunId();
-    },
-    storeEventRecord: async (event) =>
-      await dependencies.storeEventRecord(event),
-  };
-};
+    );
+  },
+  getActiveLease: (handle) =>
+    dependencies.activeRunLeaseControllers.get(handle),
+  getActiveRunId: (handle) => handle.getActiveRunId(),
+  getNow: () => dependencies.now(),
+  getRunLivenessOptions: () => dependencies.runLivenessOptions,
+  getRuntimeKernel: () => dependencies.kernel,
+  rememberActiveLease: (handle, lease) => {
+    dependencies.activeRunLeaseControllers.set(handle, lease);
+  },
+  rememberActiveRunId: (handle, runId) => {
+    handle.setActiveRunId(runId);
+  },
+  runPhase: (handle) => handle.status().phase,
+  setNoActiveRunId: (handle) => {
+    handle.takeActiveRunId();
+  },
+  storeEventRecord: async (event) => await dependencies.storeEventRecord(event),
+});
 
 /**
  * Builds the host seam for the expired-run recovery module
@@ -672,31 +674,29 @@ export const buildRuntimeCoreLivenessHost = (
  */
 export const buildRuntimeCoreExpiredRecoveryHost = (
   dependencies: ExpiredRecoveryHostDependencies
-): RuntimeCoreExpiredRecoveryHost => {
-  return {
-    getNow: () => dependencies.now(),
-    getPayloadCodecBinding: () => dependencies.payloadCodecBinding,
-    getRunLivenessOptions: () => dependencies.runLivenessOptions,
-    getRuntimeKernel: () => dependencies.kernel,
-    loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
-    publishTurnEnd: (handle, status, loopState) => {
-      dependencies.publishEvent(
-        handle,
-        {
-          status,
-          timestamp: dependencies.now(),
-          turnId: handle.turnId,
-          type: "turn.end",
-        },
-        loopState
-      );
-    },
-    readRecoveredActiveAgentName: (turnTreeHash) =>
-      dependencies.readRecoveredActiveAgentName(turnTreeHash),
-    readRecoveredRuntimeStatus: (turnTreeHash) =>
-      dependencies.readRecoveredRuntimeStatus(turnTreeHash),
-  };
-};
+): RuntimeCoreExpiredRecoveryHost => ({
+  getNow: () => dependencies.now(),
+  getPayloadCodecBinding: () => dependencies.payloadCodecBinding,
+  getRunLivenessOptions: () => dependencies.runLivenessOptions,
+  getRuntimeKernel: () => dependencies.kernel,
+  loadHeadState: async (branchId) => await dependencies.loadHeadState(branchId),
+  publishTurnEnd: (handle, status, loopState) => {
+    dependencies.publishEvent(
+      handle,
+      {
+        status,
+        timestamp: dependencies.now(),
+        turnId: handle.turnId,
+        type: "turn.end",
+      },
+      loopState
+    );
+  },
+  readRecoveredActiveAgentName: async (turnTreeHash) =>
+    await dependencies.readRecoveredActiveAgentName(turnTreeHash),
+  readRecoveredRuntimeStatus: async (turnTreeHash) =>
+    await dependencies.readRecoveredRuntimeStatus(turnTreeHash),
+});
 
 /**
  * Builds the host seam for the turn-progress module
@@ -706,39 +706,35 @@ export const buildRuntimeCoreExpiredRecoveryHost = (
  */
 export const buildRuntimeCoreTurnProgressHost = (
   dependencies: TurnProgressHostDependencies
-): RuntimeCoreTurnProgressHost => {
-  return {
-    advanceTurnAndBranchHead: (...args) =>
-      dependencies.advanceTurnAndBranchHead(...args),
-    branchSetHead: async (branchId, turnNodeHash) => {
-      await dependencies.kernel.branch.setHead(branchId, turnNodeHash);
-    },
-    completeKernelRun: async (runId, status, eventHash) =>
-      await dependencies.kernel.run.complete(runId, status, eventHash),
-    completeRunStep: async (runId, stepId, eventHash, treeHash) =>
-      await dependencies.kernel.run.completeStep(
-        runId,
-        stepId,
-        eventHash,
-        undefined,
-        treeHash
-      ),
-    completeTrackedRun: (...args) => dependencies.completeTrackedRun(...args),
-    emitStateObservability: (...args) =>
-      Promise.resolve(dependencies.emitStateObservability(...args)),
-    storeEventRecord: async (event) =>
-      await dependencies.storeEventRecord(event),
-    syncRunLeaseStateFromStepResult: (...args) => {
-      dependencies.syncRunLeaseStateFromStepResult(...args);
-    },
-    treeCreate: async (schemaId, changes, baseTurnTreeHash) =>
-      await dependencies.kernel.tree.create(
-        schemaId,
-        changes,
-        baseTurnTreeHash
-      ),
-  };
-};
+): RuntimeCoreTurnProgressHost => ({
+  advanceTurnAndBranchHead: async (...args) => {
+    await dependencies.advanceTurnAndBranchHead(...args);
+  },
+  branchSetHead: async (branchId, turnNodeHash) => {
+    await dependencies.kernel.branch.setHead(branchId, turnNodeHash);
+  },
+  completeKernelRun: async (runId, status, eventHash) =>
+    await dependencies.kernel.run.complete(runId, status, eventHash),
+  completeRunStep: async (runId, stepId, eventHash, treeHash) =>
+    await dependencies.kernel.run.completeStep(
+      runId,
+      stepId,
+      eventHash,
+      undefined,
+      treeHash
+    ),
+  completeTrackedRun: async (...args) =>
+    await dependencies.completeTrackedRun(...args),
+  emitStateObservability: (...args) => {
+    dependencies.emitStateObservability(...args);
+  },
+  storeEventRecord: async (event) => await dependencies.storeEventRecord(event),
+  syncRunLeaseStateFromStepResult: (...args) => {
+    dependencies.syncRunLeaseStateFromStepResult(...args);
+  },
+  treeCreate: async (schemaId, changes, baseTurnTreeHash) =>
+    await dependencies.kernel.tree.create(schemaId, changes, baseTurnTreeHash),
+});
 
 /**
  * Builds the host seam for the finalization module
@@ -748,34 +744,36 @@ export const buildRuntimeCoreTurnProgressHost = (
  */
 export const buildRuntimeCoreFinalizationHost = (
   dependencies: FinalizationHostDependencies
-): RuntimeCoreFinalizationHost => {
-  return {
-    createId: () => dependencies.createId(),
-    defaultRunnerId: () => dependencies.defaultRunnerId,
-    finalizeRejectedPausedToolCancellation: (...args) =>
-      dependencies.finalizeRejectedPausedToolCancellation(...args),
-    finalizeTurnStatus: (...args) => dependencies.finalizeTurnStatus(...args),
-    kernelTurnExists: async (turnId) =>
-      (await dependencies.kernel.turn.get(turnId)) !== null,
-    loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
-    now: () => dependencies.now(),
-    publishCustomEvent: (...args) => {
-      dependencies.publishCustomEvent(...args);
-    },
-    publishEvent: (handle, event, loopState) => {
-      dependencies.publishEvent(handle, event as never, loopState);
-    },
-    publishProjectedError: (handle, error, fatal, loopState) => {
-      dependencies.publishProjectedError(handle, error, fatal, loopState);
-    },
-    resolveFailureActiveConfig: (handle) =>
-      dependencies.resolveFailureActiveConfig(handle),
-    runComplete: async (runId, status, eventHash) =>
-      await dependencies.kernel.run.complete(runId, status, eventHash),
-    storeEventRecord: async (event) =>
-      await dependencies.storeEventRecord(event as KernelRecord),
-  };
-};
+): RuntimeCoreFinalizationHost => ({
+  createId: () => dependencies.createId(),
+  defaultRunnerId: () => dependencies.defaultRunnerId,
+  finalizeRejectedPausedToolCancellation: async (...args) =>
+    await dependencies.finalizeRejectedPausedToolCancellation(...args),
+  finalizeTurnStatus: async (...args) => {
+    await dependencies.finalizeTurnStatus(...args);
+  },
+  kernelTurnExists: async (turnId) =>
+    (await dependencies.kernel.turn.get(turnId)) !== null,
+  loadHeadState: async (branchId) => await dependencies.loadHeadState(branchId),
+  now: () => dependencies.now(),
+  publishCustomEvent: (...args) => {
+    dependencies.publishCustomEvent(...args);
+  },
+  publishEvent: (handle, event, loopState) => {
+    dependencies.publishEvent(handle, event, loopState);
+  },
+  publishProjectedError: (handle, error, fatal, loopState) => {
+    dependencies.publishProjectedError(handle, error, fatal, loopState);
+  },
+  resolveFailureActiveConfig: (handle) =>
+    dependencies.resolveFailureActiveConfig(handle),
+  runComplete: async (runId, status, eventHash) =>
+    await dependencies.kernel.run.complete(runId, status, eventHash),
+  storeEventRecord: async (event) => {
+    assertKernelRecord(event, "event");
+    return await dependencies.storeEventRecord(event);
+  },
+});
 
 /**
  * Builds the host seam for the startup module (`runtime-core-startup.ts`),
@@ -793,14 +791,22 @@ export const buildRuntimeCoreFinalizationHost = (
 export const buildRuntimeCoreStartupHost = (
   dependencies: StartupHostDependencies
 ): RuntimeCoreStartupHost => {
+  const resumedPauseContexts = new WeakMap<
+    RuntimeExecutionHandle,
+    PauseContext | undefined
+  >();
+
   return {
-    applyTerminalAgentTransitionIfNeeded: (...args) =>
-      dependencies.applyTerminalAgentTransitionIfNeeded(...args),
-    checkpointResumeRunningStatus: (...args) =>
-      dependencies.checkpointResumeRunningStatus(...args),
-    commitPendingExtensionStateUpdates: (...args) =>
-      dependencies.commitPendingExtensionStateUpdates(...args),
-    completeExecution: (...args) => dependencies.completeExecution(...args),
+    applyTerminalAgentTransitionIfNeeded: async (...args) =>
+      await dependencies.applyTerminalAgentTransitionIfNeeded(...args),
+    checkpointResumeRunningStatus: async (...args) =>
+      await dependencies.checkpointResumeRunningStatus(...args),
+    commitPendingExtensionStateUpdates: async (...args) => {
+      await dependencies.commitPendingExtensionStateUpdates(...args);
+    },
+    completeExecution: async (...args) => {
+      await dependencies.completeExecution(...args);
+    },
     createActiveToolRegistry: (runtimeTools, config, clientEndpointBoundary) =>
       dependencies.createActiveToolRegistry(
         runtimeTools,
@@ -811,9 +817,11 @@ export const buildRuntimeCoreStartupHost = (
       dependencies.createClientEndpointBoundaryFromConfig(config),
     createId: () => dependencies.createId(),
     defaultRunnerId: () => dependencies.defaultRunnerId,
-    emitStateObservability: (...args) =>
-      Promise.resolve(dependencies.emitStateObservability(...args)),
-    loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
+    emitStateObservability: (...args) => {
+      dependencies.emitStateObservability(...args);
+    },
+    loadHeadState: async (branchId) =>
+      await dependencies.loadHeadState(branchId),
     now: () => dependencies.now(),
     publishCustomEvent: (...args) => {
       dependencies.publishCustomEvent(...args);
@@ -821,12 +829,20 @@ export const buildRuntimeCoreStartupHost = (
     publishEvent: (...args) => {
       dependencies.publishEvent(...args);
     },
-    publishPauseOutcome: (handle, pauseContext, loopState) =>
-      dependencies.publishPauseOutcome(
+    publishPauseOutcome: (handle, pauseContext, loopState) => {
+      const resumedPauseContext = resumedPauseContexts.get(handle);
+      if (pauseContext !== resumedPauseContext) {
+        throw new TypeError(
+          "pause outcome context must match the resumed tool execution result"
+        );
+      }
+      resumedPauseContexts.delete(handle);
+      return dependencies.publishPauseOutcome(
         handle,
-        pauseContext as PauseContext | undefined,
+        resumedPauseContext,
         loopState
-      ),
+      );
+    },
     publishProjectedError: (handle, error, fatal, loopState) => {
       dependencies.publishProjectedError(handle, error, fatal, loopState);
     },
@@ -875,9 +891,16 @@ export const buildRuntimeCoreStartupHost = (
 
       return branch.headTurnNodeHash;
     },
-    resolveParentTurnId: (...args) => dependencies.resolveParentTurnId(...args),
-    resumePausedToolExecution: (...args) =>
-      dependencies.resumePausedToolExecution(...args),
+    resolveParentTurnId: async (...args) =>
+      await dependencies.resolveParentTurnId(...args),
+    resumePausedToolExecution: async (handle, ...args) => {
+      const outcome = await dependencies.resumePausedToolExecution(
+        handle,
+        ...args
+      );
+      resumedPauseContexts.set(handle, outcome.pauseContext);
+      return outcome;
+    },
     turnCreate: async (
       turnId,
       threadId,
@@ -904,38 +927,45 @@ export const buildRuntimeCoreStartupHost = (
  */
 export const buildRuntimeCoreStateCommitHost = (
   dependencies: StateCommitHostDependencies
-): RuntimeCoreStateCommitHost => {
-  return {
-    advanceTurnAndBranchHead: (...args) =>
-      dependencies.advanceTurnAndBranchHead(...args),
-    collectInitialExtensionStateUpdates: (extensions, manifest) =>
-      dependencies.collectInitialExtensionStateUpdates(extensions, manifest),
-    completeTrackedRun: (...args) => dependencies.completeTrackedRun(...args),
-    createId: () => dependencies.createId(),
-    createTrackedRun: (...args) => dependencies.createTrackedRun(...args),
-    emitStateObservability: (...args) =>
-      Promise.resolve(dependencies.emitStateObservability(...args)),
-    kernelRunBeginStep: async (runId, stepId) => {
-      await dependencies.kernel.run.beginStep(runId, stepId);
-    },
-    kernelRunCompleteStep: async (runId, stepId, eventHash) =>
-      await dependencies.kernel.run.completeStep(runId, stepId, eventHash),
-    loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
-    now: () => dependencies.now(),
-    publishEvent: (...args) => {
-      dependencies.publishEvent(...args);
-    },
-    stageManifest: (...args) => dependencies.stageManifest(...args),
-    stageMessage: (...args) => dependencies.stageMessage(...args),
-    stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
-    stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
-    storeEventRecord: async (event) =>
-      await dependencies.storeEventRecord(event as KernelRecord),
-    syncRunLeaseStateFromStepResult: (...args) => {
-      dependencies.syncRunLeaseStateFromStepResult(...args);
-    },
-  };
-};
+): RuntimeCoreStateCommitHost => ({
+  advanceTurnAndBranchHead: async (...args) => {
+    await dependencies.advanceTurnAndBranchHead(...args);
+  },
+  collectInitialExtensionStateUpdates: (extensions, manifest) =>
+    dependencies.collectInitialExtensionStateUpdates(extensions, manifest),
+  completeTrackedRun: async (...args) =>
+    await dependencies.completeTrackedRun(...args),
+  createId: () => dependencies.createId(),
+  createTrackedRun: async (...args) => {
+    await dependencies.createTrackedRun(...args);
+  },
+  emitStateObservability: (...args) => {
+    dependencies.emitStateObservability(...args);
+  },
+  kernelRunBeginStep: async (runId, stepId) => {
+    await dependencies.kernel.run.beginStep(runId, stepId);
+  },
+  kernelRunCompleteStep: async (runId, stepId, eventHash) =>
+    await dependencies.kernel.run.completeStep(runId, stepId, eventHash),
+  loadHeadState: async (branchId) => await dependencies.loadHeadState(branchId),
+  now: () => dependencies.now(),
+  publishEvent: (...args) => {
+    dependencies.publishEvent(...args);
+  },
+  stageManifest: async (...args) => await dependencies.stageManifest(...args),
+  stageMessage: async (...args) => await dependencies.stageMessage(...args),
+  stageRuntimeStatus: async (...args) =>
+    await dependencies.stageRuntimeStatus(...args),
+  stageTurnLineage: async (...args) =>
+    await dependencies.stageTurnLineage(...args),
+  storeEventRecord: async (event) => {
+    assertKernelRecord(event, "event");
+    return await dependencies.storeEventRecord(event);
+  },
+  syncRunLeaseStateFromStepResult: (...args) => {
+    dependencies.syncRunLeaseStateFromStepResult(...args);
+  },
+});
 
 /**
  * Builds the host seam for the runner-support module
@@ -946,48 +976,43 @@ export const buildRuntimeCoreStateCommitHost = (
  */
 export const buildRuntimeCoreRunnerSupportHost = (
   dependencies: RunnerSupportHostDependencies
-): RuntimeCoreRunnerSupportHost => {
-  return {
-    cloneAgentConfigForRequest: (config) =>
-      dependencies.cloneAgentConfigForRequest(config),
-    createContextEngineeringHelpers: (messageHashes, messages) =>
-      dependencies.createContextEngineeringHelpers(messageHashes, messages),
-    createFrozenSnapshot: <T>(value: T) =>
-      dependencies.createFrozenSnapshot(value),
-    defaultMaxParallelToolCalls: () => dependencies.defaultMaxParallelToolCalls,
-    now: () => dependencies.now(),
-    publishCustomEvent: (...args) => {
-      dependencies.publishCustomEvent(...args);
-    },
-    publishEvent: (handle, event, loopState) => {
-      dependencies.publishEvent(handle, event as never, loopState);
-    },
-    publishProjectedError: (handle, error, fatal, loopState) => {
-      dependencies.publishProjectedError(handle, error, fatal, loopState);
-    },
-    resolveActiveMaxParallelToolCalls: (
+): RuntimeCoreRunnerSupportHost => ({
+  cloneAgentConfigForRequest: (config) =>
+    dependencies.cloneAgentConfigForRequest(config),
+  createContextEngineeringHelpers: (messageHashes, messages) =>
+    dependencies.createContextEngineeringHelpers(messageHashes, messages),
+  createFrozenSnapshot: <T>(value: T) =>
+    dependencies.createFrozenSnapshot(value),
+  defaultMaxParallelToolCalls: () => dependencies.defaultMaxParallelToolCalls,
+  now: () => dependencies.now(),
+  publishCustomEvent: (...args) => {
+    dependencies.publishCustomEvent(...args);
+  },
+  publishEvent: (handle, event, loopState) => {
+    dependencies.publishEvent(handle, event, loopState);
+  },
+  publishProjectedError: (handle, error, fatal, loopState) => {
+    dependencies.publishProjectedError(handle, error, fatal, loopState);
+  },
+  resolveActiveMaxParallelToolCalls: (loopState, defaultMaxParallelToolCalls) =>
+    dependencies.resolveActiveMaxParallelToolCalls(
       loopState,
       defaultMaxParallelToolCalls
-    ) =>
-      dependencies.resolveActiveMaxParallelToolCalls(
-        loopState,
-        defaultMaxParallelToolCalls
-      ),
-    resolveDefaultHandoffContextBuilder: (mode) =>
-      dependencies.resolveDefaultHandoffContextBuilder(mode),
-    resolveTargetAgent: (targetAgent) =>
-      dependencies.resolveTargetAgent(targetAgent),
-    stageToolResultManifest: async (runId, manifest, taskId) => {
-      await dependencies.stageManifest(runId, manifest, taskId);
-    },
-    stageToolResultMessage: async (runId, result, orderIndex) =>
-      await dependencies.stageMessage(
-        runId,
-        {
-          parts: [result],
-          role: "tool",
-        },
-        `tool_result_${orderIndex}_${result.callId}`
-      ),
-  };
-};
+    ),
+  resolveDefaultHandoffContextBuilder: (mode) =>
+    dependencies.resolveDefaultHandoffContextBuilder(mode),
+  resolveTargetAgent: (targetAgent) =>
+    dependencies.resolveTargetAgent(targetAgent),
+  stageToolResultManifest: async (runId, manifest, taskId) => {
+    await dependencies.stageManifest(runId, manifest, taskId);
+  },
+  stageToolResultMessage: async (runId, result, orderIndex) =>
+    await dependencies.stageMessage(
+      runId,
+      {
+        parts: [result],
+        role: "tool",
+      },
+      `tool_result_${orderIndex}_${result.callId}`
+    ),
+});
