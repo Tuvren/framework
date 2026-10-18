@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 /**
  * KRT-BA002: Observation/Event Taxonomy Depth
  *
@@ -43,6 +41,7 @@ import type {
   ClientReportedResult,
 } from "@tuvren/core/capabilities";
 import type {
+  TuvrenStreamEvent,
   ToolAuditEvent,
   ToolResultEvent,
   ToolStartEvent,
@@ -64,6 +63,7 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   textSignal,
 } from "./runtime-core-test-helpers.ts";
 
@@ -89,25 +89,16 @@ const createTelemetryCapture = (): {
   };
 };
 
-const extractEventsByType = (events: unknown[]) => {
-  const starts: ToolStartEvent[] = [];
-  const results: ToolResultEvent[] = [];
-  const audits: ToolAuditEvent[] = [];
-  for (const ev of events) {
-    if (typeof ev !== "object" || ev === null) {
-      continue;
-    }
-    const e = ev as Record<string, unknown>;
-    if (e.type === "tool.start") {
-      starts.push(e as unknown as ToolStartEvent);
-    }
-    if (e.type === "tool.result") {
-      results.push(e as unknown as ToolResultEvent);
-    }
-    if (e.type === "tool.audit") {
-      audits.push(e as unknown as ToolAuditEvent);
-    }
-  }
+const extractEventsByType = (events: TuvrenStreamEvent[]) => {
+  const starts = events.filter(
+    (event): event is ToolStartEvent => event.type === "tool.start"
+  );
+  const results = events.filter(
+    (event): event is ToolResultEvent => event.type === "tool.result"
+  );
+  const audits = events.filter(
+    (event): event is ToolAuditEvent => event.type === "tool.audit"
+  );
   return { audits, results, starts };
 };
 
@@ -115,130 +106,118 @@ const buildProviderToolMessage = (
   callId: string,
   name: string,
   executionClass: "provider-native" | "provider-mediated"
-): TuvrenMessage => {
-  return {
-    parts: [
-      {
-        callId,
-        name,
-        output: { value: 1 },
-        providerMetadata: {
-          executionClass,
-          owner: "provider",
-          providerCallId: callId,
-        },
-        type: "tool_result",
+): TuvrenMessage => ({
+  parts: [
+    {
+      callId,
+      name,
+      output: { value: 1 },
+      providerMetadata: {
+        executionClass,
+        owner: "provider",
+        providerCallId: callId,
       },
-    ],
-    role: "tool",
-  };
-};
+      type: "tool_result",
+    },
+  ],
+  role: "tool",
+});
 
 const makeProviderRunner = (
   executionClass: "provider-native" | "provider-mediated"
-): RuntimeRunner => {
-  return {
-    async execute(context) {
-      if (!context.messages.some((m) => m.role === "tool")) {
-        return {
-          messages: [
-            buildProviderToolMessage(
-              `call-${executionClass}`,
-              `prov_${executionClass.replace("-", "_")}`,
-              executionClass
-            ),
-          ],
-          resolution: { type: "continue_iteration" },
-        };
-      }
+): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    if (!context.messages.some((m) => m.role === "tool")) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
+        messages: [
+          buildProviderToolMessage(
+            `call-${executionClass}`,
+            `prov_${executionClass.replace("-", "_")}`,
+            executionClass
+          ),
+        ],
+        resolution: { type: "continue_iteration" },
       };
-    },
-    id: `ba002-runner-${executionClass}`,
-    async resume() {
-      throw new Error("no");
-    },
-  };
-};
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    };
+  }),
+  id: `ba002-runner-${executionClass}`,
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("no");
+  }),
+});
 
-const makeServerRunner = (toolName: string): RuntimeRunner => {
-  return {
-    async execute(context) {
-      if (!context.messages.some((m) => m.role === "tool")) {
-        return {
-          messages: [
-            assistantToolCalls([
-              { callId: "ba002-call-server", input: {}, name: toolName },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" },
-          toolExecutionMode: "parallel",
-        };
-      }
+const makeServerRunner = (toolName: string): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    if (!context.messages.some((m) => m.role === "tool")) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
+        messages: [
+          assistantToolCalls([
+            { callId: "ba002-call-server", input: {}, name: toolName },
+          ]),
+        ],
+        resolution: { type: "continue_iteration" },
+        toolExecutionMode: "parallel",
       };
-    },
-    id: "ba002-server-runner",
-    async resume() {
-      throw new Error("no");
-    },
-  };
-};
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    };
+  }),
+  id: "ba002-server-runner",
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("no");
+  }),
+});
 
-const makeClientRunner = (capabilityId: string): RuntimeRunner => {
-  return {
-    async execute(context) {
-      if (!context.messages.some((m) => m.role === "tool")) {
-        return {
-          messages: [
-            assistantToolCalls([
-              { callId: "ba002-call-client", input: {}, name: capabilityId },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" },
-          toolExecutionMode: "parallel",
-        };
-      }
+const makeClientRunner = (capabilityId: string): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    if (!context.messages.some((m) => m.role === "tool")) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
+        messages: [
+          assistantToolCalls([
+            { callId: "ba002-call-client", input: {}, name: capabilityId },
+          ]),
+        ],
+        resolution: { type: "continue_iteration" },
+        toolExecutionMode: "parallel",
       };
-    },
-    id: "ba002-client-runner",
-    async resume() {
-      throw new Error("no");
-    },
-  };
-};
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    };
+  }),
+  id: "ba002-client-runner",
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("no");
+  }),
+});
 
 const makeOkEndpoint = (
   endpointId: string,
   capabilityId: string
-): AttachedClientEndpoint => {
-  return {
-    advertisedCapabilities: [
-      {
-        capabilityId,
-        description: "ba002 client cap",
-        inputSchema: { type: "object" },
-      },
-    ],
-    async dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      return {
-        callId: envelope.callId,
-        content: "ok",
-        leaseToken: envelope.leaseToken,
-      };
+): AttachedClientEndpoint => ({
+  advertisedCapabilities: [
+    {
+      capabilityId,
+      description: "ba002 client cap",
+      inputSchema: { type: "object" },
     },
-    endpointId,
-  };
-};
+  ],
+  dispatch: fromSynchronousVariadicAwaited(
+    (envelope: ClientInvocationEnvelope): ClientReportedResult => ({
+      callId: envelope.callId,
+      content: "ok",
+      leaseToken: envelope.leaseToken,
+    })
+  ),
+  endpointId,
+});
 
 // ---------------------------------------------------------------------------
 // BA002 criterion 3: telemetry consistency for tuvren-server
@@ -263,7 +242,7 @@ describe("BA002 telemetry taxonomy — tuvren-server", () => {
         tools: [
           {
             description: "server tool",
-            execute: async () => ({ ok: true }),
+            execute: () => ({ ok: true }),
             inputSchema: { type: "object" },
             name: toolName,
           },
@@ -305,7 +284,7 @@ describe("BA002 telemetry taxonomy — tuvren-server", () => {
         tools: [
           {
             description: "audit tool",
-            execute: async () => ({ ok: true }),
+            execute: () => ({ ok: true }),
             inputSchema: { type: "object" },
             name: toolName,
           },
@@ -468,41 +447,42 @@ describe("BA002 telemetry taxonomy — tuvren-client", () => {
 
 describe("BA002 cross-class observation limits", () => {
   test("provider-owned classes expose no resume/cancel/retry/audit affordances", async () => {
-    for (const executionClass of [
-      "provider-native",
-      "provider-mediated",
-    ] as const) {
-      const harness = createFakeKernelHarness();
-      const runtime = createTuvrenRuntime({
-        defaultRunnerId: `ba002-runner-${executionClass}`,
-        kernel: harness.kernel,
-        runnerRegistry: createRunnerRegistry([
-          makeProviderRunner(executionClass),
-        ]),
-      });
-      const thread = await runtime.createThread({});
-      const handle = runtime.executeTurn({
-        branchId: thread.branchId,
-        config: { name: "agent" },
-        signal: textSignal("go"),
-        threadId: thread.threadId,
-      });
-      const events = await collectEvents(handle.events());
-      const { starts, audits } = extractEventsByType(events);
+    await Promise.all(
+      (["provider-native", "provider-mediated"] as const).map(
+        async (executionClass) => {
+          const harness = createFakeKernelHarness();
+          const runtime = createTuvrenRuntime({
+            defaultRunnerId: `ba002-runner-${executionClass}`,
+            kernel: harness.kernel,
+            runnerRegistry: createRunnerRegistry([
+              makeProviderRunner(executionClass),
+            ]),
+          });
+          const thread = await runtime.createThread({});
+          const handle = runtime.executeTurn({
+            branchId: thread.branchId,
+            config: { name: "agent" },
+            signal: textSignal("go"),
+            threadId: thread.threadId,
+          });
+          const events = await collectEvents(handle.events());
+          const { starts, audits } = extractEventsByType(events);
 
-      // owner must be "provider" for both classes
-      expect(starts[0].attribution?.owner).toBe("provider");
+          // owner must be "provider" for both classes
+          expect(starts[0].attribution?.owner).toBe("provider");
 
-      // All observation affordances must be false for provider-owned classes
-      const obs = starts[0].attribution?.observation;
-      expect(obs?.canAudit).toBe(false);
-      expect(obs?.canCancel).toBe(false);
-      expect(obs?.canResume).toBe(false);
-      expect(obs?.canRetry).toBe(false);
+          // All observation affordances must be false for provider-owned classes
+          const obs = starts[0].attribution?.observation;
+          expect(obs?.canAudit).toBe(false);
+          expect(obs?.canCancel).toBe(false);
+          expect(obs?.canResume).toBe(false);
+          expect(obs?.canRetry).toBe(false);
 
-      // No tool.audit events for provider-owned classes
-      expect(audits).toHaveLength(0);
-    }
+          // No tool.audit events for provider-owned classes
+          expect(audits).toHaveLength(0);
+        }
+      )
+    );
   });
 
   test("tuvren-server exposes full lifecycle affordances", async () => {
@@ -521,7 +501,7 @@ describe("BA002 cross-class observation limits", () => {
         tools: [
           {
             description: "obs tool",
-            execute: async () => ({ ok: true }),
+            execute: () => ({ ok: true }),
             inputSchema: { type: "object" },
             name: toolName,
           },

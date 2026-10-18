@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 /**
  * KRT-AX003: Tenant isolation and rate-limiting for server capabilities.
  *
@@ -42,7 +40,9 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   textSignal,
+  toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
 
 // ---------------------------------------------------------------------------
@@ -52,47 +52,47 @@ import {
 const makeMultiCallRunner = (
   toolName: string,
   callCount: number
-): RuntimeRunner => {
-  return {
-    async execute(context) {
-      const toolMessages = context.messages.filter((m) => m.role === "tool");
+): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    const toolMessages = context.messages.filter((m) => m.role === "tool");
 
-      if (toolMessages.length < callCount) {
-        return {
-          messages: [
-            assistantToolCalls([
-              {
-                callId: `call-${toolMessages.length}`,
-                input: {},
-                name: toolName,
-              },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" },
-          toolExecutionMode: "parallel",
-        };
-      }
+    if (toolMessages.length < callCount) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
+        messages: [
+          assistantToolCalls([
+            {
+              callId: `call-${toolMessages.length}`,
+              input: {},
+              name: toolName,
+            },
+          ]),
+        ],
+        resolution: { type: "continue_iteration" },
+        toolExecutionMode: "parallel",
       };
-    },
-    id: "ax003-runner",
-    async resume() {
-      throw new Error("resume not expected");
-    },
-  };
-};
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    };
+  }),
+  id: "ax003-runner",
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("resume not expected");
+  }),
+});
 
-const findToolResults = (events: unknown[]) => {
-  return events.filter(
-    (e) =>
-      typeof e === "object" &&
-      e !== null &&
-      "type" in e &&
-      (e as Record<string, unknown>).type === "tool.result"
-  ) as Record<string, unknown>[];
-};
+const findToolResults = (events: unknown[]) =>
+  events
+    .filter(
+      (e) =>
+        typeof e === "object" &&
+        e !== null &&
+        "type" in e &&
+        e.type === "tool.result"
+    )
+    .map(toOptionalRecord)
+    .filter((event) => event !== undefined);
 
 const runTurnWithRateLimit = async (
   toolName: string,
@@ -120,7 +120,7 @@ const runTurnWithRateLimit = async (
     signal: textSignal("ax003 test"),
     threadId: thread.threadId,
   });
-  return collectEvents(handle.events());
+  return await collectEvents(handle.events());
 };
 
 // ---------------------------------------------------------------------------
@@ -145,7 +145,7 @@ describe("KRT-AX003 — rate limiting", () => {
 
     expect(results).toHaveLength(1);
     expect(results[0]?.isError).toBeFalsy();
-    expect((results[0]?.output as Record<string, unknown>)?.ok).toBe(true);
+    expect(toOptionalRecord(results[0]?.output)?.ok).toBe(true);
   });
 
   test("invocation beyond budget is rejected with typed result", async () => {
@@ -155,12 +155,12 @@ describe("KRT-AX003 — rate limiting", () => {
 
     expect(results).toHaveLength(2);
     // First call: success
-    const successResult = results.find((r) => !r.isError);
+    const successResult = results.find((r) => r.isError !== true);
     expect(successResult).toBeDefined();
     // Second call: rate-limited
     const limitedResult = results.find((r) => r.isError === true);
     expect(limitedResult).toBeDefined();
-    const output = limitedResult?.output as Record<string, unknown> | undefined;
+    const output = toOptionalRecord(limitedResult?.output);
     expect(output?.code).toBe(TOOL_INVOCATION_RATE_LIMITED);
   });
 
@@ -170,7 +170,7 @@ describe("KRT-AX003 — rate limiting", () => {
 
     // All calls rate-limited immediately (maxCalls: 0)
     expect(results.length).toBeGreaterThan(0);
-    const output = results[0]?.output as Record<string, unknown> | undefined;
+    const output = toOptionalRecord(results[0]?.output);
     expect(output?.code).toBe(TOOL_INVOCATION_RATE_LIMITED);
   });
 });
@@ -245,18 +245,15 @@ describe("KRT-AX003 — tenant isolation", () => {
     const limited1 = results1.find(
       (r) =>
         r.isError === true &&
-        (r.output as Record<string, unknown>)?.code ===
-          TOOL_INVOCATION_RATE_LIMITED
+        toOptionalRecord(r.output)?.code === TOOL_INVOCATION_RATE_LIMITED
     );
     expect(limited1).toBeDefined();
 
     // Runtime 2 executes normally — not affected by runtime 1's budget
-    const success2 = results2.find((r) => !r.isError);
+    const success2 = results2.find((r) => r.isError !== true);
     expect(success2).toBeDefined();
     const anyLimited2 = results2.find(
-      (r) =>
-        (r.output as Record<string, unknown>)?.code ===
-        TOOL_INVOCATION_RATE_LIMITED
+      (r) => toOptionalRecord(r.output)?.code === TOOL_INVOCATION_RATE_LIMITED
     );
     expect(anyLimited2).toBeUndefined();
   });

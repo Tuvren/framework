@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 /**
  * KRT-AX004: Server-side MCP binding and server sandbox endpoint.
  *
@@ -43,48 +41,49 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   textSignal,
+  toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-const makeRunner = (toolName: string): RuntimeRunner => {
-  return {
-    async execute(context) {
-      if (!context.messages.some((m) => m.role === "tool")) {
-        return {
-          messages: [
-            assistantToolCalls([
-              { callId: "call-ax004", input: {}, name: toolName },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" },
-          toolExecutionMode: "parallel",
-        };
-      }
+const makeRunner = (toolName: string): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    if (!context.messages.some((m) => m.role === "tool")) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
+        messages: [
+          assistantToolCalls([
+            { callId: "call-ax004", input: {}, name: toolName },
+          ]),
+        ],
+        resolution: { type: "continue_iteration" },
+        toolExecutionMode: "parallel",
       };
-    },
-    id: "ax004-runner",
-    async resume() {
-      throw new Error("no");
-    },
-  };
-};
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    };
+  }),
+  id: "ax004-runner",
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("no");
+  }),
+});
 
-const findToolResult = (events: unknown[]) => {
-  return events.find(
-    (e) =>
-      typeof e === "object" &&
-      e !== null &&
-      "type" in e &&
-      (e as Record<string, unknown>).type === "tool.result"
-  ) as Record<string, unknown> | undefined;
-};
+const findToolResult = (events: unknown[]) =>
+  toOptionalRecord(
+    events.find(
+      (e) =>
+        typeof e === "object" &&
+        e !== null &&
+        "type" in e &&
+        e.type === "tool.result"
+    )
+  );
 
 // ---------------------------------------------------------------------------
 // MCP binding classification
@@ -153,9 +152,7 @@ describe("KRT-AX004 — MCP binding classification", () => {
 
     expect(toolResult).toBeDefined();
     expect(toolResult?.isError).toBeFalsy();
-    const attribution = toolResult?.attribution as
-      | Record<string, unknown>
-      | undefined;
+    const attribution = toOptionalRecord(toolResult?.attribution);
     expect(attribution?.executionClass).toBe("tuvren-server");
   });
 });
@@ -232,7 +229,7 @@ describe("KRT-AX004 — sandbox endpoint", () => {
     expect(sandboxExecuteCalled).toBe(true);
     expect(toolExecuteCalled).toBe(false);
     expect(toolResult?.isError).toBeFalsy();
-    const output = toolResult?.output as Record<string, unknown> | undefined;
+    const output = toOptionalRecord(toolResult?.output);
     expect(output?.sandboxed).toBe(true);
     expect(output?.result).toBe(42);
   });
@@ -315,9 +312,9 @@ describe("KRT-AX004 — sandbox endpoint", () => {
       config: {
         extensions: [
           {
-            name: "passthrough-wrapper",
             // AroundToolSpec as a function — triggers the next(context) code path
-            aroundTool: async (context, next) => next(context),
+            aroundTool: async (context, next) => await next(context),
+            name: "passthrough-wrapper",
           },
         ],
         name: "primary",
@@ -333,7 +330,7 @@ describe("KRT-AX004 — sandbox endpoint", () => {
     expect(sandboxExecuteCalled).toBe(true);
     expect(toolExecuteCalled).toBe(false);
     expect(toolResult?.isError).toBeFalsy();
-    const output = toolResult?.output as Record<string, unknown> | undefined;
+    const output = toOptionalRecord(toolResult?.output);
     expect(output?.fromSandbox).toBe(99);
   });
 });

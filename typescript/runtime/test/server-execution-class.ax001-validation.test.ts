@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 /**
  * KRT-AX001: Tuvren-server invocation lifecycle — input and output validation.
  *
@@ -44,7 +42,10 @@ import {
   TOOL_RESULT_VALIDATION_FAILED,
 } from "@tuvren/core/errors";
 import type { RuntimeRunner } from "@tuvren/core/runner";
-import type { TuvrenToolDefinition } from "@tuvren/core/tools";
+import type {
+  TuvrenJsonSchema,
+  TuvrenToolDefinition,
+} from "@tuvren/core/tools";
 
 import {
   createRunnerRegistry as createBaseRunnerRegistry,
@@ -55,14 +56,16 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   textSignal,
+  toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
 
 // ---------------------------------------------------------------------------
 // Input schema with AJV enforcement (strict schema, raw TuvrenToolDefinition)
 // ---------------------------------------------------------------------------
 
-const STRICT_INPUT_SCHEMA: import("@tuvren/core/tools").TuvrenJsonSchema = {
+const STRICT_INPUT_SCHEMA: TuvrenJsonSchema = {
   additionalProperties: false,
   properties: {
     value: { type: "number" },
@@ -78,31 +81,27 @@ const STRICT_INPUT_SCHEMA: import("@tuvren/core/tools").TuvrenJsonSchema = {
 const makeRunnerWithInput = (
   toolName: string,
   input: unknown
-): RuntimeRunner => {
-  return {
-    async execute(context) {
-      if (!context.messages.some((m) => m.role === "tool")) {
-        return {
-          messages: [
-            assistantToolCalls([
-              { callId: "call-ax001", input, name: toolName },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" },
-          toolExecutionMode: "parallel",
-        };
-      }
+): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    if (!context.messages.some((m) => m.role === "tool")) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
+        messages: [
+          assistantToolCalls([{ callId: "call-ax001", input, name: toolName }]),
+        ],
+        resolution: { type: "continue_iteration" },
+        toolExecutionMode: "parallel",
       };
-    },
-    id: "ax001-runner",
-    async resume() {
-      throw new Error("resume not expected");
-    },
-  };
-};
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    };
+  }),
+  id: "ax001-runner",
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("resume not expected");
+  }),
+});
 
 const runWithTool = async (
   tool: TuvrenToolDefinition,
@@ -121,18 +120,19 @@ const runWithTool = async (
     signal: textSignal("ax001 test"),
     threadId: thread.threadId,
   });
-  return collectEvents(handle.events());
+  return await collectEvents(handle.events());
 };
 
-const findToolResult = (events: unknown[]) => {
-  return events.find(
-    (e) =>
-      typeof e === "object" &&
-      e !== null &&
-      "type" in e &&
-      (e as Record<string, unknown>).type === "tool.result"
-  ) as Record<string, unknown> | undefined;
-};
+const findToolResult = (events: unknown[]) =>
+  toOptionalRecord(
+    events.find(
+      (e) =>
+        typeof e === "object" &&
+        e !== null &&
+        "type" in e &&
+        e.type === "tool.result"
+    )
+  );
 
 // ---------------------------------------------------------------------------
 // Input validation: error code (AJV path via raw TuvrenToolDefinition)
@@ -170,7 +170,7 @@ describe("KRT-AX001 — input validation", () => {
     const runner = makeRunnerWithInput(toolName, { wrongField: "bad" });
     const events = await runWithTool(tool, runner);
     const toolResult = findToolResult(events);
-    const output = toolResult?.output as Record<string, unknown> | undefined;
+    const output = toOptionalRecord(toolResult?.output);
 
     expect(output?.code).toBe(TOOL_INPUT_VALIDATION_FAILED);
   });
@@ -198,7 +198,15 @@ describe("KRT-AX001 — input validation", () => {
       description: "spy tool",
       execute(input) {
         executedWith = input;
-        return { result: (input as { value: number }).value };
+        if (
+          input === null ||
+          typeof input !== "object" ||
+          !("value" in input) ||
+          typeof input.value !== "number"
+        ) {
+          throw new Error("expected validated numeric value input");
+        }
+        return { result: input.value };
       },
       inputSchema: STRICT_INPUT_SCHEMA,
       name: toolName,
@@ -219,7 +227,7 @@ describe("KRT-AX001 — input validation", () => {
 describe("KRT-AX001 — output validation", () => {
   const toolName = "ax001-validate-output";
 
-  const OUTPUT_SCHEMA: import("@tuvren/core/tools").TuvrenJsonSchema = {
+  const OUTPUT_SCHEMA: TuvrenJsonSchema = {
     additionalProperties: false,
     properties: {
       count: { type: "number" },
@@ -262,7 +270,7 @@ describe("KRT-AX001 — output validation", () => {
     const runner = makeRunnerWithInput(toolName, {});
     const events = await runWithTool(tool, runner);
     const toolResult = findToolResult(events);
-    const output = toolResult?.output as Record<string, unknown> | undefined;
+    const output = toOptionalRecord(toolResult?.output);
 
     expect(output?.code).toBe(TOOL_RESULT_VALIDATION_FAILED);
   });
@@ -283,18 +291,18 @@ describe("KRT-AX001 — output validation", () => {
     const toolResult = findToolResult(events);
 
     expect(toolResult?.isError).toBeFalsy();
-    expect((toolResult?.output as Record<string, unknown>)?.count).toBe(7);
+    expect(toOptionalRecord(toolResult?.output)?.count).toBe(7);
   });
 
   test("tool without outputSchema has its output surfaced unchanged regardless of shape", async () => {
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "tool without output schema",
-      inputSchema: { type: "object" },
       // No outputSchema — no output validation
       execute() {
         return { anyShape: true, nested: { x: 1 } };
       },
+      inputSchema: { type: "object" },
+      name: toolName,
     };
 
     const runner = makeRunnerWithInput(toolName, {});
@@ -302,7 +310,7 @@ describe("KRT-AX001 — output validation", () => {
     const toolResult = findToolResult(events);
 
     expect(toolResult?.isError).toBeFalsy();
-    const output = toolResult?.output as Record<string, unknown> | undefined;
+    const output = toOptionalRecord(toolResult?.output);
     expect(output?.anyShape).toBe(true);
   });
 
@@ -315,7 +323,7 @@ describe("KRT-AX001 — output validation", () => {
           callId: context.callId,
           isError: true as const,
           name: toolName,
-          output: { error: "explicit error", code: "custom_error" },
+          output: { code: "custom_error", error: "explicit error" },
           type: "tool_result" as const,
         };
       },
@@ -330,7 +338,7 @@ describe("KRT-AX001 — output validation", () => {
 
     // The tool explicitly declared an error — outputSchema must not override it
     expect(toolResult?.isError).toBe(true);
-    const output = toolResult?.output as Record<string, unknown> | undefined;
+    const output = toOptionalRecord(toolResult?.output);
     expect(output?.code).not.toBe(TOOL_RESULT_VALIDATION_FAILED);
     expect(output?.code).toBe("custom_error");
   });
