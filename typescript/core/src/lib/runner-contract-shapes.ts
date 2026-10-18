@@ -17,16 +17,20 @@
 import type { EpochMs, HashString } from "./kernel-records.js";
 import type {
   AgentConfig,
-  ApprovalResponse,
-  ContextManifest,
   HandoffContextBuilder,
   HandoffContextMode,
   HandoffContextPlan,
   RuntimeResolution,
   ToolRegistry,
-  TuvrenMessage,
-  TuvrenStreamEvent,
 } from "./runtime-contract-shapes.js";
+import type {
+  ApprovalResponse,
+  ContextManifest,
+  TuvrenMessage,
+} from "./runtime-data-contract-shapes.js";
+import type { TuvrenStreamEvent } from "./runtime-event-contract-shapes.js";
+
+/* oxlint-disable typescript/method-signature-style -- Preserve the published runner method signatures and their method bivariance under strictFunctionTypes. */
 
 /**
  * Runtime capabilities the framework lends a runner during execution
@@ -178,7 +182,10 @@ export interface RuntimeRunnerFactory {
  * `list` enumerates everything registered.
  */
 export interface RunnerRegistry {
+  // oxlint-disable-next-line typescript/array-type -- Preserve the frozen public return-type spelling in the API snapshot.
   list(): Array<RuntimeRunner | RuntimeRunnerFactory>;
   register(runner: RuntimeRunner | RuntimeRunnerFactory): void;
   resolve(runnerId: string): RuntimeRunner | RuntimeRunnerFactory | undefined;
 }
+
+/* oxlint-enable typescript/method-signature-style */

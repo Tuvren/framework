@@ -17,11 +17,16 @@
 import { describe, expect, test } from "bun:test";
 
 import { TuvrenValidationError } from "@tuvren/core/errors";
-import type { CustomSchema } from "@tuvren/core/tools";
+import type { CustomSchema, TuvrenJsonSchema } from "@tuvren/core/tools";
 import { z as z3 } from "zod/v3";
 import { z as z4 } from "zod/v4";
 
-import type { FlexibleSchema, Schema } from "../src/lib/schema-authoring.js";
+import type {
+  FlexibleSchema,
+  Schema,
+  StandardSchema,
+  ZodSchema,
+} from "../src/lib/schema-authoring.js";
 import {
   asSchema,
   defineTool,
@@ -35,83 +40,126 @@ import {
 // These implement only the duck-typed surfaces that the detection branches test.
 
 /** Minimal Zod v4 mock: has _zod + safeParse. */
-function makeZodV4Mock<T>(
+const makeZodV4Mock = <T>(
   parseResult:
     | { success: true; data: T }
     | { success: false; message: string; issues?: unknown },
   jsonSchemaValue?: Record<string, unknown>
-) {
-  return {
-    _zod: {},
-    safeParse(_value: unknown) {
-      if (parseResult.success) {
-        return { success: true as const, data: parseResult.data };
-      }
-      return {
-        success: false as const,
-        error: {
-          message: parseResult.message,
-          issues: "issues" in parseResult ? parseResult.issues : undefined,
-        },
-      };
-    },
-    ...(jsonSchemaValue === undefined
-      ? {}
-      : { toJSONSchema: () => jsonSchemaValue }),
-  };
-}
+) => ({
+  _zod: {},
+  safeParse(_value: unknown) {
+    if (parseResult.success) {
+      return { data: parseResult.data, success: true as const };
+    }
+    return {
+      error: {
+        issues: "issues" in parseResult ? parseResult.issues : undefined,
+        message: parseResult.message,
+      },
+      success: false as const,
+    };
+  },
+  ...(jsonSchemaValue === undefined
+    ? {}
+    : { toJSONSchema: () => jsonSchemaValue }),
+});
 
 /** Minimal Standard Schema mock (non-zod). */
-function makeStandardMock<T>(
+const makeStandardMock = <T>(
   result:
     | { value: T }
-    | { issues: ReadonlyArray<{ message: string }> }
-    | Promise<{ value: T } | { issues: ReadonlyArray<{ message: string }> }>,
+    | { issues: readonly { message: string }[] }
+    | Promise<{ value: T } | { issues: readonly { message: string }[] }>,
   jsonSchemaValue?: Record<string, unknown>
-) {
-  return {
-    "~standard": {
-      validate(_value: unknown) {
-        return result;
-      },
+) => ({
+  "~standard": {
+    // oxlint-disable-next-line typescript/promise-function-async -- Preserve whether the supplied Standard Schema fixture returns synchronously or returns its exact Promise.
+    validate(_value: unknown) {
+      return result;
     },
-    ...(jsonSchemaValue === undefined
-      ? {}
-      : { toJSONSchema: () => jsonSchemaValue }),
-  };
-}
+  },
+  ...(jsonSchemaValue === undefined
+    ? {}
+    : { toJSONSchema: () => jsonSchemaValue }),
+});
 
 /** Minimal Zod v3 compat mock: has ~standard.vendor === "zod" + safeParse. */
-function makeZodV3Mock<T>(
+const makeZodV3Mock = <T>(
   parseResult: { success: true; data: T } | { success: false; message: string }
-) {
-  return {
-    "~standard": {
-      vendor: "zod" as const,
-      validate(_value: unknown) {
-        return parseResult.success
-          ? { value: parseResult.data }
-          : { issues: [{ message: parseResult.message }] };
-      },
+) => ({
+  safeParse(_value: unknown) {
+    if (parseResult.success) {
+      return { data: parseResult.data, success: true as const };
+    }
+    return {
+      error: { issues: undefined, message: parseResult.message },
+      success: false as const,
+    };
+  },
+  "~standard": {
+    validate(_value: unknown) {
+      return parseResult.success
+        ? { value: parseResult.data }
+        : { issues: [{ message: parseResult.message }] };
     },
-    safeParse(_value: unknown) {
-      if (parseResult.success) {
-        return { success: true as const, data: parseResult.data };
-      }
-      return {
-        success: false as const,
-        error: { message: parseResult.message, issues: undefined },
-      };
-    },
-  };
-}
+    vendor: "zod" as const,
+  },
+});
 
 const STUB_CTX = {
   callId: "test-call-id",
   name: "test-tool",
 };
 
-const ASYNC_SCHEMA_REGEX = /Async Standard Schema/;
+const ASYNC_SCHEMA_REGEX = /Async Standard Schema/u;
+
+const toFlexibleSchemaFixture = <T>(value: unknown): FlexibleSchema<T> =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- These deliberately partial fixtures exercise the SDK's public runtime duck-typing branches without pretending to implement every external library member.
+  value as FlexibleSchema<T>;
+
+const toZodSchemaFixture = <T>(value: unknown): ZodSchema<T> =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This partial Zod fixture intentionally models only the safeParse API consumed by the SDK adapter.
+  value as ZodSchema<T>;
+
+const toStandardSchemaFixture = <T>(value: unknown): StandardSchema<T> =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This partial Standard Schema fixture intentionally models only the ~standard.validate API consumed by the SDK adapter.
+  value as StandardSchema<T>;
+
+const isCustomSchema = (
+  value: TuvrenJsonSchema | CustomSchema
+): value is CustomSchema =>
+  typeof value === "object" &&
+  value !== null &&
+  "toJSONSchema" in value &&
+  typeof value.toJSONSchema === "function" &&
+  "validate" in value &&
+  typeof value.validate === "function";
+
+const getCustomSchema = (
+  value: TuvrenJsonSchema | CustomSchema
+): CustomSchema => {
+  if (!isCustomSchema(value)) {
+    throw new Error("expected CustomSchema");
+  }
+  return value;
+};
+
+const validateOk = (value: unknown) =>
+  value === "ok"
+    ? { success: true as const, value }
+    : {
+        error: new TuvrenValidationError("bad", {
+          code: "tool_input_validation_failed",
+        }),
+        success: false as const,
+      };
+
+const validateWrapped = (
+  _value: unknown
+): ReturnType<NonNullable<Schema<string>["validate"]>> => ({
+  success: true,
+  value: "wrapped",
+});
 
 // ── jsonSchema() ──────────────────────────────────────────────────────────────
 
@@ -122,7 +170,7 @@ describe("jsonSchema()", () => {
   });
 
   test("stores the provided JSON schema", () => {
-    const raw = { type: "object", properties: { x: { type: "number" } } };
+    const raw = { properties: { x: { type: "number" } }, type: "object" };
     const schema = jsonSchema(raw);
     expect(schema.jsonSchema).toEqual(raw);
   });
@@ -133,18 +181,11 @@ describe("jsonSchema()", () => {
   });
 
   test("validate option is forwarded", () => {
-    const validate = (v: unknown) =>
-      v === "ok"
-        ? { success: true as const, value: v as string }
-        : {
-            success: false as const,
-            error: new TuvrenValidationError("bad", {
-              code: "tool_input_validation_failed",
-            }),
-          };
-
-    const schema = jsonSchema<string>({ type: "string" }, { validate });
-    expect(schema.validate).toBe(validate);
+    const schema = jsonSchema<string>(
+      { type: "string" },
+      { validate: validateOk }
+    );
+    expect(schema.validate).toBe(validateOk);
   });
 
   test("validate() succeeds for valid input", () => {
@@ -155,16 +196,16 @@ describe("jsonSchema()", () => {
           typeof v === "string"
             ? { success: true, value: v }
             : {
-                success: false,
                 error: new TuvrenValidationError("bad", {
                   code: "tool_input_validation_failed",
                 }),
+                success: false,
               },
       }
     );
     const result = schema.validate?.("hello");
     expect(result?.success).toBe(true);
-    if (result?.success) {
+    if (result?.success === true) {
       expect(result.value).toBe("hello");
     }
   });
@@ -180,39 +221,38 @@ describe("asSchema() — branch 1: already-wrapped Schema", () => {
   });
 
   test("round-trips a Schema with validate", () => {
-    const validate = (
-      _v: unknown
-    ): ReturnType<NonNullable<Schema<string>["validate"]>> => ({
-      success: true,
-      value: "wrapped",
-    });
-    const original = jsonSchema<string>({ type: "string" }, { validate });
+    const original = jsonSchema<string>(
+      { type: "string" },
+      {
+        validate: validateWrapped,
+      }
+    );
     const result = asSchema(original);
-    expect(result.validate).toBe(validate);
+    expect(result.validate).toBe(validateWrapped);
   });
 });
 
 describe("asSchema() — branch 2: Zod v4 (_zod in schema)", () => {
   test("detects Zod v4 via _zod property", () => {
-    const mock = makeZodV4Mock({ success: true, data: 42 });
-    const schema = asSchema(mock as FlexibleSchema<number>);
+    const mock = makeZodV4Mock({ data: 42, success: true });
+    const schema = asSchema(toFlexibleSchemaFixture<number>(mock));
     expect(schema[schemaSymbol]).toBe(true);
   });
 
   test("validate() success returns parsed value from safeParse", () => {
-    const mock = makeZodV4Mock({ success: true, data: 42 });
-    const schema = asSchema(mock as FlexibleSchema<number>);
+    const mock = makeZodV4Mock({ data: 42, success: true });
+    const schema = asSchema(toFlexibleSchemaFixture<number>(mock));
     const result = schema.validate?.(99);
     expect(result).toEqual({ success: true, value: 42 });
   });
 
   test("validate() failure wraps error in TuvrenValidationError", () => {
     const mock = makeZodV4Mock<number>({
-      success: false,
-      message: "not a number",
       issues: [{ message: "Expected number" }],
+      message: "not a number",
+      success: false,
     });
-    const schema = asSchema(mock as FlexibleSchema<number>);
+    const schema = asSchema(toFlexibleSchemaFixture<number>(mock));
     const result = schema.validate?.("nope");
     expect(result?.success).toBe(false);
     if (result && !result.success) {
@@ -223,14 +263,14 @@ describe("asSchema() — branch 2: Zod v4 (_zod in schema)", () => {
 
   test("jsonSchema uses toJSONSchema() when available", () => {
     const raw = { type: "number" };
-    const mock = makeZodV4Mock({ success: true, data: 1 }, raw);
-    const schema = asSchema(mock as FlexibleSchema<number>);
+    const mock = makeZodV4Mock({ data: 1, success: true }, raw);
+    const schema = asSchema(toFlexibleSchemaFixture<number>(mock));
     expect(schema.jsonSchema).toEqual(raw);
   });
 
   test("jsonSchema falls back to {} when toJSONSchema is absent", () => {
-    const mock = makeZodV4Mock({ success: true, data: 1 });
-    const schema = asSchema(mock as FlexibleSchema<number>);
+    const mock = makeZodV4Mock({ data: 1, success: true });
+    const schema = asSchema(toFlexibleSchemaFixture<number>(mock));
     expect(schema.jsonSchema).toEqual({});
   });
 });
@@ -238,13 +278,13 @@ describe("asSchema() — branch 2: Zod v4 (_zod in schema)", () => {
 describe("asSchema() — branch 3: Standard Schema (non-zod vendor)", () => {
   test("detects Standard Schema via ~standard property", () => {
     const mock = makeStandardMock({ value: "hello" });
-    const schema = asSchema(mock as unknown as FlexibleSchema<string>);
+    const schema = asSchema(toFlexibleSchemaFixture<string>(mock));
     expect(schema[schemaSymbol]).toBe(true);
   });
 
   test("validate() success returns the result value", () => {
     const mock = makeStandardMock({ value: "hello" });
-    const schema = asSchema(mock as unknown as FlexibleSchema<string>);
+    const schema = asSchema(toFlexibleSchemaFixture<string>(mock));
     const result = schema.validate?.("hello");
     expect(result).toEqual({ success: true, value: "hello" });
   });
@@ -253,7 +293,7 @@ describe("asSchema() — branch 3: Standard Schema (non-zod vendor)", () => {
     const mock = makeStandardMock<string>({
       issues: [{ message: "too short" }],
     });
-    const schema = asSchema(mock as unknown as FlexibleSchema<string>);
+    const schema = asSchema(toFlexibleSchemaFixture<string>(mock));
     const result = schema.validate?.("");
     expect(result?.success).toBe(false);
     if (result && !result.success) {
@@ -265,7 +305,7 @@ describe("asSchema() — branch 3: Standard Schema (non-zod vendor)", () => {
 
   test("validate() throws when ~standard.validate returns a Promise", () => {
     const mock = makeStandardMock<string>(Promise.resolve({ value: "async" }));
-    const schema = asSchema(mock as unknown as FlexibleSchema<string>);
+    const schema = asSchema(toFlexibleSchemaFixture<string>(mock));
     expect(() => schema.validate?.("async")).toThrow(TuvrenValidationError);
     expect(() => schema.validate?.("async")).toThrow(ASYNC_SCHEMA_REGEX);
   });
@@ -273,13 +313,13 @@ describe("asSchema() — branch 3: Standard Schema (non-zod vendor)", () => {
   test("jsonSchema uses toJSONSchema() when available", () => {
     const raw = { type: "string" };
     const mock = makeStandardMock({ value: "ok" }, raw);
-    const schema = asSchema(mock as unknown as FlexibleSchema<string>);
+    const schema = asSchema(toFlexibleSchemaFixture<string>(mock));
     expect(schema.jsonSchema).toEqual(raw);
   });
 
   test("jsonSchema falls back to {} when toJSONSchema is absent", () => {
     const mock = makeStandardMock({ value: "ok" });
-    const schema = asSchema(mock as unknown as FlexibleSchema<string>);
+    const schema = asSchema(toFlexibleSchemaFixture<string>(mock));
     expect(schema.jsonSchema).toEqual({});
   });
 });
@@ -289,27 +329,27 @@ describe("asSchema() — branch 4: Zod v3 compat (~standard.vendor === 'zod')", 
     // We verify routing by checking that safeParse is used (not ~standard.validate).
     // We make safeParse succeed but ~standard.validate fail — branch 4 should succeed.
     const mock = {
+      safeParse(_value: unknown) {
+        return { data: 42, success: true as const };
+      },
       "~standard": {
-        vendor: "zod" as const,
-        validate(_v: unknown): { issues: ReadonlyArray<{ message: string }> } {
+        validate(_v: unknown): { issues: readonly { message: string }[] } {
           return { issues: [{ message: "should not be called" }] };
         },
-      },
-      safeParse(_value: unknown) {
-        return { success: true as const, data: 42 };
+        vendor: "zod" as const,
       },
     };
-    const schema = asSchema(mock as FlexibleSchema<number>);
+    const schema = asSchema(toFlexibleSchemaFixture<number>(mock));
     const result = schema.validate?.(0);
     expect(result).toEqual({ success: true, value: 42 });
   });
 
   test("validate() failure uses Zod error path (not Standard Schema issues)", () => {
     const mock = makeZodV3Mock<number>({
-      success: false,
       message: "bad input",
+      success: false,
     });
-    const schema = asSchema(mock as FlexibleSchema<number>);
+    const schema = asSchema(toFlexibleSchemaFixture<number>(mock));
     const result = schema.validate?.("nope");
     expect(result?.success).toBe(false);
     if (result && !result.success) {
@@ -329,10 +369,10 @@ describe("asSchema() — branch 5: lazy function", () => {
 
   test("lazy returning Zod v4 schema is resolved through the Zod branch", () => {
     const mock = makeZodV4Mock(
-      { success: true, data: "ok" },
+      { data: "ok", success: true },
       { type: "string" }
     );
-    const schema = asSchema(() => mock as FlexibleSchema<string>);
+    const schema = asSchema(() => toFlexibleSchemaFixture<string>(mock));
     expect(schema.jsonSchema).toEqual({ type: "string" });
     const result = schema.validate?.("x");
     expect(result).toEqual({ success: true, value: "ok" });
@@ -349,21 +389,21 @@ describe("asSchema() — branch 5: lazy function", () => {
 
 describe("asSchema() — branch 6: bare TuvrenJsonSchema", () => {
   test("object-form JSON schema is wrapped", () => {
-    const schema = asSchema({ type: "object" } as FlexibleSchema<unknown>);
+    const schema = asSchema({ type: "object" });
     expect(schema[schemaSymbol]).toBe(true);
     expect(schema.jsonSchema).toEqual({ type: "object" });
     expect(schema.validate).toBeUndefined();
   });
 
   test("boolean true is wrapped", () => {
-    const schema = asSchema(true as FlexibleSchema<unknown>);
+    const schema = asSchema(true);
     expect(schema[schemaSymbol]).toBe(true);
     expect(schema.jsonSchema).toBe(true);
     expect(schema.validate).toBeUndefined();
   });
 
   test("boolean false is wrapped", () => {
-    const schema = asSchema(false as FlexibleSchema<unknown>);
+    const schema = asSchema(false);
     expect(schema[schemaSymbol]).toBe(true);
     expect(schema.jsonSchema).toBe(false);
     expect(schema.validate).toBeUndefined();
@@ -374,20 +414,15 @@ describe("asSchema() — branch 6: bare TuvrenJsonSchema", () => {
 
 describe("zodSchema()", () => {
   test("wraps Zod v4 schema (has safeParse) into a branded Schema", () => {
-    const mock = makeZodV4Mock({ success: true, data: 1 });
-    // zodSchema<T> accepts ZodSchema<T> — our mock is structurally compatible with ZodLike<T>
-    // We cast through unknown to satisfy the strict ZodSchema union type in the test.
-    const schema = zodSchema(
-      mock as unknown as import("zod/v4").ZodType<number>
-    );
+    const mock = makeZodV4Mock({ data: 1, success: true });
+    // The fixture guard verifies the safeParse surface consumed by zodSchema.
+    const schema = zodSchema(toZodSchemaFixture<number>(mock));
     expect(schema[schemaSymbol]).toBe(true);
   });
 
   test("validate delegates to safeParse", () => {
-    const mock = makeZodV4Mock({ success: true, data: "hello" });
-    const schema = zodSchema(
-      mock as unknown as import("zod/v4").ZodType<string>
-    );
+    const mock = makeZodV4Mock({ data: "hello", success: true });
+    const schema = zodSchema(toZodSchemaFixture<string>(mock));
     expect(schema.validate?.("anything")).toEqual({
       success: true,
       value: "hello",
@@ -400,23 +435,13 @@ describe("zodSchema()", () => {
 describe("standardSchema()", () => {
   test("wraps a Standard Schema into a branded Schema", () => {
     const mock = makeStandardMock({ value: 7 });
-    const schema = standardSchema(
-      mock as unknown as import("@standard-schema/spec").StandardSchemaV1<
-        unknown,
-        number
-      >
-    );
+    const schema = standardSchema(toStandardSchemaFixture<number>(mock));
     expect(schema[schemaSymbol]).toBe(true);
   });
 
   test("validate delegates to ~standard.validate", () => {
     const mock = makeStandardMock({ value: 7 });
-    const schema = standardSchema(
-      mock as unknown as import("@standard-schema/spec").StandardSchemaV1<
-        unknown,
-        number
-      >
-    );
+    const schema = standardSchema(toStandardSchemaFixture<number>(mock));
     expect(schema.validate?.(0)).toEqual({ success: true, value: 7 });
   });
 });
@@ -426,46 +451,46 @@ describe("standardSchema()", () => {
 describe("defineTool()", () => {
   test("returns a TuvrenToolDefinition with correct name and description", () => {
     const tool = defineTool({
-      name: "my-tool",
       description: "A test tool",
+      execute: String,
       inputSchema: { type: "string" },
-      execute: (input) => String(input),
+      name: "my-tool",
     });
     expect(tool.name).toBe("my-tool");
     expect(tool.description).toBe("A test tool");
   });
 
   test("inputSchema.toJSONSchema() returns normalized JSON schema", () => {
-    const raw = { type: "object", required: ["x"] };
+    const raw = { required: ["x"], type: "object" };
     const tool = defineTool({
-      name: "t",
       description: "d",
-      inputSchema: raw,
       execute: (input) => input,
+      inputSchema: raw,
+      name: "t",
     });
-    expect((tool.inputSchema as CustomSchema).toJSONSchema()).toEqual(raw);
+    expect(getCustomSchema(tool.inputSchema).toJSONSchema()).toEqual(raw);
   });
 
   test("inputSchema.validate() passes through when no schema validate defined", () => {
     const tool = defineTool({
-      name: "t",
       description: "d",
-      inputSchema: { type: "string" },
       execute: (input) => input,
+      inputSchema: { type: "string" },
+      name: "t",
     });
-    const result = (tool.inputSchema as CustomSchema).validate("hello");
+    const result = getCustomSchema(tool.inputSchema).validate("hello");
     expect(result).toEqual({ valid: true, value: "hello" });
   });
 
   test("inputSchema.validate() propagates schema validation success", () => {
-    const mock = makeZodV4Mock({ success: true, data: 99 });
+    const mock = makeZodV4Mock({ data: 99, success: true });
     const tool = defineTool({
-      name: "t",
       description: "d",
-      inputSchema: mock as FlexibleSchema<number>,
       execute: (input) => input,
+      inputSchema: toFlexibleSchemaFixture<number>(mock),
+      name: "t",
     });
-    expect((tool.inputSchema as CustomSchema).validate(0)).toEqual({
+    expect(getCustomSchema(tool.inputSchema).validate(0)).toEqual({
       valid: true,
       value: 99,
     });
@@ -473,17 +498,17 @@ describe("defineTool()", () => {
 
   test("inputSchema.validate() propagates schema validation failure", () => {
     const mock = makeZodV4Mock<number>({
-      success: false,
-      message: "not a number",
       issues: [{ message: "Expected number" }],
+      message: "not a number",
+      success: false,
     });
     const tool = defineTool({
-      name: "t",
       description: "d",
-      inputSchema: mock as FlexibleSchema<number>,
       execute: (input) => input,
+      inputSchema: toFlexibleSchemaFixture<number>(mock),
+      name: "t",
     });
-    const result = (tool.inputSchema as CustomSchema).validate("bad");
+    const result = getCustomSchema(tool.inputSchema).validate("bad");
     expect(result.valid).toBe(false);
     if (!result.valid) {
       expect(result.error.message).toBe("not a number");
@@ -493,13 +518,13 @@ describe("defineTool()", () => {
   test("execute callback receives validated input", async () => {
     let capturedInput: unknown;
     const tool = defineTool({
-      name: "t",
       description: "d",
-      inputSchema: { type: "string" },
       execute: (input) => {
         capturedInput = input;
         return "done";
       },
+      inputSchema: { type: "string" },
+      name: "t",
     });
     await tool.execute("hello", STUB_CTX);
     expect(capturedInput).toBe("hello");
@@ -507,13 +532,13 @@ describe("defineTool()", () => {
 
   test("approval, timeout, and metadata are forwarded", () => {
     const tool = defineTool({
-      name: "t",
-      description: "d",
-      inputSchema: { type: "string" },
-      execute: (input) => input,
       approval: true,
-      timeout: 5000,
+      description: "d",
+      execute: (input) => input,
+      inputSchema: { type: "string" },
       metadata: { version: 1 },
+      name: "t",
+      timeout: 5000,
     });
     expect(tool.approval).toBe(true);
     expect(tool.timeout).toBe(5000);
@@ -524,14 +549,14 @@ describe("defineTool()", () => {
     let callCount = 0;
     const inner = jsonSchema<string>({ type: "string" });
     const lazy = () => {
-      callCount++;
+      callCount += 1;
       return inner;
     };
     defineTool({
-      name: "t",
       description: "d",
-      inputSchema: lazy,
       execute: (i) => i,
+      inputSchema: lazy,
+      name: "t",
     });
     // asSchema resolves the lazy once during defineTool construction
     expect(callCount).toBe(1);
@@ -569,12 +594,12 @@ describe("Real library integration — Zod v4 native", () => {
 
   test("defineTool with z4.object() toJSONSchema() includes required fields", () => {
     const tool = defineTool({
-      name: "greet",
       description: "greet",
-      inputSchema: z4.object({ name: z4.string() }),
       execute: ({ name }) => `Hello ${name}`,
+      inputSchema: z4.object({ name: z4.string() }),
+      name: "greet",
     });
-    const js = (tool.inputSchema as CustomSchema).toJSONSchema();
+    const js = getCustomSchema(tool.inputSchema).toJSONSchema();
     expect(js).toMatchObject({ type: "object" });
   });
 });

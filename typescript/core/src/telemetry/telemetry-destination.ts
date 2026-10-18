@@ -90,6 +90,7 @@ export interface TelemetryOperationalSignal {
  * vocabulary and lineage keys, already secret-screened by the runtime.
  */
 export interface TelemetryDestination {
+  /* oxlint-disable typescript/method-signature-style -- Preserve the frozen public destination method signatures and their method bivariance. */
   /**
    * Declared buffering/backpressure policy, if the destination buffers.
    * Informational: the runtime does not read it.
@@ -103,6 +104,7 @@ export interface TelemetryDestination {
    * session path). The runtime imposes no batching; a destination that wants
    * larger batches buffers internally.
    */
+  // oxlint-disable-next-line typescript/array-type -- Preserve the frozen public batch parameter spelling in the API snapshot.
   deliver(batch: ReadonlyArray<TelemetryEvent | TelemetrySpan>): void;
   /**
    * Host/operator-observable funnel-health channel. When present, the runtime
@@ -111,6 +113,7 @@ export interface TelemetryDestination {
    * last-resort one-shot warning so a degraded funnel is never fully silent.
    */
   onOperationalSignal?(signal: TelemetryOperationalSignal): void;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**

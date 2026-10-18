@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 // KRT-BF006 — Framework Maintenance Surface + Tenant-Offboarding Flow (ADR-0051,
 // architecture flow §4.17).
 //
@@ -33,10 +31,11 @@ import { randomBytes } from "node:crypto";
 import {
   createMemoryBackend,
   createMemoryScopeStore,
-  type MemoryScopeStore,
 } from "@tuvren/backend-memory";
+import type { MemoryScopeStore } from "@tuvren/backend-memory";
 import { TuvrenRuntimeError } from "@tuvren/core";
-import { isErasedPayload, type PayloadCodec } from "@tuvren/core/lifecycle";
+import { isErasedPayload } from "@tuvren/core/lifecycle";
+import type { PayloadCodec } from "@tuvren/core/lifecycle";
 import type { RuntimeRunnerFactory } from "@tuvren/core/runner";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
@@ -50,10 +49,8 @@ import {
   textSignal,
 } from "../../runtime/test/runtime-core-test-helpers.ts";
 import { createTuvren } from "../src/lib/create-tuvren.js";
-import {
-  createAesGcmPayloadCodec,
-  type PayloadKeyring,
-} from "../src/lib/payload-codec.js";
+import { createAesGcmPayloadCodec } from "../src/lib/payload-codec.js";
+import type { PayloadKeyring } from "../src/lib/payload-codec.js";
 
 const SCOPE_A = "tenant.A";
 const SCOPE_B = "tenant.B";
@@ -61,16 +58,14 @@ const SCOPE_B = "tenant.B";
 // ADR-0057: createTuvren requires a constructed runner factory instance. These
 // maintenance-surface tests never execute a turn, so a minimal end-turn factory
 // suffices — the runner is registered but never invoked.
-function offboardingRunnerFactory(): RuntimeRunnerFactory {
-  return {
-    create: () =>
-      createStaticRunner(() => ({
-        messages: [],
-        resolution: { reason: "done", type: "end_turn" },
-      })),
-    id: "offboarding-test-runner",
-  };
-}
+const offboardingRunnerFactory = (): RuntimeRunnerFactory => ({
+  create: () =>
+    createStaticRunner(() => ({
+      messages: [],
+      resolution: { reason: "done", type: "end_turn" },
+    })),
+  id: "offboarding-test-runner",
+});
 
 interface Tenant {
   framework: ReturnType<typeof createTuvrenRuntime>;
@@ -78,16 +73,16 @@ interface Tenant {
   providerSecret: string;
 }
 
-function createKeyring(keys: Map<string, Uint8Array>): PayloadKeyring {
-  return { resolve: (keyRef) => keys.get(keyRef) };
-}
+const createKeyring = (keys: Map<string, Uint8Array>): PayloadKeyring => ({
+  resolve: (keyRef) => keys.get(keyRef),
+});
 
-function buildTenant(input: {
-  scope: string;
-  store: MemoryScopeStore;
+const buildTenant = (input: {
   codec: PayloadCodec;
   providerSecret: string;
-}): Tenant {
+  scope: string;
+  store: MemoryScopeStore;
+}): Tenant => {
   const backend = createMemoryBackend({
     scope: input.scope,
     store: input.store,
@@ -95,28 +90,30 @@ function buildTenant(input: {
   const kernel = createRuntimeKernel({ backend });
   const framework = createTuvrenRuntime({
     defaultRunnerId: "fake",
-    runnerRegistry: createRunnerRegistry([
-      createStaticRunner(async () => ({
-        messages: [assistantText(input.providerSecret)],
-        resolution: { reason: "done", type: "end_turn" },
-      })),
-    ]),
     kernel,
     payloadCodec: input.codec,
     // The substrate partition-drop the offboarding flow drives is the owned
     // backend's purgeScope; `createTuvren` wires this automatically, and here we
     // wire it explicitly because the tenant drives a hand-built runtime.
+    // oxlint-disable-next-line typescript/promise-function-async -- Preserve the backend's exact purge Promise identity and rejection timing in the hand-built runtime fixture.
     purgeScope: () => backend.purgeScope?.() ?? Promise.resolve(),
+    runnerRegistry: createRunnerRegistry([
+      // oxlint-disable-next-line require-await -- This runner intentionally implements the async framework contract while returning its fixture synchronously.
+      createStaticRunner(async () => ({
+        messages: [assistantText(input.providerSecret)],
+        resolution: { reason: "done", type: "end_turn" },
+      })),
+    ]),
     scope: input.scope,
   });
   return { framework, kernel, providerSecret: input.providerSecret };
-}
+};
 
-async function runTurn(
+const runTurn = async (
   tenant: Tenant,
   thread: { branchId: string; threadId: string },
   userSecret: string
-): Promise<void> {
+): Promise<void> => {
   const handle = tenant.framework.executeTurn({
     branchId: thread.branchId,
     config: { name: "agent" },
@@ -125,23 +122,23 @@ async function runTurn(
   });
   const result = await handle.awaitResult();
   expect(result.status).toBe("completed");
-}
+};
 
-async function headHash(tenant: Tenant, branchId: string): Promise<string> {
+const headHash = async (tenant: Tenant, branchId: string): Promise<string> => {
   const branch = await tenant.kernel.branch.get(branchId);
   if (branch === null) {
     throw new Error("branch missing");
   }
   return branch.headTurnNodeHash;
-}
+};
 
-async function readPlaintext(
+const readPlaintext = async (
   tenant: Tenant,
   branchId: string
-): Promise<string> {
+): Promise<string> => {
   const read = await tenant.framework.readBranchMessages({ branchId });
   return JSON.stringify(read.messages);
-}
+};
 
 describe("KRT-BF006 tenant offboarding flow", () => {
   test("offboarding scope A shreds its payloads and reclaims its unreferenced state without touching scope B", async () => {
@@ -279,15 +276,19 @@ describe("KRT-BF006 tenant offboarding flow", () => {
     // drop against, so purgeScope stays unavailable.
     await using instance = await createTuvren({
       backend: createMemoryBackend(),
-      runner: offboardingRunnerFactory(),
       kernel,
+      runner: offboardingRunnerFactory(),
     });
 
     // Reclamation still works (it only needs the kernel), but the partition
     // drop has no owned substrate to act on and is reported as unsupported.
     await instance.runtime.maintenance.reclaim();
-    await expect(instance.runtime.maintenance.purgeScope()).rejects.toThrow(
-      TuvrenRuntimeError
-    );
+    let purgeError: unknown;
+    try {
+      await instance.runtime.maintenance.purgeScope();
+    } catch (error: unknown) {
+      purgeError = error;
+    }
+    expect(purgeError).toBeInstanceOf(TuvrenRuntimeError);
   });
 });

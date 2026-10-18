@@ -33,6 +33,8 @@
  * only transiently inside a codec call.
  */
 
+/* oxlint-disable typescript/method-signature-style -- Preserve the published codec method signatures and their method bivariance under strictFunctionTypes. */
+
 // ── Codec context ────────────────────────────────────────────────────────────
 
 /**
@@ -90,15 +92,15 @@ export interface ErasedPayload {
  * True when `value` is an {@link ErasedPayload} marker: `kind` is exactly
  * `"erased"` and `keyRef`/`reason` are strings.
  */
-export function isErasedPayload(value: unknown): value is ErasedPayload {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { kind?: unknown }).kind === "erased" &&
-    typeof (value as ErasedPayload).keyRef === "string" &&
-    typeof (value as ErasedPayload).reason === "string"
-  );
-}
+export const isErasedPayload = (value: unknown): value is ErasedPayload =>
+  typeof value === "object" &&
+  value !== null &&
+  "kind" in value &&
+  value.kind === "erased" &&
+  "keyRef" in value &&
+  typeof value.keyRef === "string" &&
+  "reason" in value &&
+  typeof value.reason === "string";
 
 // ── Codec contract ───────────────────────────────────────────────────────────
 
@@ -135,12 +137,14 @@ export interface PayloadCodec {
  * (ADR-0057). The batteries-included AES-256-GCM codec stays in `@tuvren/sdk`.
  */
 export const IDENTITY_PAYLOAD_CODEC: PayloadCodec = {
+  /* oxlint-disable typescript/promise-function-async -- Preserve the shared identity codec's exact Promise instances and scheduling behavior. */
   decrypt(stored) {
     return Promise.resolve({ plaintext: stored, status: "available" });
   },
   encrypt(plaintext) {
     return Promise.resolve(plaintext);
   },
+  /* oxlint-enable typescript/promise-function-async */
   id: "identity",
 };
 
@@ -148,9 +152,8 @@ export const IDENTITY_PAYLOAD_CODEC: PayloadCodec = {
  * Returns the shared {@link IDENTITY_PAYLOAD_CODEC} instance — a factory
  * spelling for call sites that expect to construct their codec.
  */
-export function createIdentityPayloadCodec(): PayloadCodec {
-  return IDENTITY_PAYLOAD_CODEC;
-}
+export const createIdentityPayloadCodec = (): PayloadCodec =>
+  IDENTITY_PAYLOAD_CODEC;
 
 // ── Envelope discriminant ─────────────────────────────────────────────────────
 //
@@ -166,7 +169,8 @@ export function createIdentityPayloadCodec(): PayloadCodec {
 // plaintext record.
 
 /** The 4-byte AEAD envelope magic, ASCII `"TVE1"` (see block comment above). */
-export const ENVELOPE_MAGIC = Uint8Array.of(0x54, 0x56, 0x45, 0x31); // "TVE1"
+// Hexadecimal bytes for the ASCII string `TVE1`.
+export const ENVELOPE_MAGIC = Uint8Array.of(0x54, 0x56, 0x45, 0x31);
 
 /**
  * True when `bytes` begins with {@link ENVELOPE_MAGIC}, i.e. the stored
@@ -174,12 +178,11 @@ export const ENVELOPE_MAGIC = Uint8Array.of(0x54, 0x56, 0x45, 0x31); // "TVE1"
  * Lets the runtime read seam pass identity-codec/plaintext data through
  * unchanged so plaintext and ciphertext can coexist during migration.
  */
-export function isPayloadEnvelope(bytes: Uint8Array): boolean {
-  return (
-    bytes.length >= ENVELOPE_MAGIC.length &&
-    bytes[0] === ENVELOPE_MAGIC[0] &&
-    bytes[1] === ENVELOPE_MAGIC[1] &&
-    bytes[2] === ENVELOPE_MAGIC[2] &&
-    bytes[3] === ENVELOPE_MAGIC[3]
-  );
-}
+export const isPayloadEnvelope = (bytes: Uint8Array): boolean =>
+  bytes.length >= ENVELOPE_MAGIC.length &&
+  bytes[0] === ENVELOPE_MAGIC[0] &&
+  bytes[1] === ENVELOPE_MAGIC[1] &&
+  bytes[2] === ENVELOPE_MAGIC[2] &&
+  bytes[3] === ENVELOPE_MAGIC[3];
+
+/* oxlint-enable typescript/method-signature-style */

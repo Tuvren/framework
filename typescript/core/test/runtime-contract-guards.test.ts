@@ -83,29 +83,29 @@ describe("runtime-contract-guards contracts", () => {
     expect(isExecutionStatus(frameworkContractFixtures.executionStatus)).toBe(
       true
     );
-    expect(() =>
-      assertContextManifest(frameworkContractFixtures.contextManifest)
-    ).not.toThrow();
+    expect(() => {
+      assertContextManifest(frameworkContractFixtures.contextManifest);
+    }).not.toThrow();
 
-    expect(() =>
-      assertTuvrenMessage(frameworkContractFixtures.assistantMessage)
-    ).not.toThrow();
-    expect(() =>
-      assertApprovalRequest(frameworkContractFixtures.approvalRequest)
-    ).not.toThrow();
-    expect(() =>
-      assertProviderStreamChunk(frameworkContractFixtures.providerStreamChunk)
-    ).not.toThrow();
-    expect(() =>
-      assertTuvrenStreamEvent(frameworkContractFixtures.streamEvent)
-    ).not.toThrow();
-    expect(() =>
-      assertTuvrenToolDefinition(frameworkContractFixtures.toolDefinition)
-    ).not.toThrow();
-    expect(() =>
-      assertExecutionStatus(frameworkContractFixtures.executionStatus)
-    ).not.toThrow();
-    expect(() =>
+    expect(() => {
+      assertTuvrenMessage(frameworkContractFixtures.assistantMessage);
+    }).not.toThrow();
+    expect(() => {
+      assertApprovalRequest(frameworkContractFixtures.approvalRequest);
+    }).not.toThrow();
+    expect(() => {
+      assertProviderStreamChunk(frameworkContractFixtures.providerStreamChunk);
+    }).not.toThrow();
+    expect(() => {
+      assertTuvrenStreamEvent(frameworkContractFixtures.streamEvent);
+    }).not.toThrow();
+    expect(() => {
+      assertTuvrenToolDefinition(frameworkContractFixtures.toolDefinition);
+    }).not.toThrow();
+    expect(() => {
+      assertExecutionStatus(frameworkContractFixtures.executionStatus);
+    }).not.toThrow();
+    expect(() => {
       assertTuvrenModelResponse({
         finishReason: "length",
         parts: [{ text: "partial", type: "text" }],
@@ -114,8 +114,8 @@ describe("runtime-contract-guards contracts", () => {
           inputTokens: 10,
           outputTokens: 5,
         },
-      })
-    ).not.toThrow();
+      });
+    }).not.toThrow();
   });
 
   test("accepts file.done stream events", () => {
@@ -128,7 +128,9 @@ describe("runtime-contract-guards contracts", () => {
       type: "file.done",
     } as const;
 
-    expect(() => assertTuvrenStreamEvent(streamEvent)).not.toThrow();
+    expect(() => {
+      assertTuvrenStreamEvent(streamEvent);
+    }).not.toThrow();
   });
 
   test("rejects malformed contract values", () => {
@@ -158,11 +160,11 @@ describe("runtime-contract-guards contracts", () => {
         invalidFrameworkContractFixtures.malformedExecutionStatus
       )
     ).toBe(false);
-    expect(() =>
+    expect(() => {
       assertContextManifest(
         invalidFrameworkContractFixtures.malformedContextManifest
-      )
-    ).toThrow("must be a valid ContextManifest");
+      );
+    }).toThrow("must be a valid ContextManifest");
   });
 
   test("rejects provider chunks that omit required fields", () => {
