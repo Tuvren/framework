@@ -34,17 +34,57 @@ interface BatchResultMatches {
   resultIndexes: Set<number>;
 }
 
+const collectBatchResults = (
+  hashes: HashString[],
+  messagesByHash: Map<HashString, TuvrenMessage>,
+  assistantIndex: number,
+  originalCalls: ToolCallPart[]
+): BatchResultMatches => {
+  const callIds = new Set(originalCalls.map((call) => call.callId));
+  const matches: BatchResultMatches = {
+    resultByCallId: new Map(),
+    resultHashByCallId: new Map(),
+    resultIndexes: new Set(),
+  };
+
+  for (let index = assistantIndex + 1; index < hashes.length; index += 1) {
+    const hash = hashes[index];
+    const message = hash === undefined ? undefined : messagesByHash.get(hash);
+    if (message?.role === "assistant") {
+      break;
+    }
+    if (message?.role !== "tool" || hash === undefined) {
+      continue;
+    }
+
+    for (const part of message.parts) {
+      if (
+        part.type !== "tool_result" ||
+        !callIds.has(part.callId) ||
+        matches.resultHashByCallId.has(part.callId)
+      ) {
+        continue;
+      }
+      matches.resultHashByCallId.set(part.callId, hash);
+      matches.resultByCallId.set(part.callId, part);
+      matches.resultIndexes.add(index);
+    }
+  }
+
+  return matches;
+};
+
 /**
  * Projects a recovered or approval-resumed tool batch into original call
  * order once all newly completed results have joined the durable history.
  */
-export function finalizeToolBatchProjection(
+export const finalizeToolBatchProjection = (
   headState: ToolBatchHistoryState,
   assistantMessageHash: HashString | undefined,
   appendedHashes: HashString[],
   appendedMessages: TuvrenMessage[],
   fallbackToolResults: ToolResultPart[]
-): FinalizedToolBatchProjection {
+): FinalizedToolBatchProjection => {
   if (assistantMessageHash === undefined) {
     return { headState, toolResults: fallbackToolResults };
   }
@@ -117,44 +157,4 @@ export function finalizeToolBatchProjection(
     },
     toolResults,
   };
-}
-
-function collectBatchResults(
-  hashes: HashString[],
-  messagesByHash: Map<HashString, TuvrenMessage>,
-  assistantIndex: number,
-  originalCalls: ToolCallPart[]
-): BatchResultMatches {
-  const callIds = new Set(originalCalls.map((call) => call.callId));
-  const matches: BatchResultMatches = {
-    resultByCallId: new Map(),
-    resultHashByCallId: new Map(),
-    resultIndexes: new Set(),
-  };
-
-  for (let index = assistantIndex + 1; index < hashes.length; index += 1) {
-    const hash = hashes[index];
-    const message = hash === undefined ? undefined : messagesByHash.get(hash);
-    if (message?.role === "assistant") {
-      break;
-    }
-    if (message?.role !== "tool" || hash === undefined) {
-      continue;
-    }
-
-    for (const part of message.parts) {
-      if (
-        part.type !== "tool_result" ||
-        !callIds.has(part.callId) ||
-        matches.resultHashByCallId.has(part.callId)
-      ) {
-        continue;
-      }
-      matches.resultHashByCallId.set(part.callId, hash);
-      matches.resultByCallId.set(part.callId, part);
-      matches.resultIndexes.add(index);
-    }
-  }
-
-  return matches;
-}
+};

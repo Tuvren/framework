@@ -19,9 +19,9 @@ export interface InterruptedToolBatchDescriptor {
   toolExecutionMode: "parallel" | "sequential";
 }
 
-export function readInterruptedToolBatchDescriptor(
+export const readInterruptedToolBatchDescriptor = (
   value: unknown
-): InterruptedToolBatchDescriptor | undefined {
+): InterruptedToolBatchDescriptor | undefined => {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -45,4 +45,4 @@ export function readInterruptedToolBatchDescriptor(
     executable: descriptor.executable,
     toolExecutionMode: descriptor.toolExecutionMode,
   };
-}
+};

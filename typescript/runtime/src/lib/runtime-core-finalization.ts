@@ -113,12 +113,12 @@ export interface RuntimeCoreFinalizationHost {
  * @returns `true` when a pause was published (the caller must stop the
  *   execution flow); `false` when `pauseContext` is `undefined`.
  */
-export function publishPauseOutcome(
+export const publishPauseOutcome = (
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
   pauseContext: PauseContext | undefined,
   loopState: LoopState
-): boolean {
+): boolean => {
   if (pauseContext === undefined) {
     return false;
   }
@@ -148,18 +148,18 @@ export function publishPauseOutcome(
     loopState
   );
   return true;
-}
+};
 
 /**
  * Publish an `approval.resolved` event for a resumed execution, or do nothing
  * when no approval response is present.
  */
-export function publishApprovalResolved(
+export const publishApprovalResolved = (
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
   response: ApprovalResponse | undefined,
   loopState: LoopState
-): void {
+): void => {
   if (response === undefined) {
     return;
   }
@@ -173,7 +173,50 @@ export function publishApprovalResolved(
     },
     loopState
   );
-}
+};
+
+/**
+ * Move the handle to the `failed` phase and project a finalization failure:
+ * the root cause (when present) as the fatal error and the finalization
+ * error as a secondary non-fatal error, or the finalization error alone as
+ * fatal.
+ */
+const projectFinalizationFailure = (
+  host: RuntimeCoreFinalizationHost,
+  handle: RuntimeExecutionHandle,
+  loopState: LoopState,
+  finalizationFailure: FinalizationFailure
+): void => {
+  handle.replaceStatus({
+    activeAgent: loopState.activeConfig.name,
+    iterationCount: handle.status().iterationCount,
+    manifest: handle.status().manifest,
+    phase: "failed",
+  });
+
+  if (finalizationFailure.rootCause === undefined) {
+    host.publishProjectedError(
+      handle,
+      finalizationFailure.finalizationError,
+      true,
+      loopState
+    );
+    return;
+  }
+
+  host.publishProjectedError(
+    handle,
+    finalizationFailure.rootCause,
+    true,
+    loopState
+  );
+  host.publishProjectedError(
+    handle,
+    finalizationFailure.finalizationError,
+    false,
+    loopState
+  );
+};
 
 /**
  * Terminal failure path for an execution session: pick the authoritative
@@ -194,12 +237,12 @@ export function publishApprovalResolved(
  * @param failActiveRunIfNeeded - Callback that marks the handle's active
  *   kernel run (if any) as failed before status finalization.
  */
-export async function handleExecutionFailure(
+export const handleExecutionFailure = async (
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
   error: unknown,
   failActiveRunIfNeeded: (handle: RuntimeExecutionHandle) => Promise<void>
-): Promise<void> {
+): Promise<void> => {
   const finalizationFailure =
     error instanceof FinalizationFailure ? error : undefined;
   const runtimeError = normalizeError(error);
@@ -284,7 +327,7 @@ export async function handleExecutionFailure(
     },
     loopState
   );
-}
+};
 
 /**
  * Complete an execution with its final resolution and close the turn.
@@ -304,14 +347,14 @@ export async function handleExecutionFailure(
  *   the finalization error and — for a hard-failure resolution — the original
  *   root cause.
  */
-export async function completeExecution(
+export const completeExecution = async (
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
   resolution: RuntimeResolution,
   partial: boolean,
   loopState: LoopState,
   enteredIterationLoop: boolean
-): Promise<void> {
+): Promise<void> => {
   if (enteredIterationLoop) {
     const headState = await host.loadHeadState(handle.request.branchId);
     const afterTurn = await runAfterTurnHooks({
@@ -369,7 +412,7 @@ export async function completeExecution(
     },
     loopState
   );
-}
+};
 
 /**
  * Finalize an execution that was cancelled while paused for tool approval.
@@ -379,7 +422,7 @@ export async function completeExecution(
  * finalize the rejected paused tool calls into a cancellation outcome, and
  * completes the execution with that outcome via `completeExecutionFn`.
  */
-export async function finalizePausedCancellation(
+export const finalizePausedCancellation = async (
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
   pauseContext: PauseContext,
@@ -390,7 +433,7 @@ export async function finalizePausedCancellation(
     loopState: LoopState,
     enteredIterationLoop: boolean
   ) => Promise<void>
-): Promise<void> {
+): Promise<void> => {
   const loopState: LoopState = {
     activeConfig: pauseContext.activeConfig,
     activeRunnerId: pauseContext.activeRunnerId,
@@ -421,47 +464,4 @@ export async function finalizePausedCancellation(
     loopState,
     true
   );
-}
-
-/**
- * Move the handle to the `failed` phase and project a finalization failure:
- * the root cause (when present) as the fatal error and the finalization
- * error as a secondary non-fatal error, or the finalization error alone as
- * fatal.
- */
-function projectFinalizationFailure(
-  host: RuntimeCoreFinalizationHost,
-  handle: RuntimeExecutionHandle,
-  loopState: LoopState,
-  finalizationFailure: FinalizationFailure
-): void {
-  handle.replaceStatus({
-    activeAgent: loopState.activeConfig.name,
-    iterationCount: handle.status().iterationCount,
-    manifest: handle.status().manifest,
-    phase: "failed",
-  });
-
-  if (finalizationFailure.rootCause === undefined) {
-    host.publishProjectedError(
-      handle,
-      finalizationFailure.finalizationError,
-      true,
-      loopState
-    );
-    return;
-  }
-
-  host.publishProjectedError(
-    handle,
-    finalizationFailure.rootCause,
-    true,
-    loopState
-  );
-  host.publishProjectedError(
-    handle,
-    finalizationFailure.finalizationError,
-    false,
-    loopState
-  );
-}
+};
