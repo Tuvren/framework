@@ -55,10 +55,10 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
  * @throws TuvrenRuntimeError with code `invalid_handoff_mode` for any other
  *   mode, which requires an explicit builder resolved elsewhere.
  */
-export function resolveRuntimeCoreDefaultHandoffContextBuilder(
+export const resolveRuntimeCoreDefaultHandoffContextBuilder = (
   handoffContextBuilder: HandoffContextBuilder | undefined,
   mode: string
-): HandoffContextBuilder {
+): HandoffContextBuilder => {
   switch (mode) {
     case "last_output_only": {
       return createLastOutputOnlyHandoffContextBuilder();
@@ -80,7 +80,7 @@ export function resolveRuntimeCoreDefaultHandoffContextBuilder(
       );
     }
   }
-}
+};
 
 /**
  * Build the context-engineering helper bundle over the current message
@@ -94,12 +94,12 @@ export function resolveRuntimeCoreDefaultHandoffContextBuilder(
  * @param messageHashes - Ordered hashes of the current head messages.
  * @param messages - The decoded messages matching `messageHashes`.
  */
-export function createRuntimeCoreContextHelperBundle(
+export const createRuntimeCoreContextHelperBundle = (
   kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
   messageHashes: HashString[],
   messages: TuvrenMessage[]
-): HelperBundle {
+): HelperBundle => {
   return createRuntimeContextEngineeringHelpers(
     {
       cloneAgentConfigForRequest: (config) =>
@@ -119,7 +119,7 @@ export function createRuntimeCoreContextHelperBundle(
     messageHashes,
     messages
   );
-}
+};
 
 /**
  * Apply a terminal `handoff` resolution by switching the active agent.
@@ -139,7 +139,7 @@ export function createRuntimeCoreContextHelperBundle(
  *   when omitted, failures propagate without rollback.
  * @returns Whether a handoff transition was applied (loop should continue).
  */
-export async function applyRuntimeCoreTerminalAgentTransitionIfNeeded(
+export const applyRuntimeCoreTerminalAgentTransitionIfNeeded = async (
   dependencies: {
     contextOps: RuntimeCoreContextOpsHost;
     kernel: RuntimeKernel;
@@ -150,7 +150,7 @@ export async function applyRuntimeCoreTerminalAgentTransitionIfNeeded(
   resolution: RuntimeResolution,
   loopState: LoopState,
   stableHeadTurnNodeHash?: HashString
-): Promise<boolean> {
+): Promise<boolean> => {
   if (resolution.type !== "handoff") {
     return false;
   }
@@ -199,4 +199,4 @@ export async function applyRuntimeCoreTerminalAgentTransitionIfNeeded(
   loopState.clientEndpointBoundary = handoff.clientEndpointBoundary;
   loopState.carriedStateUpdates = [];
   return true;
-}
+};
