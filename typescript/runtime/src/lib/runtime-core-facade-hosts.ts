@@ -201,11 +201,11 @@ interface RuntimeCoreFacadeHostDependencies {
     branchId: string,
     schemaId: string,
     startTurnNodeHash: HashString,
-    steps: Array<{
+    steps: {
       deterministic: boolean;
       id: string;
       sideEffects: boolean;
-    }>
+    }[]
   ): Promise<void>;
   defaultMaxParallelToolCalls: number;
   defaultRunnerId: string;
@@ -394,71 +394,6 @@ export function createRuntimeCoreFacadeHosts(
       syncRunLeaseStateFromStepResult: (...args) =>
         dependencies.syncRunLeaseStateFromStepResult(...args),
     }),
-    runner: buildRuntimeCoreRunnerHost({
-      completeIterationRun: (...args) =>
-        dependencies.completeIterationRun(...args),
-      createRunnerAgentConfigSnapshot: (config) =>
-        dependencies.createRunnerAgentConfigSnapshot(config),
-      createRunnerHandoffContextPlan: (...args) =>
-        dependencies.createRunnerHandoffContextPlan(...args),
-      createRunnerPublishedEvent: (...args) =>
-        dependencies.createRunnerPublishedEvent(...args),
-      createIterationTree: (...args) =>
-        dependencies.createIterationTree(...args),
-      createReadonlyRunnerToolRegistry: (registry) =>
-        dependencies.createReadonlyRunnerToolRegistry(registry),
-      createToolBatchEnvironment: (...args) =>
-        dependencies.createToolBatchEnvironment(...args),
-      failTrackedRunWithoutBranchAdvance: (...args) =>
-        dependencies.failTrackedRunWithoutBranchAdvance(...args),
-      now: () => dependencies.now(),
-      publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
-      publishProjectedError: (...args) =>
-        dependencies.publishProjectedError(...args),
-      stageManifest: (...args) => dependencies.stageManifest(...args),
-      stageMessage: (...args) => dependencies.stageMessage(...args),
-      stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
-      stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
-    }),
-    runnerSupport: buildRuntimeCoreRunnerSupportHost({
-      cloneAgentConfigForRequest: (config) =>
-        dependencies.cloneAgentConfigForRequest(config),
-      createContextEngineeringHelpers: (messageHashes, messages) =>
-        dependencies.createContextEngineeringHelpers(messageHashes, messages),
-      createFrozenSnapshot,
-      defaultMaxParallelToolCalls: dependencies.defaultMaxParallelToolCalls,
-      now: () => dependencies.now(),
-      publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
-      publishEvent: (handle, event, loopState) =>
-        dependencies.publishEvent(
-          handle,
-          event as unknown as TuvrenStreamEvent,
-          loopState
-        ),
-      publishProjectedError: (handle, error, fatal, loopState) =>
-        dependencies.publishProjectedError(
-          handle,
-          error as Error,
-          fatal,
-          loopState
-        ),
-      resolveActiveMaxParallelToolCalls: (
-        loopState,
-        defaultMaxParallelToolCalls
-      ) =>
-        dependencies.resolveActiveMaxParallelToolCalls(
-          loopState,
-          defaultMaxParallelToolCalls
-        ),
-      resolveDefaultHandoffContextBuilder: (mode) =>
-        dependencies.resolveDefaultHandoffContextBuilder(mode),
-      resolveTargetAgent: (targetAgent) =>
-        dependencies.resolveTargetAgent(targetAgent),
-      stageManifest: (runId, manifest, taskId) =>
-        dependencies.stageManifest(runId, manifest, undefined, taskId),
-      stageMessage: (runId, message, taskId) =>
-        dependencies.stageMessage(runId, message, taskId as string),
-    }),
     events: buildRuntimeCoreEventsHost(
       () => dependencies.createId(),
       () => dependencies.enableStateObservability(),
@@ -531,6 +466,71 @@ export function createRuntimeCoreFacadeHosts(
         dependencies.getOrCreateManifestExtensionStateWarningKeys(handle),
       kernel: dependencies.kernel,
       payloadCodecBinding: dependencies.payloadCodecBinding,
+    }),
+    runner: buildRuntimeCoreRunnerHost({
+      completeIterationRun: (...args) =>
+        dependencies.completeIterationRun(...args),
+      createRunnerAgentConfigSnapshot: (config) =>
+        dependencies.createRunnerAgentConfigSnapshot(config),
+      createRunnerHandoffContextPlan: (...args) =>
+        dependencies.createRunnerHandoffContextPlan(...args),
+      createRunnerPublishedEvent: (...args) =>
+        dependencies.createRunnerPublishedEvent(...args),
+      createIterationTree: (...args) =>
+        dependencies.createIterationTree(...args),
+      createReadonlyRunnerToolRegistry: (registry) =>
+        dependencies.createReadonlyRunnerToolRegistry(registry),
+      createToolBatchEnvironment: (...args) =>
+        dependencies.createToolBatchEnvironment(...args),
+      failTrackedRunWithoutBranchAdvance: (...args) =>
+        dependencies.failTrackedRunWithoutBranchAdvance(...args),
+      now: () => dependencies.now(),
+      publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
+      publishProjectedError: (...args) =>
+        dependencies.publishProjectedError(...args),
+      stageManifest: (...args) => dependencies.stageManifest(...args),
+      stageMessage: (...args) => dependencies.stageMessage(...args),
+      stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
+      stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
+    }),
+    runnerSupport: buildRuntimeCoreRunnerSupportHost({
+      cloneAgentConfigForRequest: (config) =>
+        dependencies.cloneAgentConfigForRequest(config),
+      createContextEngineeringHelpers: (messageHashes, messages) =>
+        dependencies.createContextEngineeringHelpers(messageHashes, messages),
+      createFrozenSnapshot,
+      defaultMaxParallelToolCalls: dependencies.defaultMaxParallelToolCalls,
+      now: () => dependencies.now(),
+      publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
+      publishEvent: (handle, event, loopState) =>
+        dependencies.publishEvent(
+          handle,
+          event as unknown as TuvrenStreamEvent,
+          loopState
+        ),
+      publishProjectedError: (handle, error, fatal, loopState) =>
+        dependencies.publishProjectedError(
+          handle,
+          error as Error,
+          fatal,
+          loopState
+        ),
+      resolveActiveMaxParallelToolCalls: (
+        loopState,
+        defaultMaxParallelToolCalls
+      ) =>
+        dependencies.resolveActiveMaxParallelToolCalls(
+          loopState,
+          defaultMaxParallelToolCalls
+        ),
+      resolveDefaultHandoffContextBuilder: (mode) =>
+        dependencies.resolveDefaultHandoffContextBuilder(mode),
+      resolveTargetAgent: (targetAgent) =>
+        dependencies.resolveTargetAgent(targetAgent),
+      stageManifest: (runId, manifest, taskId) =>
+        dependencies.stageManifest(runId, manifest, undefined, taskId),
+      stageMessage: (runId, message, taskId) =>
+        dependencies.stageMessage(runId, message, taskId as string),
     }),
     startup: buildRuntimeCoreStartupHost({
       applyTerminalAgentTransitionIfNeeded: (...args) =>

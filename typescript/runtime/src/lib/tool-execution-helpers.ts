@@ -384,7 +384,7 @@ export function normalizeApprovalRequest(
     (pending) => pending.callId === toolCall.callId
   );
 
-  if (existingIndex >= 0) {
+  if (existingIndex !== -1) {
     return {
       completedResults: request.completedResults,
       toolCalls: request.toolCalls.map((pending, index) =>
@@ -1035,7 +1035,7 @@ export function collectExtensionStateUpdate(
 export function getAroundToolHandlers(
   extensions: TuvrenExtension[],
   toolName: string
-): Array<{
+): {
   extensionName: string;
   handler: (
     context: AroundToolContext,
@@ -1043,8 +1043,8 @@ export function getAroundToolHandlers(
   ) => Promise<AroundToolResult> | AroundToolResult;
   receiver: object;
   timeout?: number;
-}> {
-  const handlers: Array<{
+}[] {
+  const handlers: {
     extensionName: string;
     handler: (
       context: AroundToolContext,
@@ -1052,7 +1052,7 @@ export function getAroundToolHandlers(
     ) => Promise<AroundToolResult> | AroundToolResult;
     receiver: object;
     timeout?: number;
-  }> = [];
+  }[] = [];
 
   for (const extension of extensions) {
     const spec = extension.aroundTool;

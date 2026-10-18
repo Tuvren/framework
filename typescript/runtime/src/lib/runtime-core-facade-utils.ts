@@ -16,11 +16,8 @@
 
 import { createHash } from "node:crypto";
 
-import {
-  assertKernelRecord,
-  type HashString,
-  TuvrenRuntimeError,
-} from "@tuvren/core";
+import { assertKernelRecord, TuvrenRuntimeError } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
 import type { ClientEndpointBoundary } from "@tuvren/core/capabilities";
 import type { AgentConfig, ContextManifest } from "@tuvren/core/execution";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
