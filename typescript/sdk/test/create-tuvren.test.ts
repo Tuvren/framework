@@ -23,12 +23,8 @@ import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import type { RuntimeBackend } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
-import {
-  type CreateTuvrenOptions,
-  createTuvren,
-  type McpToolSource,
-  type TuvrenInstance,
-} from "../src/index.js";
+import { createTuvren } from '../src/index.js';
+import type { CreateTuvrenOptions, McpToolSource, TuvrenInstance } from '../src/index.js';
 
 // ADR-0057: `createTuvren` accepts constructed instances only — no string-kind
 // backend/runner shorthands and no implicit default runner. These tests exercise
@@ -65,11 +61,11 @@ function makeMockMcpSource(name = "test-server"): McpToolSource & {
 } {
   const closed = { count: 0 };
   return {
-    closed,
     close() {
       closed.count++;
       return Promise.resolve();
     },
+    closed,
     refresh() {
       return Promise.resolve({ tools: [] });
     },
@@ -157,10 +153,10 @@ describe("createTuvren", () => {
     test("rejects duplicate top-level and runtimeOptions telemetry sinks", () => {
       const telemetry = {
         event() {
-          return undefined;
+          return;
         },
         span() {
-          return undefined;
+          return;
         },
       };
 
@@ -301,7 +297,7 @@ describe("createTuvren", () => {
         baseOptions({ backend: makeThrowingBackend(), tools: [throwingSource] })
       );
 
-      const err = await instance[Symbol.asyncDispose]().catch((e) => e);
+      const err = await instance[Symbol.asyncDispose]().catch((error) => error);
       expect(err).toBeInstanceOf(Error);
       expect((err as Error).message).toContain("mcp close error");
       expect((err as Error).message).toContain("backend close error");

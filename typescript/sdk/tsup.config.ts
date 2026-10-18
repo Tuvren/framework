@@ -23,6 +23,6 @@ export default defineConfig({
   format: ["esm"],
   outDir: "dist",
   sourcemap: false,
-  tsconfig: "tsconfig.tsup.json",
   target: "esnext",
+  tsconfig: "tsconfig.tsup.json",
 });
