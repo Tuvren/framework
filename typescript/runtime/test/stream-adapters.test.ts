@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
 import { EventType } from "@ag-ui/core";
@@ -32,6 +31,7 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   hasAssistantText,
   textSignal,
   waitFor,
@@ -44,7 +44,7 @@ const readStringProperty = (value: unknown, propertyName: string): string => {
     throw new Error(`${propertyName} input must be an object`);
   }
 
-  const propertyValue = Reflect.get(value, propertyName);
+  const propertyValue: unknown = Reflect.get(value, propertyName);
   if (typeof propertyValue !== "string") {
     throw new TypeError(`${propertyName} input must be a string`);
   }
@@ -56,7 +56,7 @@ describe("stream adapter integration", () => {
     const harness = createFakeKernelHarness();
     const runner: RuntimeRunner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           data: {
             stage: "executed",
           },
@@ -74,9 +74,9 @@ describe("stream adapter integration", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -106,11 +106,13 @@ describe("stream adapter integration", () => {
       )
     ).toBe(true);
     expect(
-      sseFrames.some(
-        (frame) =>
-          frame.event === "turn.start" &&
-          JSON.parse(frame.data).threadId === thread.threadId
-      )
+      sseFrames.some((frame) => {
+        if (frame.event !== "turn.start") {
+          return false;
+        }
+        const frameData: unknown = JSON.parse(frame.data);
+        return readStringProperty(frameData, "threadId") === thread.threadId;
+      })
     ).toBe(true);
     expect(aguiEvents.map((event) => event.type)).toContain(
       EventType.RUN_STARTED
@@ -145,7 +147,7 @@ describe("stream adapter integration", () => {
     let emailCalls = 0;
     let searchCalls = 0;
     const runner: RuntimeRunner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const toolMessageCount = context.messages.filter(
           (message) => message.role === "tool"
         ).length;
@@ -182,11 +184,11 @@ describe("stream adapter integration", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -319,19 +321,17 @@ describe("stream adapter integration", () => {
   test("projects structured output turns through SSE and AG-UI fallbacks", async () => {
     const harness = createFakeKernelHarness();
     const runner: RuntimeRunner = {
-      async execute() {
-        return {
-          messages: [assistantStructured("summary", { status: "ready" })],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited(() => ({
+        messages: [assistantStructured("summary", { status: "ready" })],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -373,7 +373,7 @@ describe("stream adapter integration", () => {
   test("surfaces steering incorporation through tee branches", async () => {
     const harness = createFakeKernelHarness();
     const runner: RuntimeRunner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const steeringMessage = context.messages.find(
           (message) =>
             message.role === "user" &&
@@ -399,11 +399,11 @@ describe("stream adapter integration", () => {
             type: "continue_iteration",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -476,9 +476,9 @@ describe("stream adapter integration", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
