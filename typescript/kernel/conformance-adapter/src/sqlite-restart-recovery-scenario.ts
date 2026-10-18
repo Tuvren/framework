@@ -41,15 +41,12 @@ const RESTART_SCHEMA = {
   schemaId: "schema_restart_recovery",
 } satisfies TurnTreeSchema;
 
-const readRequiredStringField = (
-  value: unknown,
-  fieldName: string
-): string => {
+const readRequiredStringField = (value: unknown, fieldName: string): string => {
   if (typeof value !== "object" || value === null) {
     throw new Error("restart metadata must be a JSON object");
   }
 
-  const fieldValue = Reflect.get(value, fieldName);
+  const fieldValue: unknown = Reflect.get(value, fieldName);
 
   if (typeof fieldValue !== "string") {
     throw new TypeError(
@@ -61,7 +58,7 @@ const readRequiredStringField = (
 };
 
 const parseRestartMetadata = (jsonText: string): RestartMetadata => {
-  const value = JSON.parse(jsonText);
+  const value: unknown = JSON.parse(jsonText);
   return {
     branchId: readRequiredStringField(value, "branchId"),
     committedMessageHash: readRequiredStringField(
@@ -116,10 +113,12 @@ const loadNodeRuntime = async (): Promise<{
     "../../backends/sqlite/dist/index.js",
     import.meta.url
   );
-  const [runtimeKernelModule, backendSqliteModule] = await Promise.all([
-    import(runtimeKernelModuleUrl.href),
-    import(backendSqliteModuleUrl.href),
-  ]);
+  const runtimeKernelModule: unknown = await import(
+    runtimeKernelModuleUrl.href
+  );
+  const backendSqliteModule: unknown = await import(
+    backendSqliteModuleUrl.href
+  );
 
   if (!hasCreateRuntimeKernel(runtimeKernelModule)) {
     throw new Error("runtime kernel module did not export createRuntimeKernel");
@@ -276,7 +275,7 @@ const runReadPhase = async (
 };
 
 const main = async (): Promise<void> => {
-  const [, , phase, databasePath, metadataPath] = process.argv;
+  const [phase, databasePath, metadataPath] = process.argv.slice(2);
 
   if (
     (phase !== "write" && phase !== "read") ||

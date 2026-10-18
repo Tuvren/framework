@@ -16,11 +16,18 @@
 
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { once } from "node:events";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import type {
+  createMemoryBackend as CreateMemoryBackend,
+  createMemoryScopeStore as CreateMemoryScopeStore,
+} from "@tuvren/backend-memory";
+import type { createPostgresBackend as CreatePostgresBackend } from "@tuvren/backend-postgres";
+import type { createSqliteBackend as CreateSqliteBackend } from "@tuvren/backend-sqlite";
 import {
   assertRecoveryState,
   assertTurnTreeChangeSet,
@@ -59,11 +66,7 @@ export interface LogicalFixture {
 
 interface ConfiguredBackendHandle {
   backend: RuntimeBackend;
-  cleanup(): Promise<void>;
-}
-
-interface DisposablePostgresBackend {
-  destroy(options?: { dropSchema?: boolean }): Promise<void>;
+  cleanup: () => Promise<void>;
 }
 
 let canonicalSchemaPromise: Promise<TurnTreeSchema> | undefined;
@@ -90,13 +93,37 @@ export interface ScopedBackendPair {
   backendB: RuntimeBackend;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const hasCreatePostgresBackend = (
+  value: unknown
+): value is { createPostgresBackend: typeof CreatePostgresBackend } =>
+  isRecord(value) && typeof value.createPostgresBackend === "function";
+
+const hasCreateSqliteBackend = (
+  value: unknown
+): value is { createSqliteBackend: typeof CreateSqliteBackend } =>
+  isRecord(value) && typeof value.createSqliteBackend === "function";
+
+const hasMemoryBackendFactories = (
+  value: unknown
+): value is {
+  createMemoryBackend: typeof CreateMemoryBackend;
+  createMemoryScopeStore: typeof CreateMemoryScopeStore;
+} =>
+  isRecord(value) &&
+  typeof value.createMemoryBackend === "function" &&
+  typeof value.createMemoryScopeStore === "function";
+
 export const loadCanonicalSchema = async (): Promise<TurnTreeSchema> => {
-  canonicalSchemaPromise ??= readFile(CANONICAL_SCHEMA_URL, "utf-8")
-    .then((contents) => JSON.parse(contents) as unknown)
-    .then((value) => {
-      assertTurnTreeSchema(value, "canonical kernel conformance schema");
-      return value;
-    });
+  canonicalSchemaPromise ??= (async () => {
+    const contents = await readFile(CANONICAL_SCHEMA_URL, "utf-8");
+    const value: unknown = JSON.parse(contents);
+
+    assertTurnTreeSchema(value, "canonical kernel conformance schema");
+    return value;
+  })();
 
   return await canonicalSchemaPromise;
 };
@@ -155,12 +182,10 @@ export const readErrorCode = (error: unknown): string => {
   return "unknown_error";
 };
 
-export const result = (value: Record<string, unknown>): OperationOutcome => {
-  return {
-    kind: "result",
-    value,
-  };
-};
+export const result = (value: Record<string, unknown>): OperationOutcome => ({
+  kind: "result",
+  value,
+});
 
 export const hexToBytes = (value: string): Uint8Array => {
   if (value.length % 2 !== 0) {
@@ -180,11 +205,11 @@ export const readRecord = (
   value: unknown,
   label: string
 ): Record<string, unknown> => {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+  if (!isRecord(value)) {
     throw new Error(`${label} must be an object`);
   }
 
-  return value as Record<string, unknown>;
+  return value;
 };
 
 const readArray = (value: unknown, label: string): unknown[] => {
@@ -204,7 +229,7 @@ export const readString = (value: unknown, label: string): string => {
 };
 
 export const readFixture = (input: unknown): Record<string, unknown> => {
-  const object = readRecord(input, "adapter input") as AdapterInput;
+  const object = readRecord(input, "adapter input");
   return readRecord(object.fixture, "adapter input fixture");
 };
 
@@ -219,7 +244,7 @@ export const readFixture = (input: unknown): Record<string, unknown> => {
 export const readFixtureOptional = (
   input: unknown
 ): Record<string, unknown> | undefined => {
-  const object = readRecord(input, "adapter input") as AdapterInput;
+  const object = readRecord(input, "adapter input");
   return object.fixture === undefined
     ? undefined
     : readRecord(object.fixture, "adapter input fixture");
@@ -269,15 +294,19 @@ const createConfiguredBackend = async (
       "../../backends/postgres/dist/index.js",
       import.meta.url
     );
-    const { createPostgresBackend } = await import(
+    const postgresBackendModule: unknown = await import(
       postgresBackendModuleUrl.href
     );
+    if (!hasCreatePostgresBackend(postgresBackendModule)) {
+      throw new Error("postgres backend module is missing its factory");
+    }
+    const { createPostgresBackend } = postgresBackendModule;
     const schemaName = `${config.adapterId.replaceAll("-", "_")}_${randomUUID().replaceAll("-", "_")}`;
     const backend = createPostgresBackend({
       database: process.env.PGDATABASE ?? "tuvren_runtime",
       schemaName,
       ...clock,
-    }) as ReturnType<typeof createPostgresBackend> & DisposablePostgresBackend;
+    });
 
     return {
       backend,
@@ -292,11 +321,17 @@ const createConfiguredBackend = async (
       "../../backends/sqlite/dist/index.js",
       import.meta.url
     );
-    const { createSqliteBackend } = await import(sqliteBackendModuleUrl.href);
-    const tempDirectory = await mkdtemp(
-      join(tmpdir(), `${config.adapterId}-${process.pid}-`)
+    const sqliteBackendModule: unknown = await import(
+      sqliteBackendModuleUrl.href
     );
-    const databasePath = join(tempDirectory, `${randomUUID()}.sqlite`);
+    if (!hasCreateSqliteBackend(sqliteBackendModule)) {
+      throw new Error("sqlite backend module is missing its factory");
+    }
+    const { createSqliteBackend } = sqliteBackendModule;
+    const tempDirectory = await mkdtemp(
+      path.join(tmpdir(), `${config.adapterId}-${process.pid}-`)
+    );
+    const databasePath = path.join(tempDirectory, `${randomUUID()}.sqlite`);
     return {
       backend: createSqliteBackend({ databasePath, ...clock }),
       cleanup: async () => {
@@ -309,7 +344,13 @@ const createConfiguredBackend = async (
     "../../backends/memory/dist/index.js",
     import.meta.url
   );
-  const { createMemoryBackend } = await import(memoryBackendModuleUrl.href);
+  const memoryBackendModule: unknown = await import(
+    memoryBackendModuleUrl.href
+  );
+  if (!hasMemoryBackendFactories(memoryBackendModule)) {
+    throw new Error("memory backend module is missing its factories");
+  }
+  const { createMemoryBackend } = memoryBackendModule;
   return {
     backend: createMemoryBackend({ ...clock }),
     cleanup: async () => {
@@ -322,7 +363,7 @@ const createConformanceKernel = async (
   schema: TurnTreeSchema,
   config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" }
 ): Promise<{
-  cleanup(): Promise<void>;
+  cleanup: () => Promise<void>;
   kernel: ReturnType<typeof createRuntimeKernel>;
 }> => {
   const configuredBackend = await createConfiguredBackend(config);
@@ -336,22 +377,22 @@ const createConformanceKernel = async (
   };
 };
 
-interface ClosableBackend {
-  close?(): Promise<void>;
-}
-
 const createScopedBackendPair = async (config: {
   adapterId: string;
   backend: "memory" | "postgres" | "sqlite";
-}): Promise<{ cleanup(): Promise<void>; pair: ScopedBackendPair }> => {
+}): Promise<{ cleanup: () => Promise<void>; pair: ScopedBackendPair }> => {
   if (config.backend === "postgres") {
     const postgresBackendModuleUrl = new URL(
       "../../backends/postgres/dist/index.js",
       import.meta.url
     );
-    const { createPostgresBackend } = await import(
+    const postgresBackendModule: unknown = await import(
       postgresBackendModuleUrl.href
     );
+    if (!hasCreatePostgresBackend(postgresBackendModule)) {
+      throw new Error("postgres backend module is missing its factory");
+    }
+    const { createPostgresBackend } = postgresBackendModule;
     const schemaName = `${config.adapterId.replaceAll("-", "_")}_${randomUUID().replaceAll("-", "_")}`;
     const baseOptions = {
       database: process.env.PGDATABASE ?? "tuvren_runtime",
@@ -360,11 +401,11 @@ const createScopedBackendPair = async (config: {
     const backendA = createPostgresBackend({
       ...baseOptions,
       scope: CONFORMANCE_SCOPE_A,
-    }) as RuntimeBackend & DisposablePostgresBackend;
+    });
     const backendB = createPostgresBackend({
       ...baseOptions,
       scope: CONFORMANCE_SCOPE_B,
-    }) as RuntimeBackend & DisposablePostgresBackend;
+    });
 
     return {
       cleanup: async () => {
@@ -382,19 +423,25 @@ const createScopedBackendPair = async (config: {
       "../../backends/sqlite/dist/index.js",
       import.meta.url
     );
-    const { createSqliteBackend } = await import(sqliteBackendModuleUrl.href);
-    const tempDirectory = await mkdtemp(
-      join(tmpdir(), `${config.adapterId}-${process.pid}-scope-`)
+    const sqliteBackendModule: unknown = await import(
+      sqliteBackendModuleUrl.href
     );
-    const databasePath = join(tempDirectory, `${randomUUID()}.sqlite`);
+    if (!hasCreateSqliteBackend(sqliteBackendModule)) {
+      throw new Error("sqlite backend module is missing its factory");
+    }
+    const { createSqliteBackend } = sqliteBackendModule;
+    const tempDirectory = await mkdtemp(
+      path.join(tmpdir(), `${config.adapterId}-${process.pid}-scope-`)
+    );
+    const databasePath = path.join(tempDirectory, `${randomUUID()}.sqlite`);
     const backendA = createSqliteBackend({
       databasePath,
       scope: CONFORMANCE_SCOPE_A,
-    }) as RuntimeBackend & ClosableBackend;
+    });
     const backendB = createSqliteBackend({
       databasePath,
       scope: CONFORMANCE_SCOPE_B,
-    }) as RuntimeBackend & ClosableBackend;
+    });
 
     return {
       cleanup: async () => {
@@ -410,9 +457,13 @@ const createScopedBackendPair = async (config: {
     "../../backends/memory/dist/index.js",
     import.meta.url
   );
-  const { createMemoryBackend, createMemoryScopeStore } = await import(
+  const memoryBackendModule: unknown = await import(
     memoryBackendModuleUrl.href
   );
+  if (!hasMemoryBackendFactories(memoryBackendModule)) {
+    throw new Error("memory backend module is missing its factories");
+  }
+  const { createMemoryBackend, createMemoryScopeStore } = memoryBackendModule;
   const store = createMemoryScopeStore();
 
   return {
@@ -472,45 +523,35 @@ export const runRestartRecoveryPhase = async (
   databasePath: string,
   metadataPath: string
 ): Promise<Record<string, unknown>> => {
-  const result = await new Promise<{
-    code: number | null;
-    signal: NodeJS.Signals | null;
-    stderr: string;
-    stdout: string;
-  }>((resolve, reject) => {
-    const child = spawn(
-      "node",
-      [
-        fileURLToPath(SQLITE_RESTART_SCENARIO_URL),
-        phase,
-        databasePath,
-        metadataPath,
-      ],
-      {
-        stdio: ["ignore", "pipe", "pipe"],
-      }
-    );
-    let stdout = "";
-    let stderr = "";
+  const child = spawn(
+    "node",
+    [
+      fileURLToPath(SQLITE_RESTART_SCENARIO_URL),
+      phase,
+      databasePath,
+      metadataPath,
+    ],
+    {
+      stdio: ["ignore", "pipe", "pipe"],
+    }
+  );
+  let stdout = "";
+  let stderr = "";
 
-    child.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString("utf-8");
-    });
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString("utf-8");
-    });
-    child.on("error", reject);
-    child.on("close", (code, signal) => {
-      resolve({ code, signal, stderr, stdout });
-    });
+  child.stdout.on("data", (chunk: Buffer) => {
+    stdout += chunk.toString("utf-8");
   });
+  child.stderr.on("data", (chunk: Buffer) => {
+    stderr += chunk.toString("utf-8");
+  });
+  await once(child, "close");
 
-  if (result.code !== 0) {
+  if (child.exitCode !== 0) {
     throw new Error(
-      `restart recovery ${phase} phase failed: code=${String(result.code)} signal=${String(result.signal)} stderr=${result.stderr || "<empty>"}`
+      `restart recovery ${phase} phase failed: code=${String(child.exitCode)} signal=${String(child.signalCode)} stderr=${stderr || "<empty>"}`
     );
   }
 
-  const value = JSON.parse(result.stdout) as unknown;
+  const value: unknown = JSON.parse(stdout);
   return readRecord(value, `restart recovery ${phase} output`);
 };
