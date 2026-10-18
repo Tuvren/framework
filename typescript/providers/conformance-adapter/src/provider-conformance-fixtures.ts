@@ -18,11 +18,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  assertTuvrenModelResponse,
-  type TuvrenModelResponse,
-  type TuvrenPrompt,
-} from "@tuvren/provider-api";
+import { assertTuvrenModelResponse } from "@tuvren/provider-api";
+import type { TuvrenModelResponse, TuvrenPrompt } from "@tuvren/provider-api";
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
@@ -57,8 +54,8 @@ function loadProviderConformanceFixtures(): ProviderConformanceFixtureSet {
   const manifest = readConformanceManifest(manifestPath);
   const fixturePath = join(dirname(manifestPath), manifest.fixturePath);
   const schemaPath = join(dirname(manifestPath), manifest.fixtureSchemaPath);
-  const fixture = JSON.parse(readFileSync(fixturePath, "utf8"));
-  const schema = readJsonSchema(JSON.parse(readFileSync(schemaPath, "utf8")));
+  const fixture = JSON.parse(readFileSync(fixturePath, "utf-8"));
+  const schema = readJsonSchema(JSON.parse(readFileSync(schemaPath, "utf-8")));
 
   assertSchemaValid(schema, fixture, "provider conformance fixture");
   assertProviderConformanceFixtureSet(fixture);
@@ -89,12 +86,12 @@ function readConformanceManifest(manifestPath: string): {
   fixturePath: string;
   fixtureSchemaPath: string;
 } {
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
   const manifestSchema = readJsonSchema(
     JSON.parse(
       readFileSync(
         join(dirname(manifestPath), MANIFEST_SCHEMA_RELATIVE_PATH),
-        "utf8"
+        "utf-8"
       )
     )
   );

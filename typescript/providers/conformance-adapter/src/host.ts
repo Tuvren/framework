@@ -25,8 +25,10 @@ import type { ToolExecutionContext, ToolResultPart } from "@tuvren/core/tools";
 import {
   assertProviderStreamChunk,
   assertTuvrenModelResponse,
-  type ProviderStreamChunk,
-  type StructuredOutputRequest,
+} from "@tuvren/provider-api";
+import type {
+  ProviderStreamChunk,
+  StructuredOutputRequest,
 } from "@tuvren/provider-api";
 import {
   createOfficialMcpEverythingStdioCommand,
@@ -79,49 +81,70 @@ class TypeScriptProviderAdapter {
   ): Promise<OperationOutcome> {
     try {
       switch (operation) {
-        case "providers.bridge.generate-mapping":
+        case "providers.bridge.generate-mapping": {
           return result(await generateMapping());
-        case "providers.bridge.stream-metadata-continuity":
+        }
+        case "providers.bridge.stream-metadata-continuity": {
           return result(await streamMetadataContinuity());
-        case "providers.conversation-state.continuity-carriage":
+        }
+        case "providers.conversation-state.continuity-carriage": {
           return result(await conversationStateContinuityCarriage());
-        case "providers.conversation-state.continuity-replay":
+        }
+        case "providers.conversation-state.continuity-replay": {
           return result(await conversationStateContinuityReplay());
-        case "providers.conversation-state.continuity-roundtrip":
+        }
+        case "providers.conversation-state.continuity-roundtrip": {
           return result(await conversationStateContinuityRoundTrip());
-        case "providers.conversation-state.cache-correctness-neutral":
+        }
+        case "providers.conversation-state.cache-correctness-neutral": {
           return result(await conversationStateCacheCorrectnessNeutral());
-        case "providers.conversation-state.provider-executed-fidelity":
+        }
+        case "providers.conversation-state.provider-executed-fidelity": {
           return result(await conversationStateProviderExecutedFidelity());
-        case "providers.bridge.structured-output-stream":
+        }
+        case "providers.bridge.structured-output-stream": {
           return result(await structuredOutputStream());
-        case "providers.bridge.provider-failure-normalization":
+        }
+        case "providers.bridge.provider-failure-normalization": {
           return result(await providerFailureNormalization());
-        case "providers.bridge.strict-structured-output-rejection":
+        }
+        case "providers.bridge.strict-structured-output-rejection": {
           return result(await strictStructuredOutputRejection());
-        case "providers.bridge.provider-owned-tool-result-rejection":
+        }
+        case "providers.bridge.provider-owned-tool-result-rejection": {
           return result(await providerOwnedToolResultRejection());
-        case "providers.bridge.provider-owned-tool-execution-rejection":
+        }
+        case "providers.bridge.provider-owned-tool-execution-rejection": {
           return result(await providerOwnedToolExecutionRejection());
-        case "providers.bridge.provider-approval-request-rejection":
+        }
+        case "providers.bridge.provider-approval-request-rejection": {
           return result(await providerApprovalRequestRejection());
-        case "providers.mcp-client.translation-rules":
+        }
+        case "providers.mcp-client.translation-rules": {
           return result(await mcpClientTranslationRules());
-        case "providers.mcp-client.auth-headers":
+        }
+        case "providers.mcp-client.auth-headers": {
           return result(await mcpClientAuthHeaders());
-        case "providers.mcp-client.validation-errors":
+        }
+        case "providers.mcp-client.validation-errors": {
           return result(await mcpClientValidationErrors());
-        case "providers.mcp-client.transport-error-normalization":
+        }
+        case "providers.mcp-client.transport-error-normalization": {
           return result(await mcpClientTransportErrorNormalization());
-        case "providers.mcp-client.secret-isolation":
+        }
+        case "providers.mcp-client.secret-isolation": {
           return result(await mcpClientSecretIsolation(input));
-        case "providers.mcp-client.trust-boundary":
+        }
+        case "providers.mcp-client.trust-boundary": {
           return result(await mcpClientTrustBoundary());
-        case "providers.provider-native.attribution":
+        }
+        case "providers.provider-native.attribution": {
           return result(await runProviderNativeAttribution());
-        case "providers.provider-mediated.attribution":
+        }
+        case "providers.provider-mediated.attribution": {
           return result(await runProviderMediatedAttribution());
-        default:
+        }
+        default: {
           return {
             error: {
               code: "adapter_operation_not_implemented",
@@ -129,6 +152,7 @@ class TypeScriptProviderAdapter {
             },
             kind: "error",
           };
+        }
       }
     } catch (error: unknown) {
       return {
@@ -337,7 +361,7 @@ function extractReplayedThoughtSignature(prompt: unknown): string | undefined {
     if (!isRecord(message) || message.role !== "assistant") {
       continue;
     }
-    const content = message.content;
+    const { content } = message;
     if (!Array.isArray(content)) {
       continue;
     }
@@ -345,7 +369,7 @@ function extractReplayedThoughtSignature(prompt: unknown): string | undefined {
       if (!(isRecord(part) && isRecord(part.providerOptions))) {
         continue;
       }
-      const google = part.providerOptions.google;
+      const { google } = part.providerOptions;
       if (isRecord(google) && typeof google.thoughtSignature === "string") {
         return google.thoughtSignature;
       }
@@ -503,7 +527,7 @@ function extractBridgeCacheRead(metadata: unknown): unknown {
   if (!(isRecord(metadata) && isRecord(metadata.aiSdkBridge))) {
     return undefined;
   }
-  const rawUsage = metadata.aiSdkBridge.rawUsage;
+  const { rawUsage } = metadata.aiSdkBridge;
   if (!(isRecord(rawUsage) && isRecord(rawUsage.inputTokens))) {
     return undefined;
   }
@@ -1381,7 +1405,7 @@ function readToolErrorCode(part: ToolResultPart): string | undefined {
     return undefined;
   }
 
-  const error = part.output.error;
+  const { error } = part.output;
 
   return isRecord(error) && typeof error.code === "string"
     ? error.code

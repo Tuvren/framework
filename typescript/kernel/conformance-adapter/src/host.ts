@@ -19,13 +19,11 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import type {
-  RuntimeBackend,
-  StoredBranch,
-  StoredThread,
-  TurnTreeSchema,
-} from "@tuvren/kernel-protocol";
 import {
+  type RuntimeBackend,
+  type StoredBranch,
+  type StoredThread,
+  type TurnTreeSchema,
   assertStagedResult,
   assertVerdict,
   decodeDeterministicKernelRecord,
@@ -44,8 +42,8 @@ import {
   createStoredSchemaRecord,
   createStoredTurnNodeRecord,
   createStoredTurnTreeRecord,
-  type FaultPoint,
 } from "@tuvren/kernel-testkit";
+import type { FaultPoint } from "@tuvren/kernel-testkit";
 import { createAesGcmPayloadCodec } from "@tuvren/sdk";
 
 import type {
@@ -117,49 +115,70 @@ class TypeScriptKernelAdapter {
   ): Promise<OperationOutcome> {
     try {
       switch (operation) {
-        case "kernel.protocol.deterministic-hashing":
+        case "kernel.protocol.deterministic-hashing": {
           return result(await deterministicHashing(readFixture(input)));
-        case "kernel.protocol.schema-roundtrip":
+        }
+        case "kernel.protocol.schema-roundtrip": {
           return result(schemaRoundtrip(readFixture(input)));
-        case "kernel.protocol.modify-composition":
+        }
+        case "kernel.protocol.modify-composition": {
           return result(await runModifyComposition(input));
-        case "kernel.protocol.canonical-rejection":
+        }
+        case "kernel.protocol.canonical-rejection": {
           return result(runCanonicalRejection(readFixture(input)));
-        case "kernel.protocol.edge-validation":
+        }
+        case "kernel.protocol.edge-validation": {
           return result(await runProtocolEdgeValidation());
-        case "kernel.logical.diff-paths":
+        }
+        case "kernel.logical.diff-paths": {
           return result(await runLogicalDiff(readFixture(input)));
-        case "kernel.logical.branch-list":
+        }
+        case "kernel.logical.branch-list": {
           return result(await runBranchList(readFixture(input)));
-        case "kernel.logical.recovery-state":
+        }
+        case "kernel.logical.recovery-state": {
           return result(await runRecoveryState(readFixture(input)));
-        case "kernel.logical.thread-list":
+        }
+        case "kernel.logical.thread-list": {
           return result(await runThreadList());
-        case "kernel.lineage.cross-thread-rejection":
+        }
+        case "kernel.lineage.cross-thread-rejection": {
           return result(await runCrossThreadLineage());
-        case "kernel.run-liveness.lease-renewal":
+        }
+        case "kernel.run-liveness.lease-renewal": {
           return result(await runLeaseRenewal());
-        case "kernel.run-liveness.expired-listing":
+        }
+        case "kernel.run-liveness.expired-listing": {
           return result(await runExpiredListing());
-        case "kernel.run-liveness.stale-preemption":
+        }
+        case "kernel.run-liveness.stale-preemption": {
           return result(await runStalePreemption());
-        case "kernel.run-liveness.clock-skew-preemption":
+        }
+        case "kernel.run-liveness.clock-skew-preemption": {
           return result(await runClockSkewPreemption());
-        case "kernel.restart-recovery.close-reopen-checkpoint":
+        }
+        case "kernel.restart-recovery.close-reopen-checkpoint": {
           return result(await runRestartRecovery());
-        case "kernel.restart-recovery.crash-recovery-durable":
+        }
+        case "kernel.restart-recovery.crash-recovery-durable": {
           return result(await runDurableCrashRecovery());
-        case "kernel.restart-recovery.crash-recovery-in-process":
+        }
+        case "kernel.restart-recovery.crash-recovery-in-process": {
           return result(await runInProcessCrashRecovery());
-        case "kernel.restart-recovery.concurrent-writer":
+        }
+        case "kernel.restart-recovery.concurrent-writer": {
           return result(await runConcurrentWriterConflict());
-        case "kernel.scope-isolation.cross-scope-probe":
+        }
+        case "kernel.scope-isolation.cross-scope-probe": {
           return result(await runCrossScopeProbe());
-        case "kernel.reclamation.reclaim-probe":
+        }
+        case "kernel.reclamation.reclaim-probe": {
           return result(await runReclamationProbe());
-        case "kernel.reclamation.erasure-probe":
+        }
+        case "kernel.reclamation.erasure-probe": {
           return result(await runErasureProbe());
-        default:
+        }
+        default: {
           return {
             error: {
               code: "adapter_operation_not_implemented",
@@ -167,6 +186,7 @@ class TypeScriptKernelAdapter {
             },
             kind: "error",
           };
+        }
       }
     } catch (error: unknown) {
       return {
@@ -400,7 +420,7 @@ async function runModifyComposition(
 
 function readVerdicts(value: unknown, caseName: string): Verdict[] {
   if (!Array.isArray(value)) {
-    throw new Error(`cases.${caseName}.verdicts must be an array`);
+    throw new TypeError(`cases.${caseName}.verdicts must be an array`);
   }
 
   return value.map((entry, index) => {
@@ -498,8 +518,8 @@ async function runThreadList(): Promise<Record<string, unknown>> {
       threadEnumeration: {
         count: allThreads.length,
         firstThreadId: allThreads[0]?.threadId ?? null,
-        pagedCount: pagedThreads.length,
         hasCursor: nextCursor !== undefined,
+        pagedCount: pagedThreads.length,
       },
     });
   });
@@ -1555,9 +1575,9 @@ async function runExpiredListing(): Promise<Record<string, unknown>> {
       await kernel.run.complete(freshRun.runId, "failed");
       await kernel.run.complete(pausedRun.runId, "paused");
       const expiredRuns = await kernel.runLiveness.listExpired(10);
-      const pausedStoredRun = await backend.transact(async (tx) => {
-        return await tx.runs.get(pausedRun.runId);
-      });
+      const pausedStoredRun = await backend.transact(
+        async (tx) => await tx.runs.get(pausedRun.runId)
+      );
 
       if (pausedStoredRun === null) {
         throw new Error("expected paused stored run");
@@ -1624,9 +1644,9 @@ async function runStalePreemption(): Promise<Record<string, unknown>> {
         "stale_running_recovery"
       );
 
-      const storedRun = await backend.transact(async (tx) => {
-        return await tx.runs.get(leasedRun.runId);
-      });
+      const storedRun = await backend.transact(
+        async (tx) => await tx.runs.get(leasedRun.runId)
+      );
 
       if (storedRun === null) {
         throw new Error("expected preempted stored run");
@@ -1773,9 +1793,9 @@ async function runClockSkewPreemption(): Promise<Record<string, unknown>> {
         "stale_running_recovery"
       );
 
-      const storedRun = await backend.transact(async (tx) => {
-        return await tx.runs.get(leasedRun.runId);
-      });
+      const storedRun = await backend.transact(
+        async (tx) => await tx.runs.get(leasedRun.runId)
+      );
       if (storedRun === null) {
         throw new Error("expected preempted stored run");
       }
@@ -2376,9 +2396,9 @@ async function runConcurrentWriterConflictOnBackends(
   }
 
   return {
-    finalHeadMatchesWinner: finalHead === winningHead,
     finalHeadIsCommittedSibling:
       finalHead === siblingNodeA.hash || finalHead === siblingNodeB.hash,
+    finalHeadMatchesWinner: finalHead === winningHead,
     losingErrorCode,
     retryAfterLossErrorCode,
     singleWriterRejected:
@@ -2619,7 +2639,7 @@ function readStagedResults(value: unknown, label: string): StagedResult[] {
 
 function readNumberArray(value: unknown, label: string): number[] {
   if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array`);
+    throw new TypeError(`${label} must be an array`);
   }
 
   const values = value;
@@ -2637,7 +2657,7 @@ function readNullableString(value: unknown, label: string): string | null {
   }
 
   if (typeof value !== "string") {
-    throw new Error(`${label} must be a string`);
+    throw new TypeError(`${label} must be a string`);
   }
 
   return value;
