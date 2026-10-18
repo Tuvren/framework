@@ -1,0 +1,71 @@
+{
+  "ticket": "KRT-BY002",
+  "milestone": "M4",
+  "status": "pass",
+  "baseline_commit": "fd8ee5d4060ddfce23e250c32a675d41cca255b9",
+  "measurement_commit": "e1f883f53bafded44d4a830496de73dcee3edd0c",
+  "result": {
+    "cohort_files": 38,
+    "baseline_directives": 6,
+    "live_directives": 6,
+    "ledger_entries": 6,
+    "drift": "none",
+    "framework_inventory": 6,
+    "kernel_inventory": 0,
+    "provider_inventory": 0,
+    "retained_needed": 6,
+    "native_counterparts": 3,
+    "no_native_counterparts": 3,
+    "early_deletions": 0,
+    "biome_directives_added": 0,
+    "repository_files_modified": 0
+  },
+  "dispositions": {
+    "measured_counterpart": [
+      "typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts::lint/suspicious/useAwait::1 -> eslint(require-await)",
+      "typescript/conformance-adapter/src/framework-adapter-capability-policy.ts::lint/suspicious/useAwait::1 -> eslint(require-await)",
+      "typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts::lint/suspicious/useAwait::1 -> eslint(require-await)"
+    ],
+    "no_counterpart": [
+      "typescript/conformance-adapter/src/framework-adapter-admission-key.ts::lint/correctness/noUndeclaredVariables::1",
+      "typescript/conformance-adapter/src/framework-adapter-admission-key.ts::lint/correctness/noUndeclaredVariables::2",
+      "typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts::lint/suspicious/useAwait::1"
+    ],
+    "retained": "All six original Biome directives remain byte-identical with their original reasons while Biome owns the framework adapter."
+  },
+  "verification": {
+    "fresh_root_biome_checks": 3,
+    "fresh_unsuppressed_directive_mirrors": 6,
+    "fresh_oxlint_syntactic_roots": 3,
+    "fresh_oxlint_type_aware_roots": 3,
+    "oxlint_selected_files": 38,
+    "uncached_project_lint_targets": 3,
+    "uncached_project_typecheck_targets": 3,
+    "full_lint_exit_code": 0,
+    "repository_typecheck_exit_code": 0,
+    "worktree_unchanged": true
+  },
+  "new_dependencies": [],
+  "new_implementation_patterns": [],
+  "new_repository_conventions": [],
+  "new_runtime_contract_shapes": [],
+  "evidence_patterns_reused": [
+    "Version-1 suppression ledger with stable path::Biome-rule::occurrence identities and informational line numbers.",
+    "Byte-identical external mirrors with repository Biome configuration prove exact retained diagnostics without editing product source.",
+    "Native counterpart admission requires an enabled shipped rule and a fresh diagnostic on the exact suppressed construct.",
+    "External file-descriptor capture preserves complete Oxlint JSON beyond terminal output limits."
+  ],
+  "copy_guidance": {
+    "required_ledger": "suppressions.json",
+    "concise_support": [
+      "summary.json",
+      "assertions.json",
+      "source-identity.json",
+      "directive-inventory.json",
+      "native-index.json",
+      "verification-index.json",
+      "commands-index.json"
+    ],
+    "raw_support": "raw/ contains complete command stdout/stderr and per-command metadata; retain or archive it when durable diagnostic backing is required."
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "environment": "direnv exec . env PGHOST=/run/user/1000/devenv-3ea1e50/postgres PGPORT=5432",
+  "nx_cache": "disabled for project lint/typecheck targets",
+  "project_checks": [
+    {
+      "project": "providers-typescript-conformance-adapter",
+      "target": "lint",
+      "exit_code": 0,
+      "stdout": "raw/providers-nx-lint.log",
+      "stderr": "raw/providers-nx-lint.stderr"
+    },
+    {
+      "project": "providers-typescript-conformance-adapter",
+      "target": "typecheck",
+      "exit_code": 0,
+      "stdout": "raw/providers-nx-typecheck.log",
+      "stderr": "raw/providers-nx-typecheck.stderr"
+    },
+    {
+      "project": "kernel-typescript-conformance-adapter",
+      "target": "lint",
+      "exit_code": 0,
+      "stdout": "raw/kernel-nx-lint.log",
+      "stderr": "raw/kernel-nx-lint.stderr"
+    },
+    {
+      "project": "kernel-typescript-conformance-adapter",
+      "target": "typecheck",
+      "exit_code": 0,
+      "stdout": "raw/kernel-nx-typecheck.log",
+      "stderr": "raw/kernel-nx-typecheck.stderr"
+    },
+    {
+      "project": "framework-typescript-conformance-adapter",
+      "target": "lint",
+      "exit_code": 0,
+      "stdout": "raw/framework-nx-lint.log",
+      "stderr": "raw/framework-nx-lint.stderr"
+    },
+    {
+      "project": "framework-typescript-conformance-adapter",
+      "target": "typecheck",
+      "exit_code": 0,
+      "stdout": "raw/framework-nx-typecheck.log",
+      "stderr": "raw/framework-nx-typecheck.stderr"
+    }
+  ],
+  "full_lint": {
+    "exit_code": 0,
+    "stdout": "raw/repository-lint.log",
+    "stderr": "raw/repository-lint.stderr"
+  },
+  "repository_typecheck": {
+    "exit_code": 0,
+    "stdout": "raw/repository-typecheck.log",
+    "stderr": "raw/repository-typecheck.stderr"
+  },
+  "affected_tests": {
+    "disposition": "not-applicable-no-source-or-directive-change",
+    "changed_repository_files": []
+  }
+}

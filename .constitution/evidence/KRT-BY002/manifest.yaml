@@ -1,0 +1,37 @@
+owner: KRT-BY002
+mode: contract_test
+produced:
+  date: '2026-10-18'
+  commit: e1f883f53bafded44d4a830496de73dcee3edd0c
+  command: 'Run the external KRT-BY002 ledger probe under direnv against all three adapter roots, then run uncached project lint/typecheck, full lint, and repository typecheck'
+result: pass
+files:
+  - path: suppressions.json
+    sha256: f63ce88679920d1aa08d7d8002ec31031aa02168742bf18bc0ee86e61ea1ed94
+    bytes: 24496
+    role: measurement
+  - path: summary.json
+    sha256: 0b2149f3f28dd830f3020ea88c728b36f06a24b097bf26145230e6a08f2b7f5d
+    bytes: 3141
+    role: measurement-summary
+  - path: assertions.json
+    sha256: d12aea234af101b0485d414267e3d9db14ebae4036431344e91fa19127c3be77
+    bytes: 1071
+    role: measurement-assertions
+  - path: source-identity.json
+    sha256: 2683100ec1a425226e3202ab0a5bdb969be61a034f2e9cb0dfe62c308c6445b4
+    bytes: 4043
+    role: measurement-source
+  - path: directive-inventory.json
+    sha256: a6a8778a18c64c55e7266178463d1036a00d2af7aee355ce7f5b89e28c70abd1
+    bytes: 10074
+    role: measurement-inventory
+  - path: native-index.json
+    sha256: c95e1dc710859c1e44683c29e273b44af9daec61dca7ca6f45d8f4a0ebd53361
+    bytes: 14337
+    role: measurement-native-index
+  - path: verification-index.json
+    sha256: 9fa0dd05007e29d244fc556a830cbc6ca7736ada1d0531cd27e952e8c283f47d
+    bytes: 1887
+    role: measurement-verification
+pass_criteria: 'All six baseline and live framework directive identities preserve their original reasons and remain required under retained Biome; kernel and provider inventories remain empty; only three fresh exact eslint(require-await) counterparts are recorded; no directive is added or deleted; all three project lint/typecheck targets, full lint, and repository typecheck pass.'
