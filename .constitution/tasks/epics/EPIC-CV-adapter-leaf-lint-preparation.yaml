@@ -152,7 +152,7 @@ closeout:
       kind: pattern
       paths:
         - typescript/conformance-adapter/src/framework-adapter.ts
-      commit: d7d749d775cf519f3e1ac31cb81934927830c76b
+      commit: fbbf3a18764e5373f5c8f58d72812f587e149fa7
     - summary: "Split oversized framework adapter domains into one-way internal leaf modules while retaining the existing root modules as the sole public factories, composers and dispatch owners."
       kind: convention
       paths:
