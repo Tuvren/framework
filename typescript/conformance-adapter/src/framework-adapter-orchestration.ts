@@ -30,7 +30,6 @@ import {
 
 import { createFrameworkAdapterOrchestrationLifecycle } from "./framework-adapter-orchestration-lifecycle.ts";
 import {
-  type AdapterProjection,
   assistantText,
   assistantToolCalls,
   collectValues,
@@ -40,6 +39,7 @@ import {
   RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
+import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterOrchestrationDependencies {
   createObservedErrorEnvelope(error: unknown): Record<string, unknown>;
@@ -96,6 +96,7 @@ export function createFrameworkAdapterOrchestration(
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -119,7 +120,6 @@ export function createFrameworkAdapterOrchestration(
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -227,6 +227,7 @@ export function createFrameworkAdapterOrchestration(
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -250,7 +251,6 @@ export function createFrameworkAdapterOrchestration(
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -291,6 +291,7 @@ export function createFrameworkAdapterOrchestration(
       childAllEventsRemainAvailable:
         findTextEvent(childSubtreeEvents, childText) !== undefined,
       childResultText: readOrchestrationResultText(childResult),
+      descendantSource: descendantEvent?.source,
       descendantSourceAttributed:
         dependencies.readRecordString(descendantEvent?.source, "agent") !==
           undefined &&
@@ -298,7 +299,6 @@ export function createFrameworkAdapterOrchestration(
           undefined &&
         dependencies.readRecordString(descendantEvent?.source, "workerId") !==
           undefined,
-      descendantSource: descendantEvent?.source,
       eventsSelfOnly: !parentEvents.some(
         (event) =>
           dependencies.readRecordString(event, "type") === "text.done" &&
@@ -400,8 +400,8 @@ export function createFrameworkAdapterOrchestration(
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: "default",
-      runnerRegistry: createRunnerRegistry([defaultRunner, specialRunner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([defaultRunner, specialRunner]),
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -493,6 +493,7 @@ export function createFrameworkAdapterOrchestration(
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -526,7 +527,6 @@ export function createFrameworkAdapterOrchestration(
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -602,6 +602,10 @@ export function createFrameworkAdapterOrchestration(
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      resolveAgentConfig(agentName) {
+        return agents[agentName];
+      },
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -639,10 +643,6 @@ export function createFrameworkAdapterOrchestration(
           };
         }),
       ]),
-      kernel: harness.kernel,
-      resolveAgentConfig(agentName) {
-        return agents[agentName];
-      },
     });
     const orchestration = createOrchestrationRuntime({
       agents,
@@ -706,6 +706,10 @@ export function createFrameworkAdapterOrchestration(
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      resolveAgentConfig(agentName) {
+        return agentName === "reviewer" ? { name: "reviewer" } : undefined;
+      },
       runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => ({
           messages: [
@@ -729,10 +733,6 @@ export function createFrameworkAdapterOrchestration(
           toolExecutionMode: "parallel",
         })),
       ]),
-      kernel: harness.kernel,
-      resolveAgentConfig(agentName) {
-        return agentName === "reviewer" ? { name: "reviewer" } : undefined;
-      },
     });
     const thread = await framework.createThread({});
     const handle = framework.executeTurn({
@@ -767,6 +767,10 @@ export function createFrameworkAdapterOrchestration(
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      resolveAgentConfig(agentName) {
+        return agentName === "reviewer" ? { name: "reviewer" } : undefined;
+      },
       runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => {
           if (context.config.name === "primary") {
@@ -793,10 +797,6 @@ export function createFrameworkAdapterOrchestration(
           };
         }),
       ]),
-      kernel: harness.kernel,
-      resolveAgentConfig(agentName) {
-        return agentName === "reviewer" ? { name: "reviewer" } : undefined;
-      },
     });
     const thread = await framework.createThread({});
     const handle = framework.executeTurn({
@@ -1073,7 +1073,7 @@ export function createFrameworkAdapterOrchestration(
       try {
         return handle.spawn(input);
       } catch (error: unknown) {
-        const phase = handle.status().phase;
+        const { phase } = handle.status();
         const shouldRetry =
           error instanceof TuvrenRuntimeError &&
           error.code === "orchestration_parent_inactive" &&

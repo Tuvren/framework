@@ -43,7 +43,6 @@ import {
 import { createFrameworkAdapterProviderScenarios } from "./framework-adapter-provider-scenarios.ts";
 import { createFrameworkAdapterRecoveryScenarios } from "./framework-adapter-recovery-scenarios.ts";
 import {
-  type AdapterProjection,
   AGENT_NAME,
   assistantText,
   assistantToolCalls,
@@ -55,6 +54,7 @@ import {
   RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
+import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterRuntimeScenarioDependencies {
   isRecord(value: unknown): value is Record<string, unknown>;
@@ -122,14 +122,14 @@ export interface FrameworkAdapterRuntimeScenarioDependencies {
   readScenarioToolCalls(
     record: Record<string, unknown>,
     path: string
-  ): Array<{
+  ): {
     readonly callId: string;
     readonly input: unknown;
     readonly name: string;
     readonly output?: unknown;
     readonly requiresApproval?: boolean;
     readonly throwMessage?: string;
-  }>;
+  }[];
   readStringProperty(
     record: Record<string, unknown>,
     property: string,
@@ -205,6 +205,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("completed")],
@@ -214,7 +215,6 @@ export function createFrameworkAdapterRuntimeScenarios(
           },
         })),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -267,9 +267,9 @@ export function createFrameworkAdapterRuntimeScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       now: createDeterministicClock(),
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -410,13 +410,13 @@ export function createFrameworkAdapterRuntimeScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       now: createDeterministicClock(),
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -497,6 +497,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      now: createDeterministicClock(),
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("completed")],
@@ -506,8 +508,6 @@ export function createFrameworkAdapterRuntimeScenarios(
           },
         })),
       ]),
-      kernel: harness.kernel,
-      now: createDeterministicClock(),
       telemetry: destination,
     });
     const thread = await runtime.createThread({});
@@ -554,6 +554,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      now: createDeterministicClock(),
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText(markers.assistant)],
@@ -563,8 +565,6 @@ export function createFrameworkAdapterRuntimeScenarios(
           },
         })),
       ]),
-      kernel: harness.kernel,
-      now: createDeterministicClock(),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -651,8 +651,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -662,7 +662,7 @@ export function createFrameworkAdapterRuntimeScenarios(
       threadId: thread.threadId,
     });
     const events: unknown[] = [];
-    const cancelAfterEvent = controls.cancelAfterEvent;
+    const { cancelAfterEvent } = controls;
     let cancelInvocations = 0;
     let observedEventIndex: number | undefined;
     let observedEventType: string | undefined;
@@ -737,11 +737,11 @@ export function createFrameworkAdapterRuntimeScenarios(
             dependencies.isRecord(runtimeStatus) &&
             runtimeStatus.partial === true,
         },
+        error: readFirstErrorEnvelope(events),
         runtime: {
           iterationCount: finalStatus.iterationCount,
           phase: finalStatus.phase,
         },
-        error: readFirstErrorEnvelope(events),
       },
     };
   }
@@ -806,8 +806,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const pausedHandle = runtime.executeTurn({
@@ -996,6 +996,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("branch base")],
@@ -1005,7 +1006,6 @@ export function createFrameworkAdapterRuntimeScenarios(
           },
         })),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -1023,7 +1023,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     });
 
     return {
-      state: {
+      result: {
         branch: {
           completedTurnPhase: handle.status().phase,
           createdBranchId: branch.branchId,
@@ -1033,7 +1033,7 @@ export function createFrameworkAdapterRuntimeScenarios(
           sourceMessageCount: sourceMessages.length,
         },
       },
-      result: {
+      state: {
         branch: {
           completedTurnPhase: handle.status().phase,
           createdBranchId: branch.branchId,
@@ -1051,6 +1051,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("should not execute")],
@@ -1060,7 +1061,6 @@ export function createFrameworkAdapterRuntimeScenarios(
           },
         })),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     // This scenario intentionally crosses the typed boundary with malformed
@@ -1110,13 +1110,13 @@ export function createFrameworkAdapterRuntimeScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("Terminal complete.")],
           resolution: { reason: "done", type: "end_turn" },
         })),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -1162,8 +1162,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([failureRunner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([failureRunner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -1193,8 +1193,8 @@ export function createFrameworkAdapterRuntimeScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([cancelRunner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([cancelRunner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -1233,13 +1233,13 @@ export function createFrameworkAdapterRuntimeScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("Idempotent.")],
           resolution: { reason: "done", type: "end_turn" },
         })),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -1303,13 +1303,13 @@ export function createFrameworkAdapterRuntimeScenarios(
     return createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("conformance")],
           resolution: { reason: "done", type: "end_turn" },
         })),
       ]),
-      kernel: harness.kernel,
     });
   }
 
@@ -1350,8 +1350,8 @@ export function createFrameworkAdapterRuntimeScenarios(
       };
     }
     const page2 = await runtime.listThreads({
-      limit: 10,
       cursor: page1.nextCursor,
+      limit: 10,
     });
     const uniqueIds = new Set([
       ...page1.threads.map((t) => t.threadId),
@@ -1389,13 +1389,13 @@ export function createFrameworkAdapterRuntimeScenarios(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: capKernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText("conformance")],
           resolution: { reason: "done", type: "end_turn" },
         })),
       ]),
-      kernel: capKernel,
     });
     try {
       await runtime.listThreads();
@@ -1538,11 +1538,11 @@ export function createFrameworkAdapterRuntimeScenarios(
     const thread = await runtime.createThread({});
     const staleCursor = Buffer.from(
       JSON.stringify({
-        v: 1,
-        kind: "branch-messages",
-        branchId: thread.branchId,
-        positionFromOldest: 99,
         branchHeadAtCursorIssuance: "0".repeat(64),
+        branchId: thread.branchId,
+        kind: "branch-messages",
+        positionFromOldest: 99,
+        v: 1,
       })
     ).toString("base64url") as BranchMessagesCursor;
     try {
@@ -1576,6 +1576,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     runApprovalResume,
     runBranchCreate,
     runCancelledRuntimeTurn,
+    runClientResultAsProposal: recoveryScenarios.runClientResultAsProposal,
     runCompletedRuntimeTurn,
     runContextTransform: providerScenarios.runContextTransform,
     runDurableReadGetTurnHistory,
@@ -1588,12 +1589,11 @@ export function createFrameworkAdapterRuntimeScenarios(
     runDurableReadReadBranchMessages,
     runDurableReadReadBranchMessagesHeadDrift,
     runHandleTerminalValue,
+    runOperationalTelemetry,
     runProviderGenerate: providerScenarios.runProviderGenerate,
     runProviderStream: providerScenarios.runProviderStream,
-    runClientResultAsProposal: recoveryScenarios.runClientResultAsProposal,
     runRecoverResult: recoveryScenarios.runRecoverResult,
     runRecoverStaleRun: recoveryScenarios.runRecoverStaleRun,
-    runOperationalTelemetry,
     runStructuredValidationFailure:
       providerScenarios.runStructuredValidationFailure,
     runToolExecution: providerScenarios.runToolExecution,
@@ -1639,7 +1639,7 @@ export function createFrameworkAdapterRuntimeScenarios(
         continue;
       }
 
-      const parts = message.parts;
+      const { parts } = message;
 
       if (!Array.isArray(parts)) {
         continue;
@@ -1756,7 +1756,7 @@ export function createFrameworkAdapterRuntimeScenarios(
         continue;
       }
 
-      const parts = message.parts;
+      const { parts } = message;
 
       if (!Array.isArray(parts)) {
         continue;
@@ -1783,7 +1783,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     toolResults: readonly Record<string, unknown>[]
   ): string | undefined {
     for (const result of toolResults) {
-      const output = result.output;
+      const { output } = result;
 
       if (!dependencies.isRecord(output)) {
         continue;

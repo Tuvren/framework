@@ -82,7 +82,7 @@ async function observeSseEncoder(): Promise<{
   // the encoder emits `text/event-stream` and that the body is valid UTF-8
   // without coupling either claim to a hardcoded `true` literal.
   // biome-ignore lint/suspicious/useAwait: encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously
-  const events = (async function* () {
+  const events = (async function* events() {
     yield {
       data: { value: "wire-compliance-probe" },
       messageId: "probe-1",

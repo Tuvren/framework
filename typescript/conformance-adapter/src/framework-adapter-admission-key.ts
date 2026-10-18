@@ -13,11 +13,11 @@ import type {
   TuvrenProvider,
 } from "@tuvren/core/provider";
 import type { RuntimeRunner } from "@tuvren/core/runner";
-import {
-  encodeDeterministicKernelRecord,
-  type RecoveryState,
-  type RuntimeKernel,
-  type RuntimeKernelRunLiveness,
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type {
+  RecoveryState,
+  RuntimeKernel,
+  RuntimeKernelRunLiveness,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { createReActRunner, REACT_RUNNER_ID } from "@tuvren/runner-react";
@@ -28,6 +28,7 @@ import {
 } from "@tuvren/runtime";
 
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
+
 const CHILD_MARKER = "__tuvren_admission_key_child__";
 const CHILD_WAIT_MS = 30_000;
 const PARENT_PHASE_WAIT_MS = 15_000;
@@ -529,7 +530,7 @@ async function readChildMessage(
   try {
     while (true) {
       const newlineIndex = buffer.indexOf("\n");
-      if (newlineIndex >= 0) {
+      if (newlineIndex !== -1) {
         return JSON.parse(buffer.slice(0, newlineIndex));
       }
       const read = await withDeadline(
@@ -791,7 +792,9 @@ async function runWriterChild(config: WriterChildConfig): Promise<void> {
       threadId,
     });
     return await withDeadline(
-      new Promise<never>(() => undefined),
+      new Promise<never>(() => {
+        // This barrier stays pending until the parent terminates the child.
+      }),
       "writer crash barrier",
       CHILD_WAIT_MS
     );

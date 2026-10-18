@@ -21,8 +21,10 @@ import {
   createSequencedTuvrenStreamEvents,
   decodeResumeCursor,
   encodeResumeCursor,
-  type ReplayResult,
-  type SequencedTuvrenStreamEvent,
+} from "@tuvren/stream-core";
+import type {
+  ReplayResult,
+  SequencedTuvrenStreamEvent,
 } from "@tuvren/stream-core";
 import { decodeSseStream, toResumableSseFrames } from "@tuvren/stream-sse";
 
@@ -98,7 +100,7 @@ export function createFrameworkAdapterEventStreamResume(): {
     );
     const buffer = createReplayBuffer({ capacity: scenario.capacity });
 
-    const recording = (async function* () {
+    const recording = (async function* recording() {
       for await (const frame of sequenced) {
         buffer.record(frame);
         yield frame;
@@ -161,10 +163,10 @@ function resolveProbeCursor(
   sequenced: readonly SequencedTuvrenStreamEvent[]
 ): string {
   if (cursor.kind === "at-sequence") {
-    const sequence = cursor.sequence;
+    const { sequence } = cursor;
 
     if (typeof sequence !== "number") {
-      throw new Error(
+      throw new TypeError(
         'event-stream-resume replay scenario cursor.kind "at-sequence" requires a numeric cursor.sequence'
       );
     }
@@ -181,10 +183,10 @@ function resolveProbeCursor(
   }
 
   if (cursor.kind === "foreign-turn") {
-    const turnId = cursor.turnId;
+    const { turnId } = cursor;
 
     if (typeof turnId !== "string") {
-      throw new Error(
+      throw new TypeError(
         'event-stream-resume replay scenario cursor.kind "foreign-turn" requires a string cursor.turnId'
       );
     }
@@ -193,24 +195,24 @@ function resolveProbeCursor(
   }
 
   if (cursor.kind === "forged-anchor") {
-    const turnId = cursor.turnId;
-    const sequence = cursor.sequence;
-    const turnNodeHash = cursor.turnNodeHash;
+    const { turnId } = cursor;
+    const { sequence } = cursor;
+    const { turnNodeHash } = cursor;
 
     if (typeof turnId !== "string") {
-      throw new Error(
+      throw new TypeError(
         'event-stream-resume replay scenario cursor.kind "forged-anchor" requires a string cursor.turnId'
       );
     }
 
     if (typeof sequence !== "number") {
-      throw new Error(
+      throw new TypeError(
         'event-stream-resume replay scenario cursor.kind "forged-anchor" requires a numeric cursor.sequence'
       );
     }
 
     if (typeof turnNodeHash !== "string") {
-      throw new Error(
+      throw new TypeError(
         'event-stream-resume replay scenario cursor.kind "forged-anchor" requires a string cursor.turnNodeHash'
       );
     }
@@ -223,10 +225,10 @@ function resolveProbeCursor(
   }
 
   if (cursor.kind === "malformed") {
-    const token = cursor.token;
+    const { token } = cursor;
 
     if (typeof token !== "string") {
-      throw new Error(
+      throw new TypeError(
         'event-stream-resume replay scenario cursor.kind "malformed" requires a string cursor.token'
       );
     }
@@ -291,7 +293,7 @@ function readNumberProperty(
   const value = fixture[key];
 
   if (typeof value !== "number") {
-    throw new Error(
+    throw new TypeError(
       `event-stream-resume scenario fixture is missing a numeric "${key}" property`
     );
   }
@@ -305,7 +307,7 @@ function readEventsProperty(
   const value = fixture.events;
 
   if (!Array.isArray(value)) {
-    throw new Error(
+    throw new TypeError(
       'event-stream-resume scenario fixture is missing an "events" array'
     );
   }
@@ -323,7 +325,7 @@ function readCursor(fixture: Record<string, unknown>): ReplayScenarioCursor {
   }
 
   const cursor = value as Record<string, unknown>;
-  const kind = cursor.kind;
+  const { kind } = cursor;
 
   if (
     kind !== "at-sequence" &&
