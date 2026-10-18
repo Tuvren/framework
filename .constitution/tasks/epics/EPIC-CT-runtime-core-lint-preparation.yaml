@@ -111,4 +111,30 @@ tickets:
       evidence: Assert the CU+CT cumulative tree matches frozen blobs and passes runtime source-only typecheck, retained-Biome lint, a fresh runtime entrypoint import, and focused foundation/execution-lifecycle tests. Prove the compiler inventory resolves no live sibling source, initialization remains clean, no project target or coverage file changes, and the PR has a direct @tuvren/runtime patch Changeset.
     flows: []
     certainty: settled
-    status: planned
+    status: done
+closeout:
+  tickets_completed: [KRT-CT001]
+  tickets_deferred: []
+  points_completed: 5
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-CT: delivered the frozen runtime-core slice with exact source provenance, preserved initialization and public behavior, direct runtime Changeset coverage, and complete correctness review."
+  candidate_terms: []
+  routed_upstream: []
+  follow_ups: []
+  code_decisions:
+    - summary: "Own persistence-host construction in a focused runtime module while retaining its original body, ordering and supported package surface."
+      kind: pattern
+      paths:
+        - typescript/runtime/src/lib/runtime-core-hosts-persistence.ts
+      commit: 1c74c19666a5c02d7aa6d18ff1067f98bb3f5ed4
+    - summary: "Keep construction contracts and defaults in a runtime options owner and delegate handle, session and loop coordination to an inert private controller while the runtime shell retains host wiring, WeakMaps, bounds, timers and observability."
+      kind: pattern
+      paths:
+        - typescript/runtime/src/lib/runtime-core-options.ts
+        - typescript/runtime/src/lib/runtime-core-execution-controller.ts
+        - typescript/runtime/src/lib/runtime-core.ts
+      commit: 1c74c19666a5c02d7aa6d18ff1067f98bb3f5ed4
+  settled: []
