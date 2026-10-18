@@ -29,6 +29,7 @@ import type { RuntimeCoreExpiredRecoveryHost } from "../src/lib/runtime-core-exp
 import { loadHeadState } from "../src/lib/runtime-core-head-state.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import { createFakeRunLivenessKernelHarness } from "./fake-run-liveness-kernel.ts";
+import { fromSynchronousVariadicAwaited } from "./runtime-core-test-helpers.ts";
 
 const payloadCodecBinding = {
   codec: IDENTITY_PAYLOAD_CODEC,
@@ -111,12 +112,10 @@ const prepareRecovery = async (suffix: string) => {
     publishTurnEnd() {
       // Recovery classification does not publish terminal status.
     },
-    async readRecoveredActiveAgentName() {
-      await Promise.resolve();
-    },
-    async readRecoveredRuntimeStatus() {
-      await Promise.resolve();
-    },
+    readRecoveredActiveAgentName: fromSynchronousVariadicAwaited(
+      () => undefined
+    ),
+    readRecoveredRuntimeStatus: fromSynchronousVariadicAwaited(() => undefined),
   };
 
   const inputTurnNode = await kernel.node.get(inputCheckpoint.turnNodeHash);
