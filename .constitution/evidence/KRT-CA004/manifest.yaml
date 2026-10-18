@@ -47,7 +47,7 @@ files:
     bytes: 7439
     role: measurement
   - path: suppressions.json
-    sha256: 733441cf3094c399e61339b8fd754a4a3fd2a7cba045d75a50117e2086a46503
-    bytes: 130067
+    sha256: cf00839f1d73b2c1c149b8db5d9327a95d719062aecedf205028fda540c065e6
+    bytes: 130238
     role: measurement
 pass_criteria: The 12 project targets retain their canonical commands (11 exact Oxlint-plus-JSON targets and one exact JSON-only target); the complete 112-code and 76-JSON selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics, resolution errors and unused directives; all 164 firing native exception regions and 36 legacy Biome removals are reconciled with measured reasons; every changed core TypeScript source is at most 1000 formatter-clean physical lines; ca.json retains only tools/run-nx.mjs for EPIC-CB; public API, explicitly protected Promise identities, queue and iterator behavior, MCP pagination, testkit fixture lookup and telemetry capture, transport lifecycle, telemetry attributes and operation order, event and error ordering, schema boundaries, generated artifacts and release metadata remain aligned; lint, check, changeset, API freeze and the sole canonical locked full verify pass on the review-clean M38 source freeze. Final current acceptance remains held until review-clean BT merges, CA rebases through its shared classifier, and top-level options.forwardAllArgs false is added to the same 12 targets without changing command, cwd, parallel or inputs.

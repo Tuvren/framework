@@ -152,7 +152,7 @@ closeout:
   candidate_terms: []
   routed_upstream:
     - stage: tasks
-      item: "A19 final source-freeze and evidence candidate changes 133 files and 24,447 raw lines (+16,903/-7,544): TypeScript source is 100 files and 15,914 raw lines (+8,401/-7,513), while metadata/evidence is 33 files and 8,533 raw lines (+8,502/-31). The preceding source-only checkpoint was 132 files and 24,154 raw lines. Both measurements include every module move; the wave lead must use the final composition for the reviewed delivery re-slice before merge."
+      item: "A19 final source-freeze and evidence candidate changes 133 files and 24,449 raw lines (+16,905/-7,544): TypeScript source is 100 files and 15,914 raw lines (+8,401/-7,513), while metadata/evidence is 33 files and 8,535 raw lines (+8,504/-31). The preceding source-only checkpoint was 132 files and 24,154 raw lines. Both measurements include every module move; the wave lead must use the final composition for the reviewed delivery re-slice before merge."
   follow_ups:
     - "Stage 3 alignment should review the code_decisions routed by reconciliation, including the recursive-predicate initialization pattern and the permitted MCP internal Promise scheduling normalization."
     - "EPIC-CB should consume .constitution/evidence/KRT-CA002/suppressions.json and .constitution/evidence/KRT-CA004/suppressions.json, retain tools/run-nx.mjs until whole-tools admission, then remove the final CA coverage entry when Biome retires."
