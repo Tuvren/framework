@@ -301,7 +301,6 @@ export const cloneTuvrenStreamEvent = (
 export const createFixtureStream = (
   events: readonly TuvrenStreamEvent[]
 ): AsyncIterable<TuvrenStreamEvent> =>
-  // biome-ignore lint/suspicious/useAwait: Async generators must remain async even when fixture production is synchronous.
   (async function* createFixtureEventStream() {
     for (const event of events) {
       yield cloneTuvrenStreamEvent(event);

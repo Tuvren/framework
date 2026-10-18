@@ -26,7 +26,11 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bunx --bun @biomejs/biome check typescript/streaming/agui"
+        "commands": [
+          "bunx --bun oxlint --type-aware typescript/streaming/agui",
+          "bun tools/scripts/json-check.ts typescript/streaming/agui"
+        ],
+        "parallel": false
       }
     },
     "test": {

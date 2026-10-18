@@ -45,6 +45,7 @@ export const SESSION_ID = "session-under-test";
 
 const unusedClientEndpoint: AttachedClientEndpoint = {
   advertisedCapabilities: [],
+  // oxlint-disable-next-line typescript/promise-function-async -- Return the direct rejected promise from this intentionally unused test endpoint.
   dispatch(): Promise<never> {
     return Promise.reject(new Error("clientEndpoint.dispatch is unused"));
   },
@@ -71,7 +72,7 @@ export const createFiniteOutboundIterable = (
   const iterable: AsyncIterable<SessionOutboundFrame> = {
     [Symbol.asyncIterator](): AsyncIterator<SessionOutboundFrame> {
       return {
-        // biome-ignore lint/suspicious/useAwait: intentionally synchronous resolution for deterministic test ordering.
+        // oxlint-disable-next-line eslint/require-await -- Intentionally synchronous resolution preserves deterministic test ordering.
         async next(): Promise<IteratorResult<SessionOutboundFrame>> {
           if (index >= frames.length) {
             return { done: true, value: undefined };
@@ -81,7 +82,7 @@ export const createFiniteOutboundIterable = (
           index += 1;
           return { done: false, value };
         },
-        // biome-ignore lint/suspicious/useAwait: intentionally synchronous resolution for deterministic test ordering.
+        // oxlint-disable-next-line eslint/require-await -- Intentionally synchronous resolution preserves deterministic test ordering.
         async return(): Promise<IteratorResult<SessionOutboundFrame>> {
           returnCallCount += 1;
           index = frames.length;
@@ -107,6 +108,7 @@ export const createHangingOutboundIterable = (
   const iterable: AsyncIterable<SessionOutboundFrame> = {
     [Symbol.asyncIterator](): AsyncIterator<SessionOutboundFrame> {
       return {
+        // oxlint-disable-next-line typescript/promise-function-async -- Already-settled and pending iterator results must keep their established promise timing.
         next(): Promise<IteratorResult<SessionOutboundFrame>> {
           if (index < frames.length) {
             const value = frames[index];
@@ -114,11 +116,12 @@ export const createHangingOutboundIterable = (
             return Promise.resolve({ done: false, value });
           }
 
+          // oxlint-disable-next-line promise/avoid-new -- A never-settling promise models an open connection with no more frames.
           return new Promise<IteratorResult<SessionOutboundFrame>>(() => {
             // Never resolves: models an open connection with no more frames yet.
           });
         },
-        // biome-ignore lint/suspicious/useAwait: intentionally synchronous resolution for deterministic test ordering.
+        // oxlint-disable-next-line eslint/require-await -- Intentionally synchronous resolution preserves deterministic test ordering.
         async return(): Promise<IteratorResult<SessionOutboundFrame>> {
           returnCallCount += 1;
           return { done: true, value: undefined };
@@ -133,6 +136,7 @@ export const createHangingOutboundIterable = (
 export const emptyAsyncIterable = (): AsyncIterable<SessionOutboundFrame> => ({
   [Symbol.asyncIterator](): AsyncIterator<SessionOutboundFrame> {
     return {
+      // oxlint-disable-next-line typescript/promise-function-async -- Returning the already-settled promise preserves deterministic iterator timing.
       next(): Promise<IteratorResult<SessionOutboundFrame>> {
         return Promise.resolve({ done: true, value: undefined });
       },
@@ -202,20 +206,15 @@ export const createTestSession = (
 // resolveApproval/steer/cancel, and awaitResult() never settles on its own.
 // ---------------------------------------------------------------------------
 
-interface FakeEvent {
-  turnId?: string;
-  type: string;
-  [key: string]: unknown;
-}
-
-export class FakeEventSource implements AsyncIterable<FakeEvent> {
+export class FakeEventSource implements AsyncIterable<TuvrenStreamEvent> {
   private claimed = false;
   private readonly closed = false;
-  private readonly items: FakeEvent[] = [];
-  private readonly waiters: ((result: IteratorResult<FakeEvent>) => void)[] =
-    [];
+  private readonly items: TuvrenStreamEvent[] = [];
+  private readonly waiters: ((
+    result: IteratorResult<TuvrenStreamEvent>
+  ) => void)[] = [];
 
-  push(event: FakeEvent): void {
+  push(event: TuvrenStreamEvent): void {
     const waiter = this.waiters.shift();
     if (waiter !== undefined) {
       waiter({ done: false, value: event });
@@ -224,13 +223,14 @@ export class FakeEventSource implements AsyncIterable<FakeEvent> {
     this.items.push(event);
   }
 
-  [Symbol.asyncIterator](): AsyncIterator<FakeEvent> {
+  [Symbol.asyncIterator](): AsyncIterator<TuvrenStreamEvent> {
     if (this.claimed) {
       throw new Error("FakeEventSource consumed twice");
     }
     this.claimed = true;
     return {
-      next: (): Promise<IteratorResult<FakeEvent>> => {
+      // oxlint-disable-next-line typescript/promise-function-async -- The fake alternates between already-settled and externally-settled promises.
+      next: (): Promise<IteratorResult<TuvrenStreamEvent>> => {
         const value = this.items.shift();
         if (value !== undefined) {
           return Promise.resolve({ done: false, value });
@@ -238,6 +238,7 @@ export class FakeEventSource implements AsyncIterable<FakeEvent> {
         if (this.closed) {
           return Promise.resolve({ done: true, value: undefined });
         }
+        // oxlint-disable-next-line promise/avoid-new -- The next pushed event settles this pending iterator promise.
         return new Promise((resolve) => {
           this.waiters.push(resolve);
         });
@@ -251,19 +252,30 @@ export const createFakeExecutionHandle = (): {
   handle: ExecutionHandle;
 } => {
   const events = new FakeEventSource();
-  const neverSettles = new Promise<ExecutionResult>(() => undefined);
-  neverSettles.catch(() => undefined);
+  // oxlint-disable-next-line promise/avoid-new -- The fake result deliberately never settles during these transport tests.
+  const neverSettles = new Promise<ExecutionResult>(() => {
+    // Intentionally never resolves or rejects during these transport tests.
+  });
+  // oxlint-disable-next-line promise/prefer-await-to-then -- Attach a rejection sink without awaiting or changing the fake handle's timing.
+  neverSettles.catch(() => {
+    // The promise is deliberately detached; keep a defensive rejection sink.
+  });
 
-  const handle = {
+  const handle: ExecutionHandle = {
+    // oxlint-disable-next-line typescript/promise-function-async -- Preserve the exact never-settling promise owned by this fake handle.
     awaitResult: () => neverSettles,
-    cancel: () => undefined,
+    cancel: () => {
+      // Intentionally unused by the transport tests.
+    },
     events: () => events,
     resolveApproval: () => {
       throw new Error("resolveApproval not used in this suite");
     },
     status: () => ({ iterationCount: 0, phase: "running" as const }),
-    steer: () => undefined,
-  } as unknown as ExecutionHandle;
+    steer: () => {
+      // Intentionally unused by the transport tests.
+    },
+  };
 
   return { events, handle };
 };
@@ -342,14 +354,23 @@ export const createScriptedBufferedAmountSink = (
  * before assertions run.
  */
 export const flushMicrotasks = async (): Promise<void> => {
+  /* oxlint-disable eslint/no-await-in-loop -- Each microtask turn must settle before scheduling the next to flush chained transport work deterministically. */
   for (let i = 0; i < 500; i += 1) {
     await Promise.resolve();
   }
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  /* oxlint-enable eslint/no-await-in-loop */
+  // oxlint-disable-next-line promise/avoid-new -- A timer-backed promise advances the test through one macrotask turn.
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, 0);
+  });
 };
 
+// oxlint-disable-next-line typescript/promise-function-async -- Return the timer-backed promise directly so callers observe the requested delay's established settlement timing.
 export const delay = (ms: number): Promise<void> =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
+  // oxlint-disable-next-line promise/avoid-new -- Tests require a timer-backed delay with the requested duration.
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
 
 export const handshakeMessage = (
   overrides: Partial<{

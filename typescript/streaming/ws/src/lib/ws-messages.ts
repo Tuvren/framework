@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard @packageDocumentation tag and established @experimental API stability markers. */
 /**
  * Wire message shapes for the `tuvren.framework.event-stream-ws` authority
  * packet (`spec/streaming/ws/typespec/main.tsp`, ADR-0062) and a pure,
@@ -153,12 +154,11 @@ export type ParsedWsMessage =
   | { kind: "pong" }
   | { kind: "unparseable"; raw: unknown };
 
-const WS_RESUME_STATUSES: ReadonlySet<string> = new Set([
-  "resumed",
-  "out-of-window",
-  "unknown-turn",
-  "none",
-]);
+const isWsResumeStatus = (value: unknown): value is WsResumeStatus =>
+  value === "resumed" ||
+  value === "out-of-window" ||
+  value === "unknown-turn" ||
+  value === "none";
 
 const utf8Decoder = new TextDecoder();
 
@@ -214,17 +214,14 @@ const asHandshakeAck = (
     return undefined;
   }
 
-  if (
-    typeof candidate.resumeStatus !== "string" ||
-    !WS_RESUME_STATUSES.has(candidate.resumeStatus)
-  ) {
+  if (!isWsResumeStatus(candidate.resumeStatus)) {
     return undefined;
   }
 
   return {
     kind: "handshake_ack",
     protocolVersion: candidate.protocolVersion,
-    resumeStatus: candidate.resumeStatus as WsResumeStatus,
+    resumeStatus: candidate.resumeStatus,
     sessionId: candidate.sessionId,
   };
 };
@@ -282,3 +279,4 @@ export const parseWsMessage = (data: string | Uint8Array): ParsedWsMessage => {
     }
   }
 };
+/* oxlint-enable jsdoc/check-tag-names */

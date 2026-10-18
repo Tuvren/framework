@@ -115,7 +115,6 @@ if (!isSseTraceFixture(parsedFixture)) {
 
 const fixture = parsedFixture;
 
-// biome-ignore lint/suspicious/useAwait: encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously
 const events = (async function* events(): AsyncIterable<TuvrenStreamEvent> {
   yield {
     threadId: "probe-thread",

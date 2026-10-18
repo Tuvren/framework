@@ -26,7 +26,11 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bunx --bun @biomejs/biome check typescript/streaming/core"
+        "commands": [
+          "bunx --bun oxlint --type-aware typescript/streaming/core",
+          "bun tools/scripts/json-check.ts typescript/streaming/core"
+        ],
+        "parallel": false
       }
     },
     "test": {

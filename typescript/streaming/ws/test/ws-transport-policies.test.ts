@@ -36,6 +36,22 @@ import {
   SESSION_ID,
 } from "./session-test-helpers.js";
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const hasKind = (value: unknown, kind: string): boolean =>
+  isRecord(value) && value.kind === kind;
+
+const requireRecord = (
+  value: unknown,
+  message: string
+): Record<string, unknown> => {
+  if (!isRecord(value)) {
+    throw new Error(message);
+  }
+  return value;
+};
+
 describe("createWsSessionTransport: option validation", () => {
   test("heartbeat.intervalMs must be a positive finite number", () => {
     const fake = createFakeBinding();
@@ -152,7 +168,9 @@ describe("createWsSessionTransport: heartbeat / half-open detection", () => {
     const warnings: string[] = [];
     const transport = createWsSessionTransport({
       heartbeat: { intervalMs: INTERVAL_MS, timeoutMs: TIMEOUT_MS },
-      onWarning: (warning) => warnings.push(warning.code),
+      onWarning: (warning) => {
+        warnings.push(warning.code);
+      },
       session,
       sink,
     });
@@ -164,9 +182,7 @@ describe("createWsSessionTransport: heartbeat / half-open detection", () => {
     // At least one ping must fire before the first timeout can.
     await delay(INTERVAL_MS + TIMEOUT_MS + 150);
 
-    expect(
-      sink.sent.some((message) => (message as { kind: string }).kind === "ping")
-    ).toBe(true);
+    expect(sink.sent.some((message) => hasKind(message, "ping"))).toBe(true);
     expect(sink.closes).toEqual([
       {
         code: 4004,
@@ -179,15 +195,15 @@ describe("createWsSessionTransport: heartbeat / half-open detection", () => {
   test("a peer that answers every ping with pong keeps the connection open across several intervals", async () => {
     const fake = createFakeBinding(createHangingOutboundIterable());
     const session = createTestSession({ binding: fake.binding });
-    let transportRef: { ingest(data: string): void } | undefined;
+    const transportRef: { current?: { ingest: (data: string) => void } } = {};
     const sink = createFakeSink();
     const baseSend = sink.send.bind(sink);
     sink.send = (data: string): void => {
       baseSend(data);
-      const parsed = JSON.parse(data) as { kind: string };
-      if (parsed.kind === "ping") {
+      const parsed: unknown = JSON.parse(data);
+      if (hasKind(parsed, "ping")) {
         queueMicrotask(() => {
-          transportRef?.ingest(JSON.stringify({ kind: "pong" }));
+          transportRef.current?.ingest(JSON.stringify({ kind: "pong" }));
         });
       }
     };
@@ -197,7 +213,7 @@ describe("createWsSessionTransport: heartbeat / half-open detection", () => {
       session,
       sink,
     });
-    transportRef = transport;
+    transportRef.current = transport;
 
     transport.start();
     transport.ingest(handshakeMessage());
@@ -205,8 +221,8 @@ describe("createWsSessionTransport: heartbeat / half-open detection", () => {
 
     await delay(INTERVAL_MS * 8);
 
-    const pingCount = sink.sent.filter(
-      (message) => (message as { kind: string }).kind === "ping"
+    const pingCount = sink.sent.filter((message) =>
+      hasKind(message, "ping")
     ).length;
     expect(pingCount).toBeGreaterThanOrEqual(3);
     expect(sink.closes).toEqual([]);
@@ -278,9 +294,7 @@ describe("createWsSessionTransport: heartbeat / half-open detection", () => {
 
     await delay(200);
 
-    expect(
-      sink.sent.some((message) => (message as { kind: string }).kind === "ping")
-    ).toBe(false);
+    expect(sink.sent.some((message) => hasKind(message, "ping"))).toBe(false);
     expect(sink.closes).toEqual([]);
     transport.close();
   });
@@ -299,7 +313,9 @@ describe("createWsSessionTransport: bounded backpressure", () => {
     const warnings: string[] = [];
     const transport = createWsSessionTransport({
       backpressure: { maxBufferedBytes: 100 },
-      onWarning: (warning) => warnings.push(warning.code),
+      onWarning: (warning) => {
+        warnings.push(warning.code);
+      },
       session,
       sink,
     });
@@ -343,14 +359,21 @@ describe("createWsSessionTransport: bounded backpressure", () => {
     const primerSink = createFakeSessionSink();
     session.attach(primerSink);
     await flushMicrotasks();
-    const resumeCursor = primerSink.sent[0]?.cursor as string;
+    const resumeCursor = primerSink.sent[0]?.cursor;
+    if (resumeCursor === undefined) {
+      throw new Error(
+        "expected the primed event frame to carry a resume cursor"
+      );
+    }
     session.detach();
 
     const sink = createScriptedBufferedAmountSink([500]);
     const warnings: string[] = [];
     const transport = createWsSessionTransport({
       backpressure: { maxBufferedBytes: 100 },
-      onWarning: (warning) => warnings.push(warning.code),
+      onWarning: (warning) => {
+        warnings.push(warning.code);
+      },
       session,
       sink,
     });
@@ -385,7 +408,8 @@ describe("createWsSessionTransport: bounded backpressure", () => {
       createFiniteOutboundIterable([invocationFrame])
     );
     const session = createTestSession({ binding: fake.binding });
-    const sink = createFakeSink(); // no bufferedAmount()
+    // This sink deliberately has no bufferedAmount capability.
+    const sink = createFakeSink();
     const transport = createWsSessionTransport({
       backpressure: { maxBufferedBytes: 1 },
       session,
@@ -397,7 +421,10 @@ describe("createWsSessionTransport: bounded backpressure", () => {
     await flushMicrotasks();
 
     expect(sink.closes).toEqual([]);
-    const frameMessage = sink.sent[1] as { frame: SessionOutboundFrame };
+    const frameMessage = requireRecord(
+      sink.sent[1],
+      "expected the live outbound frame envelope"
+    );
     expect(frameMessage.frame).toEqual(invocationFrame);
   });
 
@@ -415,7 +442,10 @@ describe("createWsSessionTransport: bounded backpressure", () => {
     await flushMicrotasks();
 
     expect(sink.closes).toEqual([]);
-    const frameMessage = sink.sent[1] as { frame: SessionOutboundFrame };
+    const frameMessage = requireRecord(
+      sink.sent[1],
+      "expected the live outbound frame envelope"
+    );
     expect(frameMessage.frame).toEqual(invocationFrame);
   });
 });
@@ -457,13 +487,17 @@ describe("createWsSessionTransport: overflow keeps the unsent event frame resuma
     // Two live event envelopes made it onto the wire; the third was
     // sequenced and recorded by the session (event recording happens
     // unconditionally, before the budget check ever runs) but never sent.
-    const sentFrames = (
-      overflowSink.sent as { kind: string; cursor?: string }[]
-    ).filter((message) => message.kind === "frame");
+    const sentFrames = overflowSink.sent.filter((message) =>
+      hasKind(message, "frame")
+    );
 
     expect(sentFrames).toHaveLength(2);
 
-    const lastReceivedCursor = sentFrames.at(-1)?.cursor as string;
+    const lastSentFrame = sentFrames.at(-1);
+    if (!isRecord(lastSentFrame) || typeof lastSentFrame.cursor !== "string") {
+      throw new Error("expected the last sent frame to carry a resume cursor");
+    }
+    const lastReceivedCursor = lastSentFrame.cursor;
     const secondSink = createFakeSink();
     const secondTransport = createWsSessionTransport({
       session,
@@ -474,22 +508,38 @@ describe("createWsSessionTransport: overflow keeps the unsent event frame resuma
     secondTransport.ingest(handshakeMessage({ cursor: lastReceivedCursor }));
     await flushMicrotasks();
 
-    const ack = secondSink.sent[0] as { kind: string; resumeStatus: string };
+    const ack = requireRecord(
+      secondSink.sent[0],
+      "expected a handshake acknowledgement"
+    );
 
     expect(ack.resumeStatus).toBe("resumed");
 
-    const replayed = (
-      secondSink.sent.slice(1) as {
-        kind: string;
-        frame: { event: { type: string } };
-      }[]
-    ).filter((message) => message.kind === "frame");
+    const replayed = secondSink.sent
+      .slice(1)
+      .filter((message) => hasKind(message, "frame"));
 
     // Exactly the recorded-but-unsent third frame comes back.
     expect(replayed).toHaveLength(1);
-    expect(replayed[0]?.frame.event.type).toBe(
-      streamAdapterFixtures.completedTurn[2]?.type as string
+    const replayedMessage = requireRecord(
+      replayed[0],
+      "expected one replayed frame envelope"
     );
+    const replayedFrame = requireRecord(
+      replayedMessage.frame,
+      "expected a replayed session frame"
+    );
+    const replayedEvent = requireRecord(
+      replayedFrame.event,
+      "expected a replayed stream event"
+    );
+    const expectedEvent = streamAdapterFixtures.completedTurn.at(2);
+    if (expectedEvent === undefined) {
+      throw new Error(
+        "expected the completed-turn fixture to contain a third event"
+      );
+    }
+    expect(replayedEvent.type).toBe(expectedEvent.type);
 
     secondTransport.close();
   });

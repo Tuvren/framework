@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established @experimental API stability markers. */
 /**
  * The host rejected the opaque `authToken`.
  *
@@ -89,3 +90,4 @@ export type WsCloseCode =
   | typeof WS_CLOSE_CODE_HEARTBEAT_TIMEOUT
   | typeof WS_CLOSE_CODE_PROTOCOL_VERSION_UNSUPPORTED
   | typeof WS_CLOSE_CODE_SESSION_NOT_FOUND;
+/* oxlint-enable jsdoc/check-tag-names */
