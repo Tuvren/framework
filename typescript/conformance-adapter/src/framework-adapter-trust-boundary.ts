@@ -42,22 +42,6 @@ import {
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function hasToolMessage(messages: readonly unknown[]): boolean {
-  return messages.some(
-    (message) => isRecord(message) && message.role === "tool"
-  );
-}
-
-function readEventType(event: unknown): string | undefined {
-  return isRecord(event) && typeof event.type === "string"
-    ? event.type
-    : undefined;
-}
-
 interface ObservedToolResult {
   callId: unknown;
   errorCode: string | undefined;
@@ -65,7 +49,25 @@ interface ObservedToolResult {
   name: unknown;
 }
 
-function readToolResults(messages: readonly unknown[]): ObservedToolResult[] {
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+const hasToolMessage = (messages: readonly unknown[]): boolean => {
+  return messages.some(
+    (message) => isRecord(message) && message.role === "tool"
+  );
+};
+
+const readEventType = (event: unknown): string | undefined => {
+  return isRecord(event) && typeof event.type === "string"
+    ? event.type
+    : undefined;
+};
+
+const readToolResults = (
+  messages: readonly unknown[]
+): ObservedToolResult[] => {
   const results: ObservedToolResult[] = [];
 
   for (const message of messages) {
@@ -99,7 +101,7 @@ function readToolResults(messages: readonly unknown[]): ObservedToolResult[] {
   }
 
   return results;
-}
+};
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.trust-boundary.approval-gate
@@ -111,9 +113,9 @@ function readToolResults(messages: readonly unknown[]): ObservedToolResult[] {
 // executed — proving the gate cannot be bypassed without a decision.
 // ---------------------------------------------------------------------------
 
-export async function runTrustBoundaryApprovalNonBypassable(
+export const runTrustBoundaryApprovalNonBypassable = async (
   _input: unknown
-): Promise<AdapterProjection> {
+): Promise<AdapterProjection> => {
   const harness = createConformanceKernelHarness();
   const executedToolNames: string[] = [];
   const gatedToolName = "trust-boundary-gated-tool";
@@ -186,7 +188,7 @@ export async function runTrustBoundaryApprovalNonBypassable(
       },
     },
   };
-}
+};
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.trust-boundary.local-tool-input
@@ -198,9 +200,9 @@ export async function runTrustBoundaryApprovalNonBypassable(
 // `execute` was ever invoked.
 // ---------------------------------------------------------------------------
 
-export async function runTrustBoundaryLocalToolInput(
+export const runTrustBoundaryLocalToolInput = async (
   _input: unknown
-): Promise<AdapterProjection> {
+): Promise<AdapterProjection> => {
   const harness = createConformanceKernelHarness();
   let toolExecuted = false;
   const toolName = "trust-boundary-strict-tool";
@@ -269,4 +271,4 @@ export async function runTrustBoundaryLocalToolInput(
       },
     },
   };
-}
+};
