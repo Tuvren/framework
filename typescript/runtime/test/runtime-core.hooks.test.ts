@@ -55,17 +55,18 @@ describe("framework-runtime-core", () => {
           );
         }
 
-        return undefined;
+        return;
       },
       beforeTurn() {
         this.beforeTurnCalls += 1;
-        return undefined;
+        return;
       },
       beforeTurnCalls: 0,
       name: "mutable-receiver",
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         {
           async execute() {
@@ -83,7 +84,6 @@ describe("framework-runtime-core", () => {
           },
         } satisfies RuntimeRunner,
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -129,8 +129,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -140,10 +140,10 @@ describe("framework-runtime-core", () => {
           {
             beforeTurn() {
               return {
+                reason: "stop before turn",
                 state: {
                   seeded: true,
                 },
-                reason: "stop before turn",
                 verdict: "endTurn",
               };
             },
@@ -185,8 +185,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -196,10 +196,10 @@ describe("framework-runtime-core", () => {
           {
             beforeIteration() {
               return {
+                reason: "stop before iteration",
                 state: {
                   seeded: true,
                 },
-                reason: "stop before iteration",
                 verdict: "endTurn",
               };
             },
@@ -241,8 +241,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -252,7 +252,7 @@ describe("framework-runtime-core", () => {
           {
             async beforeIteration() {
               await delay(30);
-              return undefined;
+              return;
             },
             name: "slow-hook",
             timeout: 5,
@@ -298,8 +298,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -316,7 +316,7 @@ describe("framework-runtime-core", () => {
                 },
                 name: "late-event",
               });
-              return undefined;
+              return;
             },
             name: "slow-hook",
             timeout: 5,
@@ -359,8 +359,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -399,7 +399,7 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
 ) {
   return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
@@ -426,7 +426,7 @@ function isKrakenRunnerFactory(
 }
 
 function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const resume = runner.resume;
+  const { resume } = runner;
 
   return {
     async execute(context) {

@@ -113,10 +113,10 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       resolveAgentConfig: (agentName) =>
         agentName === "reviewer" ? { name: "reviewer" } : undefined,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     threadId = thread.threadId;
@@ -181,6 +181,9 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) =>
+        agentName === "reviewer" ? { name: "reviewer" } : undefined,
       runnerRegistry: createRunnerRegistry([
         {
           async execute(context) {
@@ -214,9 +217,6 @@ describe("framework-runtime-core", () => {
           },
         } satisfies RuntimeRunner,
       ]),
-      kernel: harness.kernel,
-      resolveAgentConfig: (agentName) =>
-        agentName === "reviewer" ? { name: "reviewer" } : undefined,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -280,6 +280,8 @@ describe("framework-runtime-core", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) => agents[agentName],
       runnerRegistry: createRunnerRegistry([
         {
           async execute(context) {
@@ -315,8 +317,6 @@ describe("framework-runtime-core", () => {
           },
         } satisfies RuntimeRunner,
       ]),
-      kernel: harness.kernel,
-      resolveAgentConfig: (agentName) => agents[agentName],
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -342,6 +342,9 @@ describe("framework-runtime-core", () => {
     let capturedSourceContext: HandoffSourceContext | undefined;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) =>
+        agentName === "reviewer" ? { name: "reviewer" } : undefined,
       runnerRegistry: createRunnerRegistry([
         {
           async execute(context) {
@@ -381,9 +384,6 @@ describe("framework-runtime-core", () => {
           },
         } satisfies RuntimeRunner,
       ]),
-      kernel: harness.kernel,
-      resolveAgentConfig: (agentName) =>
-        agentName === "reviewer" ? { name: "reviewer" } : undefined,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -415,6 +415,9 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) =>
+        agentName === "reviewer" ? { name: "reviewer" } : undefined,
       runnerRegistry: createRunnerRegistry([
         {
           async execute(context) {
@@ -453,9 +456,6 @@ describe("framework-runtime-core", () => {
           },
         } satisfies RuntimeRunner,
       ]),
-      kernel: harness.kernel,
-      resolveAgentConfig: (agentName) =>
-        agentName === "reviewer" ? { name: "reviewer" } : undefined,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -501,7 +501,7 @@ describe("framework-runtime-core", () => {
                 data: context.extensionState,
                 name: "reviewer.state",
               });
-              return undefined;
+              return;
             },
             name: "reviewer-state",
             state: {
@@ -546,9 +546,9 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([handoffRunner]),
       kernel: harness.kernel,
       resolveAgentConfig: (agentName) => agents[agentName],
+      runnerRegistry: createRunnerRegistry([handoffRunner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -574,7 +574,7 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
 ) {
   return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
@@ -601,7 +601,7 @@ function isKrakenRunnerFactory(
 }
 
 function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const resume = runner.resume;
+  const { resume } = runner;
 
   return {
     async execute(context) {
