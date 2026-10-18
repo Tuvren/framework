@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: adapter operations must return Promise<AdapterProjection> per adapter contract
 import {
   createCapabilityPolicyEngine,
   createRunnerRegistry,
@@ -33,12 +32,36 @@ import {
 } from "./framework-adapter-runtime.ts";
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
+const fromSynchronousWithoutArguments = <Value>(
+  operation: () => Value
+): (() => Promise<Value>) =>
+  Promise.try.bind<typeof Promise, [() => Value], [], Promise<Value>>(
+    Promise,
+    operation
+  );
+
+const fromSynchronous = <Argument, Value>(
+  operation: (argument: Argument) => Value
+): ((argument: Argument) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(argument: Argument) => Value],
+    [Argument],
+    Promise<Value>
+  >(Promise, operation);
+
+const makeBinding = (capabilityId: string) => ({
+  capabilityId,
+  endpoint: { id: "tuvren.in-process", kind: "tuvren-in-process" as const },
+  executionClass: "tuvren-server" as const,
+});
+
 /**
  * Asserts all exposure-time policy dimensions (BB001 residency, BB002 risk-class
  * cap, BB003 active-endpoint) using standalone engine calls.
  */
 export const runCapabilityPolicyExposureDimensions =
-  async (): Promise<AdapterProjection> => {
+  fromSynchronousWithoutArguments((): AdapterProjection => {
     const engine = createCapabilityPolicyEngine({
       maxExposedRiskClass: "medium",
     });
@@ -107,14 +130,14 @@ export const runCapabilityPolicyExposureDimensions =
     };
 
     return { evidence, result: evidence };
-  };
+  });
 
 /**
  * Asserts all invocation-time policy dimensions (BB001 residency, BB003 presence,
  * BB004 credential-boundary) using standalone engine calls.
  */
 export const runCapabilityPolicyInvocationDimensions =
-  async (): Promise<AdapterProjection> => {
+  fromSynchronousWithoutArguments((): AdapterProjection => {
     const engine = createCapabilityPolicyEngine();
 
     const residencyDeniedId = "eu.data.tool";
@@ -137,12 +160,6 @@ export const runCapabilityPolicyInvocationDimensions =
       providerId: "conformance-provider",
       userPresent: false,
     };
-
-    const makeBinding = (capabilityId: string) => ({
-      capabilityId,
-      endpoint: { id: "tuvren.in-process", kind: "tuvren-in-process" as const },
-      executionClass: "tuvren-server" as const,
-    });
 
     const residencyDecision = engine.evaluateInvocation(
       makeBinding(residencyDeniedId),
@@ -184,14 +201,14 @@ export const runCapabilityPolicyInvocationDimensions =
     };
 
     return { evidence, result: evidence };
-  };
+  });
 
 /**
  * Asserts policy composition: multiple denying dimensions → composed non-secret
  * reason; same inputs → deterministic outcome.
  */
-export const runCapabilityPolicyComposition =
-  async (): Promise<AdapterProjection> => {
+export const runCapabilityPolicyComposition = fromSynchronousWithoutArguments(
+  (): AdapterProjection => {
     const engine = createCapabilityPolicyEngine({
       maxExposedRiskClass: "medium",
     });
@@ -262,7 +279,8 @@ export const runCapabilityPolicyComposition =
     };
 
     return { evidence, result: evidence };
-  };
+  }
+);
 
 /**
  * Wired proof: a capability violating the credential boundary is denied at
@@ -277,28 +295,29 @@ export const runCapabilityPolicyWiredInvocationDenial =
     const harness = createConformanceKernelHarness();
     const engine = createCapabilityPolicyEngine();
 
-    const runner = createStaticRunner(async (ctx) => {
-      await Promise.resolve();
-      if (!ctx.messages.some((m) => m.role === "tool")) {
+    const runner = createStaticRunner(
+      fromSynchronous((ctx) => {
+        if (!ctx.messages.some((m) => m.role === "tool")) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "policy-wired-1",
+                  input: {},
+                  name: credentialDeniedToolName,
+                },
+              ]),
+            ],
+            resolution: { type: "continue_iteration" as const },
+            toolExecutionMode: "parallel",
+          };
+        }
         return {
-          messages: [
-            assistantToolCalls([
-              {
-                callId: "policy-wired-1",
-                input: {},
-                name: credentialDeniedToolName,
-              },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" as const },
-          toolExecutionMode: "parallel",
+          messages: [assistantText("policy wired test done")],
+          resolution: { reason: "done", type: "end_turn" as const },
         };
-      }
-      return {
-        messages: [assistantText("policy wired test done")],
-        resolution: { reason: "done", type: "end_turn" as const },
-      };
-    });
+      })
+    );
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: RUNNER_ID,
@@ -313,7 +332,8 @@ export const runCapabilityPolicyWiredInvocationDenial =
         capabilityPolicyEngine: engine,
         name: AGENT_NAME,
         policyContextInputs: {
-          availableCredentialScopes: ["read"], // write scope absent
+          // The required write scope is intentionally absent.
+          availableCredentialScopes: ["read"],
         },
         tools: [
           {
@@ -361,24 +381,25 @@ export const runCapabilityPolicyNonretryablePolicy =
 
     const harness = createConformanceKernelHarness();
 
-    const runner = createStaticRunner(async (ctx) => {
-      await Promise.resolve();
-      if (!ctx.messages.some((m) => m.role === "tool")) {
+    const runner = createStaticRunner(
+      fromSynchronous((ctx) => {
+        if (!ctx.messages.some((m) => m.role === "tool")) {
+          return {
+            messages: [
+              assistantToolCalls([
+                { callId: "nonretry-call-1", input: {}, name: toolName },
+              ]),
+            ],
+            resolution: { type: "continue_iteration" as const },
+            toolExecutionMode: "parallel",
+          };
+        }
         return {
-          messages: [
-            assistantToolCalls([
-              { callId: "nonretry-call-1", input: {}, name: toolName },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" as const },
-          toolExecutionMode: "parallel",
+          messages: [assistantText("nonretryable policy done")],
+          resolution: { reason: "done", type: "end_turn" as const },
         };
-      }
-      return {
-        messages: [assistantText("nonretryable policy done")],
-        resolution: { reason: "done", type: "end_turn" as const },
-      };
-    });
+      })
+    );
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: RUNNER_ID,
@@ -437,24 +458,29 @@ export const runCapabilityPolicyWiredRiskApproval =
       requireApprovalForRiskClass: "high",
     });
 
-    const runner = createStaticRunner(async (ctx) => {
-      await Promise.resolve();
-      if (!ctx.messages.some((m) => m.role === "tool")) {
+    const runner = createStaticRunner(
+      fromSynchronous((ctx) => {
+        if (!ctx.messages.some((m) => m.role === "tool")) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "risk-approval-1",
+                  input: {},
+                  name: highRiskToolName,
+                },
+              ]),
+            ],
+            resolution: { type: "continue_iteration" as const },
+            toolExecutionMode: "parallel",
+          };
+        }
         return {
-          messages: [
-            assistantToolCalls([
-              { callId: "risk-approval-1", input: {}, name: highRiskToolName },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" as const },
-          toolExecutionMode: "parallel",
+          messages: [assistantText("risk approval gate done")],
+          resolution: { reason: "done", type: "end_turn" as const },
         };
-      }
-      return {
-        messages: [assistantText("risk approval gate done")],
-        resolution: { reason: "done", type: "end_turn" as const },
-      };
-    });
+      })
+    );
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: RUNNER_ID,

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { setTimeout as sleep } from "node:timers/promises";
+
 import {
   createOrchestrationRuntime,
   createRunnerRegistry,
@@ -33,212 +35,105 @@ import {
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterOrchestrationLifecycleDependencies {
-  createObservedErrorEnvelope(error: unknown): Record<string, unknown>;
-  readOperationScenario(
+  createObservedErrorEnvelope: (error: unknown) => Record<string, unknown>;
+  readOperationScenario: (
     input: unknown,
     operation: string
-  ): Record<string, unknown>;
-  readStringProperty(
+  ) => Record<string, unknown>;
+  readStringProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): string;
+  ) => string;
 }
+
+const fromSynchronousWithoutArguments = <Value>(
+  operation: () => Value
+): (() => Promise<Value>) =>
+  Promise.try.bind<typeof Promise, [() => Value], [], Promise<Value>>(
+    Promise,
+    operation
+  );
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const waitUntil = async (
+  predicate: () => boolean,
+  timeoutMs = 1000,
+  start = Date.now()
+): Promise<void> => {
+  if (predicate()) {
+    return;
+  }
+
+  if (Date.now() - start > timeoutMs) {
+    throw new Error(`timed out after ${timeoutMs}ms`);
+  }
+
+  await sleep(5);
+  await waitUntil(predicate, timeoutMs, start);
+};
+
+const firstVisibleText = (result: unknown): string | undefined => {
+  if (!(isRecord(result) && isRecord(result.finalAssistantMessage))) {
+    return undefined;
+  }
+
+  const { parts } = result.finalAssistantMessage;
+  if (!Array.isArray(parts)) {
+    return undefined;
+  }
+
+  const textPart = parts.find(
+    (part): part is Record<string, unknown> =>
+      isRecord(part) && part.type === "text"
+  );
+  return isRecord(textPart) && typeof textPart.text === "string"
+    ? textPart.text
+    : undefined;
+};
 
 export const createFrameworkAdapterOrchestrationLifecycle = (
   dependencies: FrameworkAdapterOrchestrationLifecycleDependencies
 ): {
-  runOrchestrationLifecycleLocality(input: unknown): Promise<AdapterProjection>;
+  runOrchestrationLifecycleLocality: (
+    input: unknown
+  ) => Promise<AdapterProjection>;
 } => {
-  const sleep = (ms: number): Promise<void> => {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
-  };
-
-  const waitUntil = async (
-    predicate: () => boolean,
-    timeoutMs = 1000
-  ): Promise<void> => {
-    const start = Date.now();
-
-    while (!predicate()) {
-      if (Date.now() - start > timeoutMs) {
-        throw new Error(`timed out after ${timeoutMs}ms`);
-      }
-
-      await sleep(5);
-    }
-  };
-
-  const firstVisibleText = (result: unknown): string | undefined => {
-    if (
-      typeof result !== "object" ||
-      result === null ||
-      Array.isArray(result)
-    ) {
-      return undefined;
-    }
-    type KV = Record<string, unknown>;
-    const r = result as KV;
-    const msg = r.finalAssistantMessage;
-    if (typeof msg !== "object" || msg === null) {
-      return undefined;
-    }
-    const { parts } = msg as KV;
-    if (!Array.isArray(parts)) {
-      return undefined;
-    }
-    const textPart = parts.find(
-      (p) => typeof p === "object" && p !== null && (p as KV).type === "text"
-    );
-    if (textPart === undefined) {
-      return undefined;
-    }
-    const { text } = textPart as KV;
-    return typeof text === "string" ? text : undefined;
-  };
-
-  const runOrchestrationParentPauseChildContinues = async (
-    childText: string,
-    parentText: string
-  ): Promise<AdapterProjection> => {
-    const harness = createConformanceKernelHarness();
-    const framework = createTuvrenRuntimeCore({
-      createId: createConformanceIdFactory(),
-      defaultRunnerId: RUNNER_ID,
-      kernel: harness.kernel,
-      runnerRegistry: createRunnerRegistry([
-        createStaticRunner(async (context) => {
-          if (context.config.name === "worker") {
-            await sleep(40);
-            return {
-              messages: [assistantText(childText)],
-              resolution: {
-                reason: "done",
-                type: "end_turn",
-              },
-            };
-          }
-
-          const toolMessages = context.messages.filter(
-            (message) => message.role === "tool"
-          );
-
-          if (toolMessages.length === 0) {
-            return {
-              messages: [
-                assistantToolCalls([
-                  {
-                    callId: "call-hold",
-                    input: { hold: true },
-                    name: "hold",
-                  },
-                ]),
-              ],
-              resolution: {
-                type: "continue_iteration",
-              },
-              toolExecutionMode: "parallel",
-            };
-          }
-
-          return {
-            messages: [assistantText(parentText)],
-            resolution: {
-              reason: "done",
-              type: "end_turn",
-            },
-          };
-        }),
-      ]),
-    });
-    const orchestration = createOrchestrationRuntime({
-      agents: {
-        primary: {
-          name: "primary",
-          tools: [
-            {
-              approval: true,
-              description: "Pause the parent turn",
-              execute() {
-                return { approved: true };
-              },
-              inputSchema: {
-                properties: {
-                  hold: { type: "boolean" },
+  const independentScenarios = {
+    async parentPauseChildContinues(
+      childText: string,
+      parentText: string
+    ): Promise<AdapterProjection> {
+      const harness = createConformanceKernelHarness();
+      const framework = createTuvrenRuntimeCore({
+        createId: createConformanceIdFactory(),
+        defaultRunnerId: RUNNER_ID,
+        kernel: harness.kernel,
+        runnerRegistry: createRunnerRegistry([
+          createStaticRunner(async (context) => {
+            if (context.config.name === "worker") {
+              await sleep(40);
+              return {
+                messages: [assistantText(childText)],
+                resolution: {
+                  reason: "done",
+                  type: "end_turn",
                 },
-                required: ["hold"],
-                type: "object",
-              },
-              name: "hold",
-            },
-          ],
-        },
-        worker: { name: "worker" },
-      },
-      framework,
-    });
-    const thread = await framework.createThread({});
-    const handle = orchestration.executeTurn({
-      agent: "primary",
-      branchId: thread.branchId,
-      signal: textSignal("pause"),
-      threadId: thread.threadId,
-    });
-    const subtreeEventsPromise = collectValues(handle.allEvents());
+              };
+            }
 
-    await sleep(0);
+            const toolMessages = context.messages.filter(
+              (message) => message.role === "tool"
+            );
 
-    const childHandle = handle.spawn({
-      agent: "worker",
-      signal: textSignal("background"),
-    });
-    await waitUntil(() => handle.status().phase === "paused");
-    const childResult = await childHandle.awaitResult();
-    const pausedPhase = handle.status().phase;
-    const resumedHandle = handle.resolveApproval({
-      decisions: [{ callId: "call-hold", type: "approve" }],
-    });
-    const resumedResult = await resumedHandle.awaitResult();
-    await subtreeEventsPromise;
-
-    const lifecycle = {
-      childResult,
-      parentPausedWhileChildCompleted:
-        pausedPhase === "paused" && firstVisibleText(childResult) === childText,
-      resumedParentPhase: resumedHandle.status().phase,
-      resumedParentResult: resumedResult,
-    };
-
-    return {
-      evidence: { orchestration: { lifecycle } },
-      result: { orchestration: { lifecycle } },
-    };
-  };
-
-  const runOrchestrationChildPauseParentCompletes = async (
-    childText: string,
-    parentText: string
-  ): Promise<AdapterProjection> => {
-    const harness = createConformanceKernelHarness();
-    const framework = createTuvrenRuntimeCore({
-      createId: createConformanceIdFactory(),
-      defaultRunnerId: RUNNER_ID,
-      kernel: harness.kernel,
-      runnerRegistry: createRunnerRegistry([
-        createStaticRunner(async (context) => {
-          const toolMessages = context.messages.filter(
-            (message) => message.role === "tool"
-          );
-
-          if (context.config.name === "worker") {
             if (toolMessages.length === 0) {
               return {
                 messages: [
                   assistantToolCalls([
                     {
-                      callId: "call-approve-worker",
+                      callId: "call-hold",
                       input: { hold: true },
                       name: "hold",
                     },
@@ -252,93 +147,203 @@ export const createFrameworkAdapterOrchestrationLifecycle = (
             }
 
             return {
-              messages: [assistantText(childText)],
+              messages: [assistantText(parentText)],
               resolution: {
                 reason: "done",
                 type: "end_turn",
               },
             };
-          }
-
-          await sleep(20);
-          return {
-            messages: [assistantText(parentText)],
-            resolution: {
-              reason: "done",
-              type: "end_turn",
-            },
-          };
-        }),
-      ]),
-    });
-    const orchestration = createOrchestrationRuntime({
-      agents: {
-        primary: { name: "primary" },
-        worker: {
-          name: "worker",
-          tools: [
-            {
-              approval: true,
-              description: "Pause worker review",
-              execute() {
-                return { approved: true };
-              },
-              inputSchema: {
-                properties: {
-                  hold: { type: "boolean" },
+          }),
+        ]),
+      });
+      const orchestration = createOrchestrationRuntime({
+        agents: {
+          primary: {
+            name: "primary",
+            tools: [
+              {
+                approval: true,
+                description: "Pause the parent turn",
+                execute() {
+                  return { approved: true };
                 },
-                required: ["hold"],
-                type: "object",
+                inputSchema: {
+                  properties: {
+                    hold: { type: "boolean" },
+                  },
+                  required: ["hold"],
+                  type: "object",
+                },
+                name: "hold",
               },
-              name: "hold",
-            },
-          ],
+            ],
+          },
+          worker: { name: "worker" },
         },
-      },
-      framework,
-    });
-    const thread = await framework.createThread({});
-    const handle = orchestration.executeTurn({
-      agent: "primary",
-      branchId: thread.branchId,
-      signal: textSignal("root"),
-      threadId: thread.threadId,
-    });
-    const parentEventsPromise = collectValues(handle.allEvents());
+        framework,
+      });
+      const thread = await framework.createThread({});
+      const handle = orchestration.executeTurn({
+        agent: "primary",
+        branchId: thread.branchId,
+        signal: textSignal("pause"),
+        threadId: thread.threadId,
+      });
+      const subtreeEventsPromise = collectValues(handle.allEvents());
 
-    await sleep(0);
+      await sleep(0);
 
-    const childHandle = handle.spawn({
-      agent: "worker",
-      signal: textSignal("approval"),
-    });
-    await collectValues(childHandle.events());
-    // Child is now paused. Wait for the parent to complete independently (it does not
-    // collect child results), then resume the child and collect both results.
-    const pausedPhase = childHandle.status().phase;
-    await waitUntil(() => handle.status().phase === "completed");
-    const parentPhaseWhileChildPaused = handle.status().phase;
-    const resumedChildHandle = childHandle.resolveApproval({
-      decisions: [{ callId: "call-approve-worker", type: "approve" }],
-    });
-    const resumedChildResult = await resumedChildHandle.awaitResult();
-    const parentResult = await handle.awaitResult();
-    await parentEventsPromise;
+      const childHandle = handle.spawn({
+        agent: "worker",
+        signal: textSignal("background"),
+      });
+      await waitUntil(() => handle.status().phase === "paused");
+      const childResult = await childHandle.awaitResult();
+      const pausedPhase = handle.status().phase;
+      const resumedHandle = handle.resolveApproval({
+        decisions: [{ callId: "call-hold", type: "approve" }],
+      });
+      const resumedResult = await resumedHandle.awaitResult();
+      await subtreeEventsPromise;
 
-    const lifecycle = {
-      childPausedPhase: pausedPhase,
-      childResumedPhase: resumedChildHandle.status().phase,
-      parentCompletedWhileChildPaused:
-        pausedPhase === "paused" &&
-        parentPhaseWhileChildPaused === "completed" &&
-        firstVisibleText(parentResult) === parentText,
-      resumedChildResult,
-    };
+      const lifecycle = {
+        childResult,
+        parentPausedWhileChildCompleted:
+          pausedPhase === "paused" &&
+          firstVisibleText(childResult) === childText,
+        resumedParentPhase: resumedHandle.status().phase,
+        resumedParentResult: resumedResult,
+      };
 
-    return {
-      evidence: { orchestration: { lifecycle } },
-      result: { orchestration: { lifecycle } },
-    };
+      return {
+        evidence: { orchestration: { lifecycle } },
+        result: { orchestration: { lifecycle } },
+      };
+    },
+
+    async workerPauseParentCompletes(
+      childText: string,
+      parentText: string
+    ): Promise<AdapterProjection> {
+      const harness = createConformanceKernelHarness();
+      const framework = createTuvrenRuntimeCore({
+        createId: createConformanceIdFactory(),
+        defaultRunnerId: RUNNER_ID,
+        kernel: harness.kernel,
+        runnerRegistry: createRunnerRegistry([
+          createStaticRunner(async (context) => {
+            const toolMessages = context.messages.filter(
+              (message) => message.role === "tool"
+            );
+
+            if (context.config.name === "worker") {
+              if (toolMessages.length === 0) {
+                return {
+                  messages: [
+                    assistantToolCalls([
+                      {
+                        callId: "call-approve-worker",
+                        input: { hold: true },
+                        name: "hold",
+                      },
+                    ]),
+                  ],
+                  resolution: {
+                    type: "continue_iteration",
+                  },
+                  toolExecutionMode: "parallel",
+                };
+              }
+
+              return {
+                messages: [assistantText(childText)],
+                resolution: {
+                  reason: "done",
+                  type: "end_turn",
+                },
+              };
+            }
+
+            await sleep(20);
+            return {
+              messages: [assistantText(parentText)],
+              resolution: {
+                reason: "done",
+                type: "end_turn",
+              },
+            };
+          }),
+        ]),
+      });
+      const orchestration = createOrchestrationRuntime({
+        agents: {
+          primary: { name: "primary" },
+          worker: {
+            name: "worker",
+            tools: [
+              {
+                approval: true,
+                description: "Pause worker review",
+                execute() {
+                  return { approved: true };
+                },
+                inputSchema: {
+                  properties: {
+                    hold: { type: "boolean" },
+                  },
+                  required: ["hold"],
+                  type: "object",
+                },
+                name: "hold",
+              },
+            ],
+          },
+        },
+        framework,
+      });
+      const thread = await framework.createThread({});
+      const handle = orchestration.executeTurn({
+        agent: "primary",
+        branchId: thread.branchId,
+        signal: textSignal("root"),
+        threadId: thread.threadId,
+      });
+      const parentEventsPromise = collectValues(handle.allEvents());
+
+      await sleep(0);
+
+      const childHandle = handle.spawn({
+        agent: "worker",
+        signal: textSignal("approval"),
+      });
+      await collectValues(childHandle.events());
+      // Child is now paused. Wait for the parent to complete independently (it does not
+      // collect child results), then resume the child and collect both results.
+      const pausedPhase = childHandle.status().phase;
+      await waitUntil(() => handle.status().phase === "completed");
+      const parentPhaseWhileChildPaused = handle.status().phase;
+      const resumedChildHandle = childHandle.resolveApproval({
+        decisions: [{ callId: "call-approve-worker", type: "approve" }],
+      });
+      const resumedChildResult = await resumedChildHandle.awaitResult();
+      const parentResult = await handle.awaitResult();
+      await parentEventsPromise;
+
+      const lifecycle = {
+        childPausedPhase: pausedPhase,
+        childResumedPhase: resumedChildHandle.status().phase,
+        parentCompletedWhileChildPaused:
+          pausedPhase === "paused" &&
+          parentPhaseWhileChildPaused === "completed" &&
+          firstVisibleText(parentResult) === parentText,
+        resumedChildResult,
+      };
+
+      return {
+        evidence: { orchestration: { lifecycle } },
+        result: { orchestration: { lifecycle } },
+      };
+    },
   };
 
   const captureAsyncActionError = async (
@@ -401,7 +406,7 @@ export const createFrameworkAdapterOrchestrationLifecycle = (
     });
     const parentEventsPromise = collectValues(handle.events());
 
-    await Promise.resolve();
+    await sleep(0);
 
     const childHandle = handle.spawn({
       agent: "worker",
@@ -478,7 +483,7 @@ export const createFrameworkAdapterOrchestrationLifecycle = (
     });
     const parentEventsPromise = collectValues(handle.events());
 
-    await Promise.resolve();
+    await sleep(0);
 
     const childHandle = handle.spawn({
       agent: "worker",
@@ -617,13 +622,15 @@ export const createFrameworkAdapterOrchestrationLifecycle = (
       defaultRunnerId: RUNNER_ID,
       kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
-        createStaticRunner(async () => ({
-          messages: [assistantText("Parent complete.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        })),
+        createStaticRunner(
+          fromSynchronousWithoutArguments(() => ({
+            messages: [assistantText("Parent complete.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          }))
+        ),
       ]),
     });
     const orchestration = createOrchestrationRuntime({
@@ -685,7 +692,7 @@ export const createFrameworkAdapterOrchestrationLifecycle = (
 
     switch (lifecycleCase) {
       case "parent_pause_child_continues": {
-        return await runOrchestrationParentPauseChildContinues(
+        return await independentScenarios.parentPauseChildContinues(
           dependencies.readStringProperty(
             scenario,
             "childText",
@@ -699,7 +706,7 @@ export const createFrameworkAdapterOrchestrationLifecycle = (
         );
       }
       case "child_pause_parent_completes": {
-        return await runOrchestrationChildPauseParentCompletes(
+        return await independentScenarios.workerPauseParentCompletes(
           dependencies.readStringProperty(
             scenario,
             "childText",
