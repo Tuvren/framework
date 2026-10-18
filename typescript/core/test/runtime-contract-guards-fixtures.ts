@@ -308,18 +308,8 @@ export const frameworkContractFixtures = {
         threadId: "thread_main",
       });
     },
-    setBranchHead() {
-      return Promise.resolve({
-        archiveBranchId: "branch_archive",
-        branchId: "branch_main",
-        headTurnNodeHash: "3".repeat(64),
-      });
-    },
-    listThreads() {
-      return Promise.resolve({ threads: [] });
-    },
-    listBranches() {
-      return Promise.resolve([]);
+    async *getTurnHistory() {
+      // no-op iterator
     },
     getTurnState() {
       return Promise.resolve({
@@ -332,19 +322,29 @@ export const frameworkContractFixtures = {
         turnTreeHash: "2".repeat(64),
       });
     },
-    async *getTurnHistory() {
-      // no-op iterator
+    listBranches() {
+      return Promise.resolve([]);
+    },
+    listThreads() {
+      return Promise.resolve({ threads: [] });
+    },
+    maintenance: {
+      purgeScope() {
+        throw new Error("purgeScope was not expected");
+      },
+      reclaim() {
+        throw new Error("reclaim was not expected");
+      },
     },
     readBranchMessages() {
       return Promise.resolve({ messages: [] });
     },
-    maintenance: {
-      reclaim() {
-        throw new Error("reclaim was not expected");
-      },
-      purgeScope() {
-        throw new Error("purgeScope was not expected");
-      },
+    setBranchHead() {
+      return Promise.resolve({
+        archiveBranchId: "branch_archive",
+        branchId: "branch_main",
+        headTurnNodeHash: "3".repeat(64),
+      });
     },
   } satisfies TuvrenRuntime,
   streamEvent: {
@@ -379,10 +379,6 @@ export const invalidFrameworkContractFixtures = {
     completedResults: "not-an-array",
     toolCalls: [],
   },
-  malformedExecutionStatus: {
-    iterationCount: 1.5,
-    phase: "waiting",
-  },
   malformedContextManifest: {
     byRole: {
       assistant: 0,
@@ -404,6 +400,10 @@ export const invalidFrameworkContractFixtures = {
       total: 0,
     },
     turnBoundaries: [],
+  },
+  malformedExecutionStatus: {
+    iterationCount: 1.5,
+    phase: "waiting",
   },
   malformedMessage: {
     parts: "not-an-array",

@@ -20,8 +20,10 @@ import {
   assertRunnerExecutionResult,
   assertRuntimeRunner,
   isRuntimeRunner,
-  type RunnerExecutionContext,
-  type RuntimeRunner,
+} from "../src/runner/index.js";
+import type {
+  RunnerExecutionContext,
+  RuntimeRunner,
 } from "../src/runner/index.js";
 
 describe("runner-contract-guards", () => {
@@ -44,17 +46,19 @@ describe("runner-contract-guards", () => {
     } satisfies RuntimeRunner;
 
     expect(isRuntimeRunner(runner)).toBe(true);
-    expect(() => assertRuntimeRunner(runner)).not.toThrow();
+    expect(() => {
+      assertRuntimeRunner(runner);
+    }).not.toThrow();
 
     const context = createRunnerExecutionContext();
     await expect(runner.execute(context)).resolves.toEqual({
       resolution: { type: "continue_iteration" },
     });
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         resolution: { type: "continue_iteration" },
-      })
-    ).not.toThrow();
+      });
+    }).not.toThrow();
     expect(
       context.handoff.createContextPlan({
         reason: "handoff",
@@ -77,11 +81,13 @@ describe("runner-contract-guards", () => {
     } satisfies RuntimeRunner;
 
     expect(isRuntimeRunner(runner)).toBe(true);
-    expect(() => assertRuntimeRunner(runner)).not.toThrow();
+    expect(() => {
+      assertRuntimeRunner(runner);
+    }).not.toThrow();
   });
 
   test("accepts toolExecutionMode when assistant messages request tool calls", () => {
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         messages: [
           {
@@ -98,12 +104,12 @@ describe("runner-contract-guards", () => {
         ],
         resolution: { type: "continue_iteration" },
         toolExecutionMode: "sequential",
-      })
-    ).not.toThrow();
+      });
+    }).not.toThrow();
   });
 
   test("accepts runner state updates for extension-owned manifest namespaces", () => {
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         resolution: { reason: "done", type: "end_turn" },
         stateUpdates: [
@@ -114,12 +120,12 @@ describe("runner-contract-guards", () => {
             },
           },
         ],
-      })
-    ).not.toThrow();
+      });
+    }).not.toThrow();
   });
 
   test("accepts explicit assistant event reconciliation when an assistant message is returned", () => {
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         assistantEventReconciliation: "allow_final_sequence_divergence",
         messages: [
@@ -129,12 +135,12 @@ describe("runner-contract-guards", () => {
           },
         ],
         resolution: { reason: "done", type: "end_turn" },
-      })
-    ).not.toThrow();
+      });
+    }).not.toThrow();
   });
 
   test("rejects runner results with more than one assistant message", () => {
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         messages: [
           {
@@ -147,12 +153,12 @@ describe("runner-contract-guards", () => {
           },
         ],
         resolution: { reason: "done", type: "end_turn" },
-      })
-    ).toThrow("messages must not contain more than one assistant message");
+      });
+    }).toThrow("messages must not contain more than one assistant message");
   });
 
   test("permits failed partial execution results when assistant output is staged", () => {
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         messages: [
           {
@@ -166,12 +172,12 @@ describe("runner-contract-guards", () => {
           fatality: "hard",
           type: "fail",
         },
-      })
-    ).not.toThrow();
+      });
+    }).not.toThrow();
   });
 
   test("permits failed partial execution results with interrupted tool calls", () => {
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         messages: [
           {
@@ -193,21 +199,21 @@ describe("runner-contract-guards", () => {
           type: "fail",
         },
         toolExecutionMode: "parallel",
-      })
-    ).not.toThrow();
+      });
+    }).not.toThrow();
   });
 
   test("rejects partial execution results that are not failed assistant output", () => {
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         partial: true,
         resolution: { reason: "done", type: "end_turn" },
-      })
-    ).toThrow("partial is only valid for failed execution results");
+      });
+    }).toThrow("partial is only valid for failed execution results");
   });
 
   test("rejects runner results that bypass framework-owned tool results", () => {
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         messages: [
           {
@@ -223,19 +229,19 @@ describe("runner-contract-guards", () => {
           },
         ],
         resolution: { type: "continue_iteration" },
-      })
-    ).toThrow("must not be a tool_result");
+      });
+    }).toThrow("must not be a tool_result");
   });
 
   test("rejects superseded runner result fields from the old branch shape", () => {
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         activeAgent: "primary",
         resolution: { type: "continue_iteration" },
-      })
-    ).toThrow('must not include unsupported field "activeAgent"');
+      });
+    }).toThrow('must not include unsupported field "activeAgent"');
 
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         messages: [
           {
@@ -248,19 +254,19 @@ describe("runner-contract-guards", () => {
           finishReason: "stop",
           parts: [{ text: "Visible output", type: "text" }],
         },
-      })
-    ).toThrow('must not include unsupported field "response"');
+      });
+    }).toThrow('must not include unsupported field "response"');
 
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         resolution: { type: "continue_iteration" },
         toolExecutionMode: "sequential",
-      })
-    ).toThrow(
+      });
+    }).toThrow(
       "toolExecutionMode is only valid when runner messages request tool calls"
     );
 
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         resolution: { reason: "done", type: "end_turn" },
         stateUpdates: [
@@ -269,21 +275,21 @@ describe("runner-contract-guards", () => {
             unexpected: true,
           },
         ],
-      })
-    ).toThrow("must be a valid RunnerExtensionStateUpdate");
+      });
+    }).toThrow("must be a valid RunnerExtensionStateUpdate");
 
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         assistantEventReconciliation: "bad-value",
         resolution: { reason: "done", type: "end_turn" },
-      })
-    ).toThrow(
+      });
+    }).toThrow(
       'assistantEventReconciliation must be "allow_final_sequence_divergence"'
     );
   });
 
   test("requires toolExecutionMode when assistant messages request tool calls", () => {
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         messages: [
           {
@@ -299,25 +305,25 @@ describe("runner-contract-guards", () => {
           },
         ],
         resolution: { type: "continue_iteration" },
-      })
-    ).toThrow(
+      });
+    }).toThrow(
       "toolExecutionMode is required when runner messages request tool calls"
     );
   });
 
   test("requires an assistant message when assistant event reconciliation is set", () => {
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         assistantEventReconciliation: "allow_final_sequence_divergence",
         resolution: { reason: "done", type: "end_turn" },
-      })
-    ).toThrow("assistantEventReconciliation requires an assistant message");
+      });
+    }).toThrow("assistantEventReconciliation requires an assistant message");
   });
 
   test("rejects handoff resolutions whose targetAgent contradicts the context plan", () => {
     const context = createRunnerExecutionContext();
 
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         resolution: {
           contextPlan: context.handoff.createContextPlan({
@@ -327,14 +333,14 @@ describe("runner-contract-guards", () => {
           targetAgent: "planner",
           type: "handoff",
         },
-      })
-    ).toThrow("targetAgent must match");
+      });
+    }).toThrow("targetAgent must match");
   });
 
   test("rejects raw handoff plans whose sourceContext target disagrees with the plan target", () => {
     const context = createRunnerExecutionContext();
 
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         resolution: {
           contextPlan: {
@@ -357,14 +363,14 @@ describe("runner-contract-guards", () => {
           targetAgent: "reviewer",
           type: "handoff",
         },
-      })
-    ).toThrow("sourceContext.handoffIntent.targetAgent must match");
+      });
+    }).toThrow("sourceContext.handoffIntent.targetAgent must match");
   });
 
   test("rejects raw handoff plans whose sourceContext agents are not valid AgentConfig snapshots", () => {
     const context = createRunnerExecutionContext();
 
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         resolution: {
           contextPlan: {
@@ -386,8 +392,8 @@ describe("runner-contract-guards", () => {
           targetAgent: "reviewer",
           type: "handoff",
         },
-      })
-    ).toThrow("sourceContext.targetAgent.tools must be an array");
+      });
+    }).toThrow("sourceContext.targetAgent.tools must be an array");
   });
 
   test("accepts handoff source agent models backed by provider objects with extra fields", () => {
@@ -407,7 +413,7 @@ describe("runner-contract-guards", () => {
       targetAgent: "reviewer",
     });
 
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         resolution: {
           contextPlan: {
@@ -427,12 +433,12 @@ describe("runner-contract-guards", () => {
           targetAgent: "reviewer",
           type: "handoff",
         },
-      })
-    ).not.toThrow();
+      });
+    }).not.toThrow();
   });
 
   test("rejects terminal resolutions paired with assistant tool calls", () => {
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         messages: [
           {
@@ -452,14 +458,14 @@ describe("runner-contract-guards", () => {
           type: "end_turn",
         },
         toolExecutionMode: "parallel",
-      })
-    ).toThrow(
+      });
+    }).toThrow(
       "resolution must continue iteration when runner messages request tool calls"
     );
   });
 
   test("rejects pause resolutions that are not rooted in assistant tool calls", () => {
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         messages: [
           {
@@ -485,19 +491,19 @@ describe("runner-contract-guards", () => {
           reason: "approval_required",
           type: "pause",
         },
-      })
-    ).toThrow("resolution.pause requires runner messages with tool calls");
+      });
+    }).toThrow("resolution.pause requires runner messages with tool calls");
   });
 
   test("rejects stale nested fields on exact-shape resolutions", () => {
-    expect(() =>
+    expect(() => {
       assertRunnerExecutionResult({
         resolution: {
           reason: "stale",
           type: "continue_iteration",
         },
-      })
-    ).toThrow('resolution must not include unsupported field "reason"');
+      });
+    }).toThrow('resolution must not include unsupported field "reason"');
   });
 });
 

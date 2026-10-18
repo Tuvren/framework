@@ -27,7 +27,7 @@ import { isApprovalResponse } from "../src/tools/index.js";
 
 describe("runtime-contract-guards execution shape contracts", () => {
   test("rejects stream events that omit required fields", () => {
-    expect(isTuvrenStreamEvent({ type: "turn.end", timestamp: 1 })).toBe(false);
+    expect(isTuvrenStreamEvent({ timestamp: 1, type: "turn.end" })).toBe(false);
   });
 
   test("rejects stream events with empty tool names", () => {
@@ -74,8 +74,8 @@ describe("runtime-contract-guards execution shape contracts", () => {
   test("rejects stream events with empty lifecycle identifiers", () => {
     expect(
       isTuvrenStreamEvent({
-        text: "ok",
         messageId: "",
+        text: "ok",
         timestamp: 1,
         type: "text.done",
       })
