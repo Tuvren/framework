@@ -1,0 +1,542 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CA004",
+  "milestone": "M33-ticket-final",
+  "result": "pass",
+  "source": {
+    "authoritative_predecessor": "5b9fdbb5e1b8b972470a809586f217c2a62c3f31",
+    "stale_dispatch_predecessor": "5a395892cc76e3129278d30799f1cffeb16074bc",
+    "dispatch_correction": "A25 established reviewed M32 HEAD as the authoritative M33 predecessor; the stale M31 dispatch value is not a source identity.",
+    "frozen_candidate_diff_sha256": "99695038d6460a0018459d753deb07f14b6c83758a86af91c353aacee8d1d5fd"
+  },
+  "m33": {
+    "files": 4,
+    "insertions": 25,
+    "deletions": 13,
+    "raw_changed_lines": 38,
+    "source_files": [
+      {
+        "path": "tools/biome-coverage/ca.json",
+        "sha256": "3e3f3c9ce4fa9861ca91d5495308370d837cef179f113d442f61f80000e2b382"
+      },
+      {
+        "path": "typescript/certification-batteries-included/project.json",
+        "sha256": "dfbe47792bd63439e73f0dbe2bcca31282ca07e959e446aa69392c2232d8fdbb"
+      },
+      {
+        "path": "typescript/certification/project.json",
+        "sha256": "e7ba64acd72c422840e686ddf05fb443b3340860c3350dd05869db1e6de37f55"
+      },
+      {
+        "path": "typescript/certification/test/framework-typescript-conformance.test.ts",
+        "sha256": "dc2a214a3b55274359ecf51adaccd0d3909c2d0882495b08f4258bb20717bd5f"
+      }
+    ],
+    "certification_baseline": {
+      "code_files": 1,
+      "syntactic_diagnostics": 3,
+      "type_aware_diagnostics": 4
+    },
+    "certification_final": {
+      "code_files": 1,
+      "type_aware_diagnostics": 0,
+      "unused_directive_diagnostics": 0,
+      "tests": {
+        "passed": 1,
+        "failed": 0
+      }
+    },
+    "batteries_preflight": {
+      "tracked_code_files": 0,
+      "tracked_json_files": 1,
+      "fresh_outside_cached_nx_result": true,
+      "json_only_command_exit": 0
+    },
+    "retained_biome": {
+      "files": 6,
+      "diagnostics": 0,
+      "report_sha256": "63cfe45d825b6f0c380624a01aafee85ec749409541a1e79488367cb0b739b6c"
+    },
+    "routing_partition_controls": {
+      "passed": 89,
+      "failed": 0,
+      "files": 6
+    },
+    "code_decisions": [
+      "Use the preset-required default import for node:path without changing resolved authority-packet paths.",
+      "Assign JSON.parse output to unknown and retain complete runtime narrowing before reading packet fields.",
+      "Use toSorted on the newly materialized plan-path array; validation membership and lexical order remain unchanged.",
+      "Retain one firing line-scoped eslint/no-await-in-loop exception so authority plans compile sequentially with deterministic first-failure order.",
+      "Give the batteries wrapper only the exact JSON-only target after a fresh zero-code Git inventory."
+    ]
+  },
+  "aggregate": {
+    "source_range": "5b9fdbb5e1b8b972470a809586f217c2a62c3f31 is the M33 predecessor; KRT-CA004 implementation range begins at a2e8b7cda2373f3026f691107affe5be5c2de601^",
+    "final_net_without_constitution_evidence": {
+      "files": 93,
+      "insertions": 1807,
+      "deletions": 1166,
+      "raw_changed_lines": 2973
+    },
+    "recorded_m24_through_m33_slice_sum": {
+      "file_touches": 99,
+      "insertions": 1388,
+      "deletions": 820,
+      "raw_changed_lines": 2208,
+      "note": "This is the exact sum of each recorded milestone slice, including M32 and M33; final net range statistics are the canonical aggregate because review follow-ups and repeated file edits are not fully represented by the slice reports."
+    },
+    "stage4_routing": "A19 final aggregate reviewability remains routed to the wave lead and Stage 4: the canonical implementation delta is 93 files and 2,973 raw changed lines. This ticket-final evidence makes no aggregate-size compliance claim."
+  },
+  "code_decisions_by_milestone": [
+    {
+      "milestone": "M24-ticket-partial-core-admission",
+      "code_decisions": null,
+      "behavior": {
+        "stable_and_experimental_api_freeze": "pass",
+        "release_kind": "unchanged patch changeset",
+        "api_snapshot_changed": false,
+        "identity_promise_timing": "preserved",
+        "noop_sink_behavior": "preserved",
+        "error_names_and_constructors": "preserved",
+        "adr0056_tags": "preserved"
+      },
+      "bounded_cleanup": null,
+      "verification_notes": null
+    },
+    {
+      "milestone": "M25-sdk-atomic-native-admission",
+      "code_decisions": [
+        "Replace broad Record casts with property-presence checks for MCP sources and closeable backends while retaining the same duck-typed compatibility surface.",
+        "Factor duplicate composition-option checks through one synchronous helper while preserving error class, code, message text, and validation order.",
+        "Replace postfix offset increments with explicit writes and increments so payload envelope bytes remain identical.",
+        "Use structural schema guards where they preserve runtime branches; retain narrow boundary assertions where external library types, phantom generic brands, or the unparameterized tool contract require them.",
+        "Replace Bun matcher thenable ambiguities and nullable assertions with explicit rejection capture and guards while preserving the exercised failures."
+      ],
+      "behavior": {
+        "api_freeze": "pass: 14 entrypoints and 404 exports unchanged",
+        "release_kind": "unchanged patch changeset",
+        "changeset_sha256": "b0f5b0573b3ffa31372e2b3f4fcf2653be6b849ee5350c888b28ef39f24d70af",
+        "api_snapshot_changed": false,
+        "promise_identity_and_sync_throw_timing": "preserved",
+        "payload_envelope_bytes_and_schema_branching": "preserved",
+        "module_resolution_and_error_constructor_identity": "preserved",
+        "schema_authoring_contracts": "preserved"
+      },
+      "bounded_cleanup": null,
+      "verification_notes": null
+    },
+    {
+      "milestone": "M26-agui-cleanup-retained-streaming-ownership",
+      "code_decisions": null,
+      "behavior": {
+        "projection_switch_executable_diff": false,
+        "event_order": "preserved",
+        "warning_order": "preserved",
+        "error_order": "preserved",
+        "iterator_behavior": "preserved",
+        "public_exports": "preserved",
+        "release_metadata": "unchanged"
+      },
+      "bounded_cleanup": null,
+      "verification_notes": null
+    },
+    {
+      "milestone": "M27-stream-core-sse-cleanup-retained-streaming-ownership",
+      "code_decisions": null,
+      "behavior": {
+        "queue_and_iterator_timing": "preserved",
+        "cursor_encoding_and_decoding": "preserved",
+        "serialization": "preserved",
+        "replay_order_and_windowing": "preserved",
+        "sse_bytes_and_headers": "preserved",
+        "warning_order_and_deduplication": "preserved",
+        "error_identity_and_order": "preserved",
+        "public_exports": "preserved",
+        "generated_core_declaration_sha256_before_after": "f0d41ba077bcbd25f4e715a11dd74d95d9bbdbe3501249b2c6f630babfc64f63",
+        "generated_sse_declaration_sha256_before_after": "8086e8f9f00b051dd384d5c061306100869af9bab4fcd07f155f727ba24c994a",
+        "release_metadata": "unchanged"
+      },
+      "bounded_cleanup": null,
+      "verification_notes": null
+    },
+    {
+      "milestone": "M28-ws-cleanup-and-atomic-four-project-streaming-admission",
+      "code_decisions": null,
+      "behavior": {
+        "package_tests": {
+          "agui": {
+            "passed": 9,
+            "failed": 0
+          },
+          "core": {
+            "passed": 25,
+            "failed": 0
+          },
+          "sse": {
+            "passed": 26,
+            "failed": 0
+          },
+          "ws": {
+            "passed": 62,
+            "failed": 0
+          }
+        },
+        "runtime_tests": {
+          "passed": 566,
+          "failed": 0
+        },
+        "focused_conformance": {
+          "requested_streaming_plans": 5,
+          "applicable": 511,
+          "passed": 511,
+          "failed": 0,
+          "non_applicable": 12
+        },
+        "api_freeze": {
+          "entrypoints": 14,
+          "exports": 404,
+          "status": "pass"
+        },
+        "ws_declarations_byte_identical": true,
+        "core_and_sse_index_declaration_hashes_match_m27": true,
+        "release_metadata": "unchanged"
+      },
+      "bounded_cleanup": {
+        "baseline_type_aware_diagnostics": 107,
+        "final_type_aware_diagnostics": 0,
+        "project_resolution_errors": 0,
+        "decisions": [
+          "Replace the resume-status assertion with a complete runtime type guard.",
+          "Hoist the pure session-attach error classifier without changing its predicate.",
+          "Preserve the serialized ingest promise chain with a measured, scoped native exception because it defines message ordering and rejection recovery.",
+          "Preserve public method declarations and API stability tags with scoped native exceptions; generated declarations remain byte-identical.",
+          "Replace unsafe test assertions with runtime guards while retaining exact pending-promise and sequential-flush timing where tests exercise transport behavior."
+        ],
+        "preserved": [
+          "public API and declarations",
+          "event and error ordering",
+          "warning delivery",
+          "queue and iterator settlement timing",
+          "handshake, replay, redelivery, heartbeat, backpressure and close semantics"
+        ]
+      },
+      "verification_notes": null
+    },
+    {
+      "milestone": "M29-mcp-client-cleanup-and-atomic-native-admission",
+      "code_decisions": [
+        {
+          "pattern": "sequential-cursor-pagination",
+          "rule": "eslint/no-await-in-loop",
+          "reason": "Each MCP listTools request consumes the preceding response's nextCursor, so parallelizing page requests would break protocol ordering."
+        },
+        {
+          "pattern": "published-method-declaration-spelling",
+          "rule": "typescript/method-signature-style",
+          "reason": "Keep McpToolSource.close and McpToolSource.refresh as published method declarations so native admission does not change the public API shape."
+        },
+        {
+          "pattern": "direct-connection-promise",
+          "rule": "typescript/promise-function-async",
+          "reason": "Return createMcpToolSourceInternal's Promise directly so createMcpToolSource preserves the established Promise identity and settlement timing."
+        },
+        {
+          "pattern": "settled-and-rejected-test-promises",
+          "rule": "typescript/promise-function-async",
+          "reason": "Keep MCP client test doubles returning their exact resolved or rejected Promise fixtures so lifecycle and rejection timing remain observable."
+        }
+      ],
+      "behavior": {
+        "mcp_tests": {
+          "passed": 9,
+          "failed": 0
+        },
+        "exports_smoke": {
+          "passed": 1,
+          "failed": 0
+        },
+        "core_tests": {
+          "passed": 119,
+          "failed": 0
+        },
+        "sdk_tests": {
+          "passed": 91,
+          "failed": 0
+        },
+        "runtime_tests": {
+          "passed": 566,
+          "failed": 0
+        },
+        "provider_mcp_conformance": {
+          "applicable": 60,
+          "passed": 60,
+          "failed": 0
+        },
+        "api_freeze": {
+          "entrypoints": 14,
+          "exports": 404,
+          "status": "pass"
+        },
+        "transport_lifecycle": "preserved",
+        "schema_validation": "preserved",
+        "provider_error_shapes": "preserved",
+        "public_api": "preserved",
+        "internal_promise_scheduling": "The tool execute wrapper uses return await; Bun 1.4.2 can settle an already-resolved inner Promise one microtask earlier. Step-0 permits this incidental internal normalization; explicit connection and test Promise-identity exceptions remain preserved."
+      },
+      "bounded_cleanup": null,
+      "verification_notes": {
+        "runtime": "The first combined run lacked the repository environment and hit two known SQLite child-start timing failures; the isolated direnv-backed retry passed 566 of 566 tests.",
+        "routing": "The first run shared CPU with full workspace lint and timed out four native-selection controls; the isolated direnv-backed retry passed 90 of 90 tests.",
+        "constitution": "The first run lacked the repository environment and could not resolve declared doctor commands; the direnv-backed validation passed with zero errors and zero warnings.",
+        "final_unresolved_failures": 0
+      }
+    },
+    {
+      "milestone": "M30-testkit-cleanup-and-atomic-native-admission",
+      "code_decisions": [
+        {
+          "pattern": "node-path-default-import",
+          "reason": "Use the preset-required default import and avoid shadowing timer Promise resolver parameters without changing resolved fixture paths."
+        },
+        {
+          "pattern": "named-async-generator",
+          "reason": "Name the fixture generator while preserving one-pass cloning and async-iterator behavior."
+        },
+        {
+          "pattern": "typed-throws-documentation",
+          "reason": "Add explicit Error types to existing throws documentation without changing signatures or runtime behavior."
+        },
+        {
+          "pattern": "ordered-fixture-path-fallback",
+          "reason": "Keep reads sequential so the first existing fixture wins and non-ENOENT errors stop the search."
+        },
+        {
+          "pattern": "timer-backed-test-waits",
+          "reason": "Keep waitForCondition polling order and waitForAsyncTurn macrotask timing unchanged."
+        },
+        {
+          "pattern": "telemetry-capture-method-surface",
+          "reason": "Keep TelemetryCapture.clear as a method while preserving event/span capture and in-place clearing semantics."
+        }
+      ],
+      "behavior": {
+        "testkit_tests": {
+          "passed": 2,
+          "failed": 0
+        },
+        "exports_smoke": {
+          "passed": 1,
+          "failed": 0
+        },
+        "core_tests": {
+          "passed": 119,
+          "failed": 0
+        },
+        "runtime_tests": {
+          "passed": 566,
+          "failed": 0
+        },
+        "conformance_projects": {
+          "passed": 11,
+          "failed": 0,
+          "applicable_checks_passed": 1054
+        },
+        "api_freeze": {
+          "entrypoints": 14,
+          "exports": 404,
+          "status": "pass"
+        },
+        "declaration_signatures": "Source/interface review and the 14-entrypoint, 404-export API freeze confirm the public declaration surface remains unchanged; the saved predecessor declaration artifact was empty and is not used as byte-equality evidence.",
+        "fixture_loading": "preserved",
+        "telemetry_capture": "preserved",
+        "stream_test_semantics": "preserved",
+        "public_api": "preserved"
+      },
+      "bounded_cleanup": null,
+      "verification_notes": {
+        "runtime": "Two plain-shell runs reproduced the known SQLite child-start environment failure. The failing file passed 8 of 8 and the full runtime passed 566 of 566 under the repository's direnv environment.",
+        "constitution": "The plain-shell run could not resolve four declared doctor commands. The direnv-backed run passed with zero errors and zero warnings.",
+        "current_documentation": "The current Oxlint documentation confirms the --type-aware flag, inline disable comments, explicit unused-disable reporting, and automatic tsconfig discovery used by this admission.",
+        "final_unresolved_failures": 0
+      }
+    },
+    {
+      "milestone": "M31-telemetry-cleanup-and-atomic-native-admission",
+      "code_decisions": [
+        {
+          "pattern": "supported-opentelemetry-attributes-type",
+          "reason": "Replace the deprecated SpanAttributes alias with its supported Attributes target. The installed API declares SpanAttributes as a deprecated alias of Attributes, so this changes no runtime value, public export, or accepted attribute shape."
+        },
+        {
+          "pattern": "explicit-void-sink-callbacks",
+          "reason": "Use block-bodied event and span callbacks so the sink retains the same single synchronous emission call and void return without a confusing concise-arrow return."
+        },
+        {
+          "pattern": "bounded-typescript-documentation-tags",
+          "reason": "Keep only three measured jsdoc/check-tag-names exception regions around established TypeScript documentation tags; each region has an explicit matching enable directive and passes unused-directive denial."
+        },
+        {
+          "pattern": "generated-semconv-byte-identity",
+          "reason": "Do not edit the generated semantic-convention helper. Forced telemetry code generation reproduces the same SHA-256 and leaves no generated diff."
+        }
+      ],
+      "behavior": {
+        "otel_tests": {
+          "passed": 3,
+          "failed": 0
+        },
+        "semconv_tests": {
+          "passed": 1,
+          "failed": 0
+        },
+        "exports_smoke": {
+          "otel_passed": 1,
+          "semconv_passed": 1,
+          "failed": 0
+        },
+        "telemetry_conformance": {
+          "plans": [
+            "spec/conformance/telemetry/plans/framework-operational-telemetry.json",
+            "spec/conformance/telemetry/plans/invocation-lifecycle-observation.json"
+          ],
+          "passed": 31,
+          "failed": 0,
+          "non_applicable": 0
+        },
+        "api_freeze": {
+          "entrypoints": 14,
+          "exports": 404,
+          "status": "pass"
+        },
+        "generated_semconv": {
+          "sha256_before": "5bbc62d2f1f0ad672abc8b8da6d02c327115365cfba1de35169f4d4d126edfb4",
+          "sha256_after": "5bbc62d2f1f0ad672abc8b8da6d02c327115365cfba1de35169f4d4d126edfb4",
+          "byte_identical": true,
+          "tracked_diff": false
+        },
+        "telemetry_attribute_order": "preserved",
+        "telemetry_span_order": "preserved",
+        "telemetry_event_order": "preserved",
+        "public_api": "preserved",
+        "release_metadata": "unchanged; existing direct eight-package patch changeset retained",
+        "changeset_sha256": "b0f5b0573b3ffa31372e2b3f4fcf2653be6b849ee5350c888b28ef39f24d70af"
+      },
+      "bounded_cleanup": null,
+      "verification_notes": {
+        "current_documentation": "Current Oxlint documentation confirms type-aware linting, automatic tsconfig discovery, inline disable comments, and deny-severity unused-directive reporting. Current OpenTelemetry JavaScript API documentation confirms tracer acquisition, startSpan, addEvent, setStatus, and explicit span end behavior; the installed 1.9.1 declarations confirm Attributes is the supported replacement for SpanAttributes.",
+        "environment_retry": "The first plain-shell telemetry invocation inherited every adapter authority packet and reported four failures across the resulting 523-check suite, so it is excluded from scoped evidence. The exact two-plan run under the repository direnv passed 31 of 31. The first plain-shell generator attempt could not resolve Weaver; the repository-direnv forced codegen passed and reproduced identical bytes.",
+        "final_unresolved_failures": 0
+      }
+    },
+    {
+      "milestone": "M32-run-nx-native-cleanup",
+      "code_decisions": [
+        "Narrow the untyped process boundary through an explicit runtime predicate before invoking listener-limit methods.",
+        "Retain the existing minimum listener ceiling and conditional setMaxListeners behavior while removing native diagnostics without a suppression.",
+        "Keep tools/run-nx.mjs under retained Biome ownership through KRT-CA004 and until CB whole-tools admission."
+      ]
+    },
+    {
+      "milestone": "M33-certification-and-json-only-wrapper-admission",
+      "code_decisions": [
+        "Use the preset-required node:path default import and preserve authority-packet path resolution.",
+        "Treat JSON.parse as unknown and keep complete runtime validation before consuming authority packet fields.",
+        "Use non-mutating lexical plan sorting and retain serial compilation for deterministic first-failure order.",
+        "Admit certification with the canonical Oxlint plus JSON target and batteries with only the measured JSON-only target."
+      ]
+    }
+  ],
+  "final_inventory": {
+    "native_exception_regions": 160,
+    "legacy_biome_removals": 36,
+    "native_projects": 12,
+    "selected_code_files": 107,
+    "selected_json_files": 76,
+    "retained_ca_biome_entries": [
+      "tools/run-nx.mjs"
+    ]
+  },
+  "behavior_and_release": {
+    "authority_packet_and_plan_validation": "preserved",
+    "conformance_test_registration": "preserved",
+    "public_api": "frozen surface unchanged (14 entrypoints, 404 exports)",
+    "generated_artifacts": "verify regenerated and checked all governed families with no tracked drift",
+    "changeset": "unchanged direct patch coverage for eight affected publishable packages; certification wrappers remain private",
+    "changeset_sha256": "b0f5b0573b3ffa31372e2b3f4fcf2653be6b849ee5350c888b28ef39f24d70af",
+    "m30_operational_deviation": {
+      "action": "The M30 worker invoked bun run services:down despite A1 reserving shared service teardown for the wave lead.",
+      "observed_effect": "The command exited zero; the pre-existing daemon and PostgreSQL process remained alive and its socket stayed available.",
+      "recovery": "No restart or further lifecycle command was performed. M33 used the surviving A1 service and issued no lifecycle command."
+    }
+  },
+  "final_gates": {
+    "lock": "/tmp/tuvren-framework-wave-1-gates.lock",
+    "postgres": {
+      "host": "/run/user/1000/devenv-3ea1e50/postgres",
+      "port": 5432,
+      "service_pid": 1107851,
+      "lifecycle_owned_by": "/root"
+    },
+    "commands": [
+      {
+        "command": "bun run lint",
+        "exit": 0,
+        "chunk": "ec2bb4"
+      },
+      {
+        "command": "bun run check",
+        "exit": 0,
+        "session": 56856,
+        "chunks": [
+          "6631fd",
+          "79aa19"
+        ]
+      },
+      {
+        "command": "bun run changeset:check --base=master",
+        "exit": 0,
+        "chunk": "0d8f36"
+      },
+      {
+        "command": "bun run format:check",
+        "exit": 0,
+        "chunk": "e423e4"
+      },
+      {
+        "command": "bun run api-freeze:check",
+        "exit": 0,
+        "chunk": "3b6353"
+      },
+      {
+        "command": "flock /tmp/tuvren-framework-wave-1-gates.lock direnv exec . env PGHOST=/run/user/1000/devenv-3ea1e50/postgres PGPORT=5432 bun run verify",
+        "exit": 0,
+        "session": 56394,
+        "flock_pid": 70045,
+        "verify_pid": 70206,
+        "chunks": [
+          "24b790",
+          "f0fce7",
+          "dd3c5b",
+          "626ded",
+          "c39187",
+          "c11d69",
+          "e10681",
+          "1df85e",
+          "48830b"
+        ]
+      }
+    ],
+    "retries": 0,
+    "test_failure_budget_used": 0
+  },
+  "drift_and_followups": {
+    "relevant_directive_drift": [],
+    "source_drift_after_freeze": false,
+    "final_unresolved_failures": 0,
+    "followups": [
+      "A19 aggregate reviewability is routed to the wave lead and Stage 4.",
+      "CB retains ownership of tools/run-nx.mjs until whole-tools admission.",
+      "The M30 shared-service lifecycle deviation remains recorded for closeout."
+    ]
+  }
+}

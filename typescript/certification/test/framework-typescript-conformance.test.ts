@@ -16,12 +16,12 @@
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import path from "node:path";
 
 import { loadConformancePlan } from "../../../tools/conformance/plan-compiler/index.js";
 import type { CompiledConformancePlan } from "../../../tools/conformance/plan-compiler/index.js";
 
-const REPO_ROOT = resolve(import.meta.dir, "../../..");
+const REPO_ROOT = path.resolve(import.meta.dir, "../../..");
 const FRAMEWORK_PACKET_PATHS: readonly string[] = [
   "spec/core/authority-packet.json",
   "spec/streaming/sse/authority-packet.json",
@@ -78,15 +78,19 @@ const readPlanReferences = (
   );
 };
 
-const readAuthorityPacket = (path: string): AuthorityPacketManifest => {
-  const value = JSON.parse(readFileSync(resolve(REPO_ROOT, path), "utf-8"));
+const readAuthorityPacket = (
+  authorityPath: string
+): AuthorityPacketManifest => {
+  const value: unknown = JSON.parse(
+    readFileSync(path.resolve(REPO_ROOT, authorityPath), "utf-8")
+  );
 
   if (!isRecord(value)) {
-    throw new Error(`${path} must contain an authority packet object`);
+    throw new Error(`${authorityPath} must contain an authority packet object`);
   }
 
   return {
-    conformancePlans: readPlanReferences(value.conformancePlans, path),
+    conformancePlans: readPlanReferences(value.conformancePlans, authorityPath),
   };
 };
 
@@ -104,7 +108,8 @@ describe("framework TypeScript certification", () => {
 
     const compiledPlans: CompiledConformancePlan[] = [];
 
-    for (const planPath of [...planPaths].sort()) {
+    for (const planPath of [...planPaths].toSorted()) {
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Compile plans sequentially to preserve deterministic validation and first-failure order.
       compiledPlans.push(await loadConformancePlan(planPath));
     }
 
