@@ -70,13 +70,13 @@ export interface RuntimeCoreStatusHost {
       sideEffects: boolean;
     }[]
   ): Promise<void>;
-  emitStateObservability(
+  emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
     iterationCount: number,
     manifest?: ContextManifest
-  ): Promise<void>;
+  ) => void;
   loadHeadState(branchId: string): Promise<HeadState>;
   stageManifest(
     runId: string,
@@ -209,7 +209,7 @@ export const finalizeTurnStatus = async (
 
   if (stepResult.turnNodeHash !== undefined) {
     await host.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
-    await host.emitStateObservability(
+    host.emitStateObservability(
       handle,
       loopState,
       stepResult.turnNodeHash,
@@ -329,7 +329,7 @@ export const checkpointResumeRunningStatus = async (
     };
 
     if (emitObservability) {
-      await host.emitStateObservability(
+      host.emitStateObservability(
         handle,
         loopState,
         pendingStateObservability.turnNodeHash,
