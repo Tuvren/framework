@@ -33,8 +33,8 @@ import {
   createCapabilityPolicyEngine,
   createRunnerRegistry,
   createTuvrenRuntime,
-  type RuntimeCoreOptions,
 } from "../src/index.ts";
+import type { RuntimeCoreOptions } from "../src/index.ts";
 import {
   DEFAULT_EXECUTION_BOUNDS,
   normalizeExecutionBounds,
@@ -96,8 +96,8 @@ function createBoundsRuntime(options: {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
     defaultRunnerId: options.runner.id,
-    runnerRegistry: createRunnerRegistry([options.runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([options.runner]),
     ...(options.bounds === undefined ? {} : { bounds: options.bounds }),
     ...(options.now === undefined ? {} : { now: options.now }),
     ...(options.telemetry === undefined
@@ -182,7 +182,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       // A runner/agent asking for far more iterations cannot bypass the bound.
-      config: { name: AGENT, maxIterations: 1000 },
+      config: { maxIterations: 1000, name: AGENT },
       signal: textSignal("run"),
       threadId: thread.threadId,
     });
@@ -216,7 +216,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
       },
     } satisfies RuntimeRunner;
     const { runtime } = createBoundsRuntime({
-      bounds: { maxToolCalls: 2, maxIterations: 100 },
+      bounds: { maxIterations: 100, maxToolCalls: 2 },
       runner: batchRunner,
     });
     const thread = await runtime.createThread({});
@@ -251,9 +251,9 @@ describe("framework execution bounds (KRT-BD006)", () => {
       return clock as EpochMs;
     };
     const { runtime } = createBoundsRuntime({
-      bounds: { maxWallClockMs: 100, maxIterations: 100_000 },
-      runner: runawayTextRunner,
+      bounds: { maxIterations: 100_000, maxWallClockMs: 100 },
       now,
+      runner: runawayTextRunner,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -354,9 +354,9 @@ describe("framework execution bounds (KRT-BD006)", () => {
     } satisfies RuntimeRunner;
 
     const { runtime } = createBoundsRuntime({
-      bounds: { maxWallClockMs: 1000, maxIterations: 100 },
-      runner: approvalRunner,
+      bounds: { maxIterations: 100, maxWallClockMs: 1000 },
       now,
+      runner: approvalRunner,
     });
 
     const thread = await runtime.createThread({});
@@ -479,8 +479,8 @@ describe("framework execution bounds (KRT-BD006)", () => {
       branchId: thread.branchId,
       // A high agent parallelism is clamped by the bound to 1.
       config: {
-        name: AGENT,
         maxParallelToolCalls: 10,
+        name: AGENT,
         tools: [concurrencyTool],
       },
       signal: textSignal("run"),

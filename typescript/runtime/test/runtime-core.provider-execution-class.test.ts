@@ -59,7 +59,6 @@ function buildProviderToolMessage(opts: {
   extraMeta?: Record<string, unknown>;
 }): TuvrenMessage {
   return {
-    role: "tool",
     parts: [
       {
         callId: opts.callId,
@@ -74,6 +73,7 @@ function buildProviderToolMessage(opts: {
         type: "tool_result",
       },
     ],
+    role: "tool",
   };
 }
 
@@ -82,7 +82,6 @@ function makeProviderRunner(
   extraMeta?: Record<string, unknown>
 ): RuntimeRunner {
   return {
-    id: "ay003-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -103,6 +102,7 @@ function makeProviderRunner(
         resolution: { reason: "done", type: "end_turn" },
       };
     },
+    id: "ay003-runner",
     async resume() {
       throw new Error("no");
     },
@@ -117,8 +117,8 @@ async function runWithProviderTool(
   const runner = makeProviderRunner(executionClass, extraMeta);
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "ay003-runner",
-    runnerRegistry: createBaseRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createBaseRunnerRegistry([runner]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
@@ -275,8 +275,8 @@ describe("KRT-AY005 — providerContinuity not in emitted events (event-emitter 
     // this). The emitter must not propagate it to any event regardless.
     const events = await runWithProviderTool("provider-native", {
       providerContinuity: {
-        sessionToken: "secret-abc-123",
         continuationUrl: "https://provider.example.com/continue",
+        sessionToken: "secret-abc-123",
       },
     });
     const serialized = JSON.stringify(events);

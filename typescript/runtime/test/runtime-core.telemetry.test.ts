@@ -58,9 +58,9 @@ describe("runtime operational telemetry", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       now: createDeterministicClock(),
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -115,8 +115,8 @@ describe("runtime operational telemetry", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
       scope: "tenant-a",
       telemetry: capture.sink,
     });
@@ -168,8 +168,8 @@ describe("runtime operational telemetry", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -219,8 +219,8 @@ describe("runtime operational telemetry", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: {
         event() {
           throw new Error("sink failed");
@@ -463,13 +463,13 @@ function createTelemetryCapture(): {
 }
 
 function createDestinationCapture(options?: { failDelivery?: boolean }): {
-  batches: ReadonlyArray<TelemetryEvent | TelemetrySpan>[];
+  batches: (readonly (TelemetryEvent | TelemetrySpan)[])[];
   destination: TelemetryDestination;
-  records: Array<TelemetryEvent | TelemetrySpan>;
+  records: (TelemetryEvent | TelemetrySpan)[];
   signals: TelemetryOperationalSignal[];
 } {
-  const batches: ReadonlyArray<TelemetryEvent | TelemetrySpan>[] = [];
-  const records: Array<TelemetryEvent | TelemetrySpan> = [];
+  const batches: (readonly (TelemetryEvent | TelemetrySpan)[])[] = [];
+  const records: (TelemetryEvent | TelemetrySpan)[] = [];
   const signals: TelemetryOperationalSignal[] = [];
 
   return {
@@ -510,8 +510,8 @@ async function runTelemetryTurn(
   } satisfies RuntimeRunner;
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
     telemetry,
   });
   const thread = await runtime.createThread({});
