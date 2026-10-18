@@ -95,7 +95,7 @@ export interface RuntimeCoreTurnProgressHost {
  * @returns The new turn node hash, or `undefined` when the completion did
  *   not advance the turn.
  */
-export async function completeIterationRun(
+export const completeIterationRun = async (
   host: RuntimeCoreTurnProgressHost,
   handle: RuntimeExecutionHandle,
   runId: string,
@@ -104,7 +104,7 @@ export async function completeIterationRun(
   iterationCount: number,
   loopState: LoopState,
   treeHash?: HashString
-): Promise<HashString | undefined> {
+): Promise<HashString | undefined> => {
   let turnNodeHash: HashString | undefined;
 
   if (resolution.type === "fail" && resolution.fatality === "hard") {
@@ -159,7 +159,7 @@ export async function completeIterationRun(
   }
 
   return turnNodeHash;
-}
+};
 
 /**
  * Create the turn tree for a completed iteration.
@@ -170,7 +170,7 @@ export async function completeIterationRun(
  *
  * @returns Hash of the newly created turn tree.
  */
-export async function createIterationTree(
+export const createIterationTree = async (
   host: RuntimeCoreTurnProgressHost,
   schemaId: string,
   baseTurnTreeHash: HashString,
@@ -179,7 +179,7 @@ export async function createIterationTree(
   manifestHash: HashString,
   runtimeStatusHash?: HashString,
   turnLineageHash?: HashString
-): Promise<HashString> {
+): Promise<HashString> => {
   const changes: Record<string, PathValue> = {
     "context.manifest": manifestHash,
     messages: [...baseMessageHashes, ...appendedMessageHashes],
@@ -193,7 +193,7 @@ export async function createIterationTree(
   }
 
   return await host.treeCreate(schemaId, changes, baseTurnTreeHash);
-}
+};
 
 /**
  * Fail a tracked run while keeping the branch head at its stable position.
@@ -203,12 +203,12 @@ export async function createIterationTree(
  * `stableHeadTurnNodeHash` so failed iteration work is not observable on the
  * branch.
  */
-export async function failTrackedRunWithoutBranchAdvance(
+export const failTrackedRunWithoutBranchAdvance = async (
   host: RuntimeCoreTurnProgressHost,
   handle: RuntimeExecutionHandle,
   runId: string,
   stableHeadTurnNodeHash: HashString
-): Promise<void> {
+): Promise<void> => {
   const completion = await host.completeTrackedRun(handle, runId, "failed");
 
   if (completion.turnNodeHash === undefined) {
@@ -216,32 +216,7 @@ export async function failTrackedRunWithoutBranchAdvance(
   }
 
   await host.branchSetHead(handle.request.branchId, stableHeadTurnNodeHash);
-}
-
-/**
- * Reconcile a durable pause checkpoint with the iteration's final
- * resolution.
- *
- * When a pause was checkpointed but the runner ultimately resolved to
- * something other than `pause`, the checkpointed paused run is overridden
- * via {@link resolveCheckpointedPausedRun}; otherwise this is a no-op.
- *
- * @returns The resolution, unchanged.
- */
-export async function reconcileCheckpointedPauseResolution(
-  host: RuntimeCoreTurnProgressHost,
-  checkpointedPause: boolean,
-  runId: string,
-  turnId: string,
-  resolution: RuntimeResolution
-): Promise<RuntimeResolution> {
-  if (!checkpointedPause || resolution.type === "pause") {
-    return resolution;
-  }
-
-  await resolveCheckpointedPausedRun(host, runId, turnId, resolution);
-  return resolution;
-}
+};
 
 /**
  * Override a kernel run that was durably checkpointed as paused.
@@ -250,12 +225,12 @@ export async function reconcileCheckpointedPauseResolution(
  * records the superseding resolution type (and, for failures, its fatality
  * and message), so the durable pause cannot be resumed later.
  */
-export async function resolveCheckpointedPausedRun(
+export const resolveCheckpointedPausedRun = async (
   host: RuntimeCoreTurnProgressHost,
   runId: string,
   turnId: string,
   resolution: RuntimeResolution
-): Promise<void> {
+): Promise<void> => {
   if (resolution.type === "fail") {
     await host.completeKernelRun(
       runId,
@@ -280,4 +255,29 @@ export async function resolveCheckpointedPausedRun(
       type: "paused_run_overridden",
     })
   );
-}
+};
+
+/**
+ * Reconcile a durable pause checkpoint with the iteration's final
+ * resolution.
+ *
+ * When a pause was checkpointed but the runner ultimately resolved to
+ * something other than `pause`, the checkpointed paused run is overridden
+ * via {@link resolveCheckpointedPausedRun}; otherwise this is a no-op.
+ *
+ * @returns The resolution, unchanged.
+ */
+export const reconcileCheckpointedPauseResolution = async (
+  host: RuntimeCoreTurnProgressHost,
+  checkpointedPause: boolean,
+  runId: string,
+  turnId: string,
+  resolution: RuntimeResolution
+): Promise<RuntimeResolution> => {
+  if (!checkpointedPause || resolution.type === "pause") {
+    return resolution;
+  }
+
+  await resolveCheckpointedPausedRun(host, runId, turnId, resolution);
+  return resolution;
+};

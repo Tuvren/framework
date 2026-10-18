@@ -136,12 +136,12 @@ export interface RuntimeCoreStateCommitHost {
  * @param loopState - Active loop state; supplies the agent name and
  *   extensions.
  */
-export async function incorporateInput(
+export const incorporateInput = async (
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState
-): Promise<void> {
+): Promise<void> => {
   const runId = host.createId();
   const headState = await host.loadHeadState(handle.request.branchId);
   const userMessage: TuvrenMessage = {
@@ -212,7 +212,7 @@ export async function incorporateInput(
       manifest
     );
   }
-}
+};
 
 /**
  * Durably incorporate a queued steering signal as a user message mid-turn.
@@ -227,13 +227,13 @@ export async function incorporateInput(
  * @param signal - The steering input signal whose parts become the user
  *   message.
  */
-export async function incorporateSteering(
+export const incorporateSteering = async (
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   signal: InputSignal,
   loopState: LoopState
-): Promise<void> {
+): Promise<void> => {
   const runId = host.createId();
   const headState = await host.loadHeadState(handle.request.branchId);
   const steeringMessage: TuvrenMessage = {
@@ -310,7 +310,7 @@ export async function incorporateSteering(
     },
     loopState
   );
-}
+};
 
 /**
  * Durably fold pending extension state updates into the context manifest.
@@ -328,14 +328,14 @@ export async function incorporateSteering(
  * @param iterationCount - Iteration attributed in the emitted state
  *   observability.
  */
-export async function commitPendingExtensionStateUpdates(
+export const commitPendingExtensionStateUpdates = async (
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
   updates: ExtensionStateUpdate[],
   iterationCount: number
-): Promise<void> {
+): Promise<void> => {
   if (updates.length === 0) {
     return;
   }
@@ -389,4 +389,4 @@ export async function commitPendingExtensionStateUpdates(
   handle.updateStatus({
     manifest,
   });
-}
+};

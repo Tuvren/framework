@@ -53,15 +53,36 @@ export const DEFAULT_EXECUTION_BOUNDS: ResolvedExecutionBounds = {
   maxWallClockMs: 600_000,
 };
 
+const normalizeBoundField = (
+  value: number | undefined,
+  field: keyof ResolvedExecutionBounds
+): number => {
+  if (value === undefined) {
+    return DEFAULT_EXECUTION_BOUNDS[field];
+  }
+
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new TuvrenRuntimeError(
+      `bounds.${field} must be a finite positive integer`,
+      {
+        code: "invalid_runtime_options",
+        details: { [`bounds.${field}`]: value },
+      }
+    );
+  }
+
+  return value;
+};
+
 /**
  * Resolve host-supplied bounds against the §3.11 safe defaults, validating that
  * every configured field is a finite positive integer. Hosts may raise or lower
  * finite limits but may not disable the guard with `Infinity`, `NaN`, zero, or
  * negative values.
  */
-export function normalizeExecutionBounds(
+export const normalizeExecutionBounds = (
   bounds: ExecutionBounds | undefined
-): ResolvedExecutionBounds {
+): ResolvedExecutionBounds => {
   if (bounds === undefined) {
     return DEFAULT_EXECUTION_BOUNDS;
   }
@@ -78,38 +99,17 @@ export function normalizeExecutionBounds(
       "maxWallClockMs"
     ),
   };
-}
-
-function normalizeBoundField(
-  value: number | undefined,
-  field: keyof ResolvedExecutionBounds
-): number {
-  if (value === undefined) {
-    return DEFAULT_EXECUTION_BOUNDS[field];
-  }
-
-  if (!Number.isSafeInteger(value) || value <= 0) {
-    throw new TuvrenRuntimeError(
-      `bounds.${field} must be a finite positive integer`,
-      {
-        code: "invalid_runtime_options",
-        details: { [`bounds.${field}`]: value },
-      }
-    );
-  }
-
-  return value;
-}
+};
 
 /**
  * Build the stable terminal error finalized on the failed `ExecutionResult`,
  * the fatal canonical `error` event, and the bounded-execution telemetry event.
  */
-export function createBoundExceededError(
+export const createBoundExceededError = (
   bound: ExecutionBoundKind,
   limit: number,
   observed: number
-): TuvrenRuntimeError {
+): TuvrenRuntimeError => {
   const details: ExecutionBoundExceededDetails = { bound, limit, observed };
   return new TuvrenRuntimeError(
     `Execution bound ${bound} exceeded: observed ${observed} exceeds limit ${limit}`,
@@ -118,29 +118,11 @@ export function createBoundExceededError(
       details,
     }
   );
-}
+};
 
-/** Narrow an unknown value to the bounds terminal error carrying its details. */
-export function isBoundExceededError(
+const isExecutionBoundExceededDetails = (
   value: unknown
-): value is TuvrenRuntimeError & { details: ExecutionBoundExceededDetails } {
-  return (
-    value instanceof TuvrenRuntimeError &&
-    value.code === EXECUTION_BOUND_EXCEEDED &&
-    isExecutionBoundExceededDetails(value.details)
-  );
-}
-
-/** Extract the bound details from a bounds terminal error, if present. */
-export function getBoundExceededDetails(
-  error: unknown
-): ExecutionBoundExceededDetails | undefined {
-  return isBoundExceededError(error) ? error.details : undefined;
-}
-
-function isExecutionBoundExceededDetails(
-  value: unknown
-): value is ExecutionBoundExceededDetails {
+): value is ExecutionBoundExceededDetails => {
   if (value === null || typeof value !== "object") {
     return false;
   }
@@ -152,4 +134,22 @@ function isExecutionBoundExceededDetails(
     typeof record.limit === "number" &&
     typeof record.observed === "number"
   );
-}
+};
+
+/** Narrow an unknown value to the bounds terminal error carrying its details. */
+export const isBoundExceededError = (
+  value: unknown
+): value is TuvrenRuntimeError & { details: ExecutionBoundExceededDetails } => {
+  return (
+    value instanceof TuvrenRuntimeError &&
+    value.code === EXECUTION_BOUND_EXCEEDED &&
+    isExecutionBoundExceededDetails(value.details)
+  );
+};
+
+/** Extract the bound details from a bounds terminal error, if present. */
+export const getBoundExceededDetails = (
+  error: unknown
+): ExecutionBoundExceededDetails | undefined => {
+  return isBoundExceededError(error) ? error.details : undefined;
+};

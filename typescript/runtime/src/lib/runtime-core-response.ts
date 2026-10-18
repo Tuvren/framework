@@ -51,12 +51,12 @@ export interface TurnLineageRecord {
  * The order index is zero-padded to six digits so ids sort lexicographically
  * in tool-call order, e.g. `tool_message_000003_<callId>`.
  */
-export function formatToolResultTaskId(
+export const formatToolResultTaskId = (
   orderIndex: number,
   callId: string
-): string {
+): string => {
   return `tool_message_${orderIndex.toString().padStart(6, "0")}_${callId}`;
-}
+};
 
 /**
  * Rank a resolution for {@link composeResolutions}.
@@ -64,7 +64,7 @@ export function formatToolResultTaskId(
  * Higher wins: hard fail (6) > pause (5) > handoff (4) > end_turn (3) >
  * soft fail (2) > continue_iteration (1) > unknown (0).
  */
-export function resolutionPriority(resolution: RuntimeResolution): number {
+export const resolutionPriority = (resolution: RuntimeResolution): number => {
   switch (resolution.type) {
     case "fail": {
       return resolution.fatality === "hard" ? 6 : 2;
@@ -85,17 +85,17 @@ export function resolutionPriority(resolution: RuntimeResolution): number {
       return 0;
     }
   }
-}
+};
 
 /**
  * Combine two resolutions, keeping the one with the higher
  * {@link resolutionPriority}; the base resolution wins ties and is returned
  * unchanged when there is no override.
  */
-export function composeResolutions(
+export const composeResolutions = (
   baseResolution: RuntimeResolution,
   overrideResolution: RuntimeResolution | undefined
-): RuntimeResolution {
+): RuntimeResolution => {
   if (overrideResolution === undefined) {
     return baseResolution;
   }
@@ -104,16 +104,16 @@ export function composeResolutions(
     resolutionPriority(overrideResolution)
     ? baseResolution
     : overrideResolution;
-}
+};
 
 /**
  * Map a runtime resolution to the `turn.end` status it terminates the turn
  * with: `paused` for pause, `failed` for fail (or an unknown type), and
  * `completed` for continue_iteration, end_turn, and handoff.
  */
-export function resolutionToPhase(
+export const resolutionToPhase = (
   resolution: RuntimeResolution
-): TurnEndEvent["status"] {
+): TurnEndEvent["status"] => {
   switch (resolution.type) {
     case "pause": {
       return "paused";
@@ -130,7 +130,25 @@ export function resolutionToPhase(
       return "failed";
     }
   }
-}
+};
+
+/**
+ * Return the last `message.done` event in the emitted stream, or `undefined`
+ * when none was emitted.
+ */
+export const findLastMessageDoneEvent = (
+  events: TuvrenStreamEvent[]
+): Extract<TuvrenStreamEvent, { type: "message.done" }> | undefined => {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index];
+
+    if (event?.type === "message.done") {
+      return event;
+    }
+  }
+
+  return undefined;
+};
 
 /**
  * Synthesize the model response for an iteration from its durable messages
@@ -144,12 +162,12 @@ export function resolutionToPhase(
  * event. Without an assistant message an empty response is returned with
  * finish reason `"error"` or `"stop"` depending on the resolution.
  */
-export function synthesizeResponse(
+export const synthesizeResponse = (
   messages: TuvrenMessage[],
   resolution: RuntimeResolution,
   emittedEvents: TuvrenStreamEvent[],
   assistantEventReconciliation: RunnerAssistantEventReconciliation | undefined
-): TuvrenModelResponse {
+): TuvrenModelResponse => {
   const assistantMessage = messages.find(
     (message): message is Extract<TuvrenMessage, { role: "assistant" }> =>
       message.role === "assistant"
@@ -178,51 +196,33 @@ export function synthesizeResponse(
     finishReason: resolution.type === "fail" ? "error" : "stop",
     parts: [],
   };
-}
-
-/**
- * Return the last `message.done` event in the emitted stream, or `undefined`
- * when none was emitted.
- */
-export function findLastMessageDoneEvent(
-  events: TuvrenStreamEvent[]
-): Extract<TuvrenStreamEvent, { type: "message.done" }> | undefined {
-  for (let index = events.length - 1; index >= 0; index -= 1) {
-    const event = events[index];
-
-    if (event?.type === "message.done") {
-      return event;
-    }
-  }
-
-  return undefined;
-}
+};
 
 /**
  * Build an approval response that rejects every tool call in the request,
  * used when a paused approval is cancelled instead of being answered.
  */
-export function createRejectedApprovalResponse(
+export const createRejectedApprovalResponse = (
   request: ApprovalRequest
-): ApprovalResponse {
+): ApprovalResponse => {
   return {
     decisions: request.toolCalls.map((toolCall) => ({
       callId: toolCall.callId,
       type: "reject",
     })),
   };
-}
+};
 
 /**
  * Build the `end_turn` resolution (reason `approval_rejected`) used when all
  * pending tool approvals were rejected.
  */
-export function createApprovalRejectionResolution(): RuntimeResolution {
+export const createApprovalRejectionResolution = (): RuntimeResolution => {
   return {
     reason: "approval_rejected",
     type: "end_turn",
   };
-}
+};
 
 /**
  * Narrow a kernel tree path value to a single hash or `null` (path absent).
@@ -230,7 +230,7 @@ export function createApprovalRejectionResolution(): RuntimeResolution {
  * @throws TuvrenRuntimeError with code `invalid_path_value_shape` when the
  *   value is an ordered array, i.e. the path was not a single-hash path.
  */
-export function toOptionalHash(value: PathValue): HashString | null {
+export const toOptionalHash = (value: PathValue): HashString | null => {
   if (typeof value === "string") {
     return value;
   }
@@ -245,7 +245,7 @@ export function toOptionalHash(value: PathValue): HashString | null {
       value,
     },
   });
-}
+};
 
 /**
  * Narrow a kernel tree path value to an ordered hash array.
@@ -253,7 +253,7 @@ export function toOptionalHash(value: PathValue): HashString | null {
  * @throws TuvrenRuntimeError with code `invalid_path_value_shape` when the
  *   value is not an array, i.e. the path was not an ordered-collection path.
  */
-export function toOrderedHashArray(value: PathValue): HashString[] {
+export const toOrderedHashArray = (value: PathValue): HashString[] => {
   if (Array.isArray(value)) {
     return value;
   }
@@ -264,15 +264,15 @@ export function toOrderedHashArray(value: PathValue): HashString[] {
       value,
     },
   });
-}
+};
 
 /**
  * Type guard for {@link TurnLineageRecord}: an object carrying a string
  * `activeTurnId`.
  */
-export function isTurnLineageRecord(
+export const isTurnLineageRecord = (
   value: unknown
-): value is TurnLineageRecord {
+): value is TurnLineageRecord => {
   return (
     isRecord(value) &&
     typeof value.activeTurnId === "string" &&
@@ -280,16 +280,16 @@ export function isTurnLineageRecord(
       readInterruptedToolBatchDescriptor(value.interruptedToolBatch) !==
         undefined)
   );
-}
+};
 
 /**
  * Type guard detecting whether a kernel exposes the optional run-liveness
  * surface (a non-null `runLiveness` object), enabling leased runs and lease
  * renewal.
  */
-export function hasRunLivenessKernel(
+export const hasRunLivenessKernel = (
   kernel: unknown
-): kernel is RuntimeKernel & RuntimeKernelRunLiveness {
+): kernel is RuntimeKernel & RuntimeKernelRunLiveness => {
   return (
     typeof kernel === "object" &&
     kernel !== null &&
@@ -297,7 +297,25 @@ export function hasRunLivenessKernel(
     typeof (kernel as { runLiveness?: unknown }).runLiveness === "object" &&
     (kernel as { runLiveness?: unknown }).runLiveness !== null
   );
-}
+};
+
+/**
+ * Whether an error carries one of the kernel run-lease fencing codes
+ * (expired, not leased, owner mismatch, or token mismatch), meaning this
+ * owner no longer holds execution authority for the run.
+ */
+export const isRunLeaseFenceError = (error: unknown): boolean => {
+  if (!isRecord(error) || typeof error.code !== "string") {
+    return false;
+  }
+
+  return (
+    error.code === "kernel_runtime_run_lease_expired" ||
+    error.code === "kernel_runtime_run_not_leased" ||
+    error.code === "kernel_runtime_run_lease_owner_mismatch" ||
+    error.code === "kernel_runtime_run_lease_token_mismatch"
+  );
+};
 
 /**
  * Normalize an error from lease renewal, translating kernel lease-fence
@@ -306,7 +324,7 @@ export function hasRunLivenessKernel(
  * original code and message in its details; other errors are returned
  * normalized but otherwise unchanged.
  */
-export function createRunLeaseLostError(error: unknown): Error {
+export const createRunLeaseLostError = (error: unknown): Error => {
   const normalizedError = normalizeError(error);
 
   if (!isRunLeaseFenceError(normalizedError)) {
@@ -323,54 +341,20 @@ export function createRunLeaseLostError(error: unknown): Error {
       message: normalizedError.message,
     },
   });
-}
+};
 
 /**
  * Build the `runtime_execution_recovery_contended` error raised when another
  * owner claimed the stale-run recovery this session attempted.
  */
-export function createStaleRecoveryContendedError(): Error {
+export const createStaleRecoveryContendedError = (): Error => {
   return new TuvrenRuntimeError(
     "stale run recovery was claimed by another owner",
     {
       code: "runtime_execution_recovery_contended",
     }
   );
-}
-
-/**
- * Whether an error carries one of the kernel run-lease fencing codes
- * (expired, not leased, owner mismatch, or token mismatch), meaning this
- * owner no longer holds execution authority for the run.
- */
-export function isRunLeaseFenceError(error: unknown): boolean {
-  if (!isRecord(error) || typeof error.code !== "string") {
-    return false;
-  }
-
-  return (
-    error.code === "kernel_runtime_run_lease_expired" ||
-    error.code === "kernel_runtime_run_not_leased" ||
-    error.code === "kernel_runtime_run_lease_owner_mismatch" ||
-    error.code === "kernel_runtime_run_lease_token_mismatch"
-  );
-}
-
-/**
- * Wait for `durationMs`, resolving immediately for a non-positive duration or
- * an already-aborted signal. Like {@link awaitableDelay}, an abort resolves
- * the promise early — it never rejects.
- */
-export function waitForDelay(
-  durationMs: number,
-  signal: AbortSignal
-): Promise<void> {
-  if (durationMs <= 0 || signal.aborted) {
-    return Promise.resolve();
-  }
-
-  return awaitableDelay(durationMs, signal);
-}
+};
 
 /**
  * Abortable timer: resolves after `durationMs` or as soon as the signal
@@ -378,10 +362,10 @@ export function waitForDelay(
  * listener. Never rejects; callers that must distinguish abort from timeout
  * should check `signal.aborted` afterwards.
  */
-export function awaitableDelay(
+export const awaitableDelay = (
   durationMs: number,
   signal: AbortSignal
-): Promise<void> {
+): Promise<void> => {
   return new Promise((resolve) => {
     const timeoutId = setTimeout(() => {
       signal.removeEventListener("abort", onAbort);
@@ -396,7 +380,23 @@ export function awaitableDelay(
 
     signal.addEventListener("abort", onAbort, { once: true });
   });
-}
+};
+
+/**
+ * Wait for `durationMs`, resolving immediately for a non-positive duration or
+ * an already-aborted signal. Like {@link awaitableDelay}, an abort resolves
+ * the promise early — it never rejects.
+ */
+export const waitForDelay = (
+  durationMs: number,
+  signal: AbortSignal
+): Promise<void> => {
+  if (durationMs <= 0 || signal.aborted) {
+    return Promise.resolve();
+  }
+
+  return awaitableDelay(durationMs, signal);
+};
 
 /**
  * Assert that a turn-tree schema satisfies the framework's contract.
@@ -409,9 +409,9 @@ export function awaitableDelay(
  * @throws TuvrenRuntimeError with code `invalid_framework_schema` naming the
  *   first missing or mismatched path or incorporation rule.
  */
-export function assertFrameworkSchemaCompatibility(
+export const assertFrameworkSchemaCompatibility = (
   schema: TurnTreeSchema
-): void {
+): void => {
   const requiredPathKinds = new Map<string, "ordered" | "single">([
     ["messages", "ordered"],
     ["context.manifest", "single"],
@@ -463,4 +463,4 @@ export function assertFrameworkSchemaCompatibility(
       );
     }
   }
-}
+};
