@@ -39,6 +39,18 @@ import {
   waitForAsync,
 } from "./runtime-core-test-helpers.ts";
 
+const readStringProperty = (value: unknown, propertyName: string): string => {
+  if (typeof value !== "object" || value === null) {
+    throw new Error(`${propertyName} input must be an object`);
+  }
+
+  const propertyValue = Reflect.get(value, propertyName);
+  if (typeof propertyValue !== "string") {
+    throw new TypeError(`${propertyName} input must be a string`);
+  }
+
+  return propertyValue;
+};
 describe("stream adapter integration", () => {
   test("fans one completed execution stream into canonical, SSE, and AG-UI consumers", async () => {
     const harness = createFakeKernelHarness();
@@ -514,16 +526,3 @@ describe("stream adapter integration", () => {
     ).toBe(true);
   });
 });
-
-function readStringProperty(value: unknown, propertyName: string): string {
-  if (typeof value !== "object" || value === null) {
-    throw new Error(`${propertyName} input must be an object`);
-  }
-
-  const propertyValue = Reflect.get(value, propertyName);
-  if (typeof propertyValue !== "string") {
-    throw new TypeError(`${propertyName} input must be a string`);
-  }
-
-  return propertyValue;
-}
