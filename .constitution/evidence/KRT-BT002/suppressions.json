@@ -3,12 +3,12 @@
   "ticket": "KRT-BT002",
   "milestone": "M8",
   "acceptance_mode": "contract_test",
-  "produced_at": "2026-10-18T05:14:14.127Z",
+  "produced_at": "2026-10-18T05:20:34.004Z",
   "source": {
     "planned_commit": "fd8ee5d4060ddfce23e250c32a675d41cca255b9",
     "reviewed_parent_commit": "c341a9076327fb6ce3429ca70c634ca5331673ea",
-    "measured_head_commit": "c341a9076327fb6ce3429ca70c634ca5331673ea",
-    "candidate_diff_sha256": "dbbac2f34d6d9cbdb723138e3c7967731e8d70fa01df1360a92842b674332886",
+    "measured_head_commit": "e9796643d6c01e209231941cc2aac14bfaa81ae7",
+    "candidate_diff_sha256": "ab4309a22ed76fbf1d4ea8f66cdf253aea7345d41b83e71287c39927789e38ea",
     "worktree": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BT",
     "owned_path": "typescript/runtime"
   },
@@ -25,14 +25,14 @@
   "counts": {
     "planned_baseline_directives": 59,
     "reviewed_parent_directives": 59,
-    "final_candidate_directives": 58,
+    "final_candidate_directives": 59,
     "planned_baseline_rule_mentions": 60,
     "reviewed_parent_rule_mentions": 60,
-    "final_candidate_rule_mentions": 59,
+    "final_candidate_rule_mentions": 60,
     "ledger_entries": 59,
     "final_live_entries": 57,
-    "final_retained_dead_entries": 1,
-    "early_deletions": 1,
+    "final_retained_dead_entries": 2,
+    "early_deletions": 0,
     "final_biome_unsuppressed_diagnostics": 507,
     "final_oxlint_type_aware_diagnostics": 4134,
     "final_oxlint_selected_files": 136,
@@ -81,18 +81,14 @@
     },
     "reviewed_parent_to_final_candidate": {
       "added": [],
-      "removed": [
-        "typescript/runtime/test/runtime-core.sanitize-tool-result.test.ts::lint/suspicious/useAwait::1"
-      ],
+      "removed": [],
       "changed_reasons": [],
       "changed_directive_text": [],
       "line_moved": []
     },
     "planned_to_final_candidate": {
       "added": [],
-      "removed": [
-        "typescript/runtime/test/runtime-core.sanitize-tool-result.test.ts::lint/suspicious/useAwait::1"
-      ],
+      "removed": [],
       "changed_reasons": [],
       "changed_directive_text": [],
       "line_moved": [
@@ -112,7 +108,7 @@
   "decisions": [
     {
       "identity": "typescript/runtime/test/runtime-core.sanitize-tool-result.test.ts::lint/suspicious/useAwait::1",
-      "decision": "delete early after reviewed behavior-preserving async-to-Promise-return fix and fresh retained-Biome proof with zero matching diagnostics"
+      "decision": "retain the dead original directive through atomic native admission; no qualifying behavior-preserving code fix was made, and fresh unsuppressed Biome reports zero matching diagnostics"
     },
     {
       "identity": "typescript/runtime/test/admission-key-persistence.test.ts::lint/suspicious/useAwait::1",
@@ -130,7 +126,7 @@
   },
   "command_results": {
     "biome-parent-unsuppressed": {
-      "command": "bunx --bun @biomejs/biome check --config-path=$REPO/biome.jsonc --vcs-enabled=false $SCRATCH/unsuppressed-mirror/typescript/runtime --reporter=json --max-diagnostics=none",
+      "command": "direnv exec . bunx --bun @biomejs/biome check --config-path=$PWD/biome.jsonc --vcs-enabled=false $SCRATCH/unsuppressed-mirror/typescript/runtime --reporter=json --max-diagnostics=none (all biome-ignore directives removed from scratch mirror)",
       "expected_exit": 1,
       "exit_code": 1,
       "result": {
@@ -139,27 +135,27 @@
       "report_sha256": "41e72fd06a6dc1beec5e329228f5e4784b5a353928aab69b62106dd8d369ff3d"
     },
     "biome-final-suppressed": {
-      "command": "bunx --bun @biomejs/biome check --config-path=$REPO/biome.jsonc --vcs-enabled=false $SCRATCH/final-suppressed-mirror/typescript/runtime --reporter=json --max-diagnostics=none",
+      "command": "direnv exec . bunx --bun @biomejs/biome check --config-path=$PWD/biome.jsonc --vcs-enabled=false $SCRATCH/final-suppressed-mirror/typescript/runtime --reporter=json --max-diagnostics=none",
       "expected_exit": 0,
       "exit_code": 0,
       "result": {
         "diagnostics": 0,
         "selected_files": 143
       },
-      "report_sha256": "f7fc092705eeea66e1ee854f605aa6a9a5a0583ac07b649b6a8f41fd3a4c6707"
+      "report_sha256": "0d85366cd80c245e6bf621deab3ce377085c2cc789d258a7dad723dd1e835373"
     },
     "biome-final-unsuppressed": {
-      "command": "bunx --bun @biomejs/biome check --config-path=$REPO/biome.jsonc --vcs-enabled=false $SCRATCH/final-unsuppressed-mirror/typescript/runtime --reporter=json --max-diagnostics=none",
+      "command": "direnv exec . bunx --bun @biomejs/biome check --config-path=$PWD/biome.jsonc --vcs-enabled=false $SCRATCH/final-unsuppressed-mirror/typescript/runtime --reporter=json --max-diagnostics=none (all biome-ignore directives removed from scratch mirror)",
       "expected_exit": 1,
       "exit_code": 1,
       "result": {
         "diagnostics": 507,
         "selected_files": 143
       },
-      "report_sha256": "825bbe372bbf76a07e7c226571c2a2ec00b30c06a42d51dbd86c69da9ceaff9a"
+      "report_sha256": "e9873ad3dbad1ce2d269dc229a3ac6169fd1e3eba12bc2609c23dd60397c5431"
     },
     "oxlint-final-type-aware": {
-      "command": "bunx --bun oxlint --type-aware --format=json typescript/runtime",
+      "command": "direnv exec . bunx --bun oxlint --type-aware --format=json typescript/runtime",
       "expected_exit": 1,
       "exit_code": 1,
       "result": {
@@ -168,34 +164,34 @@
         "enabled_rules": 474,
         "resolution_or_backend_errors": 0
       },
-      "report_sha256": "bd7e2d79bc5daba8081990b116a31e377e0f2fba2b586fa3cda474e37d7eb17c"
+      "report_sha256": "742ab066d61a5c3278f47097197fa77e9a5251b73c87855bb0615ea4def824d6"
     },
     "affected-tests": {
-      "command": "cd typescript/runtime && bun test ./test/admission-key-persistence.test.ts ./test/runtime-core.sanitize-tool-result.test.ts",
+      "command": "direnv exec . zsh -lc 'cd typescript/runtime && bun test ./test/admission-key-persistence.test.ts ./test/runtime-core.sanitize-tool-result.test.ts'",
       "expected_exit": 0,
       "exit_code": 0,
       "result": {
         "passed": 19,
         "failed": 0
       },
-      "log_sha256": "2ab3fa45e6874a1ca8796545791d64768b5e025e7ed4dd405b254e9316178fdb"
+      "log_sha256": "542a86d8987691f85e67a76b9a6baf421c0e4a97492ab8bf0cfb3368f8ca76f5"
     },
     "runtime-typecheck": {
-      "command": "bun run nx run framework-runtime:typecheck --skipNxCache",
+      "command": "direnv exec . bun run nx run framework-runtime:typecheck --skipNxCache",
       "expected_exit": 0,
       "exit_code": 0,
       "result": "pass",
-      "log_sha256": "a1ef5fe68ee5996ccfbfabe9f127667f359a9aa74a0fcb71b1a191ce08ccb9de"
+      "log_sha256": "9636bcc7d426ed1fdcbf2ba0663697950de239b65a53b33b9ab9886f79a41182"
     },
     "retained-runtime-lint": {
-      "command": "bun run nx run framework-runtime:lint --skipNxCache",
+      "command": "direnv exec . bun run nx run framework-runtime:lint --skipNxCache",
       "expected_exit": 0,
       "exit_code": 0,
       "result": {
         "selected_files": 143,
         "diagnostics": 0
       },
-      "log_sha256": "b5de40b5a2985fe9a10b85c2af9803eca2a6776c5a6108285db540bbe6586f1a"
+      "log_sha256": "bef768e76fa88261d9fb59b827b25718d3421393d334d3a2f7e1f5dc62fa6de5"
     },
     "repository-typecheck": {
       "command": "bun run typecheck",
@@ -225,7 +221,8 @@
     "final_drift_reconciled": true,
     "original_reasons_preserved": true,
     "no_biome_directives_added": true,
-    "one_eligible_early_deletion_only": true,
+    "no_unqualified_early_deletions": true,
+    "all_planned_directives_retained": true,
     "needed_biome_directives_retained": true,
     "native_equivalents_require_fresh_same_file_diagnostic": true,
     "native_suppressions_added": 0,
@@ -2034,37 +2031,28 @@
       },
       "baseline_line": 17,
       "reviewed_parent_line": 17,
-      "final_line": null,
+      "final_line": 17,
       "original_reason": "Test runners intentionally match the async framework runner contract.",
       "original_reason_preserved": true,
-      "currently_retained": false,
-      "retained_checker_disposition": "removed-after-reviewed-behavior-preserving-fix-and-fresh-retained-proof",
-      "native_admission_disposition": "early-biome-deletion-complete-native-admission-will-use-fresh-final-proof",
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-dead-deletion-deferred-no-behavior-preserving-fix",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
       "rule_dispositions": [
         {
           "biome_rule": "lint/suspicious/useAwait",
           "parent_unsuppressed_diagnostic_count": 0,
           "final_unsuppressed_diagnostic_count": 0,
           "retained_diagnostic_sample_lines": [],
-          "retained_checker_disposition": "removed-after-reviewed-behavior-preserving-fix-and-fresh-retained-proof",
+          "retained_checker_disposition": "retain-original-dead-deletion-deferred-no-behavior-preserving-fix",
           "current_native_diagnostic_count": 0,
           "diagnostic_sample_lines": [],
-          "native_admission_disposition": "no-native-suppression-planned-early-biome-deletion-complete"
+          "native_admission_disposition": "remove-biome-directive-at-atomic-admission-if-fresh-native-proof-still-has-no-counterpart"
         }
       ],
-      "early_deletion": {
-        "behavior_preserving_fix_commit": "c341a9076327fb6ce3429ca70c634ca5331673ea",
-        "fix": "Runner execute methods changed from async bodies without await to synchronous methods returning Promise.resolve with the same fulfilled values.",
-        "parent_unsuppressed_matching_diagnostics": 0,
-        "fresh_retained_lint_exit_code": 0,
-        "affected_tests": {
-          "passed": 19,
-          "failed": 0
-        }
-      },
+      "early_deletion": null,
       "supporting_command_results": [
-        "biome-parent-unsuppressed",
         "biome-final-suppressed",
+        "biome-final-unsuppressed",
         "oxlint-final-type-aware",
         "affected-tests",
         "runtime-typecheck",
