@@ -54,9 +54,7 @@ export interface TurnLineageRecord {
 export const formatToolResultTaskId = (
   orderIndex: number,
   callId: string
-): string => {
-  return `tool_message_${orderIndex.toString().padStart(6, "0")}_${callId}`;
-};
+): string => `tool_message_${orderIndex.toString().padStart(6, "0")}_${callId}`;
 
 /**
  * Rank a resolution for {@link composeResolutions}.
@@ -204,30 +202,26 @@ export const synthesizeResponse = (
  */
 export const createRejectedApprovalResponse = (
   request: ApprovalRequest
-): ApprovalResponse => {
-  return {
-    decisions: request.toolCalls.map((toolCall) => ({
-      callId: toolCall.callId,
-      type: "reject",
-    })),
-  };
-};
+): ApprovalResponse => ({
+  decisions: request.toolCalls.map((toolCall) => ({
+    callId: toolCall.callId,
+    type: "reject",
+  })),
+});
 
 /**
  * Build the `end_turn` resolution (reason `approval_rejected`) used when all
  * pending tool approvals were rejected.
  */
-export const createApprovalRejectionResolution = (): RuntimeResolution => {
-  return {
-    reason: "approval_rejected",
-    type: "end_turn",
-  };
-};
+export const createApprovalRejectionResolution = (): RuntimeResolution => ({
+  reason: "approval_rejected",
+  type: "end_turn",
+});
 
 /**
  * Narrow a kernel tree path value to a single hash or `null` (path absent).
  *
- * @throws TuvrenRuntimeError with code `invalid_path_value_shape` when the
+ * @throws {TuvrenRuntimeError} With code `invalid_path_value_shape` when the
  *   value is an ordered array, i.e. the path was not a single-hash path.
  */
 export const toOptionalHash = (value: PathValue): HashString | null => {
@@ -250,7 +244,7 @@ export const toOptionalHash = (value: PathValue): HashString | null => {
 /**
  * Narrow a kernel tree path value to an ordered hash array.
  *
- * @throws TuvrenRuntimeError with code `invalid_path_value_shape` when the
+ * @throws {TuvrenRuntimeError} With code `invalid_path_value_shape` when the
  *   value is not an array, i.e. the path was not an ordered-collection path.
  */
 export const toOrderedHashArray = (value: PathValue): HashString[] => {
@@ -272,15 +266,12 @@ export const toOrderedHashArray = (value: PathValue): HashString[] => {
  */
 export const isTurnLineageRecord = (
   value: unknown
-): value is TurnLineageRecord => {
-  return (
-    isRecord(value) &&
-    typeof value.activeTurnId === "string" &&
-    (!("interruptedToolBatch" in value) ||
-      readInterruptedToolBatchDescriptor(value.interruptedToolBatch) !==
-        undefined)
-  );
-};
+): value is TurnLineageRecord =>
+  isRecord(value) &&
+  typeof value.activeTurnId === "string" &&
+  (!("interruptedToolBatch" in value) ||
+    readInterruptedToolBatchDescriptor(value.interruptedToolBatch) !==
+      undefined);
 
 /**
  * Type guard detecting whether a kernel exposes the optional run-liveness
@@ -289,15 +280,12 @@ export const isTurnLineageRecord = (
  */
 export const hasRunLivenessKernel = (
   kernel: unknown
-): kernel is RuntimeKernel & RuntimeKernelRunLiveness => {
-  return (
-    typeof kernel === "object" &&
-    kernel !== null &&
-    "runLiveness" in kernel &&
-    typeof (kernel as { runLiveness?: unknown }).runLiveness === "object" &&
-    (kernel as { runLiveness?: unknown }).runLiveness !== null
-  );
-};
+): kernel is RuntimeKernel & RuntimeKernelRunLiveness =>
+  typeof kernel === "object" &&
+  kernel !== null &&
+  "runLiveness" in kernel &&
+  typeof (kernel as { runLiveness?: unknown }).runLiveness === "object" &&
+  (kernel as { runLiveness?: unknown }).runLiveness !== null;
 
 /**
  * Whether an error carries one of the kernel run-lease fencing codes
@@ -347,14 +335,10 @@ export const createRunLeaseLostError = (error: unknown): Error => {
  * Build the `runtime_execution_recovery_contended` error raised when another
  * owner claimed the stale-run recovery this session attempted.
  */
-export const createStaleRecoveryContendedError = (): Error => {
-  return new TuvrenRuntimeError(
-    "stale run recovery was claimed by another owner",
-    {
-      code: "runtime_execution_recovery_contended",
-    }
-  );
-};
+export const createStaleRecoveryContendedError = (): Error =>
+  new TuvrenRuntimeError("stale run recovery was claimed by another owner", {
+    code: "runtime_execution_recovery_contended",
+  });
 
 /**
  * Abortable timer: resolves after `durationMs` or as soon as the signal
@@ -362,24 +346,27 @@ export const createStaleRecoveryContendedError = (): Error => {
  * listener. Never rejects; callers that must distinguish abort from timeout
  * should check `signal.aborted` afterwards.
  */
-export const awaitableDelay = (
+export const awaitableDelay = async (
   durationMs: number,
   signal: AbortSignal
 ): Promise<void> => {
-  return new Promise((resolve) => {
-    const timeoutId = setTimeout(() => {
-      signal.removeEventListener("abort", onAbort);
-      resolve();
-    }, durationMs);
+  const { promise, resolve } = Promise.withResolvers<true>();
+  const delayState: { timeoutId?: ReturnType<typeof setTimeout> } = {};
+  const onAbort = () => {
+    if (delayState.timeoutId !== undefined) {
+      clearTimeout(delayState.timeoutId);
+    }
+    signal.removeEventListener("abort", onAbort);
+    resolve(true);
+  };
+  const timeoutId = setTimeout(() => {
+    signal.removeEventListener("abort", onAbort);
+    resolve(true);
+  }, durationMs);
+  delayState.timeoutId = timeoutId;
 
-    const onAbort = () => {
-      clearTimeout(timeoutId);
-      signal.removeEventListener("abort", onAbort);
-      resolve();
-    };
-
-    signal.addEventListener("abort", onAbort, { once: true });
-  });
+  signal.addEventListener("abort", onAbort, { once: true });
+  await promise;
 };
 
 /**
@@ -387,15 +374,15 @@ export const awaitableDelay = (
  * an already-aborted signal. Like {@link awaitableDelay}, an abort resolves
  * the promise early — it never rejects.
  */
-export const waitForDelay = (
+export const waitForDelay = async (
   durationMs: number,
   signal: AbortSignal
 ): Promise<void> => {
   if (durationMs <= 0 || signal.aborted) {
-    return Promise.resolve();
+    return;
   }
 
-  return awaitableDelay(durationMs, signal);
+  await awaitableDelay(durationMs, signal);
 };
 
 /**
@@ -406,7 +393,7 @@ export const waitForDelay = (
  * declare incorporation rules mapping the `message`, `context_manifest`,
  * `turn_lineage`, and `runtime_status` object types to those paths.
  *
- * @throws TuvrenRuntimeError with code `invalid_framework_schema` naming the
+ * @throws {TuvrenRuntimeError} With code `invalid_framework_schema` naming the
  *   first missing or mismatched path or incorporation rule.
  */
 export const assertFrameworkSchemaCompatibility = (

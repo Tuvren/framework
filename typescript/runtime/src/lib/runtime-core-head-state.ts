@@ -33,6 +33,7 @@ import {
   toOptionalHash,
   toOrderedHashArray,
 } from "./runtime-core-response.js";
+import type { TurnLineageRecord } from "./runtime-core-response.js";
 import { isRecord } from "./runtime-core-shared.js";
 import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
 
@@ -60,7 +61,7 @@ const readTurnLineageRecord = async (
   kernel: RuntimeKernel,
   turnNode: Exclude<Awaited<ReturnType<RuntimeKernel["node"]["get"]>>, null>,
   branchId: string
-): Promise<import("./runtime-core-response.js").TurnLineageRecord | null> => {
+): Promise<TurnLineageRecord | null> => {
   const lineageHash = toOptionalHash(
     await kernel.tree.resolve(turnNode.turnTreeHash, "turn.lineage")
   );
@@ -142,10 +143,22 @@ const readMessages = async (
   hashes: HashString[]
 ): Promise<TuvrenMessage[]> => {
   const messages: TuvrenMessage[] = [];
+  const readNextMessage = async (
+    remainingHashes: Iterator<HashString>
+  ): Promise<void> => {
+    const nextHash = remainingHashes.next();
 
-  for (const hash of hashes) {
-    messages.push(await readMessage(kernel, payloadCodecBinding, hash));
-  }
+    if (nextHash.done === true) {
+      return;
+    }
+
+    messages.push(
+      await readMessage(kernel, payloadCodecBinding, nextHash.value)
+    );
+    await readNextMessage(remainingHashes);
+  };
+
+  await readNextMessage(hashes.values());
 
   return messages;
 };
@@ -158,9 +171,9 @@ const readMessages = async (
  * message payload, and falls back to an empty manifest when the tree carries
  * none.
  *
- * @throws TuvrenLineageError when the branch, its head turn node, a manifest,
+ * @throws {TuvrenLineageError} When the branch, its head turn node, a manifest,
  *   or a message record is missing.
- * @throws TuvrenPersistenceError with code `kernel_payload_erased` when a
+ * @throws {TuvrenPersistenceError} With code `kernel_payload_erased` when a
  *   message payload was crypto-shredded and cannot be reconstructed.
  */
 export const loadHeadState = async (
@@ -271,7 +284,8 @@ export const readRecoveredActiveAgentName = async (
   kernel: RuntimeKernel,
   turnTreeHash: HashString
 ): Promise<string | undefined> => {
-  return (await readRecoveredRuntimeStatus(kernel, turnTreeHash))?.activeAgent;
+  const runtimeStatus = await readRecoveredRuntimeStatus(kernel, turnTreeHash);
+  return runtimeStatus?.activeAgent;
 };
 
 /**
@@ -417,7 +431,7 @@ const assertValidParentTurnId = async (
  * @param explicitParentTurnId - Parent turn id from the request; `null`
  *   explicitly requests a root turn, `undefined` defers to resolution.
  * @returns The validated parent turn id, or `null` for a root turn.
- * @throws TuvrenLineageError with code `invalid_parent_turn` when the
+ * @throws {TuvrenLineageError} With code `invalid_parent_turn` when the
  *   resolved parent is not the branch's active turn, does not exist, or
  *   belongs to a different thread.
  */

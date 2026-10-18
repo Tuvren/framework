@@ -20,6 +20,7 @@ import type { TuvrenMessage } from "@tuvren/core/messages";
 
 import { updateContextManifest } from "./context-manifest.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
+import type { InterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 
@@ -34,21 +35,21 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
  * {@link commitPendingExtensionStateUpdates}.
  */
 export interface RuntimeCoreStateCommitHost {
-  advanceTurnAndBranchHead(
+  advanceTurnAndBranchHead: (
     handle: RuntimeExecutionHandle,
     turnNodeHash: HashString
-  ): Promise<void>;
-  collectInitialExtensionStateUpdates(
+  ) => Promise<void>;
+  collectInitialExtensionStateUpdates: (
     extensions: LoopState["activeConfig"]["extensions"] | undefined,
     manifest: HeadState["manifest"]
-  ): ExtensionStateUpdate[];
-  completeTrackedRun(
+  ) => ExtensionStateUpdate[];
+  completeTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     status: "completed" | "failed" | "paused"
-  ): Promise<{ turnNodeHash?: HashString }>;
-  createId(): string;
-  createTrackedRun(
+  ) => Promise<{ turnNodeHash?: HashString }>;
+  createId: () => string;
+  createTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     turnId: string,
@@ -60,63 +61,63 @@ export interface RuntimeCoreStateCommitHost {
       id: string;
       sideEffects: boolean;
     }[]
-  ): Promise<void>;
-  emitStateObservability(
+  ) => Promise<void>;
+  emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
     iterationCount: number,
     manifest?: HeadState["manifest"]
-  ): Promise<void>;
-  kernelRunBeginStep(runId: string, stepId: string): Promise<void>;
-  kernelRunCompleteStep(
+  ) => void;
+  kernelRunBeginStep: (runId: string, stepId: string) => Promise<void>;
+  kernelRunCompleteStep: (
     runId: string,
     stepId: string,
     eventHash: HashString
-  ): Promise<{
+  ) => Promise<{
     lease?: { fencingToken: string; leaseExpiresAtMs: number };
     turnNodeHash?: HashString;
   }>;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  now(): number;
-  publishEvent(
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  now: () => number;
+  publishEvent: (
     handle: RuntimeExecutionHandle,
     event: { messageId?: HashString; timestamp: number; type: string },
     loopState: LoopState
-  ): void;
-  stageManifest(
+  ) => void;
+  stageManifest: (
     runId: string,
     manifest: HeadState["manifest"],
     warningContext?: {
       handle: RuntimeExecutionHandle;
       loopState: LoopState;
     }
-  ): Promise<HashString>;
-  stageMessage(
+  ) => Promise<HashString>;
+  stageMessage: (
     runId: string,
     message: TuvrenMessage,
     taskId: string
-  ): Promise<HashString>;
-  stageRuntimeStatus(
+  ) => Promise<HashString>;
+  stageRuntimeStatus: (
     runId: string,
     status: {
       activeAgent?: string;
       state: "running";
     },
     taskId: string
-  ): Promise<HashString>;
-  stageTurnLineage(
+  ) => Promise<HashString>;
+  stageTurnLineage: (
     runId: string,
     turnId: string,
     taskId: string,
-    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
-  ): Promise<HashString>;
-  storeEventRecord(event: Record<string, unknown>): Promise<HashString>;
-  syncRunLeaseStateFromStepResult(
+    interruptedToolBatch?: InterruptedToolBatchDescriptor
+  ) => Promise<HashString>;
+  storeEventRecord: (event: Record<string, unknown>) => Promise<HashString>;
+  syncRunLeaseStateFromStepResult: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stepResult: { lease?: { fencingToken: string; leaseExpiresAtMs: number } }
-  ): void;
+  ) => void;
 }
 
 /**
@@ -204,7 +205,7 @@ export const incorporateInput = async (
 
   if (stepResult.turnNodeHash !== undefined) {
     await host.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
-    await host.emitStateObservability(
+    host.emitStateObservability(
       handle,
       loopState,
       stepResult.turnNodeHash,
@@ -289,7 +290,7 @@ export const incorporateSteering = async (
 
   if (stepResult.turnNodeHash !== undefined) {
     await host.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
-    await host.emitStateObservability(
+    host.emitStateObservability(
       handle,
       loopState,
       stepResult.turnNodeHash,
@@ -377,7 +378,7 @@ export const commitPendingExtensionStateUpdates = async (
 
   if (stepResult.turnNodeHash !== undefined) {
     await host.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
-    await host.emitStateObservability(
+    host.emitStateObservability(
       handle,
       loopState,
       stepResult.turnNodeHash,
