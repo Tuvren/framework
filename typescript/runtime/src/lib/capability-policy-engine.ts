@@ -96,9 +96,9 @@ export interface CapabilityPolicyEngineOptions {
 // ---------------------------------------------------------------------------
 
 const RISK_ORDER: Record<"low" | "medium" | "high", number> = {
+  high: 2,
   low: 0,
   medium: 1,
-  high: 2,
 };
 
 function riskExceedsThreshold(
@@ -237,8 +237,8 @@ function checkRiskClassInvocation(
     )
   ) {
     return {
-      requiresApproval: true,
       reason: `capability "${capabilityId}" has risk class "${metadata.riskClass}" which requires explicit approval`,
+      requiresApproval: true,
     };
   }
   return null;
@@ -443,7 +443,7 @@ export function createCapabilityPolicyEngine(
  * unavailability via unavailableCapabilityIds.
  */
 export function buildCapabilityMetadataFromTools(
-  tools: ReadonlyArray<{
+  tools: readonly {
     metadata?: Record<string, unknown>;
     name: string;
     nonRetryable?: boolean;
@@ -451,7 +451,7 @@ export function buildCapabilityMetadataFromTools(
     requiredResidency?: string;
     requiresUserPresence?: boolean;
     riskClass?: "low" | "medium" | "high";
-  }>
+  }[]
 ): ReadonlyMap<string, PolicyCapabilityMetadata> {
   const map = new Map<string, PolicyCapabilityMetadata>();
   for (const tool of tools) {

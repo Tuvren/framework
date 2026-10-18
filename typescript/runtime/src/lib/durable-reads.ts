@@ -19,26 +19,23 @@ import {
   TuvrenPersistenceError,
   TuvrenValidationError,
 } from "@tuvren/core";
-import {
-  assertContextManifest,
-  type BranchMessagesCursor,
-  type BranchSummary,
-  type ListThreadsCursor,
-  type ThreadSummary,
-  type TurnHistoryCursor,
-  type TurnSnapshot,
+import { assertContextManifest } from "@tuvren/core/execution";
+import type {
+  BranchMessagesCursor,
+  BranchSummary,
+  ListThreadsCursor,
+  ThreadSummary,
+  TurnHistoryCursor,
+  TurnSnapshot,
 } from "@tuvren/core/execution";
 import type { ErasedPayload } from "@tuvren/core/lifecycle";
-import { assertTuvrenMessage, type TuvrenMessage } from "@tuvren/core/messages";
-import {
-  decodeDeterministicKernelRecord,
-  type RuntimeKernel,
-} from "@tuvren/kernel-protocol";
+import { assertTuvrenMessage } from "@tuvren/core/messages";
+import type { TuvrenMessage } from "@tuvren/core/messages";
+import { decodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type { RuntimeKernel } from "@tuvren/kernel-protocol";
 
-import {
-  decryptStoredMessage,
-  type PayloadCodecBinding,
-} from "./payload-codec-seam.js";
+import { decryptStoredMessage } from "./payload-codec-seam.js";
+import type { PayloadCodecBinding } from "./payload-codec-seam.js";
 
 // ── Internal cursor payload shapes (TechSpec §3.8) ──────────────────────────
 
@@ -74,7 +71,7 @@ function encodeCursor<T>(payload: T): string {
 function decodeCursorRaw(token: string): unknown {
   // Buffer.from(token, "base64url") does not throw on invalid input; it
   // silently emits garbage bytes. JSON.parse then catches the malformed result.
-  const raw = Buffer.from(token, "base64url").toString("utf8");
+  const raw = Buffer.from(token, "base64url").toString("utf-8");
   try {
     return JSON.parse(raw);
   } catch {
@@ -177,7 +174,6 @@ export async function listThreads(
 
   // kernel_capability_unsupported propagates naturally — no catch needed.
   const kernelResult = await kernel.thread.list({
-    limit: options?.limit,
     cursor: cursorPayload
       ? encodeCursor({
           v: 1 as const,
@@ -188,6 +184,7 @@ export async function listThreads(
         })
       : undefined,
     filter: options?.filter,
+    limit: options?.limit,
   });
 
   const threads: ThreadSummary[] = kernelResult.threads.map((t) => ({
@@ -206,14 +203,14 @@ export async function listThreads(
     return { threads };
   }
   const nextCursorPayload: ListThreadsCursorPayload = {
-    v: 1,
-    kind: "list-threads",
-    lastThreadId: last.threadId,
-    lastCreatedAtMs: last.createdAtMs,
     filter: options?.filter,
+    kind: "list-threads",
+    lastCreatedAtMs: last.createdAtMs,
+    lastThreadId: last.threadId,
+    v: 1,
   };
 
-  return { threads, nextCursor: encodeCursor(nextCursorPayload) };
+  return { nextCursor: encodeCursor(nextCursorPayload), threads };
 }
 
 // ── listBranches (KRT-AO003) ─────────────────────────────────────────────────
@@ -225,8 +222,8 @@ export async function listBranches(
   const entries = await kernel.branch.list(input.threadId);
   return entries.map(([branchId, headTurnNodeHash]) => ({
     branchId,
-    threadId: input.threadId,
     headTurnNodeHash,
+    threadId: input.threadId,
   }));
 }
 
@@ -269,13 +266,13 @@ async function buildTurnSnapshot(
   }
 
   return {
-    turnNodeHash: node.hash,
-    previousTurnNodeHash: node.previousTurnNodeHash,
-    turnTreeHash: node.turnTreeHash,
-    schemaId: node.schemaId,
     eventHash: node.eventHash,
     manifest: contextManifest,
     paths,
+    previousTurnNodeHash: node.previousTurnNodeHash,
+    schemaId: node.schemaId,
+    turnNodeHash: node.hash,
+    turnTreeHash: node.turnTreeHash,
   };
 }
 
@@ -543,7 +540,7 @@ export async function readBranchMessages(
           messageHashes
         );
 
-  const limit = input.limit;
+  const { limit } = input;
   const endIndex =
     limit === undefined
       ? messageHashes.length
@@ -582,11 +579,11 @@ export async function readBranchMessages(
   }
 
   const nextCursorPayload: BranchMessagesCursorPayload = {
-    v: 1,
-    kind: "branch-messages",
-    branchId: input.branchId,
-    positionFromOldest: endIndex,
     branchHeadAtCursorIssuance: currentHead,
+    branchId: input.branchId,
+    kind: "branch-messages",
+    positionFromOldest: endIndex,
+    v: 1,
   };
 
   return { messages, nextCursor: encodeCursor(nextCursorPayload) };

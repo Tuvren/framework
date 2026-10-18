@@ -147,7 +147,7 @@ class BasicClientEndpointBoundary implements ClientEndpointBoundary {
         input,
         leaseToken,
       });
-    } catch (err) {
+    } catch (error) {
       // Convert a thrown endpoint rejection into an isError result. Client
       // endpoints should surface failures via ClientReportedResult{isError:true}
       // but throwing is a realistic failure mode (network error, client crash).
@@ -160,7 +160,7 @@ class BasicClientEndpointBoundary implements ClientEndpointBoundary {
       reported = {
         callId,
         content: {
-          error: err instanceof Error ? err.message : String(err),
+          error: error instanceof Error ? error.message : String(error),
         },
         isError: true,
         leaseToken,
