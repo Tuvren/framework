@@ -26,107 +26,136 @@ const TOKEN_ESTIMATE_DIVISOR = 4;
  * empty counters and extension state, `-1` sentinels for the last
  * assistant/user message indexes, and no turn boundaries.
  */
-export function createEmptyContextManifest(): ContextManifest {
-  return {
-    byRole: {
-      assistant: 0,
-      system: 0,
-      tool: 0,
-      user: 0,
-    },
-    extensions: {},
-    lastAssistantMessageIndex: -1,
-    lastUserMessageIndex: -1,
-    messageCount: 0,
-    tokenEstimate: 0,
-    toolCalls: {
-      byName: {},
-      total: 0,
-    },
-    toolResults: {
-      byName: {},
-      total: 0,
-    },
-    turnBoundaries: [],
-  };
-}
+export const createEmptyContextManifest = (): ContextManifest => ({
+  byRole: {
+    assistant: 0,
+    system: 0,
+    tool: 0,
+    user: 0,
+  },
+  extensions: {},
+  lastAssistantMessageIndex: -1,
+  lastUserMessageIndex: -1,
+  messageCount: 0,
+  tokenEstimate: 0,
+  toolCalls: {
+    byName: {},
+    total: 0,
+  },
+  toolResults: {
+    byName: {},
+    total: 0,
+  },
+  turnBoundaries: [],
+});
 
-/**
- * Builds a `ContextManifest` from a full message history plus optional
- * initial per-extension state. Turn boundaries default to the offsets of the
- * user messages when `turnBoundaryOffsets` is not supplied.
- */
-export function createContextManifest(
-  messages: TuvrenMessage[],
-  extensionState: Record<string, unknown> = {},
-  turnBoundaryOffsets: number[] = inferUserTurnBoundaryOffsets(messages)
-): ContextManifest {
-  const manifest = createEmptyContextManifest();
-  manifest.extensions = cloneRecord(extensionState);
-  return updateContextManifest(manifest, messages, [], turnBoundaryOffsets);
-}
-
-/**
- * Returns a new manifest with `messages` appended to `manifest`'s counters
- * (role tallies, tool call/result totals, token estimate, boundaries) and
- * with each {@link ExtensionStateUpdate} shallow-merged into its extension's
- * state slice. The input manifest is never mutated; `turnBoundaryOffsets`
- * indexes into `messages` and defaults to its user-message offsets.
- */
-export function updateContextManifest(
-  manifest: ContextManifest,
-  messages: TuvrenMessage[],
-  updates: ExtensionStateUpdate[] = [],
-  turnBoundaryOffsets: number[] = inferUserTurnBoundaryOffsets(messages)
-): ContextManifest {
-  const nextManifest = cloneContextManifest(manifest);
-  const turnBoundaryOffsetSet = new Set(turnBoundaryOffsets);
+const inferUserTurnBoundaryOffsets = (messages: TuvrenMessage[]): number[] => {
+  const turnBoundaryOffsets: number[] = [];
 
   for (const [index, message] of messages.entries()) {
-    appendMessage(nextManifest, message, turnBoundaryOffsetSet.has(index));
+    if (message.role === "user") {
+      turnBoundaryOffsets.push(index);
+    }
   }
 
-  nextManifest.extensions = applyExtensionStateUpdates(
-    nextManifest.extensions,
-    updates
-  );
+  return turnBoundaryOffsets;
+};
 
-  return nextManifest;
-}
+const cloneRecord = (
+  record: Record<string, unknown>
+): Record<string, unknown> => globalThis.structuredClone(record);
+
+const cloneCountRecord = (
+  record: Record<string, number>
+): Record<string, number> => ({ ...record });
 
 /** Deep-copies a manifest so callers can evolve one without aliasing. */
-export function cloneContextManifest(
+export const cloneContextManifest = (
   manifest: ContextManifest
-): ContextManifest {
-  return {
-    byRole: {
-      assistant: manifest.byRole.assistant,
-      system: manifest.byRole.system,
-      tool: manifest.byRole.tool,
-      user: manifest.byRole.user,
-    },
-    extensions: cloneRecord(manifest.extensions),
-    lastAssistantMessageIndex: manifest.lastAssistantMessageIndex,
-    lastUserMessageIndex: manifest.lastUserMessageIndex,
-    messageCount: manifest.messageCount,
-    tokenEstimate: manifest.tokenEstimate,
-    toolCalls: {
-      byName: cloneCountRecord(manifest.toolCalls.byName),
-      total: manifest.toolCalls.total,
-    },
-    toolResults: {
-      byName: cloneCountRecord(manifest.toolResults.byName),
-      total: manifest.toolResults.total,
-    },
-    turnBoundaries: [...manifest.turnBoundaries],
-  };
-}
+): ContextManifest => ({
+  byRole: {
+    assistant: manifest.byRole.assistant,
+    system: manifest.byRole.system,
+    tool: manifest.byRole.tool,
+    user: manifest.byRole.user,
+  },
+  extensions: cloneRecord(manifest.extensions),
+  lastAssistantMessageIndex: manifest.lastAssistantMessageIndex,
+  lastUserMessageIndex: manifest.lastUserMessageIndex,
+  messageCount: manifest.messageCount,
+  tokenEstimate: manifest.tokenEstimate,
+  toolCalls: {
+    byName: cloneCountRecord(manifest.toolCalls.byName),
+    total: manifest.toolCalls.total,
+  },
+  toolResults: {
+    byName: cloneCountRecord(manifest.toolResults.byName),
+    total: manifest.toolResults.total,
+  },
+  turnBoundaries: [...manifest.turnBoundaries],
+});
 
-function appendMessage(
+const estimateFilePayloadLength = (payload: string | Uint8Array): number =>
+  typeof payload === "string" ? payload.length : payload.byteLength;
+
+const estimateMessageTokens = (message: TuvrenMessage): number => {
+  const textLength =
+    message.role === "system"
+      ? message.content.length
+      : message.parts.reduce((length, part) => {
+          switch (part.type) {
+            case "file": {
+              return (
+                length +
+                estimateFilePayloadLength(part.data) +
+                (part.filename?.length ?? 0) +
+                part.mediaType.length
+              );
+            }
+            case "reasoning":
+            case "text": {
+              return length + part.text.length;
+            }
+            case "structured": {
+              return length + JSON.stringify(part.data).length;
+            }
+            case "tool_call": {
+              return (
+                length +
+                part.name.length +
+                JSON.stringify(part.input).length +
+                part.callId.length
+              );
+            }
+            case "tool_result": {
+              return (
+                length +
+                part.name.length +
+                JSON.stringify(part.output).length +
+                part.callId.length
+              );
+            }
+            default: {
+              return length;
+            }
+          }
+        }, 0);
+
+  return Math.ceil(textLength / TOKEN_ESTIMATE_DIVISOR);
+};
+
+const incrementNameCounter = (
+  counter: Record<string, number>,
+  name: string
+): void => {
+  counter[name] = (counter[name] ?? 0) + 1;
+};
+
+const appendMessage = (
   manifest: ContextManifest,
   message: TuvrenMessage,
   isTurnBoundary: boolean
-): void {
+): void => {
   const messageIndex = manifest.messageCount;
   manifest.messageCount += 1;
   manifest.tokenEstimate += estimateMessageTokens(message);
@@ -172,69 +201,20 @@ function appendMessage(
       return;
     }
   }
-}
+};
 
-function estimateMessageTokens(message: TuvrenMessage): number {
-  const textLength =
-    message.role === "system"
-      ? message.content.length
-      : message.parts.reduce((length, part) => {
-          switch (part.type) {
-            case "file": {
-              return (
-                length +
-                estimateFilePayloadLength(part.data) +
-                (part.filename?.length ?? 0) +
-                part.mediaType.length
-              );
-            }
-            case "reasoning":
-            case "text": {
-              return length + part.text.length;
-            }
-            case "structured": {
-              return length + JSON.stringify(part.data).length;
-            }
-            case "tool_call": {
-              return (
-                length +
-                part.name.length +
-                JSON.stringify(part.input).length +
-                part.callId.length
-              );
-            }
-            case "tool_result": {
-              return (
-                length +
-                part.name.length +
-                JSON.stringify(part.output).length +
-                part.callId.length
-              );
-            }
-            default: {
-              return length;
-            }
-          }
-        }, 0);
+const asRecord = (value: unknown): Record<string, unknown> => {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
 
-  return Math.ceil(textLength / TOKEN_ESTIMATE_DIVISOR);
-}
+  return {};
+};
 
-function estimateFilePayloadLength(payload: string | Uint8Array): number {
-  return typeof payload === "string" ? payload.length : payload.byteLength;
-}
-
-function incrementNameCounter(
-  counter: Record<string, number>,
-  name: string
-): void {
-  counter[name] = (counter[name] ?? 0) + 1;
-}
-
-function applyExtensionStateUpdates(
+const applyExtensionStateUpdates = (
   currentState: Record<string, unknown>,
   updates: ExtensionStateUpdate[]
-): Record<string, unknown> {
+): Record<string, unknown> => {
   if (updates.length === 0) {
     return currentState;
   }
@@ -250,34 +230,47 @@ function applyExtensionStateUpdates(
   }
 
   return nextState;
-}
+};
 
-function cloneRecord(record: Record<string, unknown>): Record<string, unknown> {
-  return globalThis.structuredClone(record);
-}
-
-function inferUserTurnBoundaryOffsets(messages: TuvrenMessage[]): number[] {
-  const turnBoundaryOffsets: number[] = [];
+/**
+ * Returns a new manifest with `messages` appended to `manifest`'s counters
+ * (role tallies, tool call/result totals, token estimate, boundaries) and
+ * with each {@link ExtensionStateUpdate} shallow-merged into its extension's
+ * state slice. The input manifest is never mutated; `turnBoundaryOffsets`
+ * indexes into `messages` and defaults to its user-message offsets.
+ */
+export const updateContextManifest = (
+  manifest: ContextManifest,
+  messages: TuvrenMessage[],
+  updates: ExtensionStateUpdate[] = [],
+  turnBoundaryOffsets: number[] = inferUserTurnBoundaryOffsets(messages)
+): ContextManifest => {
+  const nextManifest = cloneContextManifest(manifest);
+  const turnBoundaryOffsetSet = new Set(turnBoundaryOffsets);
 
   for (const [index, message] of messages.entries()) {
-    if (message.role === "user") {
-      turnBoundaryOffsets.push(index);
-    }
+    appendMessage(nextManifest, message, turnBoundaryOffsetSet.has(index));
   }
 
-  return turnBoundaryOffsets;
-}
+  nextManifest.extensions = applyExtensionStateUpdates(
+    nextManifest.extensions,
+    updates
+  );
 
-function cloneCountRecord(
-  record: Record<string, number>
-): Record<string, number> {
-  return { ...record };
-}
+  return nextManifest;
+};
 
-function asRecord(value: unknown): Record<string, unknown> {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-
-  return {};
-}
+/**
+ * Builds a `ContextManifest` from a full message history plus optional
+ * initial per-extension state. Turn boundaries default to the offsets of the
+ * user messages when `turnBoundaryOffsets` is not supplied.
+ */
+export const createContextManifest = (
+  messages: TuvrenMessage[],
+  extensionState: Record<string, unknown> = {},
+  turnBoundaryOffsets: number[] = inferUserTurnBoundaryOffsets(messages)
+): ContextManifest => {
+  const manifest = createEmptyContextManifest();
+  manifest.extensions = cloneRecord(extensionState);
+  return updateContextManifest(manifest, messages, [], turnBoundaryOffsets);
+};

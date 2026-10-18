@@ -58,7 +58,10 @@ import { createHash } from "node:crypto";
  * fixed-length, opaque hex digest suitable for presenting to an external system
  * as an idempotency key.
  */
-export function deriveIdempotencyKey(turnId: string, callId: string): string {
+export const deriveIdempotencyKey = (
+  turnId: string,
+  callId: string
+): string => {
   const canonical = JSON.stringify([turnId, callId]);
   return createHash("sha256").update(canonical).digest("hex");
-}
+};

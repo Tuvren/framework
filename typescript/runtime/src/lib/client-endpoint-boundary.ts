@@ -190,8 +190,6 @@ class BasicClientEndpointBoundary implements ClientEndpointBoundary {
   }
 }
 
-export function createClientEndpointBoundary(
+export const createClientEndpointBoundary = (
   endpoints: AttachedClientEndpoint[]
-): ClientEndpointBoundary {
-  return new BasicClientEndpointBoundary(endpoints);
-}
+): ClientEndpointBoundary => new BasicClientEndpointBoundary(endpoints);

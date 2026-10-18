@@ -97,6 +97,5 @@ class BasicCapabilityRegistry implements CapabilityRegistry {
   }
 }
 
-export function createCapabilityRegistry(): CapabilityRegistry {
-  return new BasicCapabilityRegistry();
-}
+export const createCapabilityRegistry = (): CapabilityRegistry =>
+  new BasicCapabilityRegistry();

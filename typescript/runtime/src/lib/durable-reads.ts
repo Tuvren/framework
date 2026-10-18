@@ -64,11 +64,10 @@ interface BranchMessagesCursorPayload {
 
 // ── Cursor encode/decode helpers (KRT-AO002) ─────────────────────────────────
 
-function encodeCursor<T>(payload: T): string {
-  return Buffer.from(JSON.stringify(payload)).toString("base64url");
-}
+const encodeCursor = <T>(payload: T): string =>
+  Buffer.from(JSON.stringify(payload)).toString("base64url");
 
-function decodeCursorRaw(token: string): unknown {
+const decodeCursorRaw = (token: string): unknown => {
   // Buffer.from(token, "base64url") does not throw on invalid input; it
   // silently emits garbage bytes. JSON.parse then catches the malformed result.
   const raw = Buffer.from(token, "base64url").toString("utf-8");
@@ -79,11 +78,11 @@ function decodeCursorRaw(token: string): unknown {
       code: "invalid_durable_read_cursor",
     });
   }
-}
+};
 
-function decodeListThreadsCursor(
+const decodeListThreadsCursor = (
   token: ListThreadsCursor
-): ListThreadsCursorPayload {
+): ListThreadsCursorPayload => {
   const parsed = decodeCursorRaw(token);
   if (
     typeof parsed !== "object" ||
@@ -99,11 +98,11 @@ function decodeListThreadsCursor(
     );
   }
   return parsed as ListThreadsCursorPayload;
-}
+};
 
-function decodeTurnHistoryCursor(
+const decodeTurnHistoryCursor = (
   token: TurnHistoryCursor
-): TurnHistoryCursorPayload {
+): TurnHistoryCursorPayload => {
   const parsed = decodeCursorRaw(token);
   if (
     typeof parsed !== "object" ||
@@ -119,11 +118,11 @@ function decodeTurnHistoryCursor(
     );
   }
   return parsed as TurnHistoryCursorPayload;
-}
+};
 
-function decodeBranchMessagesCursor(
+const decodeBranchMessagesCursor = (
   token: BranchMessagesCursor
-): BranchMessagesCursorPayload {
+): BranchMessagesCursorPayload => {
   const parsed = decodeCursorRaw(token);
   if (
     typeof parsed !== "object" ||
@@ -142,18 +141,18 @@ function decodeBranchMessagesCursor(
     );
   }
   return parsed as BranchMessagesCursorPayload;
-}
+};
 
 // ── listThreads (KRT-AO003) ──────────────────────────────────────────────────
 
-export async function listThreads(
+export const listThreads = async (
   kernel: RuntimeKernel,
   options?: {
     limit?: number;
     cursor?: ListThreadsCursor;
     filter?: { schemaId?: string };
   }
-): Promise<{ threads: ThreadSummary[]; nextCursor?: ListThreadsCursor }> {
+): Promise<{ threads: ThreadSummary[]; nextCursor?: ListThreadsCursor }> => {
   let cursorPayload: ListThreadsCursorPayload | undefined;
 
   if (options?.cursor !== undefined) {
@@ -211,28 +210,28 @@ export async function listThreads(
   };
 
   return { nextCursor: encodeCursor(nextCursorPayload), threads };
-}
+};
 
 // ── listBranches (KRT-AO003) ─────────────────────────────────────────────────
 
-export async function listBranches(
+export const listBranches = async (
   kernel: RuntimeKernel,
   input: { threadId: string }
-): Promise<BranchSummary[]> {
+): Promise<BranchSummary[]> => {
   const entries = await kernel.branch.list(input.threadId);
   return entries.map(([branchId, headTurnNodeHash]) => ({
     branchId,
     headTurnNodeHash,
     threadId: input.threadId,
   }));
-}
+};
 
 // ── Shared helper: build TurnSnapshot from a turn node hash ──────────────────
 
-async function buildTurnSnapshot(
+const buildTurnSnapshot = async (
   kernel: RuntimeKernel,
   turnNodeHash: string
-): Promise<TurnSnapshot> {
+): Promise<TurnSnapshot> => {
   const node = await kernel.node.get(turnNodeHash);
 
   if (node === null) {
@@ -274,18 +273,18 @@ async function buildTurnSnapshot(
     turnNodeHash: node.hash,
     turnTreeHash: node.turnTreeHash,
   };
-}
+};
 
 // ── getTurnState (KRT-AO004) ─────────────────────────────────────────────────
 
-export async function getTurnState(
+export const getTurnState = async (
   kernel: RuntimeKernel,
   input: {
     threadId: string;
     branchId: string;
     turnNodeHash?: string;
   }
-): Promise<TurnSnapshot> {
+): Promise<TurnSnapshot> => {
   const branch = await kernel.branch.get(input.branchId);
   if (branch === null) {
     throw new TuvrenLineageError(`branch "${input.branchId}" does not exist`, {
@@ -319,7 +318,7 @@ export async function getTurnState(
     `turn node "${input.turnNodeHash}" is not on the lineage of branch "${input.branchId}"`,
     { code: "turn_node_not_on_branch_lineage" }
   );
-}
+};
 
 // ── getTurnHistory (KRT-AO004) ────────────────────────────────────────────────
 // Contract (TechSpec §5.5.3) returns AsyncIterableIterator<TurnSnapshot>,
@@ -329,7 +328,7 @@ export async function getTurnState(
 // Emitting resumable cursors from the generator itself requires a contract
 // amendment; deferred to a future epic.
 
-export async function* getTurnHistory(
+export const getTurnHistory = async function* getTurnHistory(
   kernel: RuntimeKernel,
   input: { threadId: string; branchId: string },
   options?: { limit?: number; before?: TurnHistoryCursor }
@@ -394,14 +393,14 @@ export async function* getTurnHistory(
     yield snapshot;
     count += 1;
   }
-}
+};
 
 // ── readBranchMessages helpers ───────────────────────────────────────────────
 
-async function resolveTreeMessageHashes(
+const resolveTreeMessageHashes = async (
   kernel: RuntimeKernel,
   treeHash: string
-): Promise<string[]> {
+): Promise<string[]> => {
   try {
     const resolved = await kernel.tree.resolve(treeHash, "messages");
     if (Array.isArray(resolved)) {
@@ -417,14 +416,14 @@ async function resolveTreeMessageHashes(
     }
     throw error;
   }
-}
+};
 
-async function assertPrefixStability(
+const assertPrefixStability = async (
   kernel: RuntimeKernel,
   recordedHead: string,
   position: number,
   currentMessageHashes: string[]
-): Promise<void> {
+): Promise<void> => {
   // A position-0 cursor claims a specific head identity; reject when the
   // head has moved even though there is no prefix to compare.
   if (position === 0) {
@@ -458,14 +457,14 @@ async function assertPrefixStability(
       { code: "durable_read_cursor_head_drift" }
     );
   }
-}
+};
 
-async function resolveCursorStartIndex(
+const resolveCursorStartIndex = async (
   kernel: RuntimeKernel,
   cursorPayload: BranchMessagesCursorPayload,
   currentHead: string,
   messageHashes: string[]
-): Promise<number> {
+): Promise<number> => {
   const {
     positionFromOldest: position,
     branchHeadAtCursorIssuance: recordedHead,
@@ -479,11 +478,11 @@ async function resolveCursorStartIndex(
   }
 
   return position;
-}
+};
 
 // ── readBranchMessages (KRT-AO005) ───────────────────────────────────────────
 
-export async function readBranchMessages(
+export const readBranchMessages = async (
   kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
   input: {
@@ -494,7 +493,7 @@ export async function readBranchMessages(
 ): Promise<{
   messages: (ErasedPayload | TuvrenMessage)[];
   nextCursor?: BranchMessagesCursor;
-}> {
+}> => {
   const cursorPayload =
     input.after === undefined
       ? undefined
@@ -587,4 +586,4 @@ export async function readBranchMessages(
   };
 
   return { messages, nextCursor: encodeCursor(nextCursorPayload) };
-}
+};
