@@ -743,7 +743,7 @@ async function checkpointUserMessage(
       })),
       role: input.message.role,
     }),
-    `${input.stepId}_message`,
+    input.stepId === "incorporate_input" ? "input_message" : "steering_message",
     "message",
     "completed"
   );

@@ -177,8 +177,9 @@ describe("framework-runtime-core", () => {
         const keyedSteering = context.messages.find(
           (message) =>
             message.role === "user" &&
-            "admissionKey" in message &&
-            message.admissionKey === "  host-key-steering  "
+            message.parts.some(
+              (part) => part.type === "text" && part.text === "Keyed steering"
+            )
         );
 
         if (keyedSteering !== undefined) {
@@ -228,6 +229,13 @@ describe("framework-runtime-core", () => {
     );
     await eventsPromise;
 
+    expect(handle.status().phase).toBe("completed");
+    expect(
+      hasAssistantText(
+        await harness.readBranchMessages(thread.branchId),
+        "Saw keyed steering."
+      )
+    ).toBe(true);
     expect(await harness.readBranchMessages(thread.branchId)).toContainEqual({
       admissionKey: "  host-key-steering  ",
       parts: [{ text: "Keyed steering", type: "text" }],

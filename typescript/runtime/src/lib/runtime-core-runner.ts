@@ -296,19 +296,22 @@ export function createRunnerExecutionContext(
 
   const toolRegistrySnapshot =
     host.createReadonlyRunnerToolRegistry(registryForRunner);
+  const runnerMessages = projectMessagesForRunner(headState.messages);
+  const runnerHeadState = {
+    ...headState,
+    messages: runnerMessages,
+  };
 
   return {
     branchId: handle.request.branchId,
     config: host.createRunnerAgentConfigSnapshot(loopState.activeConfig),
     handoff: {
       createContextPlan: (input) =>
-        host.createRunnerHandoffContextPlan(input, headState, loopState),
+        host.createRunnerHandoffContextPlan(input, runnerHeadState, loopState),
     },
     iterationCount,
     manifest: createFrozenSnapshot(headState.manifest),
-    messages: createFrozenSnapshot(
-      projectMessagesForRunner(headState.messages)
-    ),
+    messages: createFrozenSnapshot(runnerMessages),
     runtime: {
       emit: (event) => {
         let clonedEvent: TuvrenStreamEvent;
