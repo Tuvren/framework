@@ -162,7 +162,7 @@
         "equivalent_native_rule": "eslint/require-await",
         "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason",
         "fresh_retained_diagnostics": 0,
-        "fresh_retained_disposition": "original-useAwait-diagnostic-no-longer-fires-after-behavior-preserving-code-fix",
+        "fresh_retained_disposition": "original-useAwait-diagnostic-absent-on-current-source",
         "native_equivalent_firing": true
       },
       {
@@ -173,7 +173,7 @@
         "equivalent_native_rule": "eslint/require-await",
         "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason",
         "fresh_retained_diagnostics": 0,
-        "fresh_retained_disposition": "original-useAwait-diagnostic-no-longer-fires-after-behavior-preserving-code-fix",
+        "fresh_retained_disposition": "original-useAwait-diagnostic-absent-on-current-source",
         "native_equivalent_firing": true
       },
       {
@@ -184,7 +184,7 @@
         "equivalent_native_rule": "eslint/require-await",
         "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason",
         "fresh_retained_diagnostics": 0,
-        "fresh_retained_disposition": "original-useAwait-diagnostic-no-longer-fires-after-behavior-preserving-code-fix",
+        "fresh_retained_disposition": "original-useAwait-diagnostic-absent-on-current-source",
         "native_equivalent_firing": true
       },
       {
@@ -195,7 +195,7 @@
         "equivalent_native_rule": "eslint/require-await",
         "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason",
         "fresh_retained_diagnostics": 0,
-        "fresh_retained_disposition": "original-useAwait-diagnostic-no-longer-fires-after-behavior-preserving-code-fix",
+        "fresh_retained_disposition": "original-useAwait-diagnostic-absent-on-current-source",
         "native_equivalent_firing": true
       }
     ],
