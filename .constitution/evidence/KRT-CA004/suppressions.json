@@ -1,0 +1,2706 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CA004",
+  "milestone": "M33-ticket-final",
+  "source": {
+    "authoritative_predecessor": "5b9fdbb5e1b8b972470a809586f217c2a62c3f31",
+    "stale_dispatch_predecessor": "5a395892cc76e3129278d30799f1cffeb16074bc",
+    "dispatch_correction": "A25 established reviewed M32 HEAD as the authoritative M33 predecessor; the stale M31 dispatch value is not a source identity.",
+    "frozen_candidate_diff_sha256": "99695038d6460a0018459d753deb07f14b6c83758a86af91c353aacee8d1d5fd"
+  },
+  "source_reports": [
+    {
+      "path": ".constitution/evidence/KRT-CA004/M24-core-readiness.json",
+      "sha256": "221d0f71aee93a43c5c5514db9ef20bc02dfe33386ff734efa749ee50ac58029"
+    },
+    {
+      "path": ".constitution/evidence/KRT-CA004/M25-sdk-readiness.json",
+      "sha256": "40266cbe4171fdb7e3215329e1a17e9fc64f20ed6608ea6385c468f7ffaf8e21"
+    },
+    {
+      "path": ".constitution/evidence/KRT-CA004/M26-agui-readiness.json",
+      "sha256": "1a57f7ccdea338b291592ecff4952fc4987cd57e47b6b9e651553e8e44d8c37a"
+    },
+    {
+      "path": ".constitution/evidence/KRT-CA004/M27-stream-core-sse-readiness.json",
+      "sha256": "12ed977445b8fd8e9499f56181e79415eb5ebad652506e35928e665aba1000e1"
+    },
+    {
+      "path": ".constitution/evidence/KRT-CA004/M28-streaming-admission.json",
+      "sha256": "f13fb21d92f1553a03e507733d8721b0378ed2e32fd2df32689ada3f6977a379"
+    },
+    {
+      "path": ".constitution/evidence/KRT-CA004/M29-mcp-readiness.json",
+      "sha256": "6287470001ba78ee6cf0352fdea0547b9842394d709c97d3c2518b553956e146"
+    },
+    {
+      "path": ".constitution/evidence/KRT-CA004/M30-testkit-readiness.json",
+      "sha256": "96c31f361e09619da10cb13813a09d2f5b120123bb334e61a75c34ae46947fd1"
+    },
+    {
+      "path": ".constitution/evidence/KRT-CA004/M31-telemetry-readiness.json",
+      "sha256": "c82b00c22ab3595f0130460800e965c91995133a036c523dd744bfcbbc4fe135"
+    }
+  ],
+  "native_exceptions": {
+    "region_count": 160,
+    "all_firing": true,
+    "unused_directive_diagnostics": 0,
+    "config_overrides": 0,
+    "proof": "The unchanged shipped Oxlint preset, full repository lint, and the explicit certification type-aware unused-directive denial all exited zero on the frozen candidate.",
+    "regions": [
+      {
+        "identity": "typescript/certification/test/framework-typescript-conformance.test.ts:112",
+        "path": "typescript/certification/test/framework-typescript-conformance.test.ts",
+        "line": 112,
+        "rules": [
+          "eslint/no-await-in-loop"
+        ],
+        "reason": "Compile plans sequentially to preserve deterministic validation and first-failure order.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/capabilities/index.ts:17",
+        "path": "typescript/core/src/capabilities/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/capabilities/index.ts:40",
+        "path": "typescript/core/src/capabilities/index.ts",
+        "line": 40,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve every ADR-0056-required @experimental release tag on this public surface.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/errors/index.ts:17",
+        "path": "typescript/core/src/errors/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/events/index.ts:17",
+        "path": "typescript/core/src/events/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/execution/index.ts:17",
+        "path": "typescript/core/src/execution/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/extensions/index.ts:17",
+        "path": "typescript/core/src/extensions/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/index.ts:17",
+        "path": "typescript/core/src/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/capability-shapes.ts:27",
+        "path": "typescript/core/src/lib/capability-shapes.ts",
+        "line": 27,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the published public method signatures and their method bivariance under strictFunctionTypes.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/capability-shapes.ts:294",
+        "path": "typescript/core/src/lib/capability-shapes.ts",
+        "line": 294,
+        "rules": [
+          "typescript/no-redundant-type-constituents"
+        ],
+        "reason": "Preserve the published sync-or-Promise return spelling and its exact API snapshot.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/payload-codec.ts:36",
+        "path": "typescript/core/src/lib/payload-codec.ts",
+        "line": 36,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the published codec method signatures and their method bivariance under strictFunctionTypes.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/payload-codec.ts:140",
+        "path": "typescript/core/src/lib/payload-codec.ts",
+        "line": 140,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve the shared identity codec's exact Promise instances and scheduling behavior.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/runner-contract-shapes.ts:31",
+        "path": "typescript/core/src/lib/runner-contract-shapes.ts",
+        "line": 31,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the published runner method signatures and their method bivariance under strictFunctionTypes.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/runner-contract-shapes.ts:183",
+        "path": "typescript/core/src/lib/runner-contract-shapes.ts",
+        "line": 183,
+        "rules": [
+          "typescript/array-type"
+        ],
+        "reason": "Preserve the frozen public return-type spelling in the API snapshot.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:28",
+        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
+        "line": 28,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the frozen public method signatures and their method bivariance under strictFunctionTypes.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:50",
+        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
+        "line": 50,
+        "rules": [
+          "typescript/consistent-indexed-object-style"
+        ],
+        "reason": "Preserve the frozen recursive JSON Schema alias spelling in the public API snapshot.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:64",
+        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
+        "line": 64,
+        "rules": [
+          "typescript/ban-types"
+        ],
+        "reason": "Preserve the intentional open-string union without collapsing editor completion for known values.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:77",
+        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
+        "line": 77,
+        "rules": [
+          "typescript/ban-types"
+        ],
+        "reason": "Preserve the intentional open-string union without collapsing editor completion for known values.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:1116",
+        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
+        "line": 1116,
+        "rules": [
+          "typescript/no-redundant-type-constituents"
+        ],
+        "reason": "Preserve the frozen sync-or-Promise callable spelling in the public API snapshot.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/runtime-contract-shapes.ts:1760",
+        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
+        "line": 1760,
+        "rules": [
+          "typescript/no-redundant-type-constituents"
+        ],
+        "reason": "Preserve the frozen sync-or-Promise sandbox callable spelling in the public API snapshot.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/tuvren-error.ts:17",
+        "path": "typescript/core/src/lib/tuvren-error.ts",
+        "line": 17,
+        "rules": [
+          "eslint/max-classes-per-file"
+        ],
+        "reason": "Preserve the intentionally co-located published error family.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/tuvren-error.ts:18",
+        "path": "typescript/core/src/lib/tuvren-error.ts",
+        "line": 18,
+        "rules": [
+          "eslint/no-useless-constructor"
+        ],
+        "reason": "Preserve the public constructors that re-expose the protected base constructor.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lib/tuvren-error.ts:19",
+        "path": "typescript/core/src/lib/tuvren-error.ts",
+        "line": 19,
+        "rules": [
+          "unicorn/custom-error-definition"
+        ],
+        "reason": "Preserve dynamic concrete subclass names, including future TuvrenError subclasses.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/lifecycle/index.ts:17",
+        "path": "typescript/core/src/lifecycle/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/messages/index.ts:17",
+        "path": "typescript/core/src/messages/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/provider/index.ts:17",
+        "path": "typescript/core/src/provider/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/runner/index.ts:17",
+        "path": "typescript/core/src/runner/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/security/index.ts:17",
+        "path": "typescript/core/src/security/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/telemetry/index.ts:17",
+        "path": "typescript/core/src/telemetry/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/telemetry/index.ts:115",
+        "path": "typescript/core/src/telemetry/index.ts",
+        "line": 115,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the frozen public sink method signatures and their method bivariance.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/telemetry/index.ts:126",
+        "path": "typescript/core/src/telemetry/index.ts",
+        "line": 126,
+        "rules": [
+          "unicorn/no-useless-undefined"
+        ],
+        "reason": "Preserve explicit undefined-returning noop callbacks on the shared frozen sink.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/telemetry/telemetry-destination.ts:93",
+        "path": "typescript/core/src/telemetry/telemetry-destination.ts",
+        "line": 93,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the frozen public destination method signatures and their method bivariance.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/telemetry/telemetry-destination.ts:107",
+        "path": "typescript/core/src/telemetry/telemetry-destination.ts",
+        "line": 107,
+        "rules": [
+          "typescript/array-type"
+        ],
+        "reason": "Preserve the frozen public batch parameter spelling in the API snapshot.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/src/tools/index.ts:17",
+        "path": "typescript/core/src/tools/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/test/runner-contract-guards.test.ts:122",
+        "path": "typescript/core/test/runner-contract-guards.test.ts",
+        "line": 122,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "These fixtures intentionally expose direct Promise resolution and rejection without async wrapper identity or scheduling changes.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/test/runtime-contract-guards-fixtures.ts:50",
+        "path": "typescript/core/test/runtime-contract-guards-fixtures.ts",
+        "line": 50,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "These contract fixtures intentionally return the exact resolved Promise instances used to model the public handle and runtime seams.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/core/test/runtime-contract-guards-fixtures.ts:157",
+        "path": "typescript/core/test/runtime-contract-guards-fixtures.ts",
+        "line": 157,
+        "rules": [
+          "prefer-const"
+        ],
+        "reason": "Preserve the deliberate post-declaration wiring of the recursive handle graph.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/advanced.ts:17",
+        "path": "typescript/sdk/src/advanced.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/index.ts:17",
+        "path": "typescript/sdk/src/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/create-tuvren.ts:59",
+        "path": "typescript/sdk/src/lib/create-tuvren.ts",
+        "line": 59,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the published callable spelling and its method bivariance under strictFunctionTypes.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/create-tuvren.ts:162",
+        "path": "typescript/sdk/src/lib/create-tuvren.ts",
+        "line": 162,
+        "rules": [
+          "typescript/array-type"
+        ],
+        "reason": "Preserve the frozen public API snapshot spelling.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/create-tuvren.ts:189",
+        "path": "typescript/sdk/src/lib/create-tuvren.ts",
+        "line": 189,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the published async-disposal method spelling and its method bivariance.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/create-tuvren.ts:216",
+        "path": "typescript/sdk/src/lib/create-tuvren.ts",
+        "line": 216,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve the backend's exact close Promise identity and rejection timing.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/create-tuvren.ts:219",
+        "path": "typescript/sdk/src/lib/create-tuvren.ts",
+        "line": 219,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve the resolved no-op Promise without adding an async scheduling hop.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/create-tuvren.ts:235",
+        "path": "typescript/sdk/src/lib/create-tuvren.ts",
+        "line": 235,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve the resolved no-op Promise without adding an async scheduling hop.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/create-tuvren.ts:250",
+        "path": "typescript/sdk/src/lib/create-tuvren.ts",
+        "line": 250,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve the owned backend's exact purge Promise identity and rejection timing.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/create-tuvren.ts:335",
+        "path": "typescript/sdk/src/lib/create-tuvren.ts",
+        "line": 335,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve synchronous option validation and the factory's exact resolved Promise timing.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/create-tuvren.ts:402",
+        "path": "typescript/sdk/src/lib/create-tuvren.ts",
+        "line": 402,
+        "rules": [
+          "no-await-in-loop"
+        ],
+        "reason": "Dispose MCP sources sequentially in registration order before the backend, preserving cleanup and error order.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/payload-codec.ts:66",
+        "path": "typescript/sdk/src/lib/payload-codec.ts",
+        "line": 66,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the published keyring method spelling and its method bivariance under strictFunctionTypes.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/schema-authoring.ts:58",
+        "path": "typescript/sdk/src/lib/schema-authoring.ts",
+        "line": 58,
+        "rules": [
+          "typescript/consistent-type-imports"
+        ],
+        "reason": "Preserve the frozen published import()-based ZodSchema alias spelling in the SDK API snapshot.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/schema-authoring.ts:156",
+        "path": "typescript/sdk/src/lib/schema-authoring.ts",
+        "line": 156,
+        "rules": [
+          "typescript/no-unsafe-type-assertion"
+        ],
+        "reason": "Bridge the external schema API's wider JSON object type to Tuvren's frozen JSON Schema contract.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/schema-authoring.ts:183",
+        "path": "typescript/sdk/src/lib/schema-authoring.ts",
+        "line": 183,
+        "rules": [
+          "typescript/no-unsafe-type-assertion"
+        ],
+        "reason": "Preserve the public generic phantom brand without manufacturing a runtime value of T.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/schema-authoring.ts:206",
+        "path": "typescript/sdk/src/lib/schema-authoring.ts",
+        "line": 206,
+        "rules": [
+          "typescript/no-unsafe-type-assertion"
+        ],
+        "reason": "Preserve the public generic phantom brand without manufacturing a runtime value of T.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/schema-authoring.ts:253",
+        "path": "typescript/sdk/src/lib/schema-authoring.ts",
+        "line": 253,
+        "rules": [
+          "typescript/no-unsafe-type-assertion"
+        ],
+        "reason": "Preserve the public generic phantom brand without manufacturing a runtime value of T.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/schema-authoring.ts:325",
+        "path": "typescript/sdk/src/lib/schema-authoring.ts",
+        "line": 325,
+        "rules": [
+          "typescript/no-unsafe-type-assertion"
+        ],
+        "reason": "The preceding public-union branches eliminate normalized, Zod, and Standard schema members; preserve the bare JSON Schema fallback.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/schema-authoring.ts:415",
+        "path": "typescript/sdk/src/lib/schema-authoring.ts",
+        "line": 415,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve synchronous tool results and exact user Promise identity across the public execute seam.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/src/lib/schema-authoring.ts:417",
+        "path": "typescript/sdk/src/lib/schema-authoring.ts",
+        "line": 417,
+        "rules": [
+          "typescript/no-unsafe-type-assertion"
+        ],
+        "reason": "Input is the value accepted by this tool's paired validator; preserve the public generic execute contract at the unparameterized runtime seam.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts:87",
+        "path": "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts",
+        "line": 87,
+        "rules": [
+          "require-await"
+        ],
+        "reason": "This runner intentionally implements the async framework contract while returning its fixture synchronously.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts:153",
+        "path": "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts",
+        "line": 153,
+        "rules": [
+          "no-await-in-loop"
+        ],
+        "reason": "Read each durable message in lineage order so a missing hash is attributed deterministically.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts:200",
+        "path": "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts",
+        "line": 200,
+        "rules": [
+          "no-await-in-loop"
+        ],
+        "reason": "Probe every retained hash sequentially for deterministic lineage diagnostics.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts:212",
+        "path": "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts",
+        "line": 212,
+        "rules": [
+          "no-await-in-loop"
+        ],
+        "reason": "Read each durable message in lineage order so a missing hash is attributed deterministically.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/create-tuvren.test.ts:45",
+        "path": "typescript/sdk/test/create-tuvren.test.ts",
+        "line": 45,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Test doubles return exact Promise instances so disposal identity and rejection timing stay observable.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/create-tuvren.test.ts:292",
+        "path": "typescript/sdk/test/create-tuvren.test.ts",
+        "line": 292,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve the explicit rejected Promise fixture used to test disposal aggregation timing.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/create-tuvren.test.ts:296",
+        "path": "typescript/sdk/test/create-tuvren.test.ts",
+        "line": 296,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve the exact resolved Promise required by the MCP source contract fixture.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/module-resolution.test.ts:66",
+        "path": "typescript/sdk/test/module-resolution.test.ts",
+        "line": 66,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve the runtime's exact rejected Promise while capturing its shared error constructor.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/module-resolution.test.ts:72",
+        "path": "typescript/sdk/test/module-resolution.test.ts",
+        "line": 72,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve the runtime's exact rejected Promise on the repeated contract probe.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/module-resolution.test.ts:95",
+        "path": "typescript/sdk/test/module-resolution.test.ts",
+        "line": 95,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve the runtime's exact rejected Promise while capturing its shared error constructor.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/module-resolution.test.ts:101",
+        "path": "typescript/sdk/test/module-resolution.test.ts",
+        "line": 101,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve the runtime's exact rejected Promise on the repeated contract probe.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts:67",
+        "path": "typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts",
+        "line": 67,
+        "rules": [
+          "require-await"
+        ],
+        "reason": "This runner intentionally implements the async framework contract while returning its fixture synchronously.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts:146",
+        "path": "typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts",
+        "line": 146,
+        "rules": [
+          "no-await-in-loop"
+        ],
+        "reason": "Read each durable message in lineage order so a broken remap is attributed deterministically.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/payload-codec.crypto-shredding.test.ts:66",
+        "path": "typescript/sdk/test/payload-codec.crypto-shredding.test.ts",
+        "line": 66,
+        "rules": [
+          "require-await"
+        ],
+        "reason": "This runner intentionally implements the async framework contract while returning its fixture synchronously.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/payload-codec.crypto-shredding.test.ts:131",
+        "path": "typescript/sdk/test/payload-codec.crypto-shredding.test.ts",
+        "line": 131,
+        "rules": [
+          "no-await-in-loop"
+        ],
+        "reason": "Read each durable message in lineage order so a missing hash is attributed deterministically.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/payload-codec.crypto-shredding.test.ts:186",
+        "path": "typescript/sdk/test/payload-codec.crypto-shredding.test.ts",
+        "line": 186,
+        "rules": [
+          "no-await-in-loop"
+        ],
+        "reason": "Probe every retained hash sequentially for deterministic lineage diagnostics.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/payload-codec.crypto-shredding.test.ts:220",
+        "path": "typescript/sdk/test/payload-codec.crypto-shredding.test.ts",
+        "line": 220,
+        "rules": [
+          "no-await-in-loop"
+        ],
+        "reason": "Read each durable message in lineage order so a missing hash is attributed deterministically.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/schema-authoring.test.ts:76",
+        "path": "typescript/sdk/test/schema-authoring.test.ts",
+        "line": 76,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve whether the supplied Standard Schema fixture returns synchronously or returns its exact Promise.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/schema-authoring.test.ts:117",
+        "path": "typescript/sdk/test/schema-authoring.test.ts",
+        "line": 117,
+        "rules": [
+          "typescript/no-unsafe-type-assertion"
+        ],
+        "reason": "These deliberately partial fixtures exercise the SDK's public runtime duck-typing branches without pretending to implement every external library member.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/schema-authoring.test.ts:121",
+        "path": "typescript/sdk/test/schema-authoring.test.ts",
+        "line": 121,
+        "rules": [
+          "typescript/no-unsafe-type-assertion"
+        ],
+        "reason": "This partial Zod fixture intentionally models only the safeParse API consumed by the SDK adapter.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/schema-authoring.test.ts:125",
+        "path": "typescript/sdk/test/schema-authoring.test.ts",
+        "line": 125,
+        "rules": [
+          "typescript/no-unsafe-type-assertion"
+        ],
+        "reason": "This partial Standard Schema fixture intentionally models only the ~standard.validate API consumed by the SDK adapter.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/tenant-offboarding.test.ts:98",
+        "path": "typescript/sdk/test/tenant-offboarding.test.ts",
+        "line": 98,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve the backend's exact purge Promise identity and rejection timing in the hand-built runtime fixture.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/sdk/test/tenant-offboarding.test.ts:101",
+        "path": "typescript/sdk/test/tenant-offboarding.test.ts",
+        "line": 101,
+        "rules": [
+          "require-await"
+        ],
+        "reason": "This runner intentionally implements the async framework contract while returning its fixture synchronously.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/agui/src/index.ts:17",
+        "path": "typescript/streaming/agui/src/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/agui/src/lib/stream-agui.ts:354",
+        "path": "typescript/streaming/agui/src/lib/stream-agui.ts",
+        "line": 354,
+        "rules": [
+          "eslint/complexity"
+        ],
+        "reason": "Protocol projection intentionally keeps the canonical-to-AG-UI mapping table in one switch.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/index.ts:17",
+        "path": "typescript/streaming/core/src/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-core.ts:99",
+        "path": "typescript/streaming/core/src/lib/stream-core.ts",
+        "line": 99,
+        "rules": [
+          "promise/prefer-await-to-then"
+        ],
+        "reason": "Detachment must attach a rejection sink without awaiting or changing pump scheduling.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-core.ts:235",
+        "path": "typescript/streaming/core/src/lib/stream-core.ts",
+        "line": 235,
+        "rules": [
+          "promise/avoid-new"
+        ],
+        "reason": "The queue promise is settled later by push, close, or fail.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-core.ts:243",
+        "path": "typescript/streaming/core/src/lib/stream-core.ts",
+        "line": 243,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Returning Promise.resolve preserves the queue iterator's established settlement timing.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-core.ts:255",
+        "path": "typescript/streaming/core/src/lib/stream-core.ts",
+        "line": 255,
+        "rules": [
+          "eslint/no-await-in-loop",
+          "promise/avoid-new"
+        ],
+        "reason": "Capacity changes asynchronously; each loop iteration must wait for a later consumer signal before rechecking queue state.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-core.ts:467",
+        "path": "typescript/streaming/core/src/lib/stream-core.ts",
+        "line": 467,
+        "rules": [
+          "eslint/no-await-in-loop"
+        ],
+        "reason": "Backpressure requires serial capacity rechecks after each claimed branch becomes writable.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-core.ts:503",
+        "path": "typescript/streaming/core/src/lib/stream-core.ts",
+        "line": 503,
+        "rules": [
+          "eslint/no-await-in-loop"
+        ],
+        "reason": "The single-consumer source and per-event broadcast must advance sequentially to preserve event and backpressure order.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-resume.ts:41",
+        "path": "typescript/streaming/core/src/lib/stream-resume.ts",
+        "line": 41,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established @experimental API stability marker.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-resume.ts:65",
+        "path": "typescript/streaming/core/src/lib/stream-resume.ts",
+        "line": 65,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established @experimental API stability marker.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-resume.ts:116",
+        "path": "typescript/streaming/core/src/lib/stream-resume.ts",
+        "line": 116,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established @experimental API stability marker.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-resume.ts:130",
+        "path": "typescript/streaming/core/src/lib/stream-resume.ts",
+        "line": 130,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established @experimental API stability marker.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-resume.ts:195",
+        "path": "typescript/streaming/core/src/lib/stream-resume.ts",
+        "line": 195,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established @experimental API stability marker.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-resume.ts:276",
+        "path": "typescript/streaming/core/src/lib/stream-resume.ts",
+        "line": 276,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established @experimental API stability marker.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-resume.ts:291",
+        "path": "typescript/streaming/core/src/lib/stream-resume.ts",
+        "line": 291,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established @experimental API stability marker.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-resume.ts:297",
+        "path": "typescript/streaming/core/src/lib/stream-resume.ts",
+        "line": 297,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the established public ReplayBuffer method declarations in generated API output.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-resume.ts:309",
+        "path": "typescript/streaming/core/src/lib/stream-resume.ts",
+        "line": 309,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established @experimental API stability marker.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/test/stream-core.test.ts:41",
+        "path": "typescript/streaming/core/test/stream-core.test.ts",
+        "line": 41,
+        "rules": [
+          "eslint/no-await-in-loop"
+        ],
+        "reason": "This helper must pull the single-consumer iterator sequentially until completion.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/test/stream-core.test.ts:76",
+        "path": "typescript/streaming/core/test/stream-core.test.ts",
+        "line": 76,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "The instrumented iterator intentionally returns already-settled promises to preserve its test timing.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/test/stream-core.test.ts:95",
+        "path": "typescript/streaming/core/test/stream-core.test.ts",
+        "line": 95,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "The instrumented iterator intentionally returns an already-settled cleanup promise.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/test/stream-resume.test.ts:385",
+        "path": "typescript/streaming/core/test/stream-resume.test.ts",
+        "line": 385,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "The probe iterator deliberately returns already-settled promises for deterministic cleanup timing.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/test/stream-resume.test.ts:396",
+        "path": "typescript/streaming/core/test/stream-resume.test.ts",
+        "line": 396,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "The probe iterator deliberately returns an already-settled cleanup promise.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/sse/src/index.ts:17",
+        "path": "typescript/streaming/sse/src/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/sse/src/lib/stream-sse.ts:192",
+        "path": "typescript/streaming/sse/src/lib/stream-sse.ts",
+        "line": 192,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established @experimental API stability marker.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/smoke/package-exports.ts:50",
+        "path": "typescript/streaming/ws/smoke/package-exports.ts",
+        "line": 50,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Return the direct rejected promise from this intentionally unused smoke-test endpoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/index.ts:17",
+        "path": "typescript/streaming/ws/src/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-close-codes.ts:17",
+        "path": "typescript/streaming/ws/src/lib/ws-close-codes.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-close-codes.ts:26",
+        "path": "typescript/streaming/ws/src/lib/ws-close-codes.ts",
+        "line": 26,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-close-codes.ts:38",
+        "path": "typescript/streaming/ws/src/lib/ws-close-codes.ts",
+        "line": 38,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-close-codes.ts:53",
+        "path": "typescript/streaming/ws/src/lib/ws-close-codes.ts",
+        "line": 53,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-close-codes.ts:64",
+        "path": "typescript/streaming/ws/src/lib/ws-close-codes.ts",
+        "line": 64,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-close-codes.ts:73",
+        "path": "typescript/streaming/ws/src/lib/ws-close-codes.ts",
+        "line": 73,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-close-codes.ts:87",
+        "path": "typescript/streaming/ws/src/lib/ws-close-codes.ts",
+        "line": 87,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-messages.ts:17",
+        "path": "typescript/streaming/ws/src/lib/ws-messages.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-messages.ts:36",
+        "path": "typescript/streaming/ws/src/lib/ws-messages.ts",
+        "line": 36,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-messages.ts:56",
+        "path": "typescript/streaming/ws/src/lib/ws-messages.ts",
+        "line": 56,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-messages.ts:73",
+        "path": "typescript/streaming/ws/src/lib/ws-messages.ts",
+        "line": 73,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-messages.ts:87",
+        "path": "typescript/streaming/ws/src/lib/ws-messages.ts",
+        "line": 87,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-messages.ts:104",
+        "path": "typescript/streaming/ws/src/lib/ws-messages.ts",
+        "line": 104,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-messages.ts:119",
+        "path": "typescript/streaming/ws/src/lib/ws-messages.ts",
+        "line": 119,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-messages.ts:153",
+        "path": "typescript/streaming/ws/src/lib/ws-messages.ts",
+        "line": 153,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-messages.ts:244",
+        "path": "typescript/streaming/ws/src/lib/ws-messages.ts",
+        "line": 244,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established API documentation tag.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-session-transport.ts:61",
+        "path": "typescript/streaming/ws/src/lib/ws-session-transport.ts",
+        "line": 61,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the established @experimental API stability markers on the public WebSocket transport surface.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-session-transport.ts:71",
+        "path": "typescript/streaming/ws/src/lib/ws-session-transport.ts",
+        "line": 71,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the established public socket seam and byte-identical generated declarations.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-session-transport.ts:168",
+        "path": "typescript/streaming/ws/src/lib/ws-session-transport.ts",
+        "line": 168,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the established public transport API and byte-identical generated declarations.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/src/lib/ws-session-transport.ts:733",
+        "path": "typescript/streaming/ws/src/lib/ws-session-transport.ts",
+        "line": 733,
+        "rules": [
+          "promise/prefer-await-to-then",
+          "promise/prefer-await-to-callbacks"
+        ],
+        "reason": "Promise chaining is the transport's serialized ingest queue; replacing it with detached async work would change message ordering and rejection recovery.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:48",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 48,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Return the direct rejected promise from this intentionally unused test endpoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:75",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 75,
+        "rules": [
+          "eslint/require-await"
+        ],
+        "reason": "Intentionally synchronous resolution preserves deterministic test ordering.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:85",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 85,
+        "rules": [
+          "eslint/require-await"
+        ],
+        "reason": "Intentionally synchronous resolution preserves deterministic test ordering.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:111",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 111,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Already-settled and pending iterator results must keep their established promise timing.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:119",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 119,
+        "rules": [
+          "promise/avoid-new"
+        ],
+        "reason": "A never-settling promise models an open connection with no more frames.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:124",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 124,
+        "rules": [
+          "eslint/require-await"
+        ],
+        "reason": "Intentionally synchronous resolution preserves deterministic test ordering.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:139",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 139,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Returning the already-settled promise preserves deterministic iterator timing.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:232",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 232,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "The fake alternates between already-settled and externally-settled promises.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:241",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 241,
+        "rules": [
+          "promise/avoid-new"
+        ],
+        "reason": "The next pushed event settles this pending iterator promise.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:255",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 255,
+        "rules": [
+          "promise/avoid-new"
+        ],
+        "reason": "The fake result deliberately never settles during these transport tests.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:259",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 259,
+        "rules": [
+          "promise/prefer-await-to-then"
+        ],
+        "reason": "Attach a rejection sink without awaiting or changing the fake handle's timing.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:265",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 265,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Preserve the exact never-settling promise owned by this fake handle.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:357",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 357,
+        "rules": [
+          "eslint/no-await-in-loop"
+        ],
+        "reason": "Each microtask turn must settle before scheduling the next to flush chained transport work deterministically.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:362",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 362,
+        "rules": [
+          "promise/avoid-new"
+        ],
+        "reason": "A timer-backed promise advances the test through one macrotask turn.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:368",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 368,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Return the timer-backed promise directly so callers observe the requested delay's established settlement timing.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts:370",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "line": 370,
+        "rules": [
+          "promise/avoid-new"
+        ],
+        "reason": "Tests require a timer-backed delay with the requested duration.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/ws-session-transport.test.ts:188",
+        "path": "typescript/streaming/ws/test/ws-session-transport.test.ts",
+        "line": 188,
+        "rules": [
+          "unicorn/consistent-function-scoping"
+        ],
+        "reason": "Keep this setup helper local to the happy-path scenario group that owns it.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/ws-session-transport.test.ts:260",
+        "path": "typescript/streaming/ws/test/ws-session-transport.test.ts",
+        "line": 260,
+        "rules": [
+          "eslint/prefer-const"
+        ],
+        "reason": "The callback closes over this binding before the transport can be assigned.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/ws-session-transport.test.ts:651",
+        "path": "typescript/streaming/ws/test/ws-session-transport.test.ts",
+        "line": 651,
+        "rules": [
+          "unicorn/consistent-function-scoping"
+        ],
+        "reason": "Keep this setup helper local to the inbound-routing scenario group that owns it.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/ws-session-transport.test.ts:733",
+        "path": "typescript/streaming/ws/test/ws-session-transport.test.ts",
+        "line": 733,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Return the exact externally-settled authorization promise used to prove ingest serialization.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/ws/test/ws-session-transport.test.ts:735",
+        "path": "typescript/streaming/ws/test/ws-session-transport.test.ts",
+        "line": 735,
+        "rules": [
+          "promise/avoid-new"
+        ],
+        "reason": "The test resolves this promise explicitly after proving later ingest calls remain queued.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/telemetry/otel/src/index.ts:17",
+        "path": "typescript/telemetry/otel/src/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/telemetry/otel/src/lib/otel-telemetry-sink.ts:29",
+        "path": "typescript/telemetry/otel/src/lib/otel-telemetry-sink.ts",
+        "line": 29,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @defaultValue tag in the published option documentation.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/telemetry/semconv/src/index.ts:17",
+        "path": "typescript/telemetry/semconv/src/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/testkit/src/index.ts:17",
+        "path": "typescript/testkit/src/index.ts",
+        "line": 17,
+        "rules": [
+          "jsdoc/check-tag-names"
+        ],
+        "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/testkit/src/lib/framework-testkit.ts:66",
+        "path": "typescript/testkit/src/lib/framework-testkit.ts",
+        "line": 66,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the published testkit method declaration and generated API spelling.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/testkit/src/lib/framework-testkit.ts:184",
+        "path": "typescript/testkit/src/lib/framework-testkit.ts",
+        "line": 184,
+        "rules": [
+          "eslint/no-await-in-loop"
+        ],
+        "reason": "Candidate fixture paths have precedence; read them serially and stop at the first existing file.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/testkit/src/lib/framework-testkit.ts:373",
+        "path": "typescript/testkit/src/lib/framework-testkit.ts",
+        "line": 373,
+        "rules": [
+          "eslint/no-await-in-loop",
+          "promise/avoid-new"
+        ],
+        "reason": "Polling must wait between serial condition checks, and setTimeout requires a Promise bridge.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/testkit/src/lib/framework-testkit.ts:396",
+        "path": "typescript/testkit/src/lib/framework-testkit.ts",
+        "line": 396,
+        "rules": [
+          "promise/avoid-new"
+        ],
+        "reason": "Yielding one timer turn requires a Promise bridge around setTimeout.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/tools/mcp-client/src/lib/mcp-sdk-client.ts:211",
+        "path": "typescript/tools/mcp-client/src/lib/mcp-sdk-client.ts",
+        "line": 211,
+        "rules": [
+          "eslint/no-await-in-loop"
+        ],
+        "reason": "Each request needs the previous page's cursor, so MCP pagination is necessarily sequential.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/tools/mcp-client/src/lib/mcp-tool-source.ts:78",
+        "path": "typescript/tools/mcp-client/src/lib/mcp-tool-source.ts",
+        "line": 78,
+        "rules": [
+          "typescript/method-signature-style"
+        ],
+        "reason": "Preserve the published method declarations for the MCP source API.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/tools/mcp-client/src/lib/mcp-tool-source.ts:593",
+        "path": "typescript/tools/mcp-client/src/lib/mcp-tool-source.ts",
+        "line": 593,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "Return the internal connection promise unchanged so callers retain its established identity and settlement timing.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/tools/mcp-client/test/mcp-client.test.ts:100",
+        "path": "typescript/tools/mcp-client/test/mcp-client.test.ts",
+        "line": 100,
+        "rules": [
+          "typescript/promise-function-async"
+        ],
+        "reason": "MCP test doubles return exact settled or rejected promises so transport lifecycle and rejection timing remain explicit.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      }
+    ]
+  },
+  "legacy_biome": {
+    "source_ledger": ".constitution/evidence/KRT-CA002/suppressions.json",
+    "removal_count": 36,
+    "remaining_relevant_directives": 0,
+    "drift": {
+      "added": [],
+      "reason_changed": [],
+      "unreconciled": []
+    },
+    "entries": [
+      {
+        "identity": "typescript/core/src/capabilities/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/capabilities/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "original-retained-but-fresh-removal-probe-shows-no-retained-biome-diagnostic",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/core/src/capabilities/index.ts::assist/source/organizeImports::1",
+        "path": "typescript/core/src/capabilities/index.ts",
+        "rule": "assist/source/organizeImports",
+        "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+        "retained_checker_disposition": "original-retained-but-fresh-removal-probe-shows-no-retained-biome-diagnostic",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": null,
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/core/src/errors/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/errors/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/core/src/events/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/events/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/core/src/execution/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/execution/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/core/src/extensions/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/extensions/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "original-retained-but-fresh-removal-probe-shows-no-retained-biome-diagnostic",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/core/src/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package entrypoint is the intentional public contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/core/src/lib/runner-contracts.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/lib/runner-contracts.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/core/src/lifecycle/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/lifecycle/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/core/src/messages/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/messages/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/core/src/provider/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/provider/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/core/src/runner/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/runner/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/core/src/security/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/security/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/core/src/tools/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/tools/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/sdk/src/advanced.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/sdk/src/advanced.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This subpath entrypoint is the intentional advanced composition surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/sdk/src/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/sdk/src/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package root is the intentional SDK surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "Test runners intentionally match the async framework runner contract.",
+        "retained_checker_disposition": "original-retained-but-fresh-removal-probe-shows-no-retained-biome-diagnostic",
+        "equivalent_native_rule": "eslint/require-await",
+        "native_candidate_rule": "eslint/require-await",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-with-measured-equivalent-native-exception-where-required",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "Test runners intentionally match the async framework runner contract.",
+        "retained_checker_disposition": "original-retained-but-fresh-removal-probe-shows-no-retained-biome-diagnostic",
+        "equivalent_native_rule": "eslint/require-await",
+        "native_candidate_rule": "eslint/require-await",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-with-measured-equivalent-native-exception-where-required",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/sdk/test/payload-codec.crypto-shredding.test.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/sdk/test/payload-codec.crypto-shredding.test.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "Test runners intentionally match the async framework runner contract.",
+        "retained_checker_disposition": "original-retained-but-fresh-removal-probe-shows-no-retained-biome-diagnostic",
+        "equivalent_native_rule": "eslint/require-await",
+        "native_candidate_rule": "eslint/require-await",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-with-measured-equivalent-native-exception-where-required",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/sdk/test/tenant-offboarding.test.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/sdk/test/tenant-offboarding.test.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "Test runners intentionally match the async framework runner contract.",
+        "retained_checker_disposition": "original-retained-but-fresh-removal-probe-shows-no-retained-biome-diagnostic",
+        "equivalent_native_rule": "eslint/require-await",
+        "native_candidate_rule": "eslint/require-await",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-with-measured-equivalent-native-exception-where-required",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/streaming/agui/src/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/streaming/agui/src/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package entrypoint is the intentional public implementation surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/streaming/agui/src/lib/stream-agui.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
+        "path": "typescript/streaming/agui/src/lib/stream-agui.ts",
+        "rule": "lint/complexity/noExcessiveCognitiveComplexity",
+        "original_reason": "Protocol projection intentionally keeps the canonical-to-AG-UI mapping table in one switch.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": null,
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/streaming/core/src/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/streaming/core/src/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package entrypoint is the intentional public implementation surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/streaming/core/src/lib/stream-core.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/streaming/core/src/lib/stream-core.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "Async generators must remain async even when fixture production is synchronous.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "eslint/require-await",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/streaming/core/test/stream-core.test.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/streaming/core/test/stream-core.test.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "Async generators must remain async even when fixture production is synchronous.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "eslint/require-await",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/streaming/sse/src/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/streaming/sse/src/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package entrypoint is the intentional public implementation surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/streaming/sse/test/sse-decoder.test.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/streaming/sse/test/sse-decoder.test.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "eslint/require-await",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/streaming/ws/src/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/streaming/ws/src/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package entrypoint is the intentional public implementation surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "intentionally synchronous resolution for deterministic test ordering.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": "eslint/require-await",
+        "native_candidate_rule": "eslint/require-await",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-with-measured-equivalent-native-exception-where-required",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts::lint/suspicious/useAwait::2",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "intentionally synchronous resolution for deterministic test ordering.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": "eslint/require-await",
+        "native_candidate_rule": "eslint/require-await",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-with-measured-equivalent-native-exception-where-required",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/streaming/ws/test/session-test-helpers.ts::lint/suspicious/useAwait::3",
+        "path": "typescript/streaming/ws/test/session-test-helpers.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "intentionally synchronous resolution for deterministic test ordering.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": "eslint/require-await",
+        "native_candidate_rule": "eslint/require-await",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-with-measured-equivalent-native-exception-where-required",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/telemetry/otel/src/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/telemetry/otel/src/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package entrypoint is the intentional public export surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/telemetry/semconv/src/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/telemetry/semconv/src/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package entrypoint is the intentional public generated-sink surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/testkit/src/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/testkit/src/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package entrypoint is the intentional testkit surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/testkit/src/lib/framework-testkit.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/testkit/src/lib/framework-testkit.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "Async generators must remain async even for synchronous fixtures.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "eslint/require-await",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      },
+      {
+        "identity": "typescript/tools/mcp-client/src/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/tools/mcp-client/src/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package entrypoint is the intentional MCP client surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "equivalent_native_rule": null,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "final_native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "currently_retained": false
+      }
+    ]
+  },
+  "final_ownership": {
+    "project_count": 12,
+    "oxc_project_count": 11,
+    "json_only_project_count": 1,
+    "selected_code_count": 107,
+    "selected_code_files": [
+      "typescript/certification/test/framework-typescript-conformance.test.ts",
+      "typescript/core/src/capabilities/index.ts",
+      "typescript/core/src/errors/index.ts",
+      "typescript/core/src/events/index.ts",
+      "typescript/core/src/execution/index.ts",
+      "typescript/core/src/extensions/index.ts",
+      "typescript/core/src/index.ts",
+      "typescript/core/src/lib/capability-error-codes.ts",
+      "typescript/core/src/lib/capability-shapes.ts",
+      "typescript/core/src/lib/kernel-records.ts",
+      "typescript/core/src/lib/payload-codec.ts",
+      "typescript/core/src/lib/runner-contract-guards.ts",
+      "typescript/core/src/lib/runner-contract-shapes.ts",
+      "typescript/core/src/lib/runner-contracts.ts",
+      "typescript/core/src/lib/runtime-content-approval-predicates.ts",
+      "typescript/core/src/lib/runtime-context-manifest-predicates.ts",
+      "typescript/core/src/lib/runtime-contract-guards.ts",
+      "typescript/core/src/lib/runtime-contract-predicates.ts",
+      "typescript/core/src/lib/runtime-contract-shapes.ts",
+      "typescript/core/src/lib/scope.ts",
+      "typescript/core/src/lib/secret-pattern-screening.ts",
+      "typescript/core/src/lib/tuvren-error.ts",
+      "typescript/core/src/lifecycle/index.ts",
+      "typescript/core/src/messages/index.ts",
+      "typescript/core/src/provider/index.ts",
+      "typescript/core/src/runner/index.ts",
+      "typescript/core/src/security/index.ts",
+      "typescript/core/src/telemetry/index.ts",
+      "typescript/core/src/telemetry/telemetry-destination.ts",
+      "typescript/core/src/tools/index.ts",
+      "typescript/core/test/admission-key-contracts.test.ts",
+      "typescript/core/test/events-json-schema.test.ts",
+      "typescript/core/test/payload-codec.test.ts",
+      "typescript/core/test/runner-contract-guards.test.ts",
+      "typescript/core/test/runtime-contract-guards-fixtures.ts",
+      "typescript/core/test/runtime-contract-guards.approval.test.ts",
+      "typescript/core/test/runtime-contract-guards.execution-shape.test.ts",
+      "typescript/core/test/runtime-contract-guards.manifest-status.test.ts",
+      "typescript/core/test/runtime-contract-guards.test.ts",
+      "typescript/core/test/runtime-contract-guards.tool-definition.test.ts",
+      "typescript/core/test/runtime-contract-guards.validation.test.ts",
+      "typescript/core/test/secret-pattern-screening.test.ts",
+      "typescript/core/tsup.config.ts",
+      "typescript/sdk/src/advanced.ts",
+      "typescript/sdk/src/index.ts",
+      "typescript/sdk/src/lib/create-tuvren.ts",
+      "typescript/sdk/src/lib/payload-codec.ts",
+      "typescript/sdk/src/lib/schema-authoring.ts",
+      "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts",
+      "typescript/sdk/test/create-tuvren.test.ts",
+      "typescript/sdk/test/module-resolution.test.ts",
+      "typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts",
+      "typescript/sdk/test/payload-codec.crypto-shredding.test.ts",
+      "typescript/sdk/test/payload-codec.test.ts",
+      "typescript/sdk/test/schema-authoring.test.ts",
+      "typescript/sdk/test/tenant-offboarding.test.ts",
+      "typescript/sdk/tsup.config.ts",
+      "typescript/streaming/agui/smoke/package-exports.ts",
+      "typescript/streaming/agui/src/index.ts",
+      "typescript/streaming/agui/src/lib/stream-agui.ts",
+      "typescript/streaming/agui/test/stream-agui.test.ts",
+      "typescript/streaming/agui/tsup.config.ts",
+      "typescript/streaming/core/smoke/package-exports.ts",
+      "typescript/streaming/core/src/index.ts",
+      "typescript/streaming/core/src/lib/stream-core.ts",
+      "typescript/streaming/core/src/lib/stream-resume.ts",
+      "typescript/streaming/core/test/stream-core.test.ts",
+      "typescript/streaming/core/test/stream-resume.test.ts",
+      "typescript/streaming/core/tsup.config.ts",
+      "typescript/streaming/sse/smoke/package-exports.ts",
+      "typescript/streaming/sse/src/index.ts",
+      "typescript/streaming/sse/src/lib/sse-decoder.ts",
+      "typescript/streaming/sse/src/lib/stream-sse.ts",
+      "typescript/streaming/sse/test/sse-decoder.test.ts",
+      "typescript/streaming/sse/test/stream-sse.test.ts",
+      "typescript/streaming/sse/tsup.config.ts",
+      "typescript/streaming/ws/smoke/package-exports.ts",
+      "typescript/streaming/ws/src/index.ts",
+      "typescript/streaming/ws/src/lib/ws-close-codes.ts",
+      "typescript/streaming/ws/src/lib/ws-messages.ts",
+      "typescript/streaming/ws/src/lib/ws-session-transport.ts",
+      "typescript/streaming/ws/test/session-test-helpers.ts",
+      "typescript/streaming/ws/test/ws-close-codes.test.ts",
+      "typescript/streaming/ws/test/ws-messages.test.ts",
+      "typescript/streaming/ws/test/ws-session-transport.test.ts",
+      "typescript/streaming/ws/test/ws-transport-policies.test.ts",
+      "typescript/streaming/ws/tsup.config.ts",
+      "typescript/telemetry/otel/smoke/package-exports.ts",
+      "typescript/telemetry/otel/src/index.ts",
+      "typescript/telemetry/otel/src/lib/otel-telemetry-sink.ts",
+      "typescript/telemetry/otel/test/otel-telemetry-sink.test.ts",
+      "typescript/telemetry/otel/tsup.config.ts",
+      "typescript/telemetry/semconv/smoke/package-exports.ts",
+      "typescript/telemetry/semconv/src/index.ts",
+      "typescript/telemetry/semconv/test/tuvren-runtime-telemetry.test.ts",
+      "typescript/telemetry/semconv/tsup.config.ts",
+      "typescript/testkit/smoke/package-exports.ts",
+      "typescript/testkit/src/index.ts",
+      "typescript/testkit/src/lib/framework-testkit.ts",
+      "typescript/testkit/test/framework-testkit.test.ts",
+      "typescript/testkit/tsup.config.ts",
+      "typescript/tools/mcp-client/smoke/package-exports.ts",
+      "typescript/tools/mcp-client/src/index.ts",
+      "typescript/tools/mcp-client/src/lib/mcp-sdk-client.ts",
+      "typescript/tools/mcp-client/src/lib/mcp-tool-source.ts",
+      "typescript/tools/mcp-client/test/mcp-client.test.ts",
+      "typescript/tools/mcp-client/tsup.config.ts"
+    ],
+    "selected_json_count": 76,
+    "selected_json_files": [
+      "typescript/certification-batteries-included/project.json",
+      "typescript/certification/package.json",
+      "typescript/certification/project.json",
+      "typescript/certification/tsconfig.json",
+      "typescript/certification/tsconfig.typecheck.json",
+      "typescript/core/package.json",
+      "typescript/core/project.json",
+      "typescript/core/tsconfig.dts.json",
+      "typescript/core/tsconfig.json",
+      "typescript/core/tsconfig.lib.json",
+      "typescript/core/tsconfig.spec.json",
+      "typescript/core/tsconfig.tsup.json",
+      "typescript/core/tsconfig.typecheck.json",
+      "typescript/sdk/package.json",
+      "typescript/sdk/project.json",
+      "typescript/sdk/tsconfig.dts.json",
+      "typescript/sdk/tsconfig.json",
+      "typescript/sdk/tsconfig.lib.json",
+      "typescript/sdk/tsconfig.tsup.json",
+      "typescript/sdk/tsconfig.typecheck.json",
+      "typescript/streaming/agui/package.json",
+      "typescript/streaming/agui/project.json",
+      "typescript/streaming/agui/tsconfig.dts.json",
+      "typescript/streaming/agui/tsconfig.json",
+      "typescript/streaming/agui/tsconfig.lib.json",
+      "typescript/streaming/agui/tsconfig.tsup.json",
+      "typescript/streaming/agui/tsconfig.typecheck.json",
+      "typescript/streaming/core/package.json",
+      "typescript/streaming/core/project.json",
+      "typescript/streaming/core/tsconfig.dts.json",
+      "typescript/streaming/core/tsconfig.json",
+      "typescript/streaming/core/tsconfig.lib.json",
+      "typescript/streaming/core/tsconfig.tsup.json",
+      "typescript/streaming/core/tsconfig.typecheck.json",
+      "typescript/streaming/sse/package.json",
+      "typescript/streaming/sse/project.json",
+      "typescript/streaming/sse/tsconfig.dts.json",
+      "typescript/streaming/sse/tsconfig.json",
+      "typescript/streaming/sse/tsconfig.lib.json",
+      "typescript/streaming/sse/tsconfig.tsup.json",
+      "typescript/streaming/sse/tsconfig.typecheck.json",
+      "typescript/streaming/ws/package.json",
+      "typescript/streaming/ws/project.json",
+      "typescript/streaming/ws/tsconfig.dts.json",
+      "typescript/streaming/ws/tsconfig.json",
+      "typescript/streaming/ws/tsconfig.lib.json",
+      "typescript/streaming/ws/tsconfig.tsup.json",
+      "typescript/streaming/ws/tsconfig.typecheck.json",
+      "typescript/telemetry/otel/package.json",
+      "typescript/telemetry/otel/project.json",
+      "typescript/telemetry/otel/tsconfig.dts.json",
+      "typescript/telemetry/otel/tsconfig.json",
+      "typescript/telemetry/otel/tsconfig.lib.json",
+      "typescript/telemetry/otel/tsconfig.tsup.json",
+      "typescript/telemetry/otel/tsconfig.typecheck.json",
+      "typescript/telemetry/semconv/package.json",
+      "typescript/telemetry/semconv/project.json",
+      "typescript/telemetry/semconv/tsconfig.dts.json",
+      "typescript/telemetry/semconv/tsconfig.json",
+      "typescript/telemetry/semconv/tsconfig.lib.json",
+      "typescript/telemetry/semconv/tsconfig.tsup.json",
+      "typescript/telemetry/semconv/tsconfig.typecheck.json",
+      "typescript/testkit/package.json",
+      "typescript/testkit/project.json",
+      "typescript/testkit/tsconfig.dts.json",
+      "typescript/testkit/tsconfig.json",
+      "typescript/testkit/tsconfig.lib.json",
+      "typescript/testkit/tsconfig.tsup.json",
+      "typescript/testkit/tsconfig.typecheck.json",
+      "typescript/tools/mcp-client/package.json",
+      "typescript/tools/mcp-client/project.json",
+      "typescript/tools/mcp-client/tsconfig.dts.json",
+      "typescript/tools/mcp-client/tsconfig.json",
+      "typescript/tools/mcp-client/tsconfig.lib.json",
+      "typescript/tools/mcp-client/tsconfig.tsup.json",
+      "typescript/tools/mcp-client/tsconfig.typecheck.json"
+    ],
+    "projects": [
+      {
+        "project": "shared-core",
+        "root": "typescript/core",
+        "lint_target": {
+          "executor": "nx:run-commands",
+          "options": {
+            "cwd": ".",
+            "commands": [
+              "bunx --bun oxlint --type-aware typescript/core",
+              "bun tools/scripts/json-check.ts typescript/core"
+            ],
+            "parallel": false
+          }
+        },
+        "code_count": 42,
+        "code_files": [
+          "typescript/core/src/capabilities/index.ts",
+          "typescript/core/src/errors/index.ts",
+          "typescript/core/src/events/index.ts",
+          "typescript/core/src/execution/index.ts",
+          "typescript/core/src/extensions/index.ts",
+          "typescript/core/src/index.ts",
+          "typescript/core/src/lib/capability-error-codes.ts",
+          "typescript/core/src/lib/capability-shapes.ts",
+          "typescript/core/src/lib/kernel-records.ts",
+          "typescript/core/src/lib/payload-codec.ts",
+          "typescript/core/src/lib/runner-contract-guards.ts",
+          "typescript/core/src/lib/runner-contract-shapes.ts",
+          "typescript/core/src/lib/runner-contracts.ts",
+          "typescript/core/src/lib/runtime-content-approval-predicates.ts",
+          "typescript/core/src/lib/runtime-context-manifest-predicates.ts",
+          "typescript/core/src/lib/runtime-contract-guards.ts",
+          "typescript/core/src/lib/runtime-contract-predicates.ts",
+          "typescript/core/src/lib/runtime-contract-shapes.ts",
+          "typescript/core/src/lib/scope.ts",
+          "typescript/core/src/lib/secret-pattern-screening.ts",
+          "typescript/core/src/lib/tuvren-error.ts",
+          "typescript/core/src/lifecycle/index.ts",
+          "typescript/core/src/messages/index.ts",
+          "typescript/core/src/provider/index.ts",
+          "typescript/core/src/runner/index.ts",
+          "typescript/core/src/security/index.ts",
+          "typescript/core/src/telemetry/index.ts",
+          "typescript/core/src/telemetry/telemetry-destination.ts",
+          "typescript/core/src/tools/index.ts",
+          "typescript/core/test/admission-key-contracts.test.ts",
+          "typescript/core/test/events-json-schema.test.ts",
+          "typescript/core/test/payload-codec.test.ts",
+          "typescript/core/test/runner-contract-guards.test.ts",
+          "typescript/core/test/runtime-contract-guards-fixtures.ts",
+          "typescript/core/test/runtime-contract-guards.approval.test.ts",
+          "typescript/core/test/runtime-contract-guards.execution-shape.test.ts",
+          "typescript/core/test/runtime-contract-guards.manifest-status.test.ts",
+          "typescript/core/test/runtime-contract-guards.test.ts",
+          "typescript/core/test/runtime-contract-guards.tool-definition.test.ts",
+          "typescript/core/test/runtime-contract-guards.validation.test.ts",
+          "typescript/core/test/secret-pattern-screening.test.ts",
+          "typescript/core/tsup.config.ts"
+        ],
+        "json_count": 8,
+        "json_files": [
+          "typescript/core/package.json",
+          "typescript/core/project.json",
+          "typescript/core/tsconfig.dts.json",
+          "typescript/core/tsconfig.json",
+          "typescript/core/tsconfig.lib.json",
+          "typescript/core/tsconfig.spec.json",
+          "typescript/core/tsconfig.tsup.json",
+          "typescript/core/tsconfig.typecheck.json"
+        ],
+        "nonempty_supported_selection": true
+      },
+      {
+        "project": "sdk",
+        "root": "typescript/sdk",
+        "lint_target": {
+          "executor": "nx:run-commands",
+          "options": {
+            "cwd": ".",
+            "commands": [
+              "bunx --bun oxlint --type-aware typescript/sdk",
+              "bun tools/scripts/json-check.ts typescript/sdk"
+            ],
+            "parallel": false
+          }
+        },
+        "code_count": 14,
+        "code_files": [
+          "typescript/sdk/src/advanced.ts",
+          "typescript/sdk/src/index.ts",
+          "typescript/sdk/src/lib/create-tuvren.ts",
+          "typescript/sdk/src/lib/payload-codec.ts",
+          "typescript/sdk/src/lib/schema-authoring.ts",
+          "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts",
+          "typescript/sdk/test/create-tuvren.test.ts",
+          "typescript/sdk/test/module-resolution.test.ts",
+          "typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts",
+          "typescript/sdk/test/payload-codec.crypto-shredding.test.ts",
+          "typescript/sdk/test/payload-codec.test.ts",
+          "typescript/sdk/test/schema-authoring.test.ts",
+          "typescript/sdk/test/tenant-offboarding.test.ts",
+          "typescript/sdk/tsup.config.ts"
+        ],
+        "json_count": 7,
+        "json_files": [
+          "typescript/sdk/package.json",
+          "typescript/sdk/project.json",
+          "typescript/sdk/tsconfig.dts.json",
+          "typescript/sdk/tsconfig.json",
+          "typescript/sdk/tsconfig.lib.json",
+          "typescript/sdk/tsconfig.tsup.json",
+          "typescript/sdk/tsconfig.typecheck.json"
+        ],
+        "nonempty_supported_selection": true
+      },
+      {
+        "project": "framework-stream-agui",
+        "root": "typescript/streaming/agui",
+        "lint_target": {
+          "executor": "nx:run-commands",
+          "options": {
+            "cwd": ".",
+            "commands": [
+              "bunx --bun oxlint --type-aware typescript/streaming/agui",
+              "bun tools/scripts/json-check.ts typescript/streaming/agui"
+            ],
+            "parallel": false
+          }
+        },
+        "code_count": 5,
+        "code_files": [
+          "typescript/streaming/agui/smoke/package-exports.ts",
+          "typescript/streaming/agui/src/index.ts",
+          "typescript/streaming/agui/src/lib/stream-agui.ts",
+          "typescript/streaming/agui/test/stream-agui.test.ts",
+          "typescript/streaming/agui/tsup.config.ts"
+        ],
+        "json_count": 7,
+        "json_files": [
+          "typescript/streaming/agui/package.json",
+          "typescript/streaming/agui/project.json",
+          "typescript/streaming/agui/tsconfig.dts.json",
+          "typescript/streaming/agui/tsconfig.json",
+          "typescript/streaming/agui/tsconfig.lib.json",
+          "typescript/streaming/agui/tsconfig.tsup.json",
+          "typescript/streaming/agui/tsconfig.typecheck.json"
+        ],
+        "nonempty_supported_selection": true
+      },
+      {
+        "project": "framework-stream-core",
+        "root": "typescript/streaming/core",
+        "lint_target": {
+          "executor": "nx:run-commands",
+          "options": {
+            "cwd": ".",
+            "commands": [
+              "bunx --bun oxlint --type-aware typescript/streaming/core",
+              "bun tools/scripts/json-check.ts typescript/streaming/core"
+            ],
+            "parallel": false
+          }
+        },
+        "code_count": 7,
+        "code_files": [
+          "typescript/streaming/core/smoke/package-exports.ts",
+          "typescript/streaming/core/src/index.ts",
+          "typescript/streaming/core/src/lib/stream-core.ts",
+          "typescript/streaming/core/src/lib/stream-resume.ts",
+          "typescript/streaming/core/test/stream-core.test.ts",
+          "typescript/streaming/core/test/stream-resume.test.ts",
+          "typescript/streaming/core/tsup.config.ts"
+        ],
+        "json_count": 7,
+        "json_files": [
+          "typescript/streaming/core/package.json",
+          "typescript/streaming/core/project.json",
+          "typescript/streaming/core/tsconfig.dts.json",
+          "typescript/streaming/core/tsconfig.json",
+          "typescript/streaming/core/tsconfig.lib.json",
+          "typescript/streaming/core/tsconfig.tsup.json",
+          "typescript/streaming/core/tsconfig.typecheck.json"
+        ],
+        "nonempty_supported_selection": true
+      },
+      {
+        "project": "framework-stream-sse",
+        "root": "typescript/streaming/sse",
+        "lint_target": {
+          "executor": "nx:run-commands",
+          "options": {
+            "cwd": ".",
+            "commands": [
+              "bunx --bun oxlint --type-aware typescript/streaming/sse",
+              "bun tools/scripts/json-check.ts typescript/streaming/sse"
+            ],
+            "parallel": false
+          }
+        },
+        "code_count": 7,
+        "code_files": [
+          "typescript/streaming/sse/smoke/package-exports.ts",
+          "typescript/streaming/sse/src/index.ts",
+          "typescript/streaming/sse/src/lib/sse-decoder.ts",
+          "typescript/streaming/sse/src/lib/stream-sse.ts",
+          "typescript/streaming/sse/test/sse-decoder.test.ts",
+          "typescript/streaming/sse/test/stream-sse.test.ts",
+          "typescript/streaming/sse/tsup.config.ts"
+        ],
+        "json_count": 7,
+        "json_files": [
+          "typescript/streaming/sse/package.json",
+          "typescript/streaming/sse/project.json",
+          "typescript/streaming/sse/tsconfig.dts.json",
+          "typescript/streaming/sse/tsconfig.json",
+          "typescript/streaming/sse/tsconfig.lib.json",
+          "typescript/streaming/sse/tsconfig.tsup.json",
+          "typescript/streaming/sse/tsconfig.typecheck.json"
+        ],
+        "nonempty_supported_selection": true
+      },
+      {
+        "project": "framework-stream-ws",
+        "root": "typescript/streaming/ws",
+        "lint_target": {
+          "executor": "nx:run-commands",
+          "options": {
+            "cwd": ".",
+            "commands": [
+              "bunx --bun oxlint --type-aware typescript/streaming/ws",
+              "bun tools/scripts/json-check.ts typescript/streaming/ws"
+            ],
+            "parallel": false
+          }
+        },
+        "code_count": 11,
+        "code_files": [
+          "typescript/streaming/ws/smoke/package-exports.ts",
+          "typescript/streaming/ws/src/index.ts",
+          "typescript/streaming/ws/src/lib/ws-close-codes.ts",
+          "typescript/streaming/ws/src/lib/ws-messages.ts",
+          "typescript/streaming/ws/src/lib/ws-session-transport.ts",
+          "typescript/streaming/ws/test/session-test-helpers.ts",
+          "typescript/streaming/ws/test/ws-close-codes.test.ts",
+          "typescript/streaming/ws/test/ws-messages.test.ts",
+          "typescript/streaming/ws/test/ws-session-transport.test.ts",
+          "typescript/streaming/ws/test/ws-transport-policies.test.ts",
+          "typescript/streaming/ws/tsup.config.ts"
+        ],
+        "json_count": 7,
+        "json_files": [
+          "typescript/streaming/ws/package.json",
+          "typescript/streaming/ws/project.json",
+          "typescript/streaming/ws/tsconfig.dts.json",
+          "typescript/streaming/ws/tsconfig.json",
+          "typescript/streaming/ws/tsconfig.lib.json",
+          "typescript/streaming/ws/tsconfig.tsup.json",
+          "typescript/streaming/ws/tsconfig.typecheck.json"
+        ],
+        "nonempty_supported_selection": true
+      },
+      {
+        "project": "mcp-client",
+        "root": "typescript/tools/mcp-client",
+        "lint_target": {
+          "executor": "nx:run-commands",
+          "options": {
+            "cwd": ".",
+            "commands": [
+              "bunx --bun oxlint --type-aware typescript/tools/mcp-client",
+              "bun tools/scripts/json-check.ts typescript/tools/mcp-client"
+            ],
+            "parallel": false
+          }
+        },
+        "code_count": 6,
+        "code_files": [
+          "typescript/tools/mcp-client/smoke/package-exports.ts",
+          "typescript/tools/mcp-client/src/index.ts",
+          "typescript/tools/mcp-client/src/lib/mcp-sdk-client.ts",
+          "typescript/tools/mcp-client/src/lib/mcp-tool-source.ts",
+          "typescript/tools/mcp-client/test/mcp-client.test.ts",
+          "typescript/tools/mcp-client/tsup.config.ts"
+        ],
+        "json_count": 7,
+        "json_files": [
+          "typescript/tools/mcp-client/package.json",
+          "typescript/tools/mcp-client/project.json",
+          "typescript/tools/mcp-client/tsconfig.dts.json",
+          "typescript/tools/mcp-client/tsconfig.json",
+          "typescript/tools/mcp-client/tsconfig.lib.json",
+          "typescript/tools/mcp-client/tsconfig.tsup.json",
+          "typescript/tools/mcp-client/tsconfig.typecheck.json"
+        ],
+        "nonempty_supported_selection": true
+      },
+      {
+        "project": "framework-testkit",
+        "root": "typescript/testkit",
+        "lint_target": {
+          "executor": "nx:run-commands",
+          "options": {
+            "cwd": ".",
+            "commands": [
+              "bunx --bun oxlint --type-aware typescript/testkit",
+              "bun tools/scripts/json-check.ts typescript/testkit"
+            ],
+            "parallel": false
+          }
+        },
+        "code_count": 5,
+        "code_files": [
+          "typescript/testkit/smoke/package-exports.ts",
+          "typescript/testkit/src/index.ts",
+          "typescript/testkit/src/lib/framework-testkit.ts",
+          "typescript/testkit/test/framework-testkit.test.ts",
+          "typescript/testkit/tsup.config.ts"
+        ],
+        "json_count": 7,
+        "json_files": [
+          "typescript/testkit/package.json",
+          "typescript/testkit/project.json",
+          "typescript/testkit/tsconfig.dts.json",
+          "typescript/testkit/tsconfig.json",
+          "typescript/testkit/tsconfig.lib.json",
+          "typescript/testkit/tsconfig.tsup.json",
+          "typescript/testkit/tsconfig.typecheck.json"
+        ],
+        "nonempty_supported_selection": true
+      },
+      {
+        "project": "framework-telemetry-otel",
+        "root": "typescript/telemetry/otel",
+        "lint_target": {
+          "executor": "nx:run-commands",
+          "options": {
+            "cwd": ".",
+            "commands": [
+              "bunx --bun oxlint --type-aware typescript/telemetry/otel",
+              "bun tools/scripts/json-check.ts typescript/telemetry/otel"
+            ],
+            "parallel": false
+          }
+        },
+        "code_count": 5,
+        "code_files": [
+          "typescript/telemetry/otel/smoke/package-exports.ts",
+          "typescript/telemetry/otel/src/index.ts",
+          "typescript/telemetry/otel/src/lib/otel-telemetry-sink.ts",
+          "typescript/telemetry/otel/test/otel-telemetry-sink.test.ts",
+          "typescript/telemetry/otel/tsup.config.ts"
+        ],
+        "json_count": 7,
+        "json_files": [
+          "typescript/telemetry/otel/package.json",
+          "typescript/telemetry/otel/project.json",
+          "typescript/telemetry/otel/tsconfig.dts.json",
+          "typescript/telemetry/otel/tsconfig.json",
+          "typescript/telemetry/otel/tsconfig.lib.json",
+          "typescript/telemetry/otel/tsconfig.tsup.json",
+          "typescript/telemetry/otel/tsconfig.typecheck.json"
+        ],
+        "nonempty_supported_selection": true
+      },
+      {
+        "project": "telemetry-semconv",
+        "root": "typescript/telemetry/semconv",
+        "lint_target": {
+          "executor": "nx:run-commands",
+          "options": {
+            "cwd": ".",
+            "commands": [
+              "bunx --bun oxlint --type-aware typescript/telemetry/semconv",
+              "bun tools/scripts/json-check.ts typescript/telemetry/semconv"
+            ],
+            "parallel": false
+          }
+        },
+        "code_count": 4,
+        "code_files": [
+          "typescript/telemetry/semconv/smoke/package-exports.ts",
+          "typescript/telemetry/semconv/src/index.ts",
+          "typescript/telemetry/semconv/test/tuvren-runtime-telemetry.test.ts",
+          "typescript/telemetry/semconv/tsup.config.ts"
+        ],
+        "json_count": 7,
+        "json_files": [
+          "typescript/telemetry/semconv/package.json",
+          "typescript/telemetry/semconv/project.json",
+          "typescript/telemetry/semconv/tsconfig.dts.json",
+          "typescript/telemetry/semconv/tsconfig.json",
+          "typescript/telemetry/semconv/tsconfig.lib.json",
+          "typescript/telemetry/semconv/tsconfig.tsup.json",
+          "typescript/telemetry/semconv/tsconfig.typecheck.json"
+        ],
+        "nonempty_supported_selection": true
+      },
+      {
+        "project": "framework-typescript-certification",
+        "root": "typescript/certification",
+        "lint_target": {
+          "executor": "nx:run-commands",
+          "options": {
+            "cwd": ".",
+            "commands": [
+              "bunx --bun oxlint --type-aware typescript/certification",
+              "bun tools/scripts/json-check.ts typescript/certification"
+            ],
+            "parallel": false
+          }
+        },
+        "code_count": 1,
+        "code_files": [
+          "typescript/certification/test/framework-typescript-conformance.test.ts"
+        ],
+        "json_count": 4,
+        "json_files": [
+          "typescript/certification/package.json",
+          "typescript/certification/project.json",
+          "typescript/certification/tsconfig.json",
+          "typescript/certification/tsconfig.typecheck.json"
+        ],
+        "nonempty_supported_selection": true
+      },
+      {
+        "project": "framework-batteries-included-certification",
+        "root": "typescript/certification-batteries-included",
+        "lint_target": {
+          "executor": "nx:run-commands",
+          "options": {
+            "cwd": ".",
+            "command": "bun tools/scripts/json-check.ts --json-only typescript/certification-batteries-included"
+          }
+        },
+        "code_count": 0,
+        "code_files": [],
+        "json_count": 1,
+        "json_files": [
+          "typescript/certification-batteries-included/project.json"
+        ],
+        "nonempty_supported_selection": true
+      }
+    ],
+    "ca_biome_coverage_entries": [
+      "tools/run-nx.mjs"
+    ]
+  }
+}
