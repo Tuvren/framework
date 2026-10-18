@@ -77,4 +77,94 @@ tickets:
       evidence: Assert the cumulative CW+CV tree matches frozen blobs and passes framework adapter typecheck, retained-Biome lint, and a fresh entrypoint import. Prove only the two historically reviewed early removals are absent, four pending identities on three files retain their original reasons, and compiler resolution reaches no live sibling source. No project configuration, coverage, shared runner, public package, or grading behavior changes.
     flows: []
     certainty: settled
-    status: planned
+    status: done
+decisions:
+  - id: OD-09
+    question: "Should native readiness preserve supported and authority-backed contracts while allowing the selected preset's internal async and error normalizations, or additionally freeze unpromised reflection and scheduling observations?"
+    blocks: [KRT-CV001]
+    options:
+      - name: "Preserve supported contracts and apply the selected preset's internal normalizations"
+        pros:
+          - "Preserves public signatures, domain errors, validation order, durable outcomes and promoted conformance while implementing ADR-0070 without exceptions."
+          - "Permits consistent Promise rejection, internal TypeError and cause preservation selected by the shipped rules."
+        cons:
+          - Changes unpromised internal observations such as synchronous invalid-input throws or generic error constructors.
+      - name: Freeze additional reflection and scheduling observations before migration
+        pros:
+          - Preserves those implementation observations even where no public or promoted contract promises them.
+        cons:
+          - Requires a separate policy ruling before native readiness and may conflict with the selected unchanged preset.
+    recommendation: "Preserve supported contracts and apply the selected preset's internal normalizations"
+    closure: ruling
+    ruler: Repository owner through Stage 3 alignment after this wave
+    waiting_on: "Review the native-readiness evidence, master tests and promoted conformance after the lint migration wave merges."
+    interim:
+      assumption: "ADR-0070 authorizes honest preset-required internal async, TypeError and cause normalization. Preserve supported contracts, documented domain errors and messages, first-validation-failure order, fail-closed behavior, emitted event ordering, commit phases, rollback and durable outcomes. The 2026-10-18 user ruling permits separately authorized intentional breaking API or shape changes with the affected authority, tests and release metadata. Unpromised Promise identity, arbitrary microtask counts, generic internal error constructors and absent cause fields are not additional contracts. No suppressions, overrides, fake awaits or signature workarounds are authorized."
+      applied_by:
+        - KRT-CV001
+        - typescript/conformance-adapter/src/framework-adapter-admission-key-session.ts
+        - typescript/conformance-adapter/src/framework-adapter-capability-policy.ts
+        - typescript/conformance-adapter/src/framework-adapter-event-stream-resume.ts
+        - typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-provider-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-schema-authoring.ts
+        - typescript/conformance-adapter/src/framework-adapter-secret-isolation.ts
+        - typescript/conformance-adapter/src/framework-adapter-session.ts
+        - typescript/conformance-adapter/src/framework-adapter-trust-boundary.ts
+        - typescript/conformance-adapter/src/framework-adapter.ts
+        - typescript/conformance-adapter/src/framework-adapter-batteries-included.ts
+        - typescript/conformance-adapter/src/batteries-included-node-host.ts
+    status: proposed
+    asked:
+      date: 2026-10-18
+      in: EPIC-BY
+closeout:
+  tickets_completed: [KRT-CV001]
+  tickets_deferred: []
+  points_completed: 5
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-CV: the reviewed framework adapter leaf, session bridge, entrypoint and batteries-included slice is assembled from immutable BY provenance, preserves the four final-BY directives, and passes adapter checks, compiler isolation, affected checks and both certification lanes."
+  candidate_terms: []
+  routed_upstream: []
+  follow_ups:
+    - "Stage 3 alignment should rule on OD-09 after the complete lint migration wave and promoted conformance evidence are available."
+    - "EPIC-BY owns activation of the staged admission-key crash leaf and the atomic native target, directive and coverage transition."
+  code_decisions:
+    - summary: "Normalize synchronous adapter helpers into required Promise contracts with bound Promise.try wrappers while preserving arguments, thenables, rejection identity, messages and observable ordering."
+      kind: pattern
+      paths:
+        - typescript/conformance-adapter/src/framework-adapter.ts
+        - typescript/conformance-adapter/src/framework-adapter-batteries-included.ts
+        - typescript/conformance-adapter/src/framework-adapter-capability-policy.ts
+        - typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-provider-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-schema-authoring.ts
+        - typescript/conformance-adapter/src/framework-adapter-secret-isolation.ts
+        - typescript/conformance-adapter/src/framework-adapter-session.ts
+        - typescript/conformance-adapter/src/batteries-included-node-host.ts
+      commit: d7d749d775cf519f3e1ac31cb81934927830c76b
+    - summary: "Dispatch untrusted adapter operation names through a canonical Map with an explicit unknown-operation error so inherited object keys cannot become valid operations."
+      kind: pattern
+      paths:
+        - typescript/conformance-adapter/src/framework-adapter.ts
+      commit: d7d749d775cf519f3e1ac31cb81934927830c76b
+    - summary: "Split oversized framework adapter domains into one-way internal leaf modules while retaining the existing root modules as the sole public factories, composers and dispatch owners."
+      kind: convention
+      paths:
+        - typescript/conformance-adapter/src/framework-adapter-admission-key-crash.ts
+        - typescript/conformance-adapter/src/framework-adapter-input.ts
+        - typescript/conformance-adapter/src/framework-adapter-recovery-result.ts
+        - typescript/conformance-adapter/src/framework-adapter-runtime-lifecycle-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-runtime-telemetry-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-session-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-runtime-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-session.ts
+        - typescript/conformance-adapter/src/framework-adapter.ts
+      commit: d7d749d775cf519f3e1ac31cb81934927830c76b
+  settled: []
