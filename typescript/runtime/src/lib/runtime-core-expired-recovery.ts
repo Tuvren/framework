@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  type EpochMs,
-  type HashString,
-  TuvrenRuntimeError,
-} from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { EpochMs, HashString } from "@tuvren/core";
 import type { InputSignal } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type {
@@ -37,9 +34,11 @@ import {
   classifyRecoveredExecutionMode,
   classifyRecoveredTurnSignalState,
   classifyStaleRecoveryRace,
-  type DurableRuntimeStatus,
   doesSignalMatchRecoveredTurn,
-  type ExpiredExecutionRecovery,
+} from "./runtime-core-recovery.js";
+import type {
+  DurableRuntimeStatus,
+  ExpiredExecutionRecovery,
 } from "./runtime-core-recovery.js";
 import { toOrderedHashArray } from "./runtime-core-response.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
@@ -65,25 +64,178 @@ export interface RuntimeCoreExpiredRecoveryOptions {
  * {@link completeRecoveredTerminalExecution}.
  */
 export interface RuntimeCoreExpiredRecoveryHost {
-  getNow(): EpochMs;
-  getPayloadCodecBinding(): PayloadCodecBinding;
-  getRunLivenessOptions(): RuntimeCoreExpiredRecoveryOptions | undefined;
-  getRuntimeKernel():
+  getNow: () => EpochMs;
+  getPayloadCodecBinding: () => PayloadCodecBinding;
+  getRunLivenessOptions: () => RuntimeCoreExpiredRecoveryOptions | undefined;
+  getRuntimeKernel: () =>
     | (RuntimeKernel & RuntimeKernelRunLiveness)
     | RuntimeKernel;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  publishTurnEnd(
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  publishTurnEnd: (
     handle: RuntimeExecutionHandle,
     status: "completed" | "failed",
     loopState: LoopState
-  ): void;
-  readRecoveredActiveAgentName(
+  ) => void;
+  readRecoveredActiveAgentName: (
     turnTreeHash: string
-  ): Promise<string | undefined>;
-  readRecoveredRuntimeStatus(
+  ) => Promise<string | undefined>;
+  readRecoveredRuntimeStatus: (
     turnTreeHash: string
-  ): Promise<DurableRuntimeStatus | undefined>;
+  ) => Promise<DurableRuntimeStatus | undefined>;
 }
+
+/**
+ * Read the earliest user message incorporated into the recovered turn.
+ *
+ * A turn's `startTurnNodeHash` is its pre-input boundary. Scan the full lineage
+ * back to that boundary for the message staged by `incorporate_input`; a
+ * keyed steering message can be the first consumed user message when the
+ * initial input was never incorporated, so role and position alone do not
+ * establish input provenance.
+ */
+const readRecoveredTurnInitialInputMessage = async (
+  kernel: RuntimeKernel,
+  payloadCodecBinding: PayloadCodecBinding,
+  turnId: string,
+  recoveredHeadTurnNodeHash: HashString
+): Promise<TuvrenMessage | undefined> => {
+  const turn = await kernel.turn.get(turnId);
+
+  if (turn === null) {
+    return undefined;
+  }
+
+  const turnNodes = kernel.node.walkBack(recoveredHeadTurnNodeHash);
+  const turnNodeIterator = turnNodes[Symbol.asyncIterator]();
+  let iteratorExhausted = false;
+
+  const readNextTurnNode = async (
+    initialInputMessage?: TuvrenMessage
+  ): Promise<TuvrenMessage | undefined> => {
+    const nextTurnNode = await turnNodeIterator.next();
+    if (nextTurnNode.done === true) {
+      iteratorExhausted = true;
+      return undefined;
+    }
+    if (nextTurnNode.value.hash === turn.startTurnNodeHash) {
+      return initialInputMessage;
+    }
+
+    const stagedInputs = nextTurnNode.value.consumedStagedResults.filter(
+      (stagedResult) =>
+        stagedResult.objectType === "message" &&
+        stagedResult.taskId === "input_message"
+    );
+    const readStagedInput = async (
+      index: number
+    ): Promise<TuvrenMessage | undefined> => {
+      const stagedResult = stagedInputs[index];
+      if (stagedResult === undefined) {
+        return undefined;
+      }
+
+      const message = await readMessage(
+        kernel,
+        payloadCodecBinding,
+        stagedResult.objectHash
+      );
+      return message.role === "user"
+        ? message
+        : await readStagedInput(index + 1);
+    };
+
+    const recoveredInput = await readStagedInput(0);
+    return await readNextTurnNode(recoveredInput ?? initialInputMessage);
+  };
+
+  let initialInputMessage: TuvrenMessage | undefined;
+  let recoveryError: unknown;
+  let recoveryFailed = false;
+
+  try {
+    initialInputMessage = await readNextTurnNode();
+  } catch (error: unknown) {
+    recoveryFailed = true;
+    recoveryError = error;
+  }
+
+  if (!iteratorExhausted && turnNodeIterator.return !== undefined) {
+    try {
+      await turnNodeIterator.return();
+    } catch (closeError: unknown) {
+      if (!recoveryFailed) {
+        throw closeError;
+      }
+    }
+  }
+
+  if (recoveryFailed) {
+    throw recoveryError;
+  }
+
+  return initialInputMessage;
+};
+
+/**
+ * Estimate how many iterations the expired execution completed by counting
+ * assistant messages appended after the turn's starting message set.
+ *
+ * Falls back to `1` when the turn or its start node cannot be resolved, when
+ * the recovered head does not extend the start messages, or when no
+ * assistant messages were appended.
+ */
+const estimateRecoveredIterationCount = async (
+  kernel: RuntimeKernel,
+  turnId: string,
+  recoveredHeadState: HeadState,
+  interruptedAssistantHash: HashString | undefined
+): Promise<{
+  count: number;
+  interruptedAssistantIncluded: boolean;
+}> => {
+  const turn = await kernel.turn.get(turnId);
+
+  if (turn === null) {
+    return { count: 0, interruptedAssistantIncluded: false };
+  }
+
+  const startTurnNode = await kernel.node.get(turn.startTurnNodeHash);
+
+  if (startTurnNode === null) {
+    return { count: 0, interruptedAssistantIncluded: false };
+  }
+
+  const startMessageHashes = toOrderedHashArray(
+    await kernel.tree.resolve(startTurnNode.turnTreeHash, "messages")
+  );
+
+  if (
+    recoveredHeadState.messageHashes.length >= startMessageHashes.length &&
+    startMessageHashes.every(
+      (hash, index) => recoveredHeadState.messageHashes[index] === hash
+    )
+  ) {
+    const appendedHashes = recoveredHeadState.messageHashes.slice(
+      startMessageHashes.length
+    );
+    const appendedMessages = recoveredHeadState.messages.slice(
+      startMessageHashes.length
+    );
+    const assistantHashes = appendedMessages.flatMap((message, index) =>
+      message.role === "assistant" && appendedHashes[index] !== undefined
+        ? [appendedHashes[index]]
+        : []
+    );
+    return {
+      count: assistantHashes.length,
+      interruptedAssistantIncluded:
+        interruptedAssistantHash !== undefined &&
+        assistantHashes.includes(interruptedAssistantHash),
+    };
+  }
+
+  return { count: 0, interruptedAssistantIncluded: false };
+};
 
 /**
  * Detect and preempt an expired run on the branch before starting a new
@@ -111,11 +263,11 @@ export interface RuntimeCoreExpiredRecoveryHost {
  * @returns The recovery classification, or `undefined` when there is
  *   nothing to recover.
  */
-export async function recoverExpiredExecutionBranchIfNeeded(
+export const recoverExpiredExecutionBranchIfNeeded = async (
   host: RuntimeCoreExpiredRecoveryHost,
   branchId: string,
   signal: InputSignal
-): Promise<ExpiredExecutionRecovery | undefined> {
+): Promise<ExpiredExecutionRecovery | undefined> => {
   const kernel = host.getRuntimeKernel();
   const livenessOptions = host.getRunLivenessOptions();
 
@@ -123,9 +275,10 @@ export async function recoverExpiredExecutionBranchIfNeeded(
     return undefined;
   }
 
-  const expiredRun = (await kernel.runLiveness.listExpired(host.getNow()))
-    .filter((candidate) => candidate.branchId === branchId)
-    .at(0);
+  const expiredRuns = await kernel.runLiveness.listExpired(host.getNow());
+  const expiredRun = expiredRuns.find(
+    (candidate) => candidate.branchId === branchId
+  );
 
   if (expiredRun === undefined) {
     return undefined;
@@ -194,7 +347,7 @@ export async function recoverExpiredExecutionBranchIfNeeded(
         initialInputMessage
       )
     ) {
-      case "match":
+      case "match": {
         return {
           iterationCount: 0,
           mode: recoveredMode,
@@ -202,7 +355,8 @@ export async function recoverExpiredExecutionBranchIfNeeded(
           preempted: true,
           turnId: expiredRun.turnId,
         };
-      case "missing":
+      }
+      case "missing": {
         return {
           iterationCount: 0,
           mode: recoveredMode,
@@ -210,14 +364,17 @@ export async function recoverExpiredExecutionBranchIfNeeded(
           preempted: true,
           turnId: expiredRun.turnId,
         };
-      case "mismatch":
+      }
+      case "mismatch": {
         return {
           preempted: true,
         };
-      default:
+      }
+      default: {
         return {
           preempted: true,
         };
+      }
     }
   }
 
@@ -269,61 +426,7 @@ export async function recoverExpiredExecutionBranchIfNeeded(
     ),
     turnId: expiredRun.turnId,
   };
-}
-
-/**
- * Read the earliest user message incorporated into the recovered turn.
- *
- * A turn's `startTurnNodeHash` is its pre-input boundary. Scan the full lineage
- * back to that boundary for the message staged by `incorporate_input`; a
- * keyed steering message can be the first consumed user message when the
- * initial input was never incorporated, so role and position alone do not
- * establish input provenance.
- */
-async function readRecoveredTurnInitialInputMessage(
-  kernel: RuntimeKernel,
-  payloadCodecBinding: PayloadCodecBinding,
-  turnId: string,
-  recoveredHeadTurnNodeHash: HashString
-): Promise<TuvrenMessage | undefined> {
-  const turn = await kernel.turn.get(turnId);
-
-  if (turn === null) {
-    return undefined;
-  }
-
-  let initialInputMessage: TuvrenMessage | undefined;
-
-  for await (const turnNode of kernel.node.walkBack(
-    recoveredHeadTurnNodeHash
-  )) {
-    if (turnNode.hash === turn.startTurnNodeHash) {
-      return initialInputMessage;
-    }
-
-    for (const stagedResult of turnNode.consumedStagedResults) {
-      if (
-        stagedResult.objectType !== "message" ||
-        stagedResult.taskId !== "input_message"
-      ) {
-        continue;
-      }
-
-      const message = await readMessage(
-        kernel,
-        payloadCodecBinding,
-        stagedResult.objectHash
-      );
-
-      if (message.role === "user") {
-        initialInputMessage = message;
-        break;
-      }
-    }
-  }
-
-  return undefined;
-}
+};
 
 /**
  * Replay a recovered execution that had already reached a durable terminal
@@ -333,15 +436,15 @@ async function readRecoveredTurnInitialInputMessage(
  * replaced with the recovered agent, manifest, and terminal phase, and the
  * matching turn-end event is published — no new iterations run.
  *
- * @throws TuvrenRuntimeError with code `missing_recovered_terminal_status`
+ * @throws {TuvrenRuntimeError} With code `missing_recovered_terminal_status`
  *   when the recovery lacks a durable `completed`/`failed` runtime status.
  */
-export async function completeRecoveredTerminalExecution(
+export const completeRecoveredTerminalExecution = async (
   host: RuntimeCoreExpiredRecoveryHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
   recoveredExecution: ExpiredExecutionRecovery
-): Promise<void> {
+): Promise<void> => {
   const recoveredRuntimeStatus = recoveredExecution.runtimeStatus;
 
   if (
@@ -364,65 +467,4 @@ export async function completeRecoveredTerminalExecution(
     phase: recoveredRuntimeStatus.state,
   });
   host.publishTurnEnd(handle, recoveredRuntimeStatus.state, loopState);
-}
-
-/**
- * Estimate how many iterations the expired execution completed by counting
- * assistant messages appended after the turn's starting message set.
- *
- * Falls back to `1` when the turn or its start node cannot be resolved, when
- * the recovered head does not extend the start messages, or when no
- * assistant messages were appended.
- */
-async function estimateRecoveredIterationCount(
-  kernel: RuntimeKernel,
-  turnId: string,
-  recoveredHeadState: HeadState,
-  interruptedAssistantHash: HashString | undefined
-): Promise<{
-  count: number;
-  interruptedAssistantIncluded: boolean;
-}> {
-  const turn = await kernel.turn.get(turnId);
-
-  if (turn === null) {
-    return { count: 0, interruptedAssistantIncluded: false };
-  }
-
-  const startTurnNode = await kernel.node.get(turn.startTurnNodeHash);
-
-  if (startTurnNode === null) {
-    return { count: 0, interruptedAssistantIncluded: false };
-  }
-
-  const startMessageHashes = toOrderedHashArray(
-    await kernel.tree.resolve(startTurnNode.turnTreeHash, "messages")
-  );
-
-  if (
-    recoveredHeadState.messageHashes.length >= startMessageHashes.length &&
-    startMessageHashes.every(
-      (hash, index) => recoveredHeadState.messageHashes[index] === hash
-    )
-  ) {
-    const appendedHashes = recoveredHeadState.messageHashes.slice(
-      startMessageHashes.length
-    );
-    const appendedMessages = recoveredHeadState.messages.slice(
-      startMessageHashes.length
-    );
-    const assistantHashes = appendedMessages.flatMap((message, index) =>
-      message.role === "assistant" && appendedHashes[index] !== undefined
-        ? [appendedHashes[index]]
-        : []
-    );
-    return {
-      count: assistantHashes.length,
-      interruptedAssistantIncluded:
-        interruptedAssistantHash !== undefined &&
-        assistantHashes.includes(interruptedAssistantHash),
-    };
-  }
-
-  return { count: 0, interruptedAssistantIncluded: false };
-}
+};

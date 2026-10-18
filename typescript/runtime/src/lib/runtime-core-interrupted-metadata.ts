@@ -8,7 +8,8 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-import { isHashString, type HashString } from "@tuvren/core";
+import { isHashString } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
 
 import { isRecord } from "./runtime-core-shared.js";
 
@@ -18,9 +19,9 @@ export interface InterruptedToolBatchDescriptor {
   toolExecutionMode: "parallel" | "sequential";
 }
 
-export function readInterruptedToolBatchDescriptor(
+export const readInterruptedToolBatchDescriptor = (
   value: unknown
-): InterruptedToolBatchDescriptor | undefined {
+): InterruptedToolBatchDescriptor | undefined => {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -44,4 +45,4 @@ export function readInterruptedToolBatchDescriptor(
     executable: descriptor.executable,
     toolExecutionMode: descriptor.toolExecutionMode,
   };
-}
+};

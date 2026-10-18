@@ -32,19 +32,19 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 interface RunnerHostDependencies {
   completeIterationRun: RuntimeCoreRunnerHost["completeIterationRun"];
   createIterationTree: RuntimeCoreRunnerHost["createIterationTree"];
-  createReadonlyRunnerToolRegistry(registry: ToolRegistry): ToolRegistry;
-  createRunnerAgentConfigSnapshot(
+  createReadonlyRunnerToolRegistry: (registry: ToolRegistry) => ToolRegistry;
+  createRunnerAgentConfigSnapshot: (
     config: LoopState["activeConfig"]
-  ): LoopState["activeConfig"];
+  ) => LoopState["activeConfig"];
   createRunnerHandoffContextPlan: RuntimeCoreRunnerHost["createRunnerHandoffContextPlan"];
   createRunnerPublishedEvent: RuntimeCoreRunnerHost["createRunnerPublishedEvent"];
   createToolBatchEnvironment: RuntimeCoreRunnerHost["createToolBatchEnvironment"];
-  failTrackedRunWithoutBranchAdvance(
+  failTrackedRunWithoutBranchAdvance: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stableHeadTurnNodeHash: HashString
-  ): Promise<void>;
-  now(): EpochMs;
+  ) => Promise<void>;
+  now: () => EpochMs;
   publishCustomEvent: RuntimeCoreRunnerHost["publishCustomEvent"];
   publishProjectedError: RuntimeCoreRunnerHost["publishProjectedError"];
   stageManifest: RuntimeCoreRunnerHost["stageManifest"];
@@ -55,27 +55,27 @@ interface RunnerHostDependencies {
 
 /** Dependency bag adapted into a {@link RuntimeCoreToolResumeHost}. */
 interface ToolResumeHostDependencies {
-  beginIterationStep(runId: string, stepId: string): Promise<void>;
+  beginIterationStep: (runId: string, stepId: string) => Promise<void>;
   completeIterationRun: RuntimeCoreToolResumeHost["completeIterationRun"];
-  createId(): string;
+  createId: () => string;
   createIterationTree: RuntimeCoreToolResumeHost["createIterationTree"];
   createTrackedRun: RuntimeCoreToolResumeHost["createTrackedRun"];
-  failTrackedRunWithoutBranchAdvance(
+  failTrackedRunWithoutBranchAdvance: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stableHeadTurnNodeHash: HashString
-  ): Promise<void>;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  now(): EpochMs;
+  ) => Promise<void>;
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  now: () => EpochMs;
   publishCustomEvent: RuntimeCoreToolResumeHost["publishCustomEvent"];
   publishEvent: RuntimeCoreToolResumeHost["publishEvent"];
   publishProjectedError: RuntimeCoreToolResumeHost["publishProjectedError"];
-  resolveActiveMaxParallelToolCalls(loopState: LoopState): number;
-  resolveCheckpointedPausedRun(
+  resolveActiveMaxParallelToolCalls: (loopState: LoopState) => number;
+  resolveCheckpointedPausedRun: (
     runId: string,
     turnId: string,
     resolution: RuntimeResolution
-  ): Promise<void>;
+  ) => Promise<void>;
   stageManifest: RuntimeCoreToolResumeHost["stageManifest"];
   stageMessage: RuntimeCoreToolResumeHost["stageMessage"];
   stageRuntimeStatus: RuntimeCoreToolResumeHost["stageRuntimeStatus"];
@@ -84,49 +84,49 @@ interface ToolResumeHostDependencies {
 
 /** Dependency bag adapted into a {@link RuntimeCoreStatusHost}. */
 interface StatusHostDependencies {
-  advanceTurnAndBranchHead(
+  advanceTurnAndBranchHead: (
     handle: RuntimeExecutionHandle,
     turnNodeHash: HashString
-  ): Promise<void>;
-  beginRunStep(runId: string, stepId: string): Promise<void>;
-  completeRunStep(
+  ) => Promise<void>;
+  beginRunStep: (runId: string, stepId: string) => Promise<void>;
+  completeRunStep: (
     runId: string,
     stepId: string,
     eventHash: HashString,
     treeHash?: HashString
-  ): Promise<{
+  ) => Promise<{
     lease?: { fencingToken: string; leaseExpiresAtMs: number };
     turnNodeHash?: HashString;
   }>;
-  completeTrackedRun(
+  completeTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     status: RunCompletionStatus,
     event?: KernelRecord
-  ): Promise<{ turnNodeHash?: HashString }>;
-  createId(): string;
+  ) => Promise<{ turnNodeHash?: HashString }>;
+  createId: () => string;
   createTrackedRun: RuntimeCoreStatusHost["createTrackedRun"];
-  emitStateObservability(
+  emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
     iterationCount: number,
     manifest?: ContextManifest
-  ): Promise<void>;
-  loadHeadState(branchId: string): Promise<HeadState>;
+  ) => void;
+  loadHeadState: (branchId: string) => Promise<HeadState>;
   stageManifest: RuntimeCoreStatusHost["stageManifest"];
   stageRuntimeStatus: RuntimeCoreStatusHost["stageRuntimeStatus"];
-  storeEventRecord(event: KernelRecord): Promise<HashString>;
-  syncRunLeaseStateFromStepResult(
+  storeEventRecord: (event: KernelRecord) => Promise<HashString>;
+  syncRunLeaseStateFromStepResult: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stepResult: { lease?: { fencingToken: string; leaseExpiresAtMs: EpochMs } }
-  ): void;
-  treeCreate(
+  ) => void;
+  treeCreate: (
     schemaId: string,
     changes: Record<string, PathValue>,
     baseTurnTreeHash: HashString
-  ): Promise<HashString>;
+  ) => Promise<HashString>;
 }
 
 /**
@@ -136,95 +136,118 @@ interface StatusHostDependencies {
  * dependency function directly, so callers may swap or spy on dependency
  * members after the host is built.
  */
-export function buildRuntimeCoreRunnerHost(
+export const buildRuntimeCoreRunnerHost = (
   dependencies: RunnerHostDependencies
-): RuntimeCoreRunnerHost {
-  return {
-    completeIterationRun: (...args) =>
-      dependencies.completeIterationRun(...args),
-    createRunnerAgentConfigSnapshot: (config) =>
-      dependencies.createRunnerAgentConfigSnapshot(config),
-    createRunnerHandoffContextPlan: (...args) =>
-      dependencies.createRunnerHandoffContextPlan(...args),
-    createRunnerPublishedEvent: (...args) =>
-      dependencies.createRunnerPublishedEvent(...args),
-    createIterationTree: (...args) => dependencies.createIterationTree(...args),
-    createReadonlyRunnerToolRegistry: (registry) =>
-      dependencies.createReadonlyRunnerToolRegistry(registry),
-    createToolBatchEnvironment: (...args) =>
-      dependencies.createToolBatchEnvironment(...args),
-    failTrackedRunWithoutBranchAdvance: (...args) =>
-      dependencies.failTrackedRunWithoutBranchAdvance(...args),
-    now: () => dependencies.now(),
-    publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
-    publishProjectedError: (...args) =>
-      dependencies.publishProjectedError(...args),
-    stageManifest: (...args) => dependencies.stageManifest(...args),
-    stageMessage: (...args) => dependencies.stageMessage(...args),
-    stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
-    stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
-  };
-}
+): RuntimeCoreRunnerHost => ({
+  completeIterationRun: async (...args) =>
+    await dependencies.completeIterationRun(...args),
+  createIterationTree: async (...args) =>
+    await dependencies.createIterationTree(...args),
+  createReadonlyRunnerToolRegistry: (registry) =>
+    dependencies.createReadonlyRunnerToolRegistry(registry),
+  createRunnerAgentConfigSnapshot: (config) =>
+    dependencies.createRunnerAgentConfigSnapshot(config),
+  createRunnerHandoffContextPlan: (...args) =>
+    dependencies.createRunnerHandoffContextPlan(...args),
+  createRunnerPublishedEvent: (...args) =>
+    dependencies.createRunnerPublishedEvent(...args),
+  createToolBatchEnvironment: (...args) =>
+    dependencies.createToolBatchEnvironment(...args),
+  failTrackedRunWithoutBranchAdvance: async (...args) => {
+    await dependencies.failTrackedRunWithoutBranchAdvance(...args);
+  },
+  now: () => dependencies.now(),
+  publishCustomEvent: (...args) => {
+    dependencies.publishCustomEvent(...args);
+  },
+  publishProjectedError: (...args) => {
+    dependencies.publishProjectedError(...args);
+  },
+  stageManifest: async (...args) => await dependencies.stageManifest(...args),
+  stageMessage: async (...args) => await dependencies.stageMessage(...args),
+  stageRuntimeStatus: async (...args) =>
+    await dependencies.stageRuntimeStatus(...args),
+  stageTurnLineage: async (...args) =>
+    await dependencies.stageTurnLineage(...args),
+});
 
 /**
  * Assemble a {@link RuntimeCoreToolResumeHost} from late-bound dependencies,
  * used by the paused-tool-execution resume path.
  */
-export function buildRuntimeCoreToolResumeHost(
+export const buildRuntimeCoreToolResumeHost = (
   dependencies: ToolResumeHostDependencies
-): RuntimeCoreToolResumeHost {
-  return {
-    beginIterationStep: (runId, stepId) =>
-      dependencies.beginIterationStep(runId, stepId),
-    completeIterationRun: (...args) =>
-      dependencies.completeIterationRun(...args),
-    createId: () => dependencies.createId(),
-    createIterationTree: (...args) => dependencies.createIterationTree(...args),
-    createTrackedRun: (...args) => dependencies.createTrackedRun(...args),
-    failTrackedRunWithoutBranchAdvance: (...args) =>
-      dependencies.failTrackedRunWithoutBranchAdvance(...args),
-    loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
-    now: () => dependencies.now(),
-    publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
-    publishEvent: (...args) => dependencies.publishEvent(...args),
-    publishProjectedError: (...args) =>
-      dependencies.publishProjectedError(...args),
-    resolveActiveMaxParallelToolCalls: (loopState) =>
-      dependencies.resolveActiveMaxParallelToolCalls(loopState),
-    resolveCheckpointedPausedRun: (...args) =>
-      dependencies.resolveCheckpointedPausedRun(...args),
-    stageManifest: (...args) => dependencies.stageManifest(...args),
-    stageMessage: (...args) => dependencies.stageMessage(...args),
-    stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
-    stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
-  };
-}
+): RuntimeCoreToolResumeHost => ({
+  beginIterationStep: async (runId, stepId) => {
+    await dependencies.beginIterationStep(runId, stepId);
+  },
+  completeIterationRun: async (...args) =>
+    await dependencies.completeIterationRun(...args),
+  createId: () => dependencies.createId(),
+  createIterationTree: async (...args) =>
+    await dependencies.createIterationTree(...args),
+  createTrackedRun: async (...args) => {
+    await dependencies.createTrackedRun(...args);
+  },
+  failTrackedRunWithoutBranchAdvance: async (...args) => {
+    await dependencies.failTrackedRunWithoutBranchAdvance(...args);
+  },
+  loadHeadState: async (branchId) => await dependencies.loadHeadState(branchId),
+  now: () => dependencies.now(),
+  publishCustomEvent: (...args) => {
+    dependencies.publishCustomEvent(...args);
+  },
+  publishEvent: (...args) => {
+    dependencies.publishEvent(...args);
+  },
+  publishProjectedError: (...args) => {
+    dependencies.publishProjectedError(...args);
+  },
+  resolveActiveMaxParallelToolCalls: (loopState) =>
+    dependencies.resolveActiveMaxParallelToolCalls(loopState),
+  resolveCheckpointedPausedRun: async (...args) => {
+    await dependencies.resolveCheckpointedPausedRun(...args);
+  },
+  stageManifest: async (...args) => await dependencies.stageManifest(...args),
+  stageMessage: async (...args) => await dependencies.stageMessage(...args),
+  stageRuntimeStatus: async (...args) =>
+    await dependencies.stageRuntimeStatus(...args),
+  stageTurnLineage: async (...args) =>
+    await dependencies.stageTurnLineage(...args),
+});
 
 /**
  * Assemble a {@link RuntimeCoreStatusHost} from late-bound dependencies,
  * used by the durable runtime-status transition helpers.
  */
-export function buildRuntimeCoreStatusHost(
+export const buildRuntimeCoreStatusHost = (
   dependencies: StatusHostDependencies
-): RuntimeCoreStatusHost {
-  return {
-    advanceTurnAndBranchHead: (...args) =>
-      dependencies.advanceTurnAndBranchHead(...args),
-    beginRunStep: (runId, stepId) => dependencies.beginRunStep(runId, stepId),
-    completeRunStep: (runId, stepId, eventHash, treeHash) =>
-      dependencies.completeRunStep(runId, stepId, eventHash, treeHash),
-    completeTrackedRun: (...args) => dependencies.completeTrackedRun(...args),
-    createId: () => dependencies.createId(),
-    createTrackedRun: (...args) => dependencies.createTrackedRun(...args),
-    emitStateObservability: (...args) =>
-      dependencies.emitStateObservability(...args),
-    loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
-    stageManifest: (...args) => dependencies.stageManifest(...args),
-    stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
-    storeEventRecord: (event) => dependencies.storeEventRecord(event),
-    syncRunLeaseStateFromStepResult: (...args) =>
-      dependencies.syncRunLeaseStateFromStepResult(...args),
-    treeCreate: (schemaId, changes, baseTurnTreeHash) =>
-      dependencies.treeCreate(schemaId, changes, baseTurnTreeHash),
-  };
-}
+): RuntimeCoreStatusHost => ({
+  advanceTurnAndBranchHead: async (...args) => {
+    await dependencies.advanceTurnAndBranchHead(...args);
+  },
+  beginRunStep: async (runId, stepId) => {
+    await dependencies.beginRunStep(runId, stepId);
+  },
+  completeRunStep: async (runId, stepId, eventHash, treeHash) =>
+    await dependencies.completeRunStep(runId, stepId, eventHash, treeHash),
+  completeTrackedRun: async (...args) =>
+    await dependencies.completeTrackedRun(...args),
+  createId: () => dependencies.createId(),
+  createTrackedRun: async (...args) => {
+    await dependencies.createTrackedRun(...args);
+  },
+  emitStateObservability: (...args) => {
+    dependencies.emitStateObservability(...args);
+  },
+  loadHeadState: async (branchId) => await dependencies.loadHeadState(branchId),
+  stageManifest: async (...args) => await dependencies.stageManifest(...args),
+  stageRuntimeStatus: async (...args) =>
+    await dependencies.stageRuntimeStatus(...args),
+  storeEventRecord: async (event) => await dependencies.storeEventRecord(event),
+  syncRunLeaseStateFromStepResult: (...args) => {
+    dependencies.syncRunLeaseStateFromStepResult(...args);
+  },
+  treeCreate: async (schemaId, changes, baseTurnTreeHash) =>
+    await dependencies.treeCreate(schemaId, changes, baseTurnTreeHash),
+});

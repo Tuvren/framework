@@ -15,6 +15,7 @@
  */
 
 import type { HashString } from "@tuvren/core";
+import type { ClientEndpointBoundary } from "@tuvren/core/capabilities";
 import type {
   ContextManifest,
   RuntimeResolution,
@@ -24,10 +25,8 @@ import type { ToolRegistry } from "@tuvren/core/tools";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import { runBeforeTurnHooks } from "./extension-runtime.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
-import {
-  createCancelledLoopOutcome,
-  type ExpiredExecutionRecovery,
-} from "./runtime-core-recovery.js";
+import { createCancelledLoopOutcome } from "./runtime-core-recovery.js";
+import type { ExpiredExecutionRecovery } from "./runtime-core-recovery.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
 
@@ -41,20 +40,20 @@ import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
  * sequencing stays testable in isolation.
  */
 export interface RuntimeCoreStartupHost {
-  applyTerminalAgentTransitionIfNeeded(
+  applyTerminalAgentTransitionIfNeeded: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     resolution: RuntimeResolution,
     loopState: LoopState,
     stableHeadTurnNodeHash?: HashString
-  ): Promise<boolean>;
-  checkpointResumeRunningStatus(
+  ) => Promise<boolean>;
+  checkpointResumeRunningStatus: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     iterationCount: number,
     emitObservability?: boolean
-  ): Promise<
+  ) => Promise<
     | {
         iterationCount: number;
         manifest?: ContextManifest;
@@ -62,45 +61,45 @@ export interface RuntimeCoreStartupHost {
       }
     | undefined
   >;
-  commitPendingExtensionStateUpdates(
+  commitPendingExtensionStateUpdates: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     updates: ExtensionStateUpdate[],
     iterationCount: number
-  ): Promise<void>;
-  completeExecution(
+  ) => Promise<void>;
+  completeExecution: (
     handle: RuntimeExecutionHandle,
     resolution: RuntimeResolution,
     partial: boolean,
     loopState: LoopState,
     enteredIterationLoop: boolean
-  ): Promise<void>;
-  createActiveToolRegistry(
+  ) => Promise<void>;
+  createActiveToolRegistry: (
     runtimeTools: ExecutionSessionRequest["tools"] | undefined,
     config: LoopState["activeConfig"],
-    clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary
-  ): ToolRegistry;
-  createClientEndpointBoundaryFromConfig(
+    clientEndpointBoundary?: ClientEndpointBoundary
+  ) => ToolRegistry;
+  createClientEndpointBoundaryFromConfig: (
     config: LoopState["activeConfig"]
-  ): import("@tuvren/core/capabilities").ClientEndpointBoundary | undefined;
-  createId(): string;
-  defaultRunnerId(): string;
-  emitStateObservability(
+  ) => ClientEndpointBoundary | undefined;
+  createId: () => string;
+  defaultRunnerId: () => string;
+  emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
     iterationCount: number,
     manifest?: ContextManifest
-  ): Promise<void>;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  now(): number;
-  publishCustomEvent(
+  ) => void;
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  now: () => number;
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  publishEvent(
+  ) => void;
+  publishEvent: (
     handle: RuntimeExecutionHandle,
     event: {
       resumedFrom?: HashString;
@@ -113,48 +112,48 @@ export interface RuntimeCoreStartupHost {
       type: string;
     },
     loopState: LoopState
-  ): void;
-  publishPauseOutcome(
+  ) => void;
+  publishPauseOutcome: (
     handle: RuntimeExecutionHandle,
     pauseContext: unknown,
     loopState: LoopState
-  ): boolean;
-  publishProjectedError(
+  ) => boolean;
+  publishProjectedError: (
     handle: RuntimeExecutionHandle,
     error: Error,
     fatal: boolean,
     loopState: LoopState
-  ): void;
-  resolveActiveConfig(
+  ) => void;
+  resolveActiveConfig: (
     handle: RuntimeExecutionHandle,
     recoveredExecution?: ExpiredExecutionRecovery
-  ): LoopState["activeConfig"];
-  resolveBranchHeadHash(
+  ) => LoopState["activeConfig"];
+  resolveBranchHeadHash: (
     branchId: string,
     threadId: string
-  ): Promise<HashString>;
-  resolveParentTurnId(
+  ) => Promise<HashString>;
+  resolveParentTurnId: (
     threadId: string,
     branchId: string,
     explicitParentTurnId?: string | null
-  ): Promise<string | null>;
-  resumePausedToolExecution(
+  ) => Promise<string | null>;
+  resumePausedToolExecution: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     resumeContext: NonNullable<RuntimeExecutionHandle["resumedFrom"]>
-  ): Promise<{
+  ) => Promise<{
     partial?: boolean;
     pauseContext?: unknown;
     resolution: RuntimeResolution;
   }>;
-  turnCreate(
+  turnCreate: (
     turnId: string,
     threadId: string,
     branchId: string,
     parentTurnId: string | null,
     branchHeadHash: HashString
-  ): Promise<void>;
+  ) => Promise<void>;
 }
 
 /**
@@ -174,11 +173,11 @@ export interface RuntimeCoreStartupHost {
  *   by the host when resolving the active config.
  * @returns A fresh loop state with `enteredIterationLoop` set to `false`.
  */
-export function createExecutionLoopState(
+export const createExecutionLoopState = (
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
   recoveredExecution?: ExpiredExecutionRecovery
-): LoopState {
+): LoopState => {
   const resumedPauseContext = handle.resumedFrom?.pauseContext;
   const initialActiveConfig = host.resolveActiveConfig(
     handle,
@@ -215,7 +214,7 @@ export function createExecutionLoopState(
           interruptedIterationPlan: recoveredExecution.interruptedIterationPlan,
         }),
   };
-}
+};
 
 /**
  * Create the kernel turn record for a fresh execution, if one is needed.
@@ -230,12 +229,12 @@ export function createExecutionLoopState(
  * @param reuseRecoveredTurn - `true` when recovery already assigned an
  *   existing turn id to the handle.
  */
-export async function createExecutionTurnIfNeeded(
+export const createExecutionTurnIfNeeded = async (
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
   branchHeadHash: HashString,
   reuseRecoveredTurn: boolean
-): Promise<void> {
+): Promise<void> => {
   if (handle.resumedFrom !== undefined || reuseRecoveredTurn) {
     return;
   }
@@ -253,7 +252,7 @@ export async function createExecutionTurnIfNeeded(
     parentTurnId,
     branchHeadHash
   );
-}
+};
 
 /**
  * Publish the `turn.start` stream event for this execution.
@@ -262,11 +261,11 @@ export async function createExecutionTurnIfNeeded(
  * node hash as `resumedFrom` so consumers can correlate the resumption with
  * the original pause point.
  */
-export function publishTurnStart(
+export const publishTurnStart = (
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState
-): void {
+): void => {
   host.publishEvent(
     handle,
     {
@@ -278,7 +277,7 @@ export function publishTurnStart(
     },
     loopState
   );
-}
+};
 
 /**
  * Run the fresh-start prelude before the iteration loop is entered.
@@ -305,7 +304,7 @@ export function publishTurnStart(
  * @returns `true` when the execution was completed by a before-turn hook
  *   resolution and the caller must not enter the iteration loop.
  */
-export async function prepareFreshExecutionStart(
+export const prepareFreshExecutionStart = async (
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -318,7 +317,7 @@ export async function prepareFreshExecutionStart(
     schemaId: string,
     loopState: LoopState
   ) => Promise<void>
-): Promise<boolean> {
+): Promise<boolean> => {
   if (
     (recoveredExecutionMode === undefined || needsInputReincorporation) &&
     incorporateInput !== undefined
@@ -385,7 +384,7 @@ export async function prepareFreshExecutionStart(
     false
   );
   return true;
-}
+};
 
 /**
  * Run the resume-side prelude for an execution resumed from a pause.
@@ -400,7 +399,7 @@ export async function prepareFreshExecutionStart(
  *   otherwise `{ completed: false, pendingStateObservability }` where the
  *   pending observability payload, if present, must be emitted by the caller.
  */
-export async function prepareResumedExecutionStartPrelude(
+export const prepareResumedExecutionStartPrelude = async (
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -421,7 +420,7 @@ export async function prepareResumedExecutionStartPrelude(
       };
     }
   | undefined
-> {
+> => {
   const resumeContext = handle.resumedFrom;
 
   if (resumeContext === undefined) {
@@ -447,7 +446,7 @@ export async function prepareResumedExecutionStartPrelude(
     completed: false,
     pendingStateObservability,
   };
-}
+};
 
 /**
  * Complete the resume-side startup by replaying the paused tool execution.
@@ -464,12 +463,12 @@ export async function prepareResumedExecutionStartPrelude(
  *   loop; `false` when the loop should run, including for a fresh
  *   (non-resumed) handle.
  */
-export async function finishResumedExecutionStart(
+export const finishResumedExecutionStart = async (
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState
-): Promise<boolean> {
+): Promise<boolean> => {
   const resumeContext = handle.resumedFrom;
 
   if (resumeContext === undefined) {
@@ -536,16 +535,14 @@ export async function finishResumedExecutionStart(
   }
 
   return false;
-}
+};
 
 /**
  * Resolve the current head turn-node hash of the execution's branch via the
  * host.
  */
-export async function resolveExecutionBranchHead(
+export const resolveExecutionBranchHead = async (
   host: RuntimeCoreStartupHost,
   branchId: string,
   threadId: string
-): Promise<HashString> {
-  return await host.resolveBranchHeadHash(branchId, threadId);
-}
+): Promise<HashString> => await host.resolveBranchHeadHash(branchId, threadId);

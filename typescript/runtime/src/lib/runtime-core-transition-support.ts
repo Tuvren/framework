@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
+import type { ClientEndpointBoundary } from "@tuvren/core/capabilities";
 import type {
   AgentConfig,
   HandoffContextBuilder,
@@ -28,16 +30,12 @@ import {
   createLastOutputOnlyHandoffContextBuilder,
   createPreserveTraceHandoffContextBuilder,
 } from "./handoff-builders.js";
-import {
-  encryptMessageRecord,
-  type PayloadCodecBinding,
-} from "./payload-codec-seam.js";
+import { encryptMessageRecord } from "./payload-codec-seam.js";
+import type { PayloadCodecBinding } from "./payload-codec-seam.js";
 import type { RuntimeCoreContextOpsHost } from "./runtime-core-context-ops.js";
 import { applyHandoff as applyRuntimeHandoffFacade } from "./runtime-core-context-ops.js";
-import {
-  createContextEngineeringHelpers as createRuntimeContextEngineeringHelpers,
-  type HelperBundle,
-} from "./runtime-core-context.js";
+import { createContextEngineeringHelpers as createRuntimeContextEngineeringHelpers } from "./runtime-core-context.js";
+import type { HelperBundle } from "./runtime-core-context.js";
 import { loadHeadStateFacade } from "./runtime-core-facade-ops.js";
 import {
   cloneAgentConfigForRequest,
@@ -55,21 +53,23 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
  * explicit builder is ignored); `preserve_trace` prefers the explicit
  * builder and falls back to the built-in preserve-trace builder.
  *
- * @throws TuvrenRuntimeError with code `invalid_handoff_mode` for any other
+ * @throws {TuvrenRuntimeError} With code `invalid_handoff_mode` for any other
  *   mode, which requires an explicit builder resolved elsewhere.
  */
-export function resolveRuntimeCoreDefaultHandoffContextBuilder(
+export const resolveRuntimeCoreDefaultHandoffContextBuilder = (
   handoffContextBuilder: HandoffContextBuilder | undefined,
   mode: string
-): HandoffContextBuilder {
+): HandoffContextBuilder => {
   switch (mode) {
-    case "last_output_only":
+    case "last_output_only": {
       return createLastOutputOnlyHandoffContextBuilder();
-    case "preserve_trace":
+    }
+    case "preserve_trace": {
       return (
         handoffContextBuilder ?? createPreserveTraceHandoffContextBuilder()
       );
-    default:
+    }
+    default: {
       throw new TuvrenRuntimeError(
         `handoff mode "${mode}" requires an explicit builder`,
         {
@@ -79,8 +79,9 @@ export function resolveRuntimeCoreDefaultHandoffContextBuilder(
           },
         }
       );
+    }
   }
-}
+};
 
 /**
  * Build the context-engineering helper bundle over the current message
@@ -94,13 +95,13 @@ export function resolveRuntimeCoreDefaultHandoffContextBuilder(
  * @param messageHashes - Ordered hashes of the current head messages.
  * @param messages - The decoded messages matching `messageHashes`.
  */
-export function createRuntimeCoreContextHelperBundle(
+export const createRuntimeCoreContextHelperBundle = (
   kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
   messageHashes: HashString[],
   messages: TuvrenMessage[]
-): HelperBundle {
-  return createRuntimeContextEngineeringHelpers(
+): HelperBundle =>
+  createRuntimeContextEngineeringHelpers(
     {
       cloneAgentConfigForRequest: (config) =>
         cloneAgentConfigForRequest(config),
@@ -119,7 +120,6 @@ export function createRuntimeCoreContextHelperBundle(
     messageHashes,
     messages
   );
-}
 
 /**
  * Apply a terminal `handoff` resolution by switching the active agent.
@@ -139,7 +139,7 @@ export function createRuntimeCoreContextHelperBundle(
  *   when omitted, failures propagate without rollback.
  * @returns Whether a handoff transition was applied (loop should continue).
  */
-export async function applyRuntimeCoreTerminalAgentTransitionIfNeeded(
+export const applyRuntimeCoreTerminalAgentTransitionIfNeeded = async (
   dependencies: {
     contextOps: RuntimeCoreContextOpsHost;
     kernel: RuntimeKernel;
@@ -150,7 +150,7 @@ export async function applyRuntimeCoreTerminalAgentTransitionIfNeeded(
   resolution: RuntimeResolution,
   loopState: LoopState,
   stableHeadTurnNodeHash?: HashString
-): Promise<boolean> {
+): Promise<boolean> => {
   if (resolution.type !== "handoff") {
     return false;
   }
@@ -159,9 +159,7 @@ export async function applyRuntimeCoreTerminalAgentTransitionIfNeeded(
     | {
         activeConfig: AgentConfig;
         activeToolRegistry: ToolRegistry;
-        clientEndpointBoundary:
-          | import("@tuvren/core/capabilities").ClientEndpointBoundary
-          | undefined;
+        clientEndpointBoundary: ClientEndpointBoundary | undefined;
       }
     | undefined;
 
@@ -199,4 +197,4 @@ export async function applyRuntimeCoreTerminalAgentTransitionIfNeeded(
   loopState.clientEndpointBoundary = handoff.clientEndpointBoundary;
   loopState.carriedStateUpdates = [];
   return true;
-}
+};

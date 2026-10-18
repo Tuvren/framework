@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  type HashString,
-  TuvrenLineageError,
-  TuvrenRuntimeError,
-} from "@tuvren/core";
+import { TuvrenLineageError, TuvrenRuntimeError } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
 import type {
   AgentConfig,
   ContextEngineeringHelpers,
@@ -26,7 +23,7 @@ import type {
   HandoffSourceContext,
 } from "@tuvren/core/execution";
 import type { RunnerRegistry, RuntimeRunner } from "@tuvren/core/runner";
-import type { RuntimeKernel } from "@tuvren/kernel-protocol";
+import type { RuntimeKernel, TurnTreeSchema } from "@tuvren/kernel-protocol";
 
 import type { PayloadCodecBinding } from "./payload-codec-seam.js";
 import { materializeRunner } from "./runner-registry.js";
@@ -49,10 +46,6 @@ import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type { DurableRuntimeStatus } from "./runtime-core-recovery.js";
 import { assertFrameworkSchemaCompatibility } from "./runtime-core-response.js";
 import { createFrozenSnapshot } from "./runtime-core-shared.js";
-import {
-  DEFAULT_AGENT_SCHEMA,
-  DEFAULT_AGENT_SCHEMA_ID,
-} from "./runtime-core.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
 
@@ -60,7 +53,7 @@ import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
  * Extracts the quoted message hash from the error text thrown when a context
  * message hash cannot be materialized.
  */
-const MISSING_CONTEXT_MESSAGE_HASH_PATTERN = /"(.+)"/;
+const MISSING_CONTEXT_MESSAGE_HASH_PATTERN = /"(?<hash>.+)"/u;
 
 /**
  * Capabilities the facade-ops functions borrow from the runtime core: the
@@ -68,9 +61,9 @@ const MISSING_CONTEXT_MESSAGE_HASH_PATTERN = /"(.+)"/;
  * hooks for agent configs and parent turn ids.
  */
 export interface FacadeOpsDependencies {
-  cloneAgentConfigForRequest(config: AgentConfig): AgentConfig;
+  cloneAgentConfigForRequest: (config: AgentConfig) => AgentConfig;
   kernel: RuntimeKernel;
-  resolveAgentConfig?(name: string): AgentConfig | undefined;
+  resolveAgentConfig?: (name: string) => AgentConfig | undefined;
   resolveParentTurnIdOption?: (
     threadId: string,
     branchId: string
@@ -82,7 +75,7 @@ export interface FacadeOpsDependencies {
  * target agent, binding kernel record encoding, pending-hash computation, and
  * frozen config snapshots into the underlying context resolution.
  */
-export function resolveHandoffSourceContextFacade(
+export const resolveHandoffSourceContextFacade = (
   dependencies: Pick<
     FacadeOpsDependencies,
     "cloneAgentConfigForRequest" | "kernel"
@@ -92,8 +85,8 @@ export function resolveHandoffSourceContextFacade(
   loopState: LoopState,
   targetConfig: AgentConfig,
   helpers: ContextEngineeringHelpers
-): HandoffSourceContext {
-  return resolveRuntimeHandoffSourceContext(
+): HandoffSourceContext =>
+  resolveRuntimeHandoffSourceContext(
     {
       cloneAgentConfigForRequest: (config) =>
         dependencies.cloneAgentConfigForRequest(config),
@@ -109,26 +102,26 @@ export function resolveHandoffSourceContextFacade(
     targetConfig,
     helpers
   );
-}
 
 /**
  * Materializes context messages from their hashes, converting any
  * materialization failure into a lineage error.
  *
- * @throws TuvrenLineageError with code `missing_message` when a hash cannot
+ * @throws {TuvrenLineageError} With code `missing_message` when a hash cannot
  *   be materialized; the missing hash (extracted from the quoted segment of
  *   the original error message) is carried in `details.hash`.
  */
-export function materializeContextMessagesFacade(
+export const materializeContextMessagesFacade = (
   hashes: HashString[],
   helpers: ContextEngineeringHelpers
-) {
+) => {
   try {
     return materializeRuntimeContextMessages(hashes, helpers);
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "context message missing";
-    const hash = message.match(MISSING_CONTEXT_MESSAGE_HASH_PATTERN)?.[1];
+    const hash =
+      MISSING_CONTEXT_MESSAGE_HASH_PATTERN.exec(message)?.groups?.hash;
 
     throw new TuvrenLineageError(message, {
       code: "missing_message",
@@ -137,20 +130,19 @@ export function materializeContextMessagesFacade(
       },
     });
   }
-}
+};
 
 /**
  * Loads the current {@link HeadState} (branch-head turn node, decoded
  * messages, and manifest) for a branch from the kernel, decoding payloads
  * through the codec binding.
  */
-export async function loadHeadStateFacade(
+export const loadHeadStateFacade = async (
   kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
   branchId: string
-): Promise<HeadState> {
-  return await loadRuntimeHeadState(kernel, payloadCodecBinding, branchId);
-}
+): Promise<HeadState> =>
+  await loadRuntimeHeadState(kernel, payloadCodecBinding, branchId);
 
 /**
  * Reads the active agent name recorded in a checkpointed turn tree, used
@@ -158,12 +150,11 @@ export async function loadHeadStateFacade(
  *
  * @returns The recorded agent name, or `undefined` when the tree carries none.
  */
-export async function readRecoveredActiveAgentNameFacade(
+export const readRecoveredActiveAgentNameFacade = async (
   kernel: RuntimeKernel,
   turnTreeHash: HashString
-): Promise<string | undefined> {
-  return await readRuntimeRecoveredActiveAgentName(kernel, turnTreeHash);
-}
+): Promise<string | undefined> =>
+  await readRuntimeRecoveredActiveAgentName(kernel, turnTreeHash);
 
 /**
  * Reads the durable runtime status recorded in a checkpointed turn tree,
@@ -172,29 +163,27 @@ export async function readRecoveredActiveAgentNameFacade(
  * @returns The recorded {@link DurableRuntimeStatus}, or `undefined` when the
  *   tree carries none.
  */
-export async function readRecoveredRuntimeStatusFacade(
+export const readRecoveredRuntimeStatusFacade = async (
   kernel: RuntimeKernel,
   turnTreeHash: HashString
-): Promise<DurableRuntimeStatus | undefined> {
-  return await readRuntimeRecoveredRuntimeStatus(kernel, turnTreeHash);
-}
+): Promise<DurableRuntimeStatus | undefined> =>
+  await readRuntimeRecoveredRuntimeStatus(kernel, turnTreeHash);
 
 /**
  * Resolves the kernel schema id an execution session should run under,
  * ensuring the schema is registered via the provided `ensureSchemaId`
  * callback (see {@link ensureSchemaIdFacade}).
  */
-export async function resolveExecutionSchemaIdFacade(
+export const resolveExecutionSchemaIdFacade = async (
   kernel: RuntimeKernel,
   ensureSchemaId: (schemaId?: string) => Promise<string>,
   request: ExecutionSessionRequest
-): Promise<string> {
-  return await resolveRuntimeExecutionSchemaId(
+): Promise<string> =>
+  await resolveRuntimeExecutionSchemaId(
     kernel,
     async (schemaId) => await ensureSchemaId(schemaId),
     request
   );
-}
 
 /**
  * Resolves the parent turn id for a new turn, honoring an explicit parent
@@ -203,46 +192,45 @@ export async function resolveExecutionSchemaIdFacade(
  *
  * @returns The parent turn id, or `null` when the turn has no parent.
  */
-export async function resolveParentTurnIdFacade(
+export const resolveParentTurnIdFacade = async (
   kernel: RuntimeKernel,
   resolveParentTurnIdOption: FacadeOpsDependencies["resolveParentTurnIdOption"],
   threadId: string,
   branchId: string,
   explicitParentTurnId?: string | null
-): Promise<string | null> {
-  return await resolveRuntimeParentTurnId(
+): Promise<string | null> =>
+  await resolveRuntimeParentTurnId(
     kernel,
     resolveParentTurnIdOption,
     threadId,
     branchId,
     explicitParentTurnId
   );
-}
 
 /**
  * Advances durable head state to a new turn-node hash: first the turn head
  * (`kernel.turn.updateHead`), then the branch head (`kernel.branch.setHead`),
  * in that order.
  */
-export async function advanceTurnAndBranchHeadFacade(
+export const advanceTurnAndBranchHeadFacade = async (
   kernel: RuntimeKernel,
   handle: RuntimeExecutionHandle,
   turnNodeHash: HashString
-): Promise<void> {
+): Promise<void> => {
   await kernel.turn.updateHead(handle.turnId, turnNodeHash);
   await kernel.branch.setHead(handle.request.branchId, turnNodeHash);
-}
+};
 
 /**
  * Materializes a {@link RuntimeRunner} instance from the runner registry.
  *
- * @throws TuvrenRuntimeError with code `unknown_runner` when `runnerId` is
+ * @throws {TuvrenRuntimeError} With code `unknown_runner` when `runnerId` is
  *   not registered.
  */
-export function materializeRunnerFacade(
+export const materializeRunnerFacade = (
   runnerRegistry: RunnerRegistry,
   runnerId: string
-): RuntimeRunner {
+): RuntimeRunner => {
   const runnerEntry = runnerRegistry.resolve(runnerId);
 
   if (runnerEntry === undefined) {
@@ -255,7 +243,7 @@ export function materializeRunnerFacade(
   }
 
   return materializeRunner(runnerEntry);
-}
+};
 
 /**
  * Resolves the {@link AgentConfig} to attribute a failure to when the active
@@ -265,11 +253,11 @@ export function materializeRunnerFacade(
  * config when its name matches the active agent, and finally a minimal
  * name-only config so failure reporting never lacks an agent identity.
  */
-export function resolveFailureActiveConfigFacade(
+export const resolveFailureActiveConfigFacade = (
   requestConfig: AgentConfig,
   activeAgentName: string,
   resolveAgentConfig: FacadeOpsDependencies["resolveAgentConfig"]
-): AgentConfig {
+): AgentConfig => {
   const resolvedActiveConfig = resolveAgentConfig?.(activeAgentName);
 
   if (resolvedActiveConfig !== undefined) {
@@ -283,24 +271,25 @@ export function resolveFailureActiveConfigFacade(
   return {
     name: activeAgentName,
   };
-}
+};
 
 /**
- * Ensures a usable kernel schema id, defaulting to the framework's
- * `DEFAULT_AGENT_SCHEMA_ID` when none is given.
+ * Ensures a usable kernel schema id, defaulting to `defaultSchema.schemaId`
+ * when none is given.
  *
  * An already-registered schema is validated for framework compatibility and
  * reused. The default agent schema is registered lazily on first use.
  *
  * @returns The resolved, registered schema id.
- * @throws TuvrenRuntimeError with code `unknown_schema` when a non-default
+ * @throws {TuvrenRuntimeError} With code `unknown_schema` when a non-default
  *   schema id is requested but not registered.
  */
-export async function ensureSchemaIdFacade(
+export const ensureSchemaIdFacade = async (
   kernel: RuntimeKernel,
+  defaultSchema: TurnTreeSchema,
   schemaId?: string
-): Promise<string> {
-  const resolvedSchemaId = schemaId ?? DEFAULT_AGENT_SCHEMA_ID;
+): Promise<string> => {
+  const resolvedSchemaId = schemaId ?? defaultSchema.schemaId;
   const existing = await kernel.schema.get(resolvedSchemaId);
 
   if (existing !== null) {
@@ -308,7 +297,7 @@ export async function ensureSchemaIdFacade(
     return existing.schemaId;
   }
 
-  if (resolvedSchemaId !== DEFAULT_AGENT_SCHEMA_ID) {
+  if (resolvedSchemaId !== defaultSchema.schemaId) {
     throw new TuvrenRuntimeError(
       `schema "${resolvedSchemaId}" is not registered`,
       {
@@ -320,5 +309,5 @@ export async function ensureSchemaIdFacade(
     );
   }
 
-  return await kernel.schema.register(DEFAULT_AGENT_SCHEMA);
-}
+  return await kernel.schema.register(defaultSchema);
+};

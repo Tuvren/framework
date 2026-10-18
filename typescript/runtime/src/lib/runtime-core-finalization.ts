@@ -36,7 +36,7 @@ import { createToolRegistry } from "./tool-registry.js";
  * original root cause (when the resolution was already a hard failure) and
  * the finalization error itself.
  */
-export class FinalizationFailure extends Error {
+export class FinalizationFailureError extends Error {
   /** The error raised while finalizing the turn status. */
   readonly finalizationError: Error;
   /**
@@ -47,7 +47,7 @@ export class FinalizationFailure extends Error {
 
   constructor(finalizationError: Error, rootCause?: Error) {
     super(finalizationError.message, { cause: finalizationError });
-    this.name = "FinalizationFailure";
+    this.name = "FinalizationFailureError";
     this.finalizationError = finalizationError;
     this.rootCause = rootCause;
   }
@@ -59,47 +59,47 @@ export class FinalizationFailure extends Error {
  * publication, and failure-time config resolution.
  */
 export interface RuntimeCoreFinalizationHost {
-  createId(): string;
-  defaultRunnerId(): string;
-  finalizeRejectedPausedToolCancellation(
+  createId: () => string;
+  defaultRunnerId: () => string;
+  finalizeRejectedPausedToolCancellation: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     pauseContext: PauseContext
-  ): Promise<LoopOutcome>;
-  finalizeTurnStatus(
+  ) => Promise<LoopOutcome>;
+  finalizeTurnStatus: (
     handle: RuntimeExecutionHandle,
     resolution: RuntimeResolution,
     partial: boolean,
     loopState: LoopState
-  ): Promise<void>;
-  kernelTurnExists(turnId: string): Promise<boolean>;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  now(): number;
-  publishCustomEvent(
+  ) => Promise<void>;
+  kernelTurnExists: (turnId: string) => Promise<boolean>;
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  now: () => number;
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  publishEvent(
+  ) => void;
+  publishEvent: (
     handle: RuntimeExecutionHandle,
     event: Parameters<RuntimeExecutionHandle["publish"]>[0],
     loopState: LoopState
-  ): void;
-  publishProjectedError(
+  ) => void;
+  publishProjectedError: (
     handle: RuntimeExecutionHandle,
     error: Error,
     fatal: boolean,
     loopState: LoopState
-  ): void;
-  resolveFailureActiveConfig(
+  ) => void;
+  resolveFailureActiveConfig: (
     handle: RuntimeExecutionHandle
-  ): LoopState["activeConfig"];
-  runComplete(
+  ) => LoopState["activeConfig"];
+  runComplete: (
     runId: string,
     status: "failed",
     eventHash: string
-  ): Promise<unknown>;
-  storeEventRecord(event: Record<string, unknown>): Promise<string>;
+  ) => Promise<unknown>;
+  storeEventRecord: (event: Record<string, unknown>) => Promise<string>;
 }
 
 /**
@@ -113,12 +113,12 @@ export interface RuntimeCoreFinalizationHost {
  * @returns `true` when a pause was published (the caller must stop the
  *   execution flow); `false` when `pauseContext` is `undefined`.
  */
-export function publishPauseOutcome(
+export const publishPauseOutcome = (
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
   pauseContext: PauseContext | undefined,
   loopState: LoopState
-): boolean {
+): boolean => {
   if (pauseContext === undefined) {
     return false;
   }
@@ -148,18 +148,18 @@ export function publishPauseOutcome(
     loopState
   );
   return true;
-}
+};
 
 /**
  * Publish an `approval.resolved` event for a resumed execution, or do nothing
  * when no approval response is present.
  */
-export function publishApprovalResolved(
+export const publishApprovalResolved = (
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
   response: ApprovalResponse | undefined,
   loopState: LoopState
-): void {
+): void => {
   if (response === undefined) {
     return;
   }
@@ -173,7 +173,50 @@ export function publishApprovalResolved(
     },
     loopState
   );
-}
+};
+
+/**
+ * Move the handle to the `failed` phase and project a finalization failure:
+ * the root cause (when present) as the fatal error and the finalization
+ * error as a secondary non-fatal error, or the finalization error alone as
+ * fatal.
+ */
+const projectFinalizationFailure = (
+  host: RuntimeCoreFinalizationHost,
+  handle: RuntimeExecutionHandle,
+  loopState: LoopState,
+  finalizationFailure: FinalizationFailureError
+): void => {
+  handle.replaceStatus({
+    activeAgent: loopState.activeConfig.name,
+    iterationCount: handle.status().iterationCount,
+    manifest: handle.status().manifest,
+    phase: "failed",
+  });
+
+  if (finalizationFailure.rootCause === undefined) {
+    host.publishProjectedError(
+      handle,
+      finalizationFailure.finalizationError,
+      true,
+      loopState
+    );
+    return;
+  }
+
+  host.publishProjectedError(
+    handle,
+    finalizationFailure.rootCause,
+    true,
+    loopState
+  );
+  host.publishProjectedError(
+    handle,
+    finalizationFailure.finalizationError,
+    false,
+    loopState
+  );
+};
 
 /**
  * Terminal failure path for an execution session: pick the authoritative
@@ -181,7 +224,8 @@ export function publishApprovalResolved(
  *
  * Error precedence: a wall-clock execution-bound abort wins over whatever the
  * interrupted work threw (BD006, see inline comment), then a
- * {@link FinalizationFailure}'s root cause, then the normalized thrown error.
+ * {@link FinalizationFailureError}'s root cause, then the normalized thrown
+ * error.
  * The effective error is remembered on the handle, the active run is failed
  * via `failActiveRunIfNeeded`, and — when the kernel turn exists — the turn
  * status is finalized as a hard failure. Every path ends with the handle in
@@ -190,25 +234,25 @@ export function publishApprovalResolved(
  * for finalization problems.
  *
  * @param error - The value thrown out of the execution flow; may be a
- *   {@link FinalizationFailure} produced by {@link completeExecution}.
+ *   {@link FinalizationFailureError} produced by {@link completeExecution}.
  * @param failActiveRunIfNeeded - Callback that marks the handle's active
  *   kernel run (if any) as failed before status finalization.
  */
-export async function handleExecutionFailure(
+export const handleExecutionFailure = async (
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
   error: unknown,
   failActiveRunIfNeeded: (handle: RuntimeExecutionHandle) => Promise<void>
-): Promise<void> {
+): Promise<void> => {
   const finalizationFailure =
-    error instanceof FinalizationFailure ? error : undefined;
+    error instanceof FinalizationFailureError ? error : undefined;
   const runtimeError = normalizeError(error);
   const rootError =
     finalizationFailure?.rootCause ?? finalizationFailure?.finalizationError;
   // A wall-clock bound abort is authoritative over whatever the interrupted
   // in-flight model/tool work threw, so the fatal error event, telemetry, and
   // result all carry execution_bound_exceeded with its details. (BD006)
-  const abortReason = handle.abortSignal.reason;
+  const abortReason: unknown = handle.abortSignal.reason;
   const boundsError = isBoundExceededError(abortReason)
     ? abortReason
     : undefined;
@@ -284,7 +328,7 @@ export async function handleExecutionFailure(
     },
     loopState
   );
-}
+};
 
 /**
  * Complete an execution with its final resolution and close the turn.
@@ -300,18 +344,18 @@ export async function handleExecutionFailure(
  *   example a cancellation after some progress).
  * @param enteredIterationLoop - Gates the after-turn hooks; pass `false` for
  *   preludes that never reached the loop.
- * @throws FinalizationFailure when persisting the turn status fails, wrapping
- *   the finalization error and — for a hard-failure resolution — the original
- *   root cause.
+ * @throws {FinalizationFailureError} When persisting the turn status fails,
+ *   wrapping the finalization error and — for a hard-failure resolution — the
+ *   original root cause.
  */
-export async function completeExecution(
+export const completeExecution = async (
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
   resolution: RuntimeResolution,
   partial: boolean,
   loopState: LoopState,
   enteredIterationLoop: boolean
-): Promise<void> {
+): Promise<void> => {
   if (enteredIterationLoop) {
     const headState = await host.loadHeadState(handle.request.branchId);
     const afterTurn = await runAfterTurnHooks({
@@ -339,7 +383,7 @@ export async function completeExecution(
   try {
     await host.finalizeTurnStatus(handle, resolution, partial, loopState);
   } catch (error: unknown) {
-    throw new FinalizationFailure(
+    throw new FinalizationFailureError(
       normalizeError(error),
       resolution.type === "fail" && resolution.fatality === "hard"
         ? resolution.error
@@ -369,7 +413,7 @@ export async function completeExecution(
     },
     loopState
   );
-}
+};
 
 /**
  * Finalize an execution that was cancelled while paused for tool approval.
@@ -379,7 +423,7 @@ export async function completeExecution(
  * finalize the rejected paused tool calls into a cancellation outcome, and
  * completes the execution with that outcome via `completeExecutionFn`.
  */
-export async function finalizePausedCancellation(
+export const finalizePausedCancellation = async (
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
   pauseContext: PauseContext,
@@ -390,7 +434,7 @@ export async function finalizePausedCancellation(
     loopState: LoopState,
     enteredIterationLoop: boolean
   ) => Promise<void>
-): Promise<void> {
+): Promise<void> => {
   const loopState: LoopState = {
     activeConfig: pauseContext.activeConfig,
     activeRunnerId: pauseContext.activeRunnerId,
@@ -421,47 +465,4 @@ export async function finalizePausedCancellation(
     loopState,
     true
   );
-}
-
-/**
- * Move the handle to the `failed` phase and project a finalization failure:
- * the root cause (when present) as the fatal error and the finalization
- * error as a secondary non-fatal error, or the finalization error alone as
- * fatal.
- */
-function projectFinalizationFailure(
-  host: RuntimeCoreFinalizationHost,
-  handle: RuntimeExecutionHandle,
-  loopState: LoopState,
-  finalizationFailure: FinalizationFailure
-): void {
-  handle.replaceStatus({
-    activeAgent: loopState.activeConfig.name,
-    iterationCount: handle.status().iterationCount,
-    manifest: handle.status().manifest,
-    phase: "failed",
-  });
-
-  if (finalizationFailure.rootCause === undefined) {
-    host.publishProjectedError(
-      handle,
-      finalizationFailure.finalizationError,
-      true,
-      loopState
-    );
-    return;
-  }
-
-  host.publishProjectedError(
-    handle,
-    finalizationFailure.rootCause,
-    true,
-    loopState
-  );
-  host.publishProjectedError(
-    handle,
-    finalizationFailure.finalizationError,
-    false,
-    loopState
-  );
-}
+};

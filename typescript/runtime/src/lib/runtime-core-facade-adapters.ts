@@ -38,7 +38,7 @@ import type { HeadState, LoopState } from "./runtime-core-loop.js";
  * runtime-core-named adapter over
  * {@link resolveHandoffSourceContextFacade}.
  */
-export function resolveRuntimeCoreHandoffSourceContext(
+export const resolveRuntimeCoreHandoffSourceContext = (
   dependencies: Pick<
     FacadeOpsDependencies,
     "cloneAgentConfigForRequest" | "kernel"
@@ -48,8 +48,8 @@ export function resolveRuntimeCoreHandoffSourceContext(
   loopState: LoopState,
   targetConfig: AgentConfig,
   helpers: ContextEngineeringHelpers
-): HandoffSourceContext {
-  return resolveHandoffSourceContextFacade(
+): HandoffSourceContext =>
+  resolveHandoffSourceContextFacade(
     dependencies,
     plan,
     headState,
@@ -57,44 +57,38 @@ export function resolveRuntimeCoreHandoffSourceContext(
     targetConfig,
     helpers
   );
-}
 
 /**
  * Materializes context messages from their hashes; a runtime-core-named
  * adapter over {@link materializeContextMessagesFacade}, which converts a
  * missing hash into a `TuvrenLineageError` with code `missing_message`.
  */
-export function materializeRuntimeCoreContextMessages(
+export const materializeRuntimeCoreContextMessages = (
   hashes: HashString[],
   helpers: ContextEngineeringHelpers
-): TuvrenMessage[] {
-  return materializeContextMessagesFacade(hashes, helpers);
-}
+): TuvrenMessage[] => materializeContextMessagesFacade(hashes, helpers);
 
 /**
  * Materializes a registered {@link RuntimeRunner} by id; a runtime-core-named
  * adapter over {@link materializeRunnerFacade}, which throws
  * `unknown_runner` for unregistered ids.
  */
-export function materializeRuntimeCoreRunner(
+export const materializeRuntimeCoreRunner = (
   runnerRegistry: Parameters<typeof materializeRunnerFacade>[0],
   runnerId: string
-): RuntimeRunner {
-  return materializeRunnerFacade(runnerRegistry, runnerId);
-}
+): RuntimeRunner => materializeRunnerFacade(runnerRegistry, runnerId);
 
 /**
  * Resolves the {@link AgentConfig} to attribute a failure to; a
  * runtime-core-named adapter over {@link resolveFailureActiveConfigFacade}.
  */
-export function resolveRuntimeCoreFailureActiveConfig(
+export const resolveRuntimeCoreFailureActiveConfig = (
   requestConfig: AgentConfig,
   activeAgentName: string,
   resolveAgentConfig: FacadeOpsDependencies["resolveAgentConfig"]
-): AgentConfig {
-  return resolveFailureActiveConfigFacade(
+): AgentConfig =>
+  resolveFailureActiveConfigFacade(
     requestConfig,
     activeAgentName,
     resolveAgentConfig
   );
-}
