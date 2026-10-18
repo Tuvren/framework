@@ -56,9 +56,9 @@ const readonlyRunnerToolRegistryCache = new WeakMap<
  * Returns undefined when no client endpoints or boundary are configured.
  * (KRT-AZ001)
  */
-export function createClientEndpointBoundaryFromConfig(
+export const createClientEndpointBoundaryFromConfig = (
   config: AgentConfig
-): ClientEndpointBoundary | undefined {
+): ClientEndpointBoundary | undefined => {
   if (config.clientEndpointBoundary !== undefined) {
     return config.clientEndpointBoundary;
   }
@@ -66,7 +66,7 @@ export function createClientEndpointBoundaryFromConfig(
   return endpoints.length > 0
     ? createClientEndpointBoundary(endpoints)
     : undefined;
-}
+};
 
 /**
  * Create the active tool registry for a turn.
@@ -76,11 +76,11 @@ export function createClientEndpointBoundaryFromConfig(
  * advertised capability. The boundary must be stored on LoopState so the
  * tool-execution path can dispatch to the correct endpoint. (KRT-AZ001)
  */
-export function createActiveToolRegistry(
+export const createActiveToolRegistry = (
   requestTools: TuvrenToolDefinition[] | undefined,
   config: AgentConfig,
   clientEndpointBoundary?: ClientEndpointBoundary
-): ToolRegistry {
+): ToolRegistry => {
   const clientEndpointTools = clientEndpointBoundary
     ? buildClientEndpointTools(
         config.clientEndpoints ?? [],
@@ -93,24 +93,7 @@ export function createActiveToolRegistry(
     ...clientEndpointTools,
   ];
   return createToolRegistry(activeTools, config.extensions ?? []);
-}
-
-/**
- * Resolves the effective parallel-tool-call limit for a turn from
- * `config.maxParallelToolCalls`, falling back to the runtime default.
- *
- * @throws TuvrenRuntimeError with code `invalid_runtime_options` when the
- *   resolved value is not a positive safe integer.
- */
-export function resolveActiveMaxParallelToolCalls(
-  config: AgentConfig,
-  defaultMaxParallelToolCalls: number
-): number {
-  return normalizeMaxParallelToolCalls(
-    config.maxParallelToolCalls ?? defaultMaxParallelToolCalls,
-    "AgentConfig.maxParallelToolCalls"
-  );
-}
+};
 
 /**
  * Validates that a numeric runtime option is a positive safe integer,
@@ -120,10 +103,10 @@ export function resolveActiveMaxParallelToolCalls(
  *   example `"AgentConfig.maxParallelToolCalls"`).
  * @throws TuvrenRuntimeError with code `invalid_runtime_options` otherwise.
  */
-export function normalizeMaxParallelToolCalls(
+export const normalizeMaxParallelToolCalls = (
   value: number,
   label: string
-): number {
+): number => {
   if (!Number.isSafeInteger(value) || value <= 0) {
     throw new TuvrenRuntimeError(`${label} must be a positive safe integer`, {
       code: "invalid_runtime_options",
@@ -134,7 +117,24 @@ export function normalizeMaxParallelToolCalls(
   }
 
   return value;
-}
+};
+
+/**
+ * Resolves the effective parallel-tool-call limit for a turn from
+ * `config.maxParallelToolCalls`, falling back to the runtime default.
+ *
+ * @throws TuvrenRuntimeError with code `invalid_runtime_options` when the
+ *   resolved value is not a positive safe integer.
+ */
+export const resolveActiveMaxParallelToolCalls = (
+  config: AgentConfig,
+  defaultMaxParallelToolCalls: number
+): number => {
+  return normalizeMaxParallelToolCalls(
+    config.maxParallelToolCalls ?? defaultMaxParallelToolCalls,
+    "AgentConfig.maxParallelToolCalls"
+  );
+};
 
 /**
  * Validates the manifest extension-state warning budget option.
@@ -145,9 +145,9 @@ export function normalizeMaxParallelToolCalls(
  * @throws TuvrenRuntimeError with code `invalid_runtime_options` when the
  *   value is neither `false` nor a positive safe integer.
  */
-export function normalizeManifestExtensionStateWarningBudget(
+export const normalizeManifestExtensionStateWarningBudget = (
   value: false | number
-): false | number {
+): false | number => {
   if (value === false) {
     return false;
   }
@@ -165,7 +165,7 @@ export function normalizeManifestExtensionStateWarningBudget(
   }
 
   return value;
-}
+};
 
 /**
  * Normalizes and validates {@link RuntimeRunLivenessOptions} for run-lease
@@ -179,11 +179,13 @@ export function normalizeManifestExtensionStateWarningBudget(
  * @throws TuvrenRuntimeError with code `invalid_runtime_options` when any
  *   constraint is violated.
  */
-export function normalizeRunLivenessOptions(value: RuntimeRunLivenessOptions): {
+export const normalizeRunLivenessOptions = (
+  value: RuntimeRunLivenessOptions
+): {
   executionOwnerId: string;
   leaseDurationMs: number;
   renewBeforeMs: number;
-} {
+} => {
   if (value.executionOwnerId.length === 0) {
     throw new TuvrenRuntimeError(
       "runLiveness.executionOwnerId must be a non-empty string",
@@ -220,7 +222,40 @@ export function normalizeRunLivenessOptions(value: RuntimeRunLivenessOptions): {
     leaseDurationMs,
     renewBeforeMs,
   };
-}
+};
+
+/**
+ * Creates a runner-facing snapshot of a tool definition: metadata and schema
+ * are frozen copies, and `execute` throws a `TuvrenRuntimeError` with code
+ * `invalid_runner_result` because runners must request tool calls through
+ * resolutions rather than executing tools directly.
+ */
+export const createRunnerToolDefinitionSnapshot = (
+  tool: TuvrenToolDefinition
+): TuvrenToolDefinition => {
+  return {
+    approval: tool.approval,
+    description: tool.description,
+    execute() {
+      throw new TuvrenRuntimeError(
+        `runners must not execute tool "${tool.name}" from the read-only tool snapshot`,
+        {
+          code: "invalid_runner_result",
+          details: {
+            toolName: tool.name,
+          },
+        }
+      );
+    },
+    inputSchema: createFrozenSnapshot(tool.inputSchema),
+    metadata:
+      tool.metadata === undefined
+        ? undefined
+        : createFrozenSnapshot(tool.metadata),
+    name: tool.name,
+    timeout: tool.timeout,
+  };
+};
 
 /**
  * Creates a frozen, read-only view of a tool registry for handing to runners.
@@ -231,9 +266,9 @@ export function normalizeRunLivenessOptions(value: RuntimeRunLivenessOptions): {
  * registry. `toDefinitions()` returns fresh clones on every call. Views are
  * cached per source registry, so repeated calls return the same instance.
  */
-export function createReadonlyRunnerToolRegistry(
+export const createReadonlyRunnerToolRegistry = (
   registry: ToolRegistry
-): ToolRegistry {
+): ToolRegistry => {
   const cachedRegistry = readonlyRunnerToolRegistryCache.get(registry);
 
   if (cachedRegistry !== undefined) {
@@ -277,16 +312,16 @@ export function createReadonlyRunnerToolRegistry(
   } satisfies ToolRegistry);
   readonlyRunnerToolRegistryCache.set(registry, readonlyRegistry);
   return readonlyRegistry;
-}
+};
 
 /**
  * Creates the frozen {@link AgentConfig} snapshot exposed to runners, with
  * every tool (top-level and extension-owned) replaced by a non-executable
  * snapshot so runners can inspect but never invoke tool implementations.
  */
-export function createRunnerAgentConfigSnapshot(
+export const createRunnerAgentConfigSnapshot = (
   config: AgentConfig
-): AgentConfig {
+): AgentConfig => {
   return createFrozenSnapshot({
     ...config,
     extensions: config.extensions?.map((extension) => ({
@@ -299,40 +334,7 @@ export function createRunnerAgentConfigSnapshot(
       createRunnerToolDefinitionSnapshot(tool)
     ),
   });
-}
-
-/**
- * Creates a runner-facing snapshot of a tool definition: metadata and schema
- * are frozen copies, and `execute` throws a `TuvrenRuntimeError` with code
- * `invalid_runner_result` because runners must request tool calls through
- * resolutions rather than executing tools directly.
- */
-export function createRunnerToolDefinitionSnapshot(
-  tool: TuvrenToolDefinition
-): TuvrenToolDefinition {
-  return {
-    approval: tool.approval,
-    description: tool.description,
-    execute() {
-      throw new TuvrenRuntimeError(
-        `runners must not execute tool "${tool.name}" from the read-only tool snapshot`,
-        {
-          code: "invalid_runner_result",
-          details: {
-            toolName: tool.name,
-          },
-        }
-      );
-    },
-    inputSchema: createFrozenSnapshot(tool.inputSchema),
-    metadata:
-      tool.metadata === undefined
-        ? undefined
-        : createFrozenSnapshot(tool.metadata),
-    name: tool.name,
-    timeout: tool.timeout,
-  };
-}
+};
 
 /**
  * Deep-clones an {@link AgentConfig} for a request while preserving function
@@ -341,7 +343,9 @@ export function createRunnerToolDefinitionSnapshot(
  * The `clientEndpointBoundary` is restored by reference — see the inline
  * comment for why its identity must be preserved.
  */
-export function cloneAgentConfigForRequest(config: AgentConfig): AgentConfig {
+export const cloneAgentConfigForRequest = (
+  config: AgentConfig
+): AgentConfig => {
   const cloned = cloneSnapshotPreservingFunctions(config);
   // clientEndpointBoundary is a stateful, identity-preserving object (the
   // capabilityIndex is mutable and external callers may detach endpoints).
@@ -352,7 +356,7 @@ export function cloneAgentConfigForRequest(config: AgentConfig): AgentConfig {
     cloned.clientEndpointBoundary = config.clientEndpointBoundary;
   }
   return cloned;
-}
+};
 
 /**
  * Asserts that a value is a valid kernel record and encodes it with the
@@ -361,10 +365,13 @@ export function cloneAgentConfigForRequest(config: AgentConfig): AgentConfig {
  *
  * @param label - Name used in the assertion error when validation fails.
  */
-export function encodeKernelRecord(value: unknown, label: string): Uint8Array {
+export const encodeKernelRecord = (
+  value: unknown,
+  label: string
+): Uint8Array => {
   assertKernelRecord(value, label);
   return encodeDeterministicKernelRecord(value);
-}
+};
 
 /**
  * Collects seed state updates for extensions that declare an initial `state`
@@ -374,10 +381,10 @@ export function encodeKernelRecord(value: unknown, label: string): Uint8Array {
  * manifest, are skipped; collected states are deep-cloned so later mutation
  * of the extension object cannot leak into the committed update.
  */
-export function collectInitialExtensionStateUpdates(
+export const collectInitialExtensionStateUpdates = (
   extensions: TuvrenExtension[],
   manifest: ContextManifest
-): ExtensionStateUpdate[] {
+): ExtensionStateUpdate[] => {
   const updates: ExtensionStateUpdate[] = [];
 
   for (const extension of extensions) {
@@ -395,7 +402,7 @@ export function collectInitialExtensionStateUpdates(
   }
 
   return updates;
-}
+};
 
 /**
  * Computes a placeholder hash for record bytes that have not been committed
@@ -403,9 +410,9 @@ export function collectInitialExtensionStateUpdates(
  * `tuvren-runtime-pending:` domain string, keeping pending hashes
  * domain-separated from hashes computed over the raw record bytes.
  */
-export function createPendingKernelHash(value: Uint8Array): HashString {
+export const createPendingKernelHash = (value: Uint8Array): HashString => {
   return createHash("sha256")
     .update("tuvren-runtime-pending:")
     .update(value)
     .digest("hex");
-}
+};

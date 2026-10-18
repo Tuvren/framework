@@ -249,6 +249,20 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
   }
 }
 
+const snapshotAgentConfigs = (
+  agents: Record<string, AgentConfig>
+): Record<string, AgentConfig> => {
+  const snapshots: Record<string, AgentConfig> = {};
+
+  for (const [agentName, config] of Object.entries(agents)) {
+    // Snapshot orchestration-owned agent configs up front without freezing the
+    // receiver objects that live execution invokes as method-style hooks.
+    snapshots[agentName] = cloneSnapshotPreservingFunctions(config);
+  }
+
+  return snapshots;
+};
+
 /**
  * The orchestration surface over a framework runtime: resolves named agent
  * configs, starts turn executions as {@link OrchestrationNode}s, and serves
@@ -407,26 +421,12 @@ class OrchestrationRuntimeImpl
  *   an optional clock override.
  * @returns An `OrchestrationRuntime` bound to the supplied framework.
  */
-export function createOrchestrationRuntime(
+export const createOrchestrationRuntime = (
   options: OrchestrationRuntimeOptions
-): OrchestrationRuntime {
+): OrchestrationRuntime => {
   return new OrchestrationRuntimeImpl(
     options.framework,
     options.agents,
     options.now ?? Date.now
   );
-}
-
-function snapshotAgentConfigs(
-  agents: Record<string, AgentConfig>
-): Record<string, AgentConfig> {
-  const snapshots: Record<string, AgentConfig> = {};
-
-  for (const [agentName, config] of Object.entries(agents)) {
-    // Snapshot orchestration-owned agent configs up front without freezing the
-    // receiver objects that live execution invokes as method-style hooks.
-    snapshots[agentName] = cloneSnapshotPreservingFunctions(config);
-  }
-
-  return snapshots;
-}
+};
