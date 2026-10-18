@@ -54,12 +54,12 @@ const MARKER = "SECRET-token-abc123";
 const SCRUBBED = "[redacted]";
 
 /** Builds a one-shot runner requesting the given tool calls, then ending the turn. */
-function makeRunner(
+const makeRunner = (
   calls: [
     { callId: string; input: unknown; name: string },
     ...{ callId: string; input: unknown; name: string }[],
   ]
-): RuntimeRunner {
+): RuntimeRunner => {
   return {
     execute(context): Promise<RunnerExecutionResult> {
       const hasToolResult = context.messages.some((m) => m.role === "tool");
@@ -77,14 +77,16 @@ function makeRunner(
     },
     id: "fake",
   };
-}
+};
 
-function toolResultEvents(events: unknown[]): (TuvrenStreamEvent & {
+const toolResultEvents = (
+  events: unknown[]
+): (TuvrenStreamEvent & {
   type: "tool.result";
   callId: string;
   isError?: boolean;
   output?: unknown;
-})[] {
+})[] => {
   return events.filter(
     (e) => (e as TuvrenStreamEvent).type === "tool.result"
   ) as (TuvrenStreamEvent & {
@@ -93,25 +95,25 @@ function toolResultEvents(events: unknown[]): (TuvrenStreamEvent & {
     isError?: boolean;
     output?: unknown;
   })[];
-}
+};
 
-async function stagedToolResultParts(
+const stagedToolResultParts = async (
   harness: ReturnType<typeof createFakeKernelHarness>,
   branchId: string
-): Promise<ToolResultPart[]> {
+): Promise<ToolResultPart[]> => {
   const messages = await harness.readBranchMessages(branchId);
   return extractToolMessages(messages).flatMap(
     (message) => message.parts as ToolResultPart[]
   );
-}
+};
 
 /** Builds a pre-staged provider tool message (AY003). */
-function buildProviderToolMessage(opts: {
+const buildProviderToolMessage = (opts: {
   callId: string;
   executionClass: "provider-native" | "provider-mediated";
   name: string;
   output: unknown;
-}): TuvrenMessage {
+}): TuvrenMessage => {
   return {
     parts: [
       {
@@ -128,13 +130,13 @@ function buildProviderToolMessage(opts: {
     ],
     role: "tool",
   };
-}
+};
 
 /** One-shot runner returning a single pre-staged provider tool message. */
-function makeProviderRunner(
+const makeProviderRunner = (
   executionClass: "provider-native" | "provider-mediated",
   output: unknown
-): RuntimeRunner {
+): RuntimeRunner => {
   return {
     execute(context): Promise<RunnerExecutionResult> {
       if (!context.messages.some((m) => m.role === "tool")) {
@@ -157,8 +159,7 @@ function makeProviderRunner(
     },
     id: "provider-sanitize-runner",
   };
-}
-
+};
 describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () => {
   test("the scrubbed form — not the original — lands in durable kernel history", async () => {
     const harness = createFakeKernelHarness();
