@@ -61,4 +61,4 @@ export type {
   TurnStartEvent,
   TuvrenErrorProjection,
   TuvrenStreamEvent,
-} from "../lib/runtime-contract-shapes.js";
+} from "../lib/runtime-event-contract-shapes.js";

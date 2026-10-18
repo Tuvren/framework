@@ -18,8 +18,6 @@ import { isEpochMs, isHashString } from "./kernel-records.js";
 import type {
   ApprovalPolicy,
   CustomSchema,
-  EventSource,
-  TuvrenErrorProjection,
 } from "./runtime-contract-shapes.js";
 import type {
   ApprovalDecision,
@@ -28,6 +26,10 @@ import type {
   TuvrenJsonSchema,
   TuvrenJsonValue,
 } from "./runtime-data-contract-shapes.js";
+import type {
+  EventSource,
+  TuvrenErrorProjection,
+} from "./runtime-event-contract-shapes.js";
 
 type KrakenJsonValuePredicate = (
   value: unknown,

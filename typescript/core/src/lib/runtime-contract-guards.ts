@@ -53,7 +53,6 @@ import {
 } from "./runtime-contract-predicates.js";
 import type {
   ExecutionStatus,
-  TuvrenStreamEvent,
   TuvrenToolDefinition,
 } from "./runtime-contract-shapes.js";
 import type {
@@ -62,6 +61,7 @@ import type {
   ContextManifest,
   TuvrenMessage,
 } from "./runtime-data-contract-shapes.js";
+import type { TuvrenStreamEvent } from "./runtime-event-contract-shapes.js";
 import { FINISH_REASONS } from "./runtime-provider-contract-guards.js";
 import { TuvrenValidationError } from "./tuvren-error.js";
 

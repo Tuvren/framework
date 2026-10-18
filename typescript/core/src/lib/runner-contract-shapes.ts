@@ -22,13 +22,13 @@ import type {
   HandoffContextPlan,
   RuntimeResolution,
   ToolRegistry,
-  TuvrenStreamEvent,
 } from "./runtime-contract-shapes.js";
 import type {
   ApprovalResponse,
   ContextManifest,
   TuvrenMessage,
 } from "./runtime-data-contract-shapes.js";
+import type { TuvrenStreamEvent } from "./runtime-event-contract-shapes.js";
 
 /* oxlint-disable typescript/method-signature-style -- Preserve the published runner method signatures and their method bivariance under strictFunctionTypes. */
 

@@ -65,9 +65,9 @@ export type {
   ToolResultPart,
   TuvrenJsonSchema,
 } from "../lib/runtime-data-contract-shapes.js";
+export type { ValidationErrorPayload } from "../lib/runtime-event-contract-shapes.js";
 export type {
   TuvrenToolDefinition,
   TuvrenToolResultBatch,
-  ValidationErrorPayload,
   ValidationResult,
 } from "../lib/runtime-contract-shapes.js";
