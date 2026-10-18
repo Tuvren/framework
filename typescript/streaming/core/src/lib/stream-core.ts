@@ -53,8 +53,8 @@ export interface StreamAdapterOptions {
 
 /** A pending `next()` call on an {@link AsyncBroadcastQueue}, settled once a value, close, or failure arrives. */
 interface AsyncQueueWaiter<T> {
-  reject(error: unknown): void;
-  resolve(result: IteratorResult<T>): void;
+  reject: (error: unknown) => void;
+  resolve: (result: IteratorResult<T>) => void;
 }
 
 /** Per-branch bookkeeping for {@link teeTuvrenStreamEvents}. */
@@ -96,6 +96,7 @@ const cloneWarning = (warning: StreamAdapterWarning): StreamAdapterWarning => {
 
 /** Fires `promise` without awaiting it, swallowing any rejection (background pump loops are not awaited by callers). */
 const detachPromise = (promise: Promise<unknown>): void => {
+  // oxlint-disable-next-line promise/prefer-await-to-then -- Detachment must attach a rejection sink without awaiting or changing pump scheduling.
   promise.catch(() => {
     // Background pump failures are surfaced through the queue itself.
   });
@@ -118,7 +119,7 @@ const normalizeQueueError = (error: unknown): Error =>
  */
 class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
   private closed = false;
-  private failure?: unknown;
+  private failure?: Error;
   private readonly items: T[] = [];
   private readonly producerWaiters: (() => void)[] = [];
   private readonly waiters: AsyncQueueWaiter<T>[] = [];
@@ -141,7 +142,7 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
   }
 
   /** Marks the queue failed; every pending and future `next()` rejects with `error`. A no-op if already closed or failed. */
-  fail(error: unknown): void {
+  fail(error: Error): void {
     if (this.closed || this.failure !== undefined) {
       return;
     }
@@ -167,7 +168,7 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
    * Delivers `value` to a waiting consumer, or buffers it in the single slot.
    * Silently dropped if the queue is already closed or failed.
    *
-   * @throws TuvrenRuntimeError with code `invalid_stream_adapter_state` if
+   * @throws {TuvrenRuntimeError} With code `invalid_stream_adapter_state` if
    *   called when {@link canAcceptValue} is `false` — callers must check
    *   capacity (e.g. via `waitForCapacity`) before pushing.
    */
@@ -231,6 +232,7 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
           };
         }
 
+        // oxlint-disable-next-line promise/avoid-new -- The queue promise is settled later by push, close, or fail.
         return await new Promise<IteratorResult<T>>((resolve, reject) => {
           this.waiters.push({
             reject,
@@ -238,6 +240,7 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
           });
         });
       },
+      // oxlint-disable-next-line typescript/promise-function-async -- Returning Promise.resolve preserves the queue iterator's established settlement timing.
       return: (): Promise<IteratorResult<T>> => {
         this.close();
         return Promise.resolve({
@@ -249,6 +252,7 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
   }
 
   /** Resolves once {@link canAcceptValue} is true (or the queue closes/fails), for producers to await before pushing. */
+  /* oxlint-disable eslint/no-await-in-loop, promise/avoid-new -- Capacity changes asynchronously; each loop iteration must wait for a later consumer signal before rechecking queue state. */
   async waitForCapacity(): Promise<void> {
     while (
       !this.closed &&
@@ -260,6 +264,7 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
       });
     }
   }
+  /* oxlint-enable eslint/no-await-in-loop, promise/avoid-new */
 
   private releaseProducerWaiter(): void {
     this.producerWaiters.shift()?.();
@@ -277,7 +282,7 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
  * the clone, so a tee branch or fixture consumer cannot observe another
  * consumer's mutations to the same logical event.
  *
- * @throws If the cloned value somehow fails `assertTuvrenStreamEvent`
+ * @throws {TuvrenRuntimeError} If the cloned value somehow fails `assertTuvrenStreamEvent`
  *   (defensive; a valid input event always produces a valid clone).
  */
 export const cloneTuvrenStreamEvent = (
@@ -297,7 +302,7 @@ export const createFixtureStream = (
   events: readonly TuvrenStreamEvent[]
 ): AsyncIterable<TuvrenStreamEvent> =>
   // biome-ignore lint/suspicious/useAwait: Async generators must remain async even when fixture production is synchronous.
-  (async function* () {
+  (async function* createFixtureEventStream() {
     for (const event of events) {
       yield cloneTuvrenStreamEvent(event);
     }
@@ -389,7 +394,7 @@ export const serializeTuvrenStreamEvent = (event: TuvrenStreamEvent): string =>
  *   positive integer.
  * @returns Exactly `branchCount` async iterables, each a single-consumer view
  *   of the same underlying event sequence.
- * @throws TuvrenRuntimeError with code `invalid_stream_branch_count` when
+ * @throws {TuvrenRuntimeError} With code `invalid_stream_branch_count` when
  *   `branchCount` is not a positive integer.
  */
 export const teeTuvrenStreamEvents = (
@@ -436,7 +441,7 @@ export const teeTuvrenStreamEvents = (
   };
 
   /** Propagates a source failure to every branch's queue. */
-  const failBranches = (error: unknown) => {
+  const failBranches = (error: Error) => {
     for (const branch of branches) {
       branch.queue.fail(error);
     }
@@ -460,6 +465,7 @@ export const teeTuvrenStreamEvents = (
    * source pull cannot overrun a slow branch's single-slot queue. Resolves
    * immediately once there are no claimed-open branches left.
    */
+  /* oxlint-disable eslint/no-await-in-loop -- Backpressure requires serial capacity rechecks after each claimed branch becomes writable. */
   const waitForClaimedBranchCapacity = async (): Promise<void> => {
     for (;;) {
       const openBranches = branches.filter(
@@ -485,6 +491,7 @@ export const teeTuvrenStreamEvents = (
       );
     }
   };
+  /* oxlint-enable eslint/no-await-in-loop */
 
   /**
    * The single background loop that reads the upstream `events` iterator and
@@ -494,6 +501,7 @@ export const teeTuvrenStreamEvents = (
    * error is normalized and delivered to every branch instead of being
    * thrown from this loop).
    */
+  /* oxlint-disable eslint/no-await-in-loop -- The single-consumer source and per-event broadcast must advance sequentially to preserve event and backpressure order. */
   const pumpSource = async (): Promise<void> => {
     try {
       for (;;) {
@@ -506,7 +514,7 @@ export const teeTuvrenStreamEvents = (
         sourceReadStarted = true;
         const nextEvent = await sourceIterator.next();
 
-        if (nextEvent.done) {
+        if (nextEvent.done === true) {
           sourceClosed = true;
           closeBranches();
           return;
@@ -527,6 +535,7 @@ export const teeTuvrenStreamEvents = (
       failBranches(normalizeQueueError(error));
     }
   };
+  /* oxlint-enable eslint/no-await-in-loop */
 
   /** Starts {@link pumpSource} on the first branch's first `next()` call; idempotent thereafter. */
   const ensureSourceStarted = (): void => {

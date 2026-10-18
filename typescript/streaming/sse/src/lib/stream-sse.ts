@@ -189,6 +189,7 @@ export const toSseFrames = (
     options
   );
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established @experimental API stability marker. */
 /**
  * Maps a sequenced stream (ADR-0061, `createSequencedTuvrenStreamEvents` from
  * `@tuvren/stream-core`) to {@link TuvrenSseFrame}s exactly like
@@ -215,6 +216,7 @@ export const toResumableSseFrames = (
     createIteratorIterable(sequencedEvents[Symbol.asyncIterator]()),
     options
   );
+/* oxlint-enable jsdoc/check-tag-names */
 
 /**
  * Wraps {@link toSseFrames} in a streaming `Response` with EventSource-compatible
@@ -246,7 +248,7 @@ export const toSseResponse = (
       try {
         const nextFrame = await iterator.next();
 
-        if (nextFrame.done) {
+        if (nextFrame.done === true) {
           controller.close();
           return;
         }

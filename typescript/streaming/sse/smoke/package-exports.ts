@@ -31,7 +31,12 @@ describe("stream-sse package exports", () => {
     const nextFrame = await iterator.next();
 
     expect(nextFrame.done).toBe(false);
-    expect(nextFrame.value?.event).toBe("turn.start");
+
+    if (nextFrame.done === true) {
+      throw new Error("expected an SSE frame");
+    }
+
+    expect(nextFrame.value.event).toBe("turn.start");
     await iterator.return?.();
 
     const response = toSseResponse(

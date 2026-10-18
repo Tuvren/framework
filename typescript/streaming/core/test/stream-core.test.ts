@@ -28,9 +28,9 @@ import {
 } from "../src/index.ts";
 
 const EVENT_STREAMS_CONSUMED_PATTERN =
-  /event streams may only be consumed once/;
+  /event streams may only be consumed once/u;
 const LATE_SUBSCRIPTION_PATTERN =
-  /must subscribe before source consumption begins/;
+  /must subscribe before source consumption begins/u;
 
 const collectIteratorEvents = async <T>(
   iterator: AsyncIterator<T>
@@ -38,9 +38,10 @@ const collectIteratorEvents = async <T>(
   const collected: T[] = [];
 
   for (;;) {
+    // oxlint-disable-next-line eslint/no-await-in-loop -- This helper must pull the single-consumer iterator sequentially until completion.
     const nextEvent = await iterator.next();
 
-    if (nextEvent.done) {
+    if (nextEvent.done === true) {
       return collected;
     }
 
@@ -72,6 +73,7 @@ const createInstrumentedSource = (
       return {
         [Symbol.asyncIterator](): AsyncIterator<TuvrenStreamEvent> {
           return {
+            // oxlint-disable-next-line typescript/promise-function-async -- The instrumented iterator intentionally returns already-settled promises to preserve its test timing.
             next(): Promise<IteratorResult<TuvrenStreamEvent>> {
               const event = events[index];
 
@@ -90,6 +92,7 @@ const createInstrumentedSource = (
                 value: cloneTuvrenStreamEvent(event),
               });
             },
+            // oxlint-disable-next-line typescript/promise-function-async -- The instrumented iterator intentionally returns an already-settled cleanup promise.
             return(): Promise<IteratorResult<TuvrenStreamEvent>> {
               returned += 1;
               return Promise.resolve({

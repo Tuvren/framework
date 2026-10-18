@@ -110,12 +110,12 @@ const applyFieldUpdate = (
     }
     case "retry": {
       if (RETRY_DIGITS_PATTERN.test(fieldValue)) {
-        state.reconnectDelayMs = Number.parseInt(fieldValue, 10);
+        state.reconnectDelayMs = Math.trunc(Number(fieldValue));
       }
-      return;
+      break;
     }
     default: {
-      return;
+      break;
     }
   }
 };
@@ -162,6 +162,8 @@ const isValidUtf8 = (bytes: Uint8Array): boolean => {
  * CRLF, or a bare CR each end a line. A trailing unterminated run of
  * characters at end-of-stream is not a complete line and is therefore not
  * yielded — it corresponds to a partial frame the algorithm must discard.
+ *
+ * @yields {string} Each complete line without its terminator, in wire order.
  */
 const iterateCompleteLines = function* iterateCompleteLines(
   text: string
@@ -181,11 +183,7 @@ const iterateCompleteLines = function* iterateCompleteLines(
       current = "";
       const next = text[index + 1];
 
-      if (next === "\n") {
-        index += 2;
-      } else {
-        index += 1;
-      }
+      index += next === "\n" ? 2 : 1;
 
       continue;
     }

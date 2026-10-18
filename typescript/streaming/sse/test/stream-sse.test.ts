@@ -166,11 +166,16 @@ describe("toResumableSseFrames", () => {
 
     for (const [index, frame] of frames.entries()) {
       expect(frame.id).toBeDefined();
-      const payload = decodeResumeCursor(frame.id as string);
+
+      if (frame.id === undefined) {
+        throw new Error("expected a resumable SSE frame id");
+      }
+
+      const payload = decodeResumeCursor(frame.id);
       expect(payload?.turnId).toBe("turn-main");
       expect(payload?.sequence).toBe(index);
       expect(frame.event).toBe(
-        streamAdapterFixtures.completedTurn[index]?.type as string
+        streamAdapterFixtures.completedTurn[index]?.type
       );
     }
   });
@@ -203,7 +208,11 @@ describe("toResumableSseFrames", () => {
 
     expect(decoded.lastEventId).toBeDefined();
 
-    const result = buffer.replayFrom(decoded.lastEventId as string);
+    if (decoded.lastEventId === undefined) {
+      throw new Error("expected a decoded Last-Event-ID");
+    }
+
+    const result = buffer.replayFrom(decoded.lastEventId);
 
     expect(result.status).toBe("resumed");
 

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */
+
 /**
  * @packageDocumentation
  *
@@ -30,6 +32,9 @@
  * stream is first pulled, or it fails with `event_stream_subscription_too_late`;
  * a branch that is iterated twice fails with `event_stream_already_consumed`.
  */
+
+/* oxlint-enable jsdoc/check-tag-names */
+
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
 export type {
   StreamAdapterOptions,

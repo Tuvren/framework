@@ -1,0 +1,320 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CA004",
+  "milestone": "M27-stream-core-sse-cleanup-retained-streaming-ownership",
+  "result": "pass",
+  "reviewed_parent": "9fa8b5280a3f11ffe56cec5e13fed2468dc1328a",
+  "working_tree_candidate": true,
+  "scope": [
+    "typescript/streaming/core",
+    "typescript/streaming/sse"
+  ],
+  "toolchain": {
+    "bun": "1.4.2",
+    "typescript": "6.0.2",
+    "oxlint": "1.86.0",
+    "oxfmt": "0.71.0",
+    "biome": "2.5.14",
+    "nx": "22.7.12"
+  },
+  "selection": {
+    "code_count": 14,
+    "code_files": [
+      "typescript/streaming/core/smoke/package-exports.ts",
+      "typescript/streaming/core/src/index.ts",
+      "typescript/streaming/core/src/lib/stream-core.ts",
+      "typescript/streaming/core/src/lib/stream-resume.ts",
+      "typescript/streaming/core/test/stream-core.test.ts",
+      "typescript/streaming/core/test/stream-resume.test.ts",
+      "typescript/streaming/core/tsup.config.ts",
+      "typescript/streaming/sse/smoke/package-exports.ts",
+      "typescript/streaming/sse/src/index.ts",
+      "typescript/streaming/sse/src/lib/sse-decoder.ts",
+      "typescript/streaming/sse/src/lib/stream-sse.ts",
+      "typescript/streaming/sse/test/sse-decoder.test.ts",
+      "typescript/streaming/sse/test/stream-sse.test.ts",
+      "typescript/streaming/sse/tsup.config.ts"
+    ],
+    "json_count": 14,
+    "json_files": [
+      "typescript/streaming/core/package.json",
+      "typescript/streaming/core/project.json",
+      "typescript/streaming/core/tsconfig.dts.json",
+      "typescript/streaming/core/tsconfig.json",
+      "typescript/streaming/core/tsconfig.lib.json",
+      "typescript/streaming/core/tsconfig.tsup.json",
+      "typescript/streaming/core/tsconfig.typecheck.json",
+      "typescript/streaming/sse/package.json",
+      "typescript/streaming/sse/project.json",
+      "typescript/streaming/sse/tsconfig.dts.json",
+      "typescript/streaming/sse/tsconfig.json",
+      "typescript/streaming/sse/tsconfig.lib.json",
+      "typescript/streaming/sse/tsconfig.tsup.json",
+      "typescript/streaming/sse/tsconfig.typecheck.json"
+    ],
+    "debug_selection_exact": true,
+    "json_selection_exact": true,
+    "nonempty": true
+  },
+  "diagnostics": {
+    "baseline_syntactic": {
+      "source_commit": "9fa8b5280a3f11ffe56cec5e13fed2468dc1328a",
+      "files": 14,
+      "rules": 419,
+      "count": 43
+    },
+    "baseline_type_aware": {
+      "source_commit": "9fa8b5280a3f11ffe56cec5e13fed2468dc1328a",
+      "files": 14,
+      "rules": 474,
+      "type_aware_rules": 55,
+      "count": 72
+    },
+    "directly_fixed_diagnostics": 45,
+    "justified_exception_diagnostics": 27,
+    "final_syntactic": {
+      "files": 14,
+      "rules": 419,
+      "count": 0
+    },
+    "final_type_aware_with_unused_denied": {
+      "files": 14,
+      "rules": 474,
+      "count": 0
+    },
+    "project_resolution_errors": 0
+  },
+  "native_exception_regions": [
+    {
+      "paths": [
+        "typescript/streaming/core/src/index.ts",
+        "typescript/streaming/core/src/lib/stream-resume.ts",
+        "typescript/streaming/sse/src/index.ts",
+        "typescript/streaming/sse/src/lib/stream-sse.ts"
+      ],
+      "rule": "jsdoc/check-tag-names",
+      "baseline_firing_diagnostics": 11,
+      "reason": "Preserve standard @packageDocumentation and established @experimental API markers."
+    },
+    {
+      "path": "typescript/streaming/core/src/lib/stream-core.ts",
+      "rule": "promise/prefer-await-to-then",
+      "region": "detachPromise rejection sink only",
+      "baseline_firing_diagnostics": 1,
+      "reason": "Detachment must attach rejection handling synchronously without awaiting or changing pump scheduling."
+    },
+    {
+      "path": "typescript/streaming/core/src/lib/stream-core.ts",
+      "rule": "promise/avoid-new",
+      "regions": [
+        "pending queue next promise",
+        "waitForCapacity producer signal promise"
+      ],
+      "baseline_firing_diagnostics": 2,
+      "reason": "Both promises are externally settled synchronization points, not replaceable library promises."
+    },
+    {
+      "paths": [
+        "typescript/streaming/core/src/lib/stream-core.ts",
+        "typescript/streaming/core/test/stream-core.test.ts",
+        "typescript/streaming/core/test/stream-resume.test.ts"
+      ],
+      "rule": "typescript/promise-function-async",
+      "baseline_firing_diagnostics": 5,
+      "reason": "Preserve already-settled iterator return promises and deterministic iterator probe timing."
+    },
+    {
+      "paths": [
+        "typescript/streaming/core/src/lib/stream-core.ts",
+        "typescript/streaming/core/test/stream-core.test.ts"
+      ],
+      "rule": "eslint/no-await-in-loop",
+      "baseline_firing_diagnostics": 5,
+      "reason": "Capacity rechecks and single-consumer iterator pulls are intentionally sequential to preserve ordering and backpressure."
+    },
+    {
+      "path": "typescript/streaming/core/src/lib/stream-resume.ts",
+      "rule": "typescript/method-signature-style",
+      "region": "ReplayBuffer public interface only",
+      "baseline_firing_diagnostics": 3,
+      "reason": "Preserve the established public method declaration form and byte-identical generated API output."
+    }
+  ],
+  "repairs": [
+    {
+      "area": "queue-and-tee",
+      "decision": "Narrow waiter callbacks to function properties, retain detached and deferred synchronization regions, and compare IteratorResult.done explicitly.",
+      "effect": "Queue capacity, first-pull timing, single-slot buffering, sequential source reads, event order, close behavior and propagated Error identity remain unchanged."
+    },
+    {
+      "area": "cursor-and-replay",
+      "decision": "Validate decoded JSON as a non-array string-keyed object, name the sequencer generator, destructure event fields, and replace test assertions with runtime guards.",
+      "effect": "Cursor encoding, decoding outcomes, checkpoint lineage, replay windows and public ReplayBuffer declarations remain unchanged."
+    },
+    {
+      "area": "sse-wire",
+      "decision": "Use equivalent digit conversion, switch breaks, documented generator yields, direct CR/LF index selection, and IteratorResult narrowing.",
+      "effect": "SSE field semantics, emitted bytes, Last-Event-ID behavior, warnings and error propagation remain unchanged."
+    },
+    {
+      "area": "fixture-validation",
+      "decision": "Validate the SSE authority fixture completely at runtime instead of asserting parsed JSON types.",
+      "effect": "The same authority fixture and expected observations are used without unsafe assertions."
+    }
+  ],
+  "retained_biome": {
+    "source_ledger": ".constitution/evidence/KRT-CA002/suppressions.json",
+    "source_ledger_sha256": "c2356a079380c9c75337ae8176f1d49bdc25d9c80b819c2e8a1d938e4aceafb9",
+    "baseline_identities": 5,
+    "currently_retained": 5,
+    "reason_changed": 0,
+    "directives_added": 0,
+    "direct_checks": {
+      "core": "pass",
+      "sse": "pass"
+    },
+    "project_targets": {
+      "framework-stream-core:lint": "pass",
+      "framework-stream-sse:lint": "pass"
+    }
+  },
+  "deferred_atomic_admission": {
+    "milestone": "M28",
+    "project_targets_unchanged": true,
+    "core_project_sha256": "be557971f5851ae2bc59b7e6cf925d5ac6683518e8366371f936922ec2d4880d",
+    "sse_project_sha256": "b4b32c4dfa7885fee0a35fc32feb506258e69b7de9db478e55124f0a55ef8211",
+    "coverage_unchanged": true,
+    "coverage_sha256": "eeecd62a988777e40bf4158159b348efc557b0dc3b0b998f5c3d54ce3965f54a",
+    "retained_coverage_entry": "typescript/streaming",
+    "reason": "AGUI, stream core, SSE and WS transfer atomically in M28."
+  },
+  "behavior": {
+    "queue_and_iterator_timing": "preserved",
+    "cursor_encoding_and_decoding": "preserved",
+    "serialization": "preserved",
+    "replay_order_and_windowing": "preserved",
+    "sse_bytes_and_headers": "preserved",
+    "warning_order_and_deduplication": "preserved",
+    "error_identity_and_order": "preserved",
+    "public_exports": "preserved",
+    "generated_core_declaration_sha256_before_after": "f0d41ba077bcbd25f4e715a11dd74d95d9bbdbe3501249b2c6f630babfc64f63",
+    "generated_sse_declaration_sha256_before_after": "8086e8f9f00b051dd384d5c061306100869af9bab4fcd07f155f727ba24c994a",
+    "release_metadata": "unchanged"
+  },
+  "gates": {
+    "core_typecheck": "pass",
+    "sse_typecheck": "pass",
+    "core_build": "pass",
+    "sse_build": "pass",
+    "core_tests": {
+      "status": "pass",
+      "passed": 25,
+      "failed": 0
+    },
+    "sse_tests": {
+      "status": "pass",
+      "passed": 26,
+      "failed": 0
+    },
+    "core_exports_smoke": {
+      "status": "pass",
+      "passed": 1,
+      "failed": 0
+    },
+    "sse_exports_smoke": {
+      "status": "pass",
+      "passed": 1,
+      "failed": 0
+    },
+    "runtime_tests": {
+      "status": "pass",
+      "passed": 566,
+      "failed": 0
+    },
+    "conformance": {
+      "status": "pass",
+      "requested_streaming_plans": 4,
+      "adapter_authority_packet_expansion": true,
+      "applicable_checks": 511,
+      "passed_checks": 511,
+      "failed_checks": 0,
+      "non_applicable_checks": 12
+    },
+    "api_freeze": {
+      "status": "pass",
+      "entrypoints": 14,
+      "exports": 404
+    },
+    "full_lint": "pass",
+    "format_check": {
+      "status": "pass",
+      "files": 1336
+    },
+    "changeset_check": {
+      "status": "pass",
+      "direct_publishable_packages": 8,
+      "base": "master"
+    },
+    "constitution_validate": {
+      "status": "pass",
+      "errors": 0,
+      "warnings": 0,
+      "info": 78
+    },
+    "json_check": "pass",
+    "diff_check": "pass"
+  },
+  "a19_composition": {
+    "files": 12,
+    "insertions": 218,
+    "deletions": 81,
+    "total_lines": 299,
+    "production": {
+      "files": 6,
+      "insertions": 69,
+      "deletions": 26
+    },
+    "export_smoke": {
+      "files": 2,
+      "insertions": 7,
+      "deletions": 2
+    },
+    "tests": {
+      "files": 4,
+      "insertions": 142,
+      "deletions": 53
+    },
+    "metadata": {
+      "files": 0,
+      "insertions": 0,
+      "deletions": 0
+    },
+    "stage4_routing": "This bounded M27 slice contributes 299 raw changed lines to the inherited aggregate. Final epic aggregate and reviewability remain routed to the wave lead under A19; this report claims no aggregate-size compliance."
+  },
+  "candidate_source_hashes": {
+    "typescript/streaming/core/smoke/package-exports.ts": "18f79f9dea9f5987d7c9959c7654a684d8c26d1e63274211851011fa5d66fdd5",
+    "typescript/streaming/core/src/index.ts": "f1cd523c704136c62b9ac0add4f4d5893a91840a6e37d785edafed6822752fe7",
+    "typescript/streaming/core/src/lib/stream-core.ts": "531b9031cdc68b9e57df9ea3fde3770745d3b584840cc997f5ecfc28f8d2e782",
+    "typescript/streaming/core/src/lib/stream-resume.ts": "24e474a53761871366fe8b455f478fa978df6909165cdffe4ac36f7c09dfcb31",
+    "typescript/streaming/core/test/stream-core.test.ts": "f497d97ed6a0e515561b017d8b623df2b89734e19cc7714ade84ecc9e3f87c0f",
+    "typescript/streaming/core/test/stream-resume.test.ts": "e952cc60d4bb78147ef6561ed7577a71f8ca5292bbd8ac2116fd3bbdf3334a70",
+    "typescript/streaming/core/tsup.config.ts": "d4eff88f13f38e0397b71bec69793f6c2364c29372cf1c9638ed2ae2793bd28d",
+    "typescript/streaming/sse/smoke/package-exports.ts": "0f969103470f83afe521ad687abee8c9b754f71896a1a3299883744f14eb927e",
+    "typescript/streaming/sse/src/index.ts": "d5deb09103c2964b4cff50e76b5ecec9e83b26bbe30fb63a442439b6b48c4b46",
+    "typescript/streaming/sse/src/lib/sse-decoder.ts": "de53b26d576f1c01989b7d6e452856b66ec5681a6c1dc240efc79cce995fd850",
+    "typescript/streaming/sse/src/lib/stream-sse.ts": "c64a7e58c0d674e0c4289d06ede29e3db911cb164fef99a3eddd8b29facfb620",
+    "typescript/streaming/sse/test/sse-decoder.test.ts": "a9fdbbc3e8008f8a3cfdf968abb9fad3753cbd754fa07cb67144a440c3e7826b",
+    "typescript/streaming/sse/test/stream-sse.test.ts": "75f6e53e989512ddfcb38b09fa0788076fb90dd7eef2de195ab013ebbd0dac7e",
+    "typescript/streaming/sse/tsup.config.ts": "d4eff88f13f38e0397b71bec69793f6c2364c29372cf1c9638ed2ae2793bd28d"
+  },
+  "drift": {
+    "changed_files_outside_m27_scope": 0,
+    "constitution_files": 0,
+    "generated_files": 0,
+    "dependency_files": 0,
+    "project_target_files": 0,
+    "coverage_files": 0,
+    "config_overrides": 0,
+    "changeset_files": 0
+  }
+}
