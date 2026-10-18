@@ -13,7 +13,7 @@
     {
       "milestone": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c",
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
       "baseline_commit": "f814b9ac82718123e0d23eabb35a9db61aebfacd",
       "planned_source_commit": "fd8ee5d4060ddfce23e250c32a675d41cca255b9",
       "measurement_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
@@ -70,12 +70,13 @@
         "removed": [],
         "changed_reasons": []
       },
-      "identities": 14
+      "identities": 14,
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "milestone": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b",
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
       "baseline_commit": "f814b9ac82718123e0d23eabb35a9db61aebfacd",
       "planned_source_commit": "fd8ee5d4060ddfce23e250c32a675d41cca255b9",
       "measurement_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
@@ -134,7 +135,8 @@
         "removed": [],
         "changed_reasons": []
       },
-      "identities": 17
+      "identities": 17,
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "milestone": "M9",
@@ -224,7 +226,8 @@
       "producing_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
       "cohort": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "identity": "typescript/core/src/capabilities/index.ts::assist/source/organizeImports::1",
@@ -268,7 +271,8 @@
       "producing_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
       "cohort": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "identity": "typescript/core/src/errors/index.ts::lint/performance/noBarrelFile::1",
@@ -312,7 +316,8 @@
       "producing_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
       "cohort": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "identity": "typescript/core/src/events/index.ts::lint/performance/noBarrelFile::1",
@@ -356,7 +361,8 @@
       "producing_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
       "cohort": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "identity": "typescript/core/src/execution/index.ts::lint/performance/noBarrelFile::1",
@@ -400,7 +406,8 @@
       "producing_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
       "cohort": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "identity": "typescript/core/src/extensions/index.ts::lint/performance/noBarrelFile::1",
@@ -444,7 +451,8 @@
       "producing_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
       "cohort": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "identity": "typescript/core/src/index.ts::lint/performance/noBarrelFile::1",
@@ -488,7 +496,8 @@
       "producing_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
       "cohort": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "identity": "typescript/core/src/lib/runner-contracts.ts::lint/performance/noBarrelFile::1",
@@ -530,7 +539,8 @@
       "producing_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
       "cohort": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "identity": "typescript/core/src/lifecycle/index.ts::lint/performance/noBarrelFile::1",
@@ -574,7 +584,8 @@
       "producing_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
       "cohort": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "identity": "typescript/core/src/messages/index.ts::lint/performance/noBarrelFile::1",
@@ -618,7 +629,8 @@
       "producing_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
       "cohort": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "identity": "typescript/core/src/provider/index.ts::lint/performance/noBarrelFile::1",
@@ -662,7 +674,8 @@
       "producing_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
       "cohort": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "identity": "typescript/core/src/runner/index.ts::lint/performance/noBarrelFile::1",
@@ -706,7 +719,8 @@
       "producing_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
       "cohort": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "identity": "typescript/core/src/security/index.ts::lint/performance/noBarrelFile::1",
@@ -750,7 +764,8 @@
       "producing_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
       "cohort": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "identity": "typescript/core/src/tools/index.ts::lint/performance/noBarrelFile::1",
@@ -794,7 +809,8 @@
       "producing_commit": "f3192ba8a5edfc82df6d4206fa4ac2dcf19750e7",
       "cohort": "M7",
       "source_ledger": ".constitution/evidence/KRT-CA002/M7-core-summary.json",
-      "source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
+      "source_ledger_sha256": "86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a",
+      "external_source_ledger_sha256": "df87b5b5bc0efd300807779dbcd551b525df262ac7016e188d845413db790e9c"
     },
     {
       "identity": "typescript/sdk/src/advanced.ts::lint/performance/noBarrelFile::1",
@@ -838,7 +854,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/sdk/src/index.ts::lint/performance/noBarrelFile::1",
@@ -882,7 +899,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts::lint/suspicious/useAwait::1",
@@ -949,7 +967,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts::lint/suspicious/useAwait::1",
@@ -1017,7 +1036,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/sdk/test/payload-codec.crypto-shredding.test.ts::lint/suspicious/useAwait::1",
@@ -1084,7 +1104,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/sdk/test/tenant-offboarding.test.ts::lint/suspicious/useAwait::1",
@@ -1152,7 +1173,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/streaming/agui/src/index.ts::lint/performance/noBarrelFile::1",
@@ -1196,7 +1218,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/streaming/agui/src/lib/stream-agui.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
@@ -1244,7 +1267,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/streaming/core/src/index.ts::lint/performance/noBarrelFile::1",
@@ -1288,7 +1312,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/streaming/core/src/lib/stream-core.ts::lint/suspicious/useAwait::1",
@@ -1342,7 +1367,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/streaming/core/test/stream-core.test.ts::lint/suspicious/useAwait::1",
@@ -1391,7 +1417,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/streaming/sse/src/index.ts::lint/performance/noBarrelFile::1",
@@ -1435,7 +1462,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/streaming/sse/test/sse-decoder.test.ts::lint/suspicious/useAwait::1",
@@ -1482,7 +1510,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/streaming/ws/src/index.ts::lint/performance/noBarrelFile::1",
@@ -1526,7 +1555,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/streaming/ws/test/session-test-helpers.ts::lint/suspicious/useAwait::1",
@@ -1598,7 +1628,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/streaming/ws/test/session-test-helpers.ts::lint/suspicious/useAwait::2",
@@ -1670,7 +1701,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/streaming/ws/test/session-test-helpers.ts::lint/suspicious/useAwait::3",
@@ -1742,7 +1774,8 @@
       "producing_commit": "1b8b1124c498be7c227cd0780f4ff6050664c84a",
       "cohort": "M8",
       "source_ledger": ".constitution/evidence/KRT-CA002/M8-sdk-streaming-summary.json",
-      "source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
+      "source_ledger_sha256": "61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66",
+      "external_source_ledger_sha256": "92aa50e484ccd77142962043f59e80ba8421e42a23473a9258c33c5cf3827c9b"
     },
     {
       "identity": "typescript/telemetry/otel/src/index.ts::lint/performance/noBarrelFile::1",
