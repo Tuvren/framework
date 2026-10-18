@@ -117,15 +117,32 @@
     ],
     "parallel": false,
     "inputs": "inherited",
-    "removed_coverage_entries": ["typescript/tools"],
+    "removed_coverage_entries": [
+      "typescript/tools"
+    ],
     "retained_coverage_entry": "tools/run-nx.mjs"
   },
   "behavior_and_api": {
-    "mcp_tests": { "passed": 9, "failed": 0 },
-    "exports_smoke": { "passed": 1, "failed": 0 },
-    "core_tests": { "passed": 119, "failed": 0 },
-    "sdk_tests": { "passed": 91, "failed": 0 },
-    "runtime_tests": { "passed": 566, "failed": 0 },
+    "mcp_tests": {
+      "passed": 9,
+      "failed": 0
+    },
+    "exports_smoke": {
+      "passed": 1,
+      "failed": 0
+    },
+    "core_tests": {
+      "passed": 119,
+      "failed": 0
+    },
+    "sdk_tests": {
+      "passed": 91,
+      "failed": 0
+    },
+    "runtime_tests": {
+      "passed": 566,
+      "failed": 0
+    },
     "provider_mcp_conformance": {
       "applicable": 60,
       "passed": 60,
@@ -139,14 +156,24 @@
     "transport_lifecycle": "preserved",
     "schema_validation": "preserved",
     "provider_error_shapes": "preserved",
-    "public_api": "preserved"
+    "public_api": "preserved",
+    "internal_promise_scheduling": "The tool execute wrapper uses return await; Bun 1.4.2 can settle an already-resolved inner Promise one microtask earlier. Step-0 permits this incidental internal normalization; explicit connection and test Promise-identity exceptions remain preserved."
   },
   "gates": {
     "mcp_lint_typecheck_test_build_exports": "pass",
-    "routing_partition_controls": { "passed": 90, "failed": 0 },
+    "routing_partition_controls": {
+      "passed": 90,
+      "failed": 0
+    },
     "full_lint": "pass",
-    "full_typecheck": { "projects": 33, "status": "pass" },
-    "format_check": { "files": 1336, "status": "pass" },
+    "full_typecheck": {
+      "projects": 33,
+      "status": "pass"
+    },
+    "format_check": {
+      "files": 1336,
+      "status": "pass"
+    },
     "changeset_check": {
       "direct_publishable_packages": 8,
       "status": "pass"
