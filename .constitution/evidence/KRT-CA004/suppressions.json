@@ -43,7 +43,7 @@
     }
   ],
   "native_exceptions": {
-    "region_count": 160,
+    "region_count": 162,
     "all_firing": true,
     "unused_directive_diagnostics": 0,
     "config_overrides": 0,
@@ -941,6 +941,16 @@
         "disposition": "retained-contract-preserving-measured-firing-native-exception"
       },
       {
+        "identity": "typescript/streaming/core/src/lib/stream-core.ts:516",
+        "path": "typescript/streaming/core/src/lib/stream-core.ts",
+        "line": 516,
+        "rules": [
+          "typescript/strict-boolean-expressions"
+        ],
+        "reason": "ECMAScript IteratorComplete applies ToBoolean to external IteratorResult.done values; strict boolean comparison rejects valid truthy completion values.",
+        "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
         "identity": "typescript/streaming/core/src/lib/stream-resume.ts:41",
         "path": "typescript/streaming/core/src/lib/stream-resume.ts",
         "line": 41,
@@ -1059,6 +1069,16 @@
         ],
         "reason": "The instrumented iterator intentionally returns an already-settled cleanup promise.",
         "disposition": "retained-contract-preserving-measured-firing-native-exception"
+      },
+      {
+        "identity": "typescript/streaming/core/test/stream-core.test.ts:185",
+        "path": "typescript/streaming/core/test/stream-core.test.ts",
+        "line": 185,
+        "rules": [
+          "typescript/no-unsafe-type-assertion"
+        ],
+        "reason": "The regression fixture deliberately violates the TypeScript IteratorResult.done type to prove ECMAScript ToBoolean completion semantics at the public async-iterator boundary.",
+        "disposition": "retained-test-fixture-measured-firing-native-exception"
       },
       {
         "identity": "typescript/streaming/core/test/stream-resume.test.ts:385",

@@ -148,11 +148,11 @@ closeout:
       text: "Completed EPIC-CA: core, SDK, streaming, MCP client, testkit, telemetry and certification packages use canonical native lint targets; the batteries wrapper has exact JSON-only ownership; tools/run-nx.mjs remains under Biome for EPIC-CB."
     - directory: tech-spec
       type: changed
-      text: "Execution produced final KRT-CA002 and KRT-CA004 ledgers covering 36 legacy Biome identities, 160 measured native exception regions, 12 native targets, 107 code files and 76 JSON files under ADR-0070's unchanged shipped preset."
+      text: "Execution produced final KRT-CA002 and KRT-CA004 ledgers covering 36 legacy Biome identities, 162 measured native exception regions, 12 native targets, 107 code files and 76 JSON files under ADR-0070's unchanged shipped preset."
   candidate_terms: []
   routed_upstream:
     - stage: tasks
-      item: "A19 final aggregate including closeout: EPIC-CA changes 127 files and 20,915 raw lines (+14,872/-6,043), comprising 12,834 implementation lines across 110 files and 8,081 bookkeeping/evidence lines across 17 files. Future lint-ratchet planning should split comparable inherited work earlier or explicitly budget aggregate review cost; the wave lead must resolve this delivery assessment before merge."
+      item: "A19 current aggregate including PR review fixes: EPIC-CA changes 127 files and 20,959 raw lines (+14,917/-6,042), comprising 12,855 implementation lines across 110 files and 8,104 bookkeeping/evidence lines across 17 files. Future lint-ratchet planning should split comparable inherited work earlier or explicitly budget aggregate review cost; the wave lead must resolve this delivery assessment before merge."
   follow_ups:
     - "Stage 3 alignment should review the code_decisions routed by reconciliation, including the recursive-predicate initialization pattern and the permitted MCP internal Promise scheduling normalization."
     - "EPIC-CB should consume .constitution/evidence/KRT-CA002/suppressions.json and .constitution/evidence/KRT-CA004/suppressions.json, retain tools/run-nx.mjs until whole-tools admission, then remove the final CA coverage entry when Biome retires."

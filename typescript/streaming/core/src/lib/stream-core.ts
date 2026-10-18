@@ -513,7 +513,8 @@ export const teeTuvrenStreamEvents = (
         sourceReadStarted = true;
         const nextEvent = await sourceIterator.next();
 
-        if (nextEvent.done === true) {
+        // oxlint-disable-next-line typescript/strict-boolean-expressions -- ECMAScript IteratorComplete applies ToBoolean to external IteratorResult.done values.
+        if (nextEvent.done) {
           sourceClosed = true;
           closeBranches();
           return;
