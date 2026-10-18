@@ -269,7 +269,6 @@ closeout:
       where: "Framework specification sections 1.2 and 1.3 and the core, host, and session TypeSpec contracts."
   routed_upstream: []
   follow_ups:
-    - "Harden the M2 test-only SQLite child helper with an explicit subprocess deadline and awaited termination so a Bun test timeout also removes its owned temporary directory. The M6 conformance process helper already applies this cleanup discipline."
     - "After merge and reconciliation, publish the curated public package set through the authorized Changesets release workflow, then verify npm provenance and a fresh installed-package admission-key scenario."
   code_decisions:
     - summary: "Represent the host admission identity as an optional opaque non-empty `admissionKey` on InputSignal and user messages, omitting the property entirely for keyless content so deterministic bytes and hashes remain unchanged."
