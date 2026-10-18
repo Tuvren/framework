@@ -128,13 +128,29 @@ const SANITIZE_SEAM_CAP = "sanitize-seam.client.marker-bearing";
 const SANITIZE_SEAM_CALL_ID = "sanitize-seam-call-1";
 const SANITIZE_SEAM_SCRUBBED_MARKER = "[scrubbed-by-host-policy]";
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
-const readString = (value: unknown, fallback: string): string => {
-  return typeof value === "string" && value.length > 0 ? value : fallback;
-};
+const fromSynchronous = <Argument, Value>(
+  operation: (argument: Argument) => Value
+): ((argument: Argument) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(argument: Argument) => Value],
+    [Argument],
+    Promise<Value>
+  >(Promise, operation);
+
+const fromSynchronousWithoutArguments = <Value>(
+  operation: () => Value
+): (() => Promise<Value>) =>
+  Promise.try.bind<typeof Promise, [() => Value], [], Promise<Value>>(
+    Promise,
+    operation
+  );
+
+const readString = (value: unknown, fallback: string): string =>
+  typeof value === "string" && value.length > 0 ? value : fallback;
 
 const readSecretFixture = (input: unknown): SecretFixture => {
   const fixture =
@@ -177,14 +193,12 @@ const createTelemetryCapture = (): {
 const readPersistedRecords = async (
   harness: ConformanceKernelHarness,
   branchId: string
-): Promise<Record<string, unknown>> => {
-  return {
-    manifest: await harness.readBranchManifest(branchId),
-    messages: await harness.readBranchMessages(branchId),
-    runs: await harness.readBranchRuns(branchId),
-    runtimeStatus: await harness.readBranchRuntimeStatus(branchId),
-  };
-};
+): Promise<Record<string, unknown>> => ({
+  manifest: await harness.readBranchManifest(branchId),
+  messages: await harness.readBranchMessages(branchId),
+  runs: await harness.readBranchRuns(branchId),
+  runtimeStatus: await harness.readBranchRuntimeStatus(branchId),
+});
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.secret-isolation.surfaces
@@ -200,13 +214,10 @@ export const runSecretIsolationRuntimeApi = async (
 ): Promise<AdapterProjection> => {
   const fixture = readSecretFixture(input);
   const harness = createConformanceKernelHarness();
-  const runner = createStaticRunner(async () => {
-    await Promise.resolve();
-    return {
-      messages: [assistantText("secret-isolation runtime-api turn")],
-      resolution: { reason: "done", type: "end_turn" as const },
-    };
-  });
+  const runner = createStaticRunner(() => ({
+    messages: [assistantText("secret-isolation runtime-api turn")],
+    resolution: { reason: "done", type: "end_turn" as const },
+  }));
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
@@ -326,13 +337,11 @@ const readProviderBridgeSecretFixture = (
   };
 };
 
-const createSecretIsolationBridgeUsage = () => {
-  return {
-    inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 1, total: 1 },
-    outputTokens: { reasoning: 0, text: 1, total: 1 },
-    raw: { provider: "secret-isolation-probe-provider" },
-  };
-};
+const createSecretIsolationBridgeUsage = () => ({
+  inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 1, total: 1 },
+  outputTokens: { reasoning: 0, text: 1, total: 1 },
+  raw: { provider: "secret-isolation-probe-provider" },
+});
 
 // This factory intentionally has no explicit `LanguageModelV3` return-type
 // annotation: `@ai-sdk/provider` is not resolvable as a bare specifier from
@@ -357,50 +366,44 @@ const createSecretIsolationProviderBridgeModel = (token: string) => {
   };
 
   return {
-    async doGenerate() {
-      await Promise.resolve();
-      return {
-        content: [
-          {
-            text: "secret-isolation provider-bridge generate turn",
-            type: "text" as const,
-          },
-        ],
-        finishReason: { raw: "stop", unified: "stop" as const },
-        request: { body: requestBody },
-        response: { headers: responseHeaders },
-        usage: createSecretIsolationBridgeUsage(),
-        warnings: [],
-      };
-    },
-    async doStream() {
-      await Promise.resolve();
-      return {
-        request: { body: requestBody },
-        response: { headers: responseHeaders },
-        // No explicit `ReadableStream<LanguageModelV3StreamPart>` generic
-        // (same reasoning as the factory's own return type): this infers as
-        // `ReadableStream<any>`, which is bivariantly assignable to the
-        // bridge's expected stream part type.
-        stream: new ReadableStream({
-          start(controller) {
-            controller.enqueue({ id: "text-1", type: "text-start" });
-            controller.enqueue({
-              delta: "secret-isolation provider-bridge stream turn",
-              id: "text-1",
-              type: "text-delta",
-            });
-            controller.enqueue({ id: "text-1", type: "text-end" });
-            controller.enqueue({
-              finishReason: { raw: "stop", unified: "stop" as const },
-              type: "finish",
-              usage: createSecretIsolationBridgeUsage(),
-            });
-            controller.close();
-          },
-        }),
-      };
-    },
+    doGenerate: fromSynchronousWithoutArguments(() => ({
+      content: [
+        {
+          text: "secret-isolation provider-bridge generate turn",
+          type: "text" as const,
+        },
+      ],
+      finishReason: { raw: "stop", unified: "stop" as const },
+      request: { body: requestBody },
+      response: { headers: responseHeaders },
+      usage: createSecretIsolationBridgeUsage(),
+      warnings: [],
+    })),
+    doStream: fromSynchronousWithoutArguments(() => ({
+      request: { body: requestBody },
+      response: { headers: responseHeaders },
+      // No explicit `ReadableStream<LanguageModelV3StreamPart>` generic
+      // (same reasoning as the factory's own return type): this infers as
+      // `ReadableStream<any>`, which is bivariantly assignable to the
+      // bridge's expected stream part type.
+      stream: new ReadableStream({
+        start(controller) {
+          controller.enqueue({ id: "text-1", type: "text-start" });
+          controller.enqueue({
+            delta: "secret-isolation provider-bridge stream turn",
+            id: "text-1",
+            type: "text-delta",
+          });
+          controller.enqueue({ id: "text-1", type: "text-end" });
+          controller.enqueue({
+            finishReason: { raw: "stop", unified: "stop" as const },
+            type: "finish",
+            usage: createSecretIsolationBridgeUsage(),
+          });
+          controller.close();
+        },
+      }),
+    })),
     modelId: "secret-isolation-probe-model",
     provider: "secret-isolation-probe-provider",
     specificationVersion: "v3" as const,
@@ -491,7 +494,7 @@ const distinctTelemetryScopes = (
   for (const span of spans) {
     scopes.add(span.lineage.scope);
   }
-  return [...scopes].sort();
+  return [...scopes].toSorted();
 };
 
 const readTranscriptScope = (
@@ -515,13 +518,10 @@ const captureScopeSurfaces = async (
 ): Promise<ScopeSurfaceObservation> => {
   const capture = createTelemetryCapture();
   const harness = createConformanceKernelHarness();
-  const runner = createStaticRunner(async () => {
-    await Promise.resolve();
-    return {
-      messages: [assistantText("scope-isolation surfaces turn")],
-      resolution: { reason: "done", type: "end_turn" as const },
-    };
-  });
+  const runner = createStaticRunner(() => ({
+    messages: [assistantText("scope-isolation surfaces turn")],
+    resolution: { reason: "done", type: "end_turn" as const },
+  }));
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
@@ -644,8 +644,7 @@ export const runSanitizeSeamToolResult = async (
 ): Promise<AdapterProjection> => {
   const marker = readSanitizeSeamMarker(input);
   const harness = createConformanceKernelHarness();
-  const runner = createStaticRunner(async (context) => {
-    await Promise.resolve();
+  const runner = createStaticRunner((context) => {
     if (!context.messages.some((message) => message.role === "tool")) {
       return {
         messages: [
@@ -674,18 +673,16 @@ export const runSanitizeSeamToolResult = async (
         inputSchema: { type: "object" },
       },
     ],
-    dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      return Promise.resolve({
+    dispatch: fromSynchronous(
+      (envelope: ClientInvocationEnvelope): ClientReportedResult => ({
         callId: envelope.callId,
         content: {
           message: `boom: leaked secret ${marker} in a client-reported error message`,
         },
         isError: true,
         leaseToken: envelope.leaseToken,
-      });
-    },
+      })
+    ),
     endpointId: "ep-sanitize-seam",
   };
   const runtime = createTuvrenRuntimeCore({

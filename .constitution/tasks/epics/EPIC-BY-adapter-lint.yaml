@@ -147,6 +147,9 @@ decisions:
         - typescript/conformance-adapter/src/framework-adapter-tuvren-client-execution-class.ts
         - typescript/conformance-adapter/src/framework-adapter-tuvren-server-execution-class.ts
         - typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-execution-bounds.ts
+        - typescript/conformance-adapter/src/framework-adapter-schema-authoring.ts
+        - typescript/conformance-adapter/src/framework-adapter-secret-isolation.ts
         - typescript/conformance-adapter/src/framework-adapter-runner.ts
         - typescript/conformance-adapter/src/framework-adapter-session.ts
         - typescript/conformance-adapter/src/framework-adapter-trust-boundary.ts
