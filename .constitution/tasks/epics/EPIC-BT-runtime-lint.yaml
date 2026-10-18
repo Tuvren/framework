@@ -8,6 +8,7 @@ scope:
     - typescript/runtime
     - tools/scripts/lib/native-lint-routing.ts
     - tools/scripts/lib/biome-oxc-discovery.test.ts
+    - tools/scripts/lib/native-lint-routing-argv.test.ts
     - tools/biome-coverage/bt.json
     - ".changeset/toolchain-bt-runtime-lint.md"
   tech_spec_patchable: []
@@ -81,6 +82,7 @@ tickets:
         - typescript/runtime
         - tools/scripts/lib/native-lint-routing.ts
         - tools/scripts/lib/biome-oxc-discovery.test.ts
+        - tools/scripts/lib/native-lint-routing-argv.test.ts
         - tools/biome-coverage/bt.json
         - ".changeset/toolchain-bt-runtime-lint.md"
     verification:
