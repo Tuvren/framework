@@ -25,9 +25,120 @@ import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 const REPO_ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const REPL_CLI_PATH = resolve(REPO_ROOT, "typescript/host/repl/dist/cli.js");
 
-export function createFrameworkAdapterProvingHost(): {
+interface ProvingHostInput {
+  backend: "memory";
+  providerMode: "fixture";
+  stdin: string;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+const readLiteral = <T extends string>(
+  value: unknown,
+  expected: T,
+  label: string
+): T => {
+  if (value === undefined || value === expected) {
+    return expected;
+  }
+
+  throw new Error(`unsupported proving-host ${label} "${String(value)}"`);
+};
+
+const readProvingHostInput = (input: unknown): ProvingHostInput => {
+  const checkInput =
+    isRecord(input) && isRecord(input.checkInput) ? input.checkInput : input;
+
+  if (!isRecord(checkInput)) {
+    return {
+      backend: "memory",
+      providerMode: "fixture",
+      stdin: ".status\n",
+    };
+  }
+
+  return {
+    backend: readLiteral(checkInput.backend, "memory", "backend"),
+    providerMode: readLiteral(
+      checkInput.providerMode,
+      "fixture",
+      "providerMode"
+    ),
+    stdin:
+      typeof checkInput.stdin === "string" ? checkInput.stdin : ".status\n",
+  };
+};
+
+const runCli = async (
+  argv: readonly string[],
+  stdin: string
+): Promise<{ exitCode: number | null; stderr: string; stdout: string }> => {
+  const child = spawn("node", [REPL_CLI_PATH, ...argv], {
+    cwd: REPO_ROOT,
+    env: {
+      CI: process.env.CI,
+      HOME: process.env.HOME,
+      LANG: process.env.LANG,
+      LC_ALL: process.env.LC_ALL,
+      PATH: process.env.PATH,
+      TERM: process.env.TERM,
+      TMPDIR: process.env.TMPDIR,
+      TZ: process.env.TZ,
+      USER: process.env.USER,
+    },
+    stdio: "pipe",
+  });
+  let stderr = "";
+  let stdout = "";
+
+  child.stderr.on("data", (chunk: Buffer | string) => {
+    stderr += String(chunk);
+  });
+  child.stdout.on("data", (chunk: Buffer | string) => {
+    stdout += String(chunk);
+  });
+  child.stdin.end(stdin);
+
+  return await new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.once("close", (exitCode) => {
+      resolve({ exitCode, stderr, stdout });
+    });
+  });
+};
+
+const parseJsonlOutputs = (text: string): string[] => {
+  return text
+    .split("\n")
+    .filter((line) => line.trim().length > 0)
+    .map((line) => JSON.parse(line) as unknown)
+    .filter(
+      (record): record is { output: string } =>
+        isRecord(record) && typeof record.output === "string"
+    )
+    .map((record) => record.output);
+};
+
+const readRecordKind = (value: unknown): string => {
+  if (isRecord(value) && typeof value.recordKind === "string") {
+    return value.recordKind;
+  }
+
+  return "<unknown>";
+};
+
+const parseJsonlKinds = (text: string): string[] => {
+  return text
+    .split("\n")
+    .filter((line) => line.trim().length > 0)
+    .map((line) => readRecordKind(JSON.parse(line) as unknown));
+};
+
+export const createFrameworkAdapterProvingHost = (): {
   runHeadlessTranscriptReplay(input: unknown): Promise<AdapterProjection>;
-} {
+} => {
   return {
     async runHeadlessTranscriptReplay(
       input: unknown
@@ -81,115 +192,4 @@ export function createFrameworkAdapterProvingHost(): {
       }
     },
   };
-}
-
-interface ProvingHostInput {
-  backend: "memory";
-  providerMode: "fixture";
-  stdin: string;
-}
-
-function readProvingHostInput(input: unknown): ProvingHostInput {
-  const checkInput =
-    isRecord(input) && isRecord(input.checkInput) ? input.checkInput : input;
-
-  if (!isRecord(checkInput)) {
-    return {
-      backend: "memory",
-      providerMode: "fixture",
-      stdin: ".status\n",
-    };
-  }
-
-  return {
-    backend: readLiteral(checkInput.backend, "memory", "backend"),
-    providerMode: readLiteral(
-      checkInput.providerMode,
-      "fixture",
-      "providerMode"
-    ),
-    stdin:
-      typeof checkInput.stdin === "string" ? checkInput.stdin : ".status\n",
-  };
-}
-
-function readLiteral<T extends string>(
-  value: unknown,
-  expected: T,
-  label: string
-): T {
-  if (value === undefined || value === expected) {
-    return expected;
-  }
-
-  throw new Error(`unsupported proving-host ${label} "${String(value)}"`);
-}
-
-async function runCli(
-  argv: readonly string[],
-  stdin: string
-): Promise<{ exitCode: number | null; stderr: string; stdout: string }> {
-  const child = spawn("node", [REPL_CLI_PATH, ...argv], {
-    cwd: REPO_ROOT,
-    env: {
-      CI: process.env.CI,
-      HOME: process.env.HOME,
-      LANG: process.env.LANG,
-      LC_ALL: process.env.LC_ALL,
-      PATH: process.env.PATH,
-      TERM: process.env.TERM,
-      TMPDIR: process.env.TMPDIR,
-      TZ: process.env.TZ,
-      USER: process.env.USER,
-    },
-    stdio: "pipe",
-  });
-  let stderr = "";
-  let stdout = "";
-
-  child.stderr.on("data", (chunk: Buffer | string) => {
-    stderr += String(chunk);
-  });
-  child.stdout.on("data", (chunk: Buffer | string) => {
-    stdout += String(chunk);
-  });
-  child.stdin.end(stdin);
-
-  return await new Promise((resolve, reject) => {
-    child.once("error", reject);
-    child.once("close", (exitCode) => {
-      resolve({ exitCode, stderr, stdout });
-    });
-  });
-}
-
-function parseJsonlKinds(text: string): string[] {
-  return text
-    .split("\n")
-    .filter((line) => line.trim().length > 0)
-    .map((line) => readRecordKind(JSON.parse(line) as unknown));
-}
-
-function parseJsonlOutputs(text: string): string[] {
-  return text
-    .split("\n")
-    .filter((line) => line.trim().length > 0)
-    .map((line) => JSON.parse(line) as unknown)
-    .filter(
-      (record): record is { output: string } =>
-        isRecord(record) && typeof record.output === "string"
-    )
-    .map((record) => record.output);
-}
-
-function readRecordKind(value: unknown): string {
-  if (isRecord(value) && typeof value.recordKind === "string") {
-    return value.recordKind;
-  }
-
-  return "<unknown>";
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+};

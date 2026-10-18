@@ -52,9 +52,9 @@ const BATTERIES_INCLUDED_MOCK_RESPONSE = {
   usage: { inputTokens: 5, outputTokens: 3 },
 } satisfies TuvrenModelResponse;
 
-function createScenarioProvider(
+const createScenarioProvider = (
   responses: readonly TuvrenModelResponse[]
-): TuvrenProvider {
+): TuvrenProvider => {
   let responseIndex = 0;
 
   return {
@@ -76,15 +76,15 @@ function createScenarioProvider(
       yield* [];
     },
   };
-}
+};
 
-function textSignal(text: string): InputSignal {
+const textSignal = (text: string): InputSignal => {
   return {
     parts: [{ text, type: "text" }],
   };
-}
+};
 
-async function collectValues<T>(values: AsyncIterable<T>): Promise<T[]> {
+const collectValues = async <T>(values: AsyncIterable<T>): Promise<T[]> => {
   const collected: T[] = [];
 
   for await (const value of values) {
@@ -92,17 +92,84 @@ async function collectValues<T>(values: AsyncIterable<T>): Promise<T[]> {
   }
 
   return collected;
-}
+};
 
-export function createFrameworkAdapterBatteriesIncluded(): {
-  runBatteriesIncludedLifecycle(input: unknown): Promise<AdapterProjection>;
-} {
-  return { runBatteriesIncludedLifecycle };
-}
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
+};
 
-async function runBatteriesIncludedLifecycle(
+const readBackendKind = (input: unknown): string => {
+  if (!isRecord(input)) {
+    return "memory";
+  }
+  const { checkInput } = input;
+  if (!isRecord(checkInput)) {
+    return "memory";
+  }
+  const { backend } = checkInput;
+  return typeof backend === "string" ? backend : "memory";
+};
+
+const buildBackendSpec = (
+  kind: string
+): {
+  backendSpec: RuntimeBackend;
+  cleanupPath: string | undefined;
+  cleanupBackend: (() => Promise<void>) | undefined;
+} => {
+  switch (kind) {
+    case "memory": {
+      return {
+        backendSpec: createMemoryBackend(),
+        cleanupBackend: undefined,
+        cleanupPath: undefined,
+      };
+    }
+    case "sqlite": {
+      const dir = join(tmpdir(), `tuvren-bi-${randomUUID()}`);
+      const databasePath = join(dir, "kernel.sqlite");
+      return {
+        backendSpec: createSqliteBackend({ databasePath }),
+        cleanupBackend: undefined,
+        cleanupPath: dir,
+      };
+    }
+    case "postgres": {
+      if (process.env.PGHOST === undefined) {
+        throw new Error(
+          "batteries-included.lifecycle postgres: PGHOST is not set. " +
+            "Start the devenv postgres service before running this conformance lane."
+        );
+      }
+      const schemaName = `bi_${randomUUID().replaceAll("-", "_")}`;
+      const pgOptions: PostgresBackendOptions = {
+        database: process.env.PGDATABASE ?? "tuvren_runtime",
+        host: process.env.PGHOST,
+        password: process.env.PGPASSWORD,
+        port:
+          process.env.PGPORT === undefined
+            ? undefined
+            : Number(process.env.PGPORT),
+        schemaName,
+        username: process.env.PGUSER,
+      };
+      return {
+        backendSpec: createPostgresBackend(pgOptions),
+        cleanupBackend: () => destroyPostgresBackend(pgOptions),
+        cleanupPath: undefined,
+      };
+    }
+    default: {
+      throw new Error(
+        `batteries-included.lifecycle: unknown backend kind "${kind}"`
+      );
+    }
+  }
+};
+
+const runBatteriesIncludedLifecycle = async (
   input: unknown
-): Promise<AdapterProjection> {
+): Promise<AdapterProjection> => {
   const backendKind = readBackendKind(input);
   const { backendSpec, cleanupPath, cleanupBackend } =
     buildBackendSpec(backendKind);
@@ -160,75 +227,10 @@ async function runBatteriesIncludedLifecycle(
       },
     },
   };
-}
+};
 
-function readBackendKind(input: unknown): string {
-  if (!isRecord(input)) {
-    return "memory";
-  }
-  const { checkInput } = input;
-  if (!isRecord(checkInput)) {
-    return "memory";
-  }
-  const { backend } = checkInput;
-  return typeof backend === "string" ? backend : "memory";
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function buildBackendSpec(kind: string): {
-  backendSpec: RuntimeBackend;
-  cleanupPath: string | undefined;
-  cleanupBackend: (() => Promise<void>) | undefined;
-} {
-  switch (kind) {
-    case "memory": {
-      return {
-        backendSpec: createMemoryBackend(),
-        cleanupBackend: undefined,
-        cleanupPath: undefined,
-      };
-    }
-    case "sqlite": {
-      const dir = join(tmpdir(), `tuvren-bi-${randomUUID()}`);
-      const databasePath = join(dir, "kernel.sqlite");
-      return {
-        backendSpec: createSqliteBackend({ databasePath }),
-        cleanupBackend: undefined,
-        cleanupPath: dir,
-      };
-    }
-    case "postgres": {
-      if (process.env.PGHOST === undefined) {
-        throw new Error(
-          "batteries-included.lifecycle postgres: PGHOST is not set. " +
-            "Start the devenv postgres service before running this conformance lane."
-        );
-      }
-      const schemaName = `bi_${randomUUID().replaceAll("-", "_")}`;
-      const pgOptions: PostgresBackendOptions = {
-        database: process.env.PGDATABASE ?? "tuvren_runtime",
-        host: process.env.PGHOST,
-        password: process.env.PGPASSWORD,
-        port:
-          process.env.PGPORT === undefined
-            ? undefined
-            : Number(process.env.PGPORT),
-        schemaName,
-        username: process.env.PGUSER,
-      };
-      return {
-        backendSpec: createPostgresBackend(pgOptions),
-        cleanupBackend: () => destroyPostgresBackend(pgOptions),
-        cleanupPath: undefined,
-      };
-    }
-    default: {
-      throw new Error(
-        `batteries-included.lifecycle: unknown backend kind "${kind}"`
-      );
-    }
-  }
-}
+export const createFrameworkAdapterBatteriesIncluded = (): {
+  runBatteriesIncludedLifecycle(input: unknown): Promise<AdapterProjection>;
+} => {
+  return { runBatteriesIncludedLifecycle };
+};
