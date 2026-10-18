@@ -137,6 +137,454 @@ interface OperationObservation {
   status: OperationStatus;
 }
 type OperationStatus = "completed" | "failed" | "paused";
+let readJsonValue: (value: unknown, label: string) => JsonValue;
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+const toObservedErrorEnvelope = (error: unknown): Record<string, unknown> => {
+  if (error instanceof Error) {
+    const envelope: Record<string, unknown> = {
+      code:
+        isRecord(error) && typeof error.code === "string"
+          ? error.code
+          : "adapter_operation_failed",
+      message: error.message,
+    };
+
+    if (isRecord(error) && error.details !== undefined) {
+      envelope.details = error.details;
+    }
+
+    return envelope;
+  }
+
+  return { ...createAdapterErrorEnvelope(error) };
+};
+
+const readFirstErrorEnvelope = (
+  events: readonly unknown[]
+): Record<string, unknown> | undefined => {
+  for (const event of events) {
+    if (isRecord(event) && isRecord(event.error)) {
+      return event.error;
+    }
+  }
+
+  return undefined;
+};
+
+const errorToEnvelope = (error: Error): Record<string, unknown> => {
+  const errorRecord: Record<string, unknown> = isRecord(error) ? error : {};
+  const code =
+    typeof errorRecord.code === "string" ? errorRecord.code : "runner_error";
+  const envelope: Record<string, unknown> = {
+    code,
+    message: error.message,
+  };
+
+  if (errorRecord.details !== undefined) {
+    envelope.details = errorRecord.details;
+  }
+
+  return envelope;
+};
+
+const readRecordString = (value: unknown, key: string): string | undefined => {
+  return isRecord(value) && typeof value[key] === "string"
+    ? value[key]
+    : undefined;
+};
+
+const parseJsonValue = (value: string): unknown => {
+  return JSON.parse(value);
+};
+
+const projectionStatus = (projection: AdapterProjection): OperationStatus => {
+  if (isRecord(projection.result) && projection.result.error !== undefined) {
+    return "failed";
+  }
+
+  return "completed";
+};
+
+const throwIfCancelled = (controls: AdapterControls): void => {
+  if (controls.cancel !== undefined) {
+    throw new Error(controls.cancel.reason);
+  }
+};
+
+const readRecord = (value: unknown, label: string): Record<string, unknown> => {
+  if (!isRecord(value) || Array.isArray(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+
+  return value;
+};
+
+const readProperty = (
+  source: Record<string, unknown>,
+  key: string,
+  label: string
+): unknown => {
+  if (!(key in source)) {
+    throw new Error(`${label} is required`);
+  }
+
+  return source[key];
+};
+
+const readRecordProperty = (
+  source: Record<string, unknown>,
+  key: string,
+  label: string
+): Record<string, unknown> => {
+  return readRecord(readProperty(source, key, label), label);
+};
+
+const readScenarioInput = (
+  input: unknown,
+  label: string
+): Record<string, unknown> => {
+  const envelope = readRecord(input, `${label}.input`);
+  const scenario = readRecordProperty(
+    envelope,
+    "scenario",
+    `${label}.input.scenario`
+  );
+
+  return scenario;
+};
+
+const readStringProperty = (
+  source: Record<string, unknown>,
+  key: string,
+  label: string
+): string => {
+  const value = readProperty(source, key, label);
+
+  if (typeof value !== "string") {
+    throw new TypeError(`${label} must be a string`);
+  }
+
+  return value;
+};
+
+const readOperationScenario = (
+  input: unknown,
+  operation: string
+): Record<string, unknown> => {
+  const scenario = readScenarioInput(input, operation);
+  const scenarioOperation = readStringProperty(
+    scenario,
+    "operation",
+    `${operation}.scenario.operation`
+  );
+
+  if (scenarioOperation !== operation) {
+    throw new Error(
+      `${operation} scenario declared operation ${scenarioOperation}`
+    );
+  }
+
+  return scenario;
+};
+
+const readArrayProperty = (
+  source: Record<string, unknown>,
+  key: string,
+  label: string
+): unknown[] => {
+  const value = readProperty(source, key, label);
+
+  if (!Array.isArray(value)) {
+    throw new TypeError(`${label} must be an array`);
+  }
+
+  return value;
+};
+
+const readJsonObject = (
+  value: unknown,
+  label: string
+): Record<string, JsonValue> => {
+  const record = readRecord(value, label);
+  const object: Record<string, JsonValue> = {};
+
+  for (const [key, item] of Object.entries(record)) {
+    object[key] = readJsonValue(item, `${label}.${key}`);
+  }
+
+  return object;
+};
+
+const readJsonSchemaProperty = (
+  source: Record<string, unknown>,
+  key: string,
+  label: string
+): TuvrenJsonSchema => {
+  const value = readProperty(source, key, label);
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  return readJsonObject(value, label);
+};
+
+const readBooleanProperty = (
+  source: Record<string, unknown>,
+  key: string,
+  label: string
+): boolean => {
+  const value = readProperty(source, key, label);
+
+  if (typeof value !== "boolean") {
+    throw new TypeError(`${label} must be a boolean`);
+  }
+
+  return value;
+};
+
+const readResponseFormat = (
+  value: unknown,
+  label: string
+): StructuredOutputRequest => {
+  const record = readRecord(value, label);
+  const schema = readJsonSchemaProperty(record, "schema", `${label}.schema`);
+  const name =
+    record.name === undefined
+      ? undefined
+      : readStringProperty(record, "name", `${label}.name`);
+  const strict =
+    record.strict === undefined
+      ? undefined
+      : readBooleanProperty(record, "strict", `${label}.strict`);
+
+  return {
+    ...(name === undefined ? {} : { name }),
+    schema,
+    ...(strict === undefined ? {} : { strict }),
+  };
+};
+
+const readPromptProperty = (
+  source: Record<string, unknown>,
+  key: string,
+  label: string
+): TuvrenPrompt => {
+  const value = readRecordProperty(source, key, label);
+  const messages = readArrayProperty(value, "messages", `${label}.messages`);
+  const promptMessages = messages.map((message, index) => {
+    assertTuvrenMessage(message, `${label}.messages[${index}]`);
+    return structuredClone(message);
+  });
+  const responseFormat =
+    value.responseFormat === undefined
+      ? undefined
+      : readResponseFormat(value.responseFormat, `${label}.responseFormat`);
+
+  return responseFormat === undefined
+    ? { messages: promptMessages }
+    : { messages: promptMessages, responseFormat };
+};
+
+const readModelResponseProperty = (
+  source: Record<string, unknown>,
+  key: string,
+  label: string
+): TuvrenModelResponse => {
+  const value = readRecordProperty(source, key, label);
+  assertTuvrenModelResponse(value, label);
+  return structuredClone(value);
+};
+
+const readModelResponseArrayProperty = (
+  source: Record<string, unknown>,
+  key: string,
+  label: string
+): TuvrenModelResponse[] => {
+  return readArrayProperty(source, key, label).map((value, index) => {
+    assertTuvrenModelResponse(value, `${label}[${index}]`);
+    return structuredClone(value);
+  });
+};
+
+const readFirstToolCallNameOptional = (
+  responses: readonly TuvrenModelResponse[],
+  _label: string
+): string | undefined => {
+  for (const response of responses) {
+    for (const part of response.parts) {
+      if (part.type === "tool_call") {
+        return part.name;
+      }
+    }
+  }
+
+  return undefined;
+};
+
+const readFirstToolCallName = (
+  responses: readonly TuvrenModelResponse[],
+  label: string
+): string => {
+  const toolCallName = readFirstToolCallNameOptional(responses, label);
+
+  if (toolCallName !== undefined) {
+    return toolCallName;
+  }
+
+  throw new Error(`${label} must contain a tool_call part`);
+};
+
+const readProviderStreamChunks = (
+  scenario: Record<string, unknown>,
+  label: string
+): ProviderStreamChunk[] => {
+  const values = readArrayProperty(scenario, "streamChunks", label);
+  return values.map((value, index) => {
+    assertProviderStreamChunk(value, `${label}[${index}]`);
+    return structuredClone(value);
+  });
+};
+
+const readResponseFormatProperty = (
+  source: Record<string, unknown>,
+  key: string,
+  label: string
+): StructuredOutputRequest => {
+  return readResponseFormat(readProperty(source, key, label), label);
+};
+
+const readScenarioToolCall = (
+  record: Record<string, unknown>,
+  label: string
+): ScenarioToolCall => {
+  return {
+    callId: readStringProperty(record, "callId", `${label}.callId`),
+    input: readProperty(record, "input", `${label}.input`),
+    name: readStringProperty(record, "name", `${label}.name`),
+    output: record.output,
+    requiresApproval:
+      record.requiresApproval === undefined
+        ? undefined
+        : readBooleanProperty(
+            record,
+            "requiresApproval",
+            `${label}.requiresApproval`
+          ),
+    throwMessage:
+      record.throwMessage === undefined
+        ? undefined
+        : readStringProperty(record, "throwMessage", `${label}.throwMessage`),
+  };
+};
+
+const readScenarioToolCalls = (
+  scenario: Record<string, unknown>,
+  label: string
+): ScenarioToolCall[] => {
+  return readArrayProperty(scenario, "toolCalls", label).map((value, index) =>
+    readScenarioToolCall(
+      readRecord(value, `${label}[${index}]`),
+      `${label}[${index}]`
+    )
+  );
+};
+
+const readPendingToolCalls = (
+  scenario: Record<string, unknown>,
+  label: string
+): ScenarioToolCall[] => {
+  return readArrayProperty(scenario, "pendingToolCalls", label).map(
+    (value, index) =>
+      readScenarioToolCall(
+        readRecord(value, `${label}[${index}]`),
+        `${label}[${index}]`
+      )
+  );
+};
+
+const readApprovalDecisions = (
+  scenario: Record<string, unknown>,
+  label: string
+): ApprovalDecision[] => {
+  return readArrayProperty(scenario, "approvalDecisions", label).map(
+    (value, index) => {
+      const record = readRecord(value, `${label}[${index}]`);
+      return {
+        callId: readStringProperty(
+          record,
+          "callId",
+          `${label}[${index}].callId`
+        ),
+        ...(record.message === undefined
+          ? {}
+          : {
+              message: readStringProperty(
+                record,
+                "message",
+                `${label}[${index}].message`
+              ),
+            }),
+        type: readStringProperty(record, "type", `${label}[${index}].type`),
+      };
+    }
+  );
+};
+
+const readAssistantText = (
+  messages: readonly unknown[],
+  expectedText: string
+): string | undefined => {
+  for (const message of messages) {
+    if (!isRecord(message) || message.role !== "assistant") {
+      continue;
+    }
+
+    const { parts } = message;
+
+    if (!Array.isArray(parts)) {
+      continue;
+    }
+
+    for (const part of parts) {
+      if (
+        isRecord(part) &&
+        part.type === "text" &&
+        part.text === expectedText
+      ) {
+        return expectedText;
+      }
+    }
+  }
+
+  return undefined;
+};
+
+readJsonValue = (value: unknown, label: string): JsonValue => {
+  if (
+    value === null ||
+    typeof value === "boolean" ||
+    typeof value === "string"
+  ) {
+    return value;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item, index) =>
+      readJsonValue(item, `${label}[${index}]`)
+    );
+  }
+
+  return readJsonObject(value, label);
+};
 const runnerScenarios = createFrameworkAdapterRunner({
   errorToEnvelope,
   readApprovalDecisions,
@@ -636,78 +1084,6 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
   }
 }
 
-function toObservedErrorEnvelope(error: unknown): Record<string, unknown> {
-  if (error instanceof Error) {
-    const envelope: Record<string, unknown> = {
-      code:
-        isRecord(error) && typeof error.code === "string"
-          ? error.code
-          : "adapter_operation_failed",
-      message: error.message,
-    };
-
-    if (isRecord(error) && error.details !== undefined) {
-      envelope.details = error.details;
-    }
-
-    return envelope;
-  }
-
-  return { ...createAdapterErrorEnvelope(error) };
-}
-
-function readFirstErrorEnvelope(
-  events: readonly unknown[]
-): Record<string, unknown> | undefined {
-  for (const event of events) {
-    if (isRecord(event) && isRecord(event.error)) {
-      return event.error;
-    }
-  }
-
-  return undefined;
-}
-
-function errorToEnvelope(error: Error): Record<string, unknown> {
-  const errorRecord: Record<string, unknown> = isRecord(error) ? error : {};
-  const code =
-    typeof errorRecord.code === "string" ? errorRecord.code : "runner_error";
-  const envelope: Record<string, unknown> = {
-    code,
-    message: error.message,
-  };
-
-  if (errorRecord.details !== undefined) {
-    envelope.details = errorRecord.details;
-  }
-
-  return envelope;
-}
-
-function readRecordString(value: unknown, key: string): string | undefined {
-  return isRecord(value) && typeof value[key] === "string"
-    ? value[key]
-    : undefined;
-}
-
-function parseJsonValue(value: string): unknown {
-  return JSON.parse(value);
-}
-
-function projectionStatus(projection: AdapterProjection): OperationStatus {
-  if (isRecord(projection.result) && projection.result.error !== undefined) {
-    return "failed";
-  }
-
-  return "completed";
-}
-
-function throwIfCancelled(controls: AdapterControls): void {
-  if (controls.cancel !== undefined) {
-    throw new Error(controls.cancel.reason);
-  }
-}
-
 type JsonValue =
   | boolean
   | null
@@ -715,378 +1091,3 @@ type JsonValue =
   | string
   | JsonValue[]
   | { [key: string]: JsonValue };
-
-function readOperationScenario(
-  input: unknown,
-  operation: string
-): Record<string, unknown> {
-  const scenario = readScenarioInput(input, operation);
-  const scenarioOperation = readStringProperty(
-    scenario,
-    "operation",
-    `${operation}.scenario.operation`
-  );
-
-  if (scenarioOperation !== operation) {
-    throw new Error(
-      `${operation} scenario declared operation ${scenarioOperation}`
-    );
-  }
-
-  return scenario;
-}
-
-function readScenarioInput(
-  input: unknown,
-  label: string
-): Record<string, unknown> {
-  const envelope = readRecord(input, `${label}.input`);
-  const scenario = readRecordProperty(
-    envelope,
-    "scenario",
-    `${label}.input.scenario`
-  );
-
-  return scenario;
-}
-
-function readPromptProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): TuvrenPrompt {
-  const value = readRecordProperty(source, key, label);
-  const messages = readArrayProperty(value, "messages", `${label}.messages`);
-  const promptMessages = messages.map((message, index) => {
-    assertTuvrenMessage(message, `${label}.messages[${index}]`);
-    return structuredClone(message);
-  });
-  const responseFormat =
-    value.responseFormat === undefined
-      ? undefined
-      : readResponseFormat(value.responseFormat, `${label}.responseFormat`);
-
-  return responseFormat === undefined
-    ? { messages: promptMessages }
-    : { messages: promptMessages, responseFormat };
-}
-
-function readModelResponseProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): TuvrenModelResponse {
-  const value = readRecordProperty(source, key, label);
-  assertTuvrenModelResponse(value, label);
-  return structuredClone(value);
-}
-
-function readModelResponseArrayProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): TuvrenModelResponse[] {
-  return readArrayProperty(source, key, label).map((value, index) => {
-    assertTuvrenModelResponse(value, `${label}[${index}]`);
-    return structuredClone(value);
-  });
-}
-
-function readFirstToolCallName(
-  responses: readonly TuvrenModelResponse[],
-  label: string
-): string {
-  const toolCallName = readFirstToolCallNameOptional(responses, label);
-
-  if (toolCallName !== undefined) {
-    return toolCallName;
-  }
-
-  throw new Error(`${label} must contain a tool_call part`);
-}
-
-function readFirstToolCallNameOptional(
-  responses: readonly TuvrenModelResponse[],
-  _label: string
-): string | undefined {
-  for (const response of responses) {
-    for (const part of response.parts) {
-      if (part.type === "tool_call") {
-        return part.name;
-      }
-    }
-  }
-
-  return undefined;
-}
-
-function readProviderStreamChunks(
-  scenario: Record<string, unknown>,
-  label: string
-): ProviderStreamChunk[] {
-  const values = readArrayProperty(scenario, "streamChunks", label);
-  return values.map((value, index) => {
-    assertProviderStreamChunk(value, `${label}[${index}]`);
-    return structuredClone(value);
-  });
-}
-
-function readResponseFormatProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): StructuredOutputRequest {
-  return readResponseFormat(readProperty(source, key, label), label);
-}
-
-function readResponseFormat(
-  value: unknown,
-  label: string
-): StructuredOutputRequest {
-  const record = readRecord(value, label);
-  const schema = readJsonSchemaProperty(record, "schema", `${label}.schema`);
-  const name =
-    record.name === undefined
-      ? undefined
-      : readStringProperty(record, "name", `${label}.name`);
-  const strict =
-    record.strict === undefined
-      ? undefined
-      : readBooleanProperty(record, "strict", `${label}.strict`);
-
-  return {
-    ...(name === undefined ? {} : { name }),
-    schema,
-    ...(strict === undefined ? {} : { strict }),
-  };
-}
-
-function readScenarioToolCalls(
-  scenario: Record<string, unknown>,
-  label: string
-): ScenarioToolCall[] {
-  return readArrayProperty(scenario, "toolCalls", label).map((value, index) =>
-    readScenarioToolCall(
-      readRecord(value, `${label}[${index}]`),
-      `${label}[${index}]`
-    )
-  );
-}
-
-function readScenarioToolCall(
-  record: Record<string, unknown>,
-  label: string
-): ScenarioToolCall {
-  return {
-    callId: readStringProperty(record, "callId", `${label}.callId`),
-    input: readProperty(record, "input", `${label}.input`),
-    name: readStringProperty(record, "name", `${label}.name`),
-    output: record.output,
-    requiresApproval:
-      record.requiresApproval === undefined
-        ? undefined
-        : readBooleanProperty(
-            record,
-            "requiresApproval",
-            `${label}.requiresApproval`
-          ),
-    throwMessage:
-      record.throwMessage === undefined
-        ? undefined
-        : readStringProperty(record, "throwMessage", `${label}.throwMessage`),
-  };
-}
-
-function readPendingToolCalls(
-  scenario: Record<string, unknown>,
-  label: string
-): ScenarioToolCall[] {
-  return readArrayProperty(scenario, "pendingToolCalls", label).map(
-    (value, index) =>
-      readScenarioToolCall(
-        readRecord(value, `${label}[${index}]`),
-        `${label}[${index}]`
-      )
-  );
-}
-
-function readApprovalDecisions(
-  scenario: Record<string, unknown>,
-  label: string
-): ApprovalDecision[] {
-  return readArrayProperty(scenario, "approvalDecisions", label).map(
-    (value, index) => {
-      const record = readRecord(value, `${label}[${index}]`);
-      return {
-        callId: readStringProperty(
-          record,
-          "callId",
-          `${label}[${index}].callId`
-        ),
-        ...(record.message === undefined
-          ? {}
-          : {
-              message: readStringProperty(
-                record,
-                "message",
-                `${label}[${index}].message`
-              ),
-            }),
-        type: readStringProperty(record, "type", `${label}[${index}].type`),
-      };
-    }
-  );
-}
-
-function readAssistantText(
-  messages: readonly unknown[],
-  expectedText: string
-): string | undefined {
-  for (const message of messages) {
-    if (!isRecord(message) || message.role !== "assistant") {
-      continue;
-    }
-
-    const { parts } = message;
-
-    if (!Array.isArray(parts)) {
-      continue;
-    }
-
-    for (const part of parts) {
-      if (
-        isRecord(part) &&
-        part.type === "text" &&
-        part.text === expectedText
-      ) {
-        return expectedText;
-      }
-    }
-  }
-
-  return undefined;
-}
-
-function readJsonSchemaProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): TuvrenJsonSchema {
-  const value = readProperty(source, key, label);
-
-  if (typeof value === "boolean") {
-    return value;
-  }
-
-  return readJsonObject(value, label);
-}
-
-function readArrayProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): unknown[] {
-  const value = readProperty(source, key, label);
-
-  if (!Array.isArray(value)) {
-    throw new TypeError(`${label} must be an array`);
-  }
-
-  return value;
-}
-
-function readRecordProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): Record<string, unknown> {
-  return readRecord(readProperty(source, key, label), label);
-}
-
-function readStringProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): string {
-  const value = readProperty(source, key, label);
-
-  if (typeof value !== "string") {
-    throw new TypeError(`${label} must be a string`);
-  }
-
-  return value;
-}
-
-function readBooleanProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): boolean {
-  const value = readProperty(source, key, label);
-
-  if (typeof value !== "boolean") {
-    throw new TypeError(`${label} must be a boolean`);
-  }
-
-  return value;
-}
-
-function readProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): unknown {
-  if (!(key in source)) {
-    throw new Error(`${label} is required`);
-  }
-
-  return source[key];
-}
-
-function readRecord(value: unknown, label: string): Record<string, unknown> {
-  if (!isRecord(value) || Array.isArray(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-
-  return value;
-}
-
-function readJsonValue(value: unknown, label: string): JsonValue {
-  if (
-    value === null ||
-    typeof value === "boolean" ||
-    typeof value === "string"
-  ) {
-    return value;
-  }
-
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((item, index) =>
-      readJsonValue(item, `${label}[${index}]`)
-    );
-  }
-
-  return readJsonObject(value, label);
-}
-
-function readJsonObject(
-  value: unknown,
-  label: string
-): Record<string, JsonValue> {
-  const record = readRecord(value, label);
-  const object: Record<string, JsonValue> = {};
-
-  for (const [key, item] of Object.entries(record)) {
-    object[key] = readJsonValue(item, `${label}.${key}`);
-  }
-
-  return object;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
