@@ -137,7 +137,68 @@ export interface FrameworkAdapterRuntimeScenarioDependencies {
   ): string;
 }
 
-export function createFrameworkAdapterRuntimeScenarios(
+const createTelemetryCapture = (): {
+  events: TelemetryEvent[];
+  sink: TuvrenTelemetrySink;
+  spans: TelemetrySpan[];
+} => {
+  const events: TelemetryEvent[] = [];
+  const spans: TelemetrySpan[] = [];
+
+  return {
+    events,
+    sink: {
+      event: (event) => {
+        events.push(event);
+      },
+      span: (span) => {
+        spans.push(span);
+      },
+    },
+    spans,
+  };
+};
+
+const createDeterministicClock = (): (() => number) => {
+  let now = 10_000;
+
+  return () => {
+    now += 10;
+    return now;
+  };
+};
+
+const summarizeTelemetry = (capture: {
+  events: readonly TelemetryEvent[];
+  spans: readonly TelemetrySpan[];
+}): Record<string, unknown> => {
+  return {
+    eventKinds: capture.events.map((event) => event.kind),
+    eventsHaveLineage: capture.events.every(
+      (event) =>
+        event.lineage.threadId.length > 0 &&
+        event.lineage.branchId.length > 0 &&
+        event.lineage.turnId.length > 0
+    ),
+    spanKinds: capture.spans.map((span) => span.kind),
+    spansHaveLineage: capture.spans.every(
+      (span) =>
+        span.lineage.threadId.length > 0 &&
+        span.lineage.branchId.length > 0 &&
+        span.lineage.turnId.length > 0
+    ),
+  };
+};
+
+// The content funnel's assistant-text surface: `text.done` stream events carry
+// the full message text the session emitted (ADR-0058 §5b evidence source).
+const readTextDoneTexts = (events: readonly TuvrenStreamEvent[]): string[] => {
+  return events.flatMap((event) =>
+    event.type === "text.done" ? [event.text] : []
+  );
+};
+
+export const createFrameworkAdapterRuntimeScenarios = (
   dependencies: FrameworkAdapterRuntimeScenarioDependencies
 ): {
   runApprovalResume(input: unknown): Promise<AdapterProjection>;
@@ -166,7 +227,7 @@ export function createFrameworkAdapterRuntimeScenarios(
   runOperationalTelemetry(input: unknown): Promise<AdapterProjection>;
   runStructuredValidationFailure(input: unknown): Promise<AdapterProjection>;
   runToolExecution(input: unknown): Promise<AdapterProjection>;
-} {
+} => {
   const providerScenarios = createFrameworkAdapterProviderScenarios({
     readAssistantText: dependencies.readAssistantText,
     readFirstErrorEnvelope: dependencies.readFirstErrorEnvelope,
@@ -189,9 +250,85 @@ export function createFrameworkAdapterRuntimeScenarios(
     readStringProperty: dependencies.readStringProperty,
   });
 
-  async function runCompletedRuntimeTurn(
+  const readErrorEnvelope = (error: unknown): Record<string, unknown> => {
+    if (error instanceof Error) {
+      return {
+        code:
+          dependencies.isRecord(error) && typeof error.code === "string"
+            ? error.code
+            : "runtime_error",
+        message: error.message,
+      };
+    }
+
+    return {
+      code: "runtime_error",
+      message: String(error),
+    };
+  };
+
+  const runInputSignalEmptyParts = async (): Promise<AdapterProjection> => {
+    const harness = createConformanceKernelHarness();
+    const runtime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([
+        createStaticRunner(() => ({
+          messages: [assistantText("should not execute")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        })),
+      ]),
+    });
+    const thread = await runtime.createThread({});
+    // This scenario intentionally crosses the typed boundary with malformed
+    // input so the shared runner can observe runtime validation behavior.
+    const emptySignal = { parts: [] } as unknown as InputSignal;
+
+    try {
+      runtime.executeTurn({
+        branchId: thread.branchId,
+        config: { name: AGENT_NAME },
+        signal: emptySignal,
+        threadId: thread.threadId,
+      });
+
+      return {
+        evidence: {
+          inputSignal: {
+            accepted: true,
+          },
+        },
+        result: {
+          inputSignal: {
+            accepted: true,
+          },
+        },
+      };
+    } catch (error: unknown) {
+      return {
+        evidence: {
+          inputSignal: {
+            accepted: false,
+            error: readErrorEnvelope(error),
+          },
+        },
+        result: {
+          inputSignal: {
+            accepted: false,
+            error: readErrorEnvelope(error),
+          },
+        },
+      };
+    }
+  };
+
+  const runCompletedRuntimeTurn = async (
     input: unknown
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runtime.execute-turn"
@@ -239,71 +376,173 @@ export function createFrameworkAdapterRuntimeScenarios(
         },
       },
     };
-  }
+  };
 
-  async function runOperationalTelemetry(
-    input: unknown
-  ): Promise<AdapterProjection> {
-    const scenario = dependencies.readOperationScenario(
-      input,
-      "runtime.operational-telemetry"
-    );
-    const scenarioCase = dependencies.readRecordString(scenario, "case");
+  // ADR-0058 §5a/§5c (KRT-BJ005): run the same deterministic turn against a
+  // telemetry destination, reporting the implementation-observed session event
+  // types, terminal phase, delivered telemetry record kinds, and
+  // operational-signal kinds. This function only measures; the shared
+  // conformance plan owns the healthy-vs-unavailable equivalence and
+  // failure-to-signal grading.
+  const runTelemetryDestinationTurn = async (options: {
+    failDelivery: boolean;
+  }): Promise<{
+    deliveredRecordKinds: string[];
+    eventTypes: string[];
+    operationalSignalKinds: string[];
+    phase: string;
+  }> => {
+    const deliveredRecordKinds: string[] = [];
+    const operationalSignalKinds: string[] = [];
+    const destination: TelemetryDestination = {
+      deliver(batch) {
+        if (options.failDelivery) {
+          throw new Error("conformance destination unavailable");
+        }
 
-    // ADR-0058 §5 funnel-isolation scenarios (KRT-BJ005): these cases construct
-    // their own telemetry routing, so they branch before the push-based sink
-    // capture the remaining cases share.
-    if (scenarioCase === "destination-health") {
-      return await runDestinationHealthEquivalence();
-    }
-
-    if (scenarioCase === "content-isolation") {
-      return await runContentFunnelIsolation(scenario);
-    }
-
-    const capture = createTelemetryCapture();
+        deliveredRecordKinds.push(...batch.map((record) => record.kind));
+      },
+      onOperationalSignal(signal) {
+        operationalSignalKinds.push(signal.kind);
+      },
+    };
     const harness = createConformanceKernelHarness();
-    const runner = createOperationalTelemetryRunner(scenarioCase);
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
       kernel: harness.kernel,
       now: createDeterministicClock(),
-      runnerRegistry: createRunnerRegistry([runner]),
-      telemetry: capture.sink,
+      runnerRegistry: createRunnerRegistry([
+        createStaticRunner(() => ({
+          messages: [assistantText("completed")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        })),
+      ]),
+      telemetry: destination,
     });
     const thread = await runtime.createThread({});
-    const tools = createOperationalTelemetryTools(scenarioCase);
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
-      config: { name: AGENT_NAME, tools },
+      config: { name: AGENT_NAME },
       signal: textSignal("run"),
       threadId: thread.threadId,
     });
-
-    if (scenarioCase === "approval") {
-      await collectValues(handle.events());
-      const resumedHandle = handle.resolveApproval({
-        decisions: [{ callId: "call-email", type: "approve" }],
-      });
-      await collectValues(resumedHandle.events());
-    } else if (scenarioCase === "recovery") {
-      return await runOperationalTelemetryRecovery(capture);
-    } else {
-      await collectValues(handle.events());
-    }
-
-    const telemetry = summarizeTelemetry(capture);
+    const events = await collectValues(handle.events());
 
     return {
-      evidence: { telemetry },
-      result: { telemetry },
+      deliveredRecordKinds,
+      eventTypes: events.map((event) => event.type),
+      operationalSignalKinds,
+      phase: handle.status().phase,
     };
-  }
+  };
 
-  function createOperationalTelemetryRunner(
+  const runDestinationHealthEquivalence =
+    async (): Promise<AdapterProjection> => {
+      const healthy = await runTelemetryDestinationTurn({
+        failDelivery: false,
+      });
+      const unavailable = await runTelemetryDestinationTurn({
+        failDelivery: true,
+      });
+      const funnel = { healthy, unavailable };
+
+      return {
+        evidence: { funnel },
+        result: { funnel },
+      };
+    };
+
+  const readContentMarkers = (
+    scenario: Record<string, unknown>
+  ): {
+    assistant: string;
+    user: string;
+  } => {
+    const value = dependencies.readProperty(
+      scenario,
+      "contentMarkers",
+      "$.scenario.contentMarkers"
+    );
+
+    if (
+      !Array.isArray(value) ||
+      value.length !== 2 ||
+      !value.every(
+        (entry): entry is string =>
+          typeof entry === "string" && entry.length > 0
+      )
+    ) {
+      throw new Error(
+        "content-isolation scenario requires two non-empty contentMarkers strings"
+      );
+    }
+
+    return { assistant: value[1], user: value[0] };
+  };
+
+  // ADR-0058 §5b (KRT-BJ005): run a turn whose input signal and assistant reply
+  // carry the scenario-owned content markers under default push-based routing,
+  // and report both funnels' surfaces — the content-funnel message texts and
+  // the raw telemetry records — so the shared plan can grade content-payload
+  // absence on the telemetry funnel without adapter-side pass/fail decisions.
+  const runContentFunnelIsolation = async (
+    scenario: Record<string, unknown>
+  ): Promise<AdapterProjection> => {
+    const markers = readContentMarkers(scenario);
+    const capture = createTelemetryCapture();
+    const harness = createConformanceKernelHarness();
+    const runtime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      now: createDeterministicClock(),
+      runnerRegistry: createRunnerRegistry([
+        createStaticRunner(() => ({
+          messages: [assistantText(markers.assistant)],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        })),
+      ]),
+      telemetry: capture.sink,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: AGENT_NAME },
+      signal: textSignal(markers.user),
+      threadId: thread.threadId,
+    });
+    const events = await collectValues(handle.events());
+    const projection = {
+      contentFunnel: {
+        messageTexts: readTextDoneTexts(events),
+      },
+      telemetry: {
+        events: capture.events,
+        spans: capture.spans,
+      },
+      telemetryEventKinds: capture.events.map((event) => event.kind),
+    };
+
+    return {
+      evidence: projection,
+      result: projection,
+    };
+  };
+
+  const hasToolMessage = (messages: readonly TuvrenMessage[]): boolean => {
+    return messages.some((message) => message.role === "tool");
+  };
+
+  const createOperationalTelemetryRunner = (
     scenarioCase: string | undefined
-  ): RuntimeRunner {
+  ): RuntimeRunner => {
     let executeCount = 0;
 
     return {
@@ -360,11 +599,11 @@ export function createFrameworkAdapterRuntimeScenarios(
       },
       id: RUNNER_ID,
     };
-  }
+  };
 
-  function createOperationalTelemetryTools(
+  const createOperationalTelemetryTools = (
     scenarioCase: string | undefined
-  ): TuvrenToolDefinition[] {
+  ): TuvrenToolDefinition[] => {
     if (scenarioCase === "tool") {
       return [
         {
@@ -393,11 +632,11 @@ export function createFrameworkAdapterRuntimeScenarios(
     }
 
     return [];
-  }
+  };
 
-  async function runOperationalTelemetryRecovery(
+  const runOperationalTelemetryRecovery = async (
     capture: ReturnType<typeof createTelemetryCapture>
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const livenessHarness = createConformanceRunLivenessKernelHarness(harness);
     const runner = createStaticRunner(() => ({
@@ -463,165 +702,109 @@ export function createFrameworkAdapterRuntimeScenarios(
       evidence: { telemetry },
       result: { telemetry },
     };
-  }
+  };
 
-  // ADR-0058 §5a/§5c (KRT-BJ005): run the same deterministic turn against a
-  // telemetry destination, reporting the implementation-observed session event
-  // types, terminal phase, delivered telemetry record kinds, and
-  // operational-signal kinds. This function only measures; the shared
-  // conformance plan owns the healthy-vs-unavailable equivalence and
-  // failure-to-signal grading.
-  async function runTelemetryDestinationTurn(options: {
-    failDelivery: boolean;
-  }): Promise<{
-    deliveredRecordKinds: string[];
-    eventTypes: string[];
-    operationalSignalKinds: string[];
-    phase: string;
-  }> {
-    const deliveredRecordKinds: string[] = [];
-    const operationalSignalKinds: string[] = [];
-    const destination: TelemetryDestination = {
-      deliver(batch) {
-        if (options.failDelivery) {
-          throw new Error("conformance destination unavailable");
-        }
+  const runOperationalTelemetry = async (
+    input: unknown
+  ): Promise<AdapterProjection> => {
+    const scenario = dependencies.readOperationScenario(
+      input,
+      "runtime.operational-telemetry"
+    );
+    const scenarioCase = dependencies.readRecordString(scenario, "case");
 
-        deliveredRecordKinds.push(...batch.map((record) => record.kind));
-      },
-      onOperationalSignal(signal) {
-        operationalSignalKinds.push(signal.kind);
-      },
-    };
-    const harness = createConformanceKernelHarness();
-    const runtime = createTuvrenRuntimeCore({
-      createId: createConformanceIdFactory(),
-      defaultRunnerId: RUNNER_ID,
-      kernel: harness.kernel,
-      now: createDeterministicClock(),
-      runnerRegistry: createRunnerRegistry([
-        createStaticRunner(() => ({
-          messages: [assistantText("completed")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        })),
-      ]),
-      telemetry: destination,
-    });
-    const thread = await runtime.createThread({});
-    const handle = runtime.executeTurn({
-      branchId: thread.branchId,
-      config: { name: AGENT_NAME },
-      signal: textSignal("run"),
-      threadId: thread.threadId,
-    });
-    const events = await collectValues(handle.events());
+    // ADR-0058 §5 funnel-isolation scenarios (KRT-BJ005): these cases construct
+    // their own telemetry routing, so they branch before the push-based sink
+    // capture the remaining cases share.
+    if (scenarioCase === "destination-health") {
+      return await runDestinationHealthEquivalence();
+    }
 
-    return {
-      deliveredRecordKinds,
-      eventTypes: events.map((event) => event.type),
-      operationalSignalKinds,
-      phase: handle.status().phase,
-    };
-  }
+    if (scenarioCase === "content-isolation") {
+      return await runContentFunnelIsolation(scenario);
+    }
 
-  async function runDestinationHealthEquivalence(): Promise<AdapterProjection> {
-    const healthy = await runTelemetryDestinationTurn({ failDelivery: false });
-    const unavailable = await runTelemetryDestinationTurn({
-      failDelivery: true,
-    });
-    const funnel = { healthy, unavailable };
-
-    return {
-      evidence: { funnel },
-      result: { funnel },
-    };
-  }
-
-  // ADR-0058 §5b (KRT-BJ005): run a turn whose input signal and assistant reply
-  // carry the scenario-owned content markers under default push-based routing,
-  // and report both funnels' surfaces — the content-funnel message texts and
-  // the raw telemetry records — so the shared plan can grade content-payload
-  // absence on the telemetry funnel without adapter-side pass/fail decisions.
-  async function runContentFunnelIsolation(
-    scenario: Record<string, unknown>
-  ): Promise<AdapterProjection> {
-    const markers = readContentMarkers(scenario);
     const capture = createTelemetryCapture();
     const harness = createConformanceKernelHarness();
+    const runner = createOperationalTelemetryRunner(scenarioCase);
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
       kernel: harness.kernel,
       now: createDeterministicClock(),
-      runnerRegistry: createRunnerRegistry([
-        createStaticRunner(() => ({
-          messages: [assistantText(markers.assistant)],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        })),
-      ]),
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
+    const tools = createOperationalTelemetryTools(scenarioCase);
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
-      config: { name: AGENT_NAME },
-      signal: textSignal(markers.user),
+      config: { name: AGENT_NAME, tools },
+      signal: textSignal("run"),
       threadId: thread.threadId,
     });
-    const events = await collectValues(handle.events());
-    const projection = {
-      contentFunnel: {
-        messageTexts: readTextDoneTexts(events),
-      },
-      telemetry: {
-        events: capture.events,
-        spans: capture.spans,
-      },
-      telemetryEventKinds: capture.events.map((event) => event.kind),
-    };
 
-    return {
-      evidence: projection,
-      result: projection,
-    };
-  }
-
-  function readContentMarkers(scenario: Record<string, unknown>): {
-    assistant: string;
-    user: string;
-  } {
-    const value = dependencies.readProperty(
-      scenario,
-      "contentMarkers",
-      "$.scenario.contentMarkers"
-    );
-
-    if (
-      !Array.isArray(value) ||
-      value.length !== 2 ||
-      !value.every(
-        (entry): entry is string =>
-          typeof entry === "string" && entry.length > 0
-      )
-    ) {
-      throw new Error(
-        "content-isolation scenario requires two non-empty contentMarkers strings"
-      );
+    if (scenarioCase === "approval") {
+      await collectValues(handle.events());
+      const resumedHandle = handle.resolveApproval({
+        decisions: [{ callId: "call-email", type: "approve" }],
+      });
+      await collectValues(resumedHandle.events());
+    } else if (scenarioCase === "recovery") {
+      return await runOperationalTelemetryRecovery(capture);
+    } else {
+      await collectValues(handle.events());
     }
 
-    return { assistant: value[1], user: value[0] };
-  }
+    const telemetry = summarizeTelemetry(capture);
 
-  async function runCancelledRuntimeTurn(controls: {
+    return {
+      evidence: { telemetry },
+      result: { telemetry },
+    };
+  };
+
+  const waitForAbort = (signal: AbortSignal | undefined): Promise<void> => {
+    if (signal === undefined || signal.aborted) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      signal.addEventListener("abort", () => resolve(), { once: true });
+    });
+  };
+
+  const countEventsByType = (
+    events: readonly unknown[],
+    type: string
+  ): number => {
+    let count = 0;
+
+    for (const event of events) {
+      if (dependencies.readRecordString(event, "type") === type) {
+        count += 1;
+      }
+    }
+
+    return count;
+  };
+
+  const readFirstErrorEnvelope = (
+    events: readonly unknown[]
+  ): Record<string, unknown> | undefined => {
+    for (const event of events) {
+      if (dependencies.isRecord(event) && dependencies.isRecord(event.error)) {
+        return event.error;
+      }
+    }
+
+    return undefined;
+  };
+
+  const runCancelledRuntimeTurn = async (controls: {
     cancelAfterEvent?: string;
     deadlineMs?: number;
-  }): Promise<AdapterProjection> {
+  }): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     let executeCount = 0;
     const runner = {
@@ -744,9 +927,201 @@ export function createFrameworkAdapterRuntimeScenarios(
         },
       },
     };
-  }
+  };
 
-  async function runApprovalResume(input: unknown): Promise<AdapterProjection> {
+  const waitForHandlePhase = async (
+    handle: ExecutionHandle,
+    phase: "completed" | "failed" | "paused" | "running"
+  ): Promise<void> => {
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      if (handle.status().phase === phase) {
+        return;
+      }
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, 1);
+      });
+    }
+
+    throw new Error(`handle did not reach ${phase} phase`);
+  };
+
+  const readToolResultParts = (
+    messages: readonly unknown[]
+  ): Record<string, unknown>[] => {
+    const results: Record<string, unknown>[] = [];
+
+    for (const message of messages) {
+      if (!dependencies.isRecord(message) || message.role !== "tool") {
+        continue;
+      }
+
+      const { parts } = message;
+
+      if (!Array.isArray(parts)) {
+        continue;
+      }
+
+      for (const part of parts) {
+        if (!dependencies.isRecord(part)) {
+          continue;
+        }
+
+        results.push({
+          callId: part.callId,
+          isError: part.isError === true,
+          name: part.name,
+          output: part.output,
+        });
+      }
+    }
+
+    return results;
+  };
+
+  const hasAssistantText = (
+    messages: readonly unknown[],
+    expectedText: string
+  ): boolean => {
+    for (const message of messages) {
+      if (!dependencies.isRecord(message) || message.role !== "assistant") {
+        continue;
+      }
+
+      const { parts } = message;
+
+      if (!Array.isArray(parts)) {
+        continue;
+      }
+
+      for (const part of parts) {
+        if (
+          dependencies.isRecord(part) &&
+          part.type === "text" &&
+          part.text === expectedText
+        ) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  const readThrownErrorCode = (action: () => void): string | undefined => {
+    try {
+      action();
+      return undefined;
+    } catch (error: unknown) {
+      if (dependencies.isRecord(error) && typeof error.code === "string") {
+        return error.code;
+      }
+
+      return undefined;
+    }
+  };
+
+  const observeSupersededPausedHandle = (
+    handle: ExecutionHandle
+  ): Record<string, unknown> => {
+    return {
+      cancelErrorCode: readThrownErrorCode(() => handle.cancel()),
+      resolveApprovalErrorCode: readThrownErrorCode(() =>
+        handle.resolveApproval({ decisions: [] })
+      ),
+      statusPhaseAfterResolution: handle.status().phase,
+    };
+  };
+
+  const findEventIndex = (
+    events: readonly unknown[],
+    type: string,
+    callId?: string
+  ): number => {
+    return events.findIndex((event) => {
+      if (dependencies.readRecordString(event, "type") !== type) {
+        return false;
+      }
+
+      return (
+        callId === undefined ||
+        dependencies.readRecordString(event, "callId") === callId
+      );
+    });
+  };
+
+  const didEventOccurAfter = (
+    events: readonly unknown[],
+    earlierType: string,
+    laterType: string,
+    laterCallId?: string
+  ): boolean => {
+    const earlierIndex = findEventIndex(events, earlierType);
+    const laterIndex = findEventIndex(events, laterType, laterCallId);
+
+    return earlierIndex >= 0 && laterIndex > earlierIndex;
+  };
+
+  const readFirstApprovalMessage = (
+    toolResults: readonly Record<string, unknown>[]
+  ): string | undefined => {
+    for (const result of toolResults) {
+      const { output } = result;
+
+      if (!dependencies.isRecord(output)) {
+        continue;
+      }
+
+      const message = dependencies.readRecordString(output, "message");
+
+      if (message !== undefined) {
+        return message;
+      }
+
+      const error = dependencies.readRecordString(output, "error");
+
+      if (error !== undefined) {
+        return error;
+      }
+    }
+
+    return undefined;
+  };
+
+  const readEventStringValues = (
+    events: readonly unknown[],
+    key: string
+  ): string[] => {
+    const values = new Set<string>();
+
+    for (const event of events) {
+      const value = dependencies.readRecordString(event, key);
+
+      if (value !== undefined) {
+        values.add(value);
+      }
+    }
+
+    return [...values].sort();
+  };
+
+  const eventStreamsShareTurn = (
+    firstEvents: readonly unknown[],
+    secondEvents: readonly unknown[]
+  ): boolean => {
+    const firstTurnIds = readEventStringValues(firstEvents, "turnId");
+    const secondTurnIds = readEventStringValues(secondEvents, "turnId");
+
+    return (
+      firstTurnIds.length === 1 &&
+      secondTurnIds.length === 1 &&
+      firstTurnIds[0] === secondTurnIds[0]
+    );
+  };
+
+  const runApprovalResume = async (
+    input: unknown
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runtime.approval-resolve"
@@ -989,9 +1364,30 @@ export function createFrameworkAdapterRuntimeScenarios(
         },
       },
     };
-  }
+  };
 
-  async function runBranchCreate(): Promise<AdapterProjection> {
+  const readLastCheckpointHash = (events: readonly unknown[]): string => {
+    let checkpointHash: string | undefined;
+
+    for (const event of events) {
+      const turnNodeHash = dependencies.readRecordString(event, "turnNodeHash");
+
+      if (turnNodeHash !== undefined) {
+        assertHashString(turnNodeHash, "state.checkpoint.turnNodeHash");
+        checkpointHash = turnNodeHash;
+      }
+    }
+
+    if (checkpointHash === undefined) {
+      throw new Error(
+        "completed branch scenario did not emit a checkpoint hash"
+      );
+    }
+
+    return checkpointHash;
+  };
+
+  const runBranchCreate = async (): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
@@ -1044,68 +1440,9 @@ export function createFrameworkAdapterRuntimeScenarios(
         },
       },
     };
-  }
+  };
 
-  async function runInputSignalEmptyParts(): Promise<AdapterProjection> {
-    const harness = createConformanceKernelHarness();
-    const runtime = createTuvrenRuntimeCore({
-      createId: createConformanceIdFactory(),
-      defaultRunnerId: RUNNER_ID,
-      kernel: harness.kernel,
-      runnerRegistry: createRunnerRegistry([
-        createStaticRunner(() => ({
-          messages: [assistantText("should not execute")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        })),
-      ]),
-    });
-    const thread = await runtime.createThread({});
-    // This scenario intentionally crosses the typed boundary with malformed
-    // input so the shared runner can observe runtime validation behavior.
-    const emptySignal = { parts: [] } as unknown as InputSignal;
-
-    try {
-      runtime.executeTurn({
-        branchId: thread.branchId,
-        config: { name: AGENT_NAME },
-        signal: emptySignal,
-        threadId: thread.threadId,
-      });
-
-      return {
-        evidence: {
-          inputSignal: {
-            accepted: true,
-          },
-        },
-        result: {
-          inputSignal: {
-            accepted: true,
-          },
-        },
-      };
-    } catch (error: unknown) {
-      return {
-        evidence: {
-          inputSignal: {
-            accepted: false,
-            error: readErrorEnvelope(error),
-          },
-        },
-        result: {
-          inputSignal: {
-            accepted: false,
-            error: readErrorEnvelope(error),
-          },
-        },
-      };
-    }
-  }
-
-  async function runTerminalValueComplete(): Promise<AdapterProjection> {
+  const runTerminalValueComplete = async (): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
@@ -1146,9 +1483,9 @@ export function createFrameworkAdapterRuntimeScenarios(
         },
       },
     };
-  }
+  };
 
-  async function runTerminalValueFailure(): Promise<AdapterProjection> {
+  const runTerminalValueFailure = async (): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const failureRunner = {
       execute() {
@@ -1177,9 +1514,9 @@ export function createFrameworkAdapterRuntimeScenarios(
     return {
       result: { handle: { awaitResult: { status: result.status } } },
     };
-  }
+  };
 
-  async function runTerminalValueCancelled(): Promise<AdapterProjection> {
+  const runTerminalValueCancelled = async (): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     let runnerStarted = false;
     const cancelRunner = {
@@ -1226,9 +1563,9 @@ export function createFrameworkAdapterRuntimeScenarios(
     return {
       result: { handle: { awaitResult: { error: errorEnvelope, rejected } } },
     };
-  }
+  };
 
-  async function runTerminalValueIdempotent(): Promise<AdapterProjection> {
+  const runTerminalValueIdempotent = async (): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
@@ -1267,9 +1604,11 @@ export function createFrameworkAdapterRuntimeScenarios(
         },
       },
     };
-  }
+  };
 
-  function runHandleTerminalValue(input: unknown): Promise<AdapterProjection> {
+  const runHandleTerminalValue = (
+    input: unknown
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runtime.handle-terminal-value"
@@ -1293,13 +1632,13 @@ export function createFrameworkAdapterRuntimeScenarios(
     throw new Error(
       `runtime.handle-terminal-value: unknown case "${caseValue}"`
     );
-  }
+  };
 
   // ── Durable-read scenarios (KRT-AO006) ────────────────────────────────────
 
-  function makeDurableReadRuntime(
+  const makeDurableReadRuntime = (
     harness: ReturnType<typeof createConformanceKernelHarness>
-  ) {
+  ) => {
     return createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
@@ -1311,9 +1650,9 @@ export function createFrameworkAdapterRuntimeScenarios(
         })),
       ]),
     });
-  }
+  };
 
-  async function runDurableReadListThreads(): Promise<AdapterProjection> {
+  const runDurableReadListThreads = async (): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const runtime = makeDurableReadRuntime(harness);
     await runtime.createThread({});
@@ -1329,99 +1668,101 @@ export function createFrameworkAdapterRuntimeScenarios(
         },
       },
     };
-  }
+  };
 
-  async function runDurableReadListThreadsPaginate(): Promise<AdapterProjection> {
-    const harness = createConformanceKernelHarness();
-    const runtime = makeDurableReadRuntime(harness);
-    await runtime.createThread({});
-    await runtime.createThread({});
-    const page1 = await runtime.listThreads({ limit: 1 });
-    if (page1.nextCursor === undefined) {
+  const runDurableReadListThreadsPaginate =
+    async (): Promise<AdapterProjection> => {
+      const harness = createConformanceKernelHarness();
+      const runtime = makeDurableReadRuntime(harness);
+      await runtime.createThread({});
+      await runtime.createThread({});
+      const page1 = await runtime.listThreads({ limit: 1 });
+      if (page1.nextCursor === undefined) {
+        return {
+          result: {
+            durableRead: {
+              listThreads: {
+                hasFirstCursor: false,
+                page1Count: page1.threads.length,
+              },
+            },
+          },
+        };
+      }
+      const page2 = await runtime.listThreads({
+        cursor: page1.nextCursor,
+        limit: 10,
+      });
+      const uniqueIds = new Set([
+        ...page1.threads.map((t) => t.threadId),
+        ...page2.threads.map((t) => t.threadId),
+      ]);
       return {
         result: {
           durableRead: {
             listThreads: {
-              hasFirstCursor: false,
+              hasFirstCursor: true,
+              hasSecondCursor: page2.nextCursor !== undefined,
               page1Count: page1.threads.length,
+              page2Count: page2.threads.length,
+              uniqueIds: uniqueIds.size,
             },
           },
         },
       };
-    }
-    const page2 = await runtime.listThreads({
-      cursor: page1.nextCursor,
-      limit: 10,
-    });
-    const uniqueIds = new Set([
-      ...page1.threads.map((t) => t.threadId),
-      ...page2.threads.map((t) => t.threadId),
-    ]);
-    return {
-      result: {
-        durableRead: {
-          listThreads: {
-            hasFirstCursor: true,
-            hasSecondCursor: page2.nextCursor !== undefined,
-            page1Count: page1.threads.length,
-            page2Count: page2.threads.length,
-            uniqueIds: uniqueIds.size,
-          },
-        },
-      },
     };
-  }
 
-  async function runDurableReadListThreadsCapabilityRejected(): Promise<AdapterProjection> {
-    const harness = createConformanceKernelHarness();
-    const capKernel = {
-      ...harness.kernel,
-      thread: {
-        ...harness.kernel.thread,
-        list: () => {
-          throw new TuvrenPersistenceError(
-            "thread enumeration unsupported by this backend",
-            { code: "kernel_capability_unsupported" }
-          );
-        },
-      },
-    } as typeof harness.kernel;
-    const runtime = createTuvrenRuntimeCore({
-      createId: createConformanceIdFactory(),
-      defaultRunnerId: RUNNER_ID,
-      kernel: capKernel,
-      runnerRegistry: createRunnerRegistry([
-        createStaticRunner(() => ({
-          messages: [assistantText("conformance")],
-          resolution: { reason: "done", type: "end_turn" },
-        })),
-      ]),
-    });
-    try {
-      await runtime.listThreads();
-      return {
-        result: {
-          durableRead: {
-            listThreads: { raised: false },
+  const runDurableReadListThreadsCapabilityRejected =
+    async (): Promise<AdapterProjection> => {
+      const harness = createConformanceKernelHarness();
+      const capKernel = {
+        ...harness.kernel,
+        thread: {
+          ...harness.kernel.thread,
+          list: () => {
+            throw new TuvrenPersistenceError(
+              "thread enumeration unsupported by this backend",
+              { code: "kernel_capability_unsupported" }
+            );
           },
         },
-      };
-    } catch (error: unknown) {
-      const code =
-        dependencies.isRecord(error) && typeof error.code === "string"
-          ? error.code
-          : undefined;
-      return {
-        result: {
-          durableRead: {
-            listThreads: { errorCode: code, raised: true },
+      } as typeof harness.kernel;
+      const runtime = createTuvrenRuntimeCore({
+        createId: createConformanceIdFactory(),
+        defaultRunnerId: RUNNER_ID,
+        kernel: capKernel,
+        runnerRegistry: createRunnerRegistry([
+          createStaticRunner(() => ({
+            messages: [assistantText("conformance")],
+            resolution: { reason: "done", type: "end_turn" },
+          })),
+        ]),
+      });
+      try {
+        await runtime.listThreads();
+        return {
+          result: {
+            durableRead: {
+              listThreads: { raised: false },
+            },
           },
-        },
-      };
-    }
-  }
+        };
+      } catch (error: unknown) {
+        const code =
+          dependencies.isRecord(error) && typeof error.code === "string"
+            ? error.code
+            : undefined;
+        return {
+          result: {
+            durableRead: {
+              listThreads: { errorCode: code, raised: true },
+            },
+          },
+        };
+      }
+    };
 
-  async function runDurableReadListBranches(): Promise<AdapterProjection> {
+  const runDurableReadListBranches = async (): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const runtime = makeDurableReadRuntime(harness);
     const thread = await runtime.createThread({});
@@ -1443,9 +1784,9 @@ export function createFrameworkAdapterRuntimeScenarios(
         },
       },
     };
-  }
+  };
 
-  async function runDurableReadGetTurnState(): Promise<AdapterProjection> {
+  const runDurableReadGetTurnState = async (): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const runtime = makeDurableReadRuntime(harness);
     const thread = await runtime.createThread({});
@@ -1464,30 +1805,31 @@ export function createFrameworkAdapterRuntimeScenarios(
         },
       },
     };
-  }
+  };
 
-  async function runDurableReadGetTurnStateLineage(): Promise<AdapterProjection> {
-    const harness = createConformanceKernelHarness();
-    const runtime = makeDurableReadRuntime(harness);
-    const thread = await runtime.createThread({});
-    const snapshot = await runtime.getTurnState({
-      branchId: thread.branchId,
-      threadId: thread.threadId,
-      turnNodeHash: thread.rootTurnNodeHash,
-    });
-    return {
-      result: {
-        durableRead: {
-          getTurnState: {
-            matchesExpectedHash:
-              snapshot.turnNodeHash === thread.rootTurnNodeHash,
+  const runDurableReadGetTurnStateLineage =
+    async (): Promise<AdapterProjection> => {
+      const harness = createConformanceKernelHarness();
+      const runtime = makeDurableReadRuntime(harness);
+      const thread = await runtime.createThread({});
+      const snapshot = await runtime.getTurnState({
+        branchId: thread.branchId,
+        threadId: thread.threadId,
+        turnNodeHash: thread.rootTurnNodeHash,
+      });
+      return {
+        result: {
+          durableRead: {
+            getTurnState: {
+              matchesExpectedHash:
+                snapshot.turnNodeHash === thread.rootTurnNodeHash,
+            },
           },
         },
-      },
+      };
     };
-  }
 
-  async function runDurableReadGetTurnHistory(): Promise<AdapterProjection> {
+  const runDurableReadGetTurnHistory = async (): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const runtime = makeDurableReadRuntime(harness);
     const thread = await runtime.createThread({});
@@ -1511,66 +1853,68 @@ export function createFrameworkAdapterRuntimeScenarios(
         },
       },
     };
-  }
+  };
 
-  async function runDurableReadReadBranchMessages(): Promise<AdapterProjection> {
-    const harness = createConformanceKernelHarness();
-    const runtime = makeDurableReadRuntime(harness);
-    const thread = await runtime.createThread({});
-    const result = await runtime.readBranchMessages({
-      branchId: thread.branchId,
-    });
-    return {
-      result: {
-        durableRead: {
-          readBranchMessages: {
-            hasCursor: result.nextCursor !== undefined,
-            messageCount: result.messages.length,
-          },
-        },
-      },
-    };
-  }
-
-  async function runDurableReadReadBranchMessagesHeadDrift(): Promise<AdapterProjection> {
-    const harness = createConformanceKernelHarness();
-    const runtime = makeDurableReadRuntime(harness);
-    const thread = await runtime.createThread({});
-    const staleCursor = Buffer.from(
-      JSON.stringify({
-        branchHeadAtCursorIssuance: "0".repeat(64),
-        branchId: thread.branchId,
-        kind: "branch-messages",
-        positionFromOldest: 99,
-        v: 1,
-      })
-    ).toString("base64url") as BranchMessagesCursor;
-    try {
-      await runtime.readBranchMessages({
-        after: staleCursor,
+  const runDurableReadReadBranchMessages =
+    async (): Promise<AdapterProjection> => {
+      const harness = createConformanceKernelHarness();
+      const runtime = makeDurableReadRuntime(harness);
+      const thread = await runtime.createThread({});
+      const result = await runtime.readBranchMessages({
         branchId: thread.branchId,
       });
       return {
         result: {
           durableRead: {
-            readBranchMessages: { raised: false },
+            readBranchMessages: {
+              hasCursor: result.nextCursor !== undefined,
+              messageCount: result.messages.length,
+            },
           },
         },
       };
-    } catch (error: unknown) {
-      const code =
-        dependencies.isRecord(error) && typeof error.code === "string"
-          ? error.code
-          : undefined;
-      return {
-        result: {
-          durableRead: {
-            readBranchMessages: { errorCode: code, raised: true },
+    };
+
+  const runDurableReadReadBranchMessagesHeadDrift =
+    async (): Promise<AdapterProjection> => {
+      const harness = createConformanceKernelHarness();
+      const runtime = makeDurableReadRuntime(harness);
+      const thread = await runtime.createThread({});
+      const staleCursor = Buffer.from(
+        JSON.stringify({
+          branchHeadAtCursorIssuance: "0".repeat(64),
+          branchId: thread.branchId,
+          kind: "branch-messages",
+          positionFromOldest: 99,
+          v: 1,
+        })
+      ).toString("base64url") as BranchMessagesCursor;
+      try {
+        await runtime.readBranchMessages({
+          after: staleCursor,
+          branchId: thread.branchId,
+        });
+        return {
+          result: {
+            durableRead: {
+              readBranchMessages: { raised: false },
+            },
           },
-        },
-      };
-    }
-  }
+        };
+      } catch (error: unknown) {
+        const code =
+          dependencies.isRecord(error) && typeof error.code === "string"
+            ? error.code
+            : undefined;
+        return {
+          result: {
+            durableRead: {
+              readBranchMessages: { errorCode: code, raised: true },
+            },
+          },
+        };
+      }
+    };
 
   return {
     runApprovalResume,
@@ -1598,331 +1942,4 @@ export function createFrameworkAdapterRuntimeScenarios(
       providerScenarios.runStructuredValidationFailure,
     runToolExecution: providerScenarios.runToolExecution,
   };
-
-  function hasToolMessage(messages: readonly TuvrenMessage[]): boolean {
-    return messages.some((message) => message.role === "tool");
-  }
-
-  function waitForAbort(signal: AbortSignal | undefined): Promise<void> {
-    if (signal === undefined || signal.aborted) {
-      return Promise.resolve();
-    }
-
-    return new Promise((resolve) => {
-      signal.addEventListener("abort", () => resolve(), { once: true });
-    });
-  }
-
-  async function waitForHandlePhase(
-    handle: ExecutionHandle,
-    phase: "completed" | "failed" | "paused" | "running"
-  ): Promise<void> {
-    for (let attempt = 0; attempt < 50; attempt += 1) {
-      if (handle.status().phase === phase) {
-        return;
-      }
-
-      await new Promise((resolve) => {
-        setTimeout(resolve, 1);
-      });
-    }
-
-    throw new Error(`handle did not reach ${phase} phase`);
-  }
-
-  function hasAssistantText(
-    messages: readonly unknown[],
-    expectedText: string
-  ): boolean {
-    for (const message of messages) {
-      if (!dependencies.isRecord(message) || message.role !== "assistant") {
-        continue;
-      }
-
-      const { parts } = message;
-
-      if (!Array.isArray(parts)) {
-        continue;
-      }
-
-      for (const part of parts) {
-        if (
-          dependencies.isRecord(part) &&
-          part.type === "text" &&
-          part.text === expectedText
-        ) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  function readFirstErrorEnvelope(
-    events: readonly unknown[]
-  ): Record<string, unknown> | undefined {
-    for (const event of events) {
-      if (dependencies.isRecord(event) && dependencies.isRecord(event.error)) {
-        return event.error;
-      }
-    }
-
-    return undefined;
-  }
-
-  function countEventsByType(events: readonly unknown[], type: string): number {
-    let count = 0;
-
-    for (const event of events) {
-      if (dependencies.readRecordString(event, "type") === type) {
-        count += 1;
-      }
-    }
-
-    return count;
-  }
-
-  function readLastCheckpointHash(events: readonly unknown[]): string {
-    let checkpointHash: string | undefined;
-
-    for (const event of events) {
-      const turnNodeHash = dependencies.readRecordString(event, "turnNodeHash");
-
-      if (turnNodeHash !== undefined) {
-        assertHashString(turnNodeHash, "state.checkpoint.turnNodeHash");
-        checkpointHash = turnNodeHash;
-      }
-    }
-
-    if (checkpointHash === undefined) {
-      throw new Error(
-        "completed branch scenario did not emit a checkpoint hash"
-      );
-    }
-
-    return checkpointHash;
-  }
-
-  function observeSupersededPausedHandle(
-    handle: ExecutionHandle
-  ): Record<string, unknown> {
-    return {
-      cancelErrorCode: readThrownErrorCode(() => handle.cancel()),
-      resolveApprovalErrorCode: readThrownErrorCode(() =>
-        handle.resolveApproval({ decisions: [] })
-      ),
-      statusPhaseAfterResolution: handle.status().phase,
-    };
-  }
-
-  function readThrownErrorCode(action: () => void): string | undefined {
-    try {
-      action();
-      return undefined;
-    } catch (error: unknown) {
-      if (dependencies.isRecord(error) && typeof error.code === "string") {
-        return error.code;
-      }
-
-      return undefined;
-    }
-  }
-
-  function readErrorEnvelope(error: unknown): Record<string, unknown> {
-    if (error instanceof Error) {
-      return {
-        code:
-          dependencies.isRecord(error) && typeof error.code === "string"
-            ? error.code
-            : "runtime_error",
-        message: error.message,
-      };
-    }
-
-    return {
-      code: "runtime_error",
-      message: String(error),
-    };
-  }
-
-  function readToolResultParts(
-    messages: readonly unknown[]
-  ): Record<string, unknown>[] {
-    const results: Record<string, unknown>[] = [];
-
-    for (const message of messages) {
-      if (!dependencies.isRecord(message) || message.role !== "tool") {
-        continue;
-      }
-
-      const { parts } = message;
-
-      if (!Array.isArray(parts)) {
-        continue;
-      }
-
-      for (const part of parts) {
-        if (!dependencies.isRecord(part)) {
-          continue;
-        }
-
-        results.push({
-          callId: part.callId,
-          isError: part.isError === true,
-          name: part.name,
-          output: part.output,
-        });
-      }
-    }
-
-    return results;
-  }
-
-  function readFirstApprovalMessage(
-    toolResults: readonly Record<string, unknown>[]
-  ): string | undefined {
-    for (const result of toolResults) {
-      const { output } = result;
-
-      if (!dependencies.isRecord(output)) {
-        continue;
-      }
-
-      const message = dependencies.readRecordString(output, "message");
-
-      if (message !== undefined) {
-        return message;
-      }
-
-      const error = dependencies.readRecordString(output, "error");
-
-      if (error !== undefined) {
-        return error;
-      }
-    }
-
-    return undefined;
-  }
-
-  function readEventStringValues(
-    events: readonly unknown[],
-    key: string
-  ): string[] {
-    const values = new Set<string>();
-
-    for (const event of events) {
-      const value = dependencies.readRecordString(event, key);
-
-      if (value !== undefined) {
-        values.add(value);
-      }
-    }
-
-    return [...values].sort();
-  }
-
-  function didEventOccurAfter(
-    events: readonly unknown[],
-    earlierType: string,
-    laterType: string,
-    laterCallId?: string
-  ): boolean {
-    const earlierIndex = findEventIndex(events, earlierType);
-    const laterIndex = findEventIndex(events, laterType, laterCallId);
-
-    return earlierIndex >= 0 && laterIndex > earlierIndex;
-  }
-
-  function findEventIndex(
-    events: readonly unknown[],
-    type: string,
-    callId?: string
-  ): number {
-    return events.findIndex((event) => {
-      if (dependencies.readRecordString(event, "type") !== type) {
-        return false;
-      }
-
-      return (
-        callId === undefined ||
-        dependencies.readRecordString(event, "callId") === callId
-      );
-    });
-  }
-
-  function eventStreamsShareTurn(
-    firstEvents: readonly unknown[],
-    secondEvents: readonly unknown[]
-  ): boolean {
-    const firstTurnIds = readEventStringValues(firstEvents, "turnId");
-    const secondTurnIds = readEventStringValues(secondEvents, "turnId");
-
-    return (
-      firstTurnIds.length === 1 &&
-      secondTurnIds.length === 1 &&
-      firstTurnIds[0] === secondTurnIds[0]
-    );
-  }
-}
-
-function createTelemetryCapture(): {
-  events: TelemetryEvent[];
-  sink: TuvrenTelemetrySink;
-  spans: TelemetrySpan[];
-} {
-  const events: TelemetryEvent[] = [];
-  const spans: TelemetrySpan[] = [];
-
-  return {
-    events,
-    sink: {
-      event: (event) => {
-        events.push(event);
-      },
-      span: (span) => {
-        spans.push(span);
-      },
-    },
-    spans,
-  };
-}
-
-// The content funnel's assistant-text surface: `text.done` stream events carry
-// the full message text the session emitted (ADR-0058 §5b evidence source).
-function readTextDoneTexts(events: readonly TuvrenStreamEvent[]): string[] {
-  return events.flatMap((event) =>
-    event.type === "text.done" ? [event.text] : []
-  );
-}
-
-function summarizeTelemetry(capture: {
-  events: readonly TelemetryEvent[];
-  spans: readonly TelemetrySpan[];
-}): Record<string, unknown> {
-  return {
-    eventKinds: capture.events.map((event) => event.kind),
-    eventsHaveLineage: capture.events.every(
-      (event) =>
-        event.lineage.threadId.length > 0 &&
-        event.lineage.branchId.length > 0 &&
-        event.lineage.turnId.length > 0
-    ),
-    spanKinds: capture.spans.map((span) => span.kind),
-    spansHaveLineage: capture.spans.every(
-      (span) =>
-        span.lineage.threadId.length > 0 &&
-        span.lineage.branchId.length > 0 &&
-        span.lineage.turnId.length > 0
-    ),
-  };
-}
-
-function createDeterministicClock(): () => number {
-  let now = 10_000;
-
-  return () => {
-    now += 10;
-    return now;
-  };
-}
+};
