@@ -110,6 +110,105 @@ const createRunnerRegistry = (
   return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 };
 describe("framework-runtime-core", () => {
+  test("stages a large executable-only parallel batch without recursive empty-slot overflow", async () => {
+    const callCount = 20_000;
+    const harness = createFakeKernelHarness();
+    const runner = {
+      async execute(context) {
+        await Promise.resolve();
+        const toolMessages = context.messages.filter(
+          (message) => message.role === "tool"
+        );
+
+        if (toolMessages.length === 0) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "call-0",
+                  input: { id: 0 },
+                  name: "work",
+                },
+                ...Array.from({ length: callCount - 1 }, (_, offset) => {
+                  const index = offset + 1;
+                  return {
+                    callId: `call-${index}`,
+                    input: { id: index },
+                    name: "work",
+                  };
+                }),
+              ]),
+            ],
+            resolution: {
+              type: "continue_iteration",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("All tools finished.")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        };
+      },
+      id: "large-batch",
+      resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies RuntimeRunner;
+    const runtime = createTuvrenRuntime({
+      defaultMaxParallelToolCalls: callCount,
+      defaultRunnerId: "large-batch",
+      kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        maxParallelToolCalls: callCount,
+        name: "primary",
+        tools: [
+          {
+            description: "Complete immediately",
+            execute(input: unknown) {
+              const record = toOptionalRecord(input);
+              return { id: record?.id };
+            },
+            inputSchema: {
+              properties: {
+                id: { type: "integer" },
+              },
+              required: ["id"],
+              type: "object",
+            },
+            name: "work",
+          },
+        ],
+      },
+      signal: textSignal("Run a large parallel batch"),
+      threadId: thread.threadId,
+    });
+
+    let startCount = 0;
+    let resultCount = 0;
+
+    for await (const event of handle.events()) {
+      if (event.type === "tool.start") {
+        startCount += 1;
+      }
+
+      if (event.type === "tool.result") {
+        resultCount += 1;
+      }
+    }
+
+    expect(startCount).toBe(callCount);
+    expect(resultCount).toBe(callCount);
+  }, 30_000);
+
   test("emits tool.result when each parallel tool finishes instead of after the slowest call", async () => {
     const harness = createFakeKernelHarness();
     const timeline: string[] = [];
