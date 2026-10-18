@@ -26,12 +26,12 @@ import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 
 import { createClientEndpointBoundary } from "./client-endpoint-boundary.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
+import type { RuntimeRunLivenessOptions } from "./runtime-core-options.js";
 import {
   cloneSnapshotPreservingFunctions,
   cloneValue,
   createFrozenSnapshot,
 } from "./runtime-core-shared.js";
-import type { RuntimeRunLivenessOptions } from "./runtime-core.js";
 import {
   buildClientEndpointTools,
   createToolRegistry,
