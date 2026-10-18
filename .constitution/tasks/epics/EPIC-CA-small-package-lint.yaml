@@ -1,139 +1,129 @@
 id: CA
-name: Small TypeScript package lint ratchet
+name: Core, SDK, and MCP lint preparation delivery
 kind: tooling
 capabilities: []
-depends_on: [BQ, CS, BT]
+depends_on:
+  - BQ
+  - CS
 scope:
   paths:
-    - typescript/core
-    - typescript/sdk
-    - typescript/streaming
-    - typescript/tools
-    - typescript/testkit
-    - typescript/telemetry
-    - typescript/certification
-    - typescript/certification-batteries-included
+    - .changeset/core-sdk-mcp-lint-prep.md
+    - .constitution/evidence/KRT-CA002
+    - .constitution/evidence/KRT-CA005
     - tools/run-nx.mjs
-    - tools/biome-coverage/ca.json
-    - ".changeset/toolchain-ca-small-package-lint.md"
+    - typescript/core/src/capabilities/index.ts
+    - typescript/core/src/extensions/index.ts
+    - typescript/core/src/lib/capability-shapes.ts
+    - typescript/core/src/lib/kernel-records.ts
+    - typescript/core/src/lib/payload-codec.ts
+    - typescript/core/src/lib/runner-agent-config-snapshot-guards.ts
+    - typescript/core/src/lib/runner-contract-guards.ts
+    - typescript/core/src/lib/runner-contract-shapes.ts
+    - typescript/core/src/lib/runtime-content-approval-predicates.ts
+    - typescript/core/src/lib/runtime-context-manifest-predicates.ts
+    - typescript/core/src/lib/runtime-contract-predicates.ts
+    - typescript/core/src/lib/runtime-data-contract-shapes.ts
+    - typescript/core/src/lib/runtime-event-contract-shapes.ts
+    - typescript/core/src/lib/runtime-execution-contract-shapes.ts
+    - typescript/core/src/lib/runtime-provider-contract-guards.ts
+    - typescript/core/src/lib/scope.ts
+    - typescript/core/src/lib/secret-pattern-screening.ts
+    - typescript/core/src/lib/tuvren-error.ts
+    - typescript/core/src/telemetry/index.ts
+    - typescript/core/src/telemetry/telemetry-destination.ts
+    - typescript/core/test/admission-key-contracts.test.ts
+    - typescript/core/test/events-json-schema.test.ts
+    - typescript/core/test/payload-codec.test.ts
+    - typescript/core/test/runtime-contract-guards-fixtures.ts
+    - typescript/core/test/runtime-contract-guards.approval.test.ts
+    - typescript/core/test/runtime-contract-guards.execution-shape.test.ts
+    - typescript/core/test/runtime-contract-guards.test.ts
+    - typescript/core/test/secret-pattern-screening.test.ts
+    - typescript/core/tsup.config.ts
+    - typescript/sdk/src/lib/create-tuvren.ts
+    - typescript/sdk/src/lib/payload-codec.ts
+    - typescript/sdk/src/lib/schema-authoring.ts
+    - typescript/sdk/test/conversation-state.shreddable-continuity.test.ts
+    - typescript/sdk/test/module-resolution.test.ts
+    - typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts
+    - typescript/sdk/test/payload-codec.crypto-shredding.test.ts
+    - typescript/sdk/test/payload-codec.test.ts
+    - typescript/sdk/test/schema-authoring.test.ts
+    - typescript/sdk/test/tenant-offboarding.test.ts
+    - typescript/sdk/tsup.config.ts
+    - typescript/tools/mcp-client/src/lib/mcp-sdk-client.ts
+    - typescript/tools/mcp-client/src/lib/mcp-tool-source.ts
+    - typescript/tools/mcp-client/test/mcp-client.test.ts
+    - typescript/tools/mcp-client/tsup.config.ts
   tech_spec_patchable: []
-estimated_diff_lines: 14000
+estimated_diff_lines: 13000
 estimate_source: planned
 tickets:
-  - id: KRT-CA001
-    title: Apply safe fixes and preserve types per directory
+  - id: KRT-CA005
+    title: Deliver the retained-clean core, SDK, and MCP foundation
     type: Chore
     effort: 5
     depends_on: []
     scope:
       in:
-        - typescript/core
-        - typescript/sdk
-        - typescript/streaming
-        - typescript/tools
-        - typescript/testkit
-        - typescript/telemetry
-        - typescript/certification
-        - typescript/certification-batteries-included
+        - .changeset/core-sdk-mcp-lint-prep.md
+        - .constitution/evidence/KRT-CA002
+        - .constitution/evidence/KRT-CA005
         - tools/run-nx.mjs
-        - ".changeset/toolchain-ca-small-package-lint.md"
+        - typescript/core/src/capabilities/index.ts
+        - typescript/core/src/extensions/index.ts
+        - typescript/core/src/lib/capability-shapes.ts
+        - typescript/core/src/lib/kernel-records.ts
+        - typescript/core/src/lib/payload-codec.ts
+        - typescript/core/src/lib/runner-agent-config-snapshot-guards.ts
+        - typescript/core/src/lib/runner-contract-guards.ts
+        - typescript/core/src/lib/runner-contract-shapes.ts
+        - typescript/core/src/lib/runtime-content-approval-predicates.ts
+        - typescript/core/src/lib/runtime-context-manifest-predicates.ts
+        - typescript/core/src/lib/runtime-contract-predicates.ts
+        - typescript/core/src/lib/runtime-data-contract-shapes.ts
+        - typescript/core/src/lib/runtime-event-contract-shapes.ts
+        - typescript/core/src/lib/runtime-execution-contract-shapes.ts
+        - typescript/core/src/lib/runtime-provider-contract-guards.ts
+        - typescript/core/src/lib/scope.ts
+        - typescript/core/src/lib/secret-pattern-screening.ts
+        - typescript/core/src/lib/tuvren-error.ts
+        - typescript/core/src/telemetry/index.ts
+        - typescript/core/src/telemetry/telemetry-destination.ts
+        - typescript/core/test/admission-key-contracts.test.ts
+        - typescript/core/test/events-json-schema.test.ts
+        - typescript/core/test/payload-codec.test.ts
+        - typescript/core/test/runtime-contract-guards-fixtures.ts
+        - typescript/core/test/runtime-contract-guards.approval.test.ts
+        - typescript/core/test/runtime-contract-guards.execution-shape.test.ts
+        - typescript/core/test/runtime-contract-guards.test.ts
+        - typescript/core/test/secret-pattern-screening.test.ts
+        - typescript/core/tsup.config.ts
+        - typescript/sdk/src/lib/create-tuvren.ts
+        - typescript/sdk/src/lib/payload-codec.ts
+        - typescript/sdk/src/lib/schema-authoring.ts
+        - typescript/sdk/test/conversation-state.shreddable-continuity.test.ts
+        - typescript/sdk/test/module-resolution.test.ts
+        - typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts
+        - typescript/sdk/test/payload-codec.crypto-shredding.test.ts
+        - typescript/sdk/test/payload-codec.test.ts
+        - typescript/sdk/test/schema-authoring.test.ts
+        - typescript/sdk/test/tenant-offboarding.test.ts
+        - typescript/sdk/tsup.config.ts
+        - typescript/tools/mcp-client/src/lib/mcp-sdk-client.ts
+        - typescript/tools/mcp-client/src/lib/mcp-tool-source.ts
+        - typescript/tools/mcp-client/test/mcp-client.test.ts
+        - typescript/tools/mcp-client/tsup.config.ts
     verification:
       command: bun run typecheck
-      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+      expected: Exit 0; core, SDK, and MCP pass typecheck, retained Biome, cold imports, and their package tests without switching native ownership.
     stop_conditions:
-      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Run safe --fix one project at a time and immediately typecheck that project. Repair the 19 measured autofix failure classes, including required undefined arguments and readonly array to Set rewrites. Complete core, SDK, streaming, tools, testkit, telemetry and certification without changing generated files. Do not switch lint targets yet. Add or update .changeset/toolchain-ca-small-package-lint.md as a patch changeset with direct coverage for the affected public packages: @tuvren/core, @tuvren/mcp-client, @tuvren/sdk, @tuvren/stream-agui, @tuvren/stream-core, @tuvren/stream-sse, @tuvren/telemetry-otel, @tuvren/telemetry-semconv. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
+      - STOP if a file lacks retained-Biome proof, the runtime-contract-shapes bridge enters this slice, or a project target or coverage file changes; do not improvise.
+      - STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise.
+    description: Deliver the exact retained-clean core, SDK, and MCP whole-file slice from frozen EPIC-CA head d67b9b8d2bb370e25d03415d6573ace25b4fa46b. Preserve the original CA001-CA003 source outcomes, reviews, OD-09 decisions, and the whole KRT-CA002 evidence directory. This slice includes the seven historically proven early removals. Keep runtime-contract-shapes and the four files that freshly failed retained Biome in final CX ownership; keep all 29 original admission removals, project targets, and coverage unchanged. Add one direct patch Changeset for @tuvren/core, @tuvren/sdk, and @tuvren/mcp-client. Use compact provenance and do not recreate milestone evidence. Feasibility measured 11363 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 11870, leaving 3130 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast.
     acceptance:
       mode: contract_test
-      evidence: "Assert each scoped project typechecks after each safe-fix batch, existing runtime assertions pass, and no signature or collection semantics change. Record changed files and the before/after diagnostic count per project. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
-    flows: []
-    certainty: settled
-    status: planned
-  - id: KRT-CA002
-    title: Migrate live suppressions and delete dead ones
-    type: Chore
-    effort: 3
-    depends_on: [KRT-CA001]
-    scope:
-      in:
-        - typescript/core
-        - typescript/sdk
-        - typescript/streaming
-        - typescript/tools
-        - typescript/testkit
-        - typescript/telemetry
-        - typescript/certification
-        - typescript/certification-batteries-included
-        - tools/run-nx.mjs
-        - ".changeset/toolchain-ca-small-package-lint.md"
-    verification:
-      command: bun run typecheck
-      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if a proposed native suppression lacks a fresh equivalent diagnostic, changes the original reason, removes a needed Biome directive before native admission, or introduces a Biome directive; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Treat the measured 144-directive inventory as an identification baseline, not a quota. Re-run live retained-Biome and Oxlint diagnostics across the owned paths. For every baseline identity and any drift discovered at execution, record its original reason, equivalent native rule, retained-checker disposition, and native-admission disposition. While Biome owns a path, preserve each needed original Biome directive and its reason. Remove a directive before admission only after a behavior-preserving code fix proves that the retained Biome diagnostic no longer fires. Do not add Biome directives. Record a native counterpart only when the equivalent native rule actually fires and the original reason remains valid. Do not replace an API's bitmask operation with a handwritten flag algorithm to avoid lint. Do not create suppressions to reproduce the historical 82-live/62-dead classification. Provide the per-directive disposition ledger for CB aggregation. Keep tools/run-nx.mjs under this retained-checker rule through KRT-CA004 and until CB's whole-tools admission. Add or update .changeset/toolchain-ca-small-package-lint.md as a patch changeset with direct coverage for the affected public packages: @tuvren/core, @tuvren/mcp-client, @tuvren/sdk, @tuvren/stream-agui, @tuvren/stream-core, @tuvren/stream-sse, @tuvren/telemetry-otel, @tuvren/telemetry-semconv. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
-    acceptance:
-      mode: contract_test
-      evidence: "Assert every baseline directive identity in the owned paths, plus any measured drift, has a ledger entry backed by live retained-Biome and Oxlint diagnostics. Each entry records the original reason, retained-checker disposition, and native-admission disposition. While Biome owns the path, prove each needed original directive remains and the full lint gate passes. Prove any early deletion follows a behavior-preserving code fix and a fresh retained-Biome run where the diagnostic no longer fires. Prove each planned native counterpart matches an actually firing equivalent rule and preserves the original reason. Add no Biome directive, manufacture no suppression to meet a historical count, and emit the ledger CB will aggregate. Prove tools/run-nx.mjs retains every needed original Biome directive and its coverage entry until CB's whole-tools admission. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
-    flows: []
-    certainty: settled
-    status: planned
-  - id: KRT-CA003
-    title: Reorder definitions without initialization regressions
-    type: Chore
-    effort: 8
-    depends_on: [KRT-CA002]
-    scope:
-      in:
-        - typescript/core
-        - typescript/sdk
-        - typescript/streaming
-        - typescript/tools
-        - typescript/testkit
-        - typescript/telemetry
-        - typescript/certification
-        - typescript/certification-batteries-included
-        - tools/run-nx.mjs
-        - ".changeset/toolchain-ca-small-package-lint.md"
-    verification:
-      command: bun run conformance
-      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if a runtime or conformance regression follows reordering; return the rule pair to the owner without overrides occurs; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Convert func-style declarations and reorder no-use-before-define definitions in bounded reviewable module batches. Preserve exports, initialization order and observable execution. The merged kernel pilot is the prerequisite; apply its proven ordering method. Add or update .changeset/toolchain-ca-small-package-lint.md as a patch changeset with direct coverage for the affected public packages: @tuvren/core, @tuvren/mcp-client, @tuvren/sdk, @tuvren/stream-agui, @tuvren/stream-core, @tuvren/stream-sse, @tuvren/telemetry-otel, @tuvren/telemetry-semconv. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
-    acceptance:
-      mode: contract_test
-      evidence: "Assert module initialization, cyclic imports and conformance outcomes match the pre-reorder baseline. Run scoped tests, repository typecheck and bun run conformance on the same implementation. Preserve error and event ordering, not just lint success. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
-    flows: []
-    certainty: settled
-    status: planned
-  - id: KRT-CA004
-    title: Clear remaining rules and switch clean project targets
-    type: Chore
-    effort: 8
-    depends_on: [KRT-CA003]
-    scope:
-      in:
-        - typescript/core
-        - typescript/sdk
-        - typescript/streaming
-        - typescript/tools
-        - typescript/testkit
-        - typescript/telemetry
-        - typescript/certification
-        - typescript/certification-batteries-included
-        - tools/run-nx.mjs
-        - tools/biome-coverage/ca.json
-        - ".changeset/toolchain-ca-small-package-lint.md"
-    verification:
-      command: bun run lint
-      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if a project isn't clean, type-aware lint skips a rule, an admitted package path loses a needed Biome directive before the same commit switches its lint target and coverage ownership, or tools/run-nx.mjs loses retained coverage before CB; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Clear remaining syntactic diagnostics, then run type-aware lint with the complete effective shipped preset unchanged. For every migrated Nx project, use the active default nx:run-commands target with the workspace root as cwd and the exact project-root command pair, in order: bunx --bun oxlint --type-aware PROJECT_ROOT, then bun tools/scripts/json-check.ts PROJECT_ROOT. Set all 12 newly admitted CA targets' top-level options.forwardAllArgs to the literal false so ordinary caller arguments cannot widen or alter their child commands. This guarantee covers ordinary caller arguments only, not an explicit executor override such as --forwardAllArgs=true. Source cleanup may proceed independently, but final admission waits for review-clean BT to merge and for the CA branch to rebase onto its shared classifier fix. Use bun tools/scripts/json-check.ts --json-only PROJECT_ROOT only for a JSON-only project whose fresh Git inventory, checked outside the cached Nx result, proves no code files. Reject alternate executors or configurations, partial, glob, or parent operands, extra options, forwarded, unknown, or no-op flags, empty selections, and duplicate checker ownership. Derive code coverage from Oxlint's actual --debug=files selection and JSON coverage from the native source-integrity selection; Oxfmt ignores affect formatting only. Where a project lint target declares inputs and thereby replaces target defaults, include the real native checker helper inputs explicitly. Use the established native helpers without adding dependencies or repository-owned lint policy. Ensure type-aware lint can read prerequisite declarations while ordinary typecheck remains source-only. Consume this epic's suppression-disposition ledger and rerun retained-Biome and Oxlint diagnostics on the admission commit. For each admitted package path, remove its legacy Biome directives in the same commit that switches its lint target and coverage ownership. The ledger permits earlier removal while Biome owns the path only after a behavior-preserving code fix and fresh retained-Biome proof that the diagnostic is gone. At native admission, remove a legacy Biome directive with no native counterpart when fresh native proof shows that no equivalent diagnostic fires, and record that disposition. If the equivalent native rule fires, keep only a justified measured native counterpart with the original reason or fix the actual native issue. Do not replace an API's bitmask operation with a handwritten flag algorithm to avoid lint. Remove each admitted package path from tools/biome-coverage/ca.json, leave every other list unchanged, and keep Biome responsible for every path not yet natively admitted. Keep tools/run-nx.mjs, its needed original Biome directives, and its ca.json coverage entry through this ticket for CB's whole-tools admission. Migrate the real package targets in this ticket. Add no lint policy or configuration override. Add or update .changeset/toolchain-ca-small-package-lint.md as a patch changeset with direct coverage for the affected public packages: @tuvren/core, @tuvren/mcp-client, @tuvren/sdk, @tuvren/stream-agui, @tuvren/stream-core, @tuvren/stream-sse, @tuvren/telemetry-otel, @tuvren/telemetry-semconv. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
-    acceptance:
-      mode: contract_test
-      evidence: "Assert the type-aware backend runs every installed, enabled, as-shipped type-aware rule with complete equality of rules, options, severities, environment, globals, plugins, settings, and categories and with no local override or project-resolution error. Treat 55 type-aware rules in the measured 474-rule installed preset, alongside 419 non-type-aware rules, as pinned historical evidence rather than a future quota. Assert all 12 admitted CA targets have top-level options.forwardAllArgs: false, the exact canonical command shape, and workspace cwd; actual --debug=files and native JSON selections are complete and nonempty, source-integrity coverage remains independent of formatter ignores, fresh JSON-only code absence is checked outside cached results, and explicit project inputs name the checker helpers when they override defaults. Prove final admission ran after review-clean BT merged and the branch rebased onto its shared classifier fix. For each admitted package path, reconcile the ledger against fresh diagnostics and record whether the legacy directive has a measured native counterpart. When no equivalent native diagnostic fires, record the no-counterpart disposition. When one fires, preserve the original reason for the justified native counterpart or prove the actual native issue is fixed. Prove the same commit removes legacy Biome directives and switches lint coverage. No admitted package path contains a biome-ignore comment after the commit. Scoped tests and the full lint gate pass; admitted package paths are absent from tools/biome-coverage/ca.json, while every remaining entry retains Biome lint coverage. Prove tools/run-nx.mjs keeps each needed original Biome directive and its ca.json coverage entry until CB's whole-tools admission. Assert no lint policy or configuration override was introduced and the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
+      evidence: Assert every delivered file maps to frozen CA provenance; core, SDK, and MCP each pass source-only typecheck, retained-Biome lint, cold import, and package tests; the seven early-removal identities retain their reviewed proof; and all 29 original admission removals remain protected in final-owned files. Prove the KRT-CA002 directory stays whole, compiler resolution reaches no live sibling source, no target or coverage metadata changes, and the PR carries direct patch Changeset entries for @tuvren/core, @tuvren/sdk, and @tuvren/mcp-client.
     flows: []
     certainty: settled
     status: planned

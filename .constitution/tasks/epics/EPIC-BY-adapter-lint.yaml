@@ -1,104 +1,83 @@
 id: BY
-name: Conformance adapter lint ratchet
+name: Atomic conformance adapter native lint admission
 kind: tooling
 capabilities: []
-depends_on: [BQ, CS, BT]
+depends_on:
+  - BT
+  - CV
 scope:
   paths:
-    - typescript/conformance-adapter
-    - typescript/kernel/conformance-adapter
-    - typescript/providers/conformance-adapter
+    - .constitution/evidence/KRT-BY002
+    - .constitution/evidence/KRT-BY004
     - tools/biome-coverage/by.json
+    - tools/scripts/verify.ts
+    - typescript/conformance-adapter/project.json
+    - typescript/conformance-adapter/src/framework-adapter-admission-key.ts
+    - typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts
+    - typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts
+    - typescript/conformance-adapter/test/host-protocol.test.zsh
+    - typescript/kernel/conformance-adapter/project.json
+    - typescript/kernel/conformance-adapter/src/host-protocol-logical-scenarios.ts
+    - typescript/kernel/conformance-adapter/src/host-reclamation-scenarios.ts
+    - typescript/kernel/conformance-adapter/src/host-restart-recovery-scenarios.ts
+    - typescript/kernel/conformance-adapter/src/host-run-liveness-scenarios.ts
+    - typescript/kernel/conformance-adapter/src/host-scenario-support.ts
+    - typescript/kernel/conformance-adapter/src/host-support.ts
+    - typescript/kernel/conformance-adapter/src/host.ts
+    - typescript/kernel/conformance-adapter/src/sqlite-restart-recovery-scenario.ts
+    - typescript/kernel/conformance-adapter/tsup.config.ts
+    - typescript/providers/conformance-adapter/project.json
+    - typescript/providers/conformance-adapter/src/host.ts
+    - typescript/providers/conformance-adapter/src/provider-conformance-fixtures.ts
+    - typescript/providers/conformance-adapter/src/provider-mediated-execution-class.ts
+    - typescript/providers/conformance-adapter/src/provider-native-execution-class.ts
+    - typescript/providers/conformance-adapter/test/host-protocol.test.zsh
   tech_spec_patchable: []
-estimated_diff_lines: 14000
+estimated_diff_lines: 13500
 estimate_source: planned
 tickets:
-  - id: KRT-BY001
-    title: Apply safe fixes and preserve types per directory
+  - id: KRT-BY004
+    title: Atomically admit all three TypeScript adapter hosts
     type: Chore
-    effort: 5
+    effort: 8
     depends_on: []
     scope:
       in:
-        - typescript/conformance-adapter
-        - typescript/kernel/conformance-adapter
-        - typescript/providers/conformance-adapter
-    verification:
-      command: bun run typecheck
-      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Run safe --fix one project at a time and immediately typecheck that project. Repair the 19 measured autofix failure classes, including required undefined arguments and readonly array to Set rewrites. Adapter syntactic diagnostics were about 1401; the measured 5797 type-aware upper bound included unresolved-type noise. Use the resolved-project count from BP and split module fixes without changing shared grading. Do not switch lint targets yet."
-    acceptance:
-      mode: contract_test
-      evidence: "Assert each scoped project typechecks after each safe-fix batch, existing runtime assertions pass, and no signature or collection semantics change. Record changed files and the before/after diagnostic count per project."
-    flows: []
-    certainty: settled
-    status: planned
-  - id: KRT-BY002
-    title: Migrate live suppressions and delete dead ones
-    type: Chore
-    effort: 3
-    depends_on: [KRT-BY001]
-    scope:
-      in:
-        - typescript/conformance-adapter
-        - typescript/kernel/conformance-adapter
-        - typescript/providers/conformance-adapter
-    verification:
-      command: bun run typecheck
-      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if a proposed native suppression lacks a fresh equivalent diagnostic, changes the original reason, removes a needed Biome directive before native admission, or introduces a Biome directive; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Treat the measured 144-directive inventory as an identification baseline, not a quota. Re-run live retained-Biome and Oxlint diagnostics across the owned paths. For every baseline identity and any drift discovered at execution, record its original reason, equivalent native rule, retained-checker disposition, and native-admission disposition. While Biome owns a path, preserve each needed original Biome directive and its reason. Remove a directive before admission only after a behavior-preserving code fix proves that the retained Biome diagnostic no longer fires. Do not add Biome directives. Record a native counterpart only when the equivalent native rule actually fires and the original reason remains valid. Do not replace an API's bitmask operation with a handwritten flag algorithm to avoid lint. Do not create suppressions to reproduce the historical 82-live/62-dead classification. Provide the per-directive disposition ledger for CB aggregation."
-    acceptance:
-      mode: contract_test
-      evidence: Assert every baseline directive identity in the owned paths, plus any measured drift, has a ledger entry backed by live retained-Biome and Oxlint diagnostics. Each entry records the original reason, retained-checker disposition, and native-admission disposition. While Biome owns the path, prove each needed original directive remains and the full lint gate passes. Prove any early deletion follows a behavior-preserving code fix and a fresh retained-Biome run where the diagnostic no longer fires. Prove each planned native counterpart matches an actually firing equivalent rule and preserves the original reason. Add no Biome directive, manufacture no suppression to meet a historical count, and emit the ledger CB will aggregate.
-    flows: []
-    certainty: settled
-    status: planned
-  - id: KRT-BY003
-    title: Reorder definitions without initialization regressions
-    type: Chore
-    effort: 8
-    depends_on: [KRT-BY002]
-    scope:
-      in:
-        - typescript/conformance-adapter
-        - typescript/kernel/conformance-adapter
-        - typescript/providers/conformance-adapter
-    verification:
-      command: bun run conformance
-      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if a runtime or conformance regression follows reordering; return the rule pair to the owner without overrides occurs; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Convert func-style declarations and reorder no-use-before-define definitions in bounded reviewable module batches. Preserve exports, initialization order and observable execution. The merged kernel pilot is the prerequisite; apply its proven ordering method."
-    acceptance:
-      mode: contract_test
-      evidence: "Assert module initialization, cyclic imports and conformance outcomes match the pre-reorder baseline. Run scoped tests, repository typecheck and bun run conformance on the same implementation. Preserve error and event ordering, not just lint success."
-    flows: []
-    certainty: settled
-    status: planned
-  - id: KRT-BY004
-    title: Clear remaining rules and switch clean project targets
-    type: Chore
-    effort: 8
-    depends_on: [KRT-BY003]
-    scope:
-      in:
-        - typescript/conformance-adapter
-        - typescript/kernel/conformance-adapter
-        - typescript/providers/conformance-adapter
+        - .constitution/evidence/KRT-BY002
+        - .constitution/evidence/KRT-BY004
         - tools/biome-coverage/by.json
+        - tools/scripts/verify.ts
+        - typescript/conformance-adapter/project.json
+        - typescript/conformance-adapter/src/framework-adapter-admission-key.ts
+        - typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts
+        - typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts
+        - typescript/conformance-adapter/test/host-protocol.test.zsh
+        - typescript/kernel/conformance-adapter/project.json
+        - typescript/kernel/conformance-adapter/src/host-protocol-logical-scenarios.ts
+        - typescript/kernel/conformance-adapter/src/host-reclamation-scenarios.ts
+        - typescript/kernel/conformance-adapter/src/host-restart-recovery-scenarios.ts
+        - typescript/kernel/conformance-adapter/src/host-run-liveness-scenarios.ts
+        - typescript/kernel/conformance-adapter/src/host-scenario-support.ts
+        - typescript/kernel/conformance-adapter/src/host-support.ts
+        - typescript/kernel/conformance-adapter/src/host.ts
+        - typescript/kernel/conformance-adapter/src/sqlite-restart-recovery-scenario.ts
+        - typescript/kernel/conformance-adapter/tsup.config.ts
+        - typescript/providers/conformance-adapter/project.json
+        - typescript/providers/conformance-adapter/src/host.ts
+        - typescript/providers/conformance-adapter/src/provider-conformance-fixtures.ts
+        - typescript/providers/conformance-adapter/src/provider-mediated-execution-class.ts
+        - typescript/providers/conformance-adapter/src/provider-native-execution-class.ts
+        - typescript/providers/conformance-adapter/test/host-protocol.test.zsh
     verification:
-      command: bun run lint
-      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+      command: bun run verify
+      expected: Exit 0; all three adapters are native-clean, both protocol tests are in the durable lane, and the complete release gate passes.
     stop_conditions:
-      - "STOP if a project isn't clean, type-aware lint skips a rule, or an admitted path loses a needed Biome directive before the same commit switches its lint target and coverage ownership; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Clear remaining syntactic diagnostics, then run type-aware lint with the complete effective shipped preset unchanged. For every migrated Nx project, use the active default nx:run-commands target with the workspace root as cwd and the exact project-root command pair, in order: bunx --bun oxlint --type-aware PROJECT_ROOT, then bun tools/scripts/json-check.ts PROJECT_ROOT. Set all three newly admitted BY targets' top-level options.forwardAllArgs to the literal false so ordinary caller arguments cannot widen or alter either child command. This guarantee covers ordinary caller arguments only, not an explicit executor override such as --forwardAllArgs=true. Source cleanup may proceed independently, but final admission waits for review-clean BT to merge and for the BY branch to rebase onto its shared classifier fix. Use bun tools/scripts/json-check.ts --json-only PROJECT_ROOT only for a JSON-only project whose fresh Git inventory, checked outside the cached Nx result, proves no code files. Reject alternate executors or configurations, partial, glob, or parent operands, extra options, forwarded, unknown, or no-op flags, empty selections, and duplicate checker ownership. Derive code coverage from Oxlint's actual --debug=files selection and JSON coverage from the native source-integrity selection; Oxfmt ignores affect formatting only. Where a project lint target declares inputs and thereby replaces target defaults, include the real native checker helper inputs explicitly. Use the established native helpers without adding dependencies or repository-owned lint policy. Ensure type-aware lint can read prerequisite declarations while ordinary typecheck remains source-only. Consume this epic's suppression-disposition ledger and rerun retained-Biome and Oxlint diagnostics on the admission commit. For each admitted path, remove its legacy Biome directives in the same commit that switches its lint target and coverage ownership. The ledger permits earlier removal while Biome owns the path only after a behavior-preserving code fix and fresh retained-Biome proof that the diagnostic is gone. At native admission, remove a legacy Biome directive with no native counterpart when fresh native proof shows that no equivalent diagnostic fires, and record that disposition. If the equivalent native rule fires, keep only a justified measured native counterpart with the original reason or fix the actual native issue. Do not replace an API's bitmask operation with a handwritten flag algorithm to avoid lint. Remove each admitted migrated path from tools/biome-coverage/by.json, leave every other list unchanged, and keep Biome responsible for every path not yet natively admitted. Add no lint policy or configuration override."
+      - STOP if BT is not merged, the ordered verify.ts preimage differs, generated code needs a lint dependency, or a pending directive is removed before the target and coverage switch; do not improvise.
+      - STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise.
+    description: After BT and CV, deliver the remaining frozen provider, kernel, and framework adapter files plus the sealed A51/A52 overlay. This integrates the delivered KRT-BY001 safe-fix, KRT-BY002 disposition, and KRT-BY003 ordering outcomes and completes KRT-BY004. Atomically remove the four pending legacy comments, switch all three lint targets to ordered type-aware Oxlint plus json-check with workspace cwd, parallel false, top-level forwardAllArgs false, and every literal root lint input plus ^production, then set tools/biome-coverage/by.json to an empty list. Add provider and framework protocol test targets with forwarding disabled. Only the framework test target depends on kernel-interop-grpc:codegen; lint has no generated prerequisite. Under the declared serialized shared-path exception, add exactly framework-typescript-conformance-adapter and providers-typescript-conformance-adapter to WORKSPACE_TEST_PROJECTS after CU's frozen verify.ts version. Preserve every original BP entry, BT argv registration, and unrelated runner behavior. Keep KRT-BY002 historical evidence whole and add only compact KRT-BY004 closeout evidence. These private adapters require no Changeset. Feasibility measured 11793 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 12293, leaving 2707 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast.
     acceptance:
       mode: contract_test
-      evidence: "Assert the type-aware backend runs every installed, enabled, as-shipped type-aware rule with complete equality of rules, options, severities, environment, globals, plugins, settings, and categories and with no local override or project-resolution error. Treat 55 type-aware rules in the measured 474-rule installed preset, alongside 419 non-type-aware rules, as pinned historical evidence rather than a future quota. Assert all three admitted BY targets have top-level options.forwardAllArgs: false, the exact canonical command shape, and workspace cwd; actual --debug=files and native JSON selections are complete and nonempty, source-integrity coverage remains independent of formatter ignores, fresh JSON-only code absence is checked outside cached results, and explicit project inputs name the checker helpers when they override defaults. Prove final admission ran after review-clean BT merged and the branch rebased onto its shared classifier fix. For each admitted path, reconcile the ledger against fresh diagnostics and record whether the legacy directive has a measured native counterpart. When no equivalent native diagnostic fires, record the no-counterpart disposition. When one fires, preserve the original reason for the justified native counterpart or prove the actual native issue is fixed. Prove the same commit removes legacy Biome directives and switches lint coverage. No admitted path contains a biome-ignore comment after the commit. Paths outside this admission retain needed original directives and Biome coverage. Scoped tests and the full lint gate pass; admitted paths are absent from tools/biome-coverage/by.json, while every remaining entry retains Biome lint coverage. Assert no lint policy or configuration override was introduced."
+      evidence: Assert the three native target profiles, cache inputs, commands, cwd, parallel and forwarding fields match the sealed overlay; all four pending identities are removed with the target/coverage switch; and no adapter biome-ignore remains. Prove verify.ts has the exact CU preimage plus only the two registry names, workspace-test parity passes before and after the ordered edit, actual Nx selection runs uncached kernel interop codegen and both protocol scripts, and lint needs no codegen edge. Run all three typechecks/lints, cold import, compiler isolation, routing regressions, JSON integrity, and bun run verify. Preserve observation-only adapter behavior and add no grading or policy.
     flows: []
     certainty: settled
     status: planned

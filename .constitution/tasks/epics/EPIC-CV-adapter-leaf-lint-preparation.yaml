@@ -1,0 +1,80 @@
+id: CV
+name: Framework adapter leaf lint preparation delivery
+kind: tooling
+capabilities: []
+depends_on:
+  - CW
+scope:
+  paths:
+    - .constitution/evidence/KRT-CV001
+    - typescript/conformance-adapter/src/batteries-included-node-host.ts
+    - typescript/conformance-adapter/src/framework-adapter-admission-key-crash.ts
+    - typescript/conformance-adapter/src/framework-adapter-admission-key-session.ts
+    - typescript/conformance-adapter/src/framework-adapter-batteries-included.ts
+    - typescript/conformance-adapter/src/framework-adapter-capability-policy.ts
+    - typescript/conformance-adapter/src/framework-adapter-event-stream-resume.ts
+    - typescript/conformance-adapter/src/framework-adapter-event-stream.ts
+    - typescript/conformance-adapter/src/framework-adapter-input.ts
+    - typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts
+    - typescript/conformance-adapter/src/framework-adapter-provider-scenarios.ts
+    - typescript/conformance-adapter/src/framework-adapter-proving-host.ts
+    - typescript/conformance-adapter/src/framework-adapter-recovery-result.ts
+    - typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts
+    - typescript/conformance-adapter/src/framework-adapter-runtime-lifecycle-scenarios.ts
+    - typescript/conformance-adapter/src/framework-adapter-runtime-scenarios.ts
+    - typescript/conformance-adapter/src/framework-adapter-runtime-telemetry-scenarios.ts
+    - typescript/conformance-adapter/src/framework-adapter-schema-authoring.ts
+    - typescript/conformance-adapter/src/framework-adapter-secret-isolation.ts
+    - typescript/conformance-adapter/src/framework-adapter-session-lifecycle.ts
+    - typescript/conformance-adapter/src/framework-adapter-session.ts
+    - typescript/conformance-adapter/src/framework-adapter-trust-boundary.ts
+    - typescript/conformance-adapter/src/framework-adapter.ts
+    - typescript/conformance-adapter/tsup.config.batteries-included.ts
+  tech_spec_patchable: []
+estimated_diff_lines: 14500
+estimate_source: planned
+tickets:
+  - id: KRT-CV001
+    title: Deliver adapter leaves, session bridge, and proven removals
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - .constitution/evidence/KRT-CV001
+        - typescript/conformance-adapter/src/batteries-included-node-host.ts
+        - typescript/conformance-adapter/src/framework-adapter-admission-key-crash.ts
+        - typescript/conformance-adapter/src/framework-adapter-admission-key-session.ts
+        - typescript/conformance-adapter/src/framework-adapter-batteries-included.ts
+        - typescript/conformance-adapter/src/framework-adapter-capability-policy.ts
+        - typescript/conformance-adapter/src/framework-adapter-event-stream-resume.ts
+        - typescript/conformance-adapter/src/framework-adapter-event-stream.ts
+        - typescript/conformance-adapter/src/framework-adapter-input.ts
+        - typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-provider-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-proving-host.ts
+        - typescript/conformance-adapter/src/framework-adapter-recovery-result.ts
+        - typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-runtime-lifecycle-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-runtime-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-runtime-telemetry-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-schema-authoring.ts
+        - typescript/conformance-adapter/src/framework-adapter-secret-isolation.ts
+        - typescript/conformance-adapter/src/framework-adapter-session-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-session.ts
+        - typescript/conformance-adapter/src/framework-adapter-trust-boundary.ts
+        - typescript/conformance-adapter/src/framework-adapter.ts
+        - typescript/conformance-adapter/tsup.config.batteries-included.ts
+    verification:
+      command: bun run typecheck
+      expected: Exit 0; the cumulative CW then CV tree passes typecheck, retained Biome, cold import, and preserves four pending identities.
+    stop_conditions:
+      - STOP if CW is not merged, an adapter leaf needs a final-owned project or directive path, or retained Biome fails; do not improvise.
+      - STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise.
+    description: After EPIC-CW, deliver the exact reviewed adapter leaf/scenario slice together with the session bridge, framework entrypoint, batteries-included host, and the two behavior-proven early directive removals. This carries the remaining KRT-BY001 safe fixes, the early-removal portion of KRT-BY002, and KRT-BY003 ordering outcomes; KRT-BY004 remains final BY. Those bridge files stay together because the frozen extraction is not type-valid when session and entrypoint versions are separated. Preserve adapter observations, original reviews, OD-09 decisions, and the four still-needed identities on admission-key, SSE, and WS files. Do not change project targets, coverage, or shared verification. This private adapter slice requires no Changeset. Feasibility measured 13025 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 13525, leaving 1475 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast.
+    acceptance:
+      mode: contract_test
+      evidence: Assert the cumulative CW+CV tree matches frozen blobs and passes framework adapter typecheck, retained-Biome lint, and a fresh entrypoint import. Prove only the two historically reviewed early removals are absent, four pending identities on three files retain their original reasons, and compiler resolution reaches no live sibling source. No project configuration, coverage, shared runner, public package, or grading behavior changes.
+    flows: []
+    certainty: settled
+    status: planned

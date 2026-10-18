@@ -1,101 +1,100 @@
 id: BT
-name: Framework runtime lint ratchet
+name: Atomic framework runtime native lint admission
 kind: tooling
 capabilities: []
-depends_on: [BQ, CS]
+depends_on:
+  - CY
 scope:
   paths:
-    - typescript/runtime
-    - tools/scripts/lib/native-lint-routing.ts
-    - tools/scripts/lib/biome-oxc-discovery.test.ts
-    - tools/scripts/lib/native-lint-routing-argv.test.ts
-    - tools/scripts/verify.ts
+    - .changeset/toolchain-bt-runtime-lint.md
+    - .constitution/evidence/KRT-BT004
     - tools/biome-coverage/bt.json
-    - ".changeset/toolchain-bt-runtime-lint.md"
+    - typescript/runtime/bench/runtime-boundary.bench.ts
+    - typescript/runtime/project.json
+    - typescript/runtime/src/index.ts
+    - typescript/runtime/src/lib/runtime-core-loop.ts
+    - typescript/runtime/test/fake-kernel.ts
+    - typescript/runtime/test/orchestration-runtime-runner-helpers.ts
+    - typescript/runtime/test/runtime-core.after-iteration.test.ts
+    - typescript/runtime/test/runtime-core.assistant-stream.test.ts
+    - typescript/runtime/test/runtime-core.await-result.test.ts
+    - typescript/runtime/test/runtime-core.bootstrap.test.ts
+    - typescript/runtime/test/runtime-core.client-endpoint.test.ts
+    - typescript/runtime/test/runtime-core.context-engineering.test.ts
+    - typescript/runtime/test/runtime-core.execution-bounds.test.ts
+    - typescript/runtime/test/runtime-core.execution-lifecycle.test.ts
+    - typescript/runtime/test/runtime-core.handoff-builders.test.ts
+    - typescript/runtime/test/runtime-core.handoff-runner.test.ts
+    - typescript/runtime/test/runtime-core.hooks.test.ts
+    - typescript/runtime/test/runtime-core.lifecycle.test.ts
+    - typescript/runtime/test/runtime-core.orchestration.test.ts
+    - typescript/runtime/test/runtime-core.parallel-batching.test.ts
+    - typescript/runtime/test/runtime-core.provider-execution-class.test.ts
+    - typescript/runtime/test/runtime-core.reasoning-stream.test.ts
+    - typescript/runtime/test/runtime-core.runner-boundary.test.ts
+    - typescript/runtime/test/runtime-core.sanitize-tool-result.test.ts
+    - typescript/runtime/test/runtime-core.steering.test.ts
+    - typescript/runtime/test/runtime-core.stream-synthesis.test.ts
+    - typescript/runtime/test/runtime-core.stream-validation.test.ts
+    - typescript/runtime/test/runtime-core.tool-batching.test.ts
+    - typescript/runtime/test/runtime-core.tool-failures.test.ts
+    - typescript/runtime/test/runtime-core.tooling.test.ts
+    - typescript/runtime/test/runtime-core.turn-linking.test.ts
   tech_spec_patchable: []
-estimated_diff_lines: 14500
+estimated_diff_lines: 12500
 estimate_source: planned
 tickets:
-  - id: KRT-BT001
-    title: Apply safe fixes and preserve types per directory
+  - id: KRT-BT004
+    title: Atomically admit the assembled runtime to native lint
     type: Chore
-    effort: 5
+    effort: 8
     depends_on: []
     scope:
-      in: [typescript/runtime, ".changeset/toolchain-bt-runtime-lint.md"]
-    verification:
-      command: bun run typecheck
-      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Run safe --fix one project at a time and immediately typecheck that project. Repair the 19 measured autofix failure classes, including required undefined arguments and readonly array to Set rewrites. The spike measured 3782 diagnostics and 6585 definition lines here. Split reorder reviews within the ticket if needed, with no merged-epic budget exemption. Do not switch lint targets yet. Add or update .changeset/toolchain-bt-runtime-lint.md as a patch changeset with direct coverage for the affected public packages: @tuvren/runtime. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
-    acceptance:
-      mode: contract_test
-      evidence: "Assert each scoped project typechecks after each safe-fix batch, existing runtime assertions pass, and no signature or collection semantics change. Record changed files and the before/after diagnostic count per project. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
-    flows: []
-    certainty: settled
-    status: planned
-  - id: KRT-BT002
-    title: Migrate live suppressions and delete dead ones
-    type: Chore
-    effort: 3
-    depends_on: [KRT-BT001]
-    scope:
-      in: [typescript/runtime, ".changeset/toolchain-bt-runtime-lint.md"]
-    verification:
-      command: bun run typecheck
-      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if a proposed native suppression lacks a fresh equivalent diagnostic, changes the original reason, removes a needed Biome directive before native admission, or introduces a Biome directive; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Treat the measured 144-directive inventory as an identification baseline, not a quota. Re-run live retained-Biome and Oxlint diagnostics across the owned paths. For every baseline identity and any drift discovered at execution, record its original reason, equivalent native rule, retained-checker disposition, and native-admission disposition. While Biome owns a path, preserve each needed original Biome directive and its reason. Remove a directive before admission only after a behavior-preserving code fix proves that the retained Biome diagnostic no longer fires. Do not add Biome directives. Record a native counterpart only when the equivalent native rule actually fires and the original reason remains valid. Do not replace an API's bitmask operation with a handwritten flag algorithm to avoid lint. Do not create suppressions to reproduce the historical 82-live/62-dead classification. Provide the per-directive disposition ledger for CB aggregation. Add or update .changeset/toolchain-bt-runtime-lint.md as a patch changeset with direct coverage for the affected public packages: @tuvren/runtime. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
-    acceptance:
-      mode: contract_test
-      evidence: "Assert every baseline directive identity in the owned paths, plus any measured drift, has a ledger entry backed by live retained-Biome and Oxlint diagnostics. Each entry records the original reason, retained-checker disposition, and native-admission disposition. While Biome owns the path, prove each needed original directive remains and the full lint gate passes. Prove any early deletion follows a behavior-preserving code fix and a fresh retained-Biome run where the diagnostic no longer fires. Prove each planned native counterpart matches an actually firing equivalent rule and preserves the original reason. Add no Biome directive, manufacture no suppression to meet a historical count, and emit the ledger CB will aggregate. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
-    flows: []
-    certainty: settled
-    status: planned
-  - id: KRT-BT003
-    title: Reorder definitions without initialization regressions
-    type: Chore
-    effort: 8
-    depends_on: [KRT-BT002]
-    scope:
-      in: [typescript/runtime, ".changeset/toolchain-bt-runtime-lint.md"]
-    verification:
-      command: bun run conformance
-      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if a runtime or conformance regression follows reordering; return the rule pair to the owner without overrides occurs; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Convert func-style declarations and reorder no-use-before-define definitions in bounded reviewable module batches. Preserve exports, initialization order and observable execution. The merged kernel pilot is the prerequisite; apply its proven ordering method. Add or update .changeset/toolchain-bt-runtime-lint.md as a patch changeset with direct coverage for the affected public packages: @tuvren/runtime. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
-    acceptance:
-      mode: contract_test
-      evidence: "Assert module initialization, cyclic imports and conformance outcomes match the pre-reorder baseline. Run scoped tests, repository typecheck and bun run conformance on the same implementation. Preserve error and event ordering, not just lint success. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
-    flows: []
-    certainty: settled
-    status: planned
-  - id: KRT-BT004
-    title: Clear remaining rules and switch clean project targets
-    type: Chore
-    effort: 8
-    depends_on: [KRT-BT003]
-    scope:
       in:
-        - typescript/runtime
-        - tools/scripts/lib/native-lint-routing.ts
-        - tools/scripts/lib/biome-oxc-discovery.test.ts
-        - tools/scripts/lib/native-lint-routing-argv.test.ts
-        - tools/scripts/verify.ts
+        - .changeset/toolchain-bt-runtime-lint.md
+        - .constitution/evidence/KRT-BT004
         - tools/biome-coverage/bt.json
-        - ".changeset/toolchain-bt-runtime-lint.md"
+        - typescript/runtime/bench/runtime-boundary.bench.ts
+        - typescript/runtime/project.json
+        - typescript/runtime/src/index.ts
+        - typescript/runtime/src/lib/runtime-core-loop.ts
+        - typescript/runtime/test/fake-kernel.ts
+        - typescript/runtime/test/orchestration-runtime-runner-helpers.ts
+        - typescript/runtime/test/runtime-core.after-iteration.test.ts
+        - typescript/runtime/test/runtime-core.assistant-stream.test.ts
+        - typescript/runtime/test/runtime-core.await-result.test.ts
+        - typescript/runtime/test/runtime-core.bootstrap.test.ts
+        - typescript/runtime/test/runtime-core.client-endpoint.test.ts
+        - typescript/runtime/test/runtime-core.context-engineering.test.ts
+        - typescript/runtime/test/runtime-core.execution-bounds.test.ts
+        - typescript/runtime/test/runtime-core.execution-lifecycle.test.ts
+        - typescript/runtime/test/runtime-core.handoff-builders.test.ts
+        - typescript/runtime/test/runtime-core.handoff-runner.test.ts
+        - typescript/runtime/test/runtime-core.hooks.test.ts
+        - typescript/runtime/test/runtime-core.lifecycle.test.ts
+        - typescript/runtime/test/runtime-core.orchestration.test.ts
+        - typescript/runtime/test/runtime-core.parallel-batching.test.ts
+        - typescript/runtime/test/runtime-core.provider-execution-class.test.ts
+        - typescript/runtime/test/runtime-core.reasoning-stream.test.ts
+        - typescript/runtime/test/runtime-core.runner-boundary.test.ts
+        - typescript/runtime/test/runtime-core.sanitize-tool-result.test.ts
+        - typescript/runtime/test/runtime-core.steering.test.ts
+        - typescript/runtime/test/runtime-core.stream-synthesis.test.ts
+        - typescript/runtime/test/runtime-core.stream-validation.test.ts
+        - typescript/runtime/test/runtime-core.tool-batching.test.ts
+        - typescript/runtime/test/runtime-core.tool-failures.test.ts
+        - typescript/runtime/test/runtime-core.tooling.test.ts
+        - typescript/runtime/test/runtime-core.turn-linking.test.ts
     verification:
       command: bun run verify
-      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+      expected: Exit 0; the assembled runtime is native-clean, all 29 final directives are reconciled and removed atomically, and the full release gate passes.
     stop_conditions:
-      - "STOP if a project isn't clean, type-aware lint skips a rule, or an admitted path loses a needed Biome directive before the same commit switches its lint target and coverage ownership; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Clear remaining syntactic diagnostics, then run type-aware lint with the complete effective shipped preset unchanged. For every migrated Nx project, use the active default nx:run-commands target with the workspace root as cwd and the exact project-root command pair, in order: bunx --bun oxlint --type-aware PROJECT_ROOT, then bun tools/scripts/json-check.ts PROJECT_ROOT. Set the one newly admitted BT target's top-level options.forwardAllArgs to the literal false so ordinary caller arguments cannot widen or alter either child command. This guarantee covers ordinary caller arguments only; an explicit executor override such as --forwardAllArgs=true is outside it. Extend the shared native-lint classifier to accept omitted forwarding configuration for legacy targets, accept only literal false when the top-level forwarding option is present, and reject true, malformed values, every nested forwarding key, configured args, __unparsed__, unknown options, interpolation, and extra flags. Command objects remain command-only. Preserve checker failure propagation and every other established routing rejection. Use bun tools/scripts/json-check.ts --json-only PROJECT_ROOT only for a JSON-only project whose fresh Git inventory, checked outside the cached Nx result, proves no code files. Reject alternate executors or configurations, partial, glob, or parent operands, extra options, forwarded, unknown, or no-op flags, empty selections, and duplicate checker ownership. Derive code coverage from Oxlint's actual --debug=files selection and JSON coverage from the native source-integrity selection; Oxfmt ignores affect formatting only. Where a project lint target declares inputs and thereby replaces target defaults, include the real native checker helper inputs explicitly. Use the established native helpers without adding dependencies or repository-owned lint policy. Ensure type-aware lint can read prerequisite declarations while ordinary typecheck remains source-only. Consume this epic's suppression-disposition ledger and rerun retained-Biome and Oxlint diagnostics on the admission commit. For each admitted path, remove its legacy Biome directives in the same commit that switches its lint target and coverage ownership. The ledger permits earlier removal while Biome owns the path only after a behavior-preserving code fix and fresh retained-Biome proof that the diagnostic is gone. At native admission, remove a legacy Biome directive with no native counterpart when fresh native proof shows that no equivalent diagnostic fires, and record that disposition. If the equivalent native rule fires, keep only a justified measured native counterpart with the original reason or fix the actual native issue. Do not replace an API's bitmask operation with a handwritten flag algorithm to avoid lint. Remove each admitted migrated path from tools/biome-coverage/bt.json, leave every other list unchanged, and keep Biome responsible for every path not yet natively admitted. Add no lint policy, configuration override, or dependency. Add or update .changeset/toolchain-bt-runtime-lint.md as a patch changeset with direct coverage for the affected public packages: @tuvren/runtime. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
+      - STOP if an upstream delivery is not review-clean, the native target or cache profile drifts, a needed directive is removed before this commit, or the complete runtime package context fails; do not improvise.
+      - STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise.
+    description: After CU, CT, and CY are merged and review-clean, deliver the remaining frozen BT files and atomically admit typescript/runtime. This integrates the delivered KRT-BT001 safe-fix, KRT-BT002 disposition, and KRT-BT003 ordering outcomes and completes KRT-BT004. Consume CU's reviewed classifier and argv regression without rewriting it. In one commit, remove the 29 still-needed legacy directives, switch typescript/runtime/project.json to the exact ordered Oxlint plus json-check commands with workspace cwd, parallel false, top-level forwardAllArgs false, every literal root lint input plus ^production, and remove only the runtime root from tools/biome-coverage/bt.json. Preserve the whole KRT-BT004 evidence directory and existing direct @tuvren/runtime patch Changeset. No lint policy, compatibility shim, public contract change, or explicit --forwardAllArgs=true guarantee is added. Feasibility measured 10612 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 11112, leaving 3888 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast.
     acceptance:
       mode: contract_test
-      evidence: "Assert the type-aware backend runs every installed, enabled, as-shipped type-aware rule with complete equality of rules, options, severities, environment, globals, plugins, settings, and categories and with no local override or project-resolution error. Treat 55 type-aware rules in the measured 474-rule installed preset, alongside 419 non-type-aware rules, as pinned historical evidence rather than a future quota. Assert the admitted BT target has top-level options.forwardAllArgs: false, the exact canonical command shape, and workspace cwd; actual --debug=files and native JSON selections are complete and nonempty, source-integrity coverage remains independent of formatter ignores, fresh JSON-only code absence is checked outside cached results, and explicit project inputs name the checker helpers when they override defaults. Pin classifier regressions for the selected default configuration and both omitted legacy command forms. Against the real pinned Nx executor, prove literal false keeps child argv unchanged for ordinary --args, arguments after --, and an unknown scalar option; use omission as the negative child-argv control. Reject top-level true or malformed forwarding values and all nested forwarding keys, including nested true, while preserving the rejection of configured args, __unparsed__, unknown options, interpolation, and extra flags. Prove Oxlint and JSON checker failures still propagate unchanged. Do not claim protection against an explicit --forwardAllArgs=true executor override. For each admitted path, reconcile the ledger against fresh diagnostics and record whether the legacy directive has a measured native counterpart. When no equivalent native diagnostic fires, record the no-counterpart disposition. When one fires, preserve the original reason for the justified native counterpart or prove the actual native issue is fixed. Prove the same commit removes legacy Biome directives and switches lint coverage. No admitted path contains a biome-ignore comment after the commit. Paths outside this admission retain needed original directives and Biome coverage. Scoped tests and the full lint gate pass; admitted paths are absent from tools/biome-coverage/bt.json, while every remaining entry retains Biome lint coverage. Assert no lint policy or configuration override was introduced and the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
+      evidence: Assert the assembled runtime matches frozen provenance; all 59 original identities remain accounted for as 30 prior removals plus 29 atomic removals; no runtime biome-ignore comment remains; and native selection is complete and diagnostic-free. Prove the exact commands, cwd, serial execution, literal false forwarding, root-default inputs plus ^production, caller-argument isolation, checker failure propagation, JSON integrity, coverage removal, typecheck, cold import, full runtime tests, Changeset coverage, and bun run verify. Preserve capability-policy-engine.test.ts as the approved byte-identical reduced inherited debt and resolve no live sibling source.
     flows: []
     certainty: settled
     status: planned

@@ -1,0 +1,106 @@
+id: CY
+name: Runtime test and early-removal lint preparation delivery
+kind: tooling
+capabilities: []
+depends_on:
+  - CT
+scope:
+  paths:
+    - .changeset/runtime-regression-lint-prep.md
+    - .constitution/evidence/KRT-BT002
+    - .constitution/evidence/KRT-CY001
+    - typescript/runtime/src/lib/runtime-core-execution-session.ts
+    - typescript/runtime/test/admission-key-persistence.test.ts
+    - typescript/runtime/test/capability-attribution.test.ts
+    - typescript/runtime/test/capability-policy-engine.test.ts
+    - typescript/runtime/test/invocation-lifecycle.cross-class.test.ts
+    - typescript/runtime/test/invocation-lifecycle.observation-taxonomy.test.ts
+    - typescript/runtime/test/invocation-lifecycle.resume-recovery.test.ts
+    - typescript/runtime/test/invocation-lifecycle.telemetry-depth.test.ts
+    - typescript/runtime/test/orchestration-runtime.approval.test.ts
+    - typescript/runtime/test/orchestration-runtime.child-lifecycle.test.ts
+    - typescript/runtime/test/orchestration-runtime.test.ts
+    - typescript/runtime/test/runtime-core-expired-recovery.test.ts
+    - typescript/runtime/test/runtime-core-recovery-test-helpers.ts
+    - typescript/runtime/test/runtime-core.approval-basics.test.ts
+    - typescript/runtime/test/runtime-core.approval-decisions.test.ts
+    - typescript/runtime/test/runtime-core.approval-lifecycle.test.ts
+    - typescript/runtime/test/runtime-core.approval-resume.test.ts
+    - typescript/runtime/test/runtime-core.approval.test.ts
+    - typescript/runtime/test/runtime-core.around-tool-approval.test.ts
+    - typescript/runtime/test/runtime-core.malformed-approval.test.ts
+    - typescript/runtime/test/runtime-core.recovery-cold-batch-regressions.test.ts
+    - typescript/runtime/test/runtime-core.recovery-guards.test.ts
+    - typescript/runtime/test/runtime-core.recovery-order-repair-window.test.ts
+    - typescript/runtime/test/runtime-core.recovery.test.ts
+    - typescript/runtime/test/runtime-core.stale-step-recovery.test.ts
+    - typescript/runtime/test/runtime-core.telemetry.test.ts
+    - typescript/runtime/test/runtime-module-initialization.test.ts
+    - typescript/runtime/test/server-execution-class.ax001-validation.test.ts
+    - typescript/runtime/test/server-execution-class.ax002-retry.test.ts
+    - typescript/runtime/test/server-execution-class.ax003-rate-limit.test.ts
+    - typescript/runtime/test/server-execution-class.ax004-sandbox-mcp.test.ts
+    - typescript/runtime/test/server-execution-class.ax005-audit.test.ts
+    - typescript/runtime/test/server-execution-class.bg004-authority-loss.test.ts
+    - typescript/runtime/test/stream-adapters.test.ts
+  tech_spec_patchable: []
+estimated_diff_lines: 13500
+estimate_source: planned
+tickets:
+  - id: KRT-CY001
+    title: Deliver reviewed runtime regressions and proven early removals
+    type: Chore
+    effort: 8
+    depends_on: []
+    scope:
+      in:
+        - .changeset/runtime-regression-lint-prep.md
+        - .constitution/evidence/KRT-BT002
+        - .constitution/evidence/KRT-CY001
+        - typescript/runtime/src/lib/runtime-core-execution-session.ts
+        - typescript/runtime/test/admission-key-persistence.test.ts
+        - typescript/runtime/test/capability-attribution.test.ts
+        - typescript/runtime/test/capability-policy-engine.test.ts
+        - typescript/runtime/test/invocation-lifecycle.cross-class.test.ts
+        - typescript/runtime/test/invocation-lifecycle.observation-taxonomy.test.ts
+        - typescript/runtime/test/invocation-lifecycle.resume-recovery.test.ts
+        - typescript/runtime/test/invocation-lifecycle.telemetry-depth.test.ts
+        - typescript/runtime/test/orchestration-runtime.approval.test.ts
+        - typescript/runtime/test/orchestration-runtime.child-lifecycle.test.ts
+        - typescript/runtime/test/orchestration-runtime.test.ts
+        - typescript/runtime/test/runtime-core-expired-recovery.test.ts
+        - typescript/runtime/test/runtime-core-recovery-test-helpers.ts
+        - typescript/runtime/test/runtime-core.approval-basics.test.ts
+        - typescript/runtime/test/runtime-core.approval-decisions.test.ts
+        - typescript/runtime/test/runtime-core.approval-lifecycle.test.ts
+        - typescript/runtime/test/runtime-core.approval-resume.test.ts
+        - typescript/runtime/test/runtime-core.approval.test.ts
+        - typescript/runtime/test/runtime-core.around-tool-approval.test.ts
+        - typescript/runtime/test/runtime-core.malformed-approval.test.ts
+        - typescript/runtime/test/runtime-core.recovery-cold-batch-regressions.test.ts
+        - typescript/runtime/test/runtime-core.recovery-guards.test.ts
+        - typescript/runtime/test/runtime-core.recovery-order-repair-window.test.ts
+        - typescript/runtime/test/runtime-core.recovery.test.ts
+        - typescript/runtime/test/runtime-core.stale-step-recovery.test.ts
+        - typescript/runtime/test/runtime-core.telemetry.test.ts
+        - typescript/runtime/test/runtime-module-initialization.test.ts
+        - typescript/runtime/test/server-execution-class.ax001-validation.test.ts
+        - typescript/runtime/test/server-execution-class.ax002-retry.test.ts
+        - typescript/runtime/test/server-execution-class.ax003-rate-limit.test.ts
+        - typescript/runtime/test/server-execution-class.ax004-sandbox-mcp.test.ts
+        - typescript/runtime/test/server-execution-class.ax005-audit.test.ts
+        - typescript/runtime/test/server-execution-class.bg004-authority-loss.test.ts
+        - typescript/runtime/test/stream-adapters.test.ts
+    verification:
+      command: bun run check
+      expected: Exit 0; the cumulative retained-Biome tree passes the complete runtime package test context and preserves exactly the still-needed directive set.
+    stop_conditions:
+      - STOP if the complete runtime package context fails under the canonical bun run nx invocation, a noncanonical bunx --bun Nx shim is used as evidence, or any still-needed directive is removed; do not improvise.
+      - STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise.
+    description: "After EPIC-CT, deliver the exact reviewed runtime test slice, the whole KRT-BT002 historical evidence directory, and the 30 behavior-proven early directive removals from frozen EPIC-BT. This carries the test-side KRT-BT001 safe fixes, KRT-BT002 disposition outcome, and KRT-BT003 ordering result; KRT-BT004 remains final BT. Preserve all test cases, fixture semantics, review history, and OD-09 decisions. The cumulative retained-Biome tree must keep the other 29 original directives with their reasons. Invoke Nx through the repository's canonical bun run nx script. Do not use bunx --bun nx as verification: Bun 1.4.2 prepends its temporary node shim, causing the Node-targeted SQLite child to run under Bun and fail before READY. Add a direct patch Changeset for @tuvren/runtime. Feasibility measured 11972 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 12477, leaving 2523 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast."
+    acceptance:
+      mode: contract_test
+      evidence: Assert every file and early-removal identity maps to frozen source and reviewed proof. On the cumulative CU+CT+CY tree, prove retained Biome passes, exactly 29 still-needed directives remain, the runtime cold import and source-only typecheck pass, every owned test passes, and the full framework-runtime test target passes uncached and serial through canonical bun run nx. Preserve the superseded noncanonical command and its fake-node diagnosis only as diagnostic provenance, never as a product failure. Preserve the original KRT-BT002 directory whole, resolve no live sibling source, and require a direct @tuvren/runtime patch Changeset.
+    flows: []
+    certainty: settled
+    status: planned

@@ -1,0 +1,177 @@
+id: CX
+name: Atomic small-package native lint admission
+kind: tooling
+capabilities: []
+depends_on:
+  - BY
+  - CA
+scope:
+  paths:
+    - .changeset/toolchain-ca-small-package-lint.md
+    - .constitution/evidence/KRT-CA004
+    - .constitution/evidence/KRT-CX001
+    - tools/biome-coverage/ca.json
+    - typescript/certification-batteries-included/project.json
+    - typescript/certification/project.json
+    - typescript/certification/test/framework-typescript-conformance.test.ts
+    - typescript/core/project.json
+    - typescript/core/src/errors/index.ts
+    - typescript/core/src/events/index.ts
+    - typescript/core/src/execution/index.ts
+    - typescript/core/src/index.ts
+    - typescript/core/src/lib/runner-contracts.ts
+    - typescript/core/src/lib/runtime-contract-guards.ts
+    - typescript/core/src/lib/runtime-contract-shapes.ts
+    - typescript/core/src/lifecycle/index.ts
+    - typescript/core/src/messages/index.ts
+    - typescript/core/src/provider/index.ts
+    - typescript/core/src/runner/index.ts
+    - typescript/core/src/security/index.ts
+    - typescript/core/src/tools/index.ts
+    - typescript/core/test/runner-contract-guards.test.ts
+    - typescript/core/test/runtime-contract-guards.tool-definition.test.ts
+    - typescript/sdk/project.json
+    - typescript/sdk/src/advanced.ts
+    - typescript/sdk/src/index.ts
+    - typescript/sdk/test/create-tuvren.test.ts
+    - typescript/streaming/agui/project.json
+    - typescript/streaming/agui/smoke/package-exports.ts
+    - typescript/streaming/agui/src/index.ts
+    - typescript/streaming/agui/src/lib/stream-agui.ts
+    - typescript/streaming/agui/test/stream-agui.test.ts
+    - typescript/streaming/agui/tsup.config.ts
+    - typescript/streaming/core/project.json
+    - typescript/streaming/core/smoke/package-exports.ts
+    - typescript/streaming/core/src/index.ts
+    - typescript/streaming/core/src/lib/stream-core.ts
+    - typescript/streaming/core/src/lib/stream-resume.ts
+    - typescript/streaming/core/test/stream-core.test.ts
+    - typescript/streaming/core/test/stream-resume.test.ts
+    - typescript/streaming/core/tsup.config.ts
+    - typescript/streaming/sse/project.json
+    - typescript/streaming/sse/smoke/package-exports.ts
+    - typescript/streaming/sse/src/index.ts
+    - typescript/streaming/sse/src/lib/sse-decoder.ts
+    - typescript/streaming/sse/src/lib/stream-sse.ts
+    - typescript/streaming/sse/test/sse-decoder.test.ts
+    - typescript/streaming/sse/test/stream-sse.test.ts
+    - typescript/streaming/sse/tsup.config.ts
+    - typescript/streaming/ws/project.json
+    - typescript/streaming/ws/smoke/package-exports.ts
+    - typescript/streaming/ws/src/index.ts
+    - typescript/streaming/ws/src/lib/ws-close-codes.ts
+    - typescript/streaming/ws/src/lib/ws-messages.ts
+    - typescript/streaming/ws/src/lib/ws-session-transport.ts
+    - typescript/streaming/ws/test/session-test-helpers.ts
+    - typescript/streaming/ws/test/ws-session-transport.test.ts
+    - typescript/streaming/ws/test/ws-transport-policies.test.ts
+    - typescript/streaming/ws/tsup.config.ts
+    - typescript/telemetry/otel/project.json
+    - typescript/telemetry/otel/src/index.ts
+    - typescript/telemetry/otel/src/lib/otel-telemetry-sink.ts
+    - typescript/telemetry/otel/tsup.config.ts
+    - typescript/telemetry/semconv/project.json
+    - typescript/telemetry/semconv/src/index.ts
+    - typescript/telemetry/semconv/tsup.config.ts
+    - typescript/testkit/project.json
+    - typescript/testkit/src/index.ts
+    - typescript/testkit/src/lib/framework-testkit.ts
+    - typescript/testkit/tsup.config.ts
+    - typescript/tools/mcp-client/project.json
+    - typescript/tools/mcp-client/src/index.ts
+  tech_spec_patchable: []
+estimated_diff_lines: 14500
+estimate_source: planned
+tickets:
+  - id: KRT-CX001
+    title: Atomically admit the assembled small TypeScript packages
+    type: Chore
+    effort: 8
+    depends_on: []
+    scope:
+      in:
+        - .changeset/toolchain-ca-small-package-lint.md
+        - .constitution/evidence/KRT-CA004
+        - .constitution/evidence/KRT-CX001
+        - tools/biome-coverage/ca.json
+        - typescript/certification-batteries-included/project.json
+        - typescript/certification/project.json
+        - typescript/certification/test/framework-typescript-conformance.test.ts
+        - typescript/core/project.json
+        - typescript/core/src/errors/index.ts
+        - typescript/core/src/events/index.ts
+        - typescript/core/src/execution/index.ts
+        - typescript/core/src/index.ts
+        - typescript/core/src/lib/runner-contracts.ts
+        - typescript/core/src/lib/runtime-contract-guards.ts
+        - typescript/core/src/lib/runtime-contract-shapes.ts
+        - typescript/core/src/lifecycle/index.ts
+        - typescript/core/src/messages/index.ts
+        - typescript/core/src/provider/index.ts
+        - typescript/core/src/runner/index.ts
+        - typescript/core/src/security/index.ts
+        - typescript/core/src/tools/index.ts
+        - typescript/core/test/runner-contract-guards.test.ts
+        - typescript/core/test/runtime-contract-guards.tool-definition.test.ts
+        - typescript/sdk/project.json
+        - typescript/sdk/src/advanced.ts
+        - typescript/sdk/src/index.ts
+        - typescript/sdk/test/create-tuvren.test.ts
+        - typescript/streaming/agui/project.json
+        - typescript/streaming/agui/smoke/package-exports.ts
+        - typescript/streaming/agui/src/index.ts
+        - typescript/streaming/agui/src/lib/stream-agui.ts
+        - typescript/streaming/agui/test/stream-agui.test.ts
+        - typescript/streaming/agui/tsup.config.ts
+        - typescript/streaming/core/project.json
+        - typescript/streaming/core/smoke/package-exports.ts
+        - typescript/streaming/core/src/index.ts
+        - typescript/streaming/core/src/lib/stream-core.ts
+        - typescript/streaming/core/src/lib/stream-resume.ts
+        - typescript/streaming/core/test/stream-core.test.ts
+        - typescript/streaming/core/test/stream-resume.test.ts
+        - typescript/streaming/core/tsup.config.ts
+        - typescript/streaming/sse/project.json
+        - typescript/streaming/sse/smoke/package-exports.ts
+        - typescript/streaming/sse/src/index.ts
+        - typescript/streaming/sse/src/lib/sse-decoder.ts
+        - typescript/streaming/sse/src/lib/stream-sse.ts
+        - typescript/streaming/sse/test/sse-decoder.test.ts
+        - typescript/streaming/sse/test/stream-sse.test.ts
+        - typescript/streaming/sse/tsup.config.ts
+        - typescript/streaming/ws/project.json
+        - typescript/streaming/ws/smoke/package-exports.ts
+        - typescript/streaming/ws/src/index.ts
+        - typescript/streaming/ws/src/lib/ws-close-codes.ts
+        - typescript/streaming/ws/src/lib/ws-messages.ts
+        - typescript/streaming/ws/src/lib/ws-session-transport.ts
+        - typescript/streaming/ws/test/session-test-helpers.ts
+        - typescript/streaming/ws/test/ws-session-transport.test.ts
+        - typescript/streaming/ws/test/ws-transport-policies.test.ts
+        - typescript/streaming/ws/tsup.config.ts
+        - typescript/telemetry/otel/project.json
+        - typescript/telemetry/otel/src/index.ts
+        - typescript/telemetry/otel/src/lib/otel-telemetry-sink.ts
+        - typescript/telemetry/otel/tsup.config.ts
+        - typescript/telemetry/semconv/project.json
+        - typescript/telemetry/semconv/src/index.ts
+        - typescript/telemetry/semconv/tsup.config.ts
+        - typescript/testkit/project.json
+        - typescript/testkit/src/index.ts
+        - typescript/testkit/src/lib/framework-testkit.ts
+        - typescript/testkit/tsup.config.ts
+        - typescript/tools/mcp-client/project.json
+        - typescript/tools/mcp-client/src/index.ts
+    verification:
+      command: bun run verify
+      expected: Exit 0; all 12 targets are native-clean with exact forwarding/cache profiles, 29 final legacy identities are reconciled, and the release gate passes.
+    stop_conditions:
+      - STOP if BY or CA is not merged, a target profile differs from the sealed overlay, a needed legacy comment is removed before admission, or a public contract changes; do not improvise.
+      - STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise.
+    description: After BY and CA, deliver the remaining frozen small-package files and sealed CA overlay. This carries the final-owned KRT-CA001 safe fixes, KRT-CA002 dispositions, KRT-CA003 ordering results, and the complete KRT-CA004 admission outcome. Keep the runtime-contract-shapes bridge and four retained-Biome-failing files with this final owner. Atomically reconcile and remove the 29 original admission identities on 27 paths, switch coverage, and require top-level forwardAllArgs false on all 12 lint targets. For certification, SDK, AG-UI, stream core/SSE/WS, OTel, testkit, and MCP client, set lint inputs to every literal root lint default plus ^production. Batteries-included certification, shared core, and telemetry semconv receive no target-local inputs. Preserve commands, cwd, parallel and all unrelated fields. Keep the whole KRT-CA004 evidence directory, the existing direct eight-package patch Changeset, public signatures, and source behavior. Add no lint policy, config override, build edge, compatibility shim, or generated edit. Feasibility measured 13210 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 13710, leaving 1290 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast.
+    acceptance:
+      mode: contract_test
+      evidence: Assert the final assembled tree matches frozen CA plus the sealed 12-path overlay; all 33 legacy paths contain zero Biome directives; the 164 native exception regions remain separate from legacy accounting; and native code/JSON selections are complete and diagnostic-free. Prove all 12 targets have literal false, exactly nine have every root lint input plus ^production, exactly three retain no inputs, and commands/cwd/parallel/unrelated fields are invariant. Run the 11 typechecks, 12 lints, public cold imports, meaningful package tests, compiler-isolation inventory, Changeset check, API freeze, and bun run verify. Preserve the whole KRT-CA004 directory and direct patch coverage for the eight published packages.
+    flows: []
+    certainty: settled
+    status: planned
