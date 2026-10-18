@@ -71,9 +71,9 @@ interface AssistantBoundaryValidation {
  * event validation and synthesis; `custom` and runtime lifecycle events are
  * excluded.
  */
-export function isAssistantContentStreamEvent(
+export const isAssistantContentStreamEvent = (
   type: TuvrenStreamEvent["type"]
-): boolean {
+): boolean => {
   switch (type) {
     case "message.start":
     case "text.delta":
@@ -93,7 +93,7 @@ export function isAssistantContentStreamEvent(
       return false;
     }
   }
-}
+};
 
 /**
  * Returns whether a stream event type participates in structural (non-delta)
@@ -104,9 +104,9 @@ export function isAssistantContentStreamEvent(
  * separately by accumulating their payloads against the durable message
  * parts.
  */
-export function isAssistantValidationEvent(
+export const isAssistantValidationEvent = (
   type: TuvrenStreamEvent["type"]
-): boolean {
+): boolean => {
   switch (type) {
     case "message.start":
     case "text.done":
@@ -122,7 +122,7 @@ export function isAssistantValidationEvent(
       return false;
     }
   }
-}
+};
 
 /**
  * Asserts that a runner-emitted stream event uses only the event types
@@ -134,7 +134,7 @@ export function isAssistantValidationEvent(
  * @throws TuvrenRuntimeError with code `invalid_stream_event` when the event
  * type is not runner-emittable.
  */
-export function assertRunnerRuntimeEvent(event: TuvrenStreamEvent): void {
+export const assertRunnerRuntimeEvent = (event: TuvrenStreamEvent): void => {
   switch (event.type) {
     case "custom":
     case "message.start":
@@ -163,7 +163,7 @@ export function assertRunnerRuntimeEvent(event: TuvrenStreamEvent): void {
       );
     }
   }
-}
+};
 
 /**
  * Serializes a structured-output or tool-call input value into the canonical
@@ -172,9 +172,46 @@ export function assertRunnerRuntimeEvent(event: TuvrenStreamEvent): void {
  * @returns `JSON.stringify(value)`, or the string `"null"` when the value is
  * not JSON-serializable (for example `undefined`).
  */
-export function serializeAssistantDeltaValue(value: unknown): string {
+export const serializeAssistantDeltaValue = (value: unknown): string => {
   return JSON.stringify(value) ?? "null";
-}
+};
+
+/**
+ * Returns true when the emitted assistant events are envelope-only (just
+ * message.start + message.done, no content). This is the streaming pattern
+ * for a pure provider-native/mediated response (AY003): the stream protocol
+ * requires start/done but the model produced no text.
+ */
+const isProviderOnlyResponseEventSet = (
+  assistantEvents: TuvrenStreamEvent[]
+): boolean => {
+  return (
+    assistantEvents.length === 2 &&
+    assistantEvents[0]?.type === "message.start" &&
+    assistantEvents[1]?.type === "message.done"
+  );
+};
+
+/**
+ * Returns true for a tool-role message whose parts are all provider-owned
+ * tool results (`providerMetadata.owner === "provider"`), i.e. results the
+ * provider executed itself and pre-staged instead of routing through the
+ * Tool Execution Gateway (AY003).
+ */
+const isPrestagedProviderToolMessage = (message: TuvrenMessage): boolean => {
+  if (message.role !== "tool") {
+    return false;
+  }
+  return message.parts.every((part) => {
+    if (part.type !== "tool_result") {
+      return false;
+    }
+    const meta = part.providerMetadata;
+    return (
+      typeof meta === "object" && meta !== null && meta.owner === "provider"
+    );
+  });
+};
 
 /**
  * Validates assistant content events that were emitted without a durable
@@ -185,11 +222,11 @@ export function serializeAssistantDeltaValue(value: unknown): string {
  * by pre-staged provider tool messages (AY003); any other combination is an
  * invalid stream.
  */
-function validateMissingAssistantMessage(
+const validateMissingAssistantMessage = (
   assistantEvents: TuvrenStreamEvent[],
   messages: TuvrenMessage[],
   resolution: RuntimeResolution
-): TuvrenRuntimeError | undefined {
+): TuvrenRuntimeError | undefined => {
   if (resolution.type === "fail" && resolution.fatality === "hard") {
     return validateFailedRunnerAssistantEvents(assistantEvents);
   }
@@ -210,7 +247,432 @@ function validateMissingAssistantMessage(
       code: "invalid_stream_event",
     }
   );
-}
+};
+
+const getAssistantEventMessageId = (
+  event: TuvrenStreamEvent
+): string | undefined => {
+  switch (event.type) {
+    case "file.done":
+    case "message.done":
+    case "message.start":
+    case "reasoning.delta":
+    case "reasoning.done":
+    case "structured.delta":
+    case "structured.done":
+    case "text.delta":
+    case "text.done":
+    case "tool_call.start": {
+      return event.messageId;
+    }
+    default: {
+      return undefined;
+    }
+  }
+};
+
+const assistantEventBelongsToCurrentMessage = (
+  event: TuvrenStreamEvent,
+  currentMessageId: string | undefined
+): boolean => {
+  const eventMessageId = getAssistantEventMessageId(event);
+
+  return eventMessageId === undefined || eventMessageId === currentMessageId;
+};
+
+/**
+ * Handles message.start/message.done bracketing for the delta replay: the
+ * first event must be message.start, all subsequent events must carry the
+ * same messageId, no event may follow message.done, and the message.done
+ * finish reason must agree with the durable message's tool-call content.
+ */
+const validateAssistantMessageBoundary = (
+  event: TuvrenStreamEvent,
+  expectedFinishReason: TuvrenModelResponse["finishReason"],
+  state: AssistantDeltaValidationState
+): AssistantBoundaryValidation => {
+  if (!state.started) {
+    if (event.type !== "message.start") {
+      return {
+        error: createAssistantDeltaValidationError(),
+        handled: false,
+      };
+    }
+
+    state.currentMessageId = event.messageId;
+    state.started = true;
+    return {
+      handled: true,
+    };
+  }
+
+  if (state.completed) {
+    return {
+      error: createAssistantDeltaValidationError(),
+      handled: false,
+    };
+  }
+
+  if (!assistantEventBelongsToCurrentMessage(event, state.currentMessageId)) {
+    return {
+      error: createAssistantDeltaValidationError(),
+      handled: false,
+    };
+  }
+
+  if (event.type === "message.start") {
+    return {
+      error: createAssistantDeltaValidationError(),
+      handled: false,
+    };
+  }
+
+  if (event.type !== "message.done") {
+    return {
+      handled: false,
+    };
+  }
+
+  if (
+    !doesFinishReasonMatchAssistantContent(
+      event.finishReason,
+      expectedFinishReason
+    )
+  ) {
+    return {
+      error: createAssistantDeltaValidationError(),
+      handled: false,
+    };
+  }
+
+  state.completed = true;
+  return {
+    handled: true,
+  };
+};
+
+const validateFileAssistantDeltaEvent = (
+  event: TuvrenStreamEvent,
+  state: AssistantDeltaValidationState
+): TuvrenRuntimeError | undefined => {
+  if (event.type !== "file.done") {
+    return createAssistantDeltaValidationError();
+  }
+
+  state.partIndex += 1;
+  return undefined;
+};
+
+const validateReasoningAssistantDeltaEvent = (
+  part: Extract<ContentPart, { type: "reasoning" }>,
+  event: TuvrenStreamEvent,
+  state: AssistantDeltaValidationState
+): TuvrenRuntimeError | undefined => {
+  if (event.type === "reasoning.delta") {
+    state.deltaBuffer += event.delta;
+    state.sawDelta = true;
+    return undefined;
+  }
+
+  if (event.type !== "reasoning.done") {
+    return createAssistantDeltaValidationError();
+  }
+
+  if (!part.redacted && part.text !== "" && state.deltaBuffer === "") {
+    return createAssistantDeltaValidationError();
+  }
+
+  if (
+    state.deltaBuffer !== "" &&
+    (part.redacted || state.deltaBuffer !== part.text)
+  ) {
+    return createAssistantDeltaValidationError();
+  }
+
+  state.deltaBuffer = "";
+  state.sawDelta = false;
+  state.partIndex += 1;
+  return undefined;
+};
+
+/**
+ * Returns whether an accumulated delta buffer reassembles the expected
+ * durable value, either as a raw string match or by parsing the buffer as
+ * JSON and comparing deeply.
+ */
+const doesSerializedDeltaMatchValue = (
+  serializedDelta: string,
+  expectedValue: unknown
+): boolean => {
+  if (typeof expectedValue === "string" && serializedDelta === expectedValue) {
+    return true;
+  }
+
+  try {
+    return isDeepStrictEqual(JSON.parse(serializedDelta), expectedValue);
+  } catch {
+    return false;
+  }
+};
+
+const validateStructuredAssistantDeltaEvent = (
+  part: Extract<ContentPart, { type: "structured" }>,
+  event: TuvrenStreamEvent,
+  state: AssistantDeltaValidationState
+): TuvrenRuntimeError | undefined => {
+  if (event.type === "structured.delta") {
+    state.deltaBuffer += event.delta;
+    state.sawDelta = true;
+    return undefined;
+  }
+
+  if (event.type !== "structured.done") {
+    return createAssistantDeltaValidationError();
+  }
+
+  if (
+    !(
+      state.sawDelta &&
+      doesSerializedDeltaMatchValue(state.deltaBuffer, part.data)
+    )
+  ) {
+    return createAssistantDeltaValidationError();
+  }
+
+  state.deltaBuffer = "";
+  state.sawDelta = false;
+  state.partIndex += 1;
+  return undefined;
+};
+
+const validateTextAssistantDeltaEvent = (
+  part: Extract<ContentPart, { type: "text" }>,
+  event: TuvrenStreamEvent,
+  state: AssistantDeltaValidationState
+): TuvrenRuntimeError | undefined => {
+  if (event.type === "text.delta") {
+    state.deltaBuffer += event.delta;
+    state.sawDelta = true;
+    return undefined;
+  }
+
+  if (event.type !== "text.done") {
+    return createAssistantDeltaValidationError();
+  }
+
+  if (!state.sawDelta || state.deltaBuffer !== part.text) {
+    return createAssistantDeltaValidationError();
+  }
+
+  state.deltaBuffer = "";
+  state.sawDelta = false;
+  state.partIndex += 1;
+  return undefined;
+};
+
+const validateToolCallAssistantDeltaEvent = (
+  part: Extract<ContentPart, { type: "tool_call" }>,
+  event: TuvrenStreamEvent,
+  state: AssistantDeltaValidationState
+): TuvrenRuntimeError | undefined => {
+  if (!state.toolCallStarted) {
+    if (event.type !== "tool_call.start") {
+      return createAssistantDeltaValidationError();
+    }
+
+    if (event.callId !== part.callId || event.name !== part.name) {
+      return createAssistantDeltaValidationError();
+    }
+
+    state.toolCallStarted = true;
+    return undefined;
+  }
+
+  if (event.type === "tool_call.args_delta") {
+    if (event.callId !== part.callId) {
+      return createAssistantDeltaValidationError();
+    }
+
+    state.deltaBuffer += event.delta;
+    state.sawDelta = true;
+    return undefined;
+  }
+
+  if (event.type !== "tool_call.done") {
+    return createAssistantDeltaValidationError();
+  }
+
+  if (
+    event.callId !== part.callId ||
+    event.name !== part.name ||
+    !isDeepStrictEqual(event.providerMetadata, part.providerMetadata) ||
+    !state.sawDelta ||
+    !doesSerializedDeltaMatchValue(state.deltaBuffer, part.input)
+  ) {
+    return createAssistantDeltaValidationError();
+  }
+
+  state.deltaBuffer = "";
+  state.sawDelta = false;
+  state.partIndex += 1;
+  state.toolCallStarted = false;
+  return undefined;
+};
+
+/**
+ * Dispatches one content event to the validator for the durable message part
+ * the replay cursor currently points at; events past the last part fail.
+ */
+const validateRunnerAssistantDeltaEvent = (
+  parts: Extract<TuvrenMessage, { role: "assistant" }>["parts"],
+  event: TuvrenStreamEvent,
+  state: AssistantDeltaValidationState
+): TuvrenRuntimeError | undefined => {
+  const currentPart = parts[state.partIndex];
+
+  if (currentPart === undefined) {
+    return createAssistantDeltaValidationError();
+  }
+
+  switch (currentPart.type) {
+    case "file": {
+      return validateFileAssistantDeltaEvent(event, state);
+    }
+    case "reasoning": {
+      return validateReasoningAssistantDeltaEvent(currentPart, event, state);
+    }
+    case "structured": {
+      return validateStructuredAssistantDeltaEvent(currentPart, event, state);
+    }
+    case "text": {
+      return validateTextAssistantDeltaEvent(currentPart, event, state);
+    }
+    case "tool_call": {
+      return validateToolCallAssistantDeltaEvent(currentPart, event, state);
+    }
+    default: {
+      return createAssistantDeltaValidationError();
+    }
+  }
+};
+
+/**
+ * Replays the full assistant event sequence (deltas included) against the
+ * durable message parts, requiring exactly one message.start/message.done
+ * bracket, per-part delta buffers that reassemble each part's content, and
+ * no dangling buffers or open tool calls at the end.
+ */
+const validateRunnerAssistantDeltas = (
+  message: Extract<TuvrenMessage, { role: "assistant" }>,
+  assistantEvents: TuvrenStreamEvent[]
+): TuvrenRuntimeError | undefined => {
+  const state: AssistantDeltaValidationState = {
+    completed: false,
+    currentMessageId: undefined,
+    deltaBuffer: "",
+    partIndex: 0,
+    sawDelta: false,
+    started: false,
+    toolCallStarted: false,
+  };
+  const expectedFinishReason = inferFinishReason(message);
+
+  for (const event of assistantEvents) {
+    const boundaryValidation = validateAssistantMessageBoundary(
+      event,
+      expectedFinishReason,
+      state
+    );
+
+    if (boundaryValidation.handled) {
+      continue;
+    }
+
+    if (boundaryValidation.error !== undefined) {
+      return boundaryValidation.error;
+    }
+
+    const validationError = validateRunnerAssistantDeltaEvent(
+      message.parts,
+      event,
+      state
+    );
+
+    if (validationError !== undefined) {
+      return validationError;
+    }
+  }
+
+  if (
+    !(state.started && state.completed) ||
+    state.deltaBuffer !== "" ||
+    state.sawDelta ||
+    state.toolCallStarted
+  ) {
+    return createAssistantDeltaValidationError();
+  }
+
+  return undefined;
+};
+
+/**
+ * Validates the final assistant event sequence against the durable assistant
+ * message: the non-delta events must match the synthesized expected sequence
+ * one-for-one, and the delta events must reassemble each message part
+ * exactly.
+ */
+const validateAssistantSequenceAgainstMessage = (
+  assistantMessage: Extract<TuvrenMessage, { role: "assistant" }>,
+  finalAssistantSequence: TuvrenStreamEvent[]
+): TuvrenRuntimeError | undefined => {
+  const actualEvents = finalAssistantSequence.filter((event) =>
+    isAssistantValidationEvent(event.type)
+  );
+  const messageId =
+    actualEvents[0]?.type === "message.start"
+      ? actualEvents[0].messageId
+      : "assistant-validation";
+  const expectedEvents = synthesizeAssistantValidationEvents(
+    assistantMessage,
+    messageId
+  );
+
+  if (actualEvents.length !== expectedEvents.length) {
+    return new TuvrenRuntimeError(
+      "runner-emitted assistant event sequences must be complete and match the durable assistant message",
+      {
+        code: "invalid_stream_event",
+      }
+    );
+  }
+
+  for (const [index, actualEvent] of actualEvents.entries()) {
+    const expectedEvent = expectedEvents[index];
+
+    if (
+      expectedEvent === undefined ||
+      !assistantValidationEventsMatch(actualEvent, expectedEvent)
+    ) {
+      return new TuvrenRuntimeError(
+        "runner-emitted assistant events must match the durable assistant message",
+        {
+          code: "invalid_stream_event",
+        }
+      );
+    }
+  }
+
+  const deltaValidationError = validateRunnerAssistantDeltas(
+    assistantMessage,
+    finalAssistantSequence
+  );
+
+  if (deltaValidationError !== undefined) {
+    return deltaValidationError;
+  }
+
+  return undefined;
+};
 
 /**
  * Validates that runner-emitted assistant content events are consistent with
@@ -242,13 +704,13 @@ function validateMissingAssistantMessage(
  * @returns A `TuvrenRuntimeError` describing the first violation, or
  * `undefined` when the emitted events are valid.
  */
-export function validateRunnerAssistantEvents(
+export const validateRunnerAssistantEvents = (
   messages: TuvrenMessage[],
   emittedEvents: TuvrenStreamEvent[],
   resolution: RuntimeResolution,
   assistantEventReconciliation: RunnerAssistantEventReconciliation | undefined,
   activeExtensions: TuvrenExtension[]
-): TuvrenRuntimeError | undefined {
+): TuvrenRuntimeError | undefined => {
   const assistantEvents = emittedEvents.filter((event) =>
     isAssistantContentStreamEvent(event.type)
   );
@@ -343,466 +805,4 @@ export function validateRunnerAssistantEvents(
   }
 
   return finalSequenceMatchError;
-}
-
-/**
- * Validates the final assistant event sequence against the durable assistant
- * message: the non-delta events must match the synthesized expected sequence
- * one-for-one, and the delta events must reassemble each message part
- * exactly.
- */
-function validateAssistantSequenceAgainstMessage(
-  assistantMessage: Extract<TuvrenMessage, { role: "assistant" }>,
-  finalAssistantSequence: TuvrenStreamEvent[]
-): TuvrenRuntimeError | undefined {
-  const actualEvents = finalAssistantSequence.filter((event) =>
-    isAssistantValidationEvent(event.type)
-  );
-  const messageId =
-    actualEvents[0]?.type === "message.start"
-      ? actualEvents[0].messageId
-      : "assistant-validation";
-  const expectedEvents = synthesizeAssistantValidationEvents(
-    assistantMessage,
-    messageId
-  );
-
-  if (actualEvents.length !== expectedEvents.length) {
-    return new TuvrenRuntimeError(
-      "runner-emitted assistant event sequences must be complete and match the durable assistant message",
-      {
-        code: "invalid_stream_event",
-      }
-    );
-  }
-
-  for (const [index, actualEvent] of actualEvents.entries()) {
-    const expectedEvent = expectedEvents[index];
-
-    if (
-      expectedEvent === undefined ||
-      !assistantValidationEventsMatch(actualEvent, expectedEvent)
-    ) {
-      return new TuvrenRuntimeError(
-        "runner-emitted assistant events must match the durable assistant message",
-        {
-          code: "invalid_stream_event",
-        }
-      );
-    }
-  }
-
-  const deltaValidationError = validateRunnerAssistantDeltas(
-    assistantMessage,
-    finalAssistantSequence
-  );
-
-  if (deltaValidationError !== undefined) {
-    return deltaValidationError;
-  }
-
-  return undefined;
-}
-
-/**
- * Replays the full assistant event sequence (deltas included) against the
- * durable message parts, requiring exactly one message.start/message.done
- * bracket, per-part delta buffers that reassemble each part's content, and
- * no dangling buffers or open tool calls at the end.
- */
-function validateRunnerAssistantDeltas(
-  message: Extract<TuvrenMessage, { role: "assistant" }>,
-  assistantEvents: TuvrenStreamEvent[]
-): TuvrenRuntimeError | undefined {
-  const state: AssistantDeltaValidationState = {
-    completed: false,
-    currentMessageId: undefined,
-    deltaBuffer: "",
-    partIndex: 0,
-    sawDelta: false,
-    started: false,
-    toolCallStarted: false,
-  };
-  const expectedFinishReason = inferFinishReason(message);
-
-  for (const event of assistantEvents) {
-    const boundaryValidation = validateAssistantMessageBoundary(
-      event,
-      expectedFinishReason,
-      state
-    );
-
-    if (boundaryValidation.handled) {
-      continue;
-    }
-
-    if (boundaryValidation.error !== undefined) {
-      return boundaryValidation.error;
-    }
-
-    const validationError = validateRunnerAssistantDeltaEvent(
-      message.parts,
-      event,
-      state
-    );
-
-    if (validationError !== undefined) {
-      return validationError;
-    }
-  }
-
-  if (
-    !(state.started && state.completed) ||
-    state.deltaBuffer !== "" ||
-    state.sawDelta ||
-    state.toolCallStarted
-  ) {
-    return createAssistantDeltaValidationError();
-  }
-
-  return undefined;
-}
-
-/**
- * Handles message.start/message.done bracketing for the delta replay: the
- * first event must be message.start, all subsequent events must carry the
- * same messageId, no event may follow message.done, and the message.done
- * finish reason must agree with the durable message's tool-call content.
- */
-function validateAssistantMessageBoundary(
-  event: TuvrenStreamEvent,
-  expectedFinishReason: TuvrenModelResponse["finishReason"],
-  state: AssistantDeltaValidationState
-): AssistantBoundaryValidation {
-  if (!state.started) {
-    if (event.type !== "message.start") {
-      return {
-        error: createAssistantDeltaValidationError(),
-        handled: false,
-      };
-    }
-
-    state.currentMessageId = event.messageId;
-    state.started = true;
-    return {
-      handled: true,
-    };
-  }
-
-  if (state.completed) {
-    return {
-      error: createAssistantDeltaValidationError(),
-      handled: false,
-    };
-  }
-
-  if (!assistantEventBelongsToCurrentMessage(event, state.currentMessageId)) {
-    return {
-      error: createAssistantDeltaValidationError(),
-      handled: false,
-    };
-  }
-
-  if (event.type === "message.start") {
-    return {
-      error: createAssistantDeltaValidationError(),
-      handled: false,
-    };
-  }
-
-  if (event.type !== "message.done") {
-    return {
-      handled: false,
-    };
-  }
-
-  if (
-    !doesFinishReasonMatchAssistantContent(
-      event.finishReason,
-      expectedFinishReason
-    )
-  ) {
-    return {
-      error: createAssistantDeltaValidationError(),
-      handled: false,
-    };
-  }
-
-  state.completed = true;
-  return {
-    handled: true,
-  };
-}
-
-function assistantEventBelongsToCurrentMessage(
-  event: TuvrenStreamEvent,
-  currentMessageId: string | undefined
-): boolean {
-  const eventMessageId = getAssistantEventMessageId(event);
-
-  return eventMessageId === undefined || eventMessageId === currentMessageId;
-}
-
-function getAssistantEventMessageId(
-  event: TuvrenStreamEvent
-): string | undefined {
-  switch (event.type) {
-    case "file.done":
-    case "message.done":
-    case "message.start":
-    case "reasoning.delta":
-    case "reasoning.done":
-    case "structured.delta":
-    case "structured.done":
-    case "text.delta":
-    case "text.done":
-    case "tool_call.start": {
-      return event.messageId;
-    }
-    default: {
-      return undefined;
-    }
-  }
-}
-
-/**
- * Dispatches one content event to the validator for the durable message part
- * the replay cursor currently points at; events past the last part fail.
- */
-function validateRunnerAssistantDeltaEvent(
-  parts: Extract<TuvrenMessage, { role: "assistant" }>["parts"],
-  event: TuvrenStreamEvent,
-  state: AssistantDeltaValidationState
-): TuvrenRuntimeError | undefined {
-  const currentPart = parts[state.partIndex];
-
-  if (currentPart === undefined) {
-    return createAssistantDeltaValidationError();
-  }
-
-  switch (currentPart.type) {
-    case "file": {
-      return validateFileAssistantDeltaEvent(event, state);
-    }
-    case "reasoning": {
-      return validateReasoningAssistantDeltaEvent(currentPart, event, state);
-    }
-    case "structured": {
-      return validateStructuredAssistantDeltaEvent(currentPart, event, state);
-    }
-    case "text": {
-      return validateTextAssistantDeltaEvent(currentPart, event, state);
-    }
-    case "tool_call": {
-      return validateToolCallAssistantDeltaEvent(currentPart, event, state);
-    }
-    default: {
-      return createAssistantDeltaValidationError();
-    }
-  }
-}
-
-function validateFileAssistantDeltaEvent(
-  event: TuvrenStreamEvent,
-  state: AssistantDeltaValidationState
-): TuvrenRuntimeError | undefined {
-  if (event.type !== "file.done") {
-    return createAssistantDeltaValidationError();
-  }
-
-  state.partIndex += 1;
-  return undefined;
-}
-
-function validateReasoningAssistantDeltaEvent(
-  part: Extract<ContentPart, { type: "reasoning" }>,
-  event: TuvrenStreamEvent,
-  state: AssistantDeltaValidationState
-): TuvrenRuntimeError | undefined {
-  if (event.type === "reasoning.delta") {
-    state.deltaBuffer += event.delta;
-    state.sawDelta = true;
-    return undefined;
-  }
-
-  if (event.type !== "reasoning.done") {
-    return createAssistantDeltaValidationError();
-  }
-
-  if (!part.redacted && part.text !== "" && state.deltaBuffer === "") {
-    return createAssistantDeltaValidationError();
-  }
-
-  if (
-    state.deltaBuffer !== "" &&
-    (part.redacted || state.deltaBuffer !== part.text)
-  ) {
-    return createAssistantDeltaValidationError();
-  }
-
-  state.deltaBuffer = "";
-  state.sawDelta = false;
-  state.partIndex += 1;
-  return undefined;
-}
-
-function validateStructuredAssistantDeltaEvent(
-  part: Extract<ContentPart, { type: "structured" }>,
-  event: TuvrenStreamEvent,
-  state: AssistantDeltaValidationState
-): TuvrenRuntimeError | undefined {
-  if (event.type === "structured.delta") {
-    state.deltaBuffer += event.delta;
-    state.sawDelta = true;
-    return undefined;
-  }
-
-  if (event.type !== "structured.done") {
-    return createAssistantDeltaValidationError();
-  }
-
-  if (
-    !(
-      state.sawDelta &&
-      doesSerializedDeltaMatchValue(state.deltaBuffer, part.data)
-    )
-  ) {
-    return createAssistantDeltaValidationError();
-  }
-
-  state.deltaBuffer = "";
-  state.sawDelta = false;
-  state.partIndex += 1;
-  return undefined;
-}
-
-function validateTextAssistantDeltaEvent(
-  part: Extract<ContentPart, { type: "text" }>,
-  event: TuvrenStreamEvent,
-  state: AssistantDeltaValidationState
-): TuvrenRuntimeError | undefined {
-  if (event.type === "text.delta") {
-    state.deltaBuffer += event.delta;
-    state.sawDelta = true;
-    return undefined;
-  }
-
-  if (event.type !== "text.done") {
-    return createAssistantDeltaValidationError();
-  }
-
-  if (!state.sawDelta || state.deltaBuffer !== part.text) {
-    return createAssistantDeltaValidationError();
-  }
-
-  state.deltaBuffer = "";
-  state.sawDelta = false;
-  state.partIndex += 1;
-  return undefined;
-}
-
-function validateToolCallAssistantDeltaEvent(
-  part: Extract<ContentPart, { type: "tool_call" }>,
-  event: TuvrenStreamEvent,
-  state: AssistantDeltaValidationState
-): TuvrenRuntimeError | undefined {
-  if (!state.toolCallStarted) {
-    if (event.type !== "tool_call.start") {
-      return createAssistantDeltaValidationError();
-    }
-
-    if (event.callId !== part.callId || event.name !== part.name) {
-      return createAssistantDeltaValidationError();
-    }
-
-    state.toolCallStarted = true;
-    return undefined;
-  }
-
-  if (event.type === "tool_call.args_delta") {
-    if (event.callId !== part.callId) {
-      return createAssistantDeltaValidationError();
-    }
-
-    state.deltaBuffer += event.delta;
-    state.sawDelta = true;
-    return undefined;
-  }
-
-  if (event.type !== "tool_call.done") {
-    return createAssistantDeltaValidationError();
-  }
-
-  if (
-    event.callId !== part.callId ||
-    event.name !== part.name ||
-    !isDeepStrictEqual(event.providerMetadata, part.providerMetadata) ||
-    !state.sawDelta ||
-    !doesSerializedDeltaMatchValue(state.deltaBuffer, part.input)
-  ) {
-    return createAssistantDeltaValidationError();
-  }
-
-  state.deltaBuffer = "";
-  state.sawDelta = false;
-  state.partIndex += 1;
-  state.toolCallStarted = false;
-  return undefined;
-}
-
-/**
- * Returns whether an accumulated delta buffer reassembles the expected
- * durable value, either as a raw string match or by parsing the buffer as
- * JSON and comparing deeply.
- */
-function doesSerializedDeltaMatchValue(
-  serializedDelta: string,
-  expectedValue: unknown
-): boolean {
-  if (typeof expectedValue === "string" && serializedDelta === expectedValue) {
-    return true;
-  }
-
-  try {
-    return isDeepStrictEqual(JSON.parse(serializedDelta), expectedValue);
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Returns true when the emitted assistant events are envelope-only (just
- * message.start + message.done, no content). This is the streaming pattern
- * for a pure provider-native/mediated response (AY003): the stream protocol
- * requires start/done but the model produced no text.
- */
-function isProviderOnlyResponseEventSet(
-  assistantEvents: TuvrenStreamEvent[]
-): boolean {
-  return (
-    assistantEvents.length === 2 &&
-    assistantEvents[0]?.type === "message.start" &&
-    assistantEvents[1]?.type === "message.done"
-  );
-}
-
-/**
- * Returns true for a tool-role message whose parts are all provider-owned
- * tool results (`providerMetadata.owner === "provider"`), i.e. results the
- * provider executed itself and pre-staged instead of routing through the
- * Tool Execution Gateway (AY003).
- */
-function isPrestagedProviderToolMessage(message: TuvrenMessage): boolean {
-  if (message.role !== "tool") {
-    return false;
-  }
-  return message.parts.every((part) => {
-    if (part.type !== "tool_result") {
-      return false;
-    }
-    const meta = part.providerMetadata;
-    return (
-      typeof meta === "object" && meta !== null && meta.owner === "provider"
-    );
-  });
-}
+};
