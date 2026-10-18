@@ -36,6 +36,120 @@ import {
 import { isRecord } from "./runtime-core-shared.js";
 import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
 
+const readManifest = async (
+  kernel: RuntimeKernel,
+  hash: HashString
+): Promise<ContextManifest> => {
+  const payload = await kernel.store.get(hash);
+
+  if (payload === null) {
+    throw new TuvrenLineageError(`manifest "${hash}" does not exist`, {
+      code: "missing_manifest",
+      details: {
+        hash,
+      },
+    });
+  }
+
+  const manifest = decodeDeterministicKernelRecord(payload);
+  assertContextManifest(manifest, `manifest "${hash}"`);
+  return manifest;
+};
+
+const readTurnLineageRecord = async (
+  kernel: RuntimeKernel,
+  turnNode: Exclude<Awaited<ReturnType<RuntimeKernel["node"]["get"]>>, null>,
+  branchId: string
+): Promise<import("./runtime-core-response.js").TurnLineageRecord | null> => {
+  const lineageHash = toOptionalHash(
+    await kernel.tree.resolve(turnNode.turnTreeHash, "turn.lineage")
+  );
+
+  if (lineageHash === null) {
+    return null;
+  }
+
+  const payload = await kernel.store.get(lineageHash);
+
+  if (payload === null) {
+    throw new TuvrenLineageError(
+      `turn lineage "${lineageHash}" does not exist`,
+      {
+        code: "missing_turn_lineage",
+        details: {
+          branchId,
+          hash: lineageHash,
+        },
+      }
+    );
+  }
+
+  const decoded = decodeDeterministicKernelRecord(payload);
+
+  if (isTurnLineageRecord(decoded)) {
+    return decoded;
+  }
+
+  throw new TuvrenLineageError(
+    `branch "${branchId}" turn lineage must carry an activeTurnId`,
+    {
+      code: "invalid_turn_lineage",
+      details: {
+        branchId,
+        lineageHash,
+        turnLineage: decoded,
+      },
+    }
+  );
+};
+
+export const readMessage = async (
+  kernel: RuntimeKernel,
+  payloadCodecBinding: PayloadCodecBinding,
+  hash: HashString
+): Promise<TuvrenMessage> => {
+  const payload = await kernel.store.get(hash);
+
+  if (payload === null) {
+    throw new TuvrenLineageError(`message "${hash}" does not exist`, {
+      code: "missing_message",
+      details: {
+        hash,
+      },
+    });
+  }
+
+  // Crypto-shredding seam (KRT-BF005): decrypt before decoding. An erased
+  // payload on the execution path is a controlled, typed failure — a shredded
+  // conversation cannot be reconstructed to feed the model — not a raw crash.
+  const decrypted = await decryptStoredMessage(payloadCodecBinding, payload);
+  if (decrypted.status === "erased") {
+    throw new TuvrenPersistenceError(
+      `message "${hash}" payload was erased (key "${decrypted.keyRef}" destroyed) and cannot be reconstructed for execution`,
+      {
+        code: "kernel_payload_erased",
+        details: { hash, keyRef: decrypted.keyRef },
+      }
+    );
+  }
+
+  return decodeKrakenMessageRecord(decrypted.plaintext, `message "${hash}"`);
+};
+
+const readMessages = async (
+  kernel: RuntimeKernel,
+  payloadCodecBinding: PayloadCodecBinding,
+  hashes: HashString[]
+): Promise<TuvrenMessage[]> => {
+  const messages: TuvrenMessage[] = [];
+
+  for (const hash of hashes) {
+    messages.push(await readMessage(kernel, payloadCodecBinding, hash));
+  }
+
+  return messages;
+};
+
 /**
  * Load the full {@link HeadState} of a branch from the kernel.
  *
@@ -49,11 +163,11 @@ import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
  * @throws TuvrenPersistenceError with code `kernel_payload_erased` when a
  *   message payload was crypto-shredded and cannot be reconstructed.
  */
-export async function loadHeadState(
+export const loadHeadState = async (
   kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
   branchId: string
-): Promise<HeadState> {
+): Promise<HeadState> => {
   const branch = await kernel.branch.get(branchId);
 
   if (branch === null) {
@@ -93,18 +207,7 @@ export async function loadHeadState(
     turnNode,
     ...(turnLineage === null ? {} : { turnLineage }),
   };
-}
-
-/**
- * Read the active agent name from the durable `runtime.status` record of a
- * turn tree, or `undefined` when no valid status (or agent name) is recorded.
- */
-export async function readRecoveredActiveAgentName(
-  kernel: RuntimeKernel,
-  turnTreeHash: HashString
-): Promise<string | undefined> {
-  return (await readRecoveredRuntimeStatus(kernel, turnTreeHash))?.activeAgent;
-}
+};
 
 /**
  * Read and validate the durable `runtime.status` record from a turn tree.
@@ -115,10 +218,10 @@ export async function readRecoveredActiveAgentName(
  * that never wrote a status. Optional fields (`activeAgent`, `partial`,
  * `pauseReason`) are only carried through when they have the expected type.
  */
-export async function readRecoveredRuntimeStatus(
+export const readRecoveredRuntimeStatus = async (
   kernel: RuntimeKernel,
   turnTreeHash: HashString
-): Promise<DurableRuntimeStatus | undefined> {
+): Promise<DurableRuntimeStatus | undefined> => {
   const runtimeStatusHash = toOptionalHash(
     await kernel.tree.resolve(turnTreeHash, "runtime.status")
   );
@@ -158,7 +261,18 @@ export async function readRecoveredRuntimeStatus(
       : {}),
     state: runtimeStatus.state,
   };
-}
+};
+
+/**
+ * Read the active agent name from the durable `runtime.status` record of a
+ * turn tree, or `undefined` when no valid status (or agent name) is recorded.
+ */
+export const readRecoveredActiveAgentName = async (
+  kernel: RuntimeKernel,
+  turnTreeHash: HashString
+): Promise<string | undefined> => {
+  return (await readRecoveredRuntimeStatus(kernel, turnTreeHash))?.activeAgent;
+};
 
 /**
  * Resolve the turn-tree schema id an execution should run under.
@@ -168,72 +282,75 @@ export async function readRecoveredRuntimeStatus(
  * `ensureSchemaId`, which is responsible for defaulting and registering the
  * schema.
  */
-export async function resolveExecutionSchemaId(
+export const resolveExecutionSchemaId = async (
   kernel: RuntimeKernel,
   ensureSchemaId: (schemaId?: string) => Promise<string>,
   request: ExecutionSessionRequest
-): Promise<string> {
+): Promise<string> => {
   if (request.schemaId !== undefined) {
     return await ensureSchemaId(request.schemaId);
   }
 
   const thread = await kernel.thread.get(request.threadId);
   return await ensureSchemaId(thread?.schemaId);
-}
+};
+
+const readBranchHeadState = async (
+  kernel: RuntimeKernel,
+  branchId: string
+): Promise<{
+  branchHeadHash: HashString;
+  turnNode: Exclude<Awaited<ReturnType<RuntimeKernel["node"]["get"]>>, null>;
+}> => {
+  const branch = await kernel.branch.get(branchId);
+
+  if (branch === null) {
+    throw new TuvrenLineageError(`branch "${branchId}" does not exist`, {
+      code: "missing_branch",
+    });
+  }
+
+  const turnNode = await kernel.node.get(branch.headTurnNodeHash);
+
+  if (turnNode === null) {
+    throw new TuvrenLineageError(
+      `turn node "${branch.headTurnNodeHash}" does not exist`,
+      {
+        code: "missing_turn_node",
+      }
+    );
+  }
+
+  return {
+    branchHeadHash: branch.headTurnNodeHash,
+    turnNode,
+  };
+};
 
 /**
- * Resolve and validate the parent turn id for a new turn on a branch.
- *
- * Precedence: an explicit parent turn id from the request (including an
- * explicit `null`), then the optional configured resolver, then the branch's
- * active turn id read from the head turn tree's `turn.lineage` record. The
- * result is always validated against the branch's actual active turn.
- *
- * @param resolveConfiguredParentTurnId - Optional host-configured resolver
- *   consulted only when the request left the parent turn id `undefined`.
- * @param explicitParentTurnId - Parent turn id from the request; `null`
- *   explicitly requests a root turn, `undefined` defers to resolution.
- * @returns The validated parent turn id, or `null` for a root turn.
- * @throws TuvrenLineageError with code `invalid_parent_turn` when the
- *   resolved parent is not the branch's active turn, does not exist, or
- *   belongs to a different thread.
+ * Read the branch's active turn id from the `turn.lineage` record on its head
+ * turn tree; `null` when the branch has no lineage yet (no turn created).
  */
-export async function resolveParentTurnId(
+const readBranchActiveTurnId = async (
   kernel: RuntimeKernel,
-  resolveConfiguredParentTurnId:
-    | ((
-        threadId: string,
-        branchId: string
-      ) => Promise<string | null> | string | null)
-    | undefined,
-  threadId: string,
-  branchId: string,
-  explicitParentTurnId?: string | null
-): Promise<string | null> {
-  const resolvedParentTurnId =
-    explicitParentTurnId === undefined
-      ? await resolveConfiguredParentTurnId?.(threadId, branchId)
-      : explicitParentTurnId;
-
-  const parentTurnId =
-    resolvedParentTurnId === undefined
-      ? await readBranchActiveTurnId(kernel, branchId)
-      : resolvedParentTurnId;
-  await assertValidParentTurnId(kernel, threadId, branchId, parentTurnId);
-  return parentTurnId;
-}
+  branchId: string
+): Promise<string | null> => {
+  const { turnNode } = await readBranchHeadState(kernel, branchId);
+  const turnLineage = await readTurnLineageRecord(kernel, turnNode, branchId);
+  return turnLineage?.activeTurnId ?? null;
+};
 
 /**
  * Assert that `parentTurnId` matches the branch's active turn, exists in the
  * kernel, and stays on the expected thread; throws `TuvrenLineageError`
  * (`invalid_parent_turn`) otherwise.
  */
-async function assertValidParentTurnId(
+const assertValidParentTurnId = async (
   kernel: RuntimeKernel,
   threadId: string,
   branchId: string,
   parentTurnId: string | null
-): Promise<void> {
+): Promise<void> => {
   const expectedParentTurnId = await readBranchActiveTurnId(kernel, branchId);
 
   if (parentTurnId !== expectedParentTurnId) {
@@ -285,163 +402,46 @@ async function assertValidParentTurnId(
       }
     );
   }
-}
-
-async function readManifest(
-  kernel: RuntimeKernel,
-  hash: HashString
-): Promise<ContextManifest> {
-  const payload = await kernel.store.get(hash);
-
-  if (payload === null) {
-    throw new TuvrenLineageError(`manifest "${hash}" does not exist`, {
-      code: "missing_manifest",
-      details: {
-        hash,
-      },
-    });
-  }
-
-  const manifest = decodeDeterministicKernelRecord(payload);
-  assertContextManifest(manifest, `manifest "${hash}"`);
-  return manifest;
-}
-
-async function readMessages(
-  kernel: RuntimeKernel,
-  payloadCodecBinding: PayloadCodecBinding,
-  hashes: HashString[]
-): Promise<TuvrenMessage[]> {
-  const messages: TuvrenMessage[] = [];
-
-  for (const hash of hashes) {
-    messages.push(await readMessage(kernel, payloadCodecBinding, hash));
-  }
-
-  return messages;
-}
-
-export async function readMessage(
-  kernel: RuntimeKernel,
-  payloadCodecBinding: PayloadCodecBinding,
-  hash: HashString
-): Promise<TuvrenMessage> {
-  const payload = await kernel.store.get(hash);
-
-  if (payload === null) {
-    throw new TuvrenLineageError(`message "${hash}" does not exist`, {
-      code: "missing_message",
-      details: {
-        hash,
-      },
-    });
-  }
-
-  // Crypto-shredding seam (KRT-BF005): decrypt before decoding. An erased
-  // payload on the execution path is a controlled, typed failure — a shredded
-  // conversation cannot be reconstructed to feed the model — not a raw crash.
-  const decrypted = await decryptStoredMessage(payloadCodecBinding, payload);
-  if (decrypted.status === "erased") {
-    throw new TuvrenPersistenceError(
-      `message "${hash}" payload was erased (key "${decrypted.keyRef}" destroyed) and cannot be reconstructed for execution`,
-      {
-        code: "kernel_payload_erased",
-        details: { hash, keyRef: decrypted.keyRef },
-      }
-    );
-  }
-
-  return decodeKrakenMessageRecord(decrypted.plaintext, `message "${hash}"`);
-}
-
-async function readBranchHeadState(
-  kernel: RuntimeKernel,
-  branchId: string
-): Promise<{
-  branchHeadHash: HashString;
-  turnNode: Exclude<Awaited<ReturnType<RuntimeKernel["node"]["get"]>>, null>;
-}> {
-  const branch = await kernel.branch.get(branchId);
-
-  if (branch === null) {
-    throw new TuvrenLineageError(`branch "${branchId}" does not exist`, {
-      code: "missing_branch",
-    });
-  }
-
-  const turnNode = await kernel.node.get(branch.headTurnNodeHash);
-
-  if (turnNode === null) {
-    throw new TuvrenLineageError(
-      `turn node "${branch.headTurnNodeHash}" does not exist`,
-      {
-        code: "missing_turn_node",
-      }
-    );
-  }
-
-  return {
-    branchHeadHash: branch.headTurnNodeHash,
-    turnNode,
-  };
-}
+};
 
 /**
- * Read the branch's active turn id from the `turn.lineage` record on its head
- * turn tree; `null` when the branch has no lineage yet (no turn created).
+ * Resolve and validate the parent turn id for a new turn on a branch.
+ *
+ * Precedence: an explicit parent turn id from the request (including an
+ * explicit `null`), then the optional configured resolver, then the branch's
+ * active turn id read from the head turn tree's `turn.lineage` record. The
+ * result is always validated against the branch's actual active turn.
+ *
+ * @param resolveConfiguredParentTurnId - Optional host-configured resolver
+ *   consulted only when the request left the parent turn id `undefined`.
+ * @param explicitParentTurnId - Parent turn id from the request; `null`
+ *   explicitly requests a root turn, `undefined` defers to resolution.
+ * @returns The validated parent turn id, or `null` for a root turn.
+ * @throws TuvrenLineageError with code `invalid_parent_turn` when the
+ *   resolved parent is not the branch's active turn, does not exist, or
+ *   belongs to a different thread.
  */
-async function readBranchActiveTurnId(
+export const resolveParentTurnId = async (
   kernel: RuntimeKernel,
-  branchId: string
-): Promise<string | null> {
-  const { turnNode } = await readBranchHeadState(kernel, branchId);
-  const turnLineage = await readTurnLineageRecord(kernel, turnNode, branchId);
-  return turnLineage?.activeTurnId ?? null;
-}
+  resolveConfiguredParentTurnId:
+    | ((
+        threadId: string,
+        branchId: string
+      ) => Promise<string | null> | string | null)
+    | undefined,
+  threadId: string,
+  branchId: string,
+  explicitParentTurnId?: string | null
+): Promise<string | null> => {
+  const resolvedParentTurnId =
+    explicitParentTurnId === undefined
+      ? await resolveConfiguredParentTurnId?.(threadId, branchId)
+      : explicitParentTurnId;
 
-async function readTurnLineageRecord(
-  kernel: RuntimeKernel,
-  turnNode: Exclude<Awaited<ReturnType<RuntimeKernel["node"]["get"]>>, null>,
-  branchId: string
-): Promise<import("./runtime-core-response.js").TurnLineageRecord | null> {
-  const lineageHash = toOptionalHash(
-    await kernel.tree.resolve(turnNode.turnTreeHash, "turn.lineage")
-  );
-
-  if (lineageHash === null) {
-    return null;
-  }
-
-  const payload = await kernel.store.get(lineageHash);
-
-  if (payload === null) {
-    throw new TuvrenLineageError(
-      `turn lineage "${lineageHash}" does not exist`,
-      {
-        code: "missing_turn_lineage",
-        details: {
-          branchId,
-          hash: lineageHash,
-        },
-      }
-    );
-  }
-
-  const decoded = decodeDeterministicKernelRecord(payload);
-
-  if (isTurnLineageRecord(decoded)) {
-    return decoded;
-  }
-
-  throw new TuvrenLineageError(
-    `branch "${branchId}" turn lineage must carry an activeTurnId`,
-    {
-      code: "invalid_turn_lineage",
-      details: {
-        branchId,
-        lineageHash,
-        turnLineage: decoded,
-      },
-    }
-  );
-}
+  const parentTurnId =
+    resolvedParentTurnId === undefined
+      ? await readBranchActiveTurnId(kernel, branchId)
+      : resolvedParentTurnId;
+  await assertValidParentTurnId(kernel, threadId, branchId, parentTurnId);
+  return parentTurnId;
+};

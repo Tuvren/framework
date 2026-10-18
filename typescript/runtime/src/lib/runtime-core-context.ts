@@ -71,9 +71,9 @@ export interface RuntimeCoreContextHost {
  * Durable messages remain untouched; callers receive projected message
  * objects for runner-facing snapshots and helper lookups.
  */
-export function projectMessagesForRunner(
+export const projectMessagesForRunner = (
   messages: readonly TuvrenMessage[]
-): TuvrenMessage[] {
+): TuvrenMessage[] => {
   return messages.map((message) => {
     if (message.role !== "user") {
       return message;
@@ -82,16 +82,16 @@ export function projectMessagesForRunner(
     const { admissionKey: _admissionKey, ...projectedMessage } = message;
     return projectedMessage;
   });
-}
+};
 
 /**
  * Projects message reads from context helpers before exposing them to a
  * runner supplied builder. Writes still use the original helper bundle so
  * persistence and canonical hash resolution retain their existing behavior.
  */
-export function projectContextEngineeringHelpersForRunner(
+export const projectContextEngineeringHelpersForRunner = (
   helpers: ContextEngineeringHelpers
-): ContextEngineeringHelpers {
+): ContextEngineeringHelpers => {
   return {
     loadMessage(hash) {
       const message = helpers.loadMessage(hash);
@@ -100,7 +100,7 @@ export function projectContextEngineeringHelpersForRunner(
     storeMessage: (message) => helpers.storeMessage(message),
     storeMessages: (messages) => helpers.storeMessages(messages),
   };
-}
+};
 
 /**
  * Create a {@link HelperBundle} over the current head messages.
@@ -116,11 +116,11 @@ export function projectContextEngineeringHelpersForRunner(
  * @param messages - The decoded messages, index-aligned with
  *   `messageHashes`.
  */
-export function createContextEngineeringHelpers(
+export const createContextEngineeringHelpers = (
   host: RuntimeCoreContextHost,
   messageHashes: HashString[],
   messages: TuvrenMessage[]
-): HelperBundle {
+): HelperBundle => {
   const existingMessages = new Map<HashString, TuvrenMessage>();
   const pendingMessages = new Map<HashString, TuvrenMessage>();
   const pendingRecords = new Map<
@@ -189,7 +189,7 @@ export function createContextEngineeringHelpers(
       return hashes.map((hash) => resolvedHashes.get(hash) ?? hash);
     },
   };
-}
+};
 
 /**
  * Build the {@link HandoffSourceContext} handed to a handoff plan's builder.
@@ -198,14 +198,14 @@ export function createContextEngineeringHelpers(
  * configs are cloned and frozen, so the builder cannot mutate live runtime
  * state through the context it receives.
  */
-export function resolveHandoffSourceContext(
+export const resolveHandoffSourceContext = (
   host: RuntimeCoreContextHost,
   plan: HandoffContextPlan,
   headState: HeadState,
   loopState: LoopState,
   targetConfig: AgentConfig,
   helpers: ContextEngineeringHelpers
-): HandoffSourceContext {
+): HandoffSourceContext => {
   return {
     handoffIntent: cloneValue(plan.sourceContext.handoffIntent),
     helpers: projectContextEngineeringHelpersForRunner(helpers),
@@ -218,7 +218,7 @@ export function resolveHandoffSourceContext(
       host.cloneAgentConfigForRequest(targetConfig)
     ),
   };
-}
+};
 
 /**
  * Load every message named by `hashes` through the helpers, in order.
@@ -227,10 +227,10 @@ export function resolveHandoffSourceContext(
  *   only return hashes that exist or were stored through the same helper
  *   bundle.
  */
-export function materializeContextMessages(
+export const materializeContextMessages = (
   hashes: HashString[],
   helpers: ContextEngineeringHelpers
-): TuvrenMessage[] {
+): TuvrenMessage[] => {
   const messages: TuvrenMessage[] = [];
 
   for (const hash of hashes) {
@@ -244,4 +244,4 @@ export function materializeContextMessages(
   }
 
   return messages;
-}
+};
