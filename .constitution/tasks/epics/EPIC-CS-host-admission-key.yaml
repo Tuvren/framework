@@ -289,10 +289,12 @@ closeout:
     - summary: "Project copies of durable user messages at createRunnerExecutionContext and remove host-owned admission keys from direct runner messages, handoff source contexts, helper lookups, and provider requests."
       kind: pattern
       paths:
+        - typescript/runtime/src/lib/runtime-core-context.ts
         - typescript/runtime/src/lib/runtime-core-runner.ts
+        - typescript/runtime/src/lib/runtime-core-runner-support.ts
         - typescript/runtime/test/admission-key-provider-projection.test.ts
         - typescript/runtime/test/runtime-core.handoff-runner.test.ts
-      commit: 8be5acd
+      commit: 2a26636
     - summary: "Resolve keyed recovery identity by scanning the recovered turn's bounded checkpoint lineage for the user message staged with `input_message` provenance, skipping empty preemption checkpoints and excluding steering messages even when a steer is the first consumed user message."
       kind: pattern
       paths:
