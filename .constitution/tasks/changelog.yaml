@@ -1,4 +1,13 @@
 entries:
+  - version: v0.48.8
+    date: 2026-10-18
+    by: patch-lane
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.8
+    changed:
+      - "Add tools/scripts/lib/native-lint-routing-argv.test.ts to EPIC-BT and KRT-BT004 ownership so the self-contained pinned Nx executor, child-argv, forwarding-control, failure-propagation, and cleanup cohort can be extracted from biome-oxc-discovery.test.ts while every TypeScript file remains within the mandatory 1000-line ceiling. Preserve all ticket and epic IDs, estimates, dependencies, acceptance, verification, implementation policy, and product scope."
   - version: v0.48.7
     date: 2026-10-18
     by: patch-lane
