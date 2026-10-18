@@ -58,7 +58,7 @@
       "dependencies": 1
     },
     {
-      "command": "bun run changeset:check --base=HEAD",
+      "command": "bun run changeset:check --base=master",
       "exit_code": 0,
       "direct_patch_packages": ["@tuvren/core", "@tuvren/sdk", "@tuvren/mcp-client"]
     },
