@@ -17,12 +17,41 @@
 import process from "node:process";
 
 const MIN_NX_MAX_LISTENERS = 64;
+/**
+ * @typedef {{
+ *   getMaxListeners: () => number;
+ *   setMaxListeners: (value: number) => void;
+ * }} ListenerProcess
+ */
 
-if (process.getMaxListeners() < MIN_NX_MAX_LISTENERS) {
-  // TODO(maint): This ceiling is a containment shim for Nx listener churn, not a
-  // root-cause fix. Keep tracing Nx/task-runner listener growth separately so a
-  // future workspace/tooling upgrade can remove this override instead of normalizing it.
-  process.setMaxListeners(MIN_NX_MAX_LISTENERS);
+/**
+ * @param {unknown} value A value crossing the untyped runtime boundary.
+ * @returns {unknown} The unchanged value for runtime narrowing.
+ */
+const toUnknown = (value) => value;
+
+/**
+ * @param {unknown} value The runtime value to inspect.
+ * @returns {value is ListenerProcess} Whether the value controls listener limits.
+ */
+const isListenerProcess = (value) =>
+  typeof value === "object" &&
+  value !== null &&
+  "getMaxListeners" in value &&
+  typeof value.getMaxListeners === "function" &&
+  "setMaxListeners" in value &&
+  typeof value.setMaxListeners === "function";
+
+const listenerProcess = toUnknown(process);
+
+if (!isListenerProcess(listenerProcess)) {
+  throw new TypeError("The runtime process must support listener limits");
+}
+
+if (listenerProcess.getMaxListeners() < MIN_NX_MAX_LISTENERS) {
+  // This ceiling contains Nx listener churn while its root cause is traced in
+  // the task runner. A future workspace/tooling upgrade can remove the override.
+  listenerProcess.setMaxListeners(MIN_NX_MAX_LISTENERS);
 }
 
 await import("nx/bin/nx.js");

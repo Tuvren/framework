@@ -41,8 +41,8 @@ import {
   createOrchestrationRuntime,
   createRunnerRegistry,
   createTuvrenRuntime,
-  type RuntimeCoreOptions,
 } from "@tuvren/runtime";
+import type { RuntimeCoreOptions } from "@tuvren/runtime";
 
 // ── Public options ────────────────────────────────────────────────────────────
 
@@ -56,6 +56,7 @@ import {
  * duck-types this shape (via `isMcpToolSource`), never a nominal import.
  */
 export interface McpToolSource {
+  /* oxlint-disable typescript/method-signature-style -- Preserve the published callable spelling and its method bivariance under strictFunctionTypes. */
   /**
    * Closes the underlying MCP connection. Called automatically for every
    * source passed to {@link createTuvren} when the returned
@@ -64,6 +65,7 @@ export interface McpToolSource {
   close(): Promise<void>;
   /** Re-lists the server's tools, returning the refreshed definitions. */
   refresh(): Promise<{ tools: TuvrenToolDefinition[] }>;
+  /* oxlint-enable typescript/method-signature-style */
   /** Human-readable identifier of the MCP server backing this source. */
   readonly serverName: string;
   /**
@@ -157,6 +159,7 @@ export interface CreateTuvrenOptions {
    * are flattened into the agent's tool list at construction time, and every
    * source is closed when the instance is disposed.
    */
+  // oxlint-disable-next-line typescript/array-type -- Preserve the frozen public API snapshot spelling.
   tools?: Array<McpToolSource | TuvrenToolDefinition>;
 }
 
@@ -183,8 +186,115 @@ export interface TuvrenInstance {
   /** The underlying framework runtime composed over the kernel. */
   runtime: TuvrenRuntime;
   /** Closes MCP tool sources and the owned backend; aggregates errors. */
+  // oxlint-disable-next-line typescript/method-signature-style -- Preserve the published async-disposal method spelling and its method bivariance.
   [Symbol.asyncDispose](): Promise<void>;
 }
+
+// ── Internal helpers ─────────────────────────────────────────────────────────
+
+const isMcpToolSource = (
+  item: McpToolSource | TuvrenToolDefinition
+): item is McpToolSource =>
+  "serverName" in item &&
+  typeof item.serverName === "string" &&
+  "refresh" in item &&
+  typeof item.refresh === "function" &&
+  "close" in item &&
+  typeof item.close === "function";
+
+interface ClosableBackend extends RuntimeBackend {
+  close: () => Promise<void>;
+}
+
+const isClosableBackend = (
+  backend: RuntimeBackend
+): backend is ClosableBackend =>
+  "close" in backend && typeof backend.close === "function";
+
+const tryCloseBackend = (backend: RuntimeBackend): (() => Promise<void>) => {
+  if (isClosableBackend(backend)) {
+    // oxlint-disable-next-line typescript/promise-function-async -- Preserve the backend's exact close Promise identity and rejection timing.
+    return () => backend.close();
+  }
+  // oxlint-disable-next-line typescript/promise-function-async -- Preserve the resolved no-op Promise without adding an async scheduling hop.
+  return () => Promise.resolve();
+};
+
+const resolveKernelAndDispose = (
+  options: CreateTuvrenOptions
+): {
+  kernel: RuntimeKernel;
+  disposeBackend: () => Promise<void>;
+  purgeScope?: () => Promise<void>;
+} => {
+  if (options.kernel !== undefined) {
+    // An externally-supplied kernel owns its substrate; `createTuvren` has no
+    // backend handle to drive a partition drop, so `maintenance.purgeScope`
+    // stays unavailable on the resulting runtime.
+    return {
+      // oxlint-disable-next-line typescript/promise-function-async -- Preserve the resolved no-op Promise without adding an async scheduling hop.
+      disposeBackend: () => Promise.resolve(),
+      kernel: options.kernel,
+    };
+  }
+
+  const { backend } = options;
+  return {
+    disposeBackend: tryCloseBackend(backend),
+    kernel: createRuntimeKernel({ backend }),
+    // Surface the substrate partition-drop (ADR-0051, §4.17) only when the owned
+    // backend implements it; otherwise the runtime maintenance surface reports
+    // it as unsupported.
+    ...(typeof backend.purgeScope === "function"
+      ? {
+          // oxlint-disable-next-line typescript/promise-function-async -- Preserve the owned backend's exact purge Promise identity and rejection timing.
+          purgeScope: (): Promise<void> =>
+            backend.purgeScope?.() ?? Promise.resolve(),
+        }
+      : {}),
+  };
+};
+
+type ExclusiveRuntimeOption = "bounds" | "payloadCodec" | "telemetry";
+
+const assertExclusiveRuntimeOption = (
+  name: ExclusiveRuntimeOption,
+  topLevelValue: unknown,
+  runtimeValue: unknown
+): void => {
+  if (topLevelValue !== undefined && runtimeValue !== undefined) {
+    throw new TuvrenValidationError(
+      `createTuvren: ${name} must be supplied either at top level or runtimeOptions, not both`,
+      { code: "invalid_createtuvren_options" }
+    );
+  }
+};
+
+const collectMcpSources = (
+  tools: CreateTuvrenOptions["tools"]
+): McpToolSource[] => {
+  if (tools === undefined) {
+    return [];
+  }
+  return tools.filter(isMcpToolSource);
+};
+
+const collectTools = (
+  tools: CreateTuvrenOptions["tools"]
+): TuvrenToolDefinition[] => {
+  if (tools === undefined) {
+    return [];
+  }
+  const result: TuvrenToolDefinition[] = [];
+  for (const item of tools) {
+    if (isMcpToolSource(item)) {
+      result.push(...item.tools);
+    } else {
+      result.push(item);
+    }
+  }
+  return result;
+};
 
 // ── Factory ─────────────────────────────────────────────────────────────────
 
@@ -203,7 +313,7 @@ export interface TuvrenInstance {
  * @returns A promise of the composed {@link TuvrenInstance}. The factory is
  *   currently synchronous internally; the promise shape leaves room for async
  *   composition steps without a signature break.
- * @throws TuvrenValidationError (code `invalid_createtuvren_options`) when
+ * @throws {TuvrenValidationError} With code `invalid_createtuvren_options` when
  *   `telemetry`, `bounds`, or `payloadCodec` is supplied both at the top
  *   level and inside `runtimeOptions`.
  *
@@ -222,38 +332,25 @@ export interface TuvrenInstance {
  * const { threadId } = await tuvren.runtime.createThread({});
  * ```
  */
-export function createTuvren(
+// oxlint-disable-next-line typescript/promise-function-async -- Preserve synchronous option validation and the factory's exact resolved Promise timing.
+export const createTuvren = (
   options: CreateTuvrenOptions
-): Promise<TuvrenInstance> {
-  if (
-    options.telemetry !== undefined &&
-    options.runtimeOptions?.telemetry !== undefined
-  ) {
-    throw new TuvrenValidationError(
-      "createTuvren: telemetry must be supplied either at top level or runtimeOptions, not both",
-      { code: "invalid_createtuvren_options" }
-    );
-  }
-
-  if (
-    options.bounds !== undefined &&
-    options.runtimeOptions?.bounds !== undefined
-  ) {
-    throw new TuvrenValidationError(
-      "createTuvren: bounds must be supplied either at top level or runtimeOptions, not both",
-      { code: "invalid_createtuvren_options" }
-    );
-  }
-
-  if (
-    options.payloadCodec !== undefined &&
-    options.runtimeOptions?.payloadCodec !== undefined
-  ) {
-    throw new TuvrenValidationError(
-      "createTuvren: payloadCodec must be supplied either at top level or runtimeOptions, not both",
-      { code: "invalid_createtuvren_options" }
-    );
-  }
+): Promise<TuvrenInstance> => {
+  assertExclusiveRuntimeOption(
+    "telemetry",
+    options.telemetry,
+    options.runtimeOptions?.telemetry
+  );
+  assertExclusiveRuntimeOption(
+    "bounds",
+    options.bounds,
+    options.runtimeOptions?.bounds
+  );
+  assertExclusiveRuntimeOption(
+    "payloadCodec",
+    options.payloadCodec,
+    options.runtimeOptions?.payloadCodec
+  );
 
   // When a pre-built kernel is supplied, skip backend construction entirely.
   // The kernel already owns its backend; constructing a second one would open
@@ -261,7 +358,7 @@ export function createTuvren(
   const { kernel, disposeBackend, purgeScope } =
     resolveKernelAndDispose(options);
 
-  const runner = options.runner;
+  const { runner } = options;
   const runnerRegistry = createRunnerRegistry([runner]);
 
   const mcpSources = collectMcpSources(options.tools);
@@ -280,10 +377,10 @@ export function createTuvren(
     ...options.runtimeOptions,
     bounds: options.bounds ?? options.runtimeOptions?.bounds,
     defaultRunnerId: runner.id,
-    runnerRegistry,
     kernel,
     payloadCodec: options.payloadCodec ?? options.runtimeOptions?.payloadCodec,
     ...(purgeScope === undefined ? {} : { purgeScope }),
+    runnerRegistry,
     telemetry: options.telemetry ?? options.runtimeOptions?.telemetry,
   });
 
@@ -302,16 +399,19 @@ export function createTuvren(
 
       for (const source of mcpSources) {
         try {
+          // oxlint-disable-next-line no-await-in-loop -- Dispose MCP sources sequentially in registration order before the backend, preserving cleanup and error order.
           await source.close();
-        } catch (err) {
-          errors.push(err instanceof Error ? err : new Error(String(err)));
+        } catch (error) {
+          errors.push(
+            error instanceof Error ? error : new Error(String(error))
+          );
         }
       }
 
       try {
         await disposeBackend();
-      } catch (err) {
-        errors.push(err instanceof Error ? err : new Error(String(err)));
+      } catch (error) {
+        errors.push(error instanceof Error ? error : new Error(String(error)));
       }
 
       if (errors.length > 0) {
@@ -322,79 +422,4 @@ export function createTuvren(
   };
 
   return Promise.resolve(instance);
-}
-
-// ── Internal helpers ─────────────────────────────────────────────────────────
-
-function resolveKernelAndDispose(options: CreateTuvrenOptions): {
-  kernel: RuntimeKernel;
-  disposeBackend: () => Promise<void>;
-  purgeScope?: () => Promise<void>;
-} {
-  if (options.kernel !== undefined) {
-    // An externally-supplied kernel owns its substrate; `createTuvren` has no
-    // backend handle to drive a partition drop, so `maintenance.purgeScope`
-    // stays unavailable on the resulting runtime.
-    return { kernel: options.kernel, disposeBackend: () => Promise.resolve() };
-  }
-
-  const backend = options.backend;
-  return {
-    kernel: createRuntimeKernel({ backend }),
-    disposeBackend: tryCloseBackend(backend),
-    // Surface the substrate partition-drop (ADR-0051, §4.17) only when the owned
-    // backend implements it; otherwise the runtime maintenance surface reports
-    // it as unsupported.
-    ...(typeof backend.purgeScope === "function"
-      ? {
-          purgeScope: (): Promise<void> =>
-            backend.purgeScope?.() ?? Promise.resolve(),
-        }
-      : {}),
-  };
-}
-
-function collectMcpSources(
-  tools: CreateTuvrenOptions["tools"]
-): McpToolSource[] {
-  if (tools === undefined) {
-    return [];
-  }
-  return tools.filter(isMcpToolSource);
-}
-
-function collectTools(
-  tools: CreateTuvrenOptions["tools"]
-): TuvrenToolDefinition[] {
-  if (tools === undefined) {
-    return [];
-  }
-  const result: TuvrenToolDefinition[] = [];
-  for (const item of tools) {
-    if (isMcpToolSource(item)) {
-      result.push(...item.tools);
-    } else {
-      result.push(item);
-    }
-  }
-  return result;
-}
-
-function isMcpToolSource(
-  item: McpToolSource | TuvrenToolDefinition
-): item is McpToolSource {
-  const obj = item as unknown as Record<string, unknown>;
-  return (
-    typeof obj.serverName === "string" &&
-    typeof obj.refresh === "function" &&
-    typeof obj.close === "function"
-  );
-}
-
-function tryCloseBackend(backend: RuntimeBackend): () => Promise<void> {
-  const b = backend as unknown as Record<string, unknown>;
-  if (typeof b.close === "function") {
-    return () => (b.close as () => Promise<void>)();
-  }
-  return () => Promise.resolve();
-}
+};

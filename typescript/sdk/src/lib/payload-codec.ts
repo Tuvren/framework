@@ -30,12 +30,11 @@
  * package stays free of any host-runtime dependency.
  */
 
-import {
-  ENVELOPE_MAGIC,
-  isPayloadEnvelope,
-  type PayloadCodec,
-  type PayloadCodecContext,
-  type PayloadDecryptResult,
+import { ENVELOPE_MAGIC, isPayloadEnvelope } from "@tuvren/core/lifecycle";
+import type {
+  PayloadCodec,
+  PayloadCodecContext,
+  PayloadDecryptResult,
 } from "@tuvren/core/lifecycle";
 
 // The behavior-free identity codec and the envelope discriminant now live on the
@@ -64,6 +63,7 @@ export interface PayloadKeyring {
    *   `undefined` when the key has been destroyed or rotated away —
    *   synchronously or as a promise.
    */
+  // oxlint-disable-next-line typescript/method-signature-style -- Preserve the published keyring method spelling and its method bivariance under strictFunctionTypes.
   resolve(
     keyRef: string
   ): Promise<Uint8Array | undefined> | Uint8Array | undefined;
@@ -108,19 +108,22 @@ interface ParsedEnvelope {
   keyRef: string;
 }
 
-function serializeEnvelope(parts: {
+const serializeEnvelope = (parts: {
   algId: number;
   ciphertext: Uint8Array;
   iv: Uint8Array;
   keyRef: string;
-}): Uint8Array {
+}): Uint8Array => {
   const keyRefBytes = new TextEncoder().encode(parts.keyRef);
   const total =
     ENVELOPE_MAGIC.length +
-    2 + // version + algId
-    2 + // keyRefLen
+    // version + algId
+    2 +
+    // keyRefLen
+    2 +
     keyRefBytes.length +
-    1 + // ivLen
+    // ivLen
+    1 +
     parts.iv.length +
     parts.ciphertext.length;
   const out = new Uint8Array(total);
@@ -128,23 +131,26 @@ function serializeEnvelope(parts: {
   let offset = 0;
   out.set(ENVELOPE_MAGIC, offset);
   offset += ENVELOPE_MAGIC.length;
-  out[offset++] = ENVELOPE_VERSION;
-  out[offset++] = parts.algId;
+  out[offset] = ENVELOPE_VERSION;
+  offset += 1;
+  out[offset] = parts.algId;
+  offset += 1;
   view.setUint16(offset, keyRefBytes.length, true);
   offset += 2;
   out.set(keyRefBytes, offset);
   offset += keyRefBytes.length;
-  out[offset++] = parts.iv.length;
+  out[offset] = parts.iv.length;
+  offset += 1;
   out.set(parts.iv, offset);
   offset += parts.iv.length;
   out.set(parts.ciphertext, offset);
   return out;
-}
+};
 
 // version(1) + algId(1) + keyRefLen(2) — the fixed header that follows the magic.
 const ENVELOPE_FIXED_HEADER_BYTES = 4;
 
-function parseEnvelope(bytes: Uint8Array): ParsedEnvelope {
+const parseEnvelope = (bytes: Uint8Array): ParsedEnvelope => {
   if (!isPayloadEnvelope(bytes)) {
     throw new TypeError("payload envelope magic mismatch");
   }
@@ -161,11 +167,13 @@ function parseEnvelope(bytes: Uint8Array): ParsedEnvelope {
   if (bytes.length < offset + ENVELOPE_FIXED_HEADER_BYTES) {
     throw new TypeError("malformed payload envelope: truncated header");
   }
-  const version = bytes[offset++];
+  const version = bytes[offset];
+  offset += 1;
   if (version !== ENVELOPE_VERSION) {
     throw new TypeError(`unsupported payload envelope version ${version}`);
   }
-  const algId = bytes[offset++];
+  const algId = bytes[offset];
+  offset += 1;
   const keyRefLen = view.getUint16(offset, true);
   offset += 2;
   if (offset + keyRefLen > bytes.length) {
@@ -180,7 +188,8 @@ function parseEnvelope(bytes: Uint8Array): ParsedEnvelope {
   if (offset + 1 > bytes.length) {
     throw new TypeError("malformed payload envelope: missing iv length");
   }
-  const ivLen = bytes[offset++];
+  const ivLen = bytes[offset];
+  offset += 1;
   if (offset + ivLen > bytes.length) {
     throw new TypeError("malformed payload envelope: iv length out of range");
   }
@@ -188,11 +197,11 @@ function parseEnvelope(bytes: Uint8Array): ParsedEnvelope {
   offset += ivLen;
   const ciphertext = bytes.subarray(offset);
   return { algId, ciphertext, iv, keyRef };
-}
+};
 
 const AAD_DOMAIN_PREFIX = new TextEncoder().encode("tuvren.payload.v1");
 
-function buildAad(context: PayloadCodecContext): Uint8Array {
+const buildAad = (context: PayloadCodecContext): Uint8Array => {
   // Bind the Scope and the payload-class (edge) tag into AAD, length-prefixed so
   // the encoding is an *injective* function of (scope, edge). A delimiter-joined
   // string is ambiguous: a host-supplied Scope is only validated as a non-empty
@@ -220,19 +229,19 @@ function buildAad(context: PayloadCodecContext): Uint8Array {
   offset += 4;
   out.set(edgeBytes, offset);
   return out;
-}
+};
 
 // Web Crypto's BufferSource parameters require a concrete ArrayBuffer-backed
 // view; the generic `Uint8Array<ArrayBufferLike>` (modern TS default, which may
 // be SharedArrayBuffer-backed) does not satisfy that. Copy into a fresh
 // ArrayBuffer so the crypto calls type-check and never alias caller memory.
-function toArrayBuffer(view: Uint8Array): ArrayBuffer {
+const toArrayBuffer = (view: Uint8Array): ArrayBuffer => {
   const copy = new ArrayBuffer(view.byteLength);
   new Uint8Array(copy).set(view);
   return copy;
-}
+};
 
-async function importAesKey(key: Uint8Array): Promise<CryptoKey> {
+const importAesKey = async (key: Uint8Array): Promise<CryptoKey> => {
   if (key.length !== AES_256_GCM_KEY_BYTES) {
     throw new TypeError(
       `AES-256-GCM key must be ${AES_256_GCM_KEY_BYTES} bytes, received ${key.length}`
@@ -245,7 +254,7 @@ async function importAesKey(key: Uint8Array): Promise<CryptoKey> {
     false,
     ["decrypt", "encrypt"]
   );
-}
+};
 
 // ── AES-256-GCM codec ────────────────────────────────────────────────────────
 
@@ -287,9 +296,9 @@ export interface AesGcmPayloadCodecOptions {
  * keys.delete(scope);
  * ```
  */
-export function createAesGcmPayloadCodec(
+export const createAesGcmPayloadCodec = (
   options: AesGcmPayloadCodecOptions
-): PayloadCodec {
+): PayloadCodec => {
   const { keyring } = options;
   const resolveKeyRef =
     options.resolveKeyRef ?? ((context: PayloadCodecContext) => context.scope);
@@ -368,4 +377,4 @@ export function createAesGcmPayloadCodec(
     },
     id: "aes-256-gcm",
   };
-}
+};

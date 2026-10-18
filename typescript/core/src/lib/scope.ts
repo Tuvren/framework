@@ -37,24 +37,26 @@ export const DEFAULT_SCOPE: Scope = "tuvren.scope.default";
  * content is opaque to the runtime — the host owns the mapping from its
  * tenancy model to a Scope.
  */
-export function isScope(value: unknown): value is Scope {
-  return typeof value === "string" && value.length > 0;
-}
+export const isScope = (value: unknown): value is Scope =>
+  typeof value === "string" && value.length > 0;
 
 /**
  * Asserts that `value` is a usable {@link Scope}.
  *
  * @param value - Untrusted candidate scope.
  * @param label - Name used in the error message (defaults to `"scope"`).
- * @throws TypeError when {@link isScope} rejects the value.
+ * @throws {TypeError} When {@link isScope} rejects the value.
  */
-export function assertScope(
+export const assertScope: (
+  value: unknown,
+  label?: string
+) => asserts value is Scope = (
   value: unknown,
   label = "scope"
-): asserts value is Scope {
+): asserts value is Scope => {
   if (!isScope(value)) {
     throw new TypeError(
       `${label} must be a non-empty host-bound Scope partition identity`
     );
   }
-}
+};

@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 // KRT-BH002 — Shreddable continuity artifacts (ADR-0053 + ADR-0051).
 //
 // ADR-0053 makes the durable lineage the unconditional source of truth for a
@@ -45,54 +43,53 @@ import {
   createStaticRunner,
 } from "../../runtime/test/orchestration-runtime-runner-helpers.ts";
 import { textSignal } from "../../runtime/test/runtime-core-test-helpers.ts";
-import {
-  createAesGcmPayloadCodec,
-  type PayloadKeyring,
-} from "../src/lib/payload-codec.js";
+import { createAesGcmPayloadCodec } from "../src/lib/payload-codec.js";
+import type { PayloadKeyring } from "../src/lib/payload-codec.js";
 
 const SCOPE = "tenant.conversation-state-continuity";
 // A provider-namespaced continuity artifact (e.g. a Google thought signature or
 // an OpenAI response continuation token) carried back from a prior turn.
 const CONTINUITY_SECRET = "CONTINUITY-thought-signature-9f3a";
 
-function createKeyring(keys: Map<string, Uint8Array>): PayloadKeyring {
-  return { resolve: (keyRef) => keys.get(keyRef) };
-}
+const createKeyring = (keys: Map<string, Uint8Array>): PayloadKeyring => ({
+  resolve: (keyRef) => keys.get(keyRef),
+});
 
-function assistantWithContinuity(text: string): TuvrenMessage {
-  return {
-    parts: [
-      {
-        providerMetadata: {
-          google: { thoughtSignature: CONTINUITY_SECRET },
-        },
-        text,
-        type: "text",
+const assistantWithContinuity = (text: string): TuvrenMessage => ({
+  parts: [
+    {
+      providerMetadata: {
+        google: { thoughtSignature: CONTINUITY_SECRET },
       },
-    ],
-    providerMetadata: {
-      google: { thoughtSignature: CONTINUITY_SECRET },
+      text,
+      type: "text",
     },
-    role: "assistant",
-  };
-}
+  ],
+  providerMetadata: {
+    google: { thoughtSignature: CONTINUITY_SECRET },
+  },
+  role: "assistant",
+});
 
-function buildRuntime(options: { keys?: Map<string, Uint8Array> }): {
+const buildRuntime = (options: {
+  keys?: Map<string, Uint8Array>;
+}): {
   framework: ReturnType<typeof createTuvrenRuntime>;
   kernel: ReturnType<typeof createRuntimeKernel>;
-} {
+} => {
   const kernel = createRuntimeKernel({
     backend: createMemoryBackend({ scope: SCOPE }),
   });
   const framework = createTuvrenRuntime({
     defaultRunnerId: "fake",
+    kernel,
     runnerRegistry: createRunnerRegistry([
+      // oxlint-disable-next-line require-await -- This runner intentionally implements the async framework contract while returning its fixture synchronously.
       createStaticRunner(async () => ({
         messages: [assistantWithContinuity("here is your answer")],
         resolution: { reason: "done", type: "end_turn" },
       })),
     ]),
-    kernel,
     scope: SCOPE,
     ...(options.keys === undefined
       ? {}
@@ -103,11 +100,11 @@ function buildRuntime(options: { keys?: Map<string, Uint8Array> }): {
         }),
   });
   return { framework, kernel };
-}
+};
 
-async function runOneTurn(runtime: {
+const runOneTurn = async (runtime: {
   framework: ReturnType<typeof createTuvrenRuntime>;
-}): Promise<{ branchId: string; threadId: string }> {
+}): Promise<{ branchId: string; threadId: string }> => {
   const thread = await runtime.framework.createThread({});
   const handle = runtime.framework.executeTurn({
     branchId: thread.branchId,
@@ -118,12 +115,12 @@ async function runOneTurn(runtime: {
   const result = await handle.awaitResult();
   expect(result.status).toBe("completed");
   return { branchId: thread.branchId, threadId: thread.threadId };
-}
+};
 
-async function readMessageHashes(
+const readMessageHashes = async (
   kernel: ReturnType<typeof createRuntimeKernel>,
   branchId: string
-): Promise<string[]> {
+): Promise<string[]> => {
   const branch = await kernel.branch.get(branchId);
   if (branch === null) {
     throw new Error("branch missing");
@@ -136,11 +133,10 @@ async function readMessageHashes(
   return Array.isArray(resolved)
     ? resolved.filter((h): h is string => typeof h === "string")
     : [];
-}
+};
 
-function bytesContainText(bytes: Uint8Array, text: string): boolean {
-  return Buffer.from(bytes).includes(Buffer.from(text, "utf8"));
-}
+const bytesContainText = (bytes: Uint8Array, text: string): boolean =>
+  Buffer.from(bytes).includes(Buffer.from(text, "utf-8"));
 
 describe("KRT-BH002 shreddable continuity artifacts", () => {
   test("carried continuity providerMetadata is stored only as a host-key-encrypted reference", async () => {
@@ -154,6 +150,7 @@ describe("KRT-BH002 shreddable continuity artifacts", () => {
     // The kernel only ever holds the ciphertext envelope; the continuity
     // artifact never appears in the durable bytes the kernel hashes.
     for (const hash of messageHashes) {
+      // oxlint-disable-next-line no-await-in-loop -- Read each durable message in lineage order so a missing hash is attributed deterministically.
       const stored = await runtime.kernel.store.get(hash);
       if (stored === null) {
         throw new Error(`message ${hash} missing from store`);
@@ -174,6 +171,9 @@ describe("KRT-BH002 shreddable continuity artifacts", () => {
 
     const branchBefore = await runtime.kernel.branch.get(branchId);
     const headBefore = branchBefore?.headTurnNodeHash;
+    if (headBefore === undefined) {
+      throw new Error("branch head missing before shredding");
+    }
     const hashesBefore = await readMessageHashes(runtime.kernel, branchId);
     expect(hashesBefore.length).toBeGreaterThanOrEqual(2);
 
@@ -192,11 +192,12 @@ describe("KRT-BH002 shreddable continuity artifacts", () => {
     // Erasure rewrote no history: the head node and every message object hash
     // that referenced the continuity are byte-identical.
     const branchAfter = await runtime.kernel.branch.get(branchId);
-    expect(branchAfter?.headTurnNodeHash).toBe(headBefore as string);
+    expect(branchAfter?.headTurnNodeHash).toBe(headBefore);
     expect(await readMessageHashes(runtime.kernel, branchId)).toEqual(
       hashesBefore
     );
     for (const hash of hashesBefore) {
+      // oxlint-disable-next-line no-await-in-loop -- Probe every retained hash sequentially for deterministic lineage diagnostics.
       expect(await runtime.kernel.store.has(hash)).toBe(true);
     }
   });
@@ -208,6 +209,7 @@ describe("KRT-BH002 shreddable continuity artifacts", () => {
     const messageHashes = await readMessageHashes(runtime.kernel, branchId);
     let sawContinuityPlaintext = false;
     for (const hash of messageHashes) {
+      // oxlint-disable-next-line no-await-in-loop -- Read each durable message in lineage order so a missing hash is attributed deterministically.
       const stored = await runtime.kernel.store.get(hash);
       if (stored === null) {
         throw new Error(`message ${hash} missing from store`);

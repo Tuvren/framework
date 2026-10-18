@@ -81,9 +81,8 @@ export const SECRET_VALUE_PATTERNS: readonly (readonly [
  * "secret", ...). Used to drop attributes/fields whose *name* signals a
  * credential regardless of their value shape.
  */
-export function isSecretLikeKey(key: string): boolean {
-  return SECRET_KEY_PATTERN.test(key);
-}
+export const isSecretLikeKey = (key: string): boolean =>
+  SECRET_KEY_PATTERN.test(key);
 
 /**
  * Tests `value` against the full covered pattern set (URL-embedded
@@ -91,13 +90,13 @@ export function isSecretLikeKey(key: string): boolean {
  * and generic long-secretish tokens) and returns the `REDACTED` sentinel on a
  * match, or the original string unchanged otherwise.
  */
-export function sanitizeSecretLikeText(value: string): string {
+export const sanitizeSecretLikeText = (value: string): string => {
   const matchesAnyPattern = SECRET_VALUE_PATTERNS.some(([, pattern]) =>
     pattern.test(value)
   );
 
   return matchesAnyPattern ? REDACTED : value;
-}
+};
 
 /**
  * Recursively screens `value` for secret-*shaped* strings and replaces them
@@ -112,7 +111,7 @@ export function sanitizeSecretLikeText(value: string): string {
  * `isSecretLikeKey` gate) — value-shape detection via the pattern set above is
  * the whole of this function's scope.
  */
-export function screenValueForSecretPatterns(value: unknown): unknown {
+export const screenValueForSecretPatterns = (value: unknown): unknown => {
   if (typeof value === "string") {
     return sanitizeSecretLikeText(value);
   }
@@ -132,4 +131,4 @@ export function screenValueForSecretPatterns(value: unknown): unknown {
   }
 
   return value;
-}
+};

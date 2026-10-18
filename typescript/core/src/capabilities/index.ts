@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
-// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */
 
 /**
  * `@tuvren/core/capabilities` — the advanced capability-orchestration contract
@@ -31,10 +30,14 @@
  * @packageDocumentation
  */
 
+/* oxlint-enable jsdoc/check-tag-names */
+
 // Re-export from the core lib so this module owns the canonical declaration.
 // One export per statement so each carries its own @experimental release tag
 // (ADR-0056 §3: tags on individual exports are the canonical marker the
 // freeze/diff gate reads).
+
+/* oxlint-disable jsdoc/check-tag-names -- Preserve every ADR-0056-required @experimental release tag on this public surface. */
 
 /** @experimental */
 export type { AttachedClientEndpoint } from "../lib/capability-shapes.js";
@@ -80,3 +83,5 @@ export type { PolicyCapabilityMetadata } from "../lib/capability-shapes.js";
 export type { ToolSurface } from "../lib/capability-shapes.js";
 /** @experimental */
 export type { TuvrenSandboxExecutor } from "../lib/capability-shapes.js";
+
+/* oxlint-enable jsdoc/check-tag-names */
