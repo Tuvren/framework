@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 /**
  * Integration tests for the Tuvren-client execution class through the full
  * runtime turn — KRT-AZ001 through KRT-AZ005.

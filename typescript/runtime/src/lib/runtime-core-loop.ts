@@ -539,7 +539,6 @@ export const runExecutionLoop = async (
 ): Promise<LoopOutcome> => {
   const bounds = host.executionBounds();
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The execution loop is intentionally kept as a single checkpointed control-flow path for cancellation and iteration semantics.
   const runNextIteration = async (): Promise<LoopOutcome> => {
     const currentIterationCount = handle.status().iterationCount;
 

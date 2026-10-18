@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional internal-engine surface.
-
 /**
  * `@tuvren/runtime` — the internal orchestration engine (ADR-0057).
  *

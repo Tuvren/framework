@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity lint/suspicious/useAwait: Shared runner test doubles intentionally centralize event emission and async contract stubs.
-
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   RunnerExecutionContext,

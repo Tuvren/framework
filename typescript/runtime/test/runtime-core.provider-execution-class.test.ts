@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 /**
  * KRT-AY003 + KRT-AY005: Provider-attribution event recording and
  * continuation-state secret isolation.

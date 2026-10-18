@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: The fake kernel mirrors the async production protocol surface.
 import { createHash } from "node:crypto";
 
 import { assertKernelRecord } from "@tuvren/core";
