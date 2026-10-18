@@ -4,9 +4,13 @@
 import { describe, expect, test } from "bun:test";
 import type { SpawnSyncReturns } from "node:child_process";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
+
+import yaml from "yaml";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 
@@ -27,10 +31,41 @@ const KERNEL_PLAN_PATH = stdio(
   "spec/conformance/kernel/plans/kernel-protocol-extended.json"
 );
 const KERNEL_PLAN_SCRIPT = "tools/scripts/conformance/generate-kernel-plans.ts";
-const CHANGESET_PATH = ".changeset/toolchain-bp-oxc-preparation.md";
+const CHANGESET_PATH = path.join(
+  ".changeset",
+  "toolchain-bp-oxc-preparation.md"
+);
+const TOOLCHAIN_CHANGESET_MARKER =
+  "Toolchain preparation moves TypeScript and JSON formatting and import organization to native Oxfmt";
+const TOOLCHAIN_RELEASES = {
+  "@tuvren/backend-memory": "typescript/kernel/backends/memory/CHANGELOG.md",
+  "@tuvren/backend-postgres":
+    "typescript/kernel/backends/postgres/CHANGELOG.md",
+  "@tuvren/backend-shared": "typescript/kernel/backends/shared/CHANGELOG.md",
+  "@tuvren/backend-sqlite": "typescript/kernel/backends/sqlite/CHANGELOG.md",
+  "@tuvren/core": "typescript/core/CHANGELOG.md",
+  "@tuvren/kernel-grpc-client": "typescript/kernel/grpc-client/CHANGELOG.md",
+  "@tuvren/kernel-protocol": "typescript/kernel/protocol/CHANGELOG.md",
+  "@tuvren/kernel-runtime": "typescript/kernel/runtime/CHANGELOG.md",
+  "@tuvren/mcp-client": "typescript/tools/mcp-client/CHANGELOG.md",
+  "@tuvren/provider-api": "typescript/providers/provider-api/CHANGELOG.md",
+  "@tuvren/provider-bridge-ai-sdk":
+    "typescript/providers/bridge-ai-sdk/CHANGELOG.md",
+  "@tuvren/runner-react": "typescript/runners/react/CHANGELOG.md",
+  "@tuvren/runtime": "typescript/runtime/CHANGELOG.md",
+  "@tuvren/sdk": "typescript/sdk/CHANGELOG.md",
+  "@tuvren/stream-agui": "typescript/streaming/agui/CHANGELOG.md",
+  "@tuvren/stream-core": "typescript/streaming/core/CHANGELOG.md",
+  "@tuvren/stream-sse": "typescript/streaming/sse/CHANGELOG.md",
+  "@tuvren/telemetry-otel": "typescript/telemetry/otel/CHANGELOG.md",
+  "@tuvren/telemetry-semconv": "typescript/telemetry/semconv/CHANGELOG.md",
+} as const;
+const CHANGESET_FRONTMATTER_PATTERN =
+  /^---\r?\n(?<frontmatter>[\s\S]*?)\r?\n---\r?\n(?<body>[\s\S]*)$/u;
+const PATCH_CHANGES_PATTERN =
+  /^### Patch Changes[ \t]*$(?<body>[\s\S]*?)(?=^#{1,6}[ \t]|(?![\s\S]))/gmu;
 const BIOME_PACKAGE_PATTERN = /@biomejs\/biome/u;
 const OXFMT_PATTERN = /\boxfmt\b/u;
-const TELEMETRY_CHANGESET_PATTERN = /"@tuvren\/telemetry-semconv":\s*patch/u;
 
 interface ArtifactTarget {
   file: string;
@@ -172,6 +207,67 @@ interface KernelPlan {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
+
+const pendingToolchainContents = (
+  entries: readonly string[],
+  body = TOOLCHAIN_CHANGESET_MARKER
+): string => `---\n${entries.join("\n")}\n---\n\n${body}\n`;
+
+const assertPendingToolchainChangeset = (contents: string): void => {
+  const match = CHANGESET_FRONTMATTER_PATTERN.exec(contents);
+  if (match === null) {
+    throw new Error("toolchain changeset must contain YAML frontmatter");
+  }
+
+  const frontmatterSource = match.groups?.frontmatter;
+  const body = match.groups?.body;
+  if (frontmatterSource === undefined || body === undefined) {
+    throw new Error("toolchain changeset frontmatter must be readable");
+  }
+
+  const frontmatter: unknown = yaml.parse(frontmatterSource);
+  if (!isRecord(frontmatter)) {
+    throw new Error("toolchain changeset frontmatter must be a YAML mapping");
+  }
+
+  const expectedPackages = Object.keys(TOOLCHAIN_RELEASES).toSorted();
+  expect(Object.keys(frontmatter).toSorted()).toEqual(expectedPackages);
+  for (const packageName of expectedPackages) {
+    expect(frontmatter[packageName]).toBe("patch");
+  }
+  expect(body).toContain(TOOLCHAIN_CHANGESET_MARKER);
+};
+
+const assertConsumedToolchainChangeset = (rootDirectory: string): void => {
+  for (const [packageName, changelogPath] of Object.entries(
+    TOOLCHAIN_RELEASES
+  )) {
+    const contents = readFileSync(
+      path.join(rootDirectory, changelogPath),
+      "utf-8"
+    );
+    const patchChangesSections = Array.from(
+      contents.matchAll(PATCH_CHANGES_PATTERN),
+      (match) => match.groups?.body ?? ""
+    );
+    expect(
+      patchChangesSections.some((section) =>
+        section.includes(TOOLCHAIN_CHANGESET_MARKER)
+      ),
+      `${packageName} must mention the toolchain marker inside a Patch Changes subsection`
+    ).toBe(true);
+  }
+};
+
+const assertToolchainReleaseIntent = (rootDirectory: string): void => {
+  const changesetPath = path.join(rootDirectory, CHANGESET_PATH);
+  if (existsSync(changesetPath)) {
+    assertPendingToolchainChangeset(readFileSync(changesetPath, "utf-8"));
+    return;
+  }
+
+  assertConsumedToolchainChangeset(rootDirectory);
+};
 
 const parseJson = (text: string): unknown => JSON.parse(text);
 
@@ -426,9 +522,71 @@ describe("kernel plan promotion guard", () => {
 });
 
 describe("changeset coverage", () => {
-  test("the changeset carries direct patch coverage for telemetry-semconv", () => {
-    const contents = read(CHANGESET_PATH);
+  test("requires the exact PATCH changeset while release intent is pending", () => {
+    const packageEntries = Object.keys(TOOLCHAIN_RELEASES)
+      .toSorted()
+      .map((packageName) => `"${packageName}": patch`);
 
-    expect(contents).toMatch(TELEMETRY_CHANGESET_PATTERN);
+    expect(() => {
+      assertPendingToolchainChangeset(pendingToolchainContents(packageEntries));
+    }).not.toThrow();
+
+    expect(() => {
+      assertPendingToolchainChangeset(
+        pendingToolchainContents([
+          ...packageEntries.slice(1),
+          '"@tuvren/backend-memory": minor',
+          '"@tuvren/unexpected": patch',
+        ])
+      );
+    }).toThrow();
+    expect(() => {
+      assertPendingToolchainChangeset(
+        pendingToolchainContents(packageEntries, "No marker.")
+      );
+    }).toThrow();
+  });
+
+  test("requires the marker inside each consumed Patch Changes subsection", async () => {
+    const directory = await mkdtemp(
+      path.join(tmpdir(), "toolchain-changeset-changelog-")
+    );
+
+    try {
+      await Promise.all(
+        Object.values(TOOLCHAIN_RELEASES).map(async (changelogPath) => {
+          const absolutePath = path.join(directory, changelogPath);
+          await mkdir(path.dirname(absolutePath), { recursive: true });
+          await writeFile(
+            absolutePath,
+            `# Package\n\n## Current release\n\n### Patch Changes\n\n- ${TOOLCHAIN_CHANGESET_MARKER}\n\n## Previous release\n\n### Patch Changes\n\n- Earlier release.\n`
+          );
+        })
+      );
+
+      expect(() => {
+        assertConsumedToolchainChangeset(directory);
+      }).not.toThrow();
+
+      const coreChangelogPath = path.join(
+        directory,
+        TOOLCHAIN_RELEASES["@tuvren/core"]
+      );
+      await writeFile(
+        coreChangelogPath,
+        `# Package\n\n## Current release\n\n${TOOLCHAIN_CHANGESET_MARKER}\n\n### Patch Changes\n\n- Another change.\n`
+      );
+      expect(() => {
+        assertConsumedToolchainChangeset(directory);
+      }).toThrow("inside a Patch Changes subsection");
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  test("records release intent in the pending changeset or generated changelogs", () => {
+    expect(() => {
+      assertToolchainReleaseIntent(REPO_ROOT);
+    }).not.toThrow();
   });
 });
