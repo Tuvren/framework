@@ -72,14 +72,13 @@ interface StandaloneAssistantValidationState {
  * Creates the shared `invalid_stream_event` error returned for every
  * assistant event/delta validation failure.
  */
-export const createAssistantDeltaValidationError = (): TuvrenRuntimeError => {
-  return new TuvrenRuntimeError(
+export const createAssistantDeltaValidationError = (): TuvrenRuntimeError =>
+  new TuvrenRuntimeError(
     "runner-emitted assistant deltas must match the durable assistant message",
     {
       code: "invalid_stream_event",
     }
   );
-};
 
 /**
  * Splits runner-emitted assistant content events into message.start →
@@ -129,25 +128,10 @@ export const splitAssistantEventSequences = (
 
 const getAssistantEventMessageId = (
   event: TuvrenStreamEvent
-): string | undefined => {
-  switch (event.type) {
-    case "file.done":
-    case "message.done":
-    case "message.start":
-    case "reasoning.delta":
-    case "reasoning.done":
-    case "structured.delta":
-    case "structured.done":
-    case "text.delta":
-    case "text.done":
-    case "tool_call.start": {
-      return event.messageId;
-    }
-    default: {
-      return undefined;
-    }
-  }
-};
+): string | undefined =>
+  "messageId" in event && event.type !== "steering.incorporated"
+    ? event.messageId
+    : undefined;
 
 const assistantEventBelongsToCurrentMessage = (
   event: TuvrenStreamEvent,
@@ -162,52 +146,50 @@ const validateStandaloneIdleAssistantEvent = (
   event: TuvrenStreamEvent,
   state: StandaloneAssistantValidationState
 ): TuvrenRuntimeError | undefined => {
-  switch (event.type) {
-    case "file.done": {
-      return undefined;
-    }
-    case "reasoning.delta": {
-      state.partState = {
-        deltaBuffer: event.delta,
-        kind: "reasoning",
-        sawDelta: true,
-      };
-      return undefined;
-    }
-    case "reasoning.done": {
-      return undefined;
-    }
-    case "structured.delta": {
-      state.partState = {
-        deltaBuffer: event.delta,
-        kind: "structured",
-        sawDelta: true,
-      };
-      return undefined;
-    }
-    case "text.delta": {
-      state.partState = {
-        deltaBuffer: event.delta,
-        kind: "text",
-        sawDelta: true,
-      };
-      return undefined;
-    }
-    case "tool_call.start": {
-      state.partState = {
-        callId: event.callId,
-        deltaBuffer: "",
-        kind: "tool_call",
-        name: event.name,
-        sawDelta: false,
-      };
-      state.sawToolCallPart = true;
-      return undefined;
-    }
-    default: {
-      return createAssistantDeltaValidationError();
-    }
+  if (event.type === "file.done" || event.type === "reasoning.done") {
+    return undefined;
   }
+
+  if (event.type === "reasoning.delta") {
+    state.partState = {
+      deltaBuffer: event.delta,
+      kind: "reasoning",
+      sawDelta: true,
+    };
+    return undefined;
+  }
+
+  if (event.type === "structured.delta") {
+    state.partState = {
+      deltaBuffer: event.delta,
+      kind: "structured",
+      sawDelta: true,
+    };
+    return undefined;
+  }
+
+  if (event.type === "text.delta") {
+    state.partState = {
+      deltaBuffer: event.delta,
+      kind: "text",
+      sawDelta: true,
+    };
+    return undefined;
+  }
+
+  if (event.type === "tool_call.start") {
+    state.partState = {
+      callId: event.callId,
+      deltaBuffer: "",
+      kind: "tool_call",
+      name: event.name,
+      sawDelta: false,
+    };
+    state.sawToolCallPart = true;
+    return undefined;
+  }
+
+  return createAssistantDeltaValidationError();
 };
 
 const validateStandaloneReasoningAssistantEvent = (
@@ -403,7 +385,7 @@ const doesFinishReasonMatchToolCallPresence = (
 export const validateStandaloneAssistantSequence = (
   assistantEvents: TuvrenStreamEvent[]
 ): TuvrenRuntimeError | undefined => {
-  const firstEvent = assistantEvents[0];
+  const [firstEvent] = assistantEvents;
   const lastEvent = assistantEvents.at(-1);
 
   if (
@@ -575,21 +557,26 @@ export const synthesizeAssistantValidationEvents = (
         break;
       }
       case "tool_call": {
-        events.push({
-          callId: part.callId,
-          messageId,
-          name: part.name,
-          timestamp: 0,
-          type: "tool_call.start",
-        });
-        events.push({
-          callId: part.callId,
-          input: cloneValue(part.input),
-          name: part.name,
-          providerMetadata: cloneValue(part.providerMetadata),
-          timestamp: 0,
-          type: "tool_call.done",
-        });
+        events.push(
+          {
+            callId: part.callId,
+            messageId,
+            name: part.name,
+            timestamp: 0,
+            type: "tool_call.start",
+          },
+          {
+            callId: part.callId,
+            input: cloneValue(part.input),
+            name: part.name,
+            providerMetadata: cloneValue(part.providerMetadata),
+            timestamp: 0,
+            type: "tool_call.done",
+          }
+        );
+        break;
+      }
+      case "tool_result": {
         break;
       }
       default: {
@@ -631,6 +618,65 @@ const areStreamEventValuesEqual = (left: unknown, right: unknown): boolean => {
   return isDeepStrictEqual(left, right);
 };
 
+type StreamEventOfType<TType extends TuvrenStreamEvent["type"]> = Extract<
+  TuvrenStreamEvent,
+  { type: TType }
+>;
+
+const messageStartEventsMatch = (
+  actualEvent: StreamEventOfType<"message.start">,
+  expectedEvent: StreamEventOfType<"message.start">
+): boolean => actualEvent.messageId === expectedEvent.messageId;
+
+const textDoneEventsMatch = (
+  actualEvent: StreamEventOfType<"text.done">,
+  expectedEvent: StreamEventOfType<"text.done">
+): boolean =>
+  actualEvent.messageId === expectedEvent.messageId &&
+  actualEvent.text === expectedEvent.text;
+
+const reasoningDoneEventsMatch = (
+  actualEvent: StreamEventOfType<"reasoning.done">,
+  expectedEvent: StreamEventOfType<"reasoning.done">
+): boolean => actualEvent.messageId === expectedEvent.messageId;
+
+const fileDoneEventsMatch = (
+  actualEvent: StreamEventOfType<"file.done">,
+  expectedEvent: StreamEventOfType<"file.done">
+): boolean =>
+  actualEvent.messageId === expectedEvent.messageId &&
+  actualEvent.filename === expectedEvent.filename &&
+  actualEvent.mediaType === expectedEvent.mediaType &&
+  areStreamEventValuesEqual(actualEvent.data, expectedEvent.data);
+
+const structuredDoneEventsMatch = (
+  actualEvent: StreamEventOfType<"structured.done">,
+  expectedEvent: StreamEventOfType<"structured.done">
+): boolean =>
+  actualEvent.messageId === expectedEvent.messageId &&
+  actualEvent.name === expectedEvent.name &&
+  isDeepStrictEqual(actualEvent.data, expectedEvent.data);
+
+const toolCallStartEventsMatch = (
+  actualEvent: StreamEventOfType<"tool_call.start">,
+  expectedEvent: StreamEventOfType<"tool_call.start">
+): boolean =>
+  actualEvent.messageId === expectedEvent.messageId &&
+  actualEvent.callId === expectedEvent.callId &&
+  actualEvent.name === expectedEvent.name;
+
+const toolCallDoneEventsMatch = (
+  actualEvent: StreamEventOfType<"tool_call.done">,
+  expectedEvent: StreamEventOfType<"tool_call.done">
+): boolean =>
+  actualEvent.callId === expectedEvent.callId &&
+  actualEvent.name === expectedEvent.name &&
+  isDeepStrictEqual(
+    actualEvent.providerMetadata,
+    expectedEvent.providerMetadata
+  ) &&
+  isDeepStrictEqual(actualEvent.input, expectedEvent.input);
+
 /**
  * Compares finish reasons at the granularity assistant validation cares
  * about: "tool_call" must match exactly, while all non-tool_call reasons
@@ -646,6 +692,16 @@ export const doesFinishReasonMatchAssistantContent = (
 
   return actualFinishReason !== "tool_call";
 };
+
+const messageDoneEventsMatch = (
+  actualEvent: StreamEventOfType<"message.done">,
+  expectedEvent: StreamEventOfType<"message.done">
+): boolean =>
+  actualEvent.messageId === expectedEvent.messageId &&
+  doesFinishReasonMatchAssistantContent(
+    actualEvent.finishReason,
+    expectedEvent.finishReason
+  );
 
 /**
  * Compares an actual runner-emitted validation event against a synthesized
@@ -663,77 +719,57 @@ export const assistantValidationEventsMatch = (
     return false;
   }
 
-  switch (actualEvent.type) {
-    case "message.start": {
-      return (
-        expectedEvent.type === "message.start" &&
-        actualEvent.messageId === expectedEvent.messageId
-      );
-    }
-    case "text.done": {
-      return (
-        expectedEvent.type === "text.done" &&
-        actualEvent.messageId === expectedEvent.messageId &&
-        actualEvent.text === expectedEvent.text
-      );
-    }
-    case "reasoning.done": {
-      return (
-        expectedEvent.type === "reasoning.done" &&
-        actualEvent.messageId === expectedEvent.messageId
-      );
-    }
-    case "file.done": {
-      return (
-        expectedEvent.type === "file.done" &&
-        actualEvent.messageId === expectedEvent.messageId &&
-        actualEvent.filename === expectedEvent.filename &&
-        actualEvent.mediaType === expectedEvent.mediaType &&
-        areStreamEventValuesEqual(actualEvent.data, expectedEvent.data)
-      );
-    }
-    case "structured.done": {
-      return (
-        expectedEvent.type === "structured.done" &&
-        actualEvent.messageId === expectedEvent.messageId &&
-        actualEvent.name === expectedEvent.name &&
-        isDeepStrictEqual(actualEvent.data, expectedEvent.data)
-      );
-    }
-    case "tool_call.start": {
-      return (
-        expectedEvent.type === "tool_call.start" &&
-        actualEvent.messageId === expectedEvent.messageId &&
-        actualEvent.callId === expectedEvent.callId &&
-        actualEvent.name === expectedEvent.name
-      );
-    }
-    case "tool_call.done": {
-      return (
-        expectedEvent.type === "tool_call.done" &&
-        actualEvent.callId === expectedEvent.callId &&
-        actualEvent.name === expectedEvent.name &&
-        isDeepStrictEqual(
-          actualEvent.providerMetadata,
-          expectedEvent.providerMetadata
-        ) &&
-        isDeepStrictEqual(actualEvent.input, expectedEvent.input)
-      );
-    }
-    case "message.done": {
-      return (
-        expectedEvent.type === "message.done" &&
-        actualEvent.messageId === expectedEvent.messageId &&
-        doesFinishReasonMatchAssistantContent(
-          actualEvent.finishReason,
-          expectedEvent.finishReason
-        )
-      );
-    }
-    default: {
-      return false;
-    }
+  if (
+    actualEvent.type === "message.start" &&
+    expectedEvent.type === "message.start"
+  ) {
+    return messageStartEventsMatch(actualEvent, expectedEvent);
   }
+
+  if (actualEvent.type === "text.done" && expectedEvent.type === "text.done") {
+    return textDoneEventsMatch(actualEvent, expectedEvent);
+  }
+
+  if (
+    actualEvent.type === "reasoning.done" &&
+    expectedEvent.type === "reasoning.done"
+  ) {
+    return reasoningDoneEventsMatch(actualEvent, expectedEvent);
+  }
+
+  if (actualEvent.type === "file.done" && expectedEvent.type === "file.done") {
+    return fileDoneEventsMatch(actualEvent, expectedEvent);
+  }
+
+  if (
+    actualEvent.type === "structured.done" &&
+    expectedEvent.type === "structured.done"
+  ) {
+    return structuredDoneEventsMatch(actualEvent, expectedEvent);
+  }
+
+  if (
+    actualEvent.type === "tool_call.start" &&
+    expectedEvent.type === "tool_call.start"
+  ) {
+    return toolCallStartEventsMatch(actualEvent, expectedEvent);
+  }
+
+  if (
+    actualEvent.type === "tool_call.done" &&
+    expectedEvent.type === "tool_call.done"
+  ) {
+    return toolCallDoneEventsMatch(actualEvent, expectedEvent);
+  }
+
+  if (
+    actualEvent.type === "message.done" &&
+    expectedEvent.type === "message.done"
+  ) {
+    return messageDoneEventsMatch(actualEvent, expectedEvent);
+  }
+
+  return false;
 };
 
 /**
@@ -743,12 +779,11 @@ export const assistantValidationEventsMatch = (
  */
 export const assistantSequenceRequestsTools = (
   events: TuvrenStreamEvent[]
-): boolean => {
-  return events.some(
+): boolean =>
+  events.some(
     (event) =>
       event.type === "tool_call.start" ||
       event.type === "tool_call.args_delta" ||
       event.type === "tool_call.done" ||
       (event.type === "message.done" && event.finishReason === "tool_call")
   );
-};
