@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard @packageDocumentation tag and established @experimental API stability markers. */
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * Wire message shapes for the `tuvren.framework.event-stream-ws` authority
  * packet (`spec/streaming/ws/typespec/main.tsp`, ADR-0062) and a pure,
@@ -31,13 +31,16 @@
  *
  * @packageDocumentation
  */
+/* oxlint-enable jsdoc/check-tag-names */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * Client-to-server handshake, the first message a client sends after the
  * socket opens.
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export interface WsHandshakeRequest {
   /** Opaque authentication material, carried to the host unmodified. */
   authToken?: string;
@@ -50,12 +53,14 @@ export interface WsHandshakeRequest {
   sessionId?: string;
 }
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * Server-to-client handshake acknowledgement, the first message a server
  * sends.
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export interface WsHandshakeAck {
   kind: "handshake_ack";
   protocolVersion: string;
@@ -65,18 +70,21 @@ export interface WsHandshakeAck {
   sessionId: string;
 }
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * Handshake resume outcomes (projects the event-stream-resume `ReplayResult`
  * vocabulary plus `"none"` for a fresh connection).
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export type WsResumeStatus =
   | "resumed"
   | "out-of-window"
   | "unknown-turn"
   | "none";
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * Outbound envelope carrying one session frame from the host to the remote
  * peer. `frame` is a `SessionOutboundFrame` (packet
@@ -85,6 +93,7 @@ export type WsResumeStatus =
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export interface WsOutboundFrameEnvelope {
   /** Present exactly when the wrapped session frame has `kind: "event"`. */
   cursor?: string;
@@ -92,6 +101,7 @@ export interface WsOutboundFrameEnvelope {
   kind: "frame";
 }
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * Inbound envelope carrying one session frame from the remote peer to the
  * host. `frame` is a `SessionInboundFrame` per the host-session authority
@@ -100,11 +110,13 @@ export interface WsOutboundFrameEnvelope {
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export interface WsInboundFrameEnvelope {
   frame: unknown;
   kind: "frame";
 }
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * Application-level heartbeat probe. After a completed handshake, either side
  * MAY send `ping` and the receiver MUST answer with `pong` (a pre-handshake
@@ -114,6 +126,7 @@ export interface WsInboundFrameEnvelope {
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export interface WsPing {
   kind: "ping";
 }
@@ -137,6 +150,7 @@ export type WsServerMessage =
   | WsPing
   | WsPong;
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * Result of {@link parseWsMessage}: a discriminated union covering every
  * recognized wire message kind plus an `"unparseable"` catch-all for
@@ -146,6 +160,7 @@ export type WsServerMessage =
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export type ParsedWsMessage =
   | { kind: "handshake"; message: WsHandshakeRequest }
   | { kind: "handshake_ack"; message: WsHandshakeAck }
@@ -226,6 +241,7 @@ const asHandshakeAck = (
   };
 };
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * Decodes and structurally parses one wire message: UTF-8-decodes a
  * `Uint8Array` payload, `JSON.parse`s the resulting text, and validates only
@@ -238,6 +254,7 @@ const asHandshakeAck = (
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export const parseWsMessage = (data: string | Uint8Array): ParsedWsMessage => {
   const text = typeof data === "string" ? data : utf8Decoder.decode(data);
 
@@ -279,4 +296,3 @@ export const parseWsMessage = (data: string | Uint8Array): ParsedWsMessage => {
     }
   }
 };
-/* oxlint-enable jsdoc/check-tag-names */
