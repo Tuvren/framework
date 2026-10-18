@@ -1,0 +1,12 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 081bb067e7eda6f1c6b67e5279480e01b11fb20f..829658fc05ef14dc0672639619b7e3683b424679 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -30,6 +30,7 @@ async function readChangesets(rootDir, sinceRef) {
+ 	} catch (err) {
+ 		if (err.code !== "ENOENT") throw err;
+ 	}
++	changesets = changesets.toSorted();
+ 	if (sinceRef != null) changesets = await filterChangesetsSinceRef(changesets, changesetBase, sinceRef);
+ 	changesets = changesets.filter((file) => {
+ 		file = path.basename(file);

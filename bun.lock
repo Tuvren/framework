@@ -419,6 +419,9 @@
   "trustedDependencies": [
     "better-sqlite3",
   ],
+  "patchedDependencies": {
+    "@changesets/read@1.0.1": "patches/@changesets%2Fread@1.0.1.patch",
+  },
   "packages": {
     "@ag-ui/core": ["@ag-ui/core@0.0.52", "", { "dependencies": { "zod": "^3.22.4" } }, "sha512-Xo0bUaNV56EqylzcrAuhUkQX7et7+SZIrqZZtEByGwEq/I1EHny6ZMkWHLkKR7UNi0FJZwJyhKYmKJS3B2SEgA=="],
 
