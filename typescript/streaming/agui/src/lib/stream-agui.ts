@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-import { type AGUIEvent, EventSchemas, EventType } from "@ag-ui/core";
+import { EventSchemas, EventType } from '@ag-ui/core';
+import type { AGUIEvent } from '@ag-ui/core';
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
-import {
-  cloneTuvrenStreamEvent,
-  createStreamAdapterWarningReporter,
-  type StreamAdapterOptions,
-} from "@tuvren/stream-core";
+import { cloneTuvrenStreamEvent, createStreamAdapterWarningReporter } from '@tuvren/stream-core';
+import type { StreamAdapterOptions } from '@tuvren/stream-core';
 
 /** Tracks one reasoning block's AG-UI `REASONING_*` lifecycle across canonical `reasoning.*` events. */
 interface PendingReasoningState {
@@ -227,7 +225,7 @@ async function* toAgUiEventsSubscribed(
         latestFatalError = undefined;
         break;
       }
-      case "iteration.start":
+      case "iteration.start": {
         yield validateAgUiEvent({
           rawEvent: cloneTuvrenStreamEvent(event),
           stepName: `iteration-${event.iterationCount}`,
@@ -235,7 +233,8 @@ async function* toAgUiEventsSubscribed(
           type: EventType.STEP_STARTED,
         });
         break;
-      case "iteration.end":
+      }
+      case "iteration.end": {
         yield validateAgUiEvent({
           rawEvent: cloneTuvrenStreamEvent(event),
           stepName: `iteration-${event.iterationCount}`,
@@ -243,7 +242,8 @@ async function* toAgUiEventsSubscribed(
           type: EventType.STEP_FINISHED,
         });
         break;
-      case "message.start":
+      }
+      case "message.start": {
         if (!textStates.has(event.messageId)) {
           textStates.set(event.messageId, {
             ended: false,
@@ -253,6 +253,7 @@ async function* toAgUiEventsSubscribed(
           });
         }
         break;
+      }
       case "text.delta": {
         const textState = ensureTextState(textStates, event.messageId);
 
@@ -484,7 +485,7 @@ async function* toAgUiEventsSubscribed(
         toolCallStates.delete(event.callId);
         break;
       }
-      case "tool.result":
+      case "tool.result": {
         yield validateAgUiEvent({
           content: serializeAgUiTextValue(event.output),
           messageId: `tool-result:${event.callId}`,
@@ -495,7 +496,8 @@ async function* toAgUiEventsSubscribed(
           type: EventType.TOOL_CALL_RESULT,
         });
         break;
-      case "state.snapshot":
+      }
+      case "state.snapshot": {
         yield validateAgUiEvent({
           rawEvent: cloneTuvrenStreamEvent(event),
           snapshot: {
@@ -505,7 +507,8 @@ async function* toAgUiEventsSubscribed(
           type: EventType.STATE_SNAPSHOT,
         });
         break;
-      case "custom":
+      }
+      case "custom": {
         yield createCustomAgUiEvent(
           event.name,
           event.data,
@@ -513,7 +516,8 @@ async function* toAgUiEventsSubscribed(
           event
         );
         break;
-      case "error":
+      }
+      case "error": {
         if (event.fatal) {
           latestFatalError = event;
           break;
@@ -526,7 +530,8 @@ async function* toAgUiEventsSubscribed(
           "nonFatalError"
         );
         break;
-      case "approval.requested":
+      }
+      case "approval.requested": {
         yield createCustomFallbackEvent(
           "tuvren.runtime.approval.requested",
           event,
@@ -534,7 +539,8 @@ async function* toAgUiEventsSubscribed(
           "approval"
         );
         break;
-      case "approval.resolved":
+      }
+      case "approval.resolved": {
         yield createCustomFallbackEvent(
           "tuvren.runtime.approval.resolved",
           event,
@@ -542,7 +548,8 @@ async function* toAgUiEventsSubscribed(
           "approval"
         );
         break;
-      case "file.done":
+      }
+      case "file.done": {
         yield createCustomFallbackEvent(
           "tuvren.runtime.file.done",
           event,
@@ -550,7 +557,8 @@ async function* toAgUiEventsSubscribed(
           "file"
         );
         break;
-      case "message.done":
+      }
+      case "message.done": {
         yield createCustomFallbackEvent(
           "tuvren.runtime.message.done",
           event,
@@ -558,7 +566,8 @@ async function* toAgUiEventsSubscribed(
           "messageDone"
         );
         break;
-      case "state.checkpoint":
+      }
+      case "state.checkpoint": {
         yield createCustomFallbackEvent(
           "tuvren.runtime.state.checkpoint",
           event,
@@ -566,7 +575,8 @@ async function* toAgUiEventsSubscribed(
           "stateCheckpoint"
         );
         break;
-      case "steering.incorporated":
+      }
+      case "steering.incorporated": {
         yield createCustomFallbackEvent(
           "tuvren.runtime.steering.incorporated",
           event,
@@ -574,7 +584,8 @@ async function* toAgUiEventsSubscribed(
           "steering"
         );
         break;
-      case "structured.delta":
+      }
+      case "structured.delta": {
         yield createCustomFallbackEvent(
           "tuvren.runtime.structured.delta",
           event,
@@ -582,7 +593,8 @@ async function* toAgUiEventsSubscribed(
           "structured"
         );
         break;
-      case "structured.done":
+      }
+      case "structured.done": {
         yield createCustomFallbackEvent(
           "tuvren.runtime.structured.done",
           event,
@@ -590,7 +602,8 @@ async function* toAgUiEventsSubscribed(
           "structured"
         );
         break;
-      case "tool.start":
+      }
+      case "tool.start": {
         yield createCustomFallbackEvent(
           "tuvren.runtime.tool.start",
           event,
@@ -598,7 +611,8 @@ async function* toAgUiEventsSubscribed(
           "toolExecution"
         );
         break;
-      case "tool.audit":
+      }
+      case "tool.audit": {
         yield createCustomFallbackEvent(
           "tuvren.runtime.tool.audit",
           event,
@@ -606,8 +620,10 @@ async function* toAgUiEventsSubscribed(
           "toolExecution"
         );
         break;
-      default:
+      }
+      default: {
         throwUnreachableEvent(event);
+      }
     }
   }
 }
@@ -685,8 +701,8 @@ function ensureReasoningState(
   }
 
   const nextState: PendingReasoningState = {
-    messageStarted: false,
     messageId: reasoningId,
+    messageStarted: false,
     started: false,
   };
   states.set(reasoningId, nextState);

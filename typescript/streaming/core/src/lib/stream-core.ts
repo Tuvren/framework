@@ -15,10 +15,8 @@
  */
 
 import { TuvrenRuntimeError } from "@tuvren/core";
-import {
-  assertTuvrenStreamEvent,
-  type TuvrenStreamEvent,
-} from "@tuvren/core/events";
+import { assertTuvrenStreamEvent } from '@tuvren/core/events';
+import type { TuvrenStreamEvent } from '@tuvren/core/events';
 
 const UINT8_ARRAY_JSON_MARKER = "Uint8Array";
 
@@ -94,7 +92,7 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
   private closed = false;
   private failure?: unknown;
   private readonly items: T[] = [];
-  private readonly producerWaiters: Array<() => void> = [];
+  private readonly producerWaiters: (() => void)[] = [];
   private readonly waiters: AsyncQueueWaiter<T>[] = [];
 
   /** Marks the queue exhausted; every pending and future `next()` resolves `{ done: true }`. A no-op if already closed or failed. */
@@ -323,7 +321,7 @@ export function serializeTuvrenStreamEvent(event: TuvrenStreamEvent): string {
   return JSON.stringify(event, (_key, value: unknown) => {
     if (value instanceof Uint8Array) {
       return {
-        data: Array.from(value),
+        data: [...value],
         type: UINT8_ARRAY_JSON_MARKER,
       };
     }
@@ -805,7 +803,9 @@ function cloneWarning(warning: StreamAdapterWarning): StreamAdapterWarning {
 
 /** Fires `promise` without awaiting it, swallowing any rejection (background pump loops are not awaited by callers). */
 function detachPromise(promise: Promise<unknown>): void {
-  promise.catch(() => undefined);
+  promise.catch(() => {
+    // Background pump failures are surfaced through the queue itself.
+  });
 }
 
 /** Normalizes a thrown value from the source iterator to an `Error` before delivering it to branch queues. */

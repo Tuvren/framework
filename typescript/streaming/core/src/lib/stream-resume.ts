@@ -16,10 +16,8 @@
 
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 
-import {
-  createStreamAdapterWarningReporter,
-  type StreamAdapterOptions,
-} from "./stream-core.js";
+import { createStreamAdapterWarningReporter } from './stream-core.js';
+import type { StreamAdapterOptions } from './stream-core.js';
 
 /**
  * Placeholder turn identity for events observed before any `turn.start`.
@@ -291,7 +289,7 @@ export interface ReplayBuffer {
 export function createReplayBuffer(options: {
   capacity: number;
 }): ReplayBuffer {
-  const capacity = options.capacity;
+  const {capacity} = options;
 
   if (!Number.isInteger(capacity) || capacity < 1) {
     throw new RangeError(
@@ -397,7 +395,7 @@ const BASE64_URL_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 /** Base64url encoder (no padding), matching the kernel thread-list cursor convention. */
 function base64UrlEncode(text: string): string {
-  return Buffer.from(text, "utf8").toString("base64url");
+  return Buffer.from(text, "utf-8").toString("base64url");
 }
 
 /**
@@ -413,5 +411,5 @@ function base64UrlDecode(token: string): string {
     throw new SyntaxError("invalid base64url token");
   }
 
-  return Buffer.from(token, "base64url").toString("utf8");
+  return Buffer.from(token, "base64url").toString("utf-8");
 }
