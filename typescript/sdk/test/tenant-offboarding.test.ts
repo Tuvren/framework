@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 // KRT-BF006 — Framework Maintenance Surface + Tenant-Offboarding Flow (ADR-0051,
 // architecture flow §4.17).
 //
@@ -80,10 +78,10 @@ const createKeyring = (keys: Map<string, Uint8Array>): PayloadKeyring => ({
 });
 
 const buildTenant = (input: {
-  scope: string;
-  store: MemoryScopeStore;
   codec: PayloadCodec;
   providerSecret: string;
+  scope: string;
+  store: MemoryScopeStore;
 }): Tenant => {
   const backend = createMemoryBackend({
     scope: input.scope,
@@ -92,18 +90,20 @@ const buildTenant = (input: {
   const kernel = createRuntimeKernel({ backend });
   const framework = createTuvrenRuntime({
     defaultRunnerId: "fake",
-    runnerRegistry: createRunnerRegistry([
-      createStaticRunner(async () => ({
-        messages: [assistantText(input.providerSecret)],
-        resolution: { reason: "done", type: "end_turn" },
-      })),
-    ]),
     kernel,
     payloadCodec: input.codec,
     // The substrate partition-drop the offboarding flow drives is the owned
     // backend's purgeScope; `createTuvren` wires this automatically, and here we
     // wire it explicitly because the tenant drives a hand-built runtime.
+    // oxlint-disable-next-line typescript/promise-function-async -- Preserve the backend's exact purge Promise identity and rejection timing in the hand-built runtime fixture.
     purgeScope: () => backend.purgeScope?.() ?? Promise.resolve(),
+    runnerRegistry: createRunnerRegistry([
+      // oxlint-disable-next-line require-await -- This runner intentionally implements the async framework contract while returning its fixture synchronously.
+      createStaticRunner(async () => ({
+        messages: [assistantText(input.providerSecret)],
+        resolution: { reason: "done", type: "end_turn" },
+      })),
+    ]),
     scope: input.scope,
   });
   return { framework, kernel, providerSecret: input.providerSecret };
@@ -283,8 +283,12 @@ describe("KRT-BF006 tenant offboarding flow", () => {
     // Reclamation still works (it only needs the kernel), but the partition
     // drop has no owned substrate to act on and is reported as unsupported.
     await instance.runtime.maintenance.reclaim();
-    await expect(instance.runtime.maintenance.purgeScope()).rejects.toThrow(
-      TuvrenRuntimeError
-    );
+    let purgeError: unknown;
+    try {
+      await instance.runtime.maintenance.purgeScope();
+    } catch (error: unknown) {
+      purgeError = error;
+    }
+    expect(purgeError).toBeInstanceOf(TuvrenRuntimeError);
   });
 });

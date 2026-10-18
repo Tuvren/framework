@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 // KRT-BH002 — Shreddable continuity artifacts (ADR-0053 + ADR-0051).
 //
 // ADR-0053 makes the durable lineage the unconditional source of truth for a
@@ -86,6 +84,7 @@ const buildRuntime = (options: {
     defaultRunnerId: "fake",
     kernel,
     runnerRegistry: createRunnerRegistry([
+      // oxlint-disable-next-line require-await -- This runner intentionally implements the async framework contract while returning its fixture synchronously.
       createStaticRunner(async () => ({
         messages: [assistantWithContinuity("here is your answer")],
         resolution: { reason: "done", type: "end_turn" },
@@ -151,6 +150,7 @@ describe("KRT-BH002 shreddable continuity artifacts", () => {
     // The kernel only ever holds the ciphertext envelope; the continuity
     // artifact never appears in the durable bytes the kernel hashes.
     for (const hash of messageHashes) {
+      // oxlint-disable-next-line no-await-in-loop -- Read each durable message in lineage order so a missing hash is attributed deterministically.
       const stored = await runtime.kernel.store.get(hash);
       if (stored === null) {
         throw new Error(`message ${hash} missing from store`);
@@ -171,6 +171,9 @@ describe("KRT-BH002 shreddable continuity artifacts", () => {
 
     const branchBefore = await runtime.kernel.branch.get(branchId);
     const headBefore = branchBefore?.headTurnNodeHash;
+    if (headBefore === undefined) {
+      throw new Error("branch head missing before shredding");
+    }
     const hashesBefore = await readMessageHashes(runtime.kernel, branchId);
     expect(hashesBefore.length).toBeGreaterThanOrEqual(2);
 
@@ -189,11 +192,12 @@ describe("KRT-BH002 shreddable continuity artifacts", () => {
     // Erasure rewrote no history: the head node and every message object hash
     // that referenced the continuity are byte-identical.
     const branchAfter = await runtime.kernel.branch.get(branchId);
-    expect(branchAfter?.headTurnNodeHash).toBe(headBefore as string);
+    expect(branchAfter?.headTurnNodeHash).toBe(headBefore);
     expect(await readMessageHashes(runtime.kernel, branchId)).toEqual(
       hashesBefore
     );
     for (const hash of hashesBefore) {
+      // oxlint-disable-next-line no-await-in-loop -- Probe every retained hash sequentially for deterministic lineage diagnostics.
       expect(await runtime.kernel.store.has(hash)).toBe(true);
     }
   });
@@ -205,6 +209,7 @@ describe("KRT-BH002 shreddable continuity artifacts", () => {
     const messageHashes = await readMessageHashes(runtime.kernel, branchId);
     let sawContinuityPlaintext = false;
     for (const hash of messageHashes) {
+      // oxlint-disable-next-line no-await-in-loop -- Read each durable message in lineage order so a missing hash is attributed deterministically.
       const stored = await runtime.kernel.store.get(hash);
       if (stored === null) {
         throw new Error(`message ${hash} missing from store`);

@@ -63,14 +63,17 @@ describe("sdk module resolution", () => {
 
     // An externally supplied kernel leaves the partition drop without an owned
     // substrate, so the public maintenance surface rejects.
+    // oxlint-disable-next-line typescript/promise-function-async -- Preserve the runtime's exact rejected Promise while capturing its shared error constructor.
     const thrown = await capturePurgeScopeRejection(() =>
       instance.runtime.maintenance.purgeScope()
     );
 
     expect(thrown).toBeInstanceOf(TuvrenRuntimeError);
-    await expect(instance.runtime.maintenance.purgeScope()).rejects.toThrow(
-      TuvrenRuntimeError
+    // oxlint-disable-next-line typescript/promise-function-async -- Preserve the runtime's exact rejected Promise on the repeated contract probe.
+    const repeated = await capturePurgeScopeRejection(() =>
+      instance.runtime.maintenance.purgeScope()
     );
+    expect(repeated).toBeInstanceOf(TuvrenRuntimeError);
 
     if (!(thrown instanceof TuvrenRuntimeError)) {
       throw new Error(
@@ -89,14 +92,17 @@ describe("sdk module resolution", () => {
       runnerRegistry: createRunnerRegistry([]),
     });
 
+    // oxlint-disable-next-line typescript/promise-function-async -- Preserve the runtime's exact rejected Promise while capturing its shared error constructor.
     const thrown = await capturePurgeScopeRejection(() =>
       runtime.maintenance.purgeScope()
     );
 
     expect(thrown).toBeInstanceOf(TuvrenRuntimeError);
-    await expect(runtime.maintenance.purgeScope()).rejects.toThrow(
-      TuvrenRuntimeError
+    // oxlint-disable-next-line typescript/promise-function-async -- Preserve the runtime's exact rejected Promise on the repeated contract probe.
+    const repeated = await capturePurgeScopeRejection(() =>
+      runtime.maintenance.purgeScope()
     );
+    expect(repeated).toBeInstanceOf(TuvrenRuntimeError);
 
     if (!(thrown instanceof TuvrenRuntimeError)) {
       throw new Error(

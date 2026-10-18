@@ -1,5 +1,4 @@
 [
-  "typescript/sdk",
   "typescript/streaming",
   "typescript/tools",
   "typescript/testkit",

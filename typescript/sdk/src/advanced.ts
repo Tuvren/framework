@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This subpath entrypoint is the intentional advanced composition surface.
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */
 
 /**
  * `@tuvren/sdk/advanced` — the advanced composition surface (ADR-0057 addendum).

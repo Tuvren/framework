@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 // KRT-BF007 (carried from the BF005 milestone review) — crypto-shredding coverage
 // for the context-engineering rewrite path. The BF005 suite exercises the codec
 // through staged messages (provider/tool/client edges); this drives the codec
@@ -66,6 +64,7 @@ const buildEncryptedRuntime = (
       keyring: { resolve: (keyRef) => keys.get(keyRef) },
     }),
     runnerRegistry: createRunnerRegistry([
+      // oxlint-disable-next-line require-await -- This runner intentionally implements the async framework contract while returning its fixture synchronously.
       createStaticRunner(async () => ({
         messages: [assistantText(PROVIDER_SECRET)],
         resolution: { reason: "done", type: "end_turn" },
@@ -144,6 +143,7 @@ describe("KRT-BF007 context-engineering rewrite crypto-shredding", () => {
     // means each hash resolves to a stored TVE1 envelope holding no plaintext; a
     // broken remap would leave the tree pointing at an unstored provisional hash.
     for (const hash of messageHashes) {
+      // oxlint-disable-next-line no-await-in-loop -- Read each durable message in lineage order so a broken remap is attributed deterministically.
       const stored = await kernel.store.get(hash);
       if (stored === null) {
         throw new Error(`message ${hash} missing from store`);
@@ -195,10 +195,14 @@ describe("KRT-BF007 context-engineering rewrite crypto-shredding", () => {
       signal: textSignal(USER_SECRET),
       threadId: thread.threadId,
     });
-    expect((await handle.awaitResult()).status).toBe("completed");
+    const result = await handle.awaitResult();
+    expect(result.status).toBe("completed");
 
-    const headBefore = (await kernel.branch.get(thread.branchId))
-      ?.headTurnNodeHash;
+    const branchBefore = await kernel.branch.get(thread.branchId);
+    const headBefore = branchBefore?.headTurnNodeHash;
+    if (headBefore === undefined) {
+      throw new Error("branch head missing before shredding");
+    }
     const hashesBefore = await readHeadMessageHashes(kernel, thread.branchId);
 
     // Crypto-shred: the host destroys the scope key.
@@ -210,9 +214,8 @@ describe("KRT-BF007 context-engineering rewrite crypto-shredding", () => {
       branchId: thread.branchId,
     });
     expect(JSON.stringify(read.messages)).not.toContain(CE_SUMMARY_SECRET);
-    expect((await kernel.branch.get(thread.branchId))?.headTurnNodeHash).toBe(
-      headBefore as string
-    );
+    const branchAfter = await kernel.branch.get(thread.branchId);
+    expect(branchAfter?.headTurnNodeHash).toBe(headBefore);
     expect(await readHeadMessageHashes(kernel, thread.branchId)).toEqual(
       hashesBefore
     );

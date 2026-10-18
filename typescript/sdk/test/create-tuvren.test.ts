@@ -37,21 +37,24 @@ import type {
 // ── Test doubles ─────────────────────────────────────────────────────────────
 
 const makeMockBackend = (): {
-  backend: RuntimeBackend & { close(): Promise<void> };
+  backend: RuntimeBackend & { close: () => Promise<void> };
   closed: { count: number };
 } => {
   const inner = createMemoryBackend();
   const closed = { count: 0 };
+  /* oxlint-disable typescript/promise-function-async -- Test doubles return exact Promise instances so disposal identity and rejection timing stay observable. */
   const backend = Object.assign(inner, {
     close() {
-      closed.count++;
+      closed.count += 1;
       return Promise.resolve();
     },
   });
   return { backend, closed };
 };
 
-const makeThrowingBackend = (): RuntimeBackend & { close(): Promise<void> } => {
+const makeThrowingBackend = (): RuntimeBackend & {
+  close: () => Promise<void>;
+} => {
   const inner = createMemoryBackend();
   return Object.assign(inner, {
     close(): Promise<void> {
@@ -68,7 +71,7 @@ const makeMockMcpSource = (
   const closed = { count: 0 };
   return {
     close() {
-      closed.count++;
+      closed.count += 1;
       return Promise.resolve();
     },
     closed,
@@ -99,6 +102,7 @@ const makeMinimalRunnerFactory = (
   },
   id,
 });
+/* oxlint-enable typescript/promise-function-async */
 
 const makeMinimalTool = (name = "test-tool"): TuvrenToolDefinition => ({
   description: "A test tool",
@@ -156,28 +160,26 @@ describe("createTuvren", () => {
   describe("kernel option", () => {
     test("rejects duplicate top-level and runtimeOptions telemetry sinks", () => {
       const telemetry = {
-        event() {
-          return;
-        },
-        span() {
-          return;
-        },
+        event() {},
+        span() {},
       };
 
-      expect(() =>
-        createTuvren(baseOptions({ runtimeOptions: { telemetry }, telemetry }))
-      ).toThrow(TuvrenValidationError);
+      expect(() => {
+        void createTuvren(
+          baseOptions({ runtimeOptions: { telemetry }, telemetry })
+        );
+      }).toThrow(TuvrenValidationError);
     });
 
     test("rejects supplying both top-level and runtimeOptions bounds (KRT-BD006)", () => {
-      expect(() =>
-        createTuvren(
+      expect(() => {
+        void createTuvren(
           baseOptions({
             bounds: { maxIterations: 8 },
             runtimeOptions: { bounds: { maxIterations: 16 } },
           })
-        )
-      ).toThrow(TuvrenValidationError);
+        );
+      }).toThrow(TuvrenValidationError);
     });
 
     test("pre-built kernel is used — threads created via the runtime appear in the kernel", async () => {
@@ -282,14 +284,16 @@ describe("createTuvren", () => {
 
     test("dispose resolves cleanly with a plain memory backend", async () => {
       const instance = await createTuvren(baseOptions());
-      await expect(instance[Symbol.asyncDispose]()).resolves.toBeUndefined();
+      await instance[Symbol.asyncDispose]();
     });
 
     test("disposal error aggregation: errors from MCP source and backend are joined into one Error", async () => {
       const throwingSource: McpToolSource = {
+        // oxlint-disable-next-line typescript/promise-function-async -- Preserve the explicit rejected Promise fixture used to test disposal aggregation timing.
         close() {
           return Promise.reject(new Error("mcp close error"));
         },
+        // oxlint-disable-next-line typescript/promise-function-async -- Preserve the exact resolved Promise required by the MCP source contract fixture.
         refresh() {
           return Promise.resolve({ tools: [] });
         },
@@ -301,10 +305,18 @@ describe("createTuvren", () => {
         baseOptions({ backend: makeThrowingBackend(), tools: [throwingSource] })
       );
 
-      const err = await instance[Symbol.asyncDispose]().catch((error) => error);
-      expect(err).toBeInstanceOf(Error);
-      expect((err as Error).message).toContain("mcp close error");
-      expect((err as Error).message).toContain("backend close error");
+      let caught: unknown;
+      try {
+        await instance[Symbol.asyncDispose]();
+      } catch (error: unknown) {
+        caught = error;
+      }
+      expect(caught).toBeInstanceOf(Error);
+      if (!(caught instanceof Error)) {
+        throw new Error("expected disposal to reject with Error");
+      }
+      expect(caught.message).toContain("mcp close error");
+      expect(caught.message).toContain("backend close error");
     });
 
     test("await using disposes the instance when the scope exits", async () => {
@@ -338,12 +350,15 @@ describe("createTuvren", () => {
     test("provider field is present when supplied", async () => {
       // A minimal stub — createTuvren only stores it in the instance and the
       // default AgentConfig; no actual calls are made here.
-      const fakeProvider = {
+      const fakeProvider: NonNullable<CreateTuvrenOptions["provider"]> = {
         generate: () => {
           throw new Error("not called in this test");
         },
         id: "fake-provider",
-      } as unknown as CreateTuvrenOptions["provider"];
+        stream: () => {
+          throw new Error("not called in this test");
+        },
+      };
 
       const instance = await createTuvren(
         baseOptions({ provider: fakeProvider })

@@ -1,0 +1,281 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CA004",
+  "milestone": "M25-sdk-atomic-native-admission",
+  "reviewed_parent": "392e01862ecac41fee284d9e6a8f1073510b2134",
+  "working_tree_candidate": true,
+  "scope": "typescript/sdk",
+  "selection": {
+    "code_count": 14,
+    "code_files": [
+      "typescript/sdk/src/advanced.ts",
+      "typescript/sdk/src/index.ts",
+      "typescript/sdk/src/lib/create-tuvren.ts",
+      "typescript/sdk/src/lib/payload-codec.ts",
+      "typescript/sdk/src/lib/schema-authoring.ts",
+      "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts",
+      "typescript/sdk/test/create-tuvren.test.ts",
+      "typescript/sdk/test/module-resolution.test.ts",
+      "typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts",
+      "typescript/sdk/test/payload-codec.crypto-shredding.test.ts",
+      "typescript/sdk/test/payload-codec.test.ts",
+      "typescript/sdk/test/schema-authoring.test.ts",
+      "typescript/sdk/test/tenant-offboarding.test.ts",
+      "typescript/sdk/tsup.config.ts"
+    ],
+    "json_count": 7,
+    "json_files": [
+      "typescript/sdk/package.json",
+      "typescript/sdk/project.json",
+      "typescript/sdk/tsconfig.dts.json",
+      "typescript/sdk/tsconfig.json",
+      "typescript/sdk/tsconfig.lib.json",
+      "typescript/sdk/tsconfig.tsup.json",
+      "typescript/sdk/tsconfig.typecheck.json"
+    ],
+    "format_count": 7,
+    "protected_files": []
+  },
+  "diagnostics": {
+    "fresh_syntactic": {
+      "files": 14,
+      "rules": 419,
+      "count": 82
+    },
+    "fresh_type_aware": {
+      "files": 14,
+      "rules": 474,
+      "count": 186
+    },
+    "direct_fixes": 135,
+    "justified_exception_diagnostics": 51,
+    "exception_breakdown": [
+      {
+        "rule": "jsdoc/check-tag-names",
+        "count": 2,
+        "reason": "standard TypeScript @packageDocumentation tags on the two published entrypoints"
+      },
+      {
+        "rule": "typescript/method-signature-style",
+        "count": 4,
+        "reason": "frozen published method spelling and strictFunctionTypes method bivariance"
+      },
+      {
+        "rule": "typescript/array-type",
+        "count": 1,
+        "reason": "frozen public CreateTuvrenOptions API spelling"
+      },
+      {
+        "rule": "typescript/promise-function-async",
+        "count": 20,
+        "reason": "synchronous validation, sync-or-Promise tool behavior, exact backend/runtime Promise identity, and test rejection timing"
+      },
+      {
+        "rule": "eslint/no-await-in-loop",
+        "count": 8,
+        "reason": "ordered disposal and deterministic lineage/storage probes preserve cleanup and attribution order"
+      },
+      {
+        "rule": "eslint/require-await",
+        "count": 4,
+        "reason": "test runners intentionally implement the async framework runner contract"
+      },
+      {
+        "rule": "typescript/consistent-type-imports",
+        "count": 3,
+        "reason": "frozen published import()-based ZodSchema alias spelling"
+      },
+      {
+        "rule": "typescript/no-unsafe-type-assertion",
+        "count": 9,
+        "reason": "external schema API conversion, generic phantom brands, validated tool input seam, and deliberately partial public API fixtures"
+      }
+    ],
+    "final_syntactic": {
+      "files": 14,
+      "rules": 419,
+      "count": 0
+    },
+    "final_type_aware_with_unused_denied": {
+      "files": 14,
+      "rules": 474,
+      "count": 0
+    }
+  },
+  "native_directives": {
+    "regions": 43,
+    "all_firing": true,
+    "unused_directive_diagnostics": 0,
+    "config_overrides": 0,
+    "policy": "Only measured API spelling, Promise/timing, ordered execution, external schema boundary, and documentation-tag conflicts are retained."
+  },
+  "atomic_admission": {
+    "target": {
+      "executor": "nx:run-commands",
+      "cwd": ".",
+      "commands": [
+        "bunx --bun oxlint --type-aware typescript/sdk",
+        "bun tools/scripts/json-check.ts typescript/sdk"
+      ],
+      "parallel": false,
+      "inputs": "inherited"
+    },
+    "coverage_removed": [
+      "typescript/sdk"
+    ],
+    "remaining_ca_entries_unchanged": true,
+    "tools_run_nx_retained": true
+  },
+  "legacy_biome": {
+    "source_ledger": ".constitution/evidence/KRT-CA002/suppressions.json",
+    "baseline_identities": 6,
+    "all_identities_reconciled": true,
+    "remaining_directive_comments": 0,
+    "entries": [
+      {
+        "identity": "typescript/sdk/src/advanced.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/sdk/src/advanced.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This subpath entrypoint is the intentional advanced composition surface.",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/sdk/src/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/sdk/src/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package root is the intentional SDK surface.",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "Test runners intentionally match the async framework runner contract.",
+        "equivalent_native_rule": "eslint/require-await",
+        "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason"
+      },
+      {
+        "identity": "typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "Test runners intentionally match the async framework runner contract.",
+        "equivalent_native_rule": "eslint/require-await",
+        "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason"
+      },
+      {
+        "identity": "typescript/sdk/test/payload-codec.crypto-shredding.test.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/sdk/test/payload-codec.crypto-shredding.test.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "Test runners intentionally match the async framework runner contract.",
+        "equivalent_native_rule": "eslint/require-await",
+        "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason"
+      },
+      {
+        "identity": "typescript/sdk/test/tenant-offboarding.test.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/sdk/test/tenant-offboarding.test.ts",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "Test runners intentionally match the async framework runner contract.",
+        "equivalent_native_rule": "eslint/require-await",
+        "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason"
+      }
+    ],
+    "drift": {
+      "added": [],
+      "removed": [],
+      "reason_changed": []
+    }
+  },
+  "negative_controls": {
+    "unused_directive": {
+      "exit": 1,
+      "diagnostics": 1,
+      "result": "unused oxlint-disable warning denied",
+      "probe_restored": true
+    },
+    "removed_firing_exception": {
+      "exit": 1,
+      "diagnostics": 3,
+      "rule": "typescript/consistent-type-imports",
+      "result": "frozen ZodSchema import() spelling re-reported",
+      "probe_restored": true
+    }
+  },
+  "behavior": {
+    "api_freeze": "pass: 14 entrypoints and 404 exports unchanged",
+    "release_kind": "unchanged patch changeset",
+    "changeset_sha256": "b0f5b0573b3ffa31372e2b3f4fcf2653be6b849ee5350c888b28ef39f24d70af",
+    "api_snapshot_changed": false,
+    "promise_identity_and_sync_throw_timing": "preserved",
+    "payload_envelope_bytes_and_schema_branching": "preserved",
+    "module_resolution_and_error_constructor_identity": "preserved",
+    "schema_authoring_contracts": "preserved"
+  },
+  "code_decisions": [
+    "Replace broad Record casts with property-presence checks for MCP sources and closeable backends while retaining the same duck-typed compatibility surface.",
+    "Factor duplicate composition-option checks through one synchronous helper while preserving error class, code, message text, and validation order.",
+    "Replace postfix offset increments with explicit writes and increments so payload envelope bytes remain identical.",
+    "Use structural schema guards where they preserve runtime branches; retain narrow boundary assertions where external library types, phantom generic brands, or the unparameterized tool contract require them.",
+    "Replace Bun matcher thenable ambiguities and nullable assertions with explicit rejection capture and guards while preserving the exercised failures."
+  ],
+  "a19_composition": {
+    "files": 15,
+    "insertions": 386,
+    "deletions": 253,
+    "total_lines": 639,
+    "production": {
+      "files": 5,
+      "insertions": 130,
+      "deletions": 71
+    },
+    "tests": {
+      "files": 8,
+      "insertions": 251,
+      "deletions": 180
+    },
+    "metadata": {
+      "files": 2,
+      "insertions": 5,
+      "deletions": 2
+    }
+  },
+  "verification": {
+    "sdk_native_lint": "pass",
+    "sdk_typecheck": "pass",
+    "sdk_build": "pass with 15 dependency builds",
+    "sdk_tests": "pass: 91/91",
+    "schema_and_module_resolution_tests": "pass: 47/47",
+    "sdk_export_smoke": "pass: root and advanced",
+    "api_freeze": "pass",
+    "core_tests": "pass: 119/119",
+    "runtime_tests": "pass: 566/566",
+    "framework_conformance": "pass: 511/511 applicable, 12 non-applicable",
+    "admission_controls": "pass: 103/103",
+    "full_lint": "pass",
+    "full_typecheck": "pass: 33 projects plus codegen dependency",
+    "changeset_check": "pass: direct coverage for 8 publishable packages",
+    "constitution_validate": "pass: 0 errors, 0 warnings, 78 info",
+    "git_diff_check": "pass"
+  },
+  "drift": {
+    "constitution_files": 0,
+    "generated_files": 0,
+    "dependency_files": 0,
+    "config_overrides": 0,
+    "tools_run_nx_changed": false,
+    "changeset_changed": false
+  },
+  "evidence_files": {
+    "fresh_syntactic": "fresh-syntactic.json",
+    "fresh_type_aware": "fresh-type-aware.json",
+    "final_type_aware": "final-native-zero.json",
+    "final_debug_files": "final-debug-files.stdout",
+    "json_selection": "json-selection-clean.json",
+    "unused_negative": "negative-unused.json",
+    "removed_exception_negative": "negative-removed-exception.json",
+    "final_status": "final-status.txt"
+  }
+}
