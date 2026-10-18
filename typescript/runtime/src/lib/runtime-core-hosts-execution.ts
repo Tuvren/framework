@@ -136,9 +136,9 @@ interface StatusHostDependencies {
  * dependency function directly, so callers may swap or spy on dependency
  * members after the host is built.
  */
-export function buildRuntimeCoreRunnerHost(
+export const buildRuntimeCoreRunnerHost = (
   dependencies: RunnerHostDependencies
-): RuntimeCoreRunnerHost {
+): RuntimeCoreRunnerHost => {
   return {
     completeIterationRun: (...args) =>
       dependencies.completeIterationRun(...args),
@@ -167,15 +167,15 @@ export function buildRuntimeCoreRunnerHost(
     stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
     stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
   };
-}
+};
 
 /**
  * Assemble a {@link RuntimeCoreToolResumeHost} from late-bound dependencies,
  * used by the paused-tool-execution resume path.
  */
-export function buildRuntimeCoreToolResumeHost(
+export const buildRuntimeCoreToolResumeHost = (
   dependencies: ToolResumeHostDependencies
-): RuntimeCoreToolResumeHost {
+): RuntimeCoreToolResumeHost => {
   return {
     beginIterationStep: (runId, stepId) =>
       dependencies.beginIterationStep(runId, stepId),
@@ -206,15 +206,15 @@ export function buildRuntimeCoreToolResumeHost(
     stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
     stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
   };
-}
+};
 
 /**
  * Assemble a {@link RuntimeCoreStatusHost} from late-bound dependencies,
  * used by the durable runtime-status transition helpers.
  */
-export function buildRuntimeCoreStatusHost(
+export const buildRuntimeCoreStatusHost = (
   dependencies: StatusHostDependencies
-): RuntimeCoreStatusHost {
+): RuntimeCoreStatusHost => {
   return {
     advanceTurnAndBranchHead: (...args) =>
       dependencies.advanceTurnAndBranchHead(...args),
@@ -236,4 +236,4 @@ export function buildRuntimeCoreStatusHost(
     treeCreate: (schemaId, changes, baseTurnTreeHash) =>
       dependencies.treeCreate(schemaId, changes, baseTurnTreeHash),
   };
-}
+};
