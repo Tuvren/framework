@@ -28,7 +28,7 @@ import type {
   ContextManifest,
   ContextManifestCounters,
   ContextManifestNameCounters,
-} from "./runtime-contract-shapes.js";
+} from "./runtime-data-contract-shapes.js";
 
 const CONTEXT_MANIFEST_KEYS = new Set([
   "byRole",
@@ -49,157 +49,38 @@ const CONTEXT_MANIFEST_COUNTER_KEYS = new Set([
 ]);
 const CONTEXT_MANIFEST_NAME_COUNTER_KEYS = new Set(["byName", "total"]);
 
-/**
- * Returns `true` when `value` is a structurally and arithmetically valid
- * {@link ContextManifest} (KrakenFrameworkSpecification §1.6).
- *
- * Beyond the exact key set (`byRole`, `extensions`,
- * `lastAssistantMessageIndex`, `lastUserMessageIndex`, `messageCount`,
- * `tokenEstimate`, `toolCalls`, `toolResults`, `turnBoundaries`) and
- * per-field shape checks, the manifest's internal bookkeeping must be
- * self-consistent:
- *
- * - `byRole` counters sum exactly to `messageCount`.
- * - Each last-role index is `-1` when that role count is zero; otherwise
- *   it lies in `[roleCount - 1, messageCount)`.
- * - `toolCalls.total` and `toolResults.total` each equal the sum of their
- *   `byName` counters.
- * - `turnBoundaries` is strictly increasing within `[0, messageCount)`,
- *   empty exactly when there are no user messages, never longer than the
- *   user-message count, never colliding with the known last assistant
- *   index, and its first entry leaves enough index space before the last
- *   user message to fit all declared user messages. With a single user
- *   message the sole boundary must be that message's index, and when the
- *   boundary count equals the user count the final boundary must be the
- *   last user index.
- */
-export function isContextManifest(value: unknown): value is ContextManifest {
-  const byRole = isPlainObject(value) ? value.byRole : undefined;
-  const messageCount = isPlainObject(value) ? value.messageCount : undefined;
-  const lastAssistantMessageIndex = isPlainObject(value)
-    ? value.lastAssistantMessageIndex
-    : undefined;
-  const lastUserMessageIndex = isPlainObject(value)
-    ? value.lastUserMessageIndex
-    : undefined;
-  const toolCalls = isPlainObject(value) ? value.toolCalls : undefined;
-  const toolResults = isPlainObject(value) ? value.toolResults : undefined;
-
-  if (
-    !(
-      isPlainObject(value) &&
-      hasOnlyAllowedKeys(value, CONTEXT_MANIFEST_KEYS) &&
-      isContextManifestCounters(byRole) &&
-      isSerializableRecord(value.extensions) &&
-      isNonNegativeSafeInteger(messageCount) &&
-      isNonNegativeFiniteNumberProperty(value, "tokenEstimate") &&
-      isContextManifestNameCounters(toolCalls) &&
-      isContextManifestNameCounters(toolResults) &&
-      Array.isArray(value.turnBoundaries) &&
-      value.turnBoundaries.every(
-        (item) => Number.isSafeInteger(item) && item >= 0
-      )
-    )
-  ) {
-    return false;
-  }
-
-  if (
-    !(
-      isMessageIndexValue(lastAssistantMessageIndex, messageCount) &&
-      isMessageIndexValue(lastUserMessageIndex, messageCount)
-    )
-  ) {
-    return false;
-  }
-
-  if (
-    !(
-      hasValidLastRoleIndex(
-        byRole.assistant,
-        lastAssistantMessageIndex,
-        messageCount
-      ) &&
-      hasValidLastRoleIndex(byRole.user, lastUserMessageIndex, messageCount)
-    )
-  ) {
-    return false;
-  }
-
-  if (
-    byRole.assistant + byRole.system + byRole.tool + byRole.user !==
-    messageCount
-  ) {
-    return false;
-  }
-
-  if (
-    !(
-      hasMatchingNamedCounterTotal(toolCalls) &&
-      hasMatchingNamedCounterTotal(toolResults)
-    )
-  ) {
-    return false;
-  }
-
-  if (
-    !hasValidTurnBoundaries(
-      value.turnBoundaries,
-      messageCount,
-      byRole.user,
-      lastUserMessageIndex,
-      byRole.assistant,
-      lastAssistantMessageIndex
-    )
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
-/** True when `value[key]` is `undefined` or a valid {@link ContextManifest}. */
-export function isOptionalContextManifestProperty<
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(value: TObject, key: TKey): boolean {
-  return value[key] === undefined || isContextManifest(value[key]);
-}
-
-function isContextManifestCounters(
+const isContextManifestCounters = (
   value: unknown
-): value is ContextManifestCounters {
-  return (
-    isPlainObject(value) &&
-    hasOnlyAllowedKeys(value, CONTEXT_MANIFEST_COUNTER_KEYS) &&
-    isNonNegativeSafeIntegerProperty(value, "assistant") &&
-    isNonNegativeSafeIntegerProperty(value, "system") &&
-    isNonNegativeSafeIntegerProperty(value, "tool") &&
-    isNonNegativeSafeIntegerProperty(value, "user")
-  );
-}
+): value is ContextManifestCounters =>
+  isPlainObject(value) &&
+  hasOnlyAllowedKeys(value, CONTEXT_MANIFEST_COUNTER_KEYS) &&
+  isNonNegativeSafeIntegerProperty(value, "assistant") &&
+  isNonNegativeSafeIntegerProperty(value, "system") &&
+  isNonNegativeSafeIntegerProperty(value, "tool") &&
+  isNonNegativeSafeIntegerProperty(value, "user");
 
-function isContextManifestNameCounters(
+const isContextManifestNameCounters = (
   value: unknown
-): value is ContextManifestNameCounters {
-  return (
-    isPlainObject(value) &&
-    hasOnlyAllowedKeys(value, CONTEXT_MANIFEST_NAME_COUNTER_KEYS) &&
-    isPlainObject(value.byName) &&
-    Object.keys(value.byName).every(isNonEmptyStringValue) &&
-    Object.values(value.byName).every(
-      (count) =>
-        typeof count === "number" && Number.isSafeInteger(count) && count >= 0
-    ) &&
-    isNonNegativeSafeIntegerProperty(value, "total")
-  );
-}
+): value is ContextManifestNameCounters =>
+  isPlainObject(value) &&
+  hasOnlyAllowedKeys(value, CONTEXT_MANIFEST_NAME_COUNTER_KEYS) &&
+  isPlainObject(value.byName) &&
+  Object.keys(value.byName).every(isNonEmptyStringValue) &&
+  Object.values(value.byName).every(
+    (count) =>
+      typeof count === "number" && Number.isSafeInteger(count) && count >= 0
+  ) &&
+  isNonNegativeSafeIntegerProperty(value, "total");
 
-function hasValidLastRoleIndex(
+const isNonNegativeSafeIntegerArray = (value: unknown): value is number[] =>
+  Array.isArray(value) &&
+  value.every((item) => Number.isSafeInteger(item) && item >= 0);
+
+const hasValidLastRoleIndex = (
   roleCount: number,
   lastIndex: number,
   messageCount: number
-): boolean {
+): boolean => {
   if (roleCount === 0) {
     return lastIndex === -1;
   }
@@ -207,22 +88,22 @@ function hasValidLastRoleIndex(
   return (
     lastIndex >= roleCount - 1 && lastIndex >= 0 && lastIndex < messageCount
   );
-}
+};
 
-function hasMatchingNamedCounterTotal(
+const hasMatchingNamedCounterTotal = (
   counters: ContextManifestNameCounters
-): boolean {
+): boolean => {
   const namedTotal = Object.values(counters.byName).reduce(
     (sum, count) => sum + count,
     0
   );
   return namedTotal === counters.total;
-}
+};
 
-function hasOrderedTurnBoundaries(
+const hasOrderedTurnBoundaries = (
   turnBoundaries: number[],
   messageCount: number
-): boolean {
+): boolean => {
   let previousBoundary = -1;
 
   for (const boundary of turnBoundaries) {
@@ -234,16 +115,16 @@ function hasOrderedTurnBoundaries(
   }
 
   return true;
-}
+};
 
-function hasValidTurnBoundaries(
+const hasValidTurnBoundaries = (
   turnBoundaries: number[],
   messageCount: number,
   userCount: number,
   lastUserMessageIndex: number,
   assistantCount: number,
   lastAssistantMessageIndex: number
-): boolean {
+): boolean => {
   if (!hasOrderedTurnBoundaries(turnBoundaries, messageCount)) {
     return false;
   }
@@ -295,4 +176,130 @@ function hasValidTurnBoundaries(
     lastBoundary !== undefined &&
     lastBoundary <= lastUserMessageIndex
   );
-}
+};
+
+const hasValidContextManifestRelations = (
+  byRole: ContextManifestCounters,
+  messageCount: number,
+  lastAssistantMessageIndex: unknown,
+  lastUserMessageIndex: unknown,
+  toolCalls: ContextManifestNameCounters,
+  toolResults: ContextManifestNameCounters,
+  turnBoundaries: number[]
+): boolean => {
+  if (
+    !(
+      isMessageIndexValue(lastAssistantMessageIndex, messageCount) &&
+      isMessageIndexValue(lastUserMessageIndex, messageCount)
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    !(
+      hasValidLastRoleIndex(
+        byRole.assistant,
+        lastAssistantMessageIndex,
+        messageCount
+      ) &&
+      hasValidLastRoleIndex(byRole.user, lastUserMessageIndex, messageCount)
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    byRole.assistant + byRole.system + byRole.tool + byRole.user !==
+    messageCount
+  ) {
+    return false;
+  }
+
+  if (
+    !(
+      hasMatchingNamedCounterTotal(toolCalls) &&
+      hasMatchingNamedCounterTotal(toolResults)
+    )
+  ) {
+    return false;
+  }
+
+  return hasValidTurnBoundaries(
+    turnBoundaries,
+    messageCount,
+    byRole.user,
+    lastUserMessageIndex,
+    byRole.assistant,
+    lastAssistantMessageIndex
+  );
+};
+
+/**
+ * Returns `true` when `value` is a structurally and arithmetically valid
+ * {@link ContextManifest} (KrakenFrameworkSpecification §1.6).
+ *
+ * Beyond the exact key set (`byRole`, `extensions`,
+ * `lastAssistantMessageIndex`, `lastUserMessageIndex`, `messageCount`,
+ * `tokenEstimate`, `toolCalls`, `toolResults`, `turnBoundaries`) and
+ * per-field shape checks, the manifest's internal bookkeeping must be
+ * self-consistent:
+ *
+ * - `byRole` counters sum exactly to `messageCount`.
+ * - Each last-role index is `-1` when that role count is zero; otherwise
+ *   it lies in `[roleCount - 1, messageCount)`.
+ * - `toolCalls.total` and `toolResults.total` each equal the sum of their
+ *   `byName` counters.
+ * - `turnBoundaries` is strictly increasing within `[0, messageCount)`,
+ *   empty exactly when there are no user messages, never longer than the
+ *   user-message count, never colliding with the known last assistant
+ *   index, and its first entry leaves enough index space before the last
+ *   user message to fit all declared user messages. With a single user
+ *   message the sole boundary must be that message's index, and when the
+ *   boundary count equals the user count the final boundary must be the
+ *   last user index.
+ */
+export const isContextManifest = (value: unknown): value is ContextManifest => {
+  const byRole = isPlainObject(value) ? value.byRole : undefined;
+  const messageCount = isPlainObject(value) ? value.messageCount : undefined;
+  const lastAssistantMessageIndex = isPlainObject(value)
+    ? value.lastAssistantMessageIndex
+    : undefined;
+  const lastUserMessageIndex = isPlainObject(value)
+    ? value.lastUserMessageIndex
+    : undefined;
+  const toolCalls = isPlainObject(value) ? value.toolCalls : undefined;
+  const toolResults = isPlainObject(value) ? value.toolResults : undefined;
+
+  if (
+    !(
+      isPlainObject(value) &&
+      hasOnlyAllowedKeys(value, CONTEXT_MANIFEST_KEYS) &&
+      isContextManifestCounters(byRole) &&
+      isSerializableRecord(value.extensions) &&
+      isNonNegativeSafeInteger(messageCount) &&
+      isNonNegativeFiniteNumberProperty(value, "tokenEstimate") &&
+      isContextManifestNameCounters(toolCalls) &&
+      isContextManifestNameCounters(toolResults) &&
+      isNonNegativeSafeIntegerArray(value.turnBoundaries)
+    )
+  ) {
+    return false;
+  }
+
+  return hasValidContextManifestRelations(
+    byRole,
+    messageCount,
+    lastAssistantMessageIndex,
+    lastUserMessageIndex,
+    toolCalls,
+    toolResults,
+    value.turnBoundaries
+  );
+};
+
+/** True when `value[key]` is `undefined` or a valid {@link ContextManifest}. */
+export const isOptionalContextManifestProperty = (
+  value: Record<string, unknown>,
+  key: string
+): boolean => value[key] === undefined || isContextManifest(value[key]);

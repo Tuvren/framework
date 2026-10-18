@@ -20,10 +20,8 @@
 
 import { describe, expect, test } from "bun:test";
 
-import {
-  type ErasedPayload,
-  isErasedPayload,
-} from "../src/lib/payload-codec.js";
+import { isErasedPayload } from "../src/lib/payload-codec.js";
+import type { ErasedPayload } from "../src/lib/payload-codec.js";
 
 describe("isErasedPayload", () => {
   test("narrows a typed erased marker", () => {
@@ -33,7 +31,7 @@ describe("isErasedPayload", () => {
       reason: "key_unavailable",
     };
     expect(isErasedPayload(erased)).toBe(true);
-    expect(isErasedPayload({ role: "user", parts: [] })).toBe(false);
+    expect(isErasedPayload({ parts: [], role: "user" })).toBe(false);
     expect(isErasedPayload(null)).toBe(false);
     expect(isErasedPayload({ kind: "erased" })).toBe(false);
   });

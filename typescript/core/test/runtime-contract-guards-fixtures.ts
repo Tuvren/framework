@@ -41,63 +41,13 @@ import type {
 
 // Binding-local harness only: cross-implementation runtime-api authority lives
 // in the packet TypeSpec and conformance plans, not in these TypeScript values.
-function emptyEvents<T>(): AsyncIterable<T> {
-  return (async function* () {
+const emptyEvents = <T>(): AsyncIterable<T> => ({
+  async *[Symbol.asyncIterator]() {
     yield* [];
-  })();
-}
+  },
+});
 
-const noopExecutionHandle: ExecutionHandle = {
-  awaitResult(): Promise<ExecutionResult> {
-    return Promise.resolve({
-      executionStatus: { iterationCount: 0, phase: "completed" },
-      status: "completed",
-    });
-  },
-  cancel() {
-    return;
-  },
-  events() {
-    return emptyEvents();
-  },
-  resolveApproval() {
-    return resumedExecutionHandle;
-  },
-  status() {
-    return frameworkContractFixtures.executionStatus;
-  },
-  steer() {
-    return;
-  },
-};
-
-const resumedExecutionHandle: ExecutionHandle = {
-  awaitResult(): Promise<ExecutionResult> {
-    return Promise.resolve({
-      executionStatus: { iterationCount: 2, phase: "completed" },
-      status: "completed",
-    });
-  },
-  cancel() {
-    return;
-  },
-  events() {
-    return emptyEvents();
-  },
-  resolveApproval() {
-    return this;
-  },
-  status() {
-    return {
-      activeAgent: "primary",
-      iterationCount: 2,
-      phase: "running",
-    };
-  },
-  steer() {
-    return;
-  },
-};
+/* oxlint-disable typescript/promise-function-async -- These contract fixtures intentionally return the exact resolved Promise instances used to model the public handle and runtime seams. */
 
 const contextManifestFixture = {
   byRole: {
@@ -130,8 +80,84 @@ const contextManifestFixture = {
   turnBoundaries: [0],
 } satisfies ContextManifest;
 
+const executionStatusFixture = {
+  activeAgent: "primary",
+  approval: {
+    completedResults: [],
+    toolCalls: [
+      {
+        callId: "call_2",
+        decisions: ["approve", "edit", "reject"],
+        input: { query: "latest status" },
+        message: "Approve the outbound search?",
+        name: "search",
+      },
+    ],
+  },
+  iterationCount: 2,
+  manifest: contextManifestFixture,
+  pauseReason: "approval_required",
+  phase: "paused",
+} satisfies ExecutionStatus;
+
+const resumedExecutionHandle: ExecutionHandle = {
+  awaitResult(): Promise<ExecutionResult> {
+    return Promise.resolve({
+      executionStatus: { iterationCount: 2, phase: "completed" },
+      status: "completed",
+    });
+  },
+  cancel() {
+    // Intentional fixture no-op.
+  },
+  events() {
+    return emptyEvents();
+  },
+  resolveApproval() {
+    return this;
+  },
+  status() {
+    return {
+      activeAgent: "primary",
+      iterationCount: 2,
+      phase: "running",
+    };
+  },
+  steer() {
+    // Intentional fixture no-op.
+  },
+};
+
+const noopExecutionHandle: ExecutionHandle = {
+  awaitResult(): Promise<ExecutionResult> {
+    return Promise.resolve({
+      executionStatus: { iterationCount: 0, phase: "completed" },
+      status: "completed",
+    });
+  },
+  cancel() {
+    // Intentional fixture no-op.
+  },
+  events() {
+    return emptyEvents();
+  },
+  resolveApproval() {
+    return resumedExecutionHandle;
+  },
+  status() {
+    return executionStatusFixture;
+  },
+  steer() {
+    // Intentional fixture no-op.
+  },
+};
+
+// These handles are assigned after the mutually recursive fixture graph is
+// declared so resolveApproval and spawn can return the same identities.
+/* oxlint-disable prefer-const -- Preserve the deliberate post-declaration wiring of the recursive handle graph. */
 let resumedOrchestrationHandle: OrchestrationHandle;
 let childOrchestrationHandle: OrchestrationHandle;
+/* oxlint-enable prefer-const */
 
 const noopOrchestrationHandle: OrchestrationHandle = {
   ...noopExecutionHandle,
@@ -257,25 +283,7 @@ export const frameworkContractFixtures = {
     role: "assistant",
   } satisfies TuvrenMessage,
   contextManifest: contextManifestFixture,
-  executionStatus: {
-    activeAgent: "primary",
-    approval: {
-      completedResults: [],
-      toolCalls: [
-        {
-          callId: "call_2",
-          decisions: ["approve", "edit", "reject"],
-          input: { query: "latest status" },
-          message: "Approve the outbound search?",
-          name: "search",
-        },
-      ],
-    },
-    iterationCount: 2,
-    manifest: contextManifestFixture,
-    pauseReason: "approval_required",
-    phase: "paused",
-  } satisfies ExecutionStatus,
+  executionStatus: executionStatusFixture,
   orchestrationHandle: noopOrchestrationHandle,
   orchestrationRuntime: noopOrchestrationRuntime,
   providerStreamChunk: {
@@ -308,18 +316,8 @@ export const frameworkContractFixtures = {
         threadId: "thread_main",
       });
     },
-    setBranchHead() {
-      return Promise.resolve({
-        archiveBranchId: "branch_archive",
-        branchId: "branch_main",
-        headTurnNodeHash: "3".repeat(64),
-      });
-    },
-    listThreads() {
-      return Promise.resolve({ threads: [] });
-    },
-    listBranches() {
-      return Promise.resolve([]);
+    async *getTurnHistory() {
+      // no-op iterator
     },
     getTurnState() {
       return Promise.resolve({
@@ -332,19 +330,29 @@ export const frameworkContractFixtures = {
         turnTreeHash: "2".repeat(64),
       });
     },
-    async *getTurnHistory() {
-      // no-op iterator
+    listBranches() {
+      return Promise.resolve([]);
+    },
+    listThreads() {
+      return Promise.resolve({ threads: [] });
+    },
+    maintenance: {
+      purgeScope() {
+        throw new Error("purgeScope was not expected");
+      },
+      reclaim() {
+        throw new Error("reclaim was not expected");
+      },
     },
     readBranchMessages() {
       return Promise.resolve({ messages: [] });
     },
-    maintenance: {
-      reclaim() {
-        throw new Error("reclaim was not expected");
-      },
-      purgeScope() {
-        throw new Error("purgeScope was not expected");
-      },
+    setBranchHead() {
+      return Promise.resolve({
+        archiveBranchId: "branch_archive",
+        branchId: "branch_main",
+        headTurnNodeHash: "3".repeat(64),
+      });
     },
   } satisfies TuvrenRuntime,
   streamEvent: {
@@ -374,14 +382,12 @@ export const frameworkContractFixtures = {
   } satisfies TuvrenToolDefinition,
 };
 
+/* oxlint-enable typescript/promise-function-async */
+
 export const invalidFrameworkContractFixtures = {
   malformedApprovalRequest: {
     completedResults: "not-an-array",
     toolCalls: [],
-  },
-  malformedExecutionStatus: {
-    iterationCount: 1.5,
-    phase: "waiting",
   },
   malformedContextManifest: {
     byRole: {
@@ -404,6 +410,10 @@ export const invalidFrameworkContractFixtures = {
       total: 0,
     },
     turnBoundaries: [],
+  },
+  malformedExecutionStatus: {
+    iterationCount: 1.5,
+    phase: "waiting",
   },
   malformedMessage: {
     parts: "not-an-array",

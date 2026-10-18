@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const HASH_STRING_PATTERN = /^[0-9a-f]{64}$/;
+const HASH_STRING_PATTERN = /^[0-9a-f]{64}$/u;
 
 /**
  * A kernel content address: the lowercase 64-character hex encoding of a
@@ -57,58 +57,247 @@ export interface KernelObject {
   [key: string]: KernelRecord;
 }
 
+type KernelRecordValuePredicate = (
+  value: unknown,
+  activeParents: WeakSet<object>
+) => value is KernelRecord;
+
 /**
  * True when `value` is a canonical {@link HashString}: exactly 64 lowercase
  * hexadecimal characters (a SHA-256 digest). Uppercase or mixed-case hex is
  * rejected.
  */
-export function isHashString(value: unknown): value is HashString {
-  return typeof value === "string" && HASH_STRING_PATTERN.test(value);
-}
+export const isHashString = (value: unknown): value is HashString =>
+  typeof value === "string" && HASH_STRING_PATTERN.test(value);
 
 /**
  * Asserts that `value` is a canonical {@link HashString}.
  *
  * @param value - Untrusted candidate hash.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TypeError when {@link isHashString} rejects the value.
+ * @throws {TypeError} When {@link isHashString} rejects the value.
  */
-export function assertHashString(
+export const assertHashString: (
+  value: unknown,
+  label?: string
+) => asserts value is HashString = (
   value: unknown,
   label = "value"
-): asserts value is HashString {
+): asserts value is HashString => {
   if (!isHashString(value)) {
     throw new TypeError(
       `${label} must be a lowercase 64-character SHA-256 hex digest`
     );
   }
-}
+};
+
+const isCanonicalKernelInteger = (value: unknown): value is number =>
+  typeof value === "number" &&
+  Number.isSafeInteger(value) &&
+  !Object.is(value, -0);
 
 /**
  * True when `value` is a canonical {@link EpochMs}: a safe integer that is
  * not `-0`. Fractional or non-finite numbers are rejected.
  */
-export function isEpochMs(value: unknown): value is EpochMs {
-  return isCanonicalKernelInteger(value);
-}
+export const isEpochMs = (value: unknown): value is EpochMs =>
+  isCanonicalKernelInteger(value);
 
 /**
  * Asserts that `value` is a canonical {@link EpochMs} timestamp.
  *
  * @param value - Untrusted candidate timestamp.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws RangeError when {@link isEpochMs} rejects the value.
+ * @throws {RangeError} When {@link isEpochMs} rejects the value.
  */
-export function assertEpochMs(
+export const assertEpochMs: (
+  value: unknown,
+  label?: string
+) => asserts value is EpochMs = (
   value: unknown,
   label = "value"
-): asserts value is EpochMs {
+): asserts value is EpochMs => {
   if (!isEpochMs(value)) {
     throw new RangeError(
       `${label} must be a safe integer Unix epoch millisecond value`
     );
   }
-}
+};
+
+const isCanonicalKernelBytes = (value: Uint8Array): boolean => {
+  if (Object.getOwnPropertySymbols(value).length > 0) {
+    return false;
+  }
+
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+
+  for (const key of Object.getOwnPropertyNames(descriptors)) {
+    const descriptor = descriptors[key];
+    const index = Number(key);
+
+    if (
+      !(
+        descriptor?.enumerable === true &&
+        Object.hasOwn(descriptor, "value") &&
+        Number.isInteger(index) &&
+        index >= 0 &&
+        index < value.length &&
+        String(index) === key
+      ) ||
+      Object.hasOwn(descriptor, "get") ||
+      Object.hasOwn(descriptor, "set")
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const isDenseKernelArray = (
+  value: unknown[],
+  activeParents: WeakSet<object>,
+  valuePredicate: KernelRecordValuePredicate
+): value is KernelArray => {
+  if (Object.getOwnPropertySymbols(value).length > 0) {
+    return false;
+  }
+
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+
+  for (const key of Object.getOwnPropertyNames(descriptors)) {
+    if (key === "length") {
+      continue;
+    }
+
+    const descriptor = descriptors[key];
+    const index = Number(key);
+
+    if (
+      !(
+        descriptor?.enumerable === true &&
+        Object.hasOwn(descriptor, "value") &&
+        Number.isInteger(index) &&
+        index >= 0 &&
+        index < value.length &&
+        String(index) === key
+      ) ||
+      Object.hasOwn(descriptor, "get") ||
+      Object.hasOwn(descriptor, "set")
+    ) {
+      return false;
+    }
+  }
+
+  for (let index = 0; index < value.length; index += 1) {
+    if (
+      !(
+        Object.hasOwn(value, index) &&
+        valuePredicate(value[index], activeParents)
+      )
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const isPlainKernelObject = (
+  value: object
+): value is Record<string, unknown> => {
+  const prototype: unknown = Object.getPrototypeOf(value);
+
+  if (prototype !== Object.prototype && prototype !== null) {
+    return false;
+  }
+
+  if (Object.getOwnPropertySymbols(value).length > 0) {
+    return false;
+  }
+
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+
+  for (const key of Object.getOwnPropertyNames(descriptors)) {
+    const descriptor = descriptors[key];
+
+    if (
+      !(
+        descriptor?.enumerable === true && Object.hasOwn(descriptor, "value")
+      ) ||
+      Object.hasOwn(descriptor, "get") ||
+      Object.hasOwn(descriptor, "set")
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const isKernelRecordValueInternal = (
+  value: unknown,
+  activeParents: WeakSet<object>
+): value is KernelRecord => {
+  if (value === null) {
+    return true;
+  }
+
+  switch (typeof value) {
+    case "boolean":
+    case "string": {
+      return true;
+    }
+    case "number": {
+      return isCanonicalKernelInteger(value);
+    }
+    case "object": {
+      if (value instanceof Uint8Array) {
+        return isCanonicalKernelBytes(value);
+      }
+
+      if (activeParents.has(value)) {
+        return false;
+      }
+
+      activeParents.add(value);
+
+      if (Array.isArray(value)) {
+        const isValidArray = isDenseKernelArray(
+          value,
+          activeParents,
+          isKernelRecordValueInternal
+        );
+        activeParents.delete(value);
+        return isValidArray;
+      }
+
+      if (!isPlainKernelObject(value)) {
+        activeParents.delete(value);
+        return false;
+      }
+
+      for (const key of Object.keys(value)) {
+        if (!isKernelRecordValueInternal(value[key], activeParents)) {
+          activeParents.delete(value);
+          return false;
+        }
+      }
+
+      activeParents.delete(value);
+      return true;
+    }
+    case "bigint":
+    case "function":
+    case "symbol":
+    case "undefined": {
+      return false;
+    }
+    default: {
+      return false;
+    }
+  }
+};
 
 /**
  * True when `value` matches the restricted {@link KernelRecord} profile,
@@ -128,188 +317,26 @@ export function assertEpochMs(
  * which is what makes content-address hashing stable
  * (KrakenKernelSpecification §2.2–2.3).
  */
-export function isKernelRecord(value: unknown): value is KernelRecord {
-  return isKernelRecordValueInternal(value, new WeakSet<object>());
-}
+export const isKernelRecord = (value: unknown): value is KernelRecord =>
+  isKernelRecordValueInternal(value, new WeakSet<object>());
 
 /**
  * Asserts that `value` matches the restricted {@link KernelRecord} profile.
  *
  * @param value - Untrusted candidate record.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TypeError when {@link isKernelRecord} rejects the value.
+ * @throws {TypeError} When {@link isKernelRecord} rejects the value.
  */
-export function assertKernelRecord(
+export const assertKernelRecord: (
+  value: unknown,
+  label?: string
+) => asserts value is KernelRecord = (
   value: unknown,
   label = "value"
-): asserts value is KernelRecord {
+): asserts value is KernelRecord => {
   if (!isKernelRecord(value)) {
     throw new TypeError(
       `${label} must match the restricted runtime kernel record profile`
     );
   }
-}
-
-function isKernelRecordValueInternal(
-  value: unknown,
-  activeParents: WeakSet<object>
-): value is KernelRecord {
-  if (value === null) {
-    return true;
-  }
-
-  switch (typeof value) {
-    case "boolean":
-    case "string":
-      return true;
-    case "number":
-      return isCanonicalKernelInteger(value);
-    case "object":
-      if (value instanceof Uint8Array) {
-        return isCanonicalKernelBytes(value);
-      }
-
-      if (activeParents.has(value)) {
-        return false;
-      }
-
-      activeParents.add(value);
-
-      if (Array.isArray(value)) {
-        const isValidArray = isDenseKernelArray(value, activeParents);
-        activeParents.delete(value);
-        return isValidArray;
-      }
-
-      if (!isPlainKernelObject(value)) {
-        activeParents.delete(value);
-        return false;
-      }
-
-      for (const key of Object.keys(value)) {
-        if (!isKernelRecordValueInternal(value[key], activeParents)) {
-          activeParents.delete(value);
-          return false;
-        }
-      }
-
-      activeParents.delete(value);
-      return true;
-    default:
-      return false;
-  }
-}
-
-function isPlainKernelObject(value: object): value is Record<string, unknown> {
-  const prototype = Object.getPrototypeOf(value);
-
-  if (prototype !== Object.prototype && prototype !== null) {
-    return false;
-  }
-
-  if (Object.getOwnPropertySymbols(value).length > 0) {
-    return false;
-  }
-
-  const descriptors = Object.getOwnPropertyDescriptors(value);
-
-  for (const key of Object.getOwnPropertyNames(descriptors)) {
-    const descriptor = descriptors[key];
-
-    if (
-      !(descriptor?.enumerable && Object.hasOwn(descriptor, "value")) ||
-      Object.hasOwn(descriptor, "get") ||
-      Object.hasOwn(descriptor, "set")
-    ) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function isDenseKernelArray(
-  value: unknown[],
-  activeParents: WeakSet<object>
-): value is KernelArray {
-  if (Object.getOwnPropertySymbols(value).length > 0) {
-    return false;
-  }
-
-  const descriptors = Object.getOwnPropertyDescriptors(value);
-
-  for (const key of Object.getOwnPropertyNames(descriptors)) {
-    if (key === "length") {
-      continue;
-    }
-
-    const descriptor = descriptors[key];
-    const index = Number(key);
-
-    if (
-      !(
-        descriptor?.enumerable &&
-        Object.hasOwn(descriptor, "value") &&
-        Number.isInteger(index) &&
-        index >= 0 &&
-        index < value.length &&
-        String(index) === key
-      ) ||
-      Object.hasOwn(descriptor, "get") ||
-      Object.hasOwn(descriptor, "set")
-    ) {
-      return false;
-    }
-  }
-
-  for (let index = 0; index < value.length; index += 1) {
-    if (
-      !(
-        Object.hasOwn(value, index) &&
-        isKernelRecordValueInternal(value[index], activeParents)
-      )
-    ) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function isCanonicalKernelInteger(value: unknown): value is number {
-  return (
-    typeof value === "number" &&
-    Number.isSafeInteger(value) &&
-    !Object.is(value, -0)
-  );
-}
-
-function isCanonicalKernelBytes(value: Uint8Array): boolean {
-  if (Object.getOwnPropertySymbols(value).length > 0) {
-    return false;
-  }
-
-  const descriptors = Object.getOwnPropertyDescriptors(value);
-
-  for (const key of Object.getOwnPropertyNames(descriptors)) {
-    const descriptor = descriptors[key];
-    const index = Number(key);
-
-    if (
-      !(
-        descriptor?.enumerable &&
-        Object.hasOwn(descriptor, "value") &&
-        Number.isInteger(index) &&
-        index >= 0 &&
-        index < value.length &&
-        String(index) === key
-      ) ||
-      Object.hasOwn(descriptor, "get") ||
-      Object.hasOwn(descriptor, "set")
-    ) {
-      return false;
-    }
-  }
-
-  return true;
-}
+};

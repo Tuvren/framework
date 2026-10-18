@@ -260,12 +260,12 @@ describe("runtime-contract-guards approval contracts", () => {
       )
     ).toBe(false);
 
-    expect(() =>
+    expect(() => {
       assertApprovalResponseForRequest(
         { decisions: [{ callId: "missing-call", type: "approve" }] },
         frameworkContractFixtures.approvalRequest
-      )
-    ).toThrow();
+      );
+    }).toThrow();
   });
 
   test("rejects request-aware approval responses that use disallowed decisions or omit pending calls", () => {
@@ -335,9 +335,9 @@ describe("runtime-contract-guards approval contracts", () => {
         decisions: [
           {
             callId: "call-1",
+            editedInput: { query: "updated status" },
             message: "Please revise and continue.",
             type: "edit",
-            editedInput: { query: "updated status" },
           },
         ],
       })
@@ -380,14 +380,14 @@ describe("runtime-contract-guards approval contracts", () => {
       })
     ).toBe(false);
 
-    expect(() =>
+    expect(() => {
       assertApprovalResponse({
         decisions: [
           { callId: "call-1", type: "approve" },
           { callId: "call-1", type: "reject" },
         ],
-      })
-    ).toThrow();
+      });
+    }).toThrow();
   });
 
   test("rejects empty approval and tool identifiers", () => {
@@ -408,7 +408,7 @@ describe("runtime-contract-guards approval contracts", () => {
 
     expect(
       isApprovalResponse({
-        decisions: [{ callId: "", type: "", message: "x" }],
+        decisions: [{ callId: "", message: "x", type: "" }],
       })
     ).toBe(false);
   });

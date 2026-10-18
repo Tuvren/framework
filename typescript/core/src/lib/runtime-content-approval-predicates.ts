@@ -32,7 +32,7 @@ import type {
   ContentPart,
   PendingToolCall,
   ToolResultPart,
-} from "./runtime-contract-shapes.js";
+} from "./runtime-data-contract-shapes.js";
 
 const CONTENT_PART_TYPES = new Set([
   "text",
@@ -91,6 +91,49 @@ const APPROVAL_DECISION_KEYS = new Set([
   "message",
 ]);
 
+const isTextContentPart = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, TEXT_PART_KEYS) &&
+  typeof value.text === "string" &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
+const isReasoningContentPart = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, REASONING_PART_KEYS) &&
+  typeof value.text === "string" &&
+  typeof value.redacted === "boolean" &&
+  (value.redacted || value.text.length > 0) &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
+const isToolCallContentPart = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, TOOL_CALL_PART_KEYS) &&
+  isNonEmptyStringProperty(value, "callId") &&
+  isNonEmptyStringProperty(value, "name") &&
+  "input" in value &&
+  isSerializableContractValue(value.input) &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
+const isToolResultContentPart = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, TOOL_RESULT_PART_KEYS) &&
+  isNonEmptyStringProperty(value, "callId") &&
+  isNonEmptyStringProperty(value, "name") &&
+  "output" in value &&
+  isSerializableContractValue(value.output) &&
+  isOptionalBooleanProperty(value, "isError") &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
+const isFileContentPart = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, FILE_PART_KEYS) &&
+  (typeof value.data === "string" || value.data instanceof Uint8Array) &&
+  isNonEmptyStringProperty(value, "mediaType") &&
+  isOptionalStringProperty(value, "filename") &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
+const isStructuredContentPart = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, STRUCTURED_PART_KEYS) &&
+  "data" in value &&
+  isSerializableContractValue(value.data) &&
+  isOptionalStringProperty(value, "name") &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
 /**
  * Returns `true` when `value` is a structurally valid {@link ContentPart}
  * (KrakenFrameworkSpecification §1.1).
@@ -112,7 +155,7 @@ const APPROVAL_DECISION_KEYS = new Set([
  * Every variant additionally allows an optional serializable
  * `providerMetadata` record.
  */
-export function isContentPart(value: unknown): value is ContentPart {
+export const isContentPart = (value: unknown): value is ContentPart => {
   if (
     !(
       isPlainObject(value) &&
@@ -124,59 +167,29 @@ export function isContentPart(value: unknown): value is ContentPart {
   }
 
   switch (value.type) {
-    case "text":
-      return (
-        hasOnlyAllowedKeys(value, TEXT_PART_KEYS) &&
-        typeof value.text === "string" &&
-        isOptionalSerializableRecordProperty(value, "providerMetadata")
-      );
-    case "reasoning":
-      return (
-        hasOnlyAllowedKeys(value, REASONING_PART_KEYS) &&
-        typeof value.text === "string" &&
-        typeof value.redacted === "boolean" &&
-        (value.redacted || value.text.length > 0) &&
-        isOptionalSerializableRecordProperty(value, "providerMetadata")
-      );
-    case "tool_call":
-      return (
-        hasOnlyAllowedKeys(value, TOOL_CALL_PART_KEYS) &&
-        isNonEmptyStringProperty(value, "callId") &&
-        isNonEmptyStringProperty(value, "name") &&
-        "input" in value &&
-        isSerializableContractValue(value.input) &&
-        isOptionalSerializableRecordProperty(value, "providerMetadata")
-      );
-    case "tool_result":
-      return (
-        hasOnlyAllowedKeys(value, TOOL_RESULT_PART_KEYS) &&
-        isNonEmptyStringProperty(value, "callId") &&
-        isNonEmptyStringProperty(value, "name") &&
-        "output" in value &&
-        isSerializableContractValue(value.output) &&
-        isOptionalBooleanProperty(value, "isError") &&
-        isOptionalSerializableRecordProperty(value, "providerMetadata")
-      );
-    case "file":
-      return (
-        hasOnlyAllowedKeys(value, FILE_PART_KEYS) &&
-        (typeof value.data === "string" || value.data instanceof Uint8Array) &&
-        isNonEmptyStringProperty(value, "mediaType") &&
-        isOptionalStringProperty(value, "filename") &&
-        isOptionalSerializableRecordProperty(value, "providerMetadata")
-      );
-    case "structured":
-      return (
-        hasOnlyAllowedKeys(value, STRUCTURED_PART_KEYS) &&
-        "data" in value &&
-        isSerializableContractValue(value.data) &&
-        isOptionalStringProperty(value, "name") &&
-        isOptionalSerializableRecordProperty(value, "providerMetadata")
-      );
-    default:
+    case "text": {
+      return isTextContentPart(value);
+    }
+    case "reasoning": {
+      return isReasoningContentPart(value);
+    }
+    case "tool_call": {
+      return isToolCallContentPart(value);
+    }
+    case "tool_result": {
+      return isToolResultContentPart(value);
+    }
+    case "file": {
+      return isFileContentPart(value);
+    }
+    case "structured": {
+      return isStructuredContentPart(value);
+    }
+    default: {
       return false;
+    }
   }
-}
+};
 
 /**
  * Returns `true` when `value` is specifically a valid {@link ToolResultPart}
@@ -184,19 +197,16 @@ export function isContentPart(value: unknown): value is ContentPart {
  * `callId`/`name`, a present JSON-serializable `output`, optional boolean
  * `isError`, and optional serializable `providerMetadata`.
  */
-export function isToolResultPart(value: unknown): value is ToolResultPart {
-  return (
-    isPlainObject(value) &&
-    hasOnlyAllowedKeys(value, TOOL_RESULT_PART_KEYS) &&
-    value.type === "tool_result" &&
-    isNonEmptyStringProperty(value, "callId") &&
-    isNonEmptyStringProperty(value, "name") &&
-    "output" in value &&
-    isSerializableContractValue(value.output) &&
-    isOptionalBooleanProperty(value, "isError") &&
-    isOptionalSerializableRecordProperty(value, "providerMetadata")
-  );
-}
+export const isToolResultPart = (value: unknown): value is ToolResultPart =>
+  isPlainObject(value) &&
+  hasOnlyAllowedKeys(value, TOOL_RESULT_PART_KEYS) &&
+  value.type === "tool_result" &&
+  isNonEmptyStringProperty(value, "callId") &&
+  isNonEmptyStringProperty(value, "name") &&
+  "output" in value &&
+  isSerializableContractValue(value.output) &&
+  isOptionalBooleanProperty(value, "isError") &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
 
 /**
  * Returns `true` when `value` is a valid {@link PendingToolCall} inside an
@@ -205,21 +215,18 @@ export function isToolResultPart(value: unknown): value is ToolResultPart {
  * JSON-serializable `input`, and a non-empty `decisions` array of unique,
  * non-empty decision-type strings the operator may choose from.
  */
-export function isPendingToolCall(value: unknown): value is PendingToolCall {
-  return (
-    isPlainObject(value) &&
-    hasOnlyAllowedKeys(value, PENDING_TOOL_CALL_KEYS) &&
-    isNonEmptyStringProperty(value, "callId") &&
-    isNonEmptyStringProperty(value, "name") &&
-    isNonEmptyStringProperty(value, "message") &&
-    "input" in value &&
-    isSerializableContractValue(value.input) &&
-    Array.isArray(value.decisions) &&
-    value.decisions.length > 0 &&
-    value.decisions.every(isNonEmptyStringValue) &&
-    hasUniqueStrings(value.decisions)
-  );
-}
+export const isPendingToolCall = (value: unknown): value is PendingToolCall =>
+  isPlainObject(value) &&
+  hasOnlyAllowedKeys(value, PENDING_TOOL_CALL_KEYS) &&
+  isNonEmptyStringProperty(value, "callId") &&
+  isNonEmptyStringProperty(value, "name") &&
+  isNonEmptyStringProperty(value, "message") &&
+  "input" in value &&
+  isSerializableContractValue(value.input) &&
+  Array.isArray(value.decisions) &&
+  value.decisions.length > 0 &&
+  value.decisions.every(isNonEmptyStringValue) &&
+  hasUniqueStrings(value.decisions);
 
 /**
  * Returns `true` when `value` is a valid {@link ApprovalDecision}
@@ -230,7 +237,9 @@ export function isPendingToolCall(value: unknown): value is PendingToolCall {
  * the decision type: an `edit` decision must carry a JSON-serializable
  * `editedInput`, and every other decision type must omit it.
  */
-export function isApprovalDecision(value: unknown): value is ApprovalDecision {
+export const isApprovalDecision = (
+  value: unknown
+): value is ApprovalDecision => {
   if (
     !(
       isPlainObject(value) &&
@@ -261,7 +270,7 @@ export function isApprovalDecision(value: unknown): value is ApprovalDecision {
   // Approval notes are optional for all decision types, but if present they
   // should carry real explanatory text instead of an empty placeholder.
   return true;
-}
+};
 
 /**
  * True when every `callId` is distinct across an approval request's pending
@@ -269,10 +278,10 @@ export function isApprovalDecision(value: unknown): value is ApprovalDecision {
  * each completed result maps to exactly one call
  * (KrakenFrameworkSpecification §1.7).
  */
-export function hasDistinctApprovalRequestCallIds(
+export const hasDistinctApprovalRequestCallIds = (
   toolCalls: PendingToolCall[],
   completedResults: ToolResultPart[]
-): boolean {
+): boolean => {
   const seenCallIds = new Set<string>();
 
   for (const toolCall of toolCalls) {
@@ -292,4 +301,4 @@ export function hasDistinctApprovalRequestCallIds(
   }
 
   return true;
-}
+};

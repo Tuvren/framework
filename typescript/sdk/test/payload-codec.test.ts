@@ -24,23 +24,23 @@ import {
   isPayloadEnvelope,
 } from "@tuvren/core/lifecycle";
 
-import {
-  createAesGcmPayloadCodec,
-  type PayloadKeyring,
-} from "../src/lib/payload-codec.js";
+import { createAesGcmPayloadCodec } from "../src/lib/payload-codec.js";
+import type { PayloadKeyring } from "../src/lib/payload-codec.js";
 
 const SCOPE = "tenant.acme";
 const CONTEXT: PayloadCodecContext = { edge: "message", scope: SCOPE };
-const CANNOT_RESOLVE_KEYREF = /cannot resolve keyRef/;
-const TRUNCATED_HEADER = /truncated header/;
-const KEYREF_LEN_OUT_OF_RANGE = /keyRef length out of range/;
-const IV_LEN_OUT_OF_RANGE = /iv length out of range/;
+const CANNOT_RESOLVE_KEYREF = /cannot resolve keyRef/u;
+const TRUNCATED_HEADER = /truncated header/u;
+const KEYREF_LEN_OUT_OF_RANGE = /keyRef length out of range/u;
+const IV_LEN_OUT_OF_RANGE = /iv length out of range/u;
 
 /** In-memory keyring whose entries the host can destroy to simulate erasure. */
-function createDestroyableKeyring(initial?: Record<string, Uint8Array>): {
-  destroy(keyRef: string): void;
+const createDestroyableKeyring = (
+  initial?: Record<string, Uint8Array>
+): {
+  destroy: (keyRef: string) => void;
   keyring: PayloadKeyring;
-} {
+} => {
   const keys = new Map<string, Uint8Array>(Object.entries(initial ?? {}));
   return {
     destroy(keyRef) {
@@ -52,7 +52,18 @@ function createDestroyableKeyring(initial?: Record<string, Uint8Array>): {
       },
     },
   };
-}
+};
+
+const captureRejection = async (
+  promise: Promise<unknown>
+): Promise<unknown> => {
+  try {
+    await promise;
+  } catch (error: unknown) {
+    return error;
+  }
+  throw new Error("expected promise to reject");
+};
 
 const PLAINTEXT = new TextEncoder().encode(
   JSON.stringify({ role: "tool", secret: "social-security-number" })
@@ -89,7 +100,7 @@ describe("AES-256-GCM payload codec", () => {
     expect(isPayloadEnvelope(stored)).toBe(true);
     // The plaintext (and the secret substring) must not appear in the blob.
     expect(Buffer.from(stored).includes(Buffer.from(PLAINTEXT))).toBe(false);
-    expect(Buffer.from(stored).toString("utf8")).not.toContain(
+    expect(Buffer.from(stored).toString("utf-8")).not.toContain(
       "social-security-number"
     );
   });
@@ -122,14 +133,14 @@ describe("AES-256-GCM payload codec", () => {
   });
 
   test("returns a typed erased result when the host has destroyed the key", async () => {
-    const { destroy, keyring } = createDestroyableKeyring({
+    const destroyable = createDestroyableKeyring({
       [SCOPE]: new Uint8Array(randomBytes(32)),
     });
-    const codec = createAesGcmPayloadCodec({ keyring });
+    const codec = createAesGcmPayloadCodec({ keyring: destroyable.keyring });
 
     const stored = await codec.encrypt(PLAINTEXT, CONTEXT);
     // Crypto-shred: destroy the key. The ciphertext envelope stays intact.
-    destroy(SCOPE);
+    destroyable.destroy(SCOPE);
 
     const result = await codec.decrypt(stored, CONTEXT);
     expect(result.status).toBe("erased");
@@ -151,35 +162,38 @@ describe("AES-256-GCM payload codec", () => {
     // Decrypt under a different Scope context: AAD differs → GCM tag mismatch.
     // (keyRef in the envelope still points at SCOPE, so a key is present and the
     // failure is an integrity error rather than an erased read.)
-    await expect(
+    const error = await captureRejection(
       codec.decrypt(stored, { edge: "message", scope: otherScope })
-    ).rejects.toThrow();
+    );
+    expect(error).toBeInstanceOf(Error);
   });
 
   test("cannot encrypt without a resolvable key", async () => {
     const { keyring } = createDestroyableKeyring();
     const codec = createAesGcmPayloadCodec({ keyring });
 
-    await expect(codec.encrypt(PLAINTEXT, CONTEXT)).rejects.toThrow(
-      CANNOT_RESOLVE_KEYREF
-    );
+    const error = await captureRejection(codec.encrypt(PLAINTEXT, CONTEXT));
+    expect(error).toBeInstanceOf(Error);
+    expect(String(error)).toMatch(CANNOT_RESOLVE_KEYREF);
   });
 
   test("supports per-subject keyRef resolution", async () => {
     const subjectKeyRef = "subject.42";
-    const { destroy, keyring } = createDestroyableKeyring({
+    const destroyable = createDestroyableKeyring({
       [subjectKeyRef]: new Uint8Array(randomBytes(32)),
     });
     const codec = createAesGcmPayloadCodec({
-      keyring,
+      keyring: destroyable.keyring,
       resolveKeyRef: () => subjectKeyRef,
     });
 
     const stored = await codec.encrypt(PLAINTEXT, CONTEXT);
-    expect((await codec.decrypt(stored, CONTEXT)).status).toBe("available");
+    const available = await codec.decrypt(stored, CONTEXT);
+    expect(available.status).toBe("available");
 
-    destroy(subjectKeyRef);
-    expect((await codec.decrypt(stored, CONTEXT)).status).toBe("erased");
+    destroyable.destroy(subjectKeyRef);
+    const erased = await codec.decrypt(stored, CONTEXT);
+    expect(erased.status).toBe("erased");
   });
 
   test("rejects a tampered ciphertext under a present key (integrity error, not erased)", async () => {
@@ -196,7 +210,8 @@ describe("AES-256-GCM payload codec", () => {
     // Flip to a guaranteed-different byte without a bitwise operator.
     tampered[last] = tampered[last] === 0xff ? 0x00 : 0xff;
 
-    await expect(codec.decrypt(tampered, CONTEXT)).rejects.toThrow();
+    const error = await captureRejection(codec.decrypt(tampered, CONTEXT));
+    expect(error).toBeInstanceOf(Error);
   });
 
   test("rejects a truncated-header envelope instead of treating it as erased", async () => {
@@ -206,9 +221,8 @@ describe("AES-256-GCM payload codec", () => {
     const forged = Uint8Array.of(0x54, 0x56, 0x45, 0x31, 1);
     expect(isPayloadEnvelope(forged)).toBe(true);
 
-    await expect(codec.decrypt(forged, CONTEXT)).rejects.toThrow(
-      TRUNCATED_HEADER
-    );
+    const error = await captureRejection(codec.decrypt(forged, CONTEXT));
+    expect(String(error)).toMatch(TRUNCATED_HEADER);
   });
 
   test("rejects an over-claimed keyRef length instead of masquerading as erased", async () => {
@@ -223,17 +237,16 @@ describe("AES-256-GCM payload codec", () => {
       0x54,
       0x56,
       0x45,
-      0x31, // "TVE1"
-      1, // version
-      1, // algId = AES-256-GCM
-      0xff, // keyRefLen low byte (255)
-      0x00, // keyRefLen high byte
-      0x61 // a single trailing byte, far short of 255
+      0x31,
+      1,
+      1,
+      0xff,
+      0x00,
+      0x61
     );
 
-    await expect(codec.decrypt(forged, CONTEXT)).rejects.toThrow(
-      KEYREF_LEN_OUT_OF_RANGE
-    );
+    const error = await captureRejection(codec.decrypt(forged, CONTEXT));
+    expect(String(error)).toMatch(KEYREF_LEN_OUT_OF_RANGE);
   });
 
   test("rejects an iv length that overflows the blob", async () => {
@@ -242,21 +255,10 @@ describe("AES-256-GCM payload codec", () => {
     });
     const codec = createAesGcmPayloadCodec({ keyring });
     // keyRefLen = 0, ivLen = 200, but no iv bytes follow.
-    const forged = Uint8Array.of(
-      0x54,
-      0x56,
-      0x45,
-      0x31, // "TVE1"
-      1, // version
-      1, // algId
-      0x00, // keyRefLen low
-      0x00, // keyRefLen high (0 → empty keyRef)
-      200 // ivLen claiming 200 bytes that do not exist
-    );
+    const forged = Uint8Array.of(0x54, 0x56, 0x45, 0x31, 1, 1, 0x00, 0x00, 200);
 
-    await expect(codec.decrypt(forged, CONTEXT)).rejects.toThrow(
-      IV_LEN_OUT_OF_RANGE
-    );
+    const error = await captureRejection(codec.decrypt(forged, CONTEXT));
+    expect(String(error)).toMatch(IV_LEN_OUT_OF_RANGE);
   });
 
   test("binds AAD injectively: delimiter-ambiguous (scope, edge) pairs do not cross-decrypt", async () => {
@@ -279,14 +281,15 @@ describe("AES-256-GCM payload codec", () => {
     });
 
     const stored = await codec.encrypt(PLAINTEXT, {
-      edge: "y\u001fz",
+      edge: "y\u001Fz",
       scope: "x",
     });
     // Length-prefixed AAD makes these distinct bindings (scopeLen 1 vs 3), so the
     // GCM tag check fails (present key -> integrity error, not erased). The old
     // delimiter join produced identical AAD and would have decrypted cleanly.
-    await expect(
-      codec.decrypt(stored, { edge: "z", scope: "x\u001fy" })
-    ).rejects.toThrow();
+    const error = await captureRejection(
+      codec.decrypt(stored, { edge: "z", scope: "x\u001Fy" })
+    );
+    expect(error).toBeInstanceOf(Error);
   });
 });
