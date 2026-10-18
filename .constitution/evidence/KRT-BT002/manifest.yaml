@@ -1,0 +1,12 @@
+owner: KRT-BT002
+mode: contract_test
+produced:
+  date: 2026-10-18
+  commit: e9796643d6c01e209231941cc2aac14bfaa81ae7
+  command: "Fresh retained-Biome suppressed and virtual-unsuppressed diagnostics; Oxlint 1.86.0 type-aware diagnostics over typescript/runtime; targeted runtime tests; framework-runtime typecheck and lint; repository typecheck and lint; direct changeset coverage check."
+files:
+  - path: suppressions.json
+    sha256: ef14b948709c222bcf29d7b12510c3e7f1b41e7e818d9744fe316f87aeea11cd
+    bytes: 118779
+    role: measurement
+pass_criteria: "Every one of the 59 planned runtime directive identities plus measured drift has an identity-stable ledger entry preserving its original reason and recording retained-checker and native-admission dispositions from fresh diagnostics. All 59 directives remain while Biome owns runtime because neither dead identity has a qualifying behavior-preserving fix for early deletion; no directive is added or removed; runtime and repository typecheck and lint gates pass; direct patch changeset coverage names @tuvren/runtime."
