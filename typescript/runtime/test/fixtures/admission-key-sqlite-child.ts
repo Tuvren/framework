@@ -29,6 +29,19 @@ if (databasePath === undefined || databasePath.length === 0) {
 
 const backend = createSqliteBackend({ databasePath });
 
+const keyedSignal = (text: string, admissionKey: string): InputSignal => {
+  return {
+    admissionKey,
+    parts: [{ text, type: "text" }],
+  };
+};
+
+const drain = async <T>(iterator: AsyncIterator<T>): Promise<void> => {
+  while (!(await iterator.next()).done) {
+    // Pulling the stream drives execution.
+  }
+};
+
 try {
   process.stdout.write("READY\n");
   if (mode === "hang-after-ready") {
@@ -99,17 +112,4 @@ try {
   );
 } finally {
   await backend.close();
-}
-
-function keyedSignal(text: string, admissionKey: string): InputSignal {
-  return {
-    admissionKey,
-    parts: [{ text, type: "text" }],
-  };
-}
-
-async function drain<T>(iterator: AsyncIterator<T>): Promise<void> {
-  while (!(await iterator.next()).done) {
-    // Pulling the stream drives execution.
-  }
 }

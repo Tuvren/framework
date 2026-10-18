@@ -42,7 +42,7 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeRunner(toolName: string): RuntimeRunner {
+const makeRunner = (toolName: string): RuntimeRunner => {
   return {
     async execute(context) {
       const toolMessages = context.messages.filter((m) => m.role === "tool");
@@ -67,18 +67,18 @@ function makeRunner(toolName: string): RuntimeRunner {
       throw new Error("resume not expected");
     },
   };
-}
+};
 
-function makeTool(name: string): TuvrenToolDefinition {
+const makeTool = (name: string): TuvrenToolDefinition => {
   return {
     description: `test tool ${name}`,
     execute: async (input) => ({ result: input }),
     inputSchema: { properties: { q: { type: "string" } }, type: "object" },
     name,
   };
-}
+};
 
-async function runToolTurn(toolName: string) {
+const runToolTurn = async (toolName: string) => {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
@@ -93,7 +93,7 @@ async function runToolTurn(toolName: string) {
     threadId: thread.threadId,
   });
   return collectEvents(handle.events());
-}
+};
 
 // ---------------------------------------------------------------------------
 // Attribution on canonical events (AW006)

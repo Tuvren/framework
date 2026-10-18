@@ -39,13 +39,13 @@ import { buildClientEndpointTools } from "../src/lib/tool-registry.ts";
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function makeEndpoint(
+const makeEndpoint = (
   endpointId: string,
   capabilities: string[],
   handler?: (
     envelope: ClientInvocationEnvelope
   ) => Promise<ClientReportedResult>
-): AttachedClientEndpoint {
+): AttachedClientEndpoint => {
   return {
     advertisedCapabilities: capabilities.map((id) => ({
       capabilityId: id,
@@ -69,13 +69,13 @@ function makeEndpoint(
     },
     endpointId,
   };
-}
+};
 
-function makeClientMcpEndpoint(
+const makeClientMcpEndpoint = (
   endpointId: string,
   capabilityId: string,
   mcpServerName: string
-): AttachedClientEndpoint {
+): AttachedClientEndpoint => {
   return {
     advertisedCapabilities: [
       {
@@ -96,7 +96,7 @@ function makeClientMcpEndpoint(
     },
     endpointId,
   };
-}
+};
 
 // ---------------------------------------------------------------------------
 // KRT-AZ001: Attachment seam and lease model

@@ -96,10 +96,10 @@ interface SeedOptions {
 // Seeds a complete message-bearing branch (schema, message object, turn tree
 // with a populated `messages` path, genesis turn node, thread, and branch) so
 // every Durable-Read Surface operation has real state to either reveal or hide.
-async function seedThreadWithMessage(
+const seedThreadWithMessage = async (
   backend: RuntimeBackend,
   options: SeedOptions
-): Promise<SeededScopeState> {
+): Promise<SeededScopeState> => {
   const schema = createCanonicalKernelTestSchema();
   const schemaRecord = createStoredSchemaRecord(schema, options.base);
 
@@ -162,15 +162,15 @@ async function seedThreadWithMessage(
     messageHash: messageObject.hash,
     threadId: options.threadId,
   };
-}
+};
 
 // ── Shared assertions ────────────────────────────────────────────────────────
 
 // Proves the constructing scope observes its own complete durable-read surface.
-async function assertSurfaceRevealed(
+const assertSurfaceRevealed = async (
   kernel: RuntimeKernel,
   seeded: SeededScopeState
-): Promise<void> {
+): Promise<void> => {
   const threads = await listThreads(kernel);
   expect(threads.threads.map((thread) => thread.threadId)).toEqual([
     seeded.threadId,
@@ -203,15 +203,15 @@ async function assertSurfaceRevealed(
 
   expect(await kernel.store.has(seeded.messageHash)).toBe(true);
   expect(await kernel.store.get(seeded.messageHash)).not.toBeNull();
-}
+};
 
 // Proves a co-tenant scope observes none of another scope's durable-read
 // surface: enumerations are empty, lineage reads reject the unknown branch, and
 // the message content is not even existence-checkable.
-async function assertSurfaceHidden(
+const assertSurfaceHidden = async (
   kernel: RuntimeKernel,
   seeded: SeededScopeState
-): Promise<void> {
+): Promise<void> => {
   const threads = await listThreads(kernel);
   expect(threads.threads).toEqual([]);
 
@@ -241,7 +241,7 @@ async function assertSurfaceHidden(
 
   expect(await kernel.store.has(seeded.messageHash)).toBe(false);
   expect(await kernel.store.get(seeded.messageHash)).toBeNull();
-}
+};
 
 // ── Scoped kernel pair (shared substrate, distinct scopes) ───────────────────
 
@@ -255,7 +255,7 @@ interface ScopedPair {
   kernelB: RuntimeKernel;
 }
 
-function createScopedMemoryPair(): ScopedPair {
+const createScopedMemoryPair = (): ScopedPair => {
   const store = createMemoryScopeStore();
   const backendA = createMemoryBackend({ scope: SCOPE_A, store });
   const backendB = createMemoryBackend({ scope: SCOPE_B, store });
@@ -265,7 +265,7 @@ function createScopedMemoryPair(): ScopedPair {
     kernelA: createRuntimeKernel({ backend: backendA }),
     kernelB: createRuntimeKernel({ backend: backendB }),
   };
-}
+};
 
 // ── Suite ────────────────────────────────────────────────────────────────────
 

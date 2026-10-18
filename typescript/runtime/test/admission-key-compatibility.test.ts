@@ -26,47 +26,7 @@ import {
 
 import { normalizeInputSignal } from "../src/lib/runtime-core-shared.ts";
 
-describe("admission-keyless message compatibility", () => {
-  test("preserves the pre-admission-key identity bytes and message hash", async () => {
-    const fixture = readAdmissionKeylessFixture();
-    const normalizedSignal = normalizeInputSignal(
-      { parts: fixture.message.parts },
-      "fixture.message"
-    );
-    const normalizedMessage = {
-      ...normalizedSignal,
-      role: "user" as const,
-    };
-    const encoded = encodeDeterministicKernelRecord(
-      normalizedMessage as unknown as KernelRecord
-    );
-    const stored = await createIdentityPayloadCodec().encrypt(encoded, {
-      edge: "message",
-      scope: "tuvren.scope.default",
-    });
-
-    expect("admissionKey" in normalizedMessage).toBe(false);
-    expect(Buffer.from(stored).toString("hex")).toBe(
-      fixture.identityPayloadCodec.encodedBytesHex
-    );
-    expect(await hashOpaqueObjectBytes(stored)).toBe(
-      fixture.identityPayloadCodec.messageHash
-    );
-  });
-});
-
-interface AdmissionKeylessFixture {
-  identityPayloadCodec: {
-    encodedBytesHex: string;
-    messageHash: string;
-  };
-  message: {
-    parts: [{ text: string; type: "text" }];
-    role: "user";
-  };
-}
-
-function readAdmissionKeylessFixture(): AdmissionKeylessFixture {
+const readAdmissionKeylessFixture = (): AdmissionKeylessFixture => {
   const fixture: unknown = JSON.parse(
     readFileSync(
       new URL(
@@ -119,5 +79,45 @@ function readAdmissionKeylessFixture(): AdmissionKeylessFixture {
       ],
       role: "user",
     },
+  };
+};
+
+describe("admission-keyless message compatibility", () => {
+  test("preserves the pre-admission-key identity bytes and message hash", async () => {
+    const fixture = readAdmissionKeylessFixture();
+    const normalizedSignal = normalizeInputSignal(
+      { parts: fixture.message.parts },
+      "fixture.message"
+    );
+    const normalizedMessage = {
+      ...normalizedSignal,
+      role: "user" as const,
+    };
+    const encoded = encodeDeterministicKernelRecord(
+      normalizedMessage as unknown as KernelRecord
+    );
+    const stored = await createIdentityPayloadCodec().encrypt(encoded, {
+      edge: "message",
+      scope: "tuvren.scope.default",
+    });
+
+    expect("admissionKey" in normalizedMessage).toBe(false);
+    expect(Buffer.from(stored).toString("hex")).toBe(
+      fixture.identityPayloadCodec.encodedBytesHex
+    );
+    expect(await hashOpaqueObjectBytes(stored)).toBe(
+      fixture.identityPayloadCodec.messageHash
+    );
+  });
+});
+
+interface AdmissionKeylessFixture {
+  identityPayloadCodec: {
+    encodedBytesHex: string;
+    messageHash: string;
+  };
+  message: {
+    parts: [{ text: string; type: "text" }];
+    role: "user";
   };
 }
