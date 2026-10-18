@@ -56,15 +56,17 @@ import type {
 
 const SAMPLE_COUNT = 5;
 const WARMUP_ITERATIONS = 25;
-const FIXTURE_HASH = "a".repeat(64) as HashString;
+const FIXTURE_HASH = "a".repeat(64);
+const FIXTURE_HASH_PROMISE = Promise.resolve(FIXTURE_HASH);
+const STARTED_PROMISE = Promise.resolve();
 const bunRuntime = globalThis as typeof globalThis & {
-  Bun: { nanoseconds(): number };
+  Bun: { nanoseconds: () => number };
 };
 
 interface BenchmarkCase {
   iterations: number;
   name: string;
-  run(iterations: number): Promise<void> | void;
+  run: (iterations: number) => Promise<void> | void;
 }
 
 interface BenchmarkResult {
@@ -166,7 +168,7 @@ const createExtensions = (count: number): TuvrenExtension[] => {
   for (let index = 0; index < count; index += 1) {
     extensions.push({
       afterIteration(context) {
-        context.sharedExports.ext0?.key0;
+        Boolean(context.sharedExports.ext0?.key0);
         return {
           state: {
             lastIteration: context.iterationCount,
@@ -174,7 +176,7 @@ const createExtensions = (count: number): TuvrenExtension[] => {
         };
       },
       beforeIteration(context) {
-        context.sharedExports.ext0?.key0;
+        Boolean(context.sharedExports.ext0?.key0);
         return {
           state: {
             lastIteration: context.iterationCount,
@@ -245,18 +247,20 @@ const createToolEnvironment = (
     return 1;
   },
   publishCustom() {
-    return;
+    // Intentionally discard benchmark emissions.
   },
   publishEvent() {
-    return;
+    // Intentionally discard benchmark emissions.
   },
   reportSoftError() {
-    return;
+    // Intentionally discard benchmark soft errors.
   },
   runId: "run",
-  stageResult(result: ToolResultPart): Promise<HashString> {
-    result.callId;
-    return Promise.resolve(FIXTURE_HASH);
+  async stageResult(result: ToolResultPart): Promise<HashString> {
+    if (result.callId.length === 0) {
+      throw new Error("benchmark tool results require a call id");
+    }
+    return await FIXTURE_HASH_PROMISE;
   },
   threadId: "thread",
   toolRegistry,
@@ -285,14 +289,27 @@ const createBenchmarkExecutionRequest = (): ExecutionSessionRequest => ({
 
 const benchmarkExecutionHandleRuntime: RuntimeExecutionHandleRuntime = {
   cancelPausedExecution() {
-    return;
+    // The event-queue benchmark never enters a paused execution.
   },
   createResumedExecutionHandle() {
     throw new Error("resume is not used by the event queue benchmark");
   },
-  startExecution() {
-    return Promise.resolve();
+  async startExecution() {
+    await STARTED_PROMISE;
   },
+};
+
+const runSequentially = async (
+  iterations: number,
+  action: (index: number) => Promise<void>,
+  index = 0
+): Promise<void> => {
+  if (index >= iterations) {
+    return;
+  }
+
+  await action(index);
+  await runSequentially(iterations, action, index + 1);
 };
 
 const runExecutionHandleEventQueueBench = async (
@@ -306,11 +323,11 @@ const runExecutionHandleEventQueueBench = async (
   );
   const iterator = handle.events()[Symbol.asyncIterator]();
 
-  for (let index = 0; index < iterations; index += 1) {
+  await runSequentially(iterations, async () => {
     const nextEvent = iterator.next();
     handle.publish(streamEventFixture);
     await nextEvent;
-  }
+  });
 
   handle.finish();
   await iterator.return?.();
@@ -326,15 +343,18 @@ const runSubtreeForwardingBench = async (
   );
   const iterators = queues.map((queue) => queue[Symbol.asyncIterator]());
 
-  for (let index = 0; index < iterations; index += 1) {
-    const nextEvents = iterators.map((iterator) => iterator.next());
+  await runSequentially(iterations, async () => {
+    const nextEvents: Promise<IteratorResult<TuvrenStreamEvent>>[] = [];
+    for (const iterator of iterators) {
+      nextEvents.push(iterator.next());
+    }
 
     for (const queue of queues) {
       queue.push(cloneValue(streamEventFixture));
     }
 
     await Promise.all(nextEvents);
-  }
+  });
 
   for (const queue of queues) {
     queue.close();
@@ -364,25 +384,25 @@ const cases: BenchmarkCase[] = [
   {
     iterations: 3000,
     name: "execution handle single-consumer event queue",
-    run(iterations) {
-      return runExecutionHandleEventQueueBench(iterations);
+    async run(iterations) {
+      await runExecutionHandleEventQueueBench(iterations);
     },
   },
   {
     iterations: 3000,
     name: "subtree queue forwarding to four queues",
-    run(iterations) {
-      return runSubtreeForwardingBench(iterations, 4);
+    async run(iterations) {
+      await runSubtreeForwardingBench(iterations, 4);
     },
   },
   {
     iterations: 700,
     name: "extension beforeIteration context snapshots",
     async run(iterations) {
-      for (let index = 0; index < iterations; index += 1) {
+      await runSequentially(iterations, async (index) => {
         await runBeforeIterationHooks({
           emit() {
-            return;
+            // Intentionally discard benchmark hook emissions.
           },
           extensions: extensionFixture,
           iterationCount: index,
@@ -391,7 +411,7 @@ const cases: BenchmarkCase[] = [
           runId: "run-bench",
           turnId: "turn-bench",
         });
-      }
+      });
     },
   },
   {
@@ -402,10 +422,10 @@ const cases: BenchmarkCase[] = [
         type: "continue_iteration",
       };
 
-      for (let index = 0; index < iterations; index += 1) {
+      await runSequentially(iterations, async (index) => {
         await runAfterIterationHooks({
           emit() {
-            return;
+            // Intentionally discard benchmark hook emissions.
           },
           extensions: extensionFixture,
           iterationCount: index,
@@ -419,7 +439,7 @@ const cases: BenchmarkCase[] = [
           runId: "run-bench",
           turnId: "turn-bench",
         });
-      }
+      });
     },
   },
   {
@@ -433,14 +453,14 @@ const cases: BenchmarkCase[] = [
           toolCallFixture,
           toolFixture,
           toolEnvironmentFixture,
-          undefined
+          toolEnvironmentFixture.signal
         );
         createAroundToolContext(
           executable,
           "ext0",
           toolEnvironmentFixture,
           sharedExportsFixture,
-          undefined
+          toolEnvironmentFixture.signal
         );
       }
     },
@@ -516,11 +536,11 @@ const measure = async (
 
   const samples: number[] = [];
 
-  for (let sampleIndex = 0; sampleIndex < SAMPLE_COUNT; sampleIndex += 1) {
+  await runSequentially(SAMPLE_COUNT, async () => {
     const startedAt = nanoseconds();
     await benchmarkCase.run(benchmarkCase.iterations);
     samples.push(nanoseconds() - startedAt);
-  }
+  });
 
   const bestNs = Math.min(...samples);
   const averageNs =
@@ -558,10 +578,14 @@ const writeResult = (result: BenchmarkResult): void => {
 const main = async (): Promise<void> => {
   process.stdout.write("runtime-core boundary benchmark\n");
 
-  for (const benchmarkCase of cases) {
+  await runSequentially(cases.length, async (index) => {
+    const benchmarkCase = cases[index];
+    if (benchmarkCase === undefined) {
+      return;
+    }
     const result = await measure(benchmarkCase);
     writeResult(result);
-  }
+  });
 };
 
 await main();

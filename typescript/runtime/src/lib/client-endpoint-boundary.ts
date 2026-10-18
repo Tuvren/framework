@@ -20,6 +20,7 @@ import type {
   Binding,
   ClientDispatchResult,
   ClientEndpointBoundary,
+  ClientReportedResult,
 } from "@tuvren/core/capabilities";
 import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
 
@@ -135,7 +136,7 @@ class BasicClientEndpointBoundary implements ClientEndpointBoundary {
     // do not add a parser without re-escaping the interpolated fields.
     const leaseToken = `${capabilityId}:${callId}:${this.leaseCounter}`;
 
-    let reported: import("@tuvren/core/capabilities").ClientReportedResult;
+    let reported: ClientReportedResult;
     try {
       reported = await entry.endpoint.dispatch({
         callId,

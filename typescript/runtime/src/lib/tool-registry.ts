@@ -163,7 +163,7 @@ const assertUniqueExtensionNames = (extensions: TuvrenExtension[]): void => {
  * @param explicitTools - Tools declared directly on the agent config.
  * @param extensions - Extensions whose `tools` merge into the registry;
  *   duplicate extension names raise `duplicate_extension_registration`.
- * @throws TuvrenRuntimeError on duplicate tool or extension names, or on an
+ * @throws {TuvrenRuntimeError} On duplicate tool or extension names, or on an
  *   invalid tool definition.
  */
 export const createToolRegistry = (
@@ -316,7 +316,7 @@ export const buildClientEndpointTools = (
           // the two conditions programmatically distinguishable (a preemption
           // vs. an echoed-back stale token); the per-dispatch guard omits the
           // reason field. (KRT-BG004)
-          if (context.signal?.aborted) {
+          if (context.signal?.aborted === true) {
             return {
               callId: context.callId,
               isError: true,
@@ -369,7 +369,7 @@ export const buildClientEndpointTools = (
             type: "tool_result",
           };
         },
-        inputSchema: cap.inputSchema as TuvrenJsonSchema,
+        inputSchema: cap.inputSchema,
         metadata: {
           clientEndpointId: endpointId,
           ...(cap.mcpServerName === undefined

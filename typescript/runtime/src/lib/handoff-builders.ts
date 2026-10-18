@@ -23,7 +23,7 @@ const formatTraceLine = (label: string, text: string): string =>
   text.length === 0 ? `[${label}]` : `[${label}] ${text}`;
 
 const summarizeTraceText = (text: string, limit = 120): string => {
-  const normalized = text.replaceAll(/\s+/g, " ").trim();
+  const normalized = text.replaceAll(/\s+/gu, " ").trim();
 
   if (normalized.length <= limit) {
     return normalized;
@@ -51,6 +51,11 @@ const summarizeAssistantMessage = (
       }
       case "file": {
         fileCount += 1;
+        break;
+      }
+      case "reasoning":
+      case "tool_call":
+      case "tool_result": {
         break;
       }
       default: {
@@ -124,6 +129,11 @@ const summarizeUserMessage = (
       }
       case "file": {
         fileCount += 1;
+        break;
+      }
+      case "reasoning":
+      case "tool_call":
+      case "tool_result": {
         break;
       }
       default: {
@@ -250,6 +260,11 @@ const cloneVisibleAssistantParts = (
           text: part.text,
           type: "text",
         });
+        break;
+      }
+      case "reasoning":
+      case "tool_call":
+      case "tool_result": {
         break;
       }
       default: {

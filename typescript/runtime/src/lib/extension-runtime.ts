@@ -47,7 +47,7 @@ export interface CollectSystemPromptsOptions {
    * Called when a computed `systemPrompt` contribution throws; the failing
    * extension is skipped and collection continues with the remaining ones.
    */
-  onError?(input: { error: Error; extensionName: string }): void;
+  onError?: (input: { error: Error; extensionName: string }) => void;
 }
 
 interface HookRunResult {
@@ -57,7 +57,7 @@ interface HookRunResult {
 }
 
 interface HookExecutionOptions {
-  emit(event: { data: unknown; name: string }): void;
+  emit: (event: { data: unknown; name: string }) => void;
   extensions: TuvrenExtension[];
   iterationCount: number;
   manifest: ContextManifest;
@@ -72,13 +72,11 @@ interface AfterIterationOptions extends HookExecutionOptions {
   toolResults?: AfterIterationContext["toolResults"];
 }
 
-const asRecord = (value: unknown): Record<string, unknown> => {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
 
-  return {};
-};
+const asRecord = (value: unknown): Record<string, unknown> =>
+  isRecord(value) ? value : {};
 
 const cloneValue = <T>(value: T): T => globalThis.structuredClone(value);
 
@@ -303,6 +301,9 @@ const liftInterceptResult = (
         type: "fail",
       };
     }
+    case undefined: {
+      return undefined;
+    }
     default: {
       return undefined;
     }
@@ -315,25 +316,31 @@ const runInterceptHooks = async (
   reverseOrder: boolean
 ): Promise<HookRunResult> => {
   const orderedExtensions = reverseOrder
-    ? [...options.extensions].reverse()
+    ? options.extensions.toReversed()
     : options.extensions;
   const updates: ExtensionStateUpdate[] = [];
   let cePlan: ContextEngineeringPlan | undefined;
   let resolution: RuntimeResolution | undefined;
 
-  for (const extension of orderedExtensions) {
+  const runHookAt = async (index: number): Promise<void> => {
+    const extension = orderedExtensions[index];
+    if (extension === undefined) {
+      return;
+    }
+
     const handler = extension[hookName];
 
     if (handler === undefined) {
-      continue;
+      await runHookAt(index + 1);
+      return;
     }
 
     const timeoutController = new AbortController();
 
     try {
       const result = await runWithTimeout(
-        () =>
-          handler.call(
+        async () =>
+          await handler.call(
             extension,
             createInterceptContext(extension, options, timeoutController.signal)
           ),
@@ -368,7 +375,11 @@ const runInterceptHooks = async (
         })
       );
     }
-  }
+
+    await runHookAt(index + 1);
+  };
+
+  await runHookAt(0);
 
   return {
     cePlan,
@@ -422,17 +433,24 @@ export const runAfterIterationHooks = async (
   const updates: ExtensionStateUpdate[] = [];
   let resolution: RuntimeResolution | undefined;
 
-  for (const extension of [...extensions].reverse()) {
-    if (extension.afterIteration === undefined) {
-      continue;
+  const orderedExtensions = extensions.toReversed();
+  const runHookAt = async (index: number): Promise<void> => {
+    const extension = orderedExtensions[index];
+    if (extension === undefined) {
+      return;
     }
 
+    const handler = extension.afterIteration;
+    if (handler === undefined) {
+      await runHookAt(index + 1);
+      return;
+    }
     const timeoutController = new AbortController();
 
     try {
       const result = await runWithTimeout(
-        () =>
-          extension.afterIteration?.({
+        async () =>
+          await handler.call(extension, {
             emit: createTimedEmit(options.emit, timeoutController.signal),
             extensionState: cloneRecord(
               options.manifest.extensions[extension.name]
@@ -473,7 +491,11 @@ export const runAfterIterationHooks = async (
         })
       );
     }
-  }
+
+    await runHookAt(index + 1);
+  };
+
+  await runHookAt(0);
 
   return {
     resolution,

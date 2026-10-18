@@ -94,4 +94,32 @@ tickets:
       evidence: "Assert the type-aware backend runs every installed, enabled, as-shipped type-aware rule with complete equality of rules, options, severities, environment, globals, plugins, settings, and categories and with no local override or project-resolution error. Treat 55 type-aware rules in the measured 474-rule installed preset, alongside 419 non-type-aware rules, as pinned historical evidence rather than a future quota. Assert the admitted BT target has top-level options.forwardAllArgs: false, the exact canonical command shape, and workspace cwd; actual --debug=files and native JSON selections are complete and nonempty, source-integrity coverage remains independent of formatter ignores, fresh JSON-only code absence is checked outside cached results, and explicit project inputs name the checker helpers when they override defaults. Pin classifier regressions for the selected default configuration and both omitted legacy command forms. Against the real pinned Nx executor, prove literal false keeps child argv unchanged for ordinary --args, arguments after --, and an unknown scalar option; use omission as the negative child-argv control. Reject top-level true or malformed forwarding values and all nested forwarding keys, including nested true, while preserving the rejection of configured args, __unparsed__, unknown options, interpolation, and extra flags. Prove Oxlint and JSON checker failures still propagate unchanged. Do not claim protection against an explicit --forwardAllArgs=true executor override. For each admitted path, reconcile the ledger against fresh diagnostics and record whether the legacy directive has a measured native counterpart. When no equivalent native diagnostic fires, record the no-counterpart disposition. When one fires, preserve the original reason for the justified native counterpart or prove the actual native issue is fixed. Prove the same commit removes legacy Biome directives and switches lint coverage. No admitted path contains a biome-ignore comment after the commit. Paths outside this admission retain needed original directives and Biome coverage. Scoped tests and the full lint gate pass; admitted paths are absent from tools/biome-coverage/bt.json, while every remaining entry retains Biome lint coverage. Assert no lint policy or configuration override was introduced and the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: planned
+    status: in_progress
+decisions:
+  - id: OD-11
+    question: Should KRT-BT004 convert root-reachable @tuvren/runtime interface methods to function-valued properties when the shipped native preset requires it, despite the resulting TypeScript variance change?
+    blocks: [KRT-BT004, ".changeset/toolchain-bt-runtime-lint.md"]
+    options:
+      - name: Convert and release as minor
+        pros:
+          - Clears the shipped method-signature-style rule without an override.
+          - Produces the canonical strictFunctionTypes surface selected by the approved lint preset.
+        cons:
+          - Changes assignability for root-reachable runtime types and requires explicit release metadata.
+      - name: Preserve method signatures and stop admission
+        pros:
+          - Preserves the current bivariant TypeScript method surface.
+        cons:
+          - Leaves the runtime project noncompliant with the unchanged shipped preset and blocks KRT-BT004.
+    recommendation: Convert and release as minor
+    closure: ruling
+    ruler: user
+    status: closed
+    asked:
+      date: 2026-10-18
+      in: EPIC-BT
+    ruling:
+      ref: "EPIC-BT plan Step-0 rulings, 2026-10-18"
+      date: 2026-10-18
+      summary: The project is unused and under development; deliberate canonical breaking changes are encouraged when authority, tests, API/release semantics, and the release type are aligned. Apply the required function-property surface and upgrade @tuvren/runtime release metadata to minor at atomic admission.
+      chosen: Convert and release as minor
