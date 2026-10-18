@@ -75,7 +75,10 @@ const STRICT_INPUT_SCHEMA: import("@tuvren/core/tools").TuvrenJsonSchema = {
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function makeRunnerWithInput(toolName: string, input: unknown): RuntimeRunner {
+const makeRunnerWithInput = (
+  toolName: string,
+  input: unknown
+): RuntimeRunner => {
   return {
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
@@ -99,9 +102,12 @@ function makeRunnerWithInput(toolName: string, input: unknown): RuntimeRunner {
       throw new Error("resume not expected");
     },
   };
-}
+};
 
-async function runWithTool(tool: TuvrenToolDefinition, runner: RuntimeRunner) {
+const runWithTool = async (
+  tool: TuvrenToolDefinition,
+  runner: RuntimeRunner
+) => {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
     defaultRunnerId: runner.id,
@@ -116,9 +122,9 @@ async function runWithTool(tool: TuvrenToolDefinition, runner: RuntimeRunner) {
     threadId: thread.threadId,
   });
   return collectEvents(handle.events());
-}
+};
 
-function findToolResult(events: unknown[]) {
+const findToolResult = (events: unknown[]) => {
   return events.find(
     (e) =>
       typeof e === "object" &&
@@ -126,7 +132,7 @@ function findToolResult(events: unknown[]) {
       "type" in e &&
       (e as Record<string, unknown>).type === "tool.result"
   ) as Record<string, unknown> | undefined;
-}
+};
 
 // ---------------------------------------------------------------------------
 // Input validation: error code (AJV path via raw TuvrenToolDefinition)

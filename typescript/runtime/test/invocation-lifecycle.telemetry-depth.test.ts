@@ -58,10 +58,10 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function createTelemetryCapture(): {
+const createTelemetryCapture = (): {
   spans: TelemetrySpan[];
   sink: TuvrenTelemetrySink;
-} {
+} => {
   const spans: TelemetrySpan[] = [];
   return {
     sink: {
@@ -74,13 +74,13 @@ function createTelemetryCapture(): {
     },
     spans,
   };
-}
+};
 
-function buildProviderToolMessage(
+const buildProviderToolMessage = (
   callId: string,
   name: string,
   executionClass: "provider-native" | "provider-mediated"
-): TuvrenMessage {
+): TuvrenMessage => {
   return {
     parts: [
       {
@@ -97,7 +97,7 @@ function buildProviderToolMessage(
     ],
     role: "tool",
   };
-}
+};
 
 // ---------------------------------------------------------------------------
 // BA004 criterion 2: spans keyed to runtime lineage

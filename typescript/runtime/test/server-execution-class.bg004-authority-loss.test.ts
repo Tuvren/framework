@@ -81,7 +81,7 @@ import {
 // Shared helpers — a runner that issues exactly one tool call, then ends.
 // ---------------------------------------------------------------------------
 
-function makeRunner(toolName: string): RuntimeRunner {
+const makeRunner = (toolName: string): RuntimeRunner => {
   return {
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
@@ -105,17 +105,17 @@ function makeRunner(toolName: string): RuntimeRunner {
       throw new Error("resume not expected");
     },
   };
-}
+};
 
 /**
  * Run a single in-flight tool under a leased runtime whose lease renewal always
  * throws, so the lease loop loses authority and aborts the handle while the tool
  * is still executing (it waits on the abort signal before returning).
  */
-async function runWithLeaseLoss(
+const runWithLeaseLoss = async (
   tool: TuvrenToolDefinition,
   toolStarted: Promise<void>
-) {
+) => {
   const harness = createFakeKernelHarness();
   const livenessHarness = createFakeRunLivenessKernelHarness(harness, {
     onRenewLease: async () => {
@@ -147,12 +147,12 @@ async function runWithLeaseLoss(
   await eventsPromise;
 
   return { branchId: thread.branchId, harness };
-}
+};
 
-function committedToolOutputValue(
+const committedToolOutputValue = (
   messages: Awaited<ReturnType<FakeReadBranchMessages>>,
   value: unknown
-): boolean {
+): boolean => {
   return extractToolMessages(messages).some((m) =>
     m.parts.some(
       (p) =>
@@ -162,15 +162,12 @@ function committedToolOutputValue(
         (p.output as Record<string, unknown>).value === value
     )
   );
-}
-type FakeReadBranchMessages = ReturnType<
-  typeof createFakeKernelHarness
->["readBranchMessages"];
+};
 
 /** True when any committed tool message carries a client success ({committed:true}). */
-function committedClientSuccess(
+const committedClientSuccess = (
   messages: Awaited<ReturnType<FakeReadBranchMessages>>
-): boolean {
+): boolean => {
   return extractToolMessages(messages).some((m) =>
     m.parts.some(
       (p) =>
@@ -179,7 +176,7 @@ function committedClientSuccess(
         (p.output as Record<string, unknown>).committed === true
     )
   );
-}
+};
 
 /**
  * Drive a real client-endpoint dispatch through a leased runtime whose lease is
@@ -189,10 +186,10 @@ function committedClientSuccess(
  * context and exercises the full tool-execution + staging path — not just the
  * gate in isolation.
  */
-async function runClientDispatchWithLeaseLoss(
+const runClientDispatchWithLeaseLoss = async (
   capabilityId: string,
   onDispatch: () => void
-) {
+) => {
   const harness = createFakeKernelHarness();
   let releaseDispatch: (() => void) | undefined;
   const dispatchHeld = new Promise<void>((resolve) => {
@@ -257,7 +254,51 @@ async function runClientDispatchWithLeaseLoss(
   await collectEvents(handle.events()).catch(() => undefined);
 
   return { branchId: thread.branchId, harness };
-}
+};
+
+// ---------------------------------------------------------------------------
+// Client-result-as-proposal
+// ---------------------------------------------------------------------------
+
+const makeRecordingEndpoint = (
+  capabilityId: string,
+  onDispatch: () => void
+): AttachedClientEndpoint => {
+  return {
+    advertisedCapabilities: [
+      {
+        capabilityId,
+        description: "side-effecting client capability",
+        inputSchema: { type: "object" },
+      },
+    ],
+    async dispatch(
+      envelope: ClientInvocationEnvelope
+    ): Promise<ClientReportedResult> {
+      onDispatch();
+      return {
+        callId: envelope.callId,
+        content: { committed: true },
+        leaseToken: envelope.leaseToken,
+      };
+    },
+    endpointId: "bg004-endpoint",
+  };
+};
+
+const makeContext = (
+  callId: string,
+  signal: AbortSignal | undefined
+): ToolExecutionContext => {
+  return {
+    callId,
+    name: "cap.side-effect",
+    signal,
+  };
+};
+type FakeReadBranchMessages = ReturnType<
+  typeof createFakeKernelHarness
+>["readBranchMessages"];
 
 // ---------------------------------------------------------------------------
 // No retry / no commit under the dead owner
@@ -323,47 +364,6 @@ describe("KRT-BG004 — no retry under lost run authority", () => {
     expect(callCount).toBe(1);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Client-result-as-proposal
-// ---------------------------------------------------------------------------
-
-function makeRecordingEndpoint(
-  capabilityId: string,
-  onDispatch: () => void
-): AttachedClientEndpoint {
-  return {
-    advertisedCapabilities: [
-      {
-        capabilityId,
-        description: "side-effecting client capability",
-        inputSchema: { type: "object" },
-      },
-    ],
-    async dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      onDispatch();
-      return {
-        callId: envelope.callId,
-        content: { committed: true },
-        leaseToken: envelope.leaseToken,
-      };
-    },
-    endpointId: "bg004-endpoint",
-  };
-}
-
-function makeContext(
-  callId: string,
-  signal: AbortSignal | undefined
-): ToolExecutionContext {
-  return {
-    callId,
-    name: "cap.side-effect",
-    signal,
-  };
-}
 
 describe("KRT-BG004 — client-result-as-proposal", () => {
   const capabilityId = "cap.side-effect";

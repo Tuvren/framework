@@ -105,7 +105,284 @@ export interface FakeRunLivenessKernelHarness {
   leasedRuns: Map<string, FakeLeasedRunRecord>;
 }
 
-export function createFakeKernelHarness(): FakeKernelHarness {
+const requireThread = (
+  state: FakeKernelState,
+  threadId: string
+): {
+  rootTurnNodeHash: HashString;
+  schemaId: string;
+  threadId: string;
+} => {
+  const thread = state.threads.get(threadId);
+
+  if (thread === undefined) {
+    throw new Error(`missing thread "${threadId}"`);
+  }
+
+  return thread;
+};
+
+const requireTurnNode = (
+  state: FakeKernelState,
+  turnNodeHash: HashString
+): TurnNode => {
+  const turnNode = state.turnNodes.get(turnNodeHash);
+
+  if (turnNode === undefined) {
+    throw new Error(`missing turn node "${turnNodeHash}"`);
+  }
+
+  return turnNode;
+};
+
+const assertTurnNodeBelongsToThread = (
+  state: FakeKernelState,
+  turnNodeHash: HashString,
+  rootTurnNodeHash: HashString
+): void => {
+  let currentHash: HashString | null = turnNodeHash;
+
+  while (currentHash !== null) {
+    if (currentHash === rootTurnNodeHash) {
+      return;
+    }
+
+    currentHash = requireTurnNode(state, currentHash).previousTurnNodeHash;
+  }
+
+  throw new Error("turn node does not belong to thread");
+};
+
+const cloneBranch = (branch: BranchRecord): BranchRecord => {
+  return { ...branch };
+};
+
+const requireBranch = (
+  state: FakeKernelState,
+  branchId: string
+): BranchRecord => {
+  const branch = state.branches.get(branchId);
+
+  if (branch === undefined) {
+    throw new Error(`missing branch "${branchId}"`);
+  }
+
+  return branch;
+};
+
+const cloneTurnNode = (turnNode: TurnNode): TurnNode => {
+  return {
+    ...turnNode,
+    consumedStagedResults: [...turnNode.consumedStagedResults],
+  };
+};
+
+const requireRun = (state: FakeKernelState, runId: string): FakeRunState => {
+  const run = state.runs.get(runId);
+
+  if (run === undefined) {
+    throw new Error(`missing run "${runId}"`);
+  }
+
+  return run;
+};
+
+const requireSchema = (
+  state: FakeKernelState,
+  schemaId: string
+): TurnTreeSchema => {
+  const schema = state.schemas.get(schemaId);
+
+  if (schema === undefined) {
+    throw new Error(`missing schema "${schemaId}"`);
+  }
+
+  return schema;
+};
+
+const clonePathValue = (value: PathValue): PathValue => {
+  return Array.isArray(value) ? [...value] : value;
+};
+
+const cloneManifest = (manifest: TurnTreeManifest): TurnTreeManifest => {
+  return Object.fromEntries(
+    Object.entries(manifest).map(([path, value]) => [
+      path,
+      clonePathValue(value),
+    ])
+  );
+};
+
+const requireTree = (
+  state: FakeKernelState,
+  treeHash: HashString
+): StoredTreeState => {
+  const tree = state.turnTrees.get(treeHash);
+
+  if (tree === undefined) {
+    throw new Error(`missing tree "${treeHash}"`);
+  }
+
+  return tree;
+};
+
+const createTree = async (
+  state: FakeKernelState,
+  manifest: TurnTreeManifest,
+  schema: TurnTreeSchema
+): Promise<HashString> => {
+  const hash = await hashTurnTreeIdentity(schema.schemaId, manifest, schema);
+  state.turnTrees.set(hash, {
+    manifest: cloneManifest(manifest),
+    schemaId: schema.schemaId,
+  });
+  return hash;
+};
+
+const incorporateTree = async (
+  state: FakeKernelState,
+  baseTurnTreeHash: HashString,
+  stagedResults: StagedResult[],
+  schemaId: string
+): Promise<HashString> => {
+  const schema = requireSchema(state, schemaId);
+  const manifest = cloneManifest(requireTree(state, baseTurnTreeHash).manifest);
+
+  for (const stagedResult of stagedResults) {
+    const rule = schema.incorporationRules.find(
+      (candidate) => candidate.objectType === stagedResult.objectType
+    );
+
+    if (rule === undefined) {
+      continue;
+    }
+
+    const pathDefinition = schema.paths.find(
+      (candidate) => candidate.path === rule.targetPath
+    );
+
+    if (pathDefinition?.collection === "ordered") {
+      const currentValue = manifest[rule.targetPath];
+      const hashes = Array.isArray(currentValue) ? [...currentValue] : [];
+      hashes.push(stagedResult.objectHash);
+      manifest[rule.targetPath] = hashes;
+    } else {
+      manifest[rule.targetPath] = stagedResult.objectHash;
+    }
+  }
+
+  return await createTree(state, manifest, schema);
+};
+
+const createTurnNode = async (
+  state: FakeKernelState,
+  previousTurnNodeHash: HashString | null,
+  turnTreeHash: HashString,
+  schemaId: string,
+  consumedStagedResults: StagedResult[],
+  eventHash: HashString | null
+): Promise<HashString> => {
+  const hash = await hashTurnNodeIdentity({
+    consumedStagedResults,
+    eventHash,
+    previousTurnNodeHash,
+    schemaId,
+    turnTreeHash,
+  });
+  state.turnNodes.set(hash, {
+    consumedStagedResults: [...consumedStagedResults],
+    eventHash,
+    hash,
+    previousTurnNodeHash,
+    schemaId,
+    turnTreeHash,
+  });
+  return hash;
+};
+
+const checkpointRun = async (
+  state: FakeKernelState,
+  run: FakeRunState,
+  _timestamp: number,
+  eventHash: HashString | null
+): Promise<HashString> => {
+  const branch = requireBranch(state, run.branchId);
+  const headNode = requireTurnNode(state, branch.headTurnNodeHash);
+  const turnTreeHash = await incorporateTree(
+    state,
+    headNode.turnTreeHash,
+    run.stagedResults,
+    run.schemaId
+  );
+  const turnNodeHash = await createTurnNode(
+    state,
+    branch.headTurnNodeHash,
+    turnTreeHash,
+    run.schemaId,
+    run.stagedResults,
+    eventHash
+  );
+  branch.headTurnNodeHash = turnNodeHash;
+  state.branches.set(branch.branchId, branch);
+  run.createdTurnNodes.push(turnNodeHash);
+  run.currentStepIndex += 1;
+  run.stagedResults = [];
+  run.status = "failed";
+  state.runs.set(run.runId, run);
+  return turnNodeHash;
+};
+
+const findActiveRunForBranch = (
+  state: FakeKernelState,
+  branchId: string
+): FakeRunState | undefined => {
+  return [...state.runs.values()].find(
+    (run) =>
+      run.branchId === branchId &&
+      (run.status === "running" || run.status === "paused")
+  );
+};
+
+const cloneRun = (run: RunRecord): RunRecord => {
+  return {
+    ...run,
+    createdTurnNodes: [...run.createdTurnNodes],
+    stepSequence: run.stepSequence.map((step) => ({ ...step })),
+  };
+};
+
+const hashBytes = (value: Uint8Array): HashString => {
+  return createHash("sha256").update(value).digest("hex");
+};
+
+const createEmptyTreeManifest = (schema: TurnTreeSchema): TurnTreeManifest => {
+  return Object.fromEntries(
+    schema.paths.map((pathDefinition) => [
+      pathDefinition.path,
+      pathDefinition.collection === "ordered" ? [] : null,
+    ])
+  );
+};
+
+const cloneTurn = (turn: TurnRecord): TurnRecord => {
+  return { ...turn };
+};
+
+const requireTurn = (state: FakeKernelState, turnId: string): TurnRecord => {
+  const turn = state.turns.get(turnId);
+
+  if (turn === undefined) {
+    throw new Error(`missing turn "${turnId}"`);
+  }
+
+  return turn;
+};
+
+const isHashString = (value: unknown): value is HashString => {
+  return typeof value === "string" && value.length > 0;
+};
+
+export const createFakeKernelHarness = (): FakeKernelHarness => {
   const state: FakeKernelState = {
     branches: new Map(),
     objects: new Map(),
@@ -660,9 +937,9 @@ export function createFakeKernelHarness(): FakeKernelHarness {
       return readMessagesFromManifest(manifest);
     },
   };
-}
+};
 
-export function createFakeRunLivenessKernelHarness(
+export const createFakeRunLivenessKernelHarness = (
   harness: FakeKernelHarness,
   options?: {
     onRenewLease?: (
@@ -672,7 +949,7 @@ export function createFakeRunLivenessKernelHarness(
       nextLeaseExpiresAtMs: EpochMs
     ) => Promise<{ fencingToken: string; leaseExpiresAtMs: EpochMs }>;
   }
-): FakeRunLivenessKernelHarness {
+): FakeRunLivenessKernelHarness => {
   let preemptCalls = 0;
   let renewLeaseCalls = 0;
   let tokenOrdinal = 0;
@@ -822,278 +1099,4 @@ export function createFakeRunLivenessKernelHarness(
     } satisfies RuntimeKernel & RuntimeKernelRunLiveness,
     leasedRuns,
   };
-}
-
-async function checkpointRun(
-  state: FakeKernelState,
-  run: FakeRunState,
-  _timestamp: number,
-  eventHash: HashString | null
-): Promise<HashString> {
-  const branch = requireBranch(state, run.branchId);
-  const headNode = requireTurnNode(state, branch.headTurnNodeHash);
-  const turnTreeHash = await incorporateTree(
-    state,
-    headNode.turnTreeHash,
-    run.stagedResults,
-    run.schemaId
-  );
-  const turnNodeHash = await createTurnNode(
-    state,
-    branch.headTurnNodeHash,
-    turnTreeHash,
-    run.schemaId,
-    run.stagedResults,
-    eventHash
-  );
-  branch.headTurnNodeHash = turnNodeHash;
-  state.branches.set(branch.branchId, branch);
-  run.createdTurnNodes.push(turnNodeHash);
-  run.currentStepIndex += 1;
-  run.stagedResults = [];
-  run.status = "failed";
-  state.runs.set(run.runId, run);
-  return turnNodeHash;
-}
-
-async function incorporateTree(
-  state: FakeKernelState,
-  baseTurnTreeHash: HashString,
-  stagedResults: StagedResult[],
-  schemaId: string
-): Promise<HashString> {
-  const schema = requireSchema(state, schemaId);
-  const manifest = cloneManifest(requireTree(state, baseTurnTreeHash).manifest);
-
-  for (const stagedResult of stagedResults) {
-    const rule = schema.incorporationRules.find(
-      (candidate) => candidate.objectType === stagedResult.objectType
-    );
-
-    if (rule === undefined) {
-      continue;
-    }
-
-    const pathDefinition = schema.paths.find(
-      (candidate) => candidate.path === rule.targetPath
-    );
-
-    if (pathDefinition?.collection === "ordered") {
-      const currentValue = manifest[rule.targetPath];
-      const hashes = Array.isArray(currentValue) ? [...currentValue] : [];
-      hashes.push(stagedResult.objectHash);
-      manifest[rule.targetPath] = hashes;
-    } else {
-      manifest[rule.targetPath] = stagedResult.objectHash;
-    }
-  }
-
-  return await createTree(state, manifest, schema);
-}
-
-async function createTree(
-  state: FakeKernelState,
-  manifest: TurnTreeManifest,
-  schema: TurnTreeSchema
-): Promise<HashString> {
-  const hash = await hashTurnTreeIdentity(schema.schemaId, manifest, schema);
-  state.turnTrees.set(hash, {
-    manifest: cloneManifest(manifest),
-    schemaId: schema.schemaId,
-  });
-  return hash;
-}
-
-async function createTurnNode(
-  state: FakeKernelState,
-  previousTurnNodeHash: HashString | null,
-  turnTreeHash: HashString,
-  schemaId: string,
-  consumedStagedResults: StagedResult[],
-  eventHash: HashString | null
-): Promise<HashString> {
-  const hash = await hashTurnNodeIdentity({
-    consumedStagedResults,
-    eventHash,
-    previousTurnNodeHash,
-    schemaId,
-    turnTreeHash,
-  });
-  state.turnNodes.set(hash, {
-    consumedStagedResults: [...consumedStagedResults],
-    eventHash,
-    hash,
-    previousTurnNodeHash,
-    schemaId,
-    turnTreeHash,
-  });
-  return hash;
-}
-
-function assertTurnNodeBelongsToThread(
-  state: FakeKernelState,
-  turnNodeHash: HashString,
-  rootTurnNodeHash: HashString
-): void {
-  let currentHash: HashString | null = turnNodeHash;
-
-  while (currentHash !== null) {
-    if (currentHash === rootTurnNodeHash) {
-      return;
-    }
-
-    currentHash = requireTurnNode(state, currentHash).previousTurnNodeHash;
-  }
-
-  throw new Error("turn node does not belong to thread");
-}
-
-function cloneBranch(branch: BranchRecord): BranchRecord {
-  return { ...branch };
-}
-
-function cloneManifest(manifest: TurnTreeManifest): TurnTreeManifest {
-  return Object.fromEntries(
-    Object.entries(manifest).map(([path, value]) => [
-      path,
-      clonePathValue(value),
-    ])
-  );
-}
-
-function clonePathValue(value: PathValue): PathValue {
-  return Array.isArray(value) ? [...value] : value;
-}
-
-function cloneRun(run: RunRecord): RunRecord {
-  return {
-    ...run,
-    createdTurnNodes: [...run.createdTurnNodes],
-    stepSequence: run.stepSequence.map((step) => ({ ...step })),
-  };
-}
-
-function cloneTurn(turn: TurnRecord): TurnRecord {
-  return { ...turn };
-}
-
-function cloneTurnNode(turnNode: TurnNode): TurnNode {
-  return {
-    ...turnNode,
-    consumedStagedResults: [...turnNode.consumedStagedResults],
-  };
-}
-
-function createEmptyTreeManifest(schema: TurnTreeSchema): TurnTreeManifest {
-  return Object.fromEntries(
-    schema.paths.map((pathDefinition) => [
-      pathDefinition.path,
-      pathDefinition.collection === "ordered" ? [] : null,
-    ])
-  );
-}
-
-function hashBytes(value: Uint8Array): HashString {
-  return createHash("sha256").update(value).digest("hex");
-}
-
-function requireBranch(state: FakeKernelState, branchId: string): BranchRecord {
-  const branch = state.branches.get(branchId);
-
-  if (branch === undefined) {
-    throw new Error(`missing branch "${branchId}"`);
-  }
-
-  return branch;
-}
-
-function requireRun(state: FakeKernelState, runId: string): FakeRunState {
-  const run = state.runs.get(runId);
-
-  if (run === undefined) {
-    throw new Error(`missing run "${runId}"`);
-  }
-
-  return run;
-}
-
-function findActiveRunForBranch(
-  state: FakeKernelState,
-  branchId: string
-): FakeRunState | undefined {
-  return [...state.runs.values()].find(
-    (run) =>
-      run.branchId === branchId &&
-      (run.status === "running" || run.status === "paused")
-  );
-}
-
-function requireSchema(
-  state: FakeKernelState,
-  schemaId: string
-): TurnTreeSchema {
-  const schema = state.schemas.get(schemaId);
-
-  if (schema === undefined) {
-    throw new Error(`missing schema "${schemaId}"`);
-  }
-
-  return schema;
-}
-
-function requireThread(
-  state: FakeKernelState,
-  threadId: string
-): {
-  rootTurnNodeHash: HashString;
-  schemaId: string;
-  threadId: string;
-} {
-  const thread = state.threads.get(threadId);
-
-  if (thread === undefined) {
-    throw new Error(`missing thread "${threadId}"`);
-  }
-
-  return thread;
-}
-
-function requireTree(
-  state: FakeKernelState,
-  treeHash: HashString
-): StoredTreeState {
-  const tree = state.turnTrees.get(treeHash);
-
-  if (tree === undefined) {
-    throw new Error(`missing tree "${treeHash}"`);
-  }
-
-  return tree;
-}
-
-function requireTurn(state: FakeKernelState, turnId: string): TurnRecord {
-  const turn = state.turns.get(turnId);
-
-  if (turn === undefined) {
-    throw new Error(`missing turn "${turnId}"`);
-  }
-
-  return turn;
-}
-
-function requireTurnNode(
-  state: FakeKernelState,
-  turnNodeHash: HashString
-): TurnNode {
-  const turnNode = state.turnNodes.get(turnNodeHash);
-
-  if (turnNode === undefined) {
-    throw new Error(`missing turn node "${turnNodeHash}"`);
-  }
-
-  return turnNode;
-}
-
-function isHashString(value: unknown): value is HashString {
-  return typeof value === "string" && value.length > 0;
-}
+};

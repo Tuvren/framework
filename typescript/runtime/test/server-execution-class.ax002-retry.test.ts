@@ -51,7 +51,7 @@ import {
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function makeRunner(toolName: string, input: unknown = {}): RuntimeRunner {
+const makeRunner = (toolName: string, input: unknown = {}): RuntimeRunner => {
   return {
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
@@ -75,9 +75,9 @@ function makeRunner(toolName: string, input: unknown = {}): RuntimeRunner {
       throw new Error("resume not expected");
     },
   };
-}
+};
 
-async function runWithTool(tool: TuvrenToolDefinition) {
+const runWithTool = async (tool: TuvrenToolDefinition) => {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "ax002-runner",
@@ -92,9 +92,9 @@ async function runWithTool(tool: TuvrenToolDefinition) {
     threadId: thread.threadId,
   });
   return { events: await collectEvents(handle.events()), handle };
-}
+};
 
-function findToolResult(events: unknown[]) {
+const findToolResult = (events: unknown[]) => {
   return events.find(
     (e) =>
       typeof e === "object" &&
@@ -102,7 +102,7 @@ function findToolResult(events: unknown[]) {
       "type" in e &&
       (e as Record<string, unknown>).type === "tool.result"
   ) as Record<string, unknown> | undefined;
-}
+};
 
 // ---------------------------------------------------------------------------
 // Idempotent retry

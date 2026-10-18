@@ -74,11 +74,13 @@ import {
 // ---------------------------------------------------------------------------
 
 /** Pick tool.start, tool.result, and tool.audit events from a stream. */
-function extractInvocationEvents(events: unknown[]): {
+const extractInvocationEvents = (
+  events: unknown[]
+): {
   starts: ToolStartEvent[];
   results: ToolResultEvent[];
   audits: ToolAuditEvent[];
-} {
+} => {
   const starts: ToolStartEvent[] = [];
   const results: ToolResultEvent[] = [];
   const audits: ToolAuditEvent[] = [];
@@ -98,15 +100,15 @@ function extractInvocationEvents(events: unknown[]): {
     }
   }
   return { audits, results, starts };
-}
+};
 
 /** Pre-staged provider tool message for provider-native / provider-mediated. */
-function buildProviderToolMessage(
+const buildProviderToolMessage = (
   callId: string,
   name: string,
   executionClass: "provider-native" | "provider-mediated",
   output: unknown
-): TuvrenMessage {
+): TuvrenMessage => {
   return {
     parts: [
       {
@@ -123,12 +125,12 @@ function buildProviderToolMessage(
     ],
     role: "tool",
   };
-}
+};
 
 /** Simple two-turn runner: first turn returns provider tool result, second ends. */
-function makeProviderRunner(
+const makeProviderRunner = (
   executionClass: "provider-native" | "provider-mediated"
-): RuntimeRunner {
+): RuntimeRunner => {
   return {
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
@@ -154,10 +156,10 @@ function makeProviderRunner(
       throw new Error("resume not expected");
     },
   };
-}
+};
 
 /** Simple tuvren-server runner that calls one defineTool tool. */
-function makeTuvrenServerRunner(toolName: string): RuntimeRunner {
+const makeTuvrenServerRunner = (toolName: string): RuntimeRunner => {
   return {
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
@@ -181,10 +183,10 @@ function makeTuvrenServerRunner(toolName: string): RuntimeRunner {
       throw new Error("resume not expected");
     },
   };
-}
+};
 
 /** Simple tuvren-client runner that calls one client endpoint capability. */
-function makeTuvrenClientRunner(capabilityId: string): RuntimeRunner {
+const makeTuvrenClientRunner = (capabilityId: string): RuntimeRunner => {
   return {
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
@@ -208,13 +210,13 @@ function makeTuvrenClientRunner(capabilityId: string): RuntimeRunner {
       throw new Error("resume not expected");
     },
   };
-}
+};
 
 /** A mock client endpoint that immediately returns a fixed result. */
-function makeOkEndpoint(
+const makeOkEndpoint = (
   endpointId: string,
   capabilityId: string
-): AttachedClientEndpoint {
+): AttachedClientEndpoint => {
   return {
     advertisedCapabilities: [
       {
@@ -234,7 +236,44 @@ function makeOkEndpoint(
     },
     endpointId,
   };
-}
+};
+
+// ---------------------------------------------------------------------------
+// BA001: InvocationLifecycleState type is exported from @tuvren/core/capabilities
+// ---------------------------------------------------------------------------
+
+/**
+ * Exhaustiveness helper: the compiler enforces that every InvocationLifecycleState
+ * member is handled. If a member is added or removed from the union this switch
+ * will fail to compile (missing case or unreachable `never`), making the test
+ * below a genuine contract regression check rather than a tautology.
+ */
+const assertLifecycleExhaustive = (state: InvocationLifecycleState): string => {
+  switch (state) {
+    case "resolved": {
+      return "resolved";
+    }
+    case "policy-admitted": {
+      return "policy-admitted";
+    }
+    case "dispatched": {
+      return "dispatched";
+    }
+    case "completed": {
+      return "completed";
+    }
+    case "failed": {
+      return "failed";
+    }
+    case "ignored": {
+      return "ignored";
+    }
+    default: {
+      const _exhaustive: never = state;
+      return _exhaustive;
+    }
+  }
+};
 
 // ---------------------------------------------------------------------------
 // BA001: Lifecycle invariant proof — tuvren-server
@@ -519,43 +558,6 @@ describe("BA001 invocation lifecycle — tuvren-client", () => {
     expect(audits).toHaveLength(0);
   });
 });
-
-// ---------------------------------------------------------------------------
-// BA001: InvocationLifecycleState type is exported from @tuvren/core/capabilities
-// ---------------------------------------------------------------------------
-
-/**
- * Exhaustiveness helper: the compiler enforces that every InvocationLifecycleState
- * member is handled. If a member is added or removed from the union this switch
- * will fail to compile (missing case or unreachable `never`), making the test
- * below a genuine contract regression check rather than a tautology.
- */
-function assertLifecycleExhaustive(state: InvocationLifecycleState): string {
-  switch (state) {
-    case "resolved": {
-      return "resolved";
-    }
-    case "policy-admitted": {
-      return "policy-admitted";
-    }
-    case "dispatched": {
-      return "dispatched";
-    }
-    case "completed": {
-      return "completed";
-    }
-    case "failed": {
-      return "failed";
-    }
-    case "ignored": {
-      return "ignored";
-    }
-    default: {
-      const _exhaustive: never = state;
-      return _exhaustive;
-    }
-  }
-}
 
 describe("BA001 InvocationLifecycleState type contract", () => {
   test("all six lifecycle phases are exported and exhaustively enumerable", () => {

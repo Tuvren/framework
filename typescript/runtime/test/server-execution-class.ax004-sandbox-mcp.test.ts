@@ -50,7 +50,7 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeRunner(toolName: string): RuntimeRunner {
+const makeRunner = (toolName: string): RuntimeRunner => {
   return {
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
@@ -74,9 +74,9 @@ function makeRunner(toolName: string): RuntimeRunner {
       throw new Error("no");
     },
   };
-}
+};
 
-function findToolResult(events: unknown[]) {
+const findToolResult = (events: unknown[]) => {
   return events.find(
     (e) =>
       typeof e === "object" &&
@@ -84,7 +84,7 @@ function findToolResult(events: unknown[]) {
       "type" in e &&
       (e as Record<string, unknown>).type === "tool.result"
   ) as Record<string, unknown> | undefined;
-}
+};
 
 // ---------------------------------------------------------------------------
 // MCP binding classification

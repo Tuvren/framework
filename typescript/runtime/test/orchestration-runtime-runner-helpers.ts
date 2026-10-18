@@ -25,34 +25,37 @@ import type {
 
 import { createRunnerRegistry as createBaseRunnerRegistry } from "../src/index.ts";
 
-export function createRunnerRegistry(
-  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-}
-
-function wrapRunnerEntry(
+const isKrakenRunnerFactory = (
   entry: RuntimeRunner | RuntimeRunnerFactory
-): RuntimeRunner | RuntimeRunnerFactory {
-  if (isKrakenRunnerFactory(entry)) {
-    return {
-      create() {
-        return wrapRunner(entry.create());
-      },
-      id: entry.id,
-    };
+): entry is RuntimeRunnerFactory => {
+  return "create" in entry && typeof entry.create === "function";
+};
+
+const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
+  return (result.messages ?? []).some(
+    (message) =>
+      message.role === "assistant" &&
+      message.parts.some((part) => part.type === "tool_call")
+  );
+};
+
+const normalizeRunnerResult = (
+  result: RunnerExecutionResult
+): RunnerExecutionResult => {
+  if (
+    result.toolExecutionMode !== undefined ||
+    !requestsToolExecution(result)
+  ) {
+    return result;
   }
 
-  return wrapRunner(entry);
-}
+  return {
+    ...result,
+    toolExecutionMode: "parallel",
+  };
+};
 
-function isKrakenRunnerFactory(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory {
-  return "create" in entry && typeof entry.create === "function";
-}
-
-function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
+const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
   const { resume } = runner;
 
   return {
@@ -68,38 +71,43 @@ function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
           },
         }),
   };
-}
+};
 
-function normalizeRunnerResult(
-  result: RunnerExecutionResult
-): RunnerExecutionResult {
-  if (
-    result.toolExecutionMode !== undefined ||
-    !requestsToolExecution(result)
-  ) {
-    return result;
+const wrapRunnerEntry = (
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): RuntimeRunner | RuntimeRunnerFactory => {
+  if (isKrakenRunnerFactory(entry)) {
+    return {
+      create() {
+        return wrapRunner(entry.create());
+      },
+      id: entry.id,
+    };
   }
 
-  return {
-    ...result,
-    toolExecutionMode: "parallel",
-  };
-}
+  return wrapRunner(entry);
+};
 
-function requestsToolExecution(result: RunnerExecutionResult): boolean {
-  return (result.messages ?? []).some(
-    (message) =>
-      message.role === "assistant" &&
-      message.parts.some((part) => part.type === "tool_call")
-  );
-}
+export const createRunnerRegistry = (
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
+) => {
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
+};
 
-export function createStaticRunner(
+const serializeRunnerDeltaValue = (value: unknown): string => {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return JSON.stringify(value) ?? "null";
+};
+
+export const createStaticRunner = (
   execute: (
     context: RunnerExecutionContext
   ) => RunnerExecutionResult | Promise<RunnerExecutionResult>,
   id = "fake"
-): RuntimeRunner {
+): RuntimeRunner => {
   let emittedMessageSequence = 0;
 
   return {
@@ -230,12 +238,4 @@ export function createStaticRunner(
       throw new Error("resume was not expected");
     },
   };
-}
-
-function serializeRunnerDeltaValue(value: unknown): string {
-  if (typeof value === "string") {
-    return value;
-  }
-
-  return JSON.stringify(value) ?? "null";
-}
+};
