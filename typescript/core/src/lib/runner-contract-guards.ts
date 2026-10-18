@@ -235,7 +235,7 @@ export function assertRunnerExecutionResult(
       partial: value.partial === true,
       resolution: value.resolution,
     },
-    `${label}`
+    label
   );
   const toolExecutionMode =
     value.toolExecutionMode === "parallel" ||
@@ -247,7 +247,7 @@ export function assertRunnerExecutionResult(
       messages: Array.isArray(value.messages) ? value.messages : undefined,
       toolExecutionMode,
     },
-    `${label}`
+    label
   );
   assertRunnerResolutionCompatibility(
     {
@@ -259,7 +259,7 @@ export function assertRunnerExecutionResult(
       partial: value.partial === true,
       resolution: value.resolution,
     },
-    `${label}`
+    label
   );
 }
 
@@ -296,23 +296,26 @@ export function assertRunnerRuntimeResolution(
   }
 
   switch (value.type) {
-    case "continue_iteration":
+    case "continue_iteration": {
       assertOnlyAllowedKeys(value, CONTINUE_RESOLUTION_KEYS, label);
       return;
-    case "end_turn":
+    }
+    case "end_turn": {
       if (typeof value.reason === "string") {
         assertOnlyAllowedKeys(value, END_TURN_RESOLUTION_KEYS, label);
         return;
       }
       break;
-    case "pause":
+    }
+    case "pause": {
       if (typeof value.reason === "string" && "approval" in value) {
         assertApprovalRequest(value.approval, `${label}.approval`);
         assertOnlyAllowedKeys(value, PAUSE_RESOLUTION_KEYS, label);
         return;
       }
       break;
-    case "handoff":
+    }
+    case "handoff": {
       if (typeof value.targetAgent === "string") {
         assertRunnerHandoffContextPlan(
           value.contextPlan,
@@ -336,7 +339,8 @@ export function assertRunnerRuntimeResolution(
         return;
       }
       break;
-    case "fail":
+    }
+    case "fail": {
       if (
         value.error instanceof Error &&
         (value.fatality === "hard" || value.fatality === "soft")
@@ -345,8 +349,10 @@ export function assertRunnerRuntimeResolution(
         return;
       }
       break;
-    default:
+    }
+    default: {
       break;
+    }
   }
 
   throw new TuvrenValidationError(`${label} must be a valid resolution`, {
@@ -539,7 +545,7 @@ function assertRunnerMessages(
     // Pre-staged provider tool messages (AY003) are allowed alongside the assistant
     // message so the framework can stage provider results without dispatching them
     // through the Tool Execution Gateway.
-    if (isPrestagedProviderToolMessage(message as TuvrenMessage)) {
+    if (isPrestagedProviderToolMessage(message)) {
       continue;
     }
     assertRunnerMessage(message, `${label}.messages[${index}]`);
@@ -575,7 +581,7 @@ function isPrestagedProviderToolMessage(message: TuvrenMessage): boolean {
     return (
       typeof meta === "object" &&
       meta !== null &&
-      (meta as Record<string, unknown>).owner === "provider"
+      (meta).owner === "provider"
     );
   });
 }

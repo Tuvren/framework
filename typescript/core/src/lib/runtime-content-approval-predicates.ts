@@ -124,13 +124,14 @@ export function isContentPart(value: unknown): value is ContentPart {
   }
 
   switch (value.type) {
-    case "text":
+    case "text": {
       return (
         hasOnlyAllowedKeys(value, TEXT_PART_KEYS) &&
         typeof value.text === "string" &&
         isOptionalSerializableRecordProperty(value, "providerMetadata")
       );
-    case "reasoning":
+    }
+    case "reasoning": {
       return (
         hasOnlyAllowedKeys(value, REASONING_PART_KEYS) &&
         typeof value.text === "string" &&
@@ -138,7 +139,8 @@ export function isContentPart(value: unknown): value is ContentPart {
         (value.redacted || value.text.length > 0) &&
         isOptionalSerializableRecordProperty(value, "providerMetadata")
       );
-    case "tool_call":
+    }
+    case "tool_call": {
       return (
         hasOnlyAllowedKeys(value, TOOL_CALL_PART_KEYS) &&
         isNonEmptyStringProperty(value, "callId") &&
@@ -147,7 +149,8 @@ export function isContentPart(value: unknown): value is ContentPart {
         isSerializableContractValue(value.input) &&
         isOptionalSerializableRecordProperty(value, "providerMetadata")
       );
-    case "tool_result":
+    }
+    case "tool_result": {
       return (
         hasOnlyAllowedKeys(value, TOOL_RESULT_PART_KEYS) &&
         isNonEmptyStringProperty(value, "callId") &&
@@ -157,7 +160,8 @@ export function isContentPart(value: unknown): value is ContentPart {
         isOptionalBooleanProperty(value, "isError") &&
         isOptionalSerializableRecordProperty(value, "providerMetadata")
       );
-    case "file":
+    }
+    case "file": {
       return (
         hasOnlyAllowedKeys(value, FILE_PART_KEYS) &&
         (typeof value.data === "string" || value.data instanceof Uint8Array) &&
@@ -165,7 +169,8 @@ export function isContentPart(value: unknown): value is ContentPart {
         isOptionalStringProperty(value, "filename") &&
         isOptionalSerializableRecordProperty(value, "providerMetadata")
       );
-    case "structured":
+    }
+    case "structured": {
       return (
         hasOnlyAllowedKeys(value, STRUCTURED_PART_KEYS) &&
         "data" in value &&
@@ -173,8 +178,10 @@ export function isContentPart(value: unknown): value is ContentPart {
         isOptionalStringProperty(value, "name") &&
         isOptionalSerializableRecordProperty(value, "providerMetadata")
       );
-    default:
+    }
+    default: {
       return false;
+    }
   }
 }
 

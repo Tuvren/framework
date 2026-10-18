@@ -294,7 +294,7 @@ export function isSerializableContractValue(
  */
 export function isSerializableRecord(
   value: unknown
-): value is { [key: string]: TuvrenJsonValue } {
+): value is Record<string, TuvrenJsonValue> {
   return isKrakenJsonObject(value, new WeakSet());
 }
 
@@ -621,9 +621,7 @@ function hasApprovalDecisionCallIdsWithinRequest(
   return decisions.every((decision) => pendingCallIds.has(decision.callId));
 }
 
-function isValidJsonSchemaObject(value: {
-  [key: string]: TuvrenJsonValue;
-}): boolean {
+function isValidJsonSchemaObject(value: Record<string, TuvrenJsonValue>): boolean {
   // This is a structural guard for the shared contract seam. It rejects
   // malformed standard keyword shapes without trying to replace a full
   // metaschema engine such as Ajv. Structurally valid but unsatisfiable
@@ -706,7 +704,7 @@ function isValidJsonSchemaObject(value: {
 function isKrakenJsonObject(
   value: unknown,
   activeParents: WeakSet<object>
-): value is { [key: string]: TuvrenJsonValue } {
+): value is Record<string, TuvrenJsonValue> {
   if (!isPlainObject(value)) {
     return false;
   }
@@ -738,11 +736,13 @@ function isKrakenJsonValue(
 
   switch (typeof value) {
     case "boolean":
-    case "string":
+    case "string": {
       return true;
-    case "number":
+    }
+    case "number": {
       return Number.isFinite(value);
-    case "object":
+    }
+    case "object": {
       if (Array.isArray(value)) {
         if (activeParents.has(value)) {
           return false;
@@ -762,8 +762,10 @@ function isKrakenJsonValue(
       }
 
       return isKrakenJsonObject(value, activeParents);
-    default:
+    }
+    default: {
       return false;
+    }
   }
 }
 
@@ -794,14 +796,14 @@ function isValidJsonSchemaType(value: unknown): boolean {
 }
 
 function hasValidNonNegativeIntegerKeyword(
-  value: { [key: string]: TuvrenJsonValue },
+  value: Record<string, TuvrenJsonValue>,
   key: string
 ): boolean {
   return !(key in value) || isNonNegativeSafeInteger(value[key]);
 }
 
 function hasValidFiniteNumberKeyword(
-  value: { [key: string]: TuvrenJsonValue },
+  value: Record<string, TuvrenJsonValue>,
   key: string,
   options?: { positive?: boolean }
 ): boolean {
@@ -823,22 +825,20 @@ function hasValidFiniteNumberKeyword(
 }
 
 function hasValidBooleanKeyword(
-  value: { [key: string]: TuvrenJsonValue },
+  value: Record<string, TuvrenJsonValue>,
   key: string
 ): boolean {
   return !(key in value) || typeof value[key] === "boolean";
 }
 
 function hasValidStringKeyword(
-  value: { [key: string]: TuvrenJsonValue },
+  value: Record<string, TuvrenJsonValue>,
   key: string
 ): boolean {
   return !(key in value) || typeof value[key] === "string";
 }
 
-function hasValidEnumKeyword(value: {
-  [key: string]: TuvrenJsonValue;
-}): boolean {
+function hasValidEnumKeyword(value: Record<string, TuvrenJsonValue>): boolean {
   if (!("enum" in value)) {
     return true;
   }
@@ -854,7 +854,7 @@ function hasValidEnumKeyword(value: {
 }
 
 function hasValidUniqueStringArrayKeyword(
-  value: { [key: string]: TuvrenJsonValue },
+  value: Record<string, TuvrenJsonValue>,
   key: string
 ): boolean {
   if (!(key in value)) {
@@ -871,7 +871,7 @@ function hasValidUniqueStringArrayKeyword(
 }
 
 function hasValidUniqueStringArrayRecordKeyword(
-  value: { [key: string]: TuvrenJsonValue },
+  value: Record<string, TuvrenJsonValue>,
   key: string
 ): boolean {
   if (!(key in value)) {
@@ -892,14 +892,14 @@ function hasValidUniqueStringArrayRecordKeyword(
 }
 
 function hasValidSchemaKeyword(
-  value: { [key: string]: TuvrenJsonValue },
+  value: Record<string, TuvrenJsonValue>,
   key: string
 ): boolean {
   return !(key in value) || isTuvrenJsonSchema(value[key]);
 }
 
 function hasValidSchemaArrayKeyword(
-  value: { [key: string]: TuvrenJsonValue },
+  value: Record<string, TuvrenJsonValue>,
   key: string,
   options?: { requireNonEmpty?: boolean }
 ): boolean {
@@ -917,7 +917,7 @@ function hasValidSchemaArrayKeyword(
 }
 
 function hasValidSchemaRecordKeyword(
-  value: { [key: string]: TuvrenJsonValue },
+  value: Record<string, TuvrenJsonValue>,
   key: string
 ): boolean {
   if (!(key in value)) {
@@ -948,13 +948,16 @@ function toCanonicalTuvrenJsonValueKey(value: TuvrenJsonValue): string {
   }
 
   switch (typeof value) {
-    case "boolean":
+    case "boolean": {
       return `boolean:${value}`;
-    case "number":
+    }
+    case "number": {
       return `number:${value}`;
-    case "string":
+    }
+    case "string": {
       return `string:${JSON.stringify(value)}`;
-    case "object":
+    }
+    case "object": {
       if (Array.isArray(value)) {
         return `array:[${value.map(toCanonicalTuvrenJsonValueKey).join(",")}]`;
       }
@@ -966,7 +969,9 @@ function toCanonicalTuvrenJsonValueKey(value: TuvrenJsonValue): string {
             `${JSON.stringify(key)}:${toCanonicalTuvrenJsonValueKey(value[key])}`
         )
         .join(",")}}`;
-    default:
+    }
+    default: {
       return "unknown";
+    }
   }
 }
