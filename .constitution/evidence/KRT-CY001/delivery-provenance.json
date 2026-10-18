@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CY001",
+  "delivery_commit": "bc309769d7ded1923365553eb53613bfb3ebbcf2",
+  "review_fix_commit": "4f154ecb9aacbb7366691558ab606ac23723981a",
+  "source": {
+    "tag": "evidence/wave-1-bt-source-freeze-20261018",
+    "commit": "6a181a8e590ad2d9600f9a0547c0ecfe8ae4185f",
+    "tree": "ae393ec6b1dd1db2aa3a3bcf1866ad035e631c6f",
+    "measured_tree": "c43ba3c28a5a09fab9cebbe7a3c69bdbbdf13033",
+    "union_tree": "32fd3ce665f6e54b6311363bb876e13f4f6756b8",
+    "owned_files_checked": 34,
+    "unchanged_mode_or_blob_matches": 33,
+    "accepted_correctness_fixes": [
+      {
+        "path": "typescript/runtime/test/runtime-core-expired-recovery.test.ts",
+        "commit": "4f154ecb9aacbb7366691558ab606ac23723981a",
+        "reason": "Replace two dummy awaits with the established synchronous-to-promise adapter required by OD-09 while preserving the cleanup tests and asynchronous host contract."
+      }
+    ]
+  },
+  "delivery": {
+    "changed_paths": 35,
+    "raw_changed_lines": 9216,
+    "changeset": ".changeset/runtime-regression-lint-prep.md",
+    "changeset_release": "@tuvren/runtime patch",
+    "directives_removed": 30,
+    "directives_retained": 29,
+    "constitution_paths_in_source_commits": 0,
+    "debug_tags": 0
+  },
+  "checks": [
+    {"name":"retained-biome","result":"pass","detail":"161 files checked; zero diagnostics"},
+    {"name":"oxfmt","result":"pass","detail":"34 imported TypeScript files checked"},
+    {"name":"compiler-isolation","result":"pass","detail":"725 files; zero live source from another checkout; 100 workspace links local"},
+    {"name":"cold-runtime-import","result":"pass","detail":"23 exports initialized; canonical empty manifest verified"},
+    {"name":"owned-tests","result":"pass","detail":"309 tests; 1159 assertions across 32 files"},
+    {"name":"framework-runtime-test","result":"pass","detail":"canonical uncached serial target; 603 tests and 2010 assertions across 70 files"},
+    {"name":"framework-runtime-typecheck","result":"pass"},
+    {"name":"changeset-coverage","result":"pass","detail":"one directly covered publishable package"},
+    {"name":"affected-workspace-check","result":"pass","detail":"unchanged retry after transient load timeouts; 118 tasks across 31 projects"},
+    {"name":"constitution-validation","result":"pass","detail":"0 errors; 0 warnings"}
+  ],
+  "diagnostic_provenance": {
+    "superseded_command": "bunx --bun nx run framework-runtime:test --skip-nx-cache --output-style=static -- --max-concurrency=1",
+    "superseded_result": "601 of 603 tests passed; two SQLite child scenarios exited before READY",
+    "diagnosis": "Bun 1.4.2 --bun injected a temporary node shim, so the Node-targeted SQLite child ran under Bun and rejected better-sqlite3. This was an invalid launcher result, not a product failure.",
+    "canonical_command": "bun run nx run framework-runtime:test --skipNxCache --parallel=1",
+    "canonical_result": "603 tests and 2010 assertions passed with the real Node runtime available to child processes"
+  },
+  "milestone_review": {
+    "model": "gpt-6.1-sol",
+    "reviewed_commit": "bc309769d7ded1923365553eb53613bfb3ebbcf2",
+    "coverage": "all 35 changed files, meaningful assertions, and whole-change interactions",
+    "accepted_findings": 1,
+    "accepted_finding": "Replace two forbidden fake awaits in expired-recovery test hosts."
+  },
+  "fix_review": {
+    "fix_worker_model": "gpt-6-luna",
+    "reviewer_model": "gpt-6.1-sol",
+    "reviewed_commit": "4f154ecb9aacbb7366691558ab606ac23723981a",
+    "prior_finding_resolved": true,
+    "new_findings": 0
+  }
+}

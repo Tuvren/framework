@@ -1,0 +1,2748 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BT002",
+  "milestone": "M8",
+  "acceptance_mode": "contract_test",
+  "produced_at": "2026-10-18T05:20:34.004Z",
+  "source": {
+    "planned_commit": "fd8ee5d4060ddfce23e250c32a675d41cca255b9",
+    "reviewed_parent_commit": "c341a9076327fb6ce3429ca70c634ca5331673ea",
+    "measured_head_commit": "e9796643d6c01e209231941cc2aac14bfaa81ae7",
+    "candidate_diff_sha256": "ab4309a22ed76fbf1d4ea8f66cdf253aea7345d41b83e71287c39927789e38ea",
+    "worktree": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BT",
+    "owned_path": "typescript/runtime"
+  },
+  "environment": {
+    "bun": "1.4.2",
+    "biome": "2.5.14",
+    "oxlint": "1.86.0",
+    "oxlint_tsgolint": "7.0.2003",
+    "platform": "linux",
+    "architecture": "x64",
+    "direnv_loaded": true
+  },
+  "identity_convention": "repository-relative path::ordered Biome rule sequence joined by +::one-based occurrence within that path and rule sequence; line and directive text are anchors",
+  "counts": {
+    "planned_baseline_directives": 59,
+    "reviewed_parent_directives": 59,
+    "final_candidate_directives": 59,
+    "planned_baseline_rule_mentions": 60,
+    "reviewed_parent_rule_mentions": 60,
+    "final_candidate_rule_mentions": 60,
+    "ledger_entries": 59,
+    "final_live_entries": 57,
+    "final_retained_dead_entries": 2,
+    "early_deletions": 0,
+    "final_biome_unsuppressed_diagnostics": 507,
+    "final_oxlint_type_aware_diagnostics": 4134,
+    "final_oxlint_selected_files": 136,
+    "final_oxlint_enabled_rules": 474,
+    "entries_with_firing_native_counterpart": 56,
+    "entries_without_firing_native_counterpart": 3,
+    "rule_mentions_with_firing_native_counterpart": 56,
+    "rule_mentions_without_firing_native_counterpart": 4,
+    "by_baseline_biome_rule": {
+      "lint/complexity/noExcessiveCognitiveComplexity": 3,
+      "lint/performance/noBarrelFile": 1,
+      "lint/style/useThrowOnlyError": 1,
+      "lint/suspicious/useAwait": 55
+    },
+    "by_final_unsuppressed_biome_diagnostic": {
+      "lint/complexity/noExcessiveCognitiveComplexity": 3,
+      "lint/performance/noBarrelFile": 1,
+      "lint/style/useThrowOnlyError": 1,
+      "lint/suspicious/useAwait": 502
+    },
+    "by_final_relevant_native_diagnostic": {
+      "eslint(complexity)": 5,
+      "eslint(no-throw-literal)": 1,
+      "eslint(require-await)": 528,
+      "typescript(only-throw-error)": 1
+    }
+  },
+  "drift": {
+    "planned_to_reviewed_parent": {
+      "added": [],
+      "removed": [],
+      "changed_reasons": [],
+      "changed_directive_text": [],
+      "line_moved": [
+        {
+          "identity": "typescript/runtime/src/lib/runtime-core-execution-session.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
+          "from_line": 251,
+          "to_line": 249
+        },
+        {
+          "identity": "typescript/runtime/src/lib/runtime-core-loop.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
+          "from_line": 229,
+          "to_line": 226
+        }
+      ]
+    },
+    "reviewed_parent_to_final_candidate": {
+      "added": [],
+      "removed": [],
+      "changed_reasons": [],
+      "changed_directive_text": [],
+      "line_moved": []
+    },
+    "planned_to_final_candidate": {
+      "added": [],
+      "removed": [],
+      "changed_reasons": [],
+      "changed_directive_text": [],
+      "line_moved": [
+        {
+          "identity": "typescript/runtime/src/lib/runtime-core-execution-session.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
+          "from_line": 251,
+          "to_line": 249
+        },
+        {
+          "identity": "typescript/runtime/src/lib/runtime-core-loop.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
+          "from_line": 229,
+          "to_line": 226
+        }
+      ]
+    }
+  },
+  "decisions": [
+    {
+      "identity": "typescript/runtime/test/runtime-core.sanitize-tool-result.test.ts::lint/suspicious/useAwait::1",
+      "decision": "retain the dead original directive through atomic native admission; no qualifying behavior-preserving code fix was made, and fresh unsuppressed Biome reports zero matching diagnostics"
+    },
+    {
+      "identity": "typescript/runtime/test/admission-key-persistence.test.ts::lint/suspicious/useAwait::1",
+      "decision": "retain despite zero current Biome diagnostics because no relevant behavior-preserving fix exists; fresh Oxlint require-await also fires"
+    },
+    {
+      "decision": "record native equivalents only where the final fresh type-aware Oxlint report contains the mapped rule in the same file"
+    }
+  ],
+  "changeset": {
+    "path": ".changeset/toolchain-bt-runtime-lint.md",
+    "package": "@tuvren/runtime",
+    "release": "patch",
+    "direct_check_exit_code": 0
+  },
+  "command_results": {
+    "biome-parent-unsuppressed": {
+      "command": "direnv exec . bunx --bun @biomejs/biome check --config-path=$PWD/biome.jsonc --vcs-enabled=false $SCRATCH/unsuppressed-mirror/typescript/runtime --reporter=json --max-diagnostics=none (all biome-ignore directives removed from scratch mirror)",
+      "expected_exit": 1,
+      "exit_code": 1,
+      "result": {
+        "diagnostics": 507
+      },
+      "report_sha256": "41e72fd06a6dc1beec5e329228f5e4784b5a353928aab69b62106dd8d369ff3d"
+    },
+    "biome-final-suppressed": {
+      "command": "direnv exec . bunx --bun @biomejs/biome check --config-path=$PWD/biome.jsonc --vcs-enabled=false $SCRATCH/final-suppressed-mirror/typescript/runtime --reporter=json --max-diagnostics=none",
+      "expected_exit": 0,
+      "exit_code": 0,
+      "result": {
+        "diagnostics": 0,
+        "selected_files": 143
+      },
+      "report_sha256": "0d85366cd80c245e6bf621deab3ce377085c2cc789d258a7dad723dd1e835373"
+    },
+    "biome-final-unsuppressed": {
+      "command": "direnv exec . bunx --bun @biomejs/biome check --config-path=$PWD/biome.jsonc --vcs-enabled=false $SCRATCH/final-unsuppressed-mirror/typescript/runtime --reporter=json --max-diagnostics=none (all biome-ignore directives removed from scratch mirror)",
+      "expected_exit": 1,
+      "exit_code": 1,
+      "result": {
+        "diagnostics": 507,
+        "selected_files": 143
+      },
+      "report_sha256": "e9873ad3dbad1ce2d269dc229a3ac6169fd1e3eba12bc2609c23dd60397c5431"
+    },
+    "oxlint-final-type-aware": {
+      "command": "direnv exec . bunx --bun oxlint --type-aware --format=json typescript/runtime",
+      "expected_exit": 1,
+      "exit_code": 1,
+      "result": {
+        "diagnostics": 4134,
+        "selected_files": 136,
+        "enabled_rules": 474,
+        "resolution_or_backend_errors": 0
+      },
+      "report_sha256": "742ab066d61a5c3278f47097197fa77e9a5251b73c87855bb0615ea4def824d6"
+    },
+    "affected-tests": {
+      "command": "direnv exec . zsh -lc 'cd typescript/runtime && bun test ./test/admission-key-persistence.test.ts ./test/runtime-core.sanitize-tool-result.test.ts'",
+      "expected_exit": 0,
+      "exit_code": 0,
+      "result": {
+        "passed": 19,
+        "failed": 0
+      },
+      "log_sha256": "542a86d8987691f85e67a76b9a6baf421c0e4a97492ab8bf0cfb3368f8ca76f5"
+    },
+    "runtime-typecheck": {
+      "command": "direnv exec . bun run nx run framework-runtime:typecheck --skipNxCache",
+      "expected_exit": 0,
+      "exit_code": 0,
+      "result": "pass",
+      "log_sha256": "9636bcc7d426ed1fdcbf2ba0663697950de239b65a53b33b9ab9886f79a41182"
+    },
+    "retained-runtime-lint": {
+      "command": "direnv exec . bun run nx run framework-runtime:lint --skipNxCache",
+      "expected_exit": 0,
+      "exit_code": 0,
+      "result": {
+        "selected_files": 143,
+        "diagnostics": 0
+      },
+      "log_sha256": "bef768e76fa88261d9fb59b827b25718d3421393d334d3a2f7e1f5dc62fa6de5"
+    },
+    "repository-typecheck": {
+      "command": "bun run typecheck",
+      "expected_exit": 0,
+      "exit_code": 0,
+      "result": "pass",
+      "log_sha256": "a0ad292abfd6bca5d34a92b6ff3abdf1e03ebcb559b8e0519fecef4de7542319"
+    },
+    "full-lint": {
+      "command": "bun run lint",
+      "expected_exit": 0,
+      "exit_code": 0,
+      "result": "pass",
+      "log_sha256": "54392629f83f6c872171e993603d008b0f7729bfff48e8c26179ca12fbfc932d"
+    },
+    "changeset-check": {
+      "command": "bun run changeset:check --base=fd8ee5d4060ddfce23e250c32a675d41cca255b9",
+      "expected_exit": 0,
+      "exit_code": 0,
+      "result": "direct patch coverage for @tuvren/runtime",
+      "log_sha256": "9d56851068252554160163e5039aafbef16f1e695206114a81b3b93e401f89f3"
+    }
+  },
+  "validations": {
+    "baseline_identity_set_complete": true,
+    "reviewed_parent_identity_set_complete": true,
+    "final_drift_reconciled": true,
+    "original_reasons_preserved": true,
+    "no_biome_directives_added": true,
+    "no_unqualified_early_deletions": true,
+    "all_planned_directives_retained": true,
+    "needed_biome_directives_retained": true,
+    "native_equivalents_require_fresh_same_file_diagnostic": true,
+    "native_suppressions_added": 0,
+    "constitution_files_written_by_worker": 0,
+    "debug_marker_absent": true
+  },
+  "entries": [
+    {
+      "identity": "typescript/runtime/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/runtime/src/index.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional internal-engine surface.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "This package entrypoint is the intentional internal-engine surface.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/performance/noBarrelFile",
+          "parent_unsuppressed_diagnostic_count": 1,
+          "final_unsuppressed_diagnostic_count": 1,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 0,
+          "diagnostic_sample_lines": [],
+          "native_admission_disposition": "remove-biome-directive-at-atomic-admission-if-fresh-native-proof-still-has-no-counterpart"
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/src/lib/runtime-core-execution-session.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
+      "path": "typescript/runtime/src/lib/runtime-core-execution-session.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Session startup intentionally linearizes recovery, resume, publication, and prelude checkpoints in one place.",
+        "directive_kind": "biome-ignore",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 251,
+      "reviewed_parent_line": 249,
+      "final_line": 249,
+      "original_reason": "Session startup intentionally linearizes recovery, resume, publication, and prelude checkpoints in one place.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/complexity/noExcessiveCognitiveComplexity",
+          "parent_unsuppressed_diagnostic_count": 1,
+          "final_unsuppressed_diagnostic_count": 1,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 1,
+          "diagnostic_sample_lines": [
+            250
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(complexity)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/src/lib/runtime-core-loop.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
+      "path": "typescript/runtime/src/lib/runtime-core-loop.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The execution loop is intentionally kept as a single checkpointed control-flow path for cancellation and iteration semantics.",
+        "directive_kind": "biome-ignore",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 229,
+      "reviewed_parent_line": 226,
+      "final_line": 226,
+      "original_reason": "The execution loop is intentionally kept as a single checkpointed control-flow path for cancellation and iteration semantics.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/complexity/noExcessiveCognitiveComplexity",
+          "parent_unsuppressed_diagnostic_count": 1,
+          "final_unsuppressed_diagnostic_count": 1,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 0,
+          "diagnostic_sample_lines": [],
+          "native_admission_disposition": "remove-biome-directive-at-atomic-admission-if-fresh-native-proof-still-has-no-counterpart"
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/admission-key-persistence.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/admission-key-persistence.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-dead-deletion-deferred-no-behavior-preserving-fix",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 0,
+          "final_unsuppressed_diagnostic_count": 0,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-dead-deletion-deferred-no-behavior-preserving-fix",
+          "current_native_diagnostic_count": 1,
+          "diagnostic_sample_lines": [
+            143
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/capability-attribution.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/capability-attribution.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 2,
+          "final_unsuppressed_diagnostic_count": 2,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 3,
+          "diagnostic_sample_lines": [
+            47,
+            66,
+            75
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/capability-policy-engine.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/capability-policy-engine.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: test runners intentionally match async contracts",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "test runners intentionally match async contracts",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 20,
+          "final_unsuppressed_diagnostic_count": 20,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 20,
+          "diagnostic_sample_lines": [
+            271,
+            289,
+            356
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/fake-kernel.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/fake-kernel.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: The fake kernel mirrors the async production protocol surface.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "The fake kernel mirrors the async production protocol surface.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 30,
+          "final_unsuppressed_diagnostic_count": 30,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 29,
+          "diagnostic_sample_lines": [
+            123,
+            138,
+            142
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/invocation-lifecycle.cross-class.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/invocation-lifecycle.cross-class.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 7,
+          "final_unsuppressed_diagnostic_count": 7,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 9,
+          "diagnostic_sample_lines": [
+            133,
+            153,
+            162
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/invocation-lifecycle.observation-taxonomy.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/invocation-lifecycle.observation-taxonomy.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 7,
+          "final_unsuppressed_diagnostic_count": 7,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 10,
+          "diagnostic_sample_lines": [
+            141,
+            160,
+            168
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/invocation-lifecycle.resume-recovery.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/invocation-lifecycle.resume-recovery.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 19,
+          "final_unsuppressed_diagnostic_count": 19,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 20,
+          "diagnostic_sample_lines": [
+            138,
+            158,
+            207
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/invocation-lifecycle.telemetry-depth.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/invocation-lifecycle.telemetry-depth.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 6,
+          "final_unsuppressed_diagnostic_count": 6,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 8,
+          "diagnostic_sample_lines": [
+            112,
+            128,
+            146
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/orchestration-runtime-runner-helpers.ts::lint/complexity/noExcessiveCognitiveComplexity+lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/orchestration-runtime-runner-helpers.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity lint/suspicious/useAwait: Shared runner test doubles intentionally centralize event emission and async contract stubs.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Shared runner test doubles intentionally centralize event emission and async contract stubs.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/complexity/noExcessiveCognitiveComplexity",
+          "parent_unsuppressed_diagnostic_count": 1,
+          "final_unsuppressed_diagnostic_count": 1,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 0,
+          "diagnostic_sample_lines": [],
+          "native_admission_disposition": "remove-biome-directive-at-atomic-admission-if-fresh-native-proof-still-has-no-counterpart"
+        },
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 1,
+          "final_unsuppressed_diagnostic_count": 1,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 1,
+          "diagnostic_sample_lines": [
+            229
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/orchestration-runtime.approval.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/orchestration-runtime.approval.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 1,
+          "final_unsuppressed_diagnostic_count": 1,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 1,
+          "diagnostic_sample_lines": [
+            154
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/orchestration-runtime.child-lifecycle.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/orchestration-runtime.child-lifecycle.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 8,
+          "final_unsuppressed_diagnostic_count": 8,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 8,
+          "diagnostic_sample_lines": [
+            269,
+            272,
+            290
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/orchestration-runtime.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/orchestration-runtime.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 16,
+          "final_unsuppressed_diagnostic_count": 16,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 17,
+          "diagnostic_sample_lines": [
+            332,
+            335,
+            359
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.after-iteration.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.after-iteration.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 12,
+          "final_unsuppressed_diagnostic_count": 12,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 12,
+          "diagnostic_sample_lines": [
+            46,
+            56,
+            93
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.approval-basics.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.approval-basics.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 10,
+          "final_unsuppressed_diagnostic_count": 10,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 10,
+          "diagnostic_sample_lines": [
+            46,
+            77,
+            208
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.approval-decisions.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.approval-decisions.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 12,
+          "final_unsuppressed_diagnostic_count": 12,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 12,
+          "diagnostic_sample_lines": [
+            48,
+            79,
+            157
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.approval-lifecycle.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.approval-lifecycle.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 8,
+          "final_unsuppressed_diagnostic_count": 8,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 8,
+          "diagnostic_sample_lines": [
+            45,
+            62,
+            115
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.approval-resume.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.approval-resume.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 14,
+          "final_unsuppressed_diagnostic_count": 14,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 14,
+          "diagnostic_sample_lines": [
+            49,
+            80,
+            169
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.approval.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.approval.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 7,
+          "final_unsuppressed_diagnostic_count": 7,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 7,
+          "diagnostic_sample_lines": [
+            43,
+            65,
+            98
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.around-tool-approval.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.around-tool-approval.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 15,
+          "final_unsuppressed_diagnostic_count": 15,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 15,
+          "diagnostic_sample_lines": [
+            79,
+            94,
+            140
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.assistant-stream.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.assistant-stream.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 14,
+          "final_unsuppressed_diagnostic_count": 14,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 14,
+          "diagnostic_sample_lines": [
+            42,
+            70,
+            112
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.await-result.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.await-result.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 5,
+          "final_unsuppressed_diagnostic_count": 5,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 5,
+          "diagnostic_sample_lines": [
+            39,
+            103,
+            177
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.bootstrap.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.bootstrap.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 4,
+          "final_unsuppressed_diagnostic_count": 4,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 4,
+          "diagnostic_sample_lines": [
+            42,
+            52,
+            107
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.client-endpoint.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.client-endpoint.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 4,
+          "final_unsuppressed_diagnostic_count": 4,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 4,
+          "diagnostic_sample_lines": [
+            82,
+            108,
+            136
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.context-engineering.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.context-engineering.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 14,
+          "final_unsuppressed_diagnostic_count": 14,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 14,
+          "diagnostic_sample_lines": [
+            48,
+            67,
+            127
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.execution-bounds.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.execution-bounds.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 11,
+          "final_unsuppressed_diagnostic_count": 11,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 12,
+          "diagnostic_sample_lines": [
+            78,
+            85,
+            200
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.execution-lifecycle.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.execution-lifecycle.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 5,
+          "final_unsuppressed_diagnostic_count": 5,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 5,
+          "diagnostic_sample_lines": [
+            46,
+            81,
+            125
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.handoff-builders.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.handoff-builders.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 5,
+          "final_unsuppressed_diagnostic_count": 5,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 5,
+          "diagnostic_sample_lines": [
+            272,
+            304,
+            339
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.handoff-runner.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.handoff-runner.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 13,
+          "final_unsuppressed_diagnostic_count": 13,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 13,
+          "diagnostic_sample_lines": [
+            110,
+            189,
+            215
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.hooks.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.hooks.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 12,
+          "final_unsuppressed_diagnostic_count": 12,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 12,
+          "diagnostic_sample_lines": [
+            72,
+            82,
+            115
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.lifecycle.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.lifecycle.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 10,
+          "final_unsuppressed_diagnostic_count": 10,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 10,
+          "diagnostic_sample_lines": [
+            84,
+            90,
+            125
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.malformed-approval.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.malformed-approval.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 12,
+          "final_unsuppressed_diagnostic_count": 12,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 12,
+          "diagnostic_sample_lines": [
+            47,
+            64,
+            146
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.orchestration.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.orchestration.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 10,
+          "final_unsuppressed_diagnostic_count": 10,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 10,
+          "diagnostic_sample_lines": [
+            87,
+            113,
+            156
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.parallel-batching.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.parallel-batching.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 10,
+          "final_unsuppressed_diagnostic_count": 10,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 10,
+          "diagnostic_sample_lines": [
+            49,
+            85,
+            157
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.provider-execution-class.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.provider-execution-class.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 2,
+          "final_unsuppressed_diagnostic_count": 2,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 2,
+          "diagnostic_sample_lines": [
+            85,
+            106
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.reasoning-stream.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.reasoning-stream.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 4,
+          "final_unsuppressed_diagnostic_count": 4,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 4,
+          "diagnostic_sample_lines": [
+            41,
+            76,
+            119
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.recovery-cold-batch-regressions.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.recovery-cold-batch-regressions.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 11,
+      "reviewed_parent_line": 11,
+      "final_line": 11,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 13,
+          "final_unsuppressed_diagnostic_count": 13,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 13,
+          "diagnostic_sample_lines": [
+            87,
+            148,
+            229
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.recovery-order-repair-window.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.recovery-order-repair-window.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 8,
+      "reviewed_parent_line": 8,
+      "final_line": 8,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 1,
+          "final_unsuppressed_diagnostic_count": 1,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 1,
+          "diagnostic_sample_lines": [
+            131
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.recovery.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.recovery.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 27,
+          "final_unsuppressed_diagnostic_count": 27,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 27,
+          "diagnostic_sample_lines": [
+            153,
+            179,
+            182
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.runner-boundary.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.runner-boundary.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 22,
+          "final_unsuppressed_diagnostic_count": 22,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 22,
+          "diagnostic_sample_lines": [
+            44,
+            54,
+            79
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.sanitize-tool-result.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.sanitize-tool-result.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-dead-deletion-deferred-no-behavior-preserving-fix",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 0,
+          "final_unsuppressed_diagnostic_count": 0,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-dead-deletion-deferred-no-behavior-preserving-fix",
+          "current_native_diagnostic_count": 0,
+          "diagnostic_sample_lines": [],
+          "native_admission_disposition": "remove-biome-directive-at-atomic-admission-if-fresh-native-proof-still-has-no-counterpart"
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "affected-tests",
+        "runtime-typecheck",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.stale-step-recovery.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.stale-step-recovery.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 9,
+          "final_unsuppressed_diagnostic_count": 9,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 9,
+          "diagnostic_sample_lines": [
+            99,
+            118,
+            168
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.steering.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.steering.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 4,
+          "final_unsuppressed_diagnostic_count": 4,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 4,
+          "diagnostic_sample_lines": [
+            75,
+            278,
+            322
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.stream-synthesis.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.stream-synthesis.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 8,
+          "final_unsuppressed_diagnostic_count": 8,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 8,
+          "diagnostic_sample_lines": [
+            44,
+            54,
+            90
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.stream-validation.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.stream-validation.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 20,
+          "final_unsuppressed_diagnostic_count": 20,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 20,
+          "diagnostic_sample_lines": [
+            43,
+            72,
+            102
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.telemetry.test.ts::lint/style/useThrowOnlyError::1",
+      "path": "typescript/runtime/test/runtime-core.telemetry.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore lint/style/useThrowOnlyError: a non-Error throw whose string coercion itself throws is the regression under test (ADR-0058 §3 boundary hardening)",
+        "directive_kind": "biome-ignore",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 388,
+      "reviewed_parent_line": 388,
+      "final_line": 388,
+      "original_reason": "a non-Error throw whose string coercion itself throws is the regression under test (ADR-0058 §3 boundary hardening)",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/style/useThrowOnlyError",
+          "parent_unsuppressed_diagnostic_count": 1,
+          "final_unsuppressed_diagnostic_count": 1,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 2,
+          "diagnostic_sample_lines": [
+            389,
+            389
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(no-throw-literal)",
+            "typescript(only-throw-error)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.tool-batching.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.tool-batching.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 4,
+          "final_unsuppressed_diagnostic_count": 4,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 4,
+          "diagnostic_sample_lines": [
+            44,
+            81,
+            159
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.tool-failures.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.tool-failures.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 12,
+          "final_unsuppressed_diagnostic_count": 12,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 12,
+          "diagnostic_sample_lines": [
+            52,
+            88,
+            168
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.tooling.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.tooling.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 14,
+          "final_unsuppressed_diagnostic_count": 14,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 14,
+          "diagnostic_sample_lines": [
+            51,
+            127,
+            198
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.turn-linking.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.turn-linking.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 10,
+          "final_unsuppressed_diagnostic_count": 10,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 10,
+          "diagnostic_sample_lines": [
+            43,
+            53,
+            88
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/server-execution-class.ax001-validation.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/server-execution-class.ax001-validation.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 2,
+          "final_unsuppressed_diagnostic_count": 2,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 2,
+          "diagnostic_sample_lines": [
+            80,
+            98
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/server-execution-class.ax002-retry.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/server-execution-class.ax002-retry.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 2,
+          "final_unsuppressed_diagnostic_count": 2,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 2,
+          "diagnostic_sample_lines": [
+            56,
+            74
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/server-execution-class.ax003-rate-limit.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/server-execution-class.ax003-rate-limit.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 2,
+          "final_unsuppressed_diagnostic_count": 2,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 2,
+          "diagnostic_sample_lines": [
+            57,
+            81
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/server-execution-class.ax004-sandbox-mcp.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/server-execution-class.ax004-sandbox-mcp.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 2,
+          "final_unsuppressed_diagnostic_count": 2,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 3,
+          "diagnostic_sample_lines": [
+            55,
+            73,
+            320
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/server-execution-class.ax005-audit.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/server-execution-class.ax005-audit.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 6,
+          "final_unsuppressed_diagnostic_count": 6,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 6,
+          "diagnostic_sample_lines": [
+            54,
+            72,
+            170
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/server-execution-class.bg004-authority-loss.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/server-execution-class.bg004-authority-loss.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 5,
+          "final_unsuppressed_diagnostic_count": 5,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 5,
+          "diagnostic_sample_lines": [
+            86,
+            104,
+            121
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    },
+    {
+      "identity": "typescript/runtime/test/stream-adapters.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/stream-adapters.test.ts",
+      "anchor": {
+        "directive_text": "// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.",
+        "directive_kind": "biome-ignore-all",
+        "one_based_occurrence_within_path_and_rule_sequence": 1
+      },
+      "baseline_line": 17,
+      "reviewed_parent_line": 17,
+      "final_line": 17,
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+      "native_admission_disposition": "defer-to-atomic-native-admission",
+      "rule_dispositions": [
+        {
+          "biome_rule": "lint/suspicious/useAwait",
+          "parent_unsuppressed_diagnostic_count": 9,
+          "final_unsuppressed_diagnostic_count": 9,
+          "retained_diagnostic_sample_lines": [],
+          "retained_checker_disposition": "retain-original-needed-while-biome-owns-runtime",
+          "current_native_diagnostic_count": 9,
+          "diagnostic_sample_lines": [
+            46,
+            65,
+            136
+          ],
+          "native_admission_disposition": "reconcile-at-atomic-admission-equivalent-fires-preserve-original-reason-or-fix-actual-issue",
+          "equivalent_native_rules": [
+            "eslint(require-await)"
+          ]
+        }
+      ],
+      "early_deletion": null,
+      "supporting_command_results": [
+        "biome-final-suppressed",
+        "biome-final-unsuppressed",
+        "oxlint-final-type-aware",
+        "retained-runtime-lint"
+      ]
+    }
+  ]
+}
