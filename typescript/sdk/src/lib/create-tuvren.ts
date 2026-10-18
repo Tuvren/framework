@@ -37,8 +37,12 @@ import type { TelemetryRouting } from "@tuvren/core/telemetry";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import type { RuntimeBackend, RuntimeKernel } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
-import { createOrchestrationRuntime, createRunnerRegistry, createTuvrenRuntime } from '@tuvren/runtime';
-import type { RuntimeCoreOptions } from '@tuvren/runtime';
+import {
+  createOrchestrationRuntime,
+  createRunnerRegistry,
+  createTuvrenRuntime,
+} from "@tuvren/runtime";
+import type { RuntimeCoreOptions } from "@tuvren/runtime";
 
 // ── Public options ────────────────────────────────────────────────────────────
 
@@ -257,7 +261,7 @@ export function createTuvren(
   const { kernel, disposeBackend, purgeScope } =
     resolveKernelAndDispose(options);
 
-  const {runner} = options;
+  const { runner } = options;
   const runnerRegistry = createRunnerRegistry([runner]);
 
   const mcpSources = collectMcpSources(options.tools);
@@ -300,7 +304,9 @@ export function createTuvren(
         try {
           await source.close();
         } catch (error) {
-          errors.push(error instanceof Error ? error : new Error(String(error)));
+          errors.push(
+            error instanceof Error ? error : new Error(String(error))
+          );
         }
       }
 
@@ -334,7 +340,7 @@ function resolveKernelAndDispose(options: CreateTuvrenOptions): {
     return { disposeBackend: () => Promise.resolve(), kernel: options.kernel };
   }
 
-  const {backend} = options;
+  const { backend } = options;
   return {
     kernel: createRuntimeKernel({ backend }),
     disposeBackend: tryCloseBackend(backend),

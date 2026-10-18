@@ -30,11 +30,14 @@
 import { describe, expect, test } from "bun:test";
 import { randomBytes } from "node:crypto";
 
-import { createMemoryBackend, createMemoryScopeStore } from '@tuvren/backend-memory';
-import type { MemoryScopeStore } from '@tuvren/backend-memory';
+import {
+  createMemoryBackend,
+  createMemoryScopeStore,
+} from "@tuvren/backend-memory";
+import type { MemoryScopeStore } from "@tuvren/backend-memory";
 import { TuvrenRuntimeError } from "@tuvren/core";
-import { isErasedPayload } from '@tuvren/core/lifecycle';
-import type { PayloadCodec } from '@tuvren/core/lifecycle';
+import { isErasedPayload } from "@tuvren/core/lifecycle";
+import type { PayloadCodec } from "@tuvren/core/lifecycle";
 import type { RuntimeRunnerFactory } from "@tuvren/core/runner";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
@@ -48,8 +51,8 @@ import {
   textSignal,
 } from "../../runtime/test/runtime-core-test-helpers.ts";
 import { createTuvren } from "../src/lib/create-tuvren.js";
-import { createAesGcmPayloadCodec } from '../src/lib/payload-codec.js';
-import type { PayloadKeyring } from '../src/lib/payload-codec.js';
+import { createAesGcmPayloadCodec } from "../src/lib/payload-codec.js";
+import type { PayloadKeyring } from "../src/lib/payload-codec.js";
 
 const SCOPE_A = "tenant.A";
 const SCOPE_B = "tenant.B";

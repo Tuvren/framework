@@ -621,7 +621,9 @@ function hasApprovalDecisionCallIdsWithinRequest(
   return decisions.every((decision) => pendingCallIds.has(decision.callId));
 }
 
-function isValidJsonSchemaObject(value: Record<string, TuvrenJsonValue>): boolean {
+function isValidJsonSchemaObject(
+  value: Record<string, TuvrenJsonValue>
+): boolean {
   // This is a structural guard for the shared contract seam. It rejects
   // malformed standard keyword shapes without trying to replace a full
   // metaschema engine such as Ajv. Structurally valid but unsatisfiable

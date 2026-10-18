@@ -579,9 +579,7 @@ function isPrestagedProviderToolMessage(message: TuvrenMessage): boolean {
     }
     const meta = part.providerMetadata;
     return (
-      typeof meta === "object" &&
-      meta !== null &&
-      (meta).owner === "provider"
+      typeof meta === "object" && meta !== null && meta.owner === "provider"
     );
   });
 }

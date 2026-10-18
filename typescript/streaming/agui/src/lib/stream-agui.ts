@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-import { EventSchemas, EventType } from '@ag-ui/core';
-import type { AGUIEvent } from '@ag-ui/core';
+import { EventSchemas, EventType } from "@ag-ui/core";
+import type { AGUIEvent } from "@ag-ui/core";
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
-import { cloneTuvrenStreamEvent, createStreamAdapterWarningReporter } from '@tuvren/stream-core';
-import type { StreamAdapterOptions } from '@tuvren/stream-core';
+import {
+  cloneTuvrenStreamEvent,
+  createStreamAdapterWarningReporter,
+} from "@tuvren/stream-core";
+import type { StreamAdapterOptions } from "@tuvren/stream-core";
 
 /** Tracks one reasoning block's AG-UI `REASONING_*` lifecycle across canonical `reasoning.*` events. */
 interface PendingReasoningState {
