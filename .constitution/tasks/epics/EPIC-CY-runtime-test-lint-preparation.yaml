@@ -103,4 +103,20 @@ tickets:
       evidence: Assert every file and early-removal identity maps to frozen source and reviewed proof. On the cumulative CU+CT+CY tree, prove retained Biome passes, exactly 29 still-needed directives remain, the runtime cold import and source-only typecheck pass, every owned test passes, and the full framework-runtime test target passes uncached and serial through canonical bun run nx. Preserve the superseded noncanonical command and its fake-node diagnosis only as diagnostic provenance, never as a product failure. Preserve the original KRT-BT002 directory whole, resolve no live sibling source, and require a direct @tuvren/runtime patch Changeset.
     flows: []
     certainty: settled
-    status: planned
+    status: done
+closeout:
+  tickets_completed: [KRT-CY001]
+  tickets_deferred: []
+  points_completed: 8
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-CY: delivered the frozen runtime regression test slice, 30 behavior-proven early directive removals, preserved historical suppression evidence, direct runtime Changeset coverage, and complete correctness review."
+  candidate_terms: []
+  routed_upstream: []
+  follow_ups:
+    - "EPIC-BT owns final native lint admission for the runtime package and the remaining 29 still-needed directives."
+    - "The wave lead must require hosted verify and Bazel to pass on the exact rebased PR head before merge."
+  code_decisions: []
+  settled: []
