@@ -7,7 +7,7 @@ produced:
   command: 'bunx --bun oxlint --type-aware typescript/core; bun tools/scripts/json-check.ts typescript/core; core build, source-only typecheck, tests, API freeze and export smoke; admission controls; focused framework conformance; bun run lint; bun run typecheck; bun run changeset:check --base=master'
 files:
   - path: M24-core-readiness.json
-    sha256: 6a3657f14308c837c605617f986305a33d3d2419e0a23f6d8aaf2639e73c1f53
-    bytes: 25745
+    sha256: d904493396b890e7f214e3f9bba9d75bbbff339b739f6dcd878147aac6f3ef56
+    bytes: 25772
     role: measurement
 pass_criteria: The complete core code and JSON selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics and no unused directive; every contract-preserving native exception is measured and reasoned; all 14 core Biome directives are removed in the same change as the canonical native target and coverage transfer; public API, Promise timing, error names, noop behavior and ADR-0056 tags remain unchanged; focused and repository gates pass. KRT-CA004 remains in progress until all later package admissions complete.

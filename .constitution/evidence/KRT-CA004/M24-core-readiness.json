@@ -287,7 +287,8 @@
       {
         "path": "typescript/core/src/telemetry/index.ts",
         "line": 17,
-        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */"
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */",
+        "enable_line": 28
       },
       {
         "path": "typescript/core/src/telemetry/index.ts",

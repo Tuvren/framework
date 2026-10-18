@@ -25,6 +25,7 @@
  *
  * @packageDocumentation
  */
+/* oxlint-enable jsdoc/check-tag-names */
 
 import type { EpochMs, HashString, TuvrenErrorCode } from "../index.js";
 
@@ -140,5 +141,3 @@ export type {
   TelemetryRoute,
   TelemetryRouting,
 } from "./telemetry-destination.js";
-
-/* oxlint-enable jsdoc/check-tag-names */
