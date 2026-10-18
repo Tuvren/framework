@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CT001",
+  "delivery_commit": "1c74c19666a5c02d7aa6d18ff1067f98bb3f5ed4",
+  "source": {
+    "tag": "evidence/wave-1-bt-source-freeze-20261018",
+    "commit": "6a181a8e590ad2d9600f9a0547c0ecfe8ae4185f",
+    "tree": "ae393ec6b1dd1db2aa3a3bcf1866ad035e631c6f",
+    "measured_tree": "ae968b46b3f8fe76c9940c914d55057f02eb07ac",
+    "union_tree": "32fd3ce665f6e54b6311363bb876e13f4f6756b8",
+    "owned_files_checked": 39,
+    "mode_or_blob_mismatches": 0
+  },
+  "delivery": {
+    "changed_paths": 40,
+    "raw_changed_lines": 12948,
+    "candidate_diff_sha256": "52c7a9573c5d84367811652d943a235afeec89494175922b3b2e84c369187ad3",
+    "changeset": ".changeset/runtime-core-lint-prep.md",
+    "changeset_release": "@tuvren/runtime patch",
+    "constitution_paths_in_source_commit": 0,
+    "debug_tags": 0
+  },
+  "checks": [
+    {"name":"retained-biome","result":"pass","detail":"157 files checked"},
+    {"name":"oxfmt","result":"pass","detail":"39 files checked; maximum 962 physical lines"},
+    {"name":"compiler-isolation","result":"pass","detail":"718 files; zero live source from another framework checkout"},
+    {"name":"cold-runtime-import","result":"pass"},
+    {"name":"focused-runtime-tests","result":"pass","detail":"13 tests; 49 assertions"},
+    {"name":"changeset-coverage","result":"pass","detail":"one directly covered publishable package"},
+    {"name":"framework-runtime-typecheck","result":"pass"},
+    {"name":"api-freeze","result":"pass","detail":"14 entrypoints; 404 exports unchanged"},
+    {"name":"affected-workspace-check","result":"pass","detail":"118 tasks across 31 projects; runtime 569 tests and 1834 assertions"},
+    {"name":"constitution-validation","result":"pass","detail":"0 errors; 0 warnings"}
+  ],
+  "milestone_review": {
+    "model": "gpt-6.1-sol",
+    "reviewed_commit": "1c74c19666a5c02d7aa6d18ff1067f98bb3f5ed4",
+    "coverage": "all 40 changed files, meaningful assertions, and whole-change interactions",
+    "findings": 0
+  }
+}
