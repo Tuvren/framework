@@ -17,10 +17,16 @@
 import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
 
+import type { TuvrenStreamEvent } from "@tuvren/core/events";
+
 import {
   decodeSseStream,
   reportSseWireCompliance,
   toSseResponse,
+} from "../src/index.ts";
+import type {
+  TuvrenDecodedSseEvent,
+  TuvrenSseWireCompliance,
 } from "../src/index.ts";
 
 interface SseTraceFixture {
@@ -29,39 +35,101 @@ interface SseTraceFixture {
     {
       encodedBytes: string;
       expectedDecodedStream: {
-        events: Record<string, unknown>[];
+        events: TuvrenDecodedSseEvent[];
         lastEventId?: string;
         reconnectDelayMs?: number;
       };
     }
   >;
-  wireCompliance: Record<string, boolean>;
+  wireCompliance: TuvrenSseWireCompliance;
 }
+
+const isStringKeyedObject = (
+  value: unknown
+): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isDecodedSseEvent = (value: unknown): value is TuvrenDecodedSseEvent =>
+  isStringKeyedObject(value) &&
+  typeof value.data === "string" &&
+  typeof value.type === "string" &&
+  (value.id === undefined || typeof value.id === "string") &&
+  (value.retryMs === undefined || typeof value.retryMs === "number");
+
+const isWireCompliance = (value: unknown): value is TuvrenSseWireCompliance =>
+  isStringKeyedObject(value) &&
+  typeof value.acceptsLfCrlfAndCrLineTerminators === "boolean" &&
+  typeof value.contentTypeIsEventStream === "boolean" &&
+  typeof value.dispatchesOnEmptyLine === "boolean" &&
+  typeof value.encodingIsUtf8 === "boolean" &&
+  typeof value.ignoresCommentLines === "boolean" &&
+  typeof value.stripsLeadingBom === "boolean" &&
+  typeof value.stripsSingleLeadingFieldSpace === "boolean";
+
+const isSseTraceFixture = (value: unknown): value is SseTraceFixture => {
+  if (!isStringKeyedObject(value)) {
+    return false;
+  }
+
+  if (
+    !(
+      isStringKeyedObject(value.traces) &&
+      isStringKeyedObject(value.wireCompliance)
+    )
+  ) {
+    return false;
+  }
+
+  const tracesAreValid = Object.values(value.traces).every((trace) => {
+    if (
+      !isStringKeyedObject(trace) ||
+      typeof trace.encodedBytes !== "string" ||
+      !isStringKeyedObject(trace.expectedDecodedStream)
+    ) {
+      return false;
+    }
+
+    const expected = trace.expectedDecodedStream;
+    return (
+      Array.isArray(expected.events) &&
+      expected.events.every(isDecodedSseEvent) &&
+      (expected.lastEventId === undefined ||
+        typeof expected.lastEventId === "string") &&
+      (expected.reconnectDelayMs === undefined ||
+        typeof expected.reconnectDelayMs === "number")
+    );
+  });
+
+  return tracesAreValid && isWireCompliance(value.wireCompliance);
+};
 
 const FIXTURE_PATH =
   "../../../../spec/conformance/streaming/fixtures/event-stream-sse-traces.json";
-const fixture = JSON.parse(
+const parsedFixture: unknown = JSON.parse(
   await readFile(new URL(FIXTURE_PATH, import.meta.url), "utf-8")
-) as SseTraceFixture;
+);
+
+if (!isSseTraceFixture(parsedFixture)) {
+  throw new Error("invalid SSE trace fixture");
+}
+
+const fixture = parsedFixture;
+
+// biome-ignore lint/suspicious/useAwait: encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously
+const events = (async function* events(): AsyncIterable<TuvrenStreamEvent> {
+  yield {
+    threadId: "probe-thread",
+    timestamp: 0,
+    turnId: "probe-turn",
+    type: "turn.start",
+  };
+})();
 
 const observeEncoderForTest = async (): Promise<{
   body: Uint8Array;
   contentType: string;
 }> => {
-  // biome-ignore lint/suspicious/useAwait: encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously
-  const events = (async function* events() {
-    yield {
-      data: { value: "probe" },
-      messageId: "probe-msg",
-      threadId: "probe-thread",
-      timestamp: 0,
-      turnId: "probe-turn",
-      type: "turn.start",
-    };
-  })();
-  const response = toSseResponse(
-    events as unknown as AsyncIterable<never> & AsyncIterator<never>
-  );
+  const response = toSseResponse(events);
   return {
     body: new Uint8Array(await response.arrayBuffer()),
     contentType: response.headers.get("content-type") ?? "",
@@ -73,14 +141,7 @@ describe("sse-decoder", () => {
     test(`decodes ${traceName} per WHATWG`, () => {
       const decoded = decodeSseStream(trace.encodedBytes);
 
-      expect(decoded.events).toEqual(
-        trace.expectedDecodedStream.events as {
-          data: string;
-          id?: string;
-          retryMs?: number;
-          type: string;
-        }[]
-      );
+      expect(decoded.events).toEqual(trace.expectedDecodedStream.events);
 
       if (trace.expectedDecodedStream.lastEventId !== undefined) {
         expect(decoded.lastEventId).toBe(
@@ -98,8 +159,6 @@ describe("sse-decoder", () => {
 
   test("reports wire compliance booleans matching the fixture", async () => {
     const report = await reportSseWireCompliance(observeEncoderForTest);
-    expect(report as unknown as Record<string, boolean>).toEqual(
-      fixture.wireCompliance
-    );
+    expect(report).toEqual(fixture.wireCompliance);
   });
 });

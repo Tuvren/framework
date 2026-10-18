@@ -3,8 +3,8 @@ mode: contract_test
 result: pass
 produced:
   date: '2026-10-18'
-  commit: 8e04ccb6afe59afb2a10784e3be1f5ae88519597
-  command: 'M24 core and M25 SDK native admission plus M26 AGUI readiness; package-native lint and JSON checking; build, source-only typecheck, tests, API freeze and export smoke; admission controls; focused framework conformance; bun run lint; bun run typecheck; bun run changeset:check --base=master'
+  commit: 9fa8b5280a3f11ffe56cec5e13fed2468dc1328a
+  command: 'M24 core and M25 SDK native admission plus M26 AGUI and M27 stream-core/SSE readiness; package-native lint and JSON checking; build, source-only typecheck, tests, API freeze and export smoke; admission controls; focused framework conformance; bun run lint; bun run typecheck; bun run changeset:check --base=master'
 files:
   - path: M24-core-readiness.json
     sha256: 221d0f71aee93a43c5c5514db9ef20bc02dfe33386ff734efa749ee50ac58029
@@ -18,4 +18,8 @@ files:
     sha256: 1a57f7ccdea338b291592ecff4952fc4987cd57e47b6b9e651553e8e44d8c37a
     bytes: 11002
     role: measurement
-pass_criteria: The complete core and SDK admission selections and AGUI readiness selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics and no unused directive; every contract-preserving native exception is measured and reasoned; admitted roots remove their legacy Biome directives in the same changes as target and coverage transfer, while AGUI keeps its original directives and shared streaming ownership until M28; public API, Promise timing, event and error ordering, schema boundaries and release metadata remain unchanged; focused and repository gates pass. KRT-CA004 remains in progress until all later package admissions complete.
+  - path: M27-stream-core-sse-readiness.json
+    sha256: 12ed977445b8fd8e9499f56181e79415eb5ebad652506e35928e665aba1000e1
+    bytes: 12327
+    role: measurement
+pass_criteria: The complete core and SDK admission selections and all three streaming readiness selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics and no unused directive; every contract-preserving native exception is measured and reasoned; admitted roots remove their legacy Biome directives in the same changes as target and coverage transfer, while AGUI, stream-core and SSE keep their original directives and shared streaming ownership until M28; public API, Promise timing, queue and iterator behavior, event and error ordering, schema boundaries and release metadata remain unchanged; focused and repository gates pass. KRT-CA004 remains in progress until all later package admissions complete.

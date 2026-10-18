@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */
+
 /**
  * @packageDocumentation
  *
@@ -25,6 +27,9 @@
  * ({@link decodeSseStream}), with {@link reportSseWireCompliance} exercising
  * both halves against live observations for conformance reporting.
  */
+
+/* oxlint-enable jsdoc/check-tag-names */
+
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
 export type {
   TuvrenDecodedSseEvent,
