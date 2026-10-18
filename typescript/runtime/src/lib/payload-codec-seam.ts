@@ -33,10 +33,10 @@
  */
 
 import type { Scope } from "@tuvren/core";
-import {
-  isPayloadEnvelope,
-  type PayloadCodec,
-  type PayloadDecryptResult,
+import { isPayloadEnvelope } from "@tuvren/core/lifecycle";
+import type {
+  PayloadCodec,
+  PayloadDecryptResult,
 } from "@tuvren/core/lifecycle";
 
 /**
@@ -61,15 +61,14 @@ export interface PayloadCodecBinding {
  * default identity codec this returns the bytes unchanged (no envelope), so
  * no-codec hosts persist plaintext exactly as before BF005.
  */
-export async function encryptMessageRecord(
+export const encryptMessageRecord = async (
   binding: PayloadCodecBinding,
   record: Uint8Array
-): Promise<Uint8Array> {
-  return await binding.codec.encrypt(record, {
+): Promise<Uint8Array> =>
+  await binding.codec.encrypt(record, {
     edge: MESSAGE_PAYLOAD_EDGE,
     scope: binding.scope,
   });
-}
 
 /**
  * Decrypt a stored message blob at a read seam. Bytes that are not a payload
@@ -78,10 +77,10 @@ export async function encryptMessageRecord(
  * plaintext (migration) without tripping over the envelope parser. A genuine
  * envelope whose key the host has destroyed yields a typed `erased` result.
  */
-export async function decryptStoredMessage(
+export const decryptStoredMessage = async (
   binding: PayloadCodecBinding,
   stored: Uint8Array
-): Promise<PayloadDecryptResult> {
+): Promise<PayloadDecryptResult> => {
   if (!isPayloadEnvelope(stored)) {
     return { plaintext: stored, status: "available" };
   }
@@ -89,4 +88,4 @@ export async function decryptStoredMessage(
     edge: MESSAGE_PAYLOAD_EDGE,
     scope: binding.scope,
   });
-}
+};

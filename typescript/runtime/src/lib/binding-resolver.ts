@@ -44,88 +44,134 @@ export const TUVREN_SANDBOX_ENDPOINT_ID_PREFIX = "sandbox:";
  */
 export interface BindingResolver {
   /** Register a manually-supplied binding (used by provider/client classes). */
-  registerBinding(binding: Binding): void;
+  registerBinding: (binding: Binding) => void;
 
   /**
    * Resolve by capability id from the registered binding table.
    * Throws `TuvrenRuntimeError` with code `capability_binding_unavailable`
    * when no binding is registered for the given id.
    */
-  resolveById(capabilityId: string): Binding;
+  resolveById: (capabilityId: string) => Binding;
   /**
    * Resolve a TuvrenToolDefinition to its Binding.
    * Never throws; every developer-defined tool is resolvable.
    */
-  resolveFromToolDefinition(tool: TuvrenToolDefinition): Binding;
+  resolveFromToolDefinition: (tool: TuvrenToolDefinition) => Binding;
 }
 
-class BasicBindingResolver implements BindingResolver {
-  private readonly bindings = new Map<string, Binding>();
+/** Detect synthetic tuvren-client tool definitions by their metadata tag. (KRT-AZ001) */
+const extractClientEndpointId = (
+  tool: TuvrenToolDefinition
+): string | undefined => {
+  const meta = tool.metadata as { clientEndpointId?: string } | undefined;
+  const id = meta?.clientEndpointId;
+  return typeof id === "string" && id.length > 0 ? id : undefined;
+};
 
-  resolveFromToolDefinition(tool: TuvrenToolDefinition): Binding {
-    // Tuvren-client synthetic tools are tagged with metadata.clientEndpointId.
-    // Client-side MCP additionally carries metadata.mcpServerName under the
-    // tuvren-client class. (KRT-AZ001, KRT-AZ004)
-    const clientEndpointId = extractClientEndpointId(tool);
-    if (clientEndpointId !== undefined) {
-      const clientMcpServerName = extractClientMcpServerName(tool);
-      if (clientMcpServerName !== undefined) {
-        return {
-          capabilityId: tool.name,
-          endpoint: {
-            id: `client-mcp:${clientEndpointId}:${clientMcpServerName}`,
-            kind: "mcp-server",
-          },
-          executionClass: "tuvren-client",
-        };
-      }
+/** Extract client-side MCP server name from a tuvren-client tool. (KRT-AZ004) */
+const extractClientMcpServerName = (
+  tool: TuvrenToolDefinition
+): string | undefined => {
+  const meta = tool.metadata as { mcpServerName?: string } | undefined;
+  const name = meta?.mcpServerName;
+  return typeof name === "string" && name.length > 0 ? name : undefined;
+};
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+const extractMcpServerName = (
+  tool: TuvrenToolDefinition
+): string | undefined => {
+  const meta = tool.metadata as { mcp?: { serverName?: string } } | undefined;
+  const serverName = meta?.mcp?.serverName;
+  return typeof serverName === "string" && serverName.length > 0
+    ? serverName
+    : undefined;
+};
+
+const extractSandboxEndpointId = (
+  tool: TuvrenToolDefinition
+): string | undefined => {
+  const meta = tool.metadata as
+    | { sandbox?: { endpointId?: string } }
+    | undefined;
+  const endpointId = meta?.sandbox?.endpointId;
+  return typeof endpointId === "string" && endpointId.length > 0
+    ? endpointId
+    : undefined;
+};
+
+const resolveToolDefinitionBinding = (tool: TuvrenToolDefinition): Binding => {
+  // Tuvren-client synthetic tools are tagged with metadata.clientEndpointId.
+  // Client-side MCP additionally carries metadata.mcpServerName under the
+  // tuvren-client class. (KRT-AZ001, KRT-AZ004)
+  const clientEndpointId = extractClientEndpointId(tool);
+  if (clientEndpointId !== undefined) {
+    const clientMcpServerName = extractClientMcpServerName(tool);
+    if (clientMcpServerName !== undefined) {
       return {
         capabilityId: tool.name,
         endpoint: {
-          id: `client-endpoint:${clientEndpointId}`,
-          kind: "client-endpoint",
+          id: `client-mcp:${clientEndpointId}:${clientMcpServerName}`,
+          kind: "mcp-server",
         },
         executionClass: "tuvren-client",
       };
     }
-
-    const mcpServerName = extractMcpServerName(tool);
-
-    if (mcpServerName !== undefined) {
-      const binding: Binding = {
-        capabilityId: tool.name,
-        endpoint: {
-          id: `mcp-server:${mcpServerName}`,
-          kind: "mcp-server",
-        },
-        executionClass: "tuvren-server",
-      };
-      return binding;
-    }
-
-    const sandboxEndpointId = extractSandboxEndpointId(tool);
-
-    if (sandboxEndpointId !== undefined) {
-      return {
-        capabilityId: tool.name,
-        endpoint: {
-          id: `${TUVREN_SANDBOX_ENDPOINT_ID_PREFIX}${sandboxEndpointId}`,
-          kind: "tuvren-sandbox",
-        },
-        executionClass: "tuvren-server",
-      };
-    }
-
-    // Developer-defined execute tool → tuvren-server / tuvren-in-process
     return {
       capabilityId: tool.name,
       endpoint: {
-        id: TUVREN_IN_PROCESS_ENDPOINT_ID,
-        kind: "tuvren-in-process",
+        id: `client-endpoint:${clientEndpointId}`,
+        kind: "client-endpoint",
+      },
+      executionClass: "tuvren-client",
+    };
+  }
+
+  const mcpServerName = extractMcpServerName(tool);
+
+  if (mcpServerName !== undefined) {
+    const binding: Binding = {
+      capabilityId: tool.name,
+      endpoint: {
+        id: `mcp-server:${mcpServerName}`,
+        kind: "mcp-server",
+      },
+      executionClass: "tuvren-server",
+    };
+    return binding;
+  }
+
+  const sandboxEndpointId = extractSandboxEndpointId(tool);
+
+  if (sandboxEndpointId !== undefined) {
+    return {
+      capabilityId: tool.name,
+      endpoint: {
+        id: `${TUVREN_SANDBOX_ENDPOINT_ID_PREFIX}${sandboxEndpointId}`,
+        kind: "tuvren-sandbox",
       },
       executionClass: "tuvren-server",
     };
   }
+
+  // Developer-defined execute tool → tuvren-server / tuvren-in-process
+  return {
+    capabilityId: tool.name,
+    endpoint: {
+      id: TUVREN_IN_PROCESS_ENDPOINT_ID,
+      kind: "tuvren-in-process",
+    },
+    executionClass: "tuvren-server",
+  };
+};
+
+class BasicBindingResolver implements BindingResolver {
+  private readonly bindings = new Map<string, Binding>();
+
+  readonly resolveFromToolDefinition = resolveToolDefinitionBinding;
 
   resolveById(capabilityId: string): Binding {
     const binding = this.bindings.get(capabilityId);
@@ -146,57 +192,13 @@ class BasicBindingResolver implements BindingResolver {
   }
 }
 
-export function createBindingResolver(): BindingResolver {
-  return new BasicBindingResolver();
-}
-
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
-function extractMcpServerName(tool: TuvrenToolDefinition): string | undefined {
-  const meta = tool.metadata as { mcp?: { serverName?: string } } | undefined;
-  const serverName = meta?.mcp?.serverName;
-  return typeof serverName === "string" && serverName.length > 0
-    ? serverName
-    : undefined;
-}
-
-function extractSandboxEndpointId(
-  tool: TuvrenToolDefinition
-): string | undefined {
-  const meta = tool.metadata as
-    | { sandbox?: { endpointId?: string } }
-    | undefined;
-  const endpointId = meta?.sandbox?.endpointId;
-  return typeof endpointId === "string" && endpointId.length > 0
-    ? endpointId
-    : undefined;
-}
-
-/** Detect synthetic tuvren-client tool definitions by their metadata tag. (KRT-AZ001) */
-function extractClientEndpointId(
-  tool: TuvrenToolDefinition
-): string | undefined {
-  const meta = tool.metadata as { clientEndpointId?: string } | undefined;
-  const id = meta?.clientEndpointId;
-  return typeof id === "string" && id.length > 0 ? id : undefined;
-}
-
-/** Extract client-side MCP server name from a tuvren-client tool. (KRT-AZ004) */
-function extractClientMcpServerName(
-  tool: TuvrenToolDefinition
-): string | undefined {
-  const meta = tool.metadata as { mcpServerName?: string } | undefined;
-  const name = meta?.mcpServerName;
-  return typeof name === "string" && name.length > 0 ? name : undefined;
-}
+export const createBindingResolver = (): BindingResolver =>
+  new BasicBindingResolver();
 
 /**
  * Returns true when the tool definition is a synthetic tuvren-client tool
  * (created by buildClientEndpointTools). Used to gate audit events and
  * server-side lifecycle concerns that do not apply to the client class.
  */
-export function isClientEndpointTool(tool: TuvrenToolDefinition): boolean {
-  return extractClientEndpointId(tool) !== undefined;
-}
+export const isClientEndpointTool = (tool: TuvrenToolDefinition): boolean =>
+  extractClientEndpointId(tool) !== undefined;

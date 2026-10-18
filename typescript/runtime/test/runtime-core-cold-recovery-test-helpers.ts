@@ -8,26 +8,63 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-import { DEFAULT_SCOPE, type KernelRecord } from "@tuvren/core";
+import { assertKernelRecord, DEFAULT_SCOPE } from "@tuvren/core";
 import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
-import {
-  encodeDeterministicKernelRecord,
-  type RuntimeKernel,
-} from "@tuvren/kernel-protocol";
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type { RuntimeKernel } from "@tuvren/kernel-protocol";
 
 import { DEFAULT_AGENT_SCHEMA } from "../src/index.ts";
 import { encryptMessageRecord } from "../src/lib/payload-codec-seam.ts";
-import {
-  createFakeKernelHarness,
-  createFakeRunLivenessKernelHarness,
-} from "./fake-kernel.ts";
+import { createFakeKernelHarness } from "./fake-kernel.ts";
+import { createFakeRunLivenessKernelHarness } from "./fake-run-liveness-kernel.ts";
 
-export async function prepareExpiredToolBatch(
+const stageTestMessage = async (
+  kernel: RuntimeKernel,
+  runId: string,
+  taskId: string,
+  message: TuvrenMessage
+): Promise<void> => {
+  const record: unknown = message;
+  assertKernelRecord(record, `cold recovery message for task "${taskId}"`);
+  await kernel.staging.stage(
+    runId,
+    await encryptMessageRecord(
+      { codec: IDENTITY_PAYLOAD_CODEC, scope: DEFAULT_SCOPE },
+      encodeDeterministicKernelRecord(record)
+    ),
+    taskId,
+    "message",
+    "completed"
+  );
+};
+
+const stageInterruptedMessages = async (
+  kernel: RuntimeKernel,
+  runId: string,
+  messages: readonly TuvrenMessage[],
+  index = 0
+): Promise<void> => {
+  const message = messages[index];
+
+  if (message === undefined) {
+    return;
+  }
+
+  await stageTestMessage(
+    kernel,
+    runId,
+    `interrupted_message_${index.toString()}`,
+    message
+  );
+  await stageInterruptedMessages(kernel, runId, messages, index + 1);
+};
+
+export const prepareExpiredToolBatch = async (
   suffix: string,
   signalText: string,
   interruptedMessages: TuvrenMessage[]
-) {
+) => {
   const harness = createFakeKernelHarness();
   const livenessHarness = createFakeRunLivenessKernelHarness(harness);
   const thread = await livenessHarness.kernel.thread.create(
@@ -82,14 +119,11 @@ export async function prepareExpiredToolBatch(
   });
   await livenessHarness.kernel.run.beginStep(staleRunId, "iterate");
 
-  for (const [index, message] of interruptedMessages.entries()) {
-    await stageTestMessage(
-      livenessHarness.kernel,
-      staleRunId,
-      `interrupted_message_${index.toString()}`,
-      message
-    );
-  }
+  await stageInterruptedMessages(
+    livenessHarness.kernel,
+    staleRunId,
+    interruptedMessages
+  );
 
   return {
     harness,
@@ -97,22 +131,4 @@ export async function prepareExpiredToolBatch(
     staleTurn,
     thread,
   };
-}
-
-async function stageTestMessage(
-  kernel: RuntimeKernel,
-  runId: string,
-  taskId: string,
-  message: TuvrenMessage
-): Promise<void> {
-  await kernel.staging.stage(
-    runId,
-    await encryptMessageRecord(
-      { codec: IDENTITY_PAYLOAD_CODEC, scope: DEFAULT_SCOPE },
-      encodeDeterministicKernelRecord(message as unknown as KernelRecord)
-    ),
-    taskId,
-    "message",
-    "completed"
-  );
-}
+};

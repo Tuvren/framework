@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { type EpochMs, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { EpochMs } from "@tuvren/core";
 import type {
   TuvrenErrorProjection,
   TuvrenStreamEvent,
@@ -28,6 +29,7 @@ import type {
 } from "@tuvren/core/execution";
 import type { ApprovalResponse } from "@tuvren/core/tools";
 
+import { createSingleConsumerLazyStream } from "./orchestration-runtime-lazy-stream.js";
 import {
   AsyncEventQueue,
   cloneValue,
@@ -79,13 +81,13 @@ export interface ChildSpawnRequest {
 export interface OrchestrationRuntimeNodeHost {
   /** Creates the child's thread and execution, inheriting schema/runner/tools
    * from the parent binding. */
-  createChildBinding(
+  createChildBinding: (
     parentBinding: ExecutionBinding,
     workerId: string,
     input: ChildSpawnRequest
-  ): Promise<ExecutionBinding>;
+  ) => Promise<ExecutionBinding>;
   /** Generates a unique id (used for child worker ids). */
-  createId(): string;
+  createId: () => string;
 }
 
 /**
@@ -115,7 +117,7 @@ export class OrchestrationNode {
   private lastErrorProjection?: TuvrenErrorProjection;
   private readonly now: () => EpochMs;
   private readonly pendingSteering: InputSignal[] = [];
-  private readonly resultState = createDeferred<void>();
+  private readonly resultState = createDeferred<boolean>();
   private readonly runtime: OrchestrationRuntimeNodeHost;
   private selfPhase: ExecutionStatus["phase"] = "running";
   private selfEventsClaimed = false;
@@ -158,14 +160,8 @@ export class OrchestrationNode {
     } else if (options.bindingPromise === undefined) {
       throw new Error("orchestration nodes require an execution binding");
     } else {
-      this.currentBindingPromise = options.bindingPromise.catch(
-        (error: unknown) => {
-          this.initializationFailed = true;
-          const normalizedError = normalizeError(error);
-          this.lastErrorProjection = projectError(normalizedError);
-          this.selfPhase = "failed";
-          throw normalizedError;
-        }
+      this.currentBindingPromise = this.captureBindingInitialization(
+        options.bindingPromise
       );
     }
   }
@@ -175,7 +171,7 @@ export class OrchestrationNode {
    * descendant's, lazily started on first `next()`. Child events are
    * forwarded as long as at least one subtree consumer is active.
    *
-   * @throws TuvrenRuntimeError with code `event_stream_already_consumed` when
+   * @throws {TuvrenRuntimeError} With code `event_stream_already_consumed` when
    *   claimed twice within one binding generation.
    */
   allEvents(): AsyncIterable<TuvrenStreamEvent> {
@@ -286,7 +282,7 @@ export class OrchestrationNode {
    * Returns the single-consumer stream of this node's own events (children
    * excluded), lazily starting execution on first `next()`.
    *
-   * @throws TuvrenRuntimeError with code `event_stream_already_consumed` when
+   * @throws {TuvrenRuntimeError} With code `event_stream_already_consumed` when
    *   claimed twice within one binding generation.
    */
   events(): AsyncIterable<TuvrenStreamEvent> {
@@ -336,7 +332,7 @@ export class OrchestrationNode {
    * resolves, a running node queues the signal for replay once the handle
    * exists.
    *
-   * @throws TuvrenRuntimeError with code `orchestration_parent_not_started`
+   * @throws {TuvrenRuntimeError} With code `orchestration_parent_not_started`
    *   when execution has not started, or `orchestration_parent_inactive`
    *   when the node is no longer running.
    */
@@ -382,11 +378,11 @@ export class OrchestrationNode {
    * the new generation, and starts watching the resumed handle.
    *
    * @returns This node (the caller wraps it in a fresh handle).
-   * @throws TuvrenRuntimeError with code `orchestration_parent_not_started`
+   * @throws {TuvrenRuntimeError} With code `orchestration_parent_not_started`
    *   when no binding exists yet, or `invalid_approval_resolution` when the
    *   execution is not paused.
    */
-  replaceAfterApproval(response: ApprovalResponse): OrchestrationNode {
+  replaceAfterApproval(response: ApprovalResponse): this {
     const binding = this.requireCurrentBinding("resolveApproval");
     const status = binding.handle.status();
 
@@ -425,7 +421,7 @@ export class OrchestrationNode {
    * after verifying this parent is `running`; the child is registered on this
    * node and its execution starts immediately.
    *
-   * @throws TuvrenRuntimeError with code `orchestration_parent_not_started`
+   * @throws {TuvrenRuntimeError} With code `orchestration_parent_not_started`
    *   when execution has not started; a non-running parent surfaces
    *   `orchestration_parent_inactive` (synchronously when the binding is
    *   ready, otherwise through the child's failed initialization).
@@ -441,50 +437,15 @@ export class OrchestrationNode {
     }
 
     const workerId = this.runtime.createId();
+    const { currentBinding } = this;
+    if (currentBinding !== undefined) {
+      OrchestrationNode.assertRunningParent(currentBinding);
+    }
+
     const childBindingPromise =
-      this.currentBinding === undefined
-        ? this.requireCurrentBindingAsync("spawn").then(async (binding) => {
-            const phase = binding.handle.status().phase;
-
-            if (phase !== "running") {
-              throw new TuvrenRuntimeError(
-                "spawn() requires a running orchestration handle",
-                {
-                  code: "orchestration_parent_inactive",
-                  details: {
-                    phase,
-                  },
-                }
-              );
-            }
-
-            return await this.runtime.createChildBinding(
-              binding,
-              workerId,
-              input
-            );
-          })
-        : (() => {
-            const phase = this.currentBinding.handle.status().phase;
-
-            if (phase !== "running") {
-              throw new TuvrenRuntimeError(
-                "spawn() requires a running orchestration handle",
-                {
-                  code: "orchestration_parent_inactive",
-                  details: {
-                    phase,
-                  },
-                }
-              );
-            }
-
-            return this.runtime.createChildBinding(
-              this.currentBinding,
-              workerId,
-              input
-            );
-          })();
+      currentBinding === undefined
+        ? this.createChildBindingWhenParentReady(workerId, input)
+        : this.createChildBinding(currentBinding, workerId, input);
     const childNode = new OrchestrationNode(
       this.runtime,
       input.agent,
@@ -518,7 +479,7 @@ export class OrchestrationNode {
    * without overwriting attribution the event already carries; root-node
    * events (no worker id) pass through unchanged.
    */
-  private decorateEvent(
+  private static decorateEvent(
     event: TuvrenStreamEvent,
     binding: ExecutionBinding
   ): TuvrenStreamEvent {
@@ -529,7 +490,7 @@ export class OrchestrationNode {
     return {
       ...event,
       source: {
-        ...(event.source ?? {}),
+        ...event.source,
         agent: event.source?.agent ?? binding.agent,
         threadId: event.source?.threadId ?? binding.threadId,
         workerId: event.source?.workerId ?? binding.workerId,
@@ -558,8 +519,56 @@ export class OrchestrationNode {
     );
   }
 
+  private async captureBindingInitialization(
+    bindingPromise: Promise<ExecutionBinding>
+  ): Promise<ExecutionBinding> {
+    try {
+      return await bindingPromise;
+    } catch (error: unknown) {
+      this.initializationFailed = true;
+      const normalizedError = normalizeError(error);
+      this.lastErrorProjection = projectError(normalizedError);
+      this.selfPhase = "failed";
+      throw normalizedError;
+    }
+  }
+
+  private static assertRunningParent(binding: ExecutionBinding): void {
+    const { handle } = binding;
+    const { phase } = handle.status();
+
+    if (phase !== "running") {
+      throw new TuvrenRuntimeError(
+        "spawn() requires a running orchestration handle",
+        {
+          code: "orchestration_parent_inactive",
+          details: {
+            phase,
+          },
+        }
+      );
+    }
+  }
+
+  private async createChildBindingWhenParentReady(
+    workerId: string,
+    input: ChildSpawnRequest
+  ): Promise<ExecutionBinding> {
+    const binding = await this.requireCurrentBindingAsync("spawn");
+    OrchestrationNode.assertRunningParent(binding);
+    return await this.createChildBinding(binding, workerId, input);
+  }
+
+  private async createChildBinding(
+    binding: ExecutionBinding,
+    workerId: string,
+    input: ChildSpawnRequest
+  ): Promise<ExecutionBinding> {
+    return await this.runtime.createChildBinding(binding, workerId, input);
+  }
+
   private finalizeCurrentBinding(binding: ExecutionBinding): void {
-    const phase = binding.handle.status().phase;
+    const { phase } = binding.handle.status();
     this.selfPhase = phase;
 
     if (phase === "paused") {
@@ -661,7 +670,7 @@ export class OrchestrationNode {
     this.selfResultResolved = true;
     const projection = projectError(error);
     this.lastErrorProjection = projection;
-    this.resultState.resolve();
+    this.resultState.resolve(true);
   }
 
   private settleResultFailureFromProjection(): void {
@@ -680,7 +689,7 @@ export class OrchestrationNode {
     }
 
     this.selfResultResolved = true;
-    this.resultState.resolve(undefined);
+    this.resultState.resolve(true);
   }
 
   private async observeChildSettlement(
@@ -699,25 +708,44 @@ export class OrchestrationNode {
 
     const iterator = child.subscribeInternalSubtreeEvents();
     this.childForwarders.set(child, iterator);
-    detachPromise(
-      (async () => {
-        try {
-          while (true) {
-            const nextEvent = await iterator.next();
+    detachPromise(this.forwardChildEvents(child, iterator));
+  }
 
-            if (nextEvent.done) {
-              return;
-            }
+  private async forwardChildEvents(
+    child: OrchestrationNode,
+    iterator: AsyncIterator<TuvrenStreamEvent>
+  ): Promise<void> {
+    try {
+      await this.forwardNextChildEvent(iterator);
+    } finally {
+      if (this.childForwarders.get(child) === iterator) {
+        this.childForwarders.delete(child);
+      }
+    }
+  }
 
-            this.publishSubtreeEvent(nextEvent.value);
-          }
-        } finally {
-          if (this.childForwarders.get(child) === iterator) {
-            this.childForwarders.delete(child);
-          }
+  private async forwardNextChildEvent(
+    iterator: AsyncIterator<TuvrenStreamEvent>
+  ): Promise<void> {
+    const completion = Promise.withResolvers<boolean>();
+    const forwardNext = async (): Promise<void> => {
+      try {
+        const nextEvent = await iterator.next();
+
+        if (nextEvent.done === true) {
+          completion.resolve(true);
+          return;
         }
-      })()
-    );
+
+        this.publishSubtreeEvent(nextEvent.value);
+        detachPromise(forwardNext());
+      } catch (error: unknown) {
+        completion.reject(error);
+      }
+    };
+
+    detachPromise(forwardNext());
+    await completion.promise;
   }
 
   private startChildForwardingForAllChildren(): void {
@@ -729,7 +757,7 @@ export class OrchestrationNode {
   private closeSubtreeEventStreams(): void {
     this.subtreeEventsQueue?.close();
 
-    for (const subscriber of [...this.subtreeEventSubscribers]) {
+    for (const subscriber of this.subtreeEventSubscribers) {
       subscriber.close();
     }
   }
@@ -757,19 +785,25 @@ export class OrchestrationNode {
   }
 
   private subscribeInternalSubtreeEvents(): AsyncIterator<TuvrenStreamEvent> {
-    let closed = false;
+    const subscription: {
+      closed: boolean;
+      queue?: AsyncEventQueue<TuvrenStreamEvent>;
+    } = { closed: false };
     const close = async (): Promise<void> => {
-      if (closed) {
+      if (subscription.closed) {
         return;
       }
 
-      closed = true;
-      this.subtreeEventSubscribers.delete(queue);
+      subscription.closed = true;
+      if (subscription.queue !== undefined) {
+        this.subtreeEventSubscribers.delete(subscription.queue);
+      }
       await this.closeSubtreeConsumer();
     };
     const queue = new AsyncEventQueue<TuvrenStreamEvent>(() => {
       detachPromise(close());
     });
+    subscription.queue = queue;
 
     this.subtreeEventSubscribers.add(queue);
     this.startSubtreeConsumer(queue);
@@ -833,22 +867,16 @@ export class OrchestrationNode {
       }
       this.pendingSteering.length = 0;
 
-      let nextEvent = await firstEventPromise;
-      while (!nextEvent.done) {
-        if (generation !== this.bindingGeneration) {
-          await eventIterator.return?.();
-          return;
-        }
+      const nextEvent = await firstEventPromise;
+      const completedCurrentGeneration = await this.forwardBindingEvents(
+        generation,
+        binding,
+        eventIterator,
+        nextEvent
+      );
 
-        const event = nextEvent.value;
-        if (event.type === "error") {
-          this.lastErrorProjection = event.error;
-        }
-
-        const decoratedEvent = this.decorateEvent(event, binding);
-        this.selfEventsQueue?.push(cloneValue(decoratedEvent));
-        this.publishSubtreeEvent(decoratedEvent);
-        nextEvent = await eventIterator.next();
+      if (!completedCurrentGeneration) {
+        return;
       }
 
       this.selfEventsQueue?.close();
@@ -889,105 +917,48 @@ export class OrchestrationNode {
     }
   }
 
+  private async forwardBindingEvents(
+    generation: number,
+    binding: ExecutionBinding,
+    eventIterator: AsyncIterator<TuvrenStreamEvent>,
+    nextEvent: IteratorResult<TuvrenStreamEvent>
+  ): Promise<boolean> {
+    const completion = Promise.withResolvers<boolean>();
+    const forwardNext = async (
+      currentEvent: IteratorResult<TuvrenStreamEvent>
+    ): Promise<void> => {
+      try {
+        if (currentEvent.done === true) {
+          completion.resolve(true);
+          return;
+        }
+
+        if (generation !== this.bindingGeneration) {
+          await eventIterator.return?.();
+          completion.resolve(false);
+          return;
+        }
+
+        const event = currentEvent.value;
+        if (event.type === "error") {
+          this.lastErrorProjection = event.error;
+        }
+
+        const decoratedEvent = OrchestrationNode.decorateEvent(event, binding);
+        this.selfEventsQueue?.push(cloneValue(decoratedEvent));
+        this.publishSubtreeEvent(decoratedEvent);
+        const followingEvent = await eventIterator.next();
+        detachPromise(forwardNext(followingEvent));
+      } catch (error: unknown) {
+        completion.reject(error);
+      }
+    };
+
+    detachPromise(forwardNext(nextEvent));
+    return await completion.promise;
+  }
+
   private async waitUntilSettled(): Promise<void> {
     await this.resultState.promise;
   }
-}
-
-/**
- * Builds an `AsyncIterable` that may be claimed by exactly one consumer and
- * defers all side effects (claim, queue creation, `onStart`) to the first
- * `next()` call. Completion, early `return()`, or the queue closing all
- * funnel through a single idempotent `onClose`.
- *
- * @throws TuvrenRuntimeError with `input.alreadyConsumedCode` when a second
- *   consumer starts iterating while the stream is already claimed.
- */
-function createSingleConsumerLazyStream<T>(input: {
-  alreadyConsumedCode: string;
-  alreadyConsumedMessage: string;
-  isClaimed(): boolean;
-  onClaim(): void;
-  onClose: () => Promise<void> | void;
-  onStart: (queue: AsyncEventQueue<T>) => void;
-}): AsyncIterable<T> {
-  return {
-    [Symbol.asyncIterator](): AsyncIterator<T, undefined> {
-      let closed = false;
-      let iterator: AsyncIterator<T> | undefined;
-      let queue: AsyncEventQueue<T> | undefined;
-      let started = false;
-
-      const close = async (): Promise<void> => {
-        if (!started || closed) {
-          return;
-        }
-
-        closed = true;
-        await input.onClose();
-      };
-
-      const start = (): void => {
-        if (started) {
-          return;
-        }
-
-        if (input.isClaimed()) {
-          throw new TuvrenRuntimeError(input.alreadyConsumedMessage, {
-            code: input.alreadyConsumedCode,
-          });
-        }
-
-        try {
-          input.onClaim();
-          queue = new AsyncEventQueue<T>(() => {
-            detachPromise(close());
-          });
-          iterator = queue[Symbol.asyncIterator]();
-          started = true;
-          input.onStart(queue);
-        } catch (error: unknown) {
-          queue?.close();
-          throw error;
-        }
-      };
-
-      return {
-        next: async (): Promise<IteratorResult<T, undefined>> => {
-          start();
-
-          if (iterator === undefined) {
-            return createIteratorDoneResult<T>();
-          }
-
-          const nextValue = await iterator.next();
-
-          if (nextValue.done) {
-            await close();
-          }
-
-          return nextValue;
-        },
-        return: async (): Promise<IteratorResult<T, undefined>> => {
-          if (!started || iterator === undefined) {
-            return createIteratorDoneResult<T>();
-          }
-
-          const result =
-            iterator.return === undefined
-              ? createIteratorDoneResult<T>()
-              : await iterator.return();
-          await close();
-          return result;
-        },
-      };
-    },
-  };
-}
-
-function createIteratorDoneResult<T>(): IteratorResult<T, undefined> {
-  return {
-    done: true,
-    value: undefined,
-  };
 }

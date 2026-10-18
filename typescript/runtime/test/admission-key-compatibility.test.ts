@@ -17,14 +17,73 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 
-import type { KernelRecord } from "@tuvren/core";
+import { assertKernelRecord } from "@tuvren/core";
 import { createIdentityPayloadCodec } from "@tuvren/core/lifecycle";
+import { assertTuvrenMessage } from "@tuvren/core/messages";
 import {
   encodeDeterministicKernelRecord,
   hashOpaqueObjectBytes,
 } from "@tuvren/kernel-protocol";
 
 import { normalizeInputSignal } from "../src/lib/runtime-core-shared.ts";
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+const readMessage = (value: unknown): AdmissionKeylessFixture["message"] => {
+  assertTuvrenMessage(value, "admission-keyless fixture message");
+  if (value.role !== "user" || value.parts.length !== 1) {
+    throw new Error(
+      "admission-keyless user-message fixture has a malformed message"
+    );
+  }
+
+  const [part] = value.parts;
+  if (part?.type !== "text") {
+    throw new Error("admission-keyless fixture requires one text part");
+  }
+  return { parts: [part], role: "user" };
+};
+
+const readIdentity = (
+  value: unknown
+): AdmissionKeylessFixture["identityPayloadCodec"] => {
+  if (
+    !isRecord(value) ||
+    typeof value.encodedBytesHex !== "string" ||
+    typeof value.messageHash !== "string"
+  ) {
+    throw new Error(
+      "admission-keyless user-message fixture has malformed identity data"
+    );
+  }
+
+  return {
+    encodedBytesHex: value.encodedBytesHex,
+    messageHash: value.messageHash,
+  };
+};
+
+const readAdmissionKeylessFixture = (): AdmissionKeylessFixture => {
+  const fixture: unknown = JSON.parse(
+    readFileSync(
+      new URL(
+        "../../../spec/conformance/engine/fixtures/admission-keyless-user-message.json",
+        import.meta.url
+      ),
+      "utf-8"
+    )
+  );
+
+  if (!isRecord(fixture)) {
+    throw new Error("admission-keyless user-message fixture is malformed");
+  }
+
+  return {
+    identityPayloadCodec: readIdentity(fixture.identityPayloadCodec),
+    message: readMessage(fixture.message),
+  };
+};
 
 describe("admission-keyless message compatibility", () => {
   test("preserves the pre-admission-key identity bytes and message hash", async () => {
@@ -35,11 +94,11 @@ describe("admission-keyless message compatibility", () => {
     );
     const normalizedMessage = {
       ...normalizedSignal,
-      role: "user" as const,
+      role: "user",
     };
-    const encoded = encodeDeterministicKernelRecord(
-      normalizedMessage as unknown as KernelRecord
-    );
+    const record: unknown = normalizedMessage;
+    assertKernelRecord(record, "normalized admission-keyless message");
+    const encoded = encodeDeterministicKernelRecord(record);
     const stored = await createIdentityPayloadCodec().encrypt(encoded, {
       edge: "message",
       scope: "tuvren.scope.default",
@@ -63,61 +122,5 @@ interface AdmissionKeylessFixture {
   message: {
     parts: [{ text: string; type: "text" }];
     role: "user";
-  };
-}
-
-function readAdmissionKeylessFixture(): AdmissionKeylessFixture {
-  const fixture: unknown = JSON.parse(
-    readFileSync(
-      new URL(
-        "../../../spec/conformance/engine/fixtures/admission-keyless-user-message.json",
-        import.meta.url
-      ),
-      "utf8"
-    )
-  );
-
-  if (
-    fixture === null ||
-    typeof fixture !== "object" ||
-    !("message" in fixture) ||
-    fixture.message === null ||
-    typeof fixture.message !== "object" ||
-    !("role" in fixture.message) ||
-    fixture.message.role !== "user" ||
-    !("parts" in fixture.message) ||
-    !Array.isArray(fixture.message.parts) ||
-    fixture.message.parts.length !== 1 ||
-    fixture.message.parts[0] === null ||
-    typeof fixture.message.parts[0] !== "object" ||
-    !("type" in fixture.message.parts[0]) ||
-    fixture.message.parts[0].type !== "text" ||
-    !("text" in fixture.message.parts[0]) ||
-    typeof fixture.message.parts[0].text !== "string" ||
-    !("identityPayloadCodec" in fixture) ||
-    fixture.identityPayloadCodec === null ||
-    typeof fixture.identityPayloadCodec !== "object" ||
-    !("encodedBytesHex" in fixture.identityPayloadCodec) ||
-    typeof fixture.identityPayloadCodec.encodedBytesHex !== "string" ||
-    !("messageHash" in fixture.identityPayloadCodec) ||
-    typeof fixture.identityPayloadCodec.messageHash !== "string"
-  ) {
-    throw new Error("admission-keyless user-message fixture is malformed");
-  }
-
-  return {
-    identityPayloadCodec: {
-      encodedBytesHex: fixture.identityPayloadCodec.encodedBytesHex,
-      messageHash: fixture.identityPayloadCodec.messageHash,
-    },
-    message: {
-      parts: [
-        {
-          text: fixture.message.parts[0].text,
-          type: "text",
-        },
-      ],
-      role: "user",
-    },
   };
 }

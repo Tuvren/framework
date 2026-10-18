@@ -20,10 +20,10 @@ import type {
   HandoffContextPlan,
   RuntimeResolution,
 } from "@tuvren/core/execution";
-import {
-  assertRunnerExecutionResult,
-  type RunnerExecutionContext,
-  type RuntimeRunner,
+import { assertRunnerExecutionResult } from "@tuvren/core/runner";
+import type {
+  RunnerExecutionContext,
+  RuntimeRunner,
 } from "@tuvren/core/runner";
 
 import { TUVREN_SANDBOX_ENDPOINT_ID_PREFIX } from "./binding-resolver.js";
@@ -39,10 +39,8 @@ import { formatToolResultTaskId } from "./runtime-core-response.js";
 import { normalizeError } from "./runtime-core-shared.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import { createServerRateLimiter } from "./server-rate-limiter.js";
-import {
-  ToolBatchStagingError,
-  type ToolBatchEnvironment,
-} from "./tool-execution.js";
+import { ToolBatchStagingError } from "./tool-execution-errors.js";
+import type { ToolBatchEnvironment } from "./tool-execution.js";
 
 /**
  * Host capabilities backing the tool-batch environment and handoff-plan
@@ -52,41 +50,41 @@ import {
  * layer.
  */
 export interface RuntimeCoreRunnerSupportHost {
-  cloneAgentConfigForRequest(
+  cloneAgentConfigForRequest: (
     config: LoopState["activeConfig"]
-  ): LoopState["activeConfig"];
-  createContextEngineeringHelpers(
+  ) => LoopState["activeConfig"];
+  createContextEngineeringHelpers: (
     messageHashes: HeadState["messageHashes"],
     messages: HeadState["messages"]
-  ): {
+  ) => {
     helpers: HandoffContextPlan["sourceContext"]["helpers"];
   };
-  createFrozenSnapshot<T>(value: T): T;
-  defaultMaxParallelToolCalls(): number;
-  now(): number;
-  publishCustomEvent(
+  createFrozenSnapshot: <T>(value: T) => T;
+  defaultMaxParallelToolCalls: () => number;
+  now: () => number;
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  publishEvent(
+  ) => void;
+  publishEvent: (
     handle: RuntimeExecutionHandle,
     event: Parameters<RuntimeExecutionHandle["publish"]>[0],
     loopState: LoopState
-  ): void;
-  publishProjectedError(
+  ) => void;
+  publishProjectedError: (
     handle: RuntimeExecutionHandle,
     error: Error,
     fatal: boolean,
     loopState: LoopState
-  ): void;
-  resolveActiveMaxParallelToolCalls(
+  ) => void;
+  resolveActiveMaxParallelToolCalls: (
     loopState: LoopState,
     defaultMaxParallelToolCalls: number
-  ): number;
-  resolveDefaultHandoffContextBuilder(mode: string): HandoffContextBuilder;
-  resolveTargetAgent(targetAgent: string): LoopState["activeConfig"];
-  stageToolResultMessage(
+  ) => number;
+  resolveDefaultHandoffContextBuilder: (mode: string) => HandoffContextBuilder;
+  resolveTargetAgent: (targetAgent: string) => LoopState["activeConfig"];
+  stageToolResultMessage: (
     runId: string,
     result: ToolBatchEnvironment["stageResult"] extends (
       result: infer TResult,
@@ -95,12 +93,12 @@ export interface RuntimeCoreRunnerSupportHost {
       ? TResult
       : never,
     orderIndex: number
-  ): Promise<string>;
-  stageToolResultManifest(
+  ) => Promise<string>;
+  stageToolResultManifest: (
     runId: string,
     manifest: ContextManifest,
     taskId: string
-  ): Promise<void>;
+  ) => Promise<void>;
 }
 
 /**
@@ -116,14 +114,14 @@ export interface RuntimeCoreRunnerSupportHost {
  * binding resolver so `AgentConfig.sandboxExecutors` stays keyed by raw
  * endpoint ids (AX004).
  */
-export function createToolBatchEnvironment(
+export const createToolBatchEnvironment = (
   host: RuntimeCoreRunnerSupportHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
   manifest: ContextManifest,
   iterationCount: number,
   runId: string
-): ToolBatchEnvironment {
+): ToolBatchEnvironment => {
   // Create the rate limiter once per turn (lazily on first iteration) and
   // cache it on loopState so the same budget applies across all iterations.
   // Intentional scoping: the limiter is fixed to the initiating agent's config
@@ -149,14 +147,40 @@ export function createToolBatchEnvironment(
     loopState.activeConfig.policyContextInputs ?? undefined;
   const baseDurableManifest = manifest;
   const stateUpdatesByOrder = new Map<number, ExtensionStateUpdate[]>();
-  let resultStagingQueue: Promise<unknown> = Promise.resolve();
+  let resultStagingQueue: Promise<unknown> | undefined;
+  const stageResultAfterBarrier = async (
+    previousStage: Promise<unknown> | undefined,
+    result: Parameters<ToolBatchEnvironment["stageResult"]>[0],
+    orderIndex: number,
+    updates: ExtensionStateUpdate[]
+  ) => {
+    if (previousStage !== undefined) {
+      await previousStage;
+    }
+    if (updates.length > 0) {
+      stateUpdatesByOrder.set(orderIndex, updates);
+      const orderedUpdates = [...stateUpdatesByOrder.entries()]
+        .toSorted(([left], [right]) => left - right)
+        .flatMap(([, callUpdates]) => callUpdates);
+      const durableManifest = updateContextManifest(
+        baseDurableManifest,
+        [],
+        orderedUpdates,
+        []
+      );
+      await host.stageToolResultManifest(
+        runId,
+        durableManifest,
+        `around_tool_state_${orderIndex.toString()}`
+      );
+    }
+    return await host.stageToolResultMessage(runId, result, orderIndex);
+  };
 
   return {
     activeAgent: loopState.activeConfig.name,
     branchId: handle.request.branchId,
     capabilityPolicyEngine: policyEngine ?? undefined,
-    policyCapabilityMetadata,
-    policyContextInputs,
     extensions: loopState.activeConfig.extensions ?? [],
     iterationCount,
     manifest,
@@ -165,6 +189,8 @@ export function createToolBatchEnvironment(
       host.defaultMaxParallelToolCalls()
     ),
     now: () => host.now(),
+    policyCapabilityMetadata,
+    policyContextInputs,
     publishCustom: (event) => {
       host.publishCustomEvent(handle, event, loopState);
     },
@@ -174,8 +200,6 @@ export function createToolBatchEnvironment(
     reportSoftError: (error) => {
       host.publishProjectedError(handle, error, false, loopState);
     },
-    runId,
-    sanitizeToolResult: loopState.activeConfig.sanitizeToolResult,
     resolveSandboxExecutor:
       loopState.activeConfig.sandboxExecutors === undefined
         ? undefined
@@ -188,33 +212,19 @@ export function createToolBatchEnvironment(
             )
               ? endpointId.slice(TUVREN_SANDBOX_ENDPOINT_ID_PREFIX.length)
               : endpointId;
-            return loopState.activeConfig.sandboxExecutors?.get(rawId) as
-              | import("@tuvren/core/capabilities").TuvrenSandboxExecutor
-              | undefined;
+            return loopState.activeConfig.sandboxExecutors?.get(rawId);
           },
+    runId,
+    sanitizeToolResult: loopState.activeConfig.sanitizeToolResult,
     serverExecutionRateLimiter: loopState.serverExecutionRateLimiter,
     signal: handle.abortSignal,
     stageResult: async (result, orderIndex, updates = []) => {
-      const stage = resultStagingQueue.then(async () => {
-        if (updates.length > 0) {
-          stateUpdatesByOrder.set(orderIndex, updates);
-          const orderedUpdates = [...stateUpdatesByOrder.entries()]
-            .sort(([left], [right]) => left - right)
-            .flatMap(([, callUpdates]) => callUpdates);
-          const durableManifest = updateContextManifest(
-            baseDurableManifest,
-            [],
-            orderedUpdates,
-            []
-          );
-          await host.stageToolResultManifest(
-            runId,
-            durableManifest,
-            `around_tool_state_${orderIndex.toString()}`
-          );
-        }
-        return await host.stageToolResultMessage(runId, result, orderIndex);
-      });
+      const stage = stageResultAfterBarrier(
+        resultStagingQueue,
+        result,
+        orderIndex,
+        updates
+      );
       resultStagingQueue = stage;
       try {
         return await stage;
@@ -226,7 +236,7 @@ export function createToolBatchEnvironment(
     toolRegistry: loopState.activeToolRegistry,
     turnId: handle.turnId,
   };
-}
+};
 
 /**
  * Builds the {@link HandoffContextPlan} a runner receives from
@@ -238,7 +248,7 @@ export function createToolBatchEnvironment(
  * intent plus frozen source/target agent-config snapshots so the plan
  * cannot mutate live loop state.
  */
-export function createRunnerHandoffContextPlan(
+export const createRunnerHandoffContextPlan = (
   host: RuntimeCoreRunnerSupportHost,
   input: {
     builder?: HandoffContextBuilder;
@@ -249,7 +259,7 @@ export function createRunnerHandoffContextPlan(
   },
   headState: HeadState,
   loopState: LoopState
-): HandoffContextPlan {
+): HandoffContextPlan => {
   const mode = input.mode ?? "preserve_trace";
   const builder =
     input.builder ?? host.resolveDefaultHandoffContextBuilder(mode);
@@ -281,7 +291,7 @@ export function createRunnerHandoffContextPlan(
     },
     targetAgent: input.targetAgent,
   } satisfies HandoffContextPlan;
-}
+};
 
 /**
  * Executes a runner against its execution context and asserts the shape of
@@ -289,13 +299,13 @@ export function createRunnerHandoffContextPlan(
  * violation) into a hard "fail" resolution instead of propagating the
  * exception into the iteration loop.
  */
-export async function executeRunner(
+export const executeRunner = async (
   runner: RuntimeRunner,
   context: RunnerExecutionContext
 ): Promise<
   | Awaited<ReturnType<RuntimeRunner["execute"]>>
   | { resolution: RuntimeResolution }
-> {
+> => {
   try {
     const result = await runner.execute(context);
     assertRunnerExecutionResult(result, "runnerResult");
@@ -309,15 +319,13 @@ export async function executeRunner(
       } satisfies RuntimeResolution,
     };
   }
-}
+};
 
 /**
  * Formats the staging task id for a tool result; a thin alias over
  * {@link formatToolResultTaskId} for host wiring.
  */
-export function formatToolResultTask(
+export const formatToolResultTask = (
   orderIndex: number,
   callId: string
-): string {
-  return formatToolResultTaskId(orderIndex, callId);
-}
+): string => formatToolResultTaskId(orderIndex, callId);

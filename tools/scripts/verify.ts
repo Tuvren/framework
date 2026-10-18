@@ -352,6 +352,7 @@ export const FOLLOWUP_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/scripts/generated-prerequisites.test.ts",
   "tools/scripts/json-check.test.ts",
   "tools/scripts/json-source-integrity.test.ts",
+  "tools/scripts/lib/native-lint-routing-argv.test.ts",
   "tools/scripts/telemetry-codegen.test.ts",
 ];
 

@@ -45,14 +45,21 @@ import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import { deriveIdempotencyKey } from "../src/lib/idempotency-identity.ts";
 import { createToolExecutionContext } from "../src/lib/tool-execution-helpers.ts";
 import type { ToolBatchEnvironment } from "../src/lib/tool-execution.ts";
+import { createToolRegistry } from "../src/lib/tool-registry.ts";
+import { fromSynchronousVariadicAwaited } from "./runtime-core-test-helpers.ts";
 
-function makeToolCall(callId: string): ToolCallPart {
-  return { callId, input: {}, name: "side.effect", type: "tool_call" };
-}
+const makeToolCall = (callId: string): ToolCallPart => ({
+  callId,
+  input: {},
+  name: "side.effect",
+  type: "tool_call",
+});
 
 const TOOL: TuvrenToolDefinition = {
   description: "a side-effecting capability",
-  execute: () => Promise.resolve(undefined),
+  execute() {
+    // Identity construction does not execute the tool body.
+  },
   inputSchema: { type: "object" },
   name: "side.effect",
 };
@@ -63,15 +70,48 @@ const TOOL: TuvrenToolDefinition = {
  * resume, and per recovery — which is exactly why the identity must not depend
  * on it; `turnId` is the identifier that survives.
  */
-function makeEnvironment(turnId: string, runId: string): ToolBatchEnvironment {
-  return {
-    publishCustom: () => undefined,
-    publishEvent: () => undefined,
-    runId,
-    turnId,
-    signal: undefined,
-  } as unknown as ToolBatchEnvironment;
-}
+const makeEnvironment = (
+  turnId: string,
+  runId: string
+): ToolBatchEnvironment => ({
+  activeAgent: "primary",
+  branchId: "branch-idempotency",
+  extensions: [],
+  iterationCount: 0,
+  manifest: {
+    byRole: { assistant: 0, system: 0, tool: 0, user: 0 },
+    extensions: {},
+    lastAssistantMessageIndex: -1,
+    lastUserMessageIndex: -1,
+    messageCount: 0,
+    tokenEstimate: 0,
+    toolCalls: { byName: {}, total: 0 },
+    toolResults: { byName: {}, total: 0 },
+    turnBoundaries: [],
+  },
+  maxParallelToolCalls: 1,
+  now: () => 0,
+  publishCustom() {
+    // Context construction does not publish custom events.
+  },
+  publishEvent() {
+    // Context construction does not publish stream events.
+  },
+  reportSoftError() {
+    // Context construction does not report soft errors.
+  },
+  runId,
+  stageResult: fromSynchronousVariadicAwaited(() => "0".repeat(64)),
+  threadId: "thread-idempotency",
+  toolRegistry: createToolRegistry([TOOL]),
+  turnId,
+});
+
+const makeContext = (
+  toolCall: ToolCallPart,
+  environment: ToolBatchEnvironment
+) =>
+  createToolExecutionContext(toolCall, TOOL, environment, environment.signal);
 
 describe("deriveIdempotencyKey (ADR-0052/ADR-0065 / KRT-BG003)", () => {
   test("is a deterministic function of the logical call identity", () => {
@@ -96,11 +136,9 @@ describe("deriveIdempotencyKey (ADR-0052/ADR-0065 / KRT-BG003)", () => {
 
 describe("createToolExecutionContext idempotency identity (KRT-BG003)", () => {
   test("carries the identity derived from turnId and callId", () => {
-    const context = createToolExecutionContext(
+    const context = makeContext(
       makeToolCall("call-alpha"),
-      TOOL,
-      makeEnvironment("turn-alpha", "run-alpha"),
-      undefined
+      makeEnvironment("turn-alpha", "run-alpha")
     );
 
     expect(context.idempotencyKey).toBe(
@@ -116,17 +154,13 @@ describe("createToolExecutionContext idempotency identity (KRT-BG003)", () => {
     // arrives with different run and authority identity every time — and must
     // still present the same idempotency key, or an external system cannot
     // deduplicate the effect.
-    const firstAttempt = createToolExecutionContext(
+    const firstAttempt = makeContext(
       makeToolCall("call-beta"),
-      TOOL,
-      makeEnvironment("turn-beta", "run-1"),
-      undefined
+      makeEnvironment("turn-beta", "run-1")
     );
-    const reDispatchAfterResume = createToolExecutionContext(
+    const reDispatchAfterResume = makeContext(
       makeToolCall("call-beta"),
-      TOOL,
-      makeEnvironment("turn-beta", "run-2"),
-      undefined
+      makeEnvironment("turn-beta", "run-2")
     );
 
     expect(reDispatchAfterResume.idempotencyKey).toBe(
@@ -136,18 +170,8 @@ describe("createToolExecutionContext idempotency identity (KRT-BG003)", () => {
 
   test("distinguishes two different calls within the same turn", () => {
     const environment = makeEnvironment("turn-delta", "run-delta");
-    const first = createToolExecutionContext(
-      makeToolCall("call-one"),
-      TOOL,
-      environment,
-      undefined
-    );
-    const second = createToolExecutionContext(
-      makeToolCall("call-two"),
-      TOOL,
-      environment,
-      undefined
-    );
+    const first = makeContext(makeToolCall("call-one"), environment);
+    const second = makeContext(makeToolCall("call-two"), environment);
 
     expect(second.idempotencyKey).not.toBe(first.idempotencyKey);
   });

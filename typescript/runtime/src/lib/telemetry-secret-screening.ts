@@ -49,9 +49,32 @@ const ALLOWED_ATTRIBUTE_KEYS: ReadonlySet<string> = new Set(
   TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS
 );
 
-export function filterTelemetryAttributes(
+export const isTelemetryAttributeAllowed = (key: string): boolean =>
+  ALLOWED_ATTRIBUTE_KEYS.has(key);
+
+const sanitizeTelemetryAttributeValue = (
+  key: string,
+  value: TelemetryAttributeValue
+): TelemetryAttributeValue | undefined => {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  if (HASH_ATTRIBUTE_KEYS.has(key) && CANONICAL_HASH_PATTERN.test(value)) {
+    return value;
+  }
+
+  if (ID_ATTRIBUTE_KEYS.has(key) && UUID_PATTERN.test(value)) {
+    return value;
+  }
+
+  const sanitized = sanitizeSecretLikeText(value);
+  return sanitized === REDACTED ? undefined : sanitized;
+};
+
+export const filterTelemetryAttributes = (
   attributes: Record<string, TelemetryAttributeValue>
-): Record<string, TelemetryAttributeValue> {
+): Record<string, TelemetryAttributeValue> => {
   const filtered: Record<string, TelemetryAttributeValue> = {};
 
   for (const [key, value] of Object.entries(attributes)) {
@@ -67,38 +90,14 @@ export function filterTelemetryAttributes(
   }
 
   return filtered;
-}
+};
 
-export function isTelemetryAttributeAllowed(key: string): boolean {
-  return ALLOWED_ATTRIBUTE_KEYS.has(key);
-}
-
-export function sanitizeTelemetryErrorSummary(message: string): string {
-  const compact = message.replace(/\s+/gu, " ").trim();
+export const sanitizeTelemetryErrorSummary = (message: string): string => {
+  const compact = message.replaceAll(/\s+/gu, " ").trim();
 
   if (compact.length === 0) {
     return "runtime error";
   }
 
   return sanitizeSecretLikeText(compact).slice(0, 512);
-}
-
-function sanitizeTelemetryAttributeValue(
-  key: string,
-  value: TelemetryAttributeValue
-): TelemetryAttributeValue | undefined {
-  if (typeof value !== "string") {
-    return value;
-  }
-
-  if (HASH_ATTRIBUTE_KEYS.has(key) && CANONICAL_HASH_PATTERN.test(value)) {
-    return value;
-  }
-
-  if (ID_ATTRIBUTE_KEYS.has(key) && UUID_PATTERN.test(value)) {
-    return value;
-  }
-
-  const sanitized = sanitizeSecretLikeText(value);
-  return sanitized === REDACTED ? undefined : sanitized;
-}
+};

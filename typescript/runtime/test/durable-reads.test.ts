@@ -18,11 +18,7 @@ import { beforeEach, describe, expect, test } from "bun:test";
 
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import { DEFAULT_SCOPE, TuvrenLineageError } from "@tuvren/core";
-import type {
-  BranchMessagesCursor,
-  ListThreadsCursor,
-  TurnHistoryCursor,
-} from "@tuvren/core/execution";
+import type { TurnSnapshot } from "@tuvren/core/execution";
 import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
@@ -47,18 +43,25 @@ const PLAINTEXT_BINDING: PayloadCodecBinding = {
   scope: DEFAULT_SCOPE,
 };
 
-function makeKernel() {
-  return createRuntimeKernel({ backend: createMemoryBackend() });
-}
+const makeKernel = () =>
+  createRuntimeKernel({ backend: createMemoryBackend() });
 
-function makeCoreOptions(
+const makeCoreOptions = (
   kernel: ReturnType<typeof makeKernel>
-): RuntimeCoreOptions {
-  return {
-    defaultRunnerId: "test-runner",
-    kernel,
-  };
-}
+): RuntimeCoreOptions => ({
+  defaultRunnerId: "test-runner",
+  kernel,
+});
+
+const captureError = async (promise: Promise<unknown>): Promise<unknown> => {
+  try {
+    await promise;
+  } catch (error: unknown) {
+    return error;
+  }
+
+  throw new Error("expected promise to reject");
+};
 
 // ── Cursor encode/decode round-trips (KRT-AO002) ──────────────────────────────
 
@@ -72,10 +75,13 @@ describe("KRT-AO002 cursor encode/decode", () => {
     const page1 = await listThreads(kernel, { limit: 1 });
     expect(page1.threads).toHaveLength(1);
     expect(page1.nextCursor).toBeDefined();
+    if (page1.nextCursor === undefined) {
+      throw new Error("expected the first page to include a cursor");
+    }
 
     const page2 = await listThreads(kernel, {
+      cursor: page1.nextCursor,
       limit: 10,
-      cursor: page1.nextCursor as ListThreadsCursor,
     });
     expect(page2.threads).toHaveLength(1);
     expect(page2.nextCursor).toBeUndefined();
@@ -83,30 +89,30 @@ describe("KRT-AO002 cursor encode/decode", () => {
     const allIds = [
       page1.threads[0].threadId,
       page2.threads[0].threadId,
-    ].sort();
-    expect(allIds).toEqual(["t1", "t2"].sort());
+    ].toSorted();
+    expect(allIds).toEqual(["t1", "t2"].toSorted());
   });
 
   test("decoding a malformed listThreads cursor raises invalid_durable_read_cursor", async () => {
     const kernel = makeKernel();
-    await expect(
-      listThreads(kernel, { cursor: "not-base64url!!!" as ListThreadsCursor })
-    ).rejects.toMatchObject({ code: "invalid_durable_read_cursor" });
+    expect(
+      await captureError(listThreads(kernel, { cursor: "not-base64url!!!" }))
+    ).toMatchObject({ code: "invalid_durable_read_cursor" });
   });
 
   test("decoding a valid-base64 but wrong-kind cursor raises invalid_durable_read_cursor", async () => {
     const wrongKind = Buffer.from(
       JSON.stringify({
-        v: 1,
         kind: "wrong-kind",
-        lastThreadId: "x",
         lastCreatedAtMs: 1,
+        lastThreadId: "x",
+        v: 1,
       })
     ).toString("base64url");
     const kernel = makeKernel();
-    await expect(
-      listThreads(kernel, { cursor: wrongKind as ListThreadsCursor })
-    ).rejects.toMatchObject({ code: "invalid_durable_read_cursor" });
+    expect(
+      await captureError(listThreads(kernel, { cursor: wrongKind }))
+    ).toMatchObject({ code: "invalid_durable_read_cursor" });
   });
 
   test("paging listThreads with mismatched filter raises durable_read_cursor_filter_mismatch", async () => {
@@ -116,17 +122,23 @@ describe("KRT-AO002 cursor encode/decode", () => {
     await kernel.thread.create("t2", DEFAULT_AGENT_SCHEMA.schemaId, "b2");
 
     const page1 = await listThreads(kernel, {
-      limit: 1,
       filter: { schemaId: "tuvren.agent.v1" },
+      limit: 1,
     });
     expect(page1.nextCursor).toBeDefined();
+    if (page1.nextCursor === undefined) {
+      throw new Error("expected the filtered first page to include a cursor");
+    }
 
-    await expect(
-      listThreads(kernel, {
-        cursor: page1.nextCursor as ListThreadsCursor,
-        filter: { schemaId: "other.schema.v1" }, // mismatch
-      })
-    ).rejects.toMatchObject({ code: "durable_read_cursor_filter_mismatch" });
+    expect(
+      await captureError(
+        listThreads(kernel, {
+          cursor: page1.nextCursor,
+          // Deliberately differs from the cursor's original filter.
+          filter: { schemaId: "other.schema.v1" },
+        })
+      )
+    ).toMatchObject({ code: "durable_read_cursor_filter_mismatch" });
   });
 
   test("turn-history cursor: decoding a malformed cursor raises invalid_durable_read_cursor", async () => {
@@ -139,16 +151,16 @@ describe("KRT-AO002 cursor encode/decode", () => {
     );
 
     const badCursor = Buffer.from(
-      JSON.stringify({ v: 1, kind: "list-threads" })
+      JSON.stringify({ kind: "list-threads", v: 1 })
     ).toString("base64url");
 
     const gen = getTurnHistory(
       kernel,
-      { threadId: thread.threadId, branchId: thread.branchId },
-      { before: badCursor as TurnHistoryCursor }
+      { branchId: thread.branchId, threadId: thread.threadId },
+      { before: badCursor }
     );
 
-    await expect(gen.next()).rejects.toMatchObject({
+    expect(await captureError(gen.next())).toMatchObject({
       code: "invalid_durable_read_cursor",
     });
   });
@@ -169,20 +181,23 @@ describe("KRT-AO002 cursor encode/decode", () => {
     // any real head, referencing position 5 (beyond any actual messages).
     const staleCursor = Buffer.from(
       JSON.stringify({
-        v: 1,
-        kind: "branch-messages",
+        // This head deliberately does not exist.
+        branchHeadAtCursorIssuance: "0".repeat(64),
         branchId: thread.branchId,
+        kind: "branch-messages",
         positionFromOldest: 5,
-        branchHeadAtCursorIssuance: "0".repeat(64), // fake old head
+        v: 1,
       })
     ).toString("base64url");
 
-    await expect(
-      readBranchMessages(kernel, PLAINTEXT_BINDING, {
-        branchId: thread.branchId,
-        after: staleCursor as BranchMessagesCursor,
-      })
-    ).rejects.toMatchObject({ code: "durable_read_cursor_head_drift" });
+    expect(
+      await captureError(
+        readBranchMessages(kernel, PLAINTEXT_BINDING, {
+          after: staleCursor,
+          branchId: thread.branchId,
+        })
+      )
+    ).toMatchObject({ code: "durable_read_cursor_head_drift" });
   });
 });
 
@@ -219,8 +234,8 @@ describe("KRT-AO003 listBranches", () => {
 
     const branches = await listBranches(kernel, { threadId: thread.threadId });
     expect(branches).toHaveLength(2);
-    const ids = branches.map((b) => b.branchId).sort();
-    expect(ids).toEqual(["b1", "b2"].sort());
+    const ids = branches.map((b) => b.branchId).toSorted();
+    expect(ids).toEqual(["b1", "b2"].toSorted());
   });
 });
 
@@ -237,8 +252,8 @@ describe("KRT-AO004 getTurnState", () => {
     );
 
     const snapshot = await getTurnState(kernel, {
-      threadId: thread.threadId,
       branchId: thread.branchId,
+      threadId: thread.threadId,
     });
 
     expect(snapshot.turnNodeHash).toBe(thread.rootTurnNodeHash);
@@ -262,8 +277,8 @@ describe("KRT-AO004 getTurnState", () => {
     );
 
     const snapshot = await getTurnState(kernel, {
-      threadId: thread.threadId,
       branchId: thread.branchId,
+      threadId: thread.threadId,
       turnNodeHash: thread.rootTurnNodeHash,
     });
 
@@ -274,9 +289,11 @@ describe("KRT-AO004 getTurnState", () => {
     const kernel = makeKernel();
     await kernel.schema.register(DEFAULT_AGENT_SCHEMA);
 
-    await expect(
-      getTurnState(kernel, { threadId: "t1", branchId: "nonexistent" })
-    ).rejects.toBeInstanceOf(TuvrenLineageError);
+    expect(
+      await captureError(
+        getTurnState(kernel, { branchId: "nonexistent", threadId: "t1" })
+      )
+    ).toBeInstanceOf(TuvrenLineageError);
   });
 });
 
@@ -293,10 +310,10 @@ describe("KRT-AO004 getTurnHistory", () => {
     );
 
     // The root node has no previous — only one turn node to walk.
-    const snapshots: import("@tuvren/core/execution").TurnSnapshot[] = [];
+    const snapshots: TurnSnapshot[] = [];
     for await (const snap of getTurnHistory(
       kernel,
-      { threadId: thread.threadId, branchId: thread.branchId },
+      { branchId: thread.branchId, threadId: thread.threadId },
       { limit: 10 }
     )) {
       snapshots.push(snap);
@@ -315,10 +332,10 @@ describe("KRT-AO004 getTurnHistory", () => {
       "b1"
     );
 
-    const snapshots: import("@tuvren/core/execution").TurnSnapshot[] = [];
+    const snapshots: TurnSnapshot[] = [];
     for await (const snap of getTurnHistory(
       kernel,
-      { threadId: thread.threadId, branchId: thread.branchId },
+      { branchId: thread.branchId, threadId: thread.threadId },
       { limit: 0 }
     )) {
       snapshots.push(snap);
@@ -330,11 +347,11 @@ describe("KRT-AO004 getTurnHistory", () => {
   test("throws TuvrenLineageError for an unknown branchId", async () => {
     const kernel = makeKernel();
     const gen = getTurnHistory(kernel, {
-      threadId: "t1",
       branchId: "nonexistent",
+      threadId: "t1",
     });
 
-    await expect(gen.next()).rejects.toBeInstanceOf(TuvrenLineageError);
+    expect(await captureError(gen.next())).toBeInstanceOf(TuvrenLineageError);
   });
 });
 
@@ -385,27 +402,33 @@ describe("KRT-AO005 readBranchMessages", () => {
     // Manufacture a stale cursor beyond actual message count.
     const staleCursor = Buffer.from(
       JSON.stringify({
-        v: 1,
-        kind: "branch-messages",
-        branchId: thread.branchId,
-        positionFromOldest: 99,
         branchHeadAtCursorIssuance: "0".repeat(64),
+        branchId: thread.branchId,
+        kind: "branch-messages",
+        positionFromOldest: 99,
+        v: 1,
       })
     ).toString("base64url");
 
-    await expect(
-      readBranchMessages(kernel, PLAINTEXT_BINDING, {
-        branchId: thread.branchId,
-        after: staleCursor as BranchMessagesCursor,
-      })
-    ).rejects.toMatchObject({ code: "durable_read_cursor_head_drift" });
+    expect(
+      await captureError(
+        readBranchMessages(kernel, PLAINTEXT_BINDING, {
+          after: staleCursor,
+          branchId: thread.branchId,
+        })
+      )
+    ).toMatchObject({ code: "durable_read_cursor_head_drift" });
   });
 
   test("throws TuvrenLineageError for an unknown branchId", async () => {
     const kernel = makeKernel();
-    await expect(
-      readBranchMessages(kernel, PLAINTEXT_BINDING, { branchId: "nonexistent" })
-    ).rejects.toBeInstanceOf(TuvrenLineageError);
+    expect(
+      await captureError(
+        readBranchMessages(kernel, PLAINTEXT_BINDING, {
+          branchId: "nonexistent",
+        })
+      )
+    ).toBeInstanceOf(TuvrenLineageError);
   });
 });
 
@@ -436,18 +459,18 @@ describe("TuvrenRuntime durable-read surface wiring", () => {
   test("getTurnState is accessible on the assembled runtime", async () => {
     const thread = await runtime.createThread({});
     const snapshot = await runtime.getTurnState({
-      threadId: thread.threadId,
       branchId: thread.branchId,
+      threadId: thread.threadId,
     });
     expect(snapshot.turnNodeHash).toBe(thread.rootTurnNodeHash);
   });
 
   test("getTurnHistory is accessible on the assembled runtime", async () => {
     const thread = await runtime.createThread({});
-    const snapshots: import("@tuvren/core/execution").TurnSnapshot[] = [];
+    const snapshots: TurnSnapshot[] = [];
     for await (const snap of runtime.getTurnHistory({
-      threadId: thread.threadId,
       branchId: thread.branchId,
+      threadId: thread.threadId,
     })) {
       snapshots.push(snap);
     }

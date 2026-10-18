@@ -15,11 +15,11 @@
  */
 
 import { TuvrenRuntimeError } from "@tuvren/core";
-import {
-  assertRuntimeRunner,
-  type RunnerRegistry,
-  type RuntimeRunner,
-  type RuntimeRunnerFactory,
+import { assertRuntimeRunner } from "@tuvren/core/runner";
+import type {
+  RunnerRegistry,
+  RuntimeRunner,
+  RuntimeRunnerFactory,
 } from "@tuvren/core/runner";
 
 /**
@@ -27,6 +27,19 @@ import {
  * {@link RuntimeRunnerFactory} that builds one on demand. Both expose an `id`.
  */
 type RunnerEntry = RuntimeRunner | RuntimeRunnerFactory;
+
+const getRunnerId = (runner: RunnerEntry): string => {
+  if (typeof runner.id === "string" && runner.id.trim().length > 0) {
+    return runner.id;
+  }
+
+  throw new TuvrenRuntimeError("runners must expose a non-empty id", {
+    code: "invalid_runner_registration",
+    details: {
+      runner,
+    },
+  });
+};
 
 /**
  * Minimal in-memory {@link RunnerRegistry}: a `Map` keyed by runner id with
@@ -71,13 +84,13 @@ class BasicRunnerRegistry implements RunnerRegistry {
  *   string `id`, unique within the registry.
  * @returns A {@link RunnerRegistry} supporting `register`, `resolve`, and
  *   `list`.
- * @throws TuvrenRuntimeError with code `invalid_runner_registration` when an
+ * @throws {TuvrenRuntimeError} With code `invalid_runner_registration` when an
  *   entry has no non-empty `id`, or `duplicate_runner_registration` when two
  *   entries share an id.
  */
-export function createRunnerRegistry(
+export const createRunnerRegistry = (
   runners: RunnerEntry[] = []
-): RunnerRegistry {
+): RunnerRegistry => {
   const registry = new BasicRunnerRegistry();
 
   for (const runner of runners) {
@@ -85,7 +98,7 @@ export function createRunnerRegistry(
   }
 
   return registry;
-}
+};
 
 /**
  * Turns a registry entry into a usable runner instance.
@@ -96,10 +109,10 @@ export function createRunnerRegistry(
  *
  * @param entry - The runner or runner factory resolved from a registry.
  * @returns The materialized, shape-validated runner.
- * @throws TuvrenValidationError when the materialized value does not satisfy
+ * @throws {Error} When the materialized value does not satisfy
  *   the `RuntimeRunner` contract (via `assertRuntimeRunner`).
  */
-export function materializeRunner(entry: RunnerEntry): RuntimeRunner {
+export const materializeRunner = (entry: RunnerEntry): RuntimeRunner => {
   const candidate =
     "create" in entry && typeof entry.create === "function"
       ? entry.create()
@@ -107,17 +120,4 @@ export function materializeRunner(entry: RunnerEntry): RuntimeRunner {
 
   assertRuntimeRunner(candidate, "runner");
   return candidate;
-}
-
-function getRunnerId(runner: RunnerEntry): string {
-  if (typeof runner.id === "string" && runner.id.trim().length > 0) {
-    return runner.id;
-  }
-
-  throw new TuvrenRuntimeError("runners must expose a non-empty id", {
-    code: "invalid_runner_registration",
-    details: {
-      runner,
-    },
-  });
-}
+};

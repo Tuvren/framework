@@ -35,6 +35,7 @@ const SCOPE_SAFE_RUN_COMMANDS_OPTION_KEYS: ReadonlySet<string> = new Set([
   "command",
   "commands",
   "cwd",
+  "forwardAllArgs",
   "parallel",
 ]);
 
@@ -87,10 +88,17 @@ const selectDefaultTargetOptions = (
   return { ...target.options, ...selected };
 };
 
-const hasOnlyScopeSafeOptions = (options: Record<string, unknown>): boolean =>
-  Object.keys(options).every((key) =>
+const hasOnlyScopeSafeOptions = (options: Record<string, unknown>): boolean => {
+  if (
+    Object.hasOwn(options, "forwardAllArgs") &&
+    options.forwardAllArgs !== false
+  ) {
+    return false;
+  }
+  return Object.keys(options).every((key) =>
     SCOPE_SAFE_RUN_COMMANDS_OPTION_KEYS.has(key)
   );
+};
 
 const invokedCommands = (
   options: Record<string, unknown>
