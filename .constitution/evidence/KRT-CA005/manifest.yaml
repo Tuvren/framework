@@ -1,0 +1,24 @@
+owner: KRT-CA005
+mode: contract_test
+result: pass
+produced:
+  date: 2026-10-18
+  commit: 4befa79e4db85afdf0443ea64a910e1e8b3e5aca
+  command: >-
+    Assemble the 45 declared source/config paths from frozen CA commit
+    d67b9b8d2bb370e25d03415d6573ace25b4fa46b; add the direct three-package
+    patch Changeset; run package typecheck, retained-Biome lint, tests, cold
+    imports, compiler isolation, workspace typecheck, Changeset coverage,
+    API freeze, constitution validation, and diff hygiene; complete the
+    independent milestone review.
+files:
+  - path: delivery-summary.json
+    role: summary
+pass_criteria: >-
+  Every delivered file maps to frozen CA provenance; core, SDK, and MCP pass
+  source-only typecheck, retained-Biome lint, cold import, and package tests;
+  the seven early-removal identities retain reviewed proof; all 29 final-owned
+  directives remain protected; KRT-CA002 stays whole; compiler resolution
+  reaches no live sibling source or workspace dist; target and coverage
+  metadata stay unchanged; and direct patch Changeset entries cover
+  @tuvren/core, @tuvren/sdk, and @tuvren/mcp-client.

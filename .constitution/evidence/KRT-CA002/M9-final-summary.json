@@ -1,0 +1,108 @@
+{
+  "status": "pass",
+  "ticket_status": "complete-at-M9",
+  "source_identity": "696d9e3637806aa1b4846bbe77290379f1eccde9",
+  "aggregate_identities": 36,
+  "cohort_identities": {
+    "M7": 14,
+    "M8": 17,
+    "M9": 5
+  },
+  "baseline_identities": {
+    "M9": 5,
+    "aggregate": 36
+  },
+  "planned_source_identities": {
+    "M9": 5,
+    "aggregate": 36
+  },
+  "live_identities": {
+    "M9": 5,
+    "aggregate": 36
+  },
+  "ledger_identities": {
+    "M9": 5,
+    "aggregate": 36
+  },
+  "identities_by_rule": {
+    "lint/performance/noBarrelFile": 4,
+    "lint/suspicious/useAwait": 1
+  },
+  "drift": {
+    "added": 0,
+    "removed": 0,
+    "changed_reasons": 0
+  },
+  "needed_original_directives_retained": true,
+  "retained_checker_dispositions": {
+    "needed": 5,
+    "no_firing_diagnostic": 0
+  },
+  "original_reasons_preserved": true,
+  "native_counterparts": 0,
+  "early_deletions": 0,
+  "biome_directives_added": 0,
+  "native_suppressions_added": 0,
+  "retained_biome_diagnostics_when_removed": 5,
+  "native_diagnostics": {
+    "syntactic": 163,
+    "type_aware": 202
+  },
+  "checks": {
+    "projects": {
+      "mcp-client": {
+        "retained_direct": 0,
+        "typecheck": 0,
+        "test": 0,
+        "lint": 0
+      },
+      "framework-testkit": {
+        "retained_direct": 0,
+        "typecheck": 0,
+        "test": 0,
+        "lint": 0
+      },
+      "framework-telemetry-otel": {
+        "retained_direct": 0,
+        "typecheck": 0,
+        "test": 0,
+        "lint": 0
+      },
+      "telemetry-semconv": {
+        "retained_direct": 0,
+        "typecheck": 0,
+        "test": 0,
+        "lint": 0
+      }
+    },
+    "repository_typecheck": 0,
+    "full_lint": 0,
+    "changeset_check": 0,
+    "diff_check": 0,
+    "debug_scan": 1
+  },
+  "changeset": {
+    "path": ".changeset/toolchain-ca-small-package-lint.md",
+    "release_type": "patch",
+    "direct_packages": [
+      "@tuvren/core",
+      "@tuvren/mcp-client",
+      "@tuvren/sdk",
+      "@tuvren/stream-agui",
+      "@tuvren/stream-core",
+      "@tuvren/stream-sse",
+      "@tuvren/telemetry-otel",
+      "@tuvren/telemetry-semconv"
+    ]
+  },
+  "wrapper": {
+    "path": "tools/run-nx.mjs",
+    "sha256": "33b4542c1451927c267e7748849b2d3cc34032d88257de7e3f2ad04a777b1079",
+    "planned_source_sha256": "33b4542c1451927c267e7748849b2d3cc34032d88257de7e3f2ad04a777b1079",
+    "baseline_sha256": "33b4542c1451927c267e7748849b2d3cc34032d88257de7e3f2ad04a777b1079",
+    "baseline_directives": 0,
+    "live_directives": 0,
+    "retained_ca_coverage": true
+  },
+  "repository_product_bytes_unchanged": true
+}
