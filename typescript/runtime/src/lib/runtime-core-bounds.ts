@@ -126,30 +126,28 @@ const isExecutionBoundExceededDetails = (
   if (value === null || typeof value !== "object") {
     return false;
   }
-  const record = value as Record<string, unknown>;
   return (
-    (record.bound === "maxIterations" ||
-      record.bound === "maxToolCalls" ||
-      record.bound === "maxWallClockMs") &&
-    typeof record.limit === "number" &&
-    typeof record.observed === "number"
+    "bound" in value &&
+    (value.bound === "maxIterations" ||
+      value.bound === "maxToolCalls" ||
+      value.bound === "maxWallClockMs") &&
+    "limit" in value &&
+    typeof value.limit === "number" &&
+    "observed" in value &&
+    typeof value.observed === "number"
   );
 };
 
 /** Narrow an unknown value to the bounds terminal error carrying its details. */
 export const isBoundExceededError = (
   value: unknown
-): value is TuvrenRuntimeError & { details: ExecutionBoundExceededDetails } => {
-  return (
-    value instanceof TuvrenRuntimeError &&
-    value.code === EXECUTION_BOUND_EXCEEDED &&
-    isExecutionBoundExceededDetails(value.details)
-  );
-};
+): value is TuvrenRuntimeError & { details: ExecutionBoundExceededDetails } =>
+  value instanceof TuvrenRuntimeError &&
+  value.code === EXECUTION_BOUND_EXCEEDED &&
+  isExecutionBoundExceededDetails(value.details);
 
 /** Extract the bound details from a bounds terminal error, if present. */
 export const getBoundExceededDetails = (
   error: unknown
-): ExecutionBoundExceededDetails | undefined => {
-  return isBoundExceededError(error) ? error.details : undefined;
-};
+): ExecutionBoundExceededDetails | undefined =>
+  isBoundExceededError(error) ? error.details : undefined;
