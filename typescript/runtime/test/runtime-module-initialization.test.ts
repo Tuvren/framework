@@ -41,6 +41,12 @@ const firstModules = [
   "../src/lib/runner-registry.ts",
   "../src/lib/server-rate-limiter.ts",
   "../src/lib/telemetry-secret-screening.ts",
+  "../src/lib/tool-execution-errors.ts",
+  "../src/lib/tool-execution-batch.ts",
+  "../src/lib/tool-execution-resolution.ts",
+  "../src/lib/tool-execution-single.ts",
+  "../src/lib/tool-execution-staging.ts",
+  "../src/lib/tool-execution-validation.ts",
   "../src/lib/tool-registry.ts",
 ] as const;
 

@@ -39,7 +39,7 @@ import { formatToolResultTaskId } from "./runtime-core-response.js";
 import { normalizeError } from "./runtime-core-shared.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import { createServerRateLimiter } from "./server-rate-limiter.js";
-import { ToolBatchStagingError } from "./tool-execution.js";
+import { ToolBatchStagingError } from "./tool-execution-errors.js";
 import type { ToolBatchEnvironment } from "./tool-execution.js";
 
 /**

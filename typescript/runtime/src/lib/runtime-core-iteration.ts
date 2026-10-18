@@ -59,7 +59,7 @@ import {
 } from "./runtime-core-runner-result.js";
 import { finalizeToolBatchProjection } from "./runtime-core-tool-batch-finalization.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
-import { applySanitizeHookToPart } from "./tool-execution-helpers.js";
+import { applySanitizeHookToPart } from "./tool-execution-staging.js";
 
 /**
  * Result of one runner iteration phase: either the iteration executed and
