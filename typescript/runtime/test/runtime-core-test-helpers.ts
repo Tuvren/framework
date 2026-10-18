@@ -49,6 +49,19 @@ export const collectEvents = async <T>(
   return collected;
 };
 
+export const fromSynchronousVariadicAwaited = <
+  Arguments extends unknown[],
+  Value,
+>(
+  operation: (this: undefined, ...arguments_: Arguments) => Value
+): ((...arguments_: Arguments) => Promise<Awaited<Value>>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(this: undefined, ...arguments_: Arguments) => Value],
+    Arguments,
+    Promise<Awaited<Value>>
+  >(Promise, operation);
+
 export const readBranchCheckpointEventTypes = async (
   kernel: RuntimeKernel,
   branchId: string
@@ -90,12 +103,11 @@ export const readBranchCheckpointEventTypes = async (
 
 export const toKrakenMessages = (
   messages: readonly unknown[]
-): TuvrenMessage[] => {
-  return messages.map((message, index) => {
+): TuvrenMessage[] =>
+  messages.map((message, index) => {
     assertTuvrenMessage(message, `messages[${index}]`);
     return message;
   });
-};
 
 export const toOptionalRecord = (
   value: unknown
@@ -107,26 +119,61 @@ export const toOptionalRecord = (
   return Object.fromEntries(Object.entries(value));
 };
 
+const ignoreTestPromiseRejection = async (
+  promise: Promise<unknown>
+): Promise<void> => {
+  try {
+    await promise;
+  } catch {
+    // Detached test work intentionally discards its terminal rejection.
+  }
+};
+
+const detachedTestPromises = new WeakSet<Promise<void>>();
+
 export const detachTestPromise = (promise: Promise<unknown>): void => {
-  promise.catch(() => undefined);
+  detachedTestPromises.add(ignoreTestPromiseRejection(promise));
 };
 
 export const TIMEOUT_TOKEN = Symbol("timeout");
 
-export const delay = (milliseconds: number): Promise<void> => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
-  });
+export const delay = async (milliseconds: number): Promise<void> => {
+  const { promise, resolve } = Promise.withResolvers<null>();
+  setTimeout(() => {
+    resolve(null);
+  }, milliseconds);
+  await promise;
 };
 
 export const settleWithin = async <T>(
   promise: Promise<T>,
   timeoutMilliseconds: number
 ): Promise<T | typeof TIMEOUT_TOKEN> => {
-  return await Promise.race<T | typeof TIMEOUT_TOKEN>([
-    promise,
-    delay(timeoutMilliseconds).then((): typeof TIMEOUT_TOKEN => TIMEOUT_TOKEN),
-  ]);
+  const timeout = (async (): Promise<typeof TIMEOUT_TOKEN> => {
+    await delay(timeoutMilliseconds);
+    return TIMEOUT_TOKEN;
+  })();
+
+  return await Promise.race<T | typeof TIMEOUT_TOKEN>([promise, timeout]);
+};
+
+const collectNextForDuration = async <T>(
+  iterator: AsyncIterator<T>,
+  deadline: number,
+  collected: T[]
+): Promise<void> => {
+  if (Date.now() >= deadline) {
+    return;
+  }
+
+  const nextValue = await settleWithin(iterator.next(), deadline - Date.now());
+
+  if (nextValue === TIMEOUT_TOKEN || nextValue.done === true) {
+    return;
+  }
+
+  collected.push(nextValue.value);
+  await collectNextForDuration(iterator, deadline, collected);
 };
 
 export const collectEventsForDuration = async <T>(
@@ -138,18 +185,7 @@ export const collectEventsForDuration = async <T>(
   const deadline = Date.now() + durationMilliseconds;
 
   try {
-    while (Date.now() < deadline) {
-      const nextValue = await settleWithin(
-        iterator.next(),
-        deadline - Date.now()
-      );
-
-      if (nextValue === TIMEOUT_TOKEN || nextValue.done) {
-        break;
-      }
-
-      collected.push(nextValue.value);
-    }
+    await collectNextForDuration(iterator, deadline, collected);
   } finally {
     await iterator.return?.();
   }
@@ -186,49 +222,70 @@ export const collectToolResultTimeline = async (
   }
 };
 
-export const waitFor = async (
-  condition: () => boolean,
-  timeoutMilliseconds = 1000
-): Promise<void> => {
-  const startedAt = Date.now();
-
-  while (!condition()) {
-    if (Date.now() - startedAt >= timeoutMilliseconds) {
-      throw new Error("timed out waiting for condition");
-    }
-
-    await delay(5);
-  }
-};
-
 export const waitForAsync = async (
   condition: () => Promise<boolean>,
   timeoutMilliseconds = 1000
 ): Promise<void> => {
   const startedAt = Date.now();
+  const poll = async (): Promise<void> => {
+    if (await condition()) {
+      return;
+    }
 
-  while (!(await condition())) {
     if (Date.now() - startedAt >= timeoutMilliseconds) {
       throw new Error("timed out waiting for condition");
     }
 
     await delay(5);
-  }
+    await poll();
+  };
+
+  await poll();
 };
+
+export const waitFor = async (
+  condition: () => boolean,
+  timeoutMilliseconds = 1000
+): Promise<void> => {
+  await waitForAsync(
+    fromSynchronousVariadicAwaited(condition),
+    timeoutMilliseconds
+  );
+};
+
+const awaitClosedEvents = <T>(
+  closedPromise: Promise<null>
+): AsyncIterable<T> => ({
+  [Symbol.asyncIterator]() {
+    return {
+      async next(): Promise<IteratorResult<T>> {
+        await closedPromise;
+        return { done: true, value: undefined };
+      },
+    };
+  },
+});
+
+const staticEventStream = <T>(events: readonly T[]): AsyncIterable<T> => ({
+  [Symbol.asyncIterator]() {
+    const iterator = events.values();
+    return {
+      next: fromSynchronousVariadicAwaited(() => iterator.next()),
+    };
+  },
+});
 
 export const createStubExecutionHandle = (
   initialPhase: ExecutionStatus["phase"]
 ): ExecutionHandle => {
   let phase = initialPhase;
   let closed = initialPhase !== "running";
-  let resolveClosed: (() => void) | undefined;
-  const closedPromise = new Promise<void>((resolve) => {
-    resolveClosed = resolve;
+  const { promise: closedPromise, resolve: resolveClosed } =
+    Promise.withResolvers<null>();
 
-    if (closed) {
-      resolve();
-    }
-  });
+  if (closed) {
+    resolveClosed(null);
+  }
 
   const handle: ExecutionHandle = {
     async awaitResult(): Promise<ExecutionResult> {
@@ -250,14 +307,11 @@ export const createStubExecutionHandle = (
 
       if (!closed) {
         closed = true;
-        resolveClosed?.();
+        resolveClosed(null);
       }
     },
     events() {
-      return (async function* events() {
-        await closedPromise;
-        yield* [];
-      })();
+      return awaitClosedEvents(closedPromise);
     },
     resolveApproval() {
       return handle;
@@ -269,29 +323,25 @@ export const createStubExecutionHandle = (
       };
     },
     steer() {
-      return;
+      // The stub deliberately ignores steering input.
     },
   };
 
   return handle;
 };
 
-export const assistantText = (text: string): TuvrenMessage => {
-  return {
-    parts: [{ text, type: "text" }],
-    role: "assistant",
-  };
-};
+export const assistantText = (text: string): TuvrenMessage => ({
+  parts: [{ text, type: "text" }],
+  role: "assistant",
+});
 
 export const assistantStructured = (
   name: string,
   data: unknown
-): TuvrenMessage => {
-  return {
-    parts: [{ data, name, type: "structured" }],
-    role: "assistant",
-  };
-};
+): TuvrenMessage => ({
+  parts: [{ data, name, type: "structured" }],
+  role: "assistant",
+});
 
 const toNonEmptyArray = <T>(values: T[]): [T, ...T[]] | undefined => {
   const [firstValue, ...remainingValues] = values;
@@ -341,78 +391,70 @@ export const buildHandoffPlan = (
   sourceAgent: AgentConfig,
   targetAgent: AgentConfig,
   builder: HandoffContextPlan["builder"]
-): HandoffContextPlan => {
-  return {
-    builder,
-    mode: "preserve_trace",
-    reason: "delegate",
-    sourceContext: {
-      handoffIntent: {
-        reason: "delegate",
-        targetAgent: targetAgent.name,
+): HandoffContextPlan => ({
+  builder,
+  mode: "preserve_trace",
+  reason: "delegate",
+  sourceContext: {
+    handoffIntent: {
+      reason: "delegate",
+      targetAgent: targetAgent.name,
+    },
+    helpers: {
+      loadMessage() {
+        return null;
       },
-      helpers: {
-        loadMessage() {
-          return null;
-        },
-        storeMessage() {
-          return "0".repeat(64);
-        },
-        storeMessages() {
-          return [];
-        },
+      storeMessage() {
+        return "0".repeat(64);
       },
-      manifest: structuredClone(context.manifest),
-      messages: [...context.messages],
-      sourceAgent,
-      targetAgent,
-    } satisfies HandoffSourceContext,
-    targetAgent: targetAgent.name,
-  };
-};
+      storeMessages() {
+        return [];
+      },
+    },
+    manifest: structuredClone(context.manifest),
+    messages: [...context.messages],
+    sourceAgent,
+    targetAgent,
+  } satisfies HandoffSourceContext,
+  targetAgent: targetAgent.name,
+});
 
 export const createStaticExecutionHandle = (
   events: TuvrenStreamEvent[],
   status: ExecutionStatus
-): ExecutionHandle => {
-  return {
-    awaitResult(): Promise<ExecutionResult> {
-      if (status.phase === "completed") {
-        return Promise.resolve({
-          executionStatus: status,
-          status: "completed",
-        });
-      }
-
-      return Promise.resolve({
-        error: new TuvrenRuntimeError("Execution failed", {
-          code: "execution_failed",
-        }),
+): ExecutionHandle => ({
+  awaitResult: fromSynchronousVariadicAwaited((): ExecutionResult => {
+    if (status.phase === "completed") {
+      return {
         executionStatus: status,
-        status: "failed",
-      });
-    },
-    cancel() {
-      return;
-    },
-    async *events() {
-      await Promise.resolve();
+        status: "completed",
+      };
+    }
 
-      for (const event of events) {
-        yield event;
-      }
-    },
-    resolveApproval() {
-      throw new Error("resolveApproval was not expected");
-    },
-    status() {
-      return status;
-    },
-    steer() {
-      return;
-    },
-  };
-};
+    return {
+      error: new TuvrenRuntimeError("Execution failed", {
+        code: "execution_failed",
+      }),
+      executionStatus: status,
+      status: "failed",
+    };
+  }),
+  cancel() {
+    // Static handles have no in-flight work to cancel.
+  },
+  events() {
+    return staticEventStream(events);
+  },
+  resolveApproval() {
+    throw new Error("resolveApproval was not expected");
+  },
+  status() {
+    return status;
+  },
+  steer() {
+    // Static handles deliberately ignore steering input.
+  },
+});
 
 export const overwriteBranchSinglePath = async (
   kernel: RuntimeKernel,
@@ -489,8 +531,8 @@ export const overwriteBranchSinglePath = async (
 
 export const extractToolMessages = (
   messages: readonly unknown[]
-): Extract<TuvrenMessage, { role: "tool" }>[] => {
-  return messages.filter(
+): Extract<TuvrenMessage, { role: "tool" }>[] =>
+  messages.filter(
     (message): message is Extract<TuvrenMessage, { role: "tool" }> =>
       message !== null &&
       typeof message === "object" &&
@@ -499,13 +541,12 @@ export const extractToolMessages = (
       "parts" in message &&
       Array.isArray(message.parts)
   );
-};
 
 export const hasAssistantText = (
   messages: readonly unknown[],
   text: string
-): boolean => {
-  return messages.some((message) => {
+): boolean =>
+  messages.some((message) => {
     if (
       message === null ||
       typeof message !== "object" ||
@@ -517,7 +558,8 @@ export const hasAssistantText = (
       return false;
     }
 
-    return message.parts.some(
+    const parts: unknown[] = message.parts;
+    return parts.some(
       (part) =>
         part !== null &&
         typeof part === "object" &&
@@ -527,25 +569,18 @@ export const hasAssistantText = (
         part.text === text
     );
   });
-};
 
-export const hasCountData = (value: unknown): value is { count: number } => {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    "count" in value &&
-    typeof value.count === "number"
-  );
-};
+export const hasCountData = (value: unknown): value is { count: number } =>
+  value !== null &&
+  typeof value === "object" &&
+  "count" in value &&
+  typeof value.count === "number";
 
-export const hasOkData = (value: unknown): value is { ok: boolean } => {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    "ok" in value &&
-    typeof value.ok === "boolean"
-  );
-};
+export const hasOkData = (value: unknown): value is { ok: boolean } =>
+  value !== null &&
+  typeof value === "object" &&
+  "ok" in value &&
+  typeof value.ok === "boolean";
 
 export const extractSingleUserText = (
   message: TuvrenMessage | null
@@ -554,7 +589,7 @@ export const extractSingleUserText = (
     throw new Error("expected a captured user handoff message");
   }
 
-  const firstPart = message.parts[0];
+  const [firstPart] = message.parts;
 
   if (firstPart?.type !== "text") {
     throw new Error("expected the captured handoff message to start with text");
@@ -575,13 +610,12 @@ export const requireStoredHandoffMessage = (
 
 export const extractLastMessageHash = (manifest: {
   messages?: unknown;
-}): string | undefined => {
-  return Array.isArray(manifest.messages)
+}): string | undefined =>
+  Array.isArray(manifest.messages)
     ? manifest.messages.findLast(
         (hash): hash is string => typeof hash === "string"
       )
     : undefined;
-};
 
 export const readBranchContextManifest = async (
   kernel: RuntimeKernel,
@@ -648,7 +682,7 @@ export const readQueryInput = (input: unknown): string => {
   throw new Error("tool input did not contain a query string");
 };
 
-export const waitForAbort = (
+export const waitForAbort = async (
   signal: AbortSignal | undefined
 ): Promise<void> => {
   if (signal === undefined) {
@@ -656,16 +690,20 @@ export const waitForAbort = (
   }
 
   if (signal.aborted) {
-    return Promise.resolve();
+    return;
   }
 
-  return new Promise((resolve) => {
-    signal.addEventListener("abort", () => resolve(), { once: true });
-  });
+  const { promise, resolve } = Promise.withResolvers<null>();
+  signal.addEventListener(
+    "abort",
+    () => {
+      resolve(null);
+    },
+    { once: true }
+  );
+  await promise;
 };
 
-export const textSignal = (text: string): InputSignal => {
-  return {
-    parts: [{ text, type: "text" }],
-  };
-};
+export const textSignal = (text: string): InputSignal => ({
+  parts: [{ text, type: "text" }],
+});

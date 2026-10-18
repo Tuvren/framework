@@ -17,8 +17,8 @@
 // biome-ignore-all lint/suspicious/useAwait: The fake kernel mirrors the async production protocol surface.
 import { createHash } from "node:crypto";
 
-import { TuvrenRuntimeError } from "@tuvren/core";
-import type { EpochMs, HashString, KernelRecord } from "@tuvren/core";
+import { assertKernelRecord, TuvrenRuntimeError } from "@tuvren/core";
+import type { EpochMs, HashString } from "@tuvren/core";
 import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
@@ -47,6 +47,10 @@ import {
   createEmptyContextManifest,
   DEFAULT_AGENT_SCHEMA,
 } from "../src/index.js";
+import {
+  fromSynchronousVariadicAwaited,
+  toOptionalRecord,
+} from "./runtime-core-test-helpers.ts";
 
 interface FakeRunState extends RunRecord {
   stagedResults: StagedResult[];
@@ -83,24 +87,24 @@ interface FakeKernelState {
 }
 
 export interface FakeKernelHarness {
-  completeRunAsPreempted(
+  completeRunAsPreempted: (
     runId: string,
     reason: string,
     eventHash: HashString
-  ): ReturnType<RuntimeKernel["run"]["complete"]>;
+  ) => ReturnType<RuntimeKernel["run"]["complete"]>;
   kernel: RuntimeKernel;
-  readBranchManifest(branchId: string): Promise<TurnTreeManifest>;
-  readBranchMessages(branchId: string): Promise<unknown[]>;
-  readBranchRuns(branchId: string): Promise<RunRecord[]>;
-  readBranchRuntimeStatus(branchId: string): Promise<unknown | null>;
-  readRunningStagedMessages(branchId: string): Promise<unknown[]>;
-  readTurnNodeManifest(turnNodeHash: HashString): Promise<TurnTreeManifest>;
-  readTurnNodeMessages(turnNodeHash: HashString): Promise<unknown[]>;
+  readBranchManifest: (branchId: string) => Promise<TurnTreeManifest>;
+  readBranchMessages: (branchId: string) => Promise<unknown[]>;
+  readBranchRuns: (branchId: string) => Promise<RunRecord[]>;
+  readBranchRuntimeStatus: (branchId: string) => Promise<unknown>;
+  readRunningStagedMessages: (branchId: string) => Promise<unknown[]>;
+  readTurnNodeManifest: (turnNodeHash: HashString) => Promise<TurnTreeManifest>;
+  readTurnNodeMessages: (turnNodeHash: HashString) => Promise<unknown[]>;
 }
 
 export interface FakeRunLivenessKernelHarness {
-  getPreemptCalls(): number;
-  getRenewLeaseCalls(): number;
+  getPreemptCalls: () => number;
+  getRenewLeaseCalls: () => number;
   kernel: RuntimeKernel & RuntimeKernelRunLiveness;
   leasedRuns: Map<string, FakeLeasedRunRecord>;
 }
@@ -153,9 +157,7 @@ const assertTurnNodeBelongsToThread = (
   throw new Error("turn node does not belong to thread");
 };
 
-const cloneBranch = (branch: BranchRecord): BranchRecord => {
-  return { ...branch };
-};
+const cloneBranch = (branch: BranchRecord): BranchRecord => ({ ...branch });
 
 const requireBranch = (
   state: FakeKernelState,
@@ -170,12 +172,10 @@ const requireBranch = (
   return branch;
 };
 
-const cloneTurnNode = (turnNode: TurnNode): TurnNode => {
-  return {
-    ...turnNode,
-    consumedStagedResults: [...turnNode.consumedStagedResults],
-  };
-};
+const cloneTurnNode = (turnNode: TurnNode): TurnNode => ({
+  ...turnNode,
+  consumedStagedResults: [...turnNode.consumedStagedResults],
+});
 
 const requireRun = (state: FakeKernelState, runId: string): FakeRunState => {
   const run = state.runs.get(runId);
@@ -200,18 +200,16 @@ const requireSchema = (
   return schema;
 };
 
-const clonePathValue = (value: PathValue): PathValue => {
-  return Array.isArray(value) ? [...value] : value;
-};
+const clonePathValue = (value: PathValue): PathValue =>
+  Array.isArray(value) ? [...value] : value;
 
-const cloneManifest = (manifest: TurnTreeManifest): TurnTreeManifest => {
-  return Object.fromEntries(
+const cloneManifest = (manifest: TurnTreeManifest): TurnTreeManifest =>
+  Object.fromEntries(
     Object.entries(manifest).map(([path, value]) => [
       path,
       clonePathValue(value),
     ])
   );
-};
 
 const requireTree = (
   state: FakeKernelState,
@@ -335,38 +333,31 @@ const checkpointRun = async (
 const findActiveRunForBranch = (
   state: FakeKernelState,
   branchId: string
-): FakeRunState | undefined => {
-  return [...state.runs.values()].find(
+): FakeRunState | undefined =>
+  [...state.runs.values()].find(
     (run) =>
       run.branchId === branchId &&
       (run.status === "running" || run.status === "paused")
   );
-};
 
-const cloneRun = (run: RunRecord): RunRecord => {
-  return {
-    ...run,
-    createdTurnNodes: [...run.createdTurnNodes],
-    stepSequence: run.stepSequence.map((step) => ({ ...step })),
-  };
-};
+const cloneRun = (run: RunRecord): RunRecord => ({
+  ...run,
+  createdTurnNodes: [...run.createdTurnNodes],
+  stepSequence: run.stepSequence.map((step) => ({ ...step })),
+});
 
-const hashBytes = (value: Uint8Array): HashString => {
-  return createHash("sha256").update(value).digest("hex");
-};
+const hashBytes = (value: Uint8Array): HashString =>
+  createHash("sha256").update(value).digest("hex");
 
-const createEmptyTreeManifest = (schema: TurnTreeSchema): TurnTreeManifest => {
-  return Object.fromEntries(
+const createEmptyTreeManifest = (schema: TurnTreeSchema): TurnTreeManifest =>
+  Object.fromEntries(
     schema.paths.map((pathDefinition) => [
       pathDefinition.path,
       pathDefinition.collection === "ordered" ? [] : null,
     ])
   );
-};
 
-const cloneTurn = (turn: TurnRecord): TurnRecord => {
-  return { ...turn };
-};
+const cloneTurn = (turn: TurnRecord): TurnRecord => ({ ...turn });
 
 const requireTurn = (state: FakeKernelState, turnId: string): TurnRecord => {
   const turn = state.turns.get(turnId);
@@ -378,8 +369,23 @@ const requireTurn = (state: FakeKernelState, turnId: string): TurnRecord => {
   return turn;
 };
 
-const isHashString = (value: unknown): value is HashString => {
-  return typeof value === "string" && value.length > 0;
+const isHashString = (value: unknown): value is HashString =>
+  typeof value === "string" && value.length > 0;
+
+const parseThreadCursor = (
+  cursor: string
+): { lastCreatedAtMs: number; lastThreadId: string } => {
+  const value = toOptionalRecord(
+    JSON.parse(Buffer.from(cursor, "base64url").toString("utf-8"))
+  );
+  const lastCreatedAtMs = value?.lastCreatedAtMs;
+  const lastThreadId = value?.lastThreadId;
+
+  if (typeof lastCreatedAtMs !== "number" || typeof lastThreadId !== "string") {
+    throw new TypeError("invalid thread cursor");
+  }
+
+  return { lastCreatedAtMs, lastThreadId };
 };
 
 export const createFakeKernelHarness = (): FakeKernelHarness => {
@@ -394,29 +400,36 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
     turns: new Map(),
   };
   let clock = 1;
+  const nextClock = (): number => {
+    const timestamp = clock;
+    clock += 1;
+    return timestamp;
+  };
 
   const kernel: RuntimeKernel = {
     branch: {
-      async create(branchId, threadId, fromTurnNodeHash) {
-        const thread = requireThread(state, threadId);
-        assertTurnNodeBelongsToThread(
-          state,
-          fromTurnNodeHash,
-          thread.rootTurnNodeHash
-        );
-        const branch = {
-          branchId,
-          headTurnNodeHash: fromTurnNodeHash,
-          threadId,
-        } satisfies BranchRecord;
-        state.branches.set(branchId, branch);
-        return cloneBranch(branch);
-      },
-      async get(branchId) {
+      create: fromSynchronousVariadicAwaited(
+        (branchId, threadId, fromTurnNodeHash) => {
+          const thread = requireThread(state, threadId);
+          assertTurnNodeBelongsToThread(
+            state,
+            fromTurnNodeHash,
+            thread.rootTurnNodeHash
+          );
+          const branch = {
+            branchId,
+            headTurnNodeHash: fromTurnNodeHash,
+            threadId,
+          } satisfies BranchRecord;
+          state.branches.set(branchId, branch);
+          return cloneBranch(branch);
+        }
+      ),
+      get: fromSynchronousVariadicAwaited((branchId) => {
         const branch = state.branches.get(branchId);
         return branch === undefined ? null : cloneBranch(branch);
-      },
-      async list(threadId) {
+      }),
+      list: fromSynchronousVariadicAwaited((threadId) => {
         const entries: BranchHeadListEntry[] = [];
 
         for (const branch of state.branches.values()) {
@@ -426,30 +439,28 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
         }
 
         return entries;
-      },
-      async setHead(branchId, turnNodeHash) {
+      }),
+      setHead: fromSynchronousVariadicAwaited((branchId, turnNodeHash) => {
         const branch = requireBranch(state, branchId);
         branch.headTurnNodeHash = turnNodeHash;
         state.branches.set(branchId, branch);
         return {
           branch: cloneBranch(branch),
         };
-      },
+      }),
     },
     maintenance: {
-      reclaim() {
+      reclaim: fromSynchronousVariadicAwaited(() => {
         // The fake kernel does not model reachability reclamation; framework
         // tests exercise the runtime against a real backend when they need it.
-        return Promise.reject(
-          new Error("fake kernel does not implement maintenance.reclaim")
-        );
-      },
+        throw new Error("fake kernel does not implement maintenance.reclaim");
+      }),
     },
     node: {
-      async get(hash) {
+      get: fromSynchronousVariadicAwaited((hash) => {
         const turnNode = state.turnNodes.get(hash);
         return turnNode === undefined ? null : cloneTurnNode(turnNode);
-      },
+      }),
       async *walkBack(fromHash) {
         let currentHash: HashString | null = fromHash;
 
@@ -466,7 +477,7 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
       },
     },
     run: {
-      async beginStep(runId, stepId) {
+      beginStep: fromSynchronousVariadicAwaited((runId, stepId) => {
         const run = requireRun(state, runId);
         const step = run.stepSequence[run.currentStepIndex];
 
@@ -481,7 +492,7 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
           signals: [],
           step,
         } satisfies StepContext;
-      },
+      }),
       async complete(runId, status, eventHash) {
         const run = requireRun(state, runId);
         run.status = status;
@@ -491,7 +502,7 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
           const turnNodeHash = await checkpointRun(
             state,
             run,
-            clock++,
+            nextClock(),
             eventHash ?? null
           );
           run.stagedResults = [];
@@ -534,38 +545,33 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
           turnNodeHash,
         };
       },
-      async create(
-        runId,
-        turnId,
-        branchId,
-        schemaId,
-        startTurnNodeHash,
-        steps
-      ) {
-        const activeRun = findActiveRunForBranch(state, branchId);
+      create: fromSynchronousVariadicAwaited(
+        (runId, turnId, branchId, schemaId, startTurnNodeHash, steps) => {
+          const activeRun = findActiveRunForBranch(state, branchId);
 
-        if (activeRun !== undefined) {
-          throw new Error(
-            `branch "${branchId}" already has an active run "${activeRun.runId}"`
-          );
+          if (activeRun !== undefined) {
+            throw new Error(
+              `branch "${branchId}" already has an active run "${activeRun.runId}"`
+            );
+          }
+
+          const run: FakeRunState = {
+            branchId,
+            createdTurnNodes: [],
+            currentStepIndex: 0,
+            runId,
+            schemaId,
+            stagedResults: [],
+            startTurnNodeHash,
+            status: "running",
+            stepSequence: steps,
+            turnId,
+          };
+          state.runs.set(runId, run);
+          return cloneRun(run);
         }
-
-        const run: FakeRunState = {
-          branchId,
-          createdTurnNodes: [],
-          currentStepIndex: 0,
-          runId,
-          schemaId,
-          stagedResults: [],
-          startTurnNodeHash,
-          status: "running",
-          stepSequence: steps,
-          turnId,
-        };
-        state.runs.set(runId, run);
-        return cloneRun(run);
-      },
-      async recover(runId) {
+      ),
+      recover: fromSynchronousVariadicAwaited((runId) => {
         const run = requireRun(state, runId);
         return {
           consumedStagedResults: [],
@@ -577,72 +583,81 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
           stepSequence: run.stepSequence,
           uncommittedStagedResults: [...run.stagedResults],
         } satisfies RecoveryState;
-      },
+      }),
     },
     schema: {
-      async get(schemaId) {
-        return state.schemas.get(schemaId) ?? null;
-      },
-      async register(schema) {
+      get: fromSynchronousVariadicAwaited(
+        (schemaId) => state.schemas.get(schemaId) ?? null
+      ),
+      register: fromSynchronousVariadicAwaited((schema) => {
         state.schemas.set(schema.schemaId, schema);
         return schema.schemaId;
-      },
+      }),
     },
     staging: {
-      async current(runId) {
-        return [...requireRun(state, runId).stagedResults];
-      },
-      async stage(runId, blob, taskId, objectType, status, interruptPayload) {
-        const run = requireRun(state, runId);
-        const objectHash = hashBytes(blob);
-        state.objects.set(objectHash, blob);
-        const stagedResult: StagedResult =
-          status === "interrupted"
-            ? {
-                interruptPayload: interruptPayload as KernelRecord,
-                objectHash,
-                objectType,
-                status,
-                taskId,
-                timestamp: clock++,
-              }
-            : {
-                objectHash,
-                objectType,
-                status,
-                taskId,
-                timestamp: clock++,
-              };
-        run.stagedResults.push(stagedResult);
-        state.runs.set(runId, run);
-        return {
-          objectHash,
-          stagedResult,
-        };
-      },
+      current: fromSynchronousVariadicAwaited((runId) => [
+        ...requireRun(state, runId).stagedResults,
+      ]),
+      stage: fromSynchronousVariadicAwaited(
+        (runId, blob, taskId, objectType, status, interruptPayload) => {
+          const run = requireRun(state, runId);
+          const objectHash = hashBytes(blob);
+          state.objects.set(objectHash, blob);
+          let stagedResult: StagedResult;
+
+          if (status === "interrupted") {
+            if (interruptPayload === undefined) {
+              throw new Error(
+                "interrupted staging requires an interrupt payload"
+              );
+            }
+
+            stagedResult = {
+              interruptPayload,
+              objectHash,
+              objectType,
+              status,
+              taskId,
+              timestamp: nextClock(),
+            };
+          } else {
+            stagedResult = {
+              objectHash,
+              objectType,
+              status,
+              taskId,
+              timestamp: nextClock(),
+            };
+          }
+          run.stagedResults.push(stagedResult);
+          state.runs.set(runId, run);
+          return {
+            objectHash,
+            stagedResult,
+          };
+        }
+      ),
     },
     store: {
-      async get(hash) {
-        return state.objects.get(hash) ?? null;
-      },
-      async has(hash) {
-        return state.objects.has(hash);
-      },
-      async put(blob) {
+      get: fromSynchronousVariadicAwaited(
+        (hash) => state.objects.get(hash) ?? null
+      ),
+      has: fromSynchronousVariadicAwaited((hash) => state.objects.has(hash)),
+      put: fromSynchronousVariadicAwaited((blob) => {
         const hash = hashBytes(blob);
         if (!state.objects.has(hash)) {
           state.objects.set(hash, blob);
         }
         return hash;
-      },
+      }),
     },
     thread: {
       async create(threadId, schemaId, initialBranchId) {
         const schema = requireSchema(state, schemaId);
+        const contextManifest: unknown = createEmptyContextManifest();
+        assertKernelRecord(contextManifest, "fake kernel context manifest");
         const manifestHash = await kernel.store.put(
-          encodeDeterministicKernelRecord(
-            createEmptyContextManifest() as unknown as KernelRecord
-          )
+          encodeDeterministicKernelRecord(contextManifest)
         );
         const rootTreeHash = await createTree(
           state,
@@ -663,7 +678,7 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
           null
         );
         state.threads.set(threadId, {
-          createdAtMs: clock++ as EpochMs,
+          createdAtMs: nextClock(),
           rootTurnNodeHash,
           schemaId,
           threadId,
@@ -680,10 +695,10 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
           threadId,
         };
       },
-      async get(threadId) {
-        return state.threads.get(threadId) ?? null;
-      },
-      async list(options) {
+      get: fromSynchronousVariadicAwaited(
+        (threadId) => state.threads.get(threadId) ?? null
+      ),
+      list: fromSynchronousVariadicAwaited((options) => {
         let threads: StoredThread[] = [...state.threads.values()].map((t) => ({
           createdAtMs: t.createdAtMs,
           rootTurnNodeHash: t.rootTurnNodeHash,
@@ -703,9 +718,9 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
         );
 
         if (options?.cursor !== undefined) {
-          const { lastCreatedAtMs, lastThreadId } = JSON.parse(
-            Buffer.from(options.cursor, "base64url").toString("utf-8")
-          ) as { lastCreatedAtMs: number; lastThreadId: string };
+          const { lastCreatedAtMs, lastThreadId } = parseThreadCursor(
+            options.cursor
+          );
           threads = threads.filter(
             (t) =>
               t.createdAtMs > lastCreatedAtMs ||
@@ -729,7 +744,7 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
         }
 
         return { nextCursor, threads };
-      },
+      }),
     },
     tree: {
       async create(schemaId, changes, baseTurnTreeHash) {
@@ -745,7 +760,7 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
 
         return await createTree(state, baseManifest, schema);
       },
-      async diff(treeHashA, treeHashB) {
+      diff: fromSynchronousVariadicAwaited((treeHashA, treeHashB) => {
         const treeA = requireTree(state, treeHashA).manifest;
         const treeB = requireTree(state, treeHashB).manifest;
         const changedPaths: string[] = [];
@@ -760,7 +775,7 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
         }
 
         return changedPaths;
-      },
+      }),
       async incorporate(baseTurnTreeHash, stagedResults) {
         const baseTree = requireTree(state, baseTurnTreeHash);
         return await incorporateTree(
@@ -770,44 +785,40 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
           baseTree.schemaId
         );
       },
-      async manifest(treeHash) {
-        return cloneManifest(requireTree(state, treeHash).manifest);
-      },
-      async resolve(treeHash, path) {
-        return clonePathValue(requireTree(state, treeHash).manifest[path]);
-      },
+      manifest: fromSynchronousVariadicAwaited((treeHash) =>
+        cloneManifest(requireTree(state, treeHash).manifest)
+      ),
+      resolve: fromSynchronousVariadicAwaited((treeHash, path) =>
+        clonePathValue(requireTree(state, treeHash).manifest[path])
+      ),
     },
     turn: {
-      async create(
-        turnId,
-        threadId,
-        branchId,
-        parentTurnId,
-        startTurnNodeHash
-      ) {
-        const turn: TurnRecord = {
-          branchId,
-          headTurnNodeHash: startTurnNodeHash,
-          parentTurnId: parentTurnId ?? null,
-          startTurnNodeHash,
-          threadId,
-          turnId,
-        };
-        state.turns.set(turnId, turn);
-        return cloneTurn(turn);
-      },
-      async get(turnId) {
+      create: fromSynchronousVariadicAwaited(
+        (turnId, threadId, branchId, parentTurnId, startTurnNodeHash) => {
+          const turn: TurnRecord = {
+            branchId,
+            headTurnNodeHash: startTurnNodeHash,
+            parentTurnId: parentTurnId ?? null,
+            startTurnNodeHash,
+            threadId,
+            turnId,
+          };
+          state.turns.set(turnId, turn);
+          return cloneTurn(turn);
+        }
+      ),
+      get: fromSynchronousVariadicAwaited((turnId) => {
         const turn = state.turns.get(turnId);
         return turn === undefined ? null : cloneTurn(turn);
-      },
-      async updateHead(turnId, headTurnNodeHash) {
+      }),
+      updateHead: fromSynchronousVariadicAwaited((turnId, headTurnNodeHash) => {
         const turn = requireTurn(state, turnId);
         turn.headTurnNodeHash = headTurnNodeHash;
         state.turns.set(turnId, turn);
-      },
+      }),
     },
     verdicts: {
-      async compose(verdicts) {
+      compose: fromSynchronousVariadicAwaited((verdicts) => {
         const abort = verdicts.find((verdict) => verdict.kind === "abort");
         if (abort !== undefined) {
           return abort;
@@ -838,7 +849,7 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
         return (verdicts.find((verdict) => verdict.kind === "retry") ?? {
           kind: "proceed",
         }) satisfies ComposedVerdict;
-      },
+      }),
     },
   };
 
@@ -874,20 +885,20 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
       return await kernel.run.complete(runId, "failed", eventHash);
     },
     kernel,
-    async readBranchManifest(branchId) {
+    readBranchManifest: fromSynchronousVariadicAwaited((branchId) => {
       const branch = requireBranch(state, branchId);
       const turnNode = requireTurnNode(state, branch.headTurnNodeHash);
       return cloneManifest(requireTree(state, turnNode.turnTreeHash).manifest);
-    },
+    }),
     async readBranchMessages(branchId) {
       const manifest = await this.readBranchManifest(branchId);
       return readMessagesFromManifest(manifest);
     },
-    async readBranchRuns(branchId) {
-      return [...state.runs.values()]
+    readBranchRuns: fromSynchronousVariadicAwaited((branchId) =>
+      [...state.runs.values()]
         .filter((run) => run.branchId === branchId)
-        .map(cloneRun);
-    },
+        .map(cloneRun)
+    ),
     async readBranchRuntimeStatus(branchId) {
       const manifest = await this.readBranchManifest(branchId);
       const runtimeStatusHash = manifest["runtime.status"];
@@ -902,7 +913,7 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
         ? null
         : decodeDeterministicKernelRecord(payload);
     },
-    async readRunningStagedMessages(branchId) {
+    readRunningStagedMessages: fromSynchronousVariadicAwaited((branchId) => {
       const run = [...state.runs.values()].find(
         (candidate) =>
           candidate.branchId === branchId && candidate.status === "running"
@@ -927,11 +938,11 @@ export const createFakeKernelHarness = (): FakeKernelHarness => {
       }
 
       return messages;
-    },
-    async readTurnNodeManifest(turnNodeHash) {
+    }),
+    readTurnNodeManifest: fromSynchronousVariadicAwaited((turnNodeHash) => {
       const turnNode = requireTurnNode(state, turnNodeHash);
       return cloneManifest(requireTree(state, turnNode.turnTreeHash).manifest);
-    },
+    }),
     async readTurnNodeMessages(turnNodeHash) {
       const manifest = await this.readTurnNodeManifest(turnNodeHash);
       return readMessagesFromManifest(manifest);
@@ -955,6 +966,10 @@ export const createFakeRunLivenessKernelHarness = (
   let tokenOrdinal = 0;
   const leasedRuns = new Map<string, FakeLeasedRunRecord>();
   const baseKernel = harness.kernel;
+  const nextTokenOrdinal = (): number => {
+    tokenOrdinal += 1;
+    return tokenOrdinal;
+  };
 
   return {
     getPreemptCalls() {
@@ -991,7 +1006,7 @@ export const createFakeRunLivenessKernelHarness = (
             const leasedRun: FakeLeasedRunRecord = {
               ...run,
               executionOwnerId: input.executionOwnerId,
-              fencingToken: `token-${++tokenOrdinal}`,
+              fencingToken: `token-${nextTokenOrdinal()}`,
               leaseExpiresAtMs: input.leaseExpiresAtMs,
             };
             leasedRuns.set(leasedRun.runId, leasedRun);
@@ -1012,11 +1027,11 @@ export const createFakeRunLivenessKernelHarness = (
             throw error;
           }
         },
-        async listExpired(nowMs) {
-          return [...leasedRuns.values()].filter(
+        listExpired: fromSynchronousVariadicAwaited((nowMs) =>
+          [...leasedRuns.values()].filter(
             (run) => run.leaseExpiresAtMs <= nowMs
-          );
-        },
+          )
+        ),
         async preemptExpired(runId, preemptingOwnerId, _nowMs, reason) {
           const leasedRun = leasedRuns.get(runId);
 
