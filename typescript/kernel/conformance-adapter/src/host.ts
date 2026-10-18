@@ -17,21 +17,29 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import path from "node:path";
 
+import type { createMemoryBackend as CreateMemoryBackend } from "@tuvren/backend-memory";
+import type {
+  createPostgresBackend as CreatePostgresBackend,
+  destroyPostgresBackend as DestroyPostgresBackend,
+} from "@tuvren/backend-postgres";
+import type { createSqliteBackend as CreateSqliteBackend } from "@tuvren/backend-sqlite";
 import {
-  type RuntimeBackend,
-  type StoredBranch,
-  type StoredThread,
-  type TurnTreeSchema,
   assertStagedResult,
   assertVerdict,
   decodeDeterministicKernelRecord,
   hashKernelRecord,
   hashOpaqueObjectBytes,
   hashTurnNodeIdentity,
-  type StagedResult,
-  type Verdict,
+} from "@tuvren/kernel-protocol";
+import type {
+  RuntimeBackend,
+  StoredBranch,
+  StoredThread,
+  TurnTreeSchema,
+  StagedResult,
+  Verdict,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import {
@@ -52,6 +60,7 @@ import type {
   OperationOutcome,
 } from "../../../../tools/conformance/adapter-protocol/index.js";
 import { createAdapterErrorEnvelope } from "../../../../tools/conformance/adapter-protocol/index.js";
+import type { StdioConformanceAdapter } from "../../../../tools/conformance/adapter-protocol/stdio-host.js";
 import { serveStdioAdapter } from "../../../../tools/conformance/adapter-protocol/stdio-host.js";
 import {
   hexToBytes,
@@ -77,21 +86,38 @@ interface KernelAdapterConfig {
   capabilities: string[];
 }
 
-interface DisposablePostgresBackend {
-  close(): Promise<void>;
-  destroy(options?: { dropSchema?: boolean }): Promise<void>;
-  dropSchema(): Promise<void>;
-}
-
 interface ManagedRuntimeBackend extends RuntimeBackend {
-  close?(): Promise<void>;
-  destroy?(options?: { dropSchema?: boolean }): Promise<void>;
+  close?: () => Promise<void>;
+  destroy?: (options?: { dropSchema?: boolean }) => Promise<void>;
 }
 
 interface CrashRecoveryBackendHarness {
-  cleanup(): Promise<void>;
-  createBackend(): Promise<ManagedRuntimeBackend>;
+  cleanup: () => void | Promise<void>;
+  createBackend: () => ManagedRuntimeBackend | Promise<ManagedRuntimeBackend>;
 }
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const hasCreateMemoryBackend = (
+  value: unknown
+): value is { createMemoryBackend: typeof CreateMemoryBackend } =>
+  isRecord(value) && typeof value.createMemoryBackend === "function";
+
+const hasCreateSqliteBackend = (
+  value: unknown
+): value is { createSqliteBackend: typeof CreateSqliteBackend } =>
+  isRecord(value) && typeof value.createSqliteBackend === "function";
+
+const hasPostgresBackendFactories = (
+  value: unknown
+): value is {
+  createPostgresBackend: typeof CreatePostgresBackend;
+  destroyPostgresBackend: typeof DestroyPostgresBackend;
+} =>
+  isRecord(value) &&
+  typeof value.createPostgresBackend === "function" &&
+  typeof value.destroyPostgresBackend === "function";
 
 const defaultCapabilities = (
   backend: KernelAdapterConfig["backend"]
@@ -388,8 +414,8 @@ const runConcurrentWriterConflictOnBackends = async (
   let finalHead: string | null = null;
 
   await primaryBackend.transact(async (tx) => {
-    finalHead =
-      (await tx.branches.get(branch.branchId))?.headTurnNodeHash ?? null;
+    const storedBranch = await tx.branches.get(branch.branchId);
+    finalHead = storedBranch?.headTurnNodeHash ?? null;
   });
 
   const winningHead =
@@ -430,7 +456,7 @@ const runConcurrentWriterConflictOnBackends = async (
     retryAfterLossErrorCode,
     singleWriterRejected:
       [firstResult, secondResult].filter(
-        (result) => result.status === "rejected"
+        (settledResult) => settledResult.status === "rejected"
       ).length === 1,
     typedLateralConflictObserved:
       losingErrorCode.endsWith("_branch_head_lateral_move") ||
@@ -565,6 +591,19 @@ const closeManagedBackend = async (
       throw error;
     }
   }
+};
+
+const closeManagedBackends = async (
+  backends: readonly ManagedRuntimeBackend[],
+  index = 0
+): Promise<void> => {
+  const backend = backends[index];
+  if (backend === undefined) {
+    return;
+  }
+
+  await closeManagedBackend(backend, true);
+  await closeManagedBackends(backends, index + 1);
 };
 
 const runCrashRecoveryFaultPoint = async (
@@ -722,49 +761,57 @@ const createCrashRecoveryHarness = async (
   backend: KernelAdapterConfig["backend"]
 ): Promise<CrashRecoveryBackendHarness> => {
   if (backend === "memory") {
-    const { createMemoryBackend } = await import(
+    const memoryBackendModule: unknown = await import(
       new URL("../../backends/memory/dist/index.js", import.meta.url).href
     );
+    if (!hasCreateMemoryBackend(memoryBackendModule)) {
+      throw new Error("memory backend module is missing its factory");
+    }
+    const { createMemoryBackend } = memoryBackendModule;
 
     return {
-      cleanup: async () => {
+      cleanup: () => {
         // Memory harnesses have no external resources to release.
       },
-      createBackend: async () => createMemoryBackend() as ManagedRuntimeBackend,
+      createBackend: () => createMemoryBackend(),
     };
   }
 
   if (backend === "sqlite") {
-    const { createSqliteBackend } = await import(
+    const sqliteBackendModule: unknown = await import(
       new URL("../../backends/sqlite/dist/index.js", import.meta.url).href
     );
+    if (!hasCreateSqliteBackend(sqliteBackendModule)) {
+      throw new Error("sqlite backend module is missing its factory");
+    }
+    const { createSqliteBackend } = sqliteBackendModule;
     const tempDirectory = await mkdtemp(
-      join(tmpdir(), `tuvren-crash-recovery-${process.pid}-`)
+      path.join(tmpdir(), `tuvren-crash-recovery-${process.pid}-`)
     );
-    const databasePath = join(tempDirectory, "kernel.sqlite");
+    const databasePath = path.join(tempDirectory, "kernel.sqlite");
     const handles = new Set<ManagedRuntimeBackend>();
 
     return {
       cleanup: async () => {
-        for (const handle of handles) {
-          await closeManagedBackend(handle, true);
-        }
-
+        await closeManagedBackends([...handles]);
         await rm(tempDirectory, { force: true, recursive: true });
       },
       createBackend: () => {
         const handle = createSqliteBackend({
           databasePath,
-        }) as ManagedRuntimeBackend;
+        });
         handles.add(handle);
-        return Promise.resolve(handle);
+        return handle;
       },
     };
   }
 
-  const postgresBackendModule = await import(
+  const postgresBackendModule: unknown = await import(
     new URL("../../backends/postgres/dist/index.js", import.meta.url).href
   );
+  if (!hasPostgresBackendFactories(postgresBackendModule)) {
+    throw new Error("postgres backend module is missing its factories");
+  }
   const schemaName = `crash_${randomUUID().replaceAll("-", "_")}`;
   const options = {
     database: process.env.PGDATABASE ?? "tuvren_runtime",
@@ -774,35 +821,28 @@ const createCrashRecoveryHarness = async (
 
   return {
     cleanup: async () => {
-      for (const handle of handles) {
-        await closeManagedBackend(handle, true);
-      }
-
+      await closeManagedBackends([...handles]);
       await postgresBackendModule.destroyPostgresBackend(options);
     },
     createBackend: () => {
-      const handle = postgresBackendModule.createPostgresBackend(
-        options
-      ) as ManagedRuntimeBackend;
+      const handle = postgresBackendModule.createPostgresBackend(options);
       handles.add(handle);
-      return Promise.resolve(handle);
+      return handle;
     },
   };
 };
 
-const createProjection = <T extends Record<string, unknown>>(
-  evidence: T
-): Record<string, unknown> => {
-  return {
-    evidence,
-    result: evidence,
-  };
-};
+const createProjection = (
+  evidence: Record<string, unknown>
+): Record<string, unknown> => ({
+  evidence,
+  result: evidence,
+});
 
 const schemaRoundtrip = (
   fixture: Record<string, unknown>
-): Record<string, unknown> => {
-  return createProjection({
+): Record<string, unknown> =>
+  createProjection({
     roundtrip: {
       turnNodeIdentityRecord: decodeDeterministicKernelRecord(
         hexToBytes(
@@ -822,6 +862,24 @@ const schemaRoundtrip = (
       ),
     },
   });
+
+const composeVerdictCases = async (
+  kernel: ReturnType<typeof createRuntimeKernel>,
+  entries: readonly [string, unknown][],
+  composition: Record<string, unknown> = {},
+  index = 0
+): Promise<Record<string, unknown>> => {
+  const entry = entries[index];
+  if (entry === undefined) {
+    return composition;
+  }
+
+  const [caseName, caseValue] = entry;
+  const caseRecord = readRecord(caseValue, `cases.${caseName}`);
+  const verdicts = readVerdicts(caseRecord.verdicts, caseName);
+  composition[caseName] = await kernel.verdicts.compose(verdicts);
+
+  return await composeVerdictCases(kernel, entries, composition, index + 1);
 };
 
 const runModifyComposition = async (
@@ -866,21 +924,19 @@ const runModifyComposition = async (
   const cases = readRecord(fixture.cases, "cases");
   const schema = await loadCanonicalSchema();
   return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
-    const composition: Record<string, unknown> = {};
-
-    for (const [caseName, caseValue] of Object.entries(cases)) {
-      const caseRecord = readRecord(caseValue, `cases.${caseName}`);
-      const verdicts = readVerdicts(caseRecord.verdicts, caseName);
-      composition[caseName] = await kernel.verdicts.compose(verdicts);
-    }
+    const composition = await composeVerdictCases(
+      kernel,
+      Object.entries(cases)
+    );
 
     return createProjection({ composition });
   });
 };
 
 const runLogicalDiff = async (
-  fixture: Record<string, unknown>
+  input: unknown
 ): Promise<Record<string, unknown>> => {
+  const fixture = readFixture(input);
   const schema = await loadCanonicalSchema();
   const logical = readLogicalFixture(fixture, schema);
   return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
@@ -894,17 +950,20 @@ const runLogicalDiff = async (
       logical.turnTreeChangeSet,
       created.rootTurnTreeHash
     );
-    const diffPaths = (
-      await kernel.tree.diff(created.rootTurnTreeHash, changedTree)
-    ).toSorted();
+    const changedPaths = await kernel.tree.diff(
+      created.rootTurnTreeHash,
+      changedTree
+    );
+    const diffPaths = changedPaths.toSorted();
 
     return createProjection({ diffPaths });
   });
 };
 
 const runBranchList = async (
-  fixture: Record<string, unknown>
+  input: unknown
 ): Promise<Record<string, unknown>> => {
+  const fixture = readFixture(input);
   const schema = await loadCanonicalSchema();
   const logical = readLogicalFixture(fixture, schema);
   return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
@@ -917,6 +976,21 @@ const runBranchList = async (
 
     return createProjection({ branchEntries });
   });
+};
+
+const stageFixtureResults = async (
+  kernel: ReturnType<typeof createRuntimeKernel>,
+  runId: string,
+  stagedResults: readonly StagedResult[],
+  index = 0
+): Promise<void> => {
+  const stagedResult = stagedResults[index];
+  if (stagedResult === undefined) {
+    return;
+  }
+
+  await stageFixtureResult(kernel, runId, stagedResult, index);
+  await stageFixtureResults(kernel, runId, stagedResults, index + 1);
 };
 
 const runThreadList = async (): Promise<Record<string, unknown>> => {
@@ -1384,8 +1458,9 @@ const runErasureProbe = async (): Promise<Record<string, unknown>> => {
 };
 
 const runRecoveryState = async (
-  fixture: Record<string, unknown>
+  input: unknown
 ): Promise<Record<string, unknown>> => {
+  const fixture = readFixture(input);
   const schema = await loadCanonicalSchema();
   const logical = readLogicalFixture(fixture, schema);
   return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
@@ -1422,21 +1497,19 @@ const runRecoveryState = async (
     await kernel.run.completeStep("run_recovery", firstStep.id);
     await kernel.run.beginStep("run_recovery", secondStep.id);
 
-    for (const [
-      index,
-      stagedResult,
-    ] of logical.recoveryState.consumedStagedResults.entries()) {
-      await stageFixtureResult(kernel, "run_recovery", stagedResult, index);
-    }
+    await stageFixtureResults(
+      kernel,
+      "run_recovery",
+      logical.recoveryState.consumedStagedResults
+    );
 
     await kernel.run.completeStep("run_recovery", secondStep.id);
 
-    for (const [
-      index,
-      stagedResult,
-    ] of logical.recoveryState.uncommittedStagedResults.entries()) {
-      await stageFixtureResult(kernel, "run_recovery", stagedResult, index);
-    }
+    await stageFixtureResults(
+      kernel,
+      "run_recovery",
+      logical.recoveryState.uncommittedStagedResults
+    );
 
     const recovery = await kernel.run.recover("run_recovery");
 
@@ -1509,7 +1582,7 @@ const runProtocolEdgeValidation = async (): Promise<
 > => {
   const schema = await loadCanonicalSchema();
   return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
-    const firstPath = schema.paths[0];
+    const [firstPath] = schema.paths;
 
     if (firstPath === undefined) {
       throw new Error("canonical schema must define at least one path");
@@ -2154,9 +2227,9 @@ const runClockSkewPreemption = async (): Promise<Record<string, unknown>> => {
           recoveryHeadMatchesBranchHead:
             recovery.lastTurnNodeHash === updatedBranch.headTurnNodeHash,
           runStatus: storedRun.status,
+          splitBrainPreemptionBlocked,
           uncommittedStagedResultCount:
             recovery.uncommittedStagedResults.length,
-          splitBrainPreemptionBlocked,
           // The skew is real: by its own clock the peer would have expired the
           // lease in phase 1.
           workerClockWouldExpire: secondaryNowMs > leaseExpiresAtMs,
@@ -2170,9 +2243,14 @@ const runClockSkewPreemption = async (): Promise<Record<string, unknown>> => {
 const runPostgresRestartRecovery = async (): Promise<
   Record<string, unknown>
 > => {
-  const { createPostgresBackend } = await import(
+  const postgresBackendModule: unknown = await import(
     new URL("../../backends/postgres/dist/index.js", import.meta.url).href
   );
+  if (!hasPostgresBackendFactories(postgresBackendModule)) {
+    throw new Error("postgres backend module is missing its factories");
+  }
+  const { createPostgresBackend, destroyPostgresBackend } =
+    postgresBackendModule;
   const restartSchema: TurnTreeSchema = {
     incorporationRules: [{ objectType: "message", targetPath: "messages" }],
     paths: [
@@ -2182,13 +2260,12 @@ const runPostgresRestartRecovery = async (): Promise<
     schemaId: "schema_restart_recovery",
   };
   const schemaName = `restart_${randomUUID().replaceAll("-", "_")}`;
-  const firstBackend = createPostgresBackend({
+  const options = {
     database: process.env.PGDATABASE ?? "tuvren_runtime",
     schemaName,
-  }) as ReturnType<typeof createPostgresBackend> & DisposablePostgresBackend;
-  let reopenedBackend:
-    | (ReturnType<typeof createPostgresBackend> & DisposablePostgresBackend)
-    | undefined;
+  };
+  const firstBackend = createPostgresBackend(options);
+  let reopenedBackend: ReturnType<typeof createPostgresBackend> | undefined;
 
   try {
     const firstKernel = createRuntimeKernel({ backend: firstBackend });
@@ -2245,10 +2322,7 @@ const runPostgresRestartRecovery = async (): Promise<
     // Close the first backend client before reopening the same disposable
     // schema so repeated conformance runs do not accumulate idle pools.
     await firstBackend.close();
-    reopenedBackend = createPostgresBackend({
-      database: process.env.PGDATABASE ?? "tuvren_runtime",
-      schemaName,
-    }) as ReturnType<typeof createPostgresBackend> & DisposablePostgresBackend;
+    reopenedBackend = createPostgresBackend(options);
     const reopenedKernel = createRuntimeKernel({
       backend: reopenedBackend,
     });
@@ -2312,18 +2386,18 @@ const runPostgresRestartRecovery = async (): Promise<
   } finally {
     await firstBackend.close();
 
-    if (reopenedBackend === undefined) {
-      await firstBackend.dropSchema();
-    } else {
-      await reopenedBackend.destroy({ dropSchema: true });
-    }
+    await (reopenedBackend === undefined
+      ? destroyPostgresBackend(options)
+      : reopenedBackend.destroy({ dropSchema: true }));
   }
 };
 
 const runRestartRecovery = async (): Promise<Record<string, unknown>> => {
-  const tempDirectory = await mkdtemp(join(tmpdir(), "tuvren-kernel-restart-"));
-  const databasePath = join(tempDirectory, "kernel.sqlite");
-  const metadataPath = join(tempDirectory, "restart-metadata.json");
+  const tempDirectory = await mkdtemp(
+    path.join(tmpdir(), "tuvren-kernel-restart-")
+  );
+  const databasePath = path.join(tempDirectory, "kernel.sqlite");
+  const metadataPath = path.join(tempDirectory, "restart-metadata.json");
 
   try {
     if (ADAPTER_CONFIG.backend === "postgres") {
@@ -2407,9 +2481,13 @@ const runConcurrentWriterConflict = async (): Promise<
   Record<string, unknown>
 > => {
   if (ADAPTER_CONFIG.backend === "memory") {
-    const { createMemoryBackend } = await import(
+    const memoryBackendModule: unknown = await import(
       new URL("../../backends/memory/dist/index.js", import.meta.url).href
     );
+    if (!hasCreateMemoryBackend(memoryBackendModule)) {
+      throw new Error("memory backend module is missing its factory");
+    }
+    const { createMemoryBackend } = memoryBackendModule;
     const seamBackend = createMemoryBackend();
     const raceBackend = createMemoryBackend();
 
@@ -2461,9 +2539,9 @@ const readStagedResults = (value: unknown, label: string): StagedResult[] => {
       })();
   const stagedResults: StagedResult[] = [];
 
-  for (const [index, result] of results.entries()) {
-    assertStagedResult(result, `${label}[${index}]`);
-    stagedResults.push(result);
+  for (const [index, stagedResult] of results.entries()) {
+    assertStagedResult(stagedResult, `${label}[${index}]`);
+    stagedResults.push(stagedResult);
   }
 
   return stagedResults;
@@ -2523,8 +2601,9 @@ const readNullableString = (value: unknown, label: string): string | null => {
 };
 
 const deterministicHashing = async (
-  fixture: Record<string, unknown>
+  input: unknown
 ): Promise<Record<string, unknown>> => {
+  const fixture = readFixture(input);
   const rawOpaqueBytes = readNumberArray(
     fixture.rawOpaqueBytes,
     "rawOpaqueBytes"
@@ -2567,106 +2646,81 @@ const deterministicHashing = async (
   });
 };
 
-class TypeScriptKernelAdapter {
-  initialize(
-    packetId: string,
-    planVersion: string
-  ): Promise<AdapterCapabilities> {
-    return Promise.resolve({
-      adapterId: ADAPTER_CONFIG.adapterId,
-      capabilities: ADAPTER_CONFIG.capabilities,
-      packetId,
-      planVersion,
-    });
+type KernelOperation = (
+  input: unknown
+) => Record<string, unknown> | Promise<Record<string, unknown>>;
+
+const kernelOperations = new Map<string, KernelOperation>([
+  ["kernel.protocol.deterministic-hashing", deterministicHashing],
+  [
+    "kernel.protocol.schema-roundtrip",
+    (input) => schemaRoundtrip(readFixture(input)),
+  ],
+  ["kernel.protocol.modify-composition", runModifyComposition],
+  [
+    "kernel.protocol.canonical-rejection",
+    (input) => runCanonicalRejection(readFixture(input)),
+  ],
+  ["kernel.protocol.edge-validation", runProtocolEdgeValidation],
+  ["kernel.logical.diff-paths", runLogicalDiff],
+  ["kernel.logical.branch-list", runBranchList],
+  ["kernel.logical.recovery-state", runRecoveryState],
+  ["kernel.logical.thread-list", runThreadList],
+  ["kernel.lineage.cross-thread-rejection", runCrossThreadLineage],
+  ["kernel.run-liveness.lease-renewal", runLeaseRenewal],
+  ["kernel.run-liveness.expired-listing", runExpiredListing],
+  ["kernel.run-liveness.stale-preemption", runStalePreemption],
+  ["kernel.run-liveness.clock-skew-preemption", runClockSkewPreemption],
+  ["kernel.restart-recovery.close-reopen-checkpoint", runRestartRecovery],
+  ["kernel.restart-recovery.crash-recovery-durable", runDurableCrashRecovery],
+  [
+    "kernel.restart-recovery.crash-recovery-in-process",
+    runInProcessCrashRecovery,
+  ],
+  ["kernel.restart-recovery.concurrent-writer", runConcurrentWriterConflict],
+  ["kernel.scope-isolation.cross-scope-probe", runCrossScopeProbe],
+  ["kernel.reclamation.reclaim-probe", runReclamationProbe],
+  ["kernel.reclamation.erasure-probe", runErasureProbe],
+]);
+
+const initialize = (
+  packetId: string,
+  planVersion: string
+): AdapterCapabilities => ({
+  adapterId: ADAPTER_CONFIG.adapterId,
+  capabilities: ADAPTER_CONFIG.capabilities,
+  packetId,
+  planVersion,
+});
+
+const dispatch = async (
+  operation: string,
+  input: unknown,
+  _controls: AdapterControls
+): Promise<OperationOutcome> => {
+  const operationHandler = kernelOperations.get(operation);
+  if (operationHandler === undefined) {
+    return {
+      error: {
+        code: "adapter_operation_not_implemented",
+        message: `${ADAPTER_CONFIG.adapterId} does not implement ${operation}`,
+      },
+      kind: "error",
+    };
   }
 
-  async dispatch(
-    operation: string,
-    input: unknown,
-    _controls: AdapterControls
-  ): Promise<OperationOutcome> {
-    try {
-      switch (operation) {
-        case "kernel.protocol.deterministic-hashing": {
-          return result(await deterministicHashing(readFixture(input)));
-        }
-        case "kernel.protocol.schema-roundtrip": {
-          return result(schemaRoundtrip(readFixture(input)));
-        }
-        case "kernel.protocol.modify-composition": {
-          return result(await runModifyComposition(input));
-        }
-        case "kernel.protocol.canonical-rejection": {
-          return result(runCanonicalRejection(readFixture(input)));
-        }
-        case "kernel.protocol.edge-validation": {
-          return result(await runProtocolEdgeValidation());
-        }
-        case "kernel.logical.diff-paths": {
-          return result(await runLogicalDiff(readFixture(input)));
-        }
-        case "kernel.logical.branch-list": {
-          return result(await runBranchList(readFixture(input)));
-        }
-        case "kernel.logical.recovery-state": {
-          return result(await runRecoveryState(readFixture(input)));
-        }
-        case "kernel.logical.thread-list": {
-          return result(await runThreadList());
-        }
-        case "kernel.lineage.cross-thread-rejection": {
-          return result(await runCrossThreadLineage());
-        }
-        case "kernel.run-liveness.lease-renewal": {
-          return result(await runLeaseRenewal());
-        }
-        case "kernel.run-liveness.expired-listing": {
-          return result(await runExpiredListing());
-        }
-        case "kernel.run-liveness.stale-preemption": {
-          return result(await runStalePreemption());
-        }
-        case "kernel.run-liveness.clock-skew-preemption": {
-          return result(await runClockSkewPreemption());
-        }
-        case "kernel.restart-recovery.close-reopen-checkpoint": {
-          return result(await runRestartRecovery());
-        }
-        case "kernel.restart-recovery.crash-recovery-durable": {
-          return result(await runDurableCrashRecovery());
-        }
-        case "kernel.restart-recovery.crash-recovery-in-process": {
-          return result(await runInProcessCrashRecovery());
-        }
-        case "kernel.restart-recovery.concurrent-writer": {
-          return result(await runConcurrentWriterConflict());
-        }
-        case "kernel.scope-isolation.cross-scope-probe": {
-          return result(await runCrossScopeProbe());
-        }
-        case "kernel.reclamation.reclaim-probe": {
-          return result(await runReclamationProbe());
-        }
-        case "kernel.reclamation.erasure-probe": {
-          return result(await runErasureProbe());
-        }
-        default: {
-          return {
-            error: {
-              code: "adapter_operation_not_implemented",
-              message: `${ADAPTER_CONFIG.adapterId} does not implement ${operation}`,
-            },
-            kind: "error",
-          };
-        }
-      }
-    } catch (error: unknown) {
-      return {
-        error: createAdapterErrorEnvelope(error),
-        kind: "error",
-      };
-    }
+  try {
+    const operationResult = await operationHandler(input);
+    return result(operationResult);
+  } catch (error: unknown) {
+    return {
+      error: createAdapterErrorEnvelope(error),
+      kind: "error",
+    };
   }
-}
+};
 
-await serveStdioAdapter(new TypeScriptKernelAdapter());
+await serveStdioAdapter({
+  dispatch,
+  initialize,
+} satisfies StdioConformanceAdapter);
