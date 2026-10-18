@@ -26,8 +26,7 @@
  */
 
 import { readdir, readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type {
@@ -38,14 +37,12 @@ import type {
 } from "@tuvren/core/capabilities";
 import type { RuntimeRunner } from "@tuvren/core/runner";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
-import {
-  createDuplexSessionBinding,
-  type SessionOutboundFrame,
-} from "@tuvren/host-session";
-import {
-  createRemoteClientSession,
-  type RemoteClientSessionSink,
-  type RemoteSessionClock,
+import { createDuplexSessionBinding } from "@tuvren/host-session";
+import type { SessionOutboundFrame } from "@tuvren/host-session";
+import { createRemoteClientSession } from "@tuvren/remote-session";
+import type {
+  RemoteClientSessionSink,
+  RemoteSessionClock,
 } from "@tuvren/remote-session";
 import {
   createRunnerRegistry,
@@ -66,7 +63,7 @@ import {
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const HOST_SESSION_JSON_SCHEMA_DIR = resolve(
   REPO_ROOT,
   "spec/host/session/artifacts/json-schema"
@@ -166,7 +163,9 @@ function drainFramesInBackground(
 
   // Fire-and-forget: the only observable effect is `sink` growing, which
   // callers poll for via `waitFor`.
-  loop.catch(() => undefined);
+  loop.catch(() => {
+    // The background drain has no result channel; callers observe collected frames.
+  });
 }
 
 function eventFramePayloads(
@@ -522,7 +521,7 @@ function loadHostSessionFrameValidators(): Promise<HostSessionFrameValidators> {
       const schema = JSON.parse(
         await readFile(
           resolve(HOST_SESSION_JSON_SCHEMA_DIR, entry.name),
-          "utf8"
+          "utf-8"
         )
       ) as AnySchema;
       ajv.addSchema(schema);
@@ -605,7 +604,9 @@ export async function runCancelWhilePaused(): Promise<AdapterProjection> {
       frames.push(step.value);
     }
   })();
-  drainLoop.catch(() => undefined);
+  drainLoop.catch(() => {
+    // The cancellation scenario observes closure through the handle and frame state.
+  });
 
   const resultPromise = handle.awaitResult();
   await waitFor(() => handle.status().phase === "paused");
@@ -837,7 +838,7 @@ function findPersistedToolResultOutput(
     if (!isRecord(message) || message.role !== "tool") {
       continue;
     }
-    const parts = message.parts;
+    const { parts } = message;
     if (!Array.isArray(parts)) {
       continue;
     }

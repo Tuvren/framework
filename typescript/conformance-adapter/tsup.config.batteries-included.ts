@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
 import { defineConfig } from "tsup";
 
-const configDir = dirname(fileURLToPath(import.meta.url));
+const configDir = import.meta.dirname;
 
 const SQLITE_MIGRATIONS_SRC = join(
   configDir,

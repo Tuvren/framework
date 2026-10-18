@@ -15,7 +15,8 @@
  */
 
 import { createMemoryBackend } from "@tuvren/backend-memory";
-import { type HashString as CoreHashString, isHashString } from "@tuvren/core";
+import { isHashString } from "@tuvren/core";
+import type { HashString as CoreHashString } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { ContextManifest, InputSignal } from "@tuvren/core/execution";
 import type { ToolCallPart, TuvrenMessage } from "@tuvren/core/messages";
@@ -26,12 +27,12 @@ import type {
   RuntimeRunner,
 } from "@tuvren/core/runner";
 import type { ToolRegistry, TuvrenToolDefinition } from "@tuvren/core/tools";
-import {
-  decodeDeterministicKernelRecord,
-  type RunRecord,
-  type RuntimeKernel,
-  type RuntimeKernelRunLiveness,
-  type TurnTreeManifest,
+import { decodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type {
+  RunRecord,
+  RuntimeKernel,
+  RuntimeKernelRunLiveness,
+  TurnTreeManifest,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import type { TuvrenProvider } from "@tuvren/provider-api";
@@ -112,6 +113,15 @@ export function createConformanceKernelHarness(options?: {
       const manifest = await this.readBranchManifest(branchId);
       return readMessagesFromManifest(kernel, manifest);
     },
+    async readBranchRuns(branchId) {
+      return await backend.transact((tx) =>
+        tx.runs
+          .listByBranch(branchId)
+          .then((storedRuns) =>
+            storedRuns.map((storedRun) => decodeStoredRun(storedRun))
+          )
+      );
+    },
     async readBranchRuntimeStatus(branchId) {
       const manifest = await this.readBranchManifest(branchId);
       const runtimeStatusHash = manifest["runtime.status"];
@@ -122,15 +132,6 @@ export function createConformanceKernelHarness(options?: {
 
       const payload = await kernel.store.get(runtimeStatusHash);
       return payload === null ? null : decodeDeterministicKernelRecord(payload);
-    },
-    async readBranchRuns(branchId) {
-      return await backend.transact((tx) =>
-        tx.runs
-          .listByBranch(branchId)
-          .then((storedRuns) =>
-            storedRuns.map((storedRun) => decodeStoredRun(storedRun))
-          )
-      );
     },
     async readRunningStagedMessages(branchId) {
       const runs = await this.readBranchRuns(branchId);
@@ -318,8 +319,8 @@ export function createRuntimeWithReactRunner(): ReturnType<
   return createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: reactRunner.id,
-    runnerRegistry: createRunnerRegistry([reactRunner]),
     kernel: createConformanceKernelHarness().kernel,
+    runnerRegistry: createRunnerRegistry([reactRunner]),
   });
 }
 

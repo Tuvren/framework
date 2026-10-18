@@ -29,7 +29,6 @@ import {
 
 import { createReActRunner } from "../../runners/react/src/index.ts";
 import {
-  type AdapterProjection,
   AGENT_NAME,
   assistantText,
   assistantToolCalls,
@@ -40,8 +39,11 @@ import {
   createScenarioProvider,
   createStaticRunner,
   RUNNER_ID,
-  type ScenarioToolCall,
   textSignal,
+} from "./framework-adapter-runtime.ts";
+import type {
+  AdapterProjection,
+  ScenarioToolCall,
 } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterRunnerDependencies {
@@ -142,8 +144,8 @@ export function createFrameworkAdapterRunner(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: reactRunner.id,
-      runnerRegistry: createRunnerRegistry([reactRunner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([reactRunner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -174,24 +176,24 @@ export function createFrameworkAdapterRunner(
 
     return {
       evidence: {
-        runner: {
-          phase: handle.status().phase,
-        },
         hooks: {
           afterIteration: hooks.afterIteration,
           aroundModel: hooks.aroundModel,
           aroundModelTrace: hooks.aroundModelTrace,
           aroundTool: hooks.aroundTool,
           aroundToolTrace: hooks.aroundToolTrace,
-          terminalMutationAttempted: hooks.terminalMutationAttempted,
-          terminalMutationDurableText: readAssistantText(messages),
           beforeIteration: hooks.beforeIteration,
           phaseTrace: hooks.phaseTrace,
+          terminalMutationAttempted: hooks.terminalMutationAttempted,
+          terminalMutationDurableText: readAssistantText(messages),
         },
         provider: {
           generate: {
             callCount: generateCalls,
           },
+        },
+        runner: {
+          phase: handle.status().phase,
         },
         tool: {
           execution: {
@@ -200,24 +202,24 @@ export function createFrameworkAdapterRunner(
         },
       },
       result: {
-        runner: {
-          phase: handle.status().phase,
-        },
         hooks: {
           afterIteration: hooks.afterIteration,
           aroundModel: hooks.aroundModel,
           aroundModelTrace: hooks.aroundModelTrace,
           aroundTool: hooks.aroundTool,
           aroundToolTrace: hooks.aroundToolTrace,
-          terminalMutationAttempted: hooks.terminalMutationAttempted,
-          terminalMutationDurableText: readAssistantText(messages),
           beforeIteration: hooks.beforeIteration,
           phaseTrace: hooks.phaseTrace,
+          terminalMutationAttempted: hooks.terminalMutationAttempted,
+          terminalMutationDurableText: readAssistantText(messages),
         },
         provider: {
           generate: {
             callCount: generateCalls,
           },
+        },
+        runner: {
+          phase: handle.status().phase,
         },
         tool: {
           execution: {
@@ -342,13 +344,13 @@ export function createFrameworkAdapterRunner(
       aroundModel: {
         finalAssistantText: readResultAssistantText(result),
       },
-      runner: {
-        resolutionType: result.resolution.type,
-      },
       provider: {
         generate: {
           callCount: generateCalls,
         },
+      },
+      runner: {
+        resolutionType: result.resolution.type,
       },
     };
 
@@ -369,7 +371,9 @@ export function createFrameworkAdapterRunner(
       createRunnerExecutionContext({
         config: {
           ...(loopPolicy === undefined ? {} : { loopPolicy }),
-          model: createScenarioProvider(providerResponses, () => undefined),
+          model: createScenarioProvider(providerResponses, () => {
+            // Direct runner scenarios intentionally discard provider observations.
+          }),
           name: AGENT_NAME,
         },
       })
@@ -390,11 +394,11 @@ export function createFrameworkAdapterRunner(
         },
       },
       result: {
+        error,
         runner: {
           errorCode: error?.code,
           resolutionType: result.resolution.type,
         },
-        error,
       },
     };
   }
@@ -431,7 +435,9 @@ export function createFrameworkAdapterRunner(
         decisions,
       },
       config: {
-        model: createScenarioProvider(providerResponses, () => undefined),
+        model: createScenarioProvider(providerResponses, () => {
+          // Resume scenarios intentionally discard provider observations.
+        }),
         name: AGENT_NAME,
       },
       messages: [
@@ -455,15 +461,15 @@ export function createFrameworkAdapterRunner(
         },
       },
       result: {
+        error:
+          result.resolution.type === "fail"
+            ? dependencies.errorToEnvelope(result.resolution.error)
+            : undefined,
         runner: {
           approvalDecisionCallIds: decisions.map((decision) => decision.callId),
           pendingToolCallIds: pendingToolCalls.map((call) => call.callId),
           resolutionType: result.resolution.type,
         },
-        error:
-          result.resolution.type === "fail"
-            ? dependencies.errorToEnvelope(result.resolution.error)
-            : undefined,
       },
     };
   }
@@ -484,6 +490,7 @@ export function createFrameworkAdapterRunner(
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(() => ({
           messages: [assistantText(finalText)],
@@ -493,7 +500,6 @@ export function createFrameworkAdapterRunner(
           },
         })),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -560,7 +566,7 @@ function readOptionalString(
 function readLoopPolicyOptional(
   scenario: Record<string, unknown>
 ): LoopPolicy | undefined {
-  const loopPolicy = scenario.loopPolicy;
+  const { loopPolicy } = scenario;
 
   if (loopPolicy === undefined) {
     return undefined;
@@ -583,15 +589,17 @@ function readIterationDecision(
   record: Record<string, unknown>
 ): IterationDecision {
   const continueDecision = record.continue;
-  const executeTools = record.executeTools;
-  const reason = record.reason;
+  const { executeTools } = record;
+  const { reason } = record;
 
   if (typeof continueDecision !== "boolean") {
-    throw new Error("runner.execute.loopPolicy.continue must be a boolean");
+    throw new TypeError("runner.execute.loopPolicy.continue must be a boolean");
   }
 
   if (typeof executeTools !== "boolean") {
-    throw new Error("runner.execute.loopPolicy.executeTools must be a boolean");
+    throw new TypeError(
+      "runner.execute.loopPolicy.executeTools must be a boolean"
+    );
   }
 
   return {
@@ -644,7 +652,7 @@ function readAssistantText(messages: readonly unknown[]): string | undefined {
       continue;
     }
 
-    const parts = message.parts;
+    const { parts } = message;
 
     if (!Array.isArray(parts)) {
       continue;

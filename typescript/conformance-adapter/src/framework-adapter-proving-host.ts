@@ -67,8 +67,8 @@ export function createFrameworkAdapterProvingHost(): {
         return {
           result: {
             provingHost: {
-              headlessRecordKinds: parseJsonlKinds(record.stdout),
               headlessOutputs: parseJsonlOutputs(record.stdout),
+              headlessRecordKinds: parseJsonlKinds(record.stdout),
               replay: JSON.parse(replay.stdout) as unknown,
               transcriptRecordKinds: parseJsonlKinds(
                 await readFile(transcriptPath, "utf8")

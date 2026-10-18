@@ -36,10 +36,8 @@ import type {
 } from "@tuvren/core/telemetry";
 import type { TuvrenPrompt } from "@tuvren/provider-api";
 import { createAiSdkProviderBridge } from "@tuvren/provider-bridge-ai-sdk";
-import {
-  createReplTranscriptWriter,
-  type ReplTranscriptHeader,
-} from "@tuvren/repl-host";
+import { createReplTranscriptWriter } from "@tuvren/repl-host";
+import type { ReplTranscriptHeader } from "@tuvren/repl-host";
 import {
   createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
@@ -150,8 +148,8 @@ export async function runSecretIsolationRuntimeApi(
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
@@ -179,8 +177,8 @@ export async function runSecretIsolationRuntimeApi(
       },
       providerMode: "aimock-openai",
     },
-    recordedAtMs: 1,
     recordKind: "header",
+    recordedAtMs: 1,
     runtimeVersion: "conformance",
     v: 1,
   };
@@ -229,8 +227,8 @@ export async function runSecretIsolationTelemetry(
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
     telemetry: capture.sink,
   });
   const thread = await runtime.createThread({});
@@ -414,16 +412,14 @@ export async function runSecretIsolationProviderBridge(
 
   return {
     result: {
-      generate: {
-        ...(generateAiSdkBridge === undefined
+      generate:
+        generateAiSdkBridge === undefined
           ? {}
-          : { aiSdkBridge: generateAiSdkBridge }),
-      },
-      stream: {
-        ...(streamAiSdkBridge === undefined
+          : { aiSdkBridge: generateAiSdkBridge },
+      stream:
+        streamAiSdkBridge === undefined
           ? {}
-          : { aiSdkBridge: streamAiSdkBridge }),
-      },
+          : { aiSdkBridge: streamAiSdkBridge },
     },
   };
 }
@@ -507,8 +503,8 @@ async function captureScopeSurfaces(
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
     scope,
     telemetry: capture.sink,
   });
@@ -531,8 +527,8 @@ async function captureScopeSurfaces(
       providerMode: "aimock-openai",
       scope,
     },
-    recordedAtMs: 1,
     recordKind: "header",
+    recordedAtMs: 1,
     runtimeVersion: "conformance",
     v: 1,
   };
@@ -626,7 +622,7 @@ function findToolResultPart(
     if (!isRecord(message) || message.role !== "tool") {
       continue;
     }
-    const parts = message.parts;
+    const { parts } = message;
     if (!Array.isArray(parts)) {
       continue;
     }
@@ -695,8 +691,8 @@ export async function runSanitizeSeamToolResult(
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({

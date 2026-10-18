@@ -39,11 +39,8 @@ import {
   createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
-import {
-  createWsSessionTransport,
-  type WsSessionTransport,
-  type WsSocketSink,
-} from "@tuvren/stream-ws";
+import { createWsSessionTransport } from "@tuvren/stream-ws";
+import type { WsSessionTransport, WsSocketSink } from "@tuvren/stream-ws";
 
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 import {
@@ -94,7 +91,6 @@ function makeOkEndpoint(
   content: unknown
 ): AttachedClientEndpoint {
   return {
-    endpointId,
     advertisedCapabilities: [
       {
         capabilityId,
@@ -111,6 +107,7 @@ function makeOkEndpoint(
         leaseToken: envelope.leaseToken,
       });
     },
+    endpointId,
   };
 }
 
@@ -121,7 +118,6 @@ function makeClientMcpEndpoint(
   content: unknown
 ): AttachedClientEndpoint {
   return {
-    endpointId,
     advertisedCapabilities: [
       {
         capabilityId,
@@ -139,6 +135,7 @@ function makeClientMcpEndpoint(
         leaseToken: envelope.leaseToken,
       });
     },
+    endpointId,
   };
 }
 
@@ -147,7 +144,6 @@ function makeStaleEndpoint(
   capabilityId: string
 ): AttachedClientEndpoint {
   return {
-    endpointId,
     advertisedCapabilities: [
       {
         capabilityId,
@@ -164,6 +160,7 @@ function makeStaleEndpoint(
         leaseToken: "stale-token-for-conformance", // will never match the envelope token
       });
     },
+    endpointId,
   };
 }
 
@@ -177,15 +174,15 @@ async function runTurn(
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
     branchId: thread.branchId,
     config: {
-      name: AGENT_NAME,
       clientEndpoints: endpoints,
+      name: AGENT_NAME,
       ...(clientEndpointBoundary === undefined
         ? {}
         : { clientEndpointBoundary }),
@@ -283,22 +280,39 @@ export async function runTuvrenClientLifecycle(): Promise<AdapterProjection> {
   // Resolve the binding for the client-side MCP capability via the binding resolver
   const resolver = createBindingResolver();
   const mcpBinding = resolver.resolveFromToolDefinition({
-    name: CLIENT_MCP_CAP,
     description: "client mcp",
-    inputSchema: { type: "object" },
     execute: () => Promise.resolve(undefined),
+    inputSchema: { type: "object" },
     metadata: { clientEndpointId: "ep-mcp", mcpServerName: "az006-mcp-server" },
+    name: CLIENT_MCP_CAP,
   });
 
   return {
     result: {
       tuvrenClient: {
+        clientMcp: {
+          bindingEndpointKind: mcpBinding.endpoint.kind,
+          bindingExecutionClass: mcpBinding.executionClass,
+          status: mcpRun.result.status,
+          toolAuditCount: mcpAuditEvents.length,
+          toolResultCount: mcpResultEvents.length,
+        },
         normal: {
           status: normalRun.result.status,
-          toolStartCount: normalStartEvents.length,
-          toolResultCount: normalResultEvents.length,
           toolAuditCount: normalAuditEvents.length,
+          toolResultCount: normalResultEvents.length,
           toolResultIsError: normalResultEvent?.isError === true,
+          toolStartCount: normalStartEvents.length,
+        },
+        stale: {
+          staleContentInResult:
+            typeof staleOutput === "object" &&
+            staleOutput !== null &&
+            "staleContent" in staleOutput &&
+            staleOutput.staleContent === true,
+          toolResultIsError: staleResultEvent?.isError === true,
+          toolResultOutputCode:
+            typeof staleOutput?.code === "string" ? staleOutput.code : null,
         },
         unavailable: {
           status: unavailableRun.result.status,
@@ -307,23 +321,6 @@ export async function runTuvrenClientLifecycle(): Promise<AdapterProjection> {
             typeof unavailableOutput?.code === "string"
               ? unavailableOutput.code
               : null,
-        },
-        stale: {
-          toolResultIsError: staleResultEvent?.isError === true,
-          toolResultOutputCode:
-            typeof staleOutput?.code === "string" ? staleOutput.code : null,
-          staleContentInResult:
-            typeof staleOutput === "object" &&
-            staleOutput !== null &&
-            "staleContent" in staleOutput &&
-            staleOutput.staleContent === true,
-        },
-        clientMcp: {
-          status: mcpRun.result.status,
-          toolResultCount: mcpResultEvents.length,
-          toolAuditCount: mcpAuditEvents.length,
-          bindingExecutionClass: mcpBinding.executionClass,
-          bindingEndpointKind: mcpBinding.endpoint.kind,
         },
       },
     },
@@ -388,8 +385,8 @@ export async function runTuvrenClientNetworkReconnectRedelivery(): Promise<Adapt
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const thread = await runtime.createThread({});
 
@@ -467,11 +464,11 @@ export async function runTuvrenClientNetworkReconnectRedelivery(): Promise<Adapt
     if (message.kind !== "frame" || !isRecord(message.frame)) {
       return;
     }
-    const frame = message.frame;
+    const { frame } = message;
     if (frame.kind !== "client_invocation" || !isRecord(frame.invocation)) {
       return;
     }
-    const invocation = frame.invocation;
+    const { invocation } = frame;
     const callId = String(invocation.callId);
     invocationSightingCount.set(
       callId,
@@ -623,8 +620,8 @@ export async function runTuvrenClientResultDurability(): Promise<AdapterProjecti
   const writerRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: writerKernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const thread = await writerRuntime.createThread({});
 
@@ -669,8 +666,8 @@ export async function runTuvrenClientResultDurability(): Promise<AdapterProjecti
   const readerRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: readerKernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const read = await readerRuntime.readBranchMessages({
     branchId: thread.branchId,

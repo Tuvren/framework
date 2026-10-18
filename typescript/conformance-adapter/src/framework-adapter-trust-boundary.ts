@@ -83,7 +83,7 @@ function readToolResults(messages: readonly unknown[]): ObservedToolResult[] {
       // A validation-error tool result carries its stable code on
       // `output.code` (with `output.error` holding the human message); see
       // createValidationErrorToolResult in the runtime.
-      const output = part.output;
+      const { output } = part;
       const errorCode =
         isRecord(output) && typeof output.code === "string"
           ? output.code
@@ -148,8 +148,8 @@ export async function runTrustBoundaryApprovalNonBypassable(
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
@@ -170,7 +170,9 @@ export async function runTrustBoundaryApprovalNonBypassable(
 
   // No decision is supplied; release the paused turn so the harness tears down.
   handle.cancel();
-  await handle.awaitResult().catch(() => undefined);
+  await handle.awaitResult().catch(() => {
+    // Cancellation rejection is expected while releasing the paused harness turn.
+  });
 
   return {
     result: {
@@ -242,8 +244,8 @@ export async function runTrustBoundaryLocalToolInput(
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({

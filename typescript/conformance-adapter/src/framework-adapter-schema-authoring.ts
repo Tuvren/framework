@@ -15,18 +15,13 @@
  */
 
 import type { CustomSchema } from "@tuvren/core/tools";
-import {
-  asSchema,
-  defineTool,
-  type FlexibleSchema,
-  jsonSchema,
-  schemaSymbol,
-} from "@tuvren/sdk";
+import { asSchema, defineTool, jsonSchema, schemaSymbol } from "@tuvren/sdk";
+import type { FlexibleSchema } from "@tuvren/sdk";
 
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export function createFrameworkAdapterSchemaAuthoring() {
-  return { runSchemaAuthoringRoute, runSchemaAuthoringDefineTool };
+  return { runSchemaAuthoringDefineTool, runSchemaAuthoringRoute };
 }
 
 // ── Input reading ─────────────────────────────────────────────────────────────
@@ -35,11 +30,11 @@ function readBranch(input: unknown): string {
   if (typeof input !== "object" || input === null) {
     return "json-schema-object";
   }
-  const checkInput = (input as Record<string, unknown>).checkInput;
+  const { checkInput } = input as Record<string, unknown>;
   if (typeof checkInput !== "object" || checkInput === null) {
     return "json-schema-object";
   }
-  const branch = (checkInput as Record<string, unknown>).branch;
+  const { branch } = checkInput as Record<string, unknown>;
   return typeof branch === "string" ? branch : "json-schema-object";
 }
 
@@ -69,11 +64,11 @@ function runSchemaAuthoringRoute(input: unknown): Promise<AdapterProjection> {
     result: {
       schemaAuthoring: {
         hasSchemaSymbol: normalized[schemaSymbol] === true,
+        hasValidate: validateFn !== undefined,
         jsonSchemaIsBoolean,
         jsonSchemaType:
           typeof jsonSchemaType === "string" ? jsonSchemaType : null,
         jsonSchemaValue: jsonSchemaIsBoolean ? jsonSchemaValue : null,
-        hasValidate: validateFn !== undefined,
         validateSuccess,
       },
     },
@@ -84,10 +79,10 @@ function runSchemaAuthoringDefineTool(
   _input: unknown
 ): Promise<AdapterProjection> {
   const tool = defineTool({
-    name: "test-tool",
     description: "conformance test tool",
-    inputSchema: { type: "string" },
     execute: (_in) => "done",
+    inputSchema: { type: "string" },
+    name: "test-tool",
   });
 
   // defineTool always assigns a CustomSchema object to inputSchema; the wider
@@ -106,9 +101,9 @@ function runSchemaAuthoringDefineTool(
     result: {
       schemaAuthoring: {
         defineTool: {
-          name: tool.name,
           jsonSchemaType:
             typeof jsonSchemaType === "string" ? jsonSchemaType : null,
+          name: tool.name,
           validateSuccess: validateResult.valid,
         },
       },
@@ -121,11 +116,12 @@ function runSchemaAuthoringDefineTool(
 function buildBranchSchema(branch: string): FlexibleSchema<unknown> {
   switch (branch) {
     // Branch 1: already-wrapped Schema — identity pass-through
-    case "already-wrapped":
+    case "already-wrapped": {
       return jsonSchema<unknown>({ type: "string" });
+    }
 
     // Branch 2: Zod v4 — detected via `_zod` property
-    case "zod-v4":
+    case "zod-v4": {
       return {
         _zod: {},
         safeParse(value: unknown) {
@@ -135,9 +131,10 @@ function buildBranchSchema(branch: string): FlexibleSchema<unknown> {
           return { type: "number" };
         },
       } as unknown as FlexibleSchema<unknown>;
+    }
 
     // Branch 3: Standard Schema (non-zod vendor)
-    case "standard-non-zod":
+    case "standard-non-zod": {
       return {
         "~standard": {
           vendor: "valibot",
@@ -146,12 +143,13 @@ function buildBranchSchema(branch: string): FlexibleSchema<unknown> {
           },
         },
       } as unknown as FlexibleSchema<unknown>;
+    }
 
     // Branch 4: Zod v3 compat — ADR-0038 ambiguous case.
     // ~standard.validate is rigged to fail; safeParse succeeds.
     // Correct routing via the Zod path (safeParse) produces validateSuccess: true.
     // Incorrect routing via Standard path would produce validateSuccess: false.
-    case "standard-zod-v3":
+    case "standard-zod-v3": {
       return {
         "~standard": {
           vendor: "zod",
@@ -165,22 +163,27 @@ function buildBranchSchema(branch: string): FlexibleSchema<unknown> {
           return { success: true as const, data: value };
         },
       } as unknown as FlexibleSchema<unknown>;
+    }
 
     // Branch 5: lazy function
-    case "lazy":
+    case "lazy": {
       return (() =>
         jsonSchema<unknown>({ type: "boolean" })) as FlexibleSchema<unknown>;
+    }
 
     // Branch 6: bare TuvrenJsonSchema — boolean true
-    case "json-schema-bool-true":
+    case "json-schema-bool-true": {
       return true as unknown as FlexibleSchema<unknown>;
+    }
 
     // Branch 6: bare TuvrenJsonSchema — boolean false
-    case "json-schema-bool-false":
+    case "json-schema-bool-false": {
       return false as unknown as FlexibleSchema<unknown>;
+    }
 
     // Branch 6: bare TuvrenJsonSchema — object form (default)
-    default:
+    default: {
       return { type: "object" } as FlexibleSchema<unknown>;
+    }
   }
 }
