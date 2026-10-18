@@ -98,7 +98,7 @@ tickets:
       evidence: "Assert the type-aware backend runs every installed, enabled, as-shipped type-aware rule with complete equality of rules, options, severities, environment, globals, plugins, settings, and categories and with no local override or project-resolution error. Treat 55 type-aware rules in the measured 474-rule installed preset, alongside 419 non-type-aware rules, as pinned historical evidence rather than a future quota. Assert the admitted BT target has top-level options.forwardAllArgs: false, the exact canonical command shape, and workspace cwd; actual --debug=files and native JSON selections are complete and nonempty, source-integrity coverage remains independent of formatter ignores, fresh JSON-only code absence is checked outside cached results, and explicit project inputs name the checker helpers when they override defaults. Pin classifier regressions for the selected default configuration and both omitted legacy command forms. Against the real pinned Nx executor, prove literal false keeps child argv unchanged for ordinary --args, arguments after --, and an unknown scalar option; use omission as the negative child-argv control. Reject top-level true or malformed forwarding values and all nested forwarding keys, including nested true, while preserving the rejection of configured args, __unparsed__, unknown options, interpolation, and extra flags. Prove Oxlint and JSON checker failures still propagate unchanged. Do not claim protection against an explicit --forwardAllArgs=true executor override. For each admitted path, reconcile the ledger against fresh diagnostics and record whether the legacy directive has a measured native counterpart. When no equivalent native diagnostic fires, record the no-counterpart disposition. When one fires, preserve the original reason for the justified native counterpart or prove the actual native issue is fixed. Prove the same commit removes legacy Biome directives and switches lint coverage. No admitted path contains a biome-ignore comment after the commit. Paths outside this admission retain needed original directives and Biome coverage. Scoped tests and the full lint gate pass; admitted paths are absent from tools/biome-coverage/bt.json, while every remaining entry retains Biome lint coverage. Assert no lint policy or configuration override was introduced and the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: in_progress
+    status: done
 decisions:
   - id: OD-11
     question: Should KRT-BT004 convert internal runtime interface methods to function-valued properties when the shipped native preset requires it?
@@ -127,3 +127,81 @@ decisions:
       date: 2026-10-18
       summary: TypeChecker reachability found none of the 63 converted method signatures reachable from supported runtime, core, or SDK exports; ADR-0057 excludes the internal runtime shape from stable guarantees. Apply the required internal function-property convention with direct patch changeset coverage and reassess only if later cleanup changes supported exports or behavior.
       chosen: Convert internal methods
+closeout:
+  tickets_completed: [KRT-BT001, KRT-BT002, KRT-BT003, KRT-BT004]
+  tickets_deferred: []
+  points_completed: 24
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-BT: the framework runtime satisfies the shipped native preset, preserves initialization and runtime semantics through reviewed module splits, reconciles all 59 suppression identities, and gains atomic native code/JSON lint ownership with isolated caller arguments and dependency-complete cache inputs."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tasks
+      item: "A34/A19 delivery correction: the final reviewed implementation spans 168 paths and 46,091 raw diff lines from the planned base. Produce the authorized whole-file Stage 4 delivery re-slice before any aggregate implementation PR or panel; preserve milestone commits, reviews, evidence, directive-coupled admission ownership and final gate receipts."
+    - stage: tasks
+      item: "EPIC-CB suppression aggregation should consume .constitution/evidence/KRT-BT004/suppressions.json, preserving its links to the KRT-BT002 baseline and the distinction between 30 prior behavior-proven removals and 29 atomic admission removals."
+    - stage: tasks
+      item: "Track typescript/runtime/test/capability-policy-engine.test.ts as inherited brownfield file-size debt: it remains byte-identical at 1,905 lines and was deliberately not expanded or refactored by this epic."
+  follow_ups:
+    - "Complete the A34/A19 Stage 4 whole-file delivery re-slice before opening the aggregate implementation PR or starting its review panel."
+    - "Have EPIC-CB aggregate the final KRT-BT004 suppression ledger without replacing its historical identity evidence with final counts."
+    - "Schedule the byte-identical capability-policy-engine.test.ts file-size debt in an owned future refactor."
+  code_decisions:
+    - summary: "Use internal function-valued properties where the shipped method-signature rule requires strict variance; TypeChecker reachability found no supported runtime, core or SDK export exposure, and direct patch changeset coverage records the internal change."
+      kind: convention
+      paths:
+        - typescript/runtime/src/lib/binding-resolver.ts
+        - typescript/runtime/src/lib/capability-policy-engine.ts
+      commit: af9edf3f0a3ec8a6de23b9264e957a5026e77663
+    - summary: "Lift synchronous test callbacks into required Promise ports with native Promise.try.bind, explicit undefined receiver and variadic arguments, preserving sync throws, thenables, receiver behavior and Promise<Awaited<T>>."
+      kind: pattern
+      paths:
+        - typescript/runtime/test/runtime-core-test-helpers.ts
+        - typescript/runtime/test/fake-kernel.ts
+        - typescript/runtime/test/orchestration-runtime-runner-helpers.ts
+      commit: ef5180fae9b48d3d9b3205e77b38ef3077d95388
+    - summary: "Own lazy orchestration streams, persistence-host construction and runner-result validation in dependency-safe focused modules while retaining their original bodies, ordering and supported package surface."
+      kind: pattern
+      paths:
+        - typescript/runtime/src/lib/orchestration-runtime-lazy-stream.ts
+        - typescript/runtime/src/lib/runtime-core-hosts-persistence.ts
+        - typescript/runtime/src/lib/runtime-core-runner-result.ts
+      commit: 0517cf7a1930252498af8483d41c8b6e4615a242
+    - summary: "Keep construction contracts and defaults in a runtime options owner and delegate handle/session/loop coordination to an inert private controller; the runtime shell retains host wiring, WeakMaps, bounds, timers and observability."
+      kind: pattern
+      paths:
+        - typescript/runtime/src/lib/runtime-core-options.ts
+        - typescript/runtime/src/lib/runtime-core-execution-controller.ts
+        - typescript/runtime/src/lib/runtime-core.ts
+      commit: 0686317cd63b7c7abe83e4d868add34690b092e6
+    - summary: "Split tool execution into validation, staging, single-call, batch and resolution owners with type-only reverse edges, one shared validator cache and one dependency-free staging-error class consumed directly by its constructor and identity check."
+      kind: pattern
+      paths:
+        - typescript/runtime/src/lib/tool-execution-validation.ts
+        - typescript/runtime/src/lib/tool-execution-staging.ts
+        - typescript/runtime/src/lib/tool-execution-single.ts
+        - typescript/runtime/src/lib/tool-execution-batch.ts
+        - typescript/runtime/src/lib/tool-execution-resolution.ts
+        - typescript/runtime/src/lib/tool-execution-errors.ts
+      commit: 121bf5d58110f3f363f7325ea7ed1c20c3781dba
+    - summary: "Share run-liveness fixtures through the same base fake-kernel state and split recovery helpers and guard scenarios without test-to-test imports, duplicated staging logic or moved lint protection."
+      kind: pattern
+      paths:
+        - typescript/runtime/test/fake-run-liveness-kernel.ts
+        - typescript/runtime/test/runtime-core-recovery-test-helpers.ts
+        - typescript/runtime/test/runtime-core.recovery-guards.test.ts
+      commit: ca5cf7208189994fc598fdc9fadc332b2dfd9dcf
+    - summary: "Accept explicit top-level forwardAllArgs:false for canonical native lint targets while preserving legacy omission and rejecting malformed, nested or configured forwarding; exercise actual Nx child argv and serial checker failure propagation."
+      kind: convention
+      paths:
+        - tools/scripts/lib/native-lint-routing.ts
+        - tools/scripts/lib/native-lint-routing-argv.test.ts
+      commit: 896c5de1cb6af35feb9d1e817552adfff370e47b
+    - summary: "When a type-aware lint target declares project-level inputs, preserve every inherited checker/configuration input and include ^production so dependency-only type changes invalidate the Nx cache."
+      kind: convention
+      paths:
+        - typescript/runtime/project.json
+      commit: 52322ca372e56b14ec7cf3d2edb21b2c152a990f
+  settled: []
