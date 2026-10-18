@@ -449,6 +449,16 @@ interface BoundsTurnState {
   wallClockTimer?: ReturnType<typeof setTimeout>;
 }
 
+// Resolves the host-supplied correlation Scope, defaulting single-tenant hosts
+// to the default Scope and rejecting an empty binding the same way the durable
+// backends do (assertScope), so telemetry and transcripts always carry a valid
+// Scope identifier.
+const resolveRuntimeScope = (scope: Scope | undefined): Scope => {
+  const resolved = scope ?? DEFAULT_SCOPE;
+  assertScope(resolved);
+  return resolved;
+};
+
 /**
  * The engine implementation of the host-facing `TuvrenRuntime` contract.
  *
@@ -1528,16 +1538,6 @@ class RuntimeCore implements TuvrenRuntime {
   }
 }
 
-// Resolves the host-supplied correlation Scope, defaulting single-tenant hosts
-// to the default Scope and rejecting an empty binding the same way the durable
-// backends do (assertScope), so telemetry and transcripts always carry a valid
-// Scope identifier.
-function resolveRuntimeScope(scope: Scope | undefined): Scope {
-  const resolved = scope ?? DEFAULT_SCOPE;
-  assertScope(resolved);
-  return resolved;
-}
-
 /**
  * Creates the engine implementation of the host-facing `TuvrenRuntime`
  * contract over a kernel.
@@ -1555,8 +1555,8 @@ function resolveRuntimeScope(scope: Scope | undefined): Scope {
  *   `kernel.run-liveness` extension, or a validation error when a numeric
  *   option (bounds, parallelism, budgets) is out of range.
  */
-export function createTuvrenRuntime(
+export const createTuvrenRuntime = (
   options: RuntimeCoreOptions
-): TuvrenRuntime {
+): TuvrenRuntime => {
   return new RuntimeCore(options);
-}
+};
