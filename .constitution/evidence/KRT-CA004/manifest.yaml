@@ -31,7 +31,7 @@ files:
     bytes: 8033
     role: measurement
   - path: M30-testkit-readiness.json
-    sha256: bbb0ae5a064faccebc5495cf7a8d0c59d3f82a583ee48926278f38f1bd77fb22
-    bytes: 9811
+    sha256: 96c31f361e09619da10cb13813a09d2f5b120123bb334e61a75c34ae46947fd1
+    bytes: 9966
     role: measurement
 pass_criteria: The complete core, SDK, four streaming, MCP and testkit admission selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics and no unused directive; every contract-preserving native exception is measured and reasoned; each admitted root removes its legacy Biome directives in the same change as canonical target and coverage transfer; public API, explicitly protected Promise identities, queue and iterator behavior, MCP pagination, testkit fixture lookup and telemetry capture, transport lifecycle, event and error ordering, schema boundaries and release metadata remain unchanged; permitted incidental internal Promise scheduling normalization and the M30 service-lifecycle deviation are recorded; focused and repository gates pass. KRT-CA004 remains in progress until all later package admissions complete.
