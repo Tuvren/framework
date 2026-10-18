@@ -59,16 +59,16 @@ function buildEncryptedRuntime(keys: Map<string, Uint8Array>): {
   });
   const framework = createTuvrenRuntime({
     defaultRunnerId: "fake",
+    kernel,
+    payloadCodec: createAesGcmPayloadCodec({
+      keyring: { resolve: (keyRef) => keys.get(keyRef) },
+    }),
     runnerRegistry: createRunnerRegistry([
       createStaticRunner(async () => ({
         messages: [assistantText(PROVIDER_SECRET)],
         resolution: { reason: "done", type: "end_turn" },
       })),
     ]),
-    kernel,
-    payloadCodec: createAesGcmPayloadCodec({
-      keyring: { resolve: (keyRef) => keys.get(keyRef) },
-    }),
     scope: SCOPE,
   });
   return { framework, kernel };
@@ -93,7 +93,7 @@ async function readHeadMessageHashes(
 }
 
 function bytesContainText(bytes: Uint8Array, text: string): boolean {
-  return Buffer.from(bytes).includes(Buffer.from(text, "utf8"));
+  return Buffer.from(bytes).includes(Buffer.from(text, "utf-8"));
 }
 
 describe("KRT-BF007 context-engineering rewrite crypto-shredding", () => {

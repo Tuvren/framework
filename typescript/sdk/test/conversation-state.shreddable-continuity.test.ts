@@ -45,10 +45,8 @@ import {
   createStaticRunner,
 } from "../../runtime/test/orchestration-runtime-runner-helpers.ts";
 import { textSignal } from "../../runtime/test/runtime-core-test-helpers.ts";
-import {
-  createAesGcmPayloadCodec,
-  type PayloadKeyring,
-} from "../src/lib/payload-codec.js";
+import { createAesGcmPayloadCodec } from '../src/lib/payload-codec.js';
+import type { PayloadKeyring } from '../src/lib/payload-codec.js';
 
 const SCOPE = "tenant.conversation-state-continuity";
 // A provider-namespaced continuity artifact (e.g. a Google thought signature or
@@ -86,13 +84,13 @@ function buildRuntime(options: { keys?: Map<string, Uint8Array> }): {
   });
   const framework = createTuvrenRuntime({
     defaultRunnerId: "fake",
+    kernel,
     runnerRegistry: createRunnerRegistry([
       createStaticRunner(async () => ({
         messages: [assistantWithContinuity("here is your answer")],
         resolution: { reason: "done", type: "end_turn" },
       })),
     ]),
-    kernel,
     scope: SCOPE,
     ...(options.keys === undefined
       ? {}
@@ -139,7 +137,7 @@ async function readMessageHashes(
 }
 
 function bytesContainText(bytes: Uint8Array, text: string): boolean {
-  return Buffer.from(bytes).includes(Buffer.from(text, "utf8"));
+  return Buffer.from(bytes).includes(Buffer.from(text, "utf-8"));
 }
 
 describe("KRT-BH002 shreddable continuity artifacts", () => {

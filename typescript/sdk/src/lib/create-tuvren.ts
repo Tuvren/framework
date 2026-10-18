@@ -37,12 +37,8 @@ import type { TelemetryRouting } from "@tuvren/core/telemetry";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import type { RuntimeBackend, RuntimeKernel } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
-import {
-  createOrchestrationRuntime,
-  createRunnerRegistry,
-  createTuvrenRuntime,
-  type RuntimeCoreOptions,
-} from "@tuvren/runtime";
+import { createOrchestrationRuntime, createRunnerRegistry, createTuvrenRuntime } from '@tuvren/runtime';
+import type { RuntimeCoreOptions } from '@tuvren/runtime';
 
 // ── Public options ────────────────────────────────────────────────────────────
 
@@ -261,7 +257,7 @@ export function createTuvren(
   const { kernel, disposeBackend, purgeScope } =
     resolveKernelAndDispose(options);
 
-  const runner = options.runner;
+  const {runner} = options;
   const runnerRegistry = createRunnerRegistry([runner]);
 
   const mcpSources = collectMcpSources(options.tools);
@@ -303,15 +299,15 @@ export function createTuvren(
       for (const source of mcpSources) {
         try {
           await source.close();
-        } catch (err) {
-          errors.push(err instanceof Error ? err : new Error(String(err)));
+        } catch (error) {
+          errors.push(error instanceof Error ? error : new Error(String(error)));
         }
       }
 
       try {
         await disposeBackend();
-      } catch (err) {
-        errors.push(err instanceof Error ? err : new Error(String(err)));
+      } catch (error) {
+        errors.push(error instanceof Error ? error : new Error(String(error)));
       }
 
       if (errors.length > 0) {
@@ -335,10 +331,10 @@ function resolveKernelAndDispose(options: CreateTuvrenOptions): {
     // An externally-supplied kernel owns its substrate; `createTuvren` has no
     // backend handle to drive a partition drop, so `maintenance.purgeScope`
     // stays unavailable on the resulting runtime.
-    return { kernel: options.kernel, disposeBackend: () => Promise.resolve() };
+    return { disposeBackend: () => Promise.resolve(), kernel: options.kernel };
   }
 
-  const backend = options.backend;
+  const {backend} = options;
   return {
     kernel: createRuntimeKernel({ backend }),
     disposeBackend: tryCloseBackend(backend),

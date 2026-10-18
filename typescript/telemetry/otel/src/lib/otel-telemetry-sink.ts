@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  type Span,
-  type SpanAttributes,
-  SpanKind,
-  SpanStatusCode,
-  type Tracer,
-  trace,
-} from "@opentelemetry/api";
+import { SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
+import type { Span, SpanAttributes, Tracer } from '@opentelemetry/api';
 import type {
   TelemetryEvent,
   TelemetrySpan,
@@ -86,11 +80,11 @@ function emitTelemetrySpan(tracer: Tracer, telemetrySpan: TelemetrySpan): void {
     attributes: toOtelAttributes({
       ...telemetrySpan.attributes,
       "tuvren.runtime.branch.id": telemetrySpan.lineage.branchId,
+      "tuvren.runtime.checkpoint.hash": telemetrySpan.lineage.turnNodeHash,
       "tuvren.runtime.run.id": telemetrySpan.lineage.runId,
       "tuvren.runtime.scope.id": telemetrySpan.lineage.scope,
       "tuvren.runtime.thread.id": telemetrySpan.lineage.threadId,
       "tuvren.runtime.turn.id": telemetrySpan.lineage.turnId,
-      "tuvren.runtime.checkpoint.hash": telemetrySpan.lineage.turnNodeHash,
     }),
     kind: SpanKind.INTERNAL,
     startTime: telemetrySpan.startMs,
@@ -110,11 +104,11 @@ function emitTelemetryEvent(tracer: Tracer, event: TelemetryEvent): void {
   const attributes = toOtelAttributes({
     ...event.attributes,
     "tuvren.runtime.branch.id": event.lineage.branchId,
+    "tuvren.runtime.checkpoint.hash": event.lineage.turnNodeHash,
     "tuvren.runtime.run.id": event.lineage.runId,
     "tuvren.runtime.scope.id": event.lineage.scope,
     "tuvren.runtime.thread.id": event.lineage.threadId,
     "tuvren.runtime.turn.id": event.lineage.turnId,
-    "tuvren.runtime.checkpoint.hash": event.lineage.turnNodeHash,
   });
 
   if (activeSpan !== undefined) {

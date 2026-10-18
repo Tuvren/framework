@@ -24,10 +24,8 @@ import {
   isPayloadEnvelope,
 } from "@tuvren/core/lifecycle";
 
-import {
-  createAesGcmPayloadCodec,
-  type PayloadKeyring,
-} from "../src/lib/payload-codec.js";
+import { createAesGcmPayloadCodec } from '../src/lib/payload-codec.js';
+import type { PayloadKeyring } from '../src/lib/payload-codec.js';
 
 const SCOPE = "tenant.acme";
 const CONTEXT: PayloadCodecContext = { edge: "message", scope: SCOPE };
@@ -89,7 +87,7 @@ describe("AES-256-GCM payload codec", () => {
     expect(isPayloadEnvelope(stored)).toBe(true);
     // The plaintext (and the secret substring) must not appear in the blob.
     expect(Buffer.from(stored).includes(Buffer.from(PLAINTEXT))).toBe(false);
-    expect(Buffer.from(stored).toString("utf8")).not.toContain(
+    expect(Buffer.from(stored).toString("utf-8")).not.toContain(
       "social-security-number"
     );
   });
@@ -279,14 +277,14 @@ describe("AES-256-GCM payload codec", () => {
     });
 
     const stored = await codec.encrypt(PLAINTEXT, {
-      edge: "y\u001fz",
+      edge: "y\u001Fz",
       scope: "x",
     });
     // Length-prefixed AAD makes these distinct bindings (scopeLen 1 vs 3), so the
     // GCM tag check fails (present key -> integrity error, not erased). The old
     // delimiter join produced identical AAD and would have decrypted cleanly.
     await expect(
-      codec.decrypt(stored, { edge: "z", scope: "x\u001fy" })
+      codec.decrypt(stored, { edge: "z", scope: "x\u001Fy" })
     ).rejects.toThrow();
   });
 });

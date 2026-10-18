@@ -117,13 +117,13 @@ interface StandardLike<T> {
       | { readonly value: T; readonly issues?: undefined }
       | {
           readonly value?: undefined;
-          readonly issues: ReadonlyArray<{ readonly message: string }>;
+          readonly issues: readonly { readonly message: string }[];
         }
       | Promise<
           | { readonly value: T; readonly issues?: undefined }
           | {
               readonly value?: undefined;
-              readonly issues: ReadonlyArray<{ readonly message: string }>;
+              readonly issues: readonly { readonly message: string }[];
             }
         >;
   };
@@ -294,11 +294,11 @@ export function defineTool<INPUT, OUTPUT>(options: {
         return { valid: true, value: result.value };
       }
       return {
-        valid: false,
         error: {
           details: result.error.details,
           message: result.error.message,
         },
+        valid: false,
       };
     },
   };
@@ -358,7 +358,6 @@ function buildZodSchema<T>(zod: ZodLike<T>): Schema<T> {
         return { success: true, value: result.data };
       }
       return {
-        success: false,
         error: new TuvrenValidationError(
           result.error.message ?? "Validation failed",
           {
@@ -366,6 +365,7 @@ function buildZodSchema<T>(zod: ZodLike<T>): Schema<T> {
             details: result.error.issues,
           }
         ),
+        success: false,
       };
     },
   };
@@ -394,11 +394,11 @@ function buildStandardSchema<T>(std: StandardLike<T>): Schema<T> {
 
       if (result.issues !== undefined) {
         return {
-          success: false,
           error: new TuvrenValidationError("Validation failed", {
             code: "tool_input_validation_failed",
             details: result.issues,
           }),
+          success: false,
         };
       }
 
