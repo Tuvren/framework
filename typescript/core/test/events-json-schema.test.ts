@@ -81,6 +81,56 @@ const EXPECTED_EVENT_STREAM_ARTIFACT_SCHEMAS = [
   "TuvrenStreamEvent",
 ] as const;
 
+const loadJsonSchemas = (directoryUrl: URL): Ajv2020 => {
+  const directory = fileURLToPath(directoryUrl);
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  const entries = readdirSync(directory).filter((entry) =>
+    entry.endsWith(".json")
+  );
+
+  expect(entries.sort()).toEqual(
+    EXPECTED_EVENT_STREAM_ARTIFACT_SCHEMAS.map(
+      (schemaName) => `${schemaName}.json`
+    ).sort()
+  );
+
+  for (const entry of entries) {
+    const schemaPath = join(directory, entry);
+    const schema = JSON.parse(readFileSync(schemaPath, "utf-8"));
+    ajv.addSchema(schema);
+  }
+
+  return ajv;
+};
+
+const expectSchemaValidation = (
+  ajv: Ajv2020,
+  schemaId: string,
+  value: unknown
+): void => {
+  const validate = ajv.getSchema(schemaId);
+
+  if (validate === undefined) {
+    throw new Error(`missing JSON Schema artifact ${schemaId}`);
+  }
+
+  expect(validate(value), ajv.errorsText(validate.errors)).toBe(true);
+};
+
+const expectSchemaRejection = (
+  ajv: Ajv2020,
+  schemaId: string,
+  value: unknown
+): void => {
+  const validate = ajv.getSchema(schemaId);
+
+  if (validate === undefined) {
+    throw new Error(`missing JSON Schema artifact ${schemaId}`);
+  }
+
+  expect(validate(value)).toBe(false);
+};
+
 describe("event-stream JSON Schema artifacts", () => {
   test("emits JSON Schema artifacts that match richer event payload variants", () => {
     const ajv = loadJsonSchemas(
@@ -160,53 +210,3 @@ describe("event-stream JSON Schema artifacts", () => {
     );
   });
 });
-
-function loadJsonSchemas(directoryUrl: URL): Ajv2020 {
-  const directory = fileURLToPath(directoryUrl);
-  const ajv = new Ajv2020({ allErrors: true, strict: false });
-  const entries = readdirSync(directory).filter((entry) =>
-    entry.endsWith(".json")
-  );
-
-  expect(entries.sort()).toEqual(
-    EXPECTED_EVENT_STREAM_ARTIFACT_SCHEMAS.map(
-      (schemaName) => `${schemaName}.json`
-    ).sort()
-  );
-
-  for (const entry of entries) {
-    const schemaPath = join(directory, entry);
-    const schema = JSON.parse(readFileSync(schemaPath, "utf-8"));
-    ajv.addSchema(schema);
-  }
-
-  return ajv;
-}
-
-function expectSchemaValidation(
-  ajv: Ajv2020,
-  schemaId: string,
-  value: unknown
-): void {
-  const validate = ajv.getSchema(schemaId);
-
-  if (validate === undefined) {
-    throw new Error(`missing JSON Schema artifact ${schemaId}`);
-  }
-
-  expect(validate(value), ajv.errorsText(validate.errors)).toBe(true);
-}
-
-function expectSchemaRejection(
-  ajv: Ajv2020,
-  schemaId: string,
-  value: unknown
-): void {
-  const validate = ajv.getSchema(schemaId);
-
-  if (validate === undefined) {
-    throw new Error(`missing JSON Schema artifact ${schemaId}`);
-  }
-
-  expect(validate(value)).toBe(false);
-}

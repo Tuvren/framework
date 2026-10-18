@@ -33,6 +33,63 @@ const SESSION_SCHEMA_URL = new URL(
   import.meta.url
 );
 
+interface JsonSchemaShape {
+  properties: Record<string, unknown>;
+  required: string[];
+}
+
+const isAjvSchema = (value: unknown): value is AnySchema =>
+  typeof value === "boolean" ||
+  (value !== null && typeof value === "object" && !Array.isArray(value));
+
+const loadJsonSchemas = (directoryUrl: URL): Ajv2020 => {
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+
+  for (const fileName of readdirSync(directoryUrl)) {
+    if (!fileName.endsWith(".json")) {
+      continue;
+    }
+
+    const schema: unknown = JSON.parse(
+      readFileSync(new URL(fileName, directoryUrl), "utf-8")
+    );
+
+    if (!isAjvSchema(schema)) {
+      throw new Error(`${fileName} is not a JSON Schema object or boolean`);
+    }
+
+    ajv.addSchema(schema);
+  }
+
+  return ajv;
+};
+
+const readSchema = (directoryUrl: URL, schemaId: string): JsonSchemaShape => {
+  const fileName = schemaId.slice(schemaId.lastIndexOf("/") + 1);
+  const schema: unknown = JSON.parse(
+    readFileSync(new URL(fileName, directoryUrl), "utf-8")
+  );
+
+  if (
+    schema === null ||
+    typeof schema !== "object" ||
+    !("properties" in schema) ||
+    schema.properties === null ||
+    typeof schema.properties !== "object" ||
+    Array.isArray(schema.properties) ||
+    !("required" in schema) ||
+    !Array.isArray(schema.required) ||
+    !schema.required.every((entry) => typeof entry === "string")
+  ) {
+    throw new Error(`schema ${schemaId} does not have the expected shape`);
+  }
+
+  return {
+    properties: Object.fromEntries(Object.entries(schema.properties)),
+    required: schema.required,
+  };
+};
+
 describe("host admission-key JSON Schema contracts", () => {
   test.each([
     {
@@ -97,63 +154,3 @@ describe("host admission-key JSON Schema contracts", () => {
     expect(validate?.({ ...entry.value, extra: true })).toBe(false);
   });
 });
-
-interface JsonSchemaShape {
-  properties: Record<string, unknown>;
-  required: string[];
-}
-
-function loadJsonSchemas(directoryUrl: URL): Ajv2020 {
-  const ajv = new Ajv2020({ allErrors: true, strict: false });
-
-  for (const fileName of readdirSync(directoryUrl)) {
-    if (!fileName.endsWith(".json")) {
-      continue;
-    }
-
-    const schema: unknown = JSON.parse(
-      readFileSync(new URL(fileName, directoryUrl), "utf-8")
-    );
-
-    if (!isAjvSchema(schema)) {
-      throw new Error(`${fileName} is not a JSON Schema object or boolean`);
-    }
-
-    ajv.addSchema(schema);
-  }
-
-  return ajv;
-}
-
-function isAjvSchema(value: unknown): value is AnySchema {
-  return (
-    typeof value === "boolean" ||
-    (value !== null && typeof value === "object" && !Array.isArray(value))
-  );
-}
-
-function readSchema(directoryUrl: URL, schemaId: string): JsonSchemaShape {
-  const fileName = schemaId.slice(schemaId.lastIndexOf("/") + 1);
-  const schema: unknown = JSON.parse(
-    readFileSync(new URL(fileName, directoryUrl), "utf-8")
-  );
-
-  if (
-    schema === null ||
-    typeof schema !== "object" ||
-    !("properties" in schema) ||
-    schema.properties === null ||
-    typeof schema.properties !== "object" ||
-    Array.isArray(schema.properties) ||
-    !("required" in schema) ||
-    !Array.isArray(schema.required) ||
-    !schema.required.every((entry) => typeof entry === "string")
-  ) {
-    throw new Error(`schema ${schemaId} does not have the expected shape`);
-  }
-
-  return {
-    properties: Object.fromEntries(Object.entries(schema.properties)),
-    required: schema.required,
-  };
-}
