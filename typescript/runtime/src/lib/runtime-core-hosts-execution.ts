@@ -142,23 +142,26 @@ export function buildRuntimeCoreRunnerHost(
   return {
     completeIterationRun: (...args) =>
       dependencies.completeIterationRun(...args),
+    createIterationTree: (...args) => dependencies.createIterationTree(...args),
+    createReadonlyRunnerToolRegistry: (registry) =>
+      dependencies.createReadonlyRunnerToolRegistry(registry),
     createRunnerAgentConfigSnapshot: (config) =>
       dependencies.createRunnerAgentConfigSnapshot(config),
     createRunnerHandoffContextPlan: (...args) =>
       dependencies.createRunnerHandoffContextPlan(...args),
     createRunnerPublishedEvent: (...args) =>
       dependencies.createRunnerPublishedEvent(...args),
-    createIterationTree: (...args) => dependencies.createIterationTree(...args),
-    createReadonlyRunnerToolRegistry: (registry) =>
-      dependencies.createReadonlyRunnerToolRegistry(registry),
     createToolBatchEnvironment: (...args) =>
       dependencies.createToolBatchEnvironment(...args),
     failTrackedRunWithoutBranchAdvance: (...args) =>
       dependencies.failTrackedRunWithoutBranchAdvance(...args),
     now: () => dependencies.now(),
-    publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
-    publishProjectedError: (...args) =>
-      dependencies.publishProjectedError(...args),
+    publishCustomEvent: (...args) => {
+      dependencies.publishCustomEvent(...args);
+    },
+    publishProjectedError: (...args) => {
+      dependencies.publishProjectedError(...args);
+    },
     stageManifest: (...args) => dependencies.stageManifest(...args),
     stageMessage: (...args) => dependencies.stageMessage(...args),
     stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
@@ -185,10 +188,15 @@ export function buildRuntimeCoreToolResumeHost(
       dependencies.failTrackedRunWithoutBranchAdvance(...args),
     loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
     now: () => dependencies.now(),
-    publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
-    publishEvent: (...args) => dependencies.publishEvent(...args),
-    publishProjectedError: (...args) =>
-      dependencies.publishProjectedError(...args),
+    publishCustomEvent: (...args) => {
+      dependencies.publishCustomEvent(...args);
+    },
+    publishEvent: (...args) => {
+      dependencies.publishEvent(...args);
+    },
+    publishProjectedError: (...args) => {
+      dependencies.publishProjectedError(...args);
+    },
     resolveActiveMaxParallelToolCalls: (loopState) =>
       dependencies.resolveActiveMaxParallelToolCalls(loopState),
     resolveCheckpointedPausedRun: (...args) =>
@@ -222,8 +230,9 @@ export function buildRuntimeCoreStatusHost(
     stageManifest: (...args) => dependencies.stageManifest(...args),
     stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
     storeEventRecord: (event) => dependencies.storeEventRecord(event),
-    syncRunLeaseStateFromStepResult: (...args) =>
-      dependencies.syncRunLeaseStateFromStepResult(...args),
+    syncRunLeaseStateFromStepResult: (...args) => {
+      dependencies.syncRunLeaseStateFromStepResult(...args);
+    },
     treeCreate: (schemaId, changes, baseTurnTreeHash) =>
       dependencies.treeCreate(schemaId, changes, baseTurnTreeHash),
   };

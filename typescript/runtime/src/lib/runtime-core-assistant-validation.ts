@@ -86,10 +86,12 @@ export function isAssistantContentStreamEvent(
     case "tool_call.start":
     case "tool_call.args_delta":
     case "tool_call.done":
-    case "message.done":
+    case "message.done": {
       return true;
-    default:
+    }
+    default: {
       return false;
+    }
   }
 }
 
@@ -113,10 +115,12 @@ export function isAssistantValidationEvent(
     case "structured.done":
     case "tool_call.start":
     case "tool_call.done":
-    case "message.done":
+    case "message.done": {
       return true;
-    default:
+    }
+    default: {
       return false;
+    }
   }
 }
 
@@ -144,9 +148,10 @@ export function assertRunnerRuntimeEvent(event: TuvrenStreamEvent): void {
     case "tool_call.start":
     case "tool_call.args_delta":
     case "tool_call.done":
-    case "message.done":
+    case "message.done": {
       return;
-    default:
+    }
+    default: {
       throw new TuvrenRuntimeError(
         `runners must not emit shared-core event type "${event.type}" directly`,
         {
@@ -156,6 +161,7 @@ export function assertRunnerRuntimeEvent(event: TuvrenStreamEvent): void {
           },
         }
       );
+    }
   }
 }
 
@@ -550,10 +556,12 @@ function getAssistantEventMessageId(
     case "structured.done":
     case "text.delta":
     case "text.done":
-    case "tool_call.start":
+    case "tool_call.start": {
       return event.messageId;
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 
@@ -573,18 +581,24 @@ function validateRunnerAssistantDeltaEvent(
   }
 
   switch (currentPart.type) {
-    case "file":
+    case "file": {
       return validateFileAssistantDeltaEvent(event, state);
-    case "reasoning":
+    }
+    case "reasoning": {
       return validateReasoningAssistantDeltaEvent(currentPart, event, state);
-    case "structured":
+    }
+    case "structured": {
       return validateStructuredAssistantDeltaEvent(currentPart, event, state);
-    case "text":
+    }
+    case "text": {
       return validateTextAssistantDeltaEvent(currentPart, event, state);
-    case "tool_call":
+    }
+    case "tool_call": {
       return validateToolCallAssistantDeltaEvent(currentPart, event, state);
-    default:
+    }
+    default: {
       return createAssistantDeltaValidationError();
+    }
   }
 }
 
@@ -788,9 +802,7 @@ function isPrestagedProviderToolMessage(message: TuvrenMessage): boolean {
     }
     const meta = part.providerMetadata;
     return (
-      typeof meta === "object" &&
-      meta !== null &&
-      (meta as Record<string, unknown>).owner === "provider"
+      typeof meta === "object" && meta !== null && meta.owner === "provider"
     );
   });
 }

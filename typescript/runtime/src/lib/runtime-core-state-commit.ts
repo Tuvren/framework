@@ -55,11 +55,11 @@ export interface RuntimeCoreStateCommitHost {
     branchId: string,
     schemaId: string,
     startTurnNodeHash: HashString,
-    steps: Array<{
+    steps: {
       deterministic: boolean;
       id: string;
       sideEffects: boolean;
-    }>
+    }[]
   ): Promise<void>;
   emitStateObservability(
     handle: RuntimeExecutionHandle,

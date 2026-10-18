@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
 import type {
   AgentConfig,
   ContextEngineeringContext,
@@ -86,11 +87,11 @@ export interface RuntimeCoreContextOpsHost {
     branchId: string,
     schemaId: string,
     startTurnNodeHash: HashString,
-    steps: Array<{
+    steps: {
       deterministic: boolean;
       id: string;
       sideEffects: boolean;
-    }>
+    }[]
   ): Promise<void>;
   emitStateObservability(
     handle: RuntimeExecutionHandle,
@@ -376,8 +377,8 @@ export async function applyHandoff(
     schemaId,
     {
       "context.manifest": manifestHash,
-      "runtime.status": statusHash,
       messages: resolvedMessageHashes,
+      "runtime.status": statusHash,
     },
     headState.turnNode.turnTreeHash
   );

@@ -261,7 +261,7 @@ export function synthesizeAssistantValidationEvents(
 
   for (const part of message.parts) {
     switch (part.type) {
-      case "file":
+      case "file": {
         events.push({
           data:
             typeof part.data === "string"
@@ -274,14 +274,16 @@ export function synthesizeAssistantValidationEvents(
           type: "file.done",
         });
         break;
-      case "reasoning":
+      }
+      case "reasoning": {
         events.push({
           messageId,
           timestamp: 0,
           type: "reasoning.done",
         });
         break;
-      case "structured":
+      }
+      case "structured": {
         events.push({
           data: cloneValue(part.data),
           messageId,
@@ -290,7 +292,8 @@ export function synthesizeAssistantValidationEvents(
           type: "structured.done",
         });
         break;
-      case "text":
+      }
+      case "text": {
         events.push({
           messageId,
           text: part.text,
@@ -298,7 +301,8 @@ export function synthesizeAssistantValidationEvents(
           type: "text.done",
         });
         break;
-      case "tool_call":
+      }
+      case "tool_call": {
         events.push({
           callId: part.callId,
           messageId,
@@ -315,8 +319,10 @@ export function synthesizeAssistantValidationEvents(
           type: "tool_call.done",
         });
         break;
-      default:
+      }
+      default: {
         break;
+      }
     }
   }
 
@@ -347,23 +353,26 @@ export function assistantValidationEventsMatch(
   }
 
   switch (actualEvent.type) {
-    case "message.start":
+    case "message.start": {
       return (
         expectedEvent.type === "message.start" &&
         actualEvent.messageId === expectedEvent.messageId
       );
-    case "text.done":
+    }
+    case "text.done": {
       return (
         expectedEvent.type === "text.done" &&
         actualEvent.messageId === expectedEvent.messageId &&
         actualEvent.text === expectedEvent.text
       );
-    case "reasoning.done":
+    }
+    case "reasoning.done": {
       return (
         expectedEvent.type === "reasoning.done" &&
         actualEvent.messageId === expectedEvent.messageId
       );
-    case "file.done":
+    }
+    case "file.done": {
       return (
         expectedEvent.type === "file.done" &&
         actualEvent.messageId === expectedEvent.messageId &&
@@ -371,21 +380,24 @@ export function assistantValidationEventsMatch(
         actualEvent.mediaType === expectedEvent.mediaType &&
         areStreamEventValuesEqual(actualEvent.data, expectedEvent.data)
       );
-    case "structured.done":
+    }
+    case "structured.done": {
       return (
         expectedEvent.type === "structured.done" &&
         actualEvent.messageId === expectedEvent.messageId &&
         actualEvent.name === expectedEvent.name &&
         isDeepStrictEqual(actualEvent.data, expectedEvent.data)
       );
-    case "tool_call.start":
+    }
+    case "tool_call.start": {
       return (
         expectedEvent.type === "tool_call.start" &&
         actualEvent.messageId === expectedEvent.messageId &&
         actualEvent.callId === expectedEvent.callId &&
         actualEvent.name === expectedEvent.name
       );
-    case "tool_call.done":
+    }
+    case "tool_call.done": {
       return (
         expectedEvent.type === "tool_call.done" &&
         actualEvent.callId === expectedEvent.callId &&
@@ -396,7 +408,8 @@ export function assistantValidationEventsMatch(
         ) &&
         isDeepStrictEqual(actualEvent.input, expectedEvent.input)
       );
-    case "message.done":
+    }
+    case "message.done": {
       return (
         expectedEvent.type === "message.done" &&
         actualEvent.messageId === expectedEvent.messageId &&
@@ -405,8 +418,10 @@ export function assistantValidationEventsMatch(
           expectedEvent.finishReason
         )
       );
-    default:
+    }
+    default: {
       return false;
+    }
   }
 }
 
@@ -470,18 +485,24 @@ function validateStandaloneAssistantPartEvent(
   }
 
   switch (state.partState.kind) {
-    case "idle":
+    case "idle": {
       return validateStandaloneIdleAssistantEvent(event, state);
-    case "reasoning":
+    }
+    case "reasoning": {
       return validateStandaloneReasoningAssistantEvent(event, state);
-    case "structured":
+    }
+    case "structured": {
       return validateStandaloneStructuredAssistantEvent(event, state);
-    case "text":
+    }
+    case "text": {
       return validateStandaloneTextAssistantEvent(event, state);
-    case "tool_call":
+    }
+    case "tool_call": {
       return validateStandaloneToolCallAssistantEvent(event, state);
-    default:
+    }
+    default: {
       return createAssistantDeltaValidationError();
+    }
   }
 }
 
@@ -490,32 +511,37 @@ function validateStandaloneIdleAssistantEvent(
   state: StandaloneAssistantValidationState
 ): TuvrenRuntimeError | undefined {
   switch (event.type) {
-    case "file.done":
+    case "file.done": {
       return undefined;
-    case "reasoning.delta":
+    }
+    case "reasoning.delta": {
       state.partState = {
         deltaBuffer: event.delta,
         kind: "reasoning",
         sawDelta: true,
       };
       return undefined;
-    case "reasoning.done":
+    }
+    case "reasoning.done": {
       return undefined;
-    case "structured.delta":
+    }
+    case "structured.delta": {
       state.partState = {
         deltaBuffer: event.delta,
         kind: "structured",
         sawDelta: true,
       };
       return undefined;
-    case "text.delta":
+    }
+    case "text.delta": {
       state.partState = {
         deltaBuffer: event.delta,
         kind: "text",
         sawDelta: true,
       };
       return undefined;
-    case "tool_call.start":
+    }
+    case "tool_call.start": {
       state.partState = {
         callId: event.callId,
         deltaBuffer: "",
@@ -525,8 +551,10 @@ function validateStandaloneIdleAssistantEvent(
       };
       state.sawToolCallPart = true;
       return undefined;
-    default:
+    }
+    default: {
       return createAssistantDeltaValidationError();
+    }
   }
 }
 
@@ -658,10 +686,12 @@ function getAssistantEventMessageId(
     case "structured.done":
     case "text.delta":
     case "text.done":
-    case "tool_call.start":
+    case "tool_call.start": {
       return event.messageId;
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 

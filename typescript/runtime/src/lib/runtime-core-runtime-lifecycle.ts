@@ -26,30 +26,30 @@ import type {
 
 import {
   completeRecoveredTerminalExecution as completeRuntimeRecoveredTerminalExecution,
-  type RuntimeCoreExpiredRecoveryHost,
   recoverExpiredExecutionBranchIfNeeded as recoverRuntimeExpiredExecutionBranchIfNeeded,
 } from "./runtime-core-expired-recovery.js";
+import type { RuntimeCoreExpiredRecoveryHost } from "./runtime-core-expired-recovery.js";
 import { advanceTurnAndBranchHeadFacade } from "./runtime-core-facade-ops.js";
 import {
   completeTrackedRun as completeRuntimeTrackedRun,
   createTrackedRun as createRuntimeTrackedRun,
-  type RuntimeCoreLivenessHost,
   stopRunLeaseLoop as stopRuntimeRunLeaseLoop,
   syncRunLeaseStateFromStepResult as syncRuntimeRunLeaseStateFromStepResult,
 } from "./runtime-core-liveness.js";
+import type { RuntimeCoreLivenessHost } from "./runtime-core-liveness.js";
 import type { LoopState } from "./runtime-core-loop.js";
 import type { ExpiredExecutionRecovery } from "./runtime-core-recovery.js";
 import {
   checkpointResumeRunningStatus as checkpointRuntimeResumeRunningStatus,
   failActiveRunIfNeeded as failRuntimeActiveRunIfNeeded,
-  type RuntimeCoreStatusHost,
 } from "./runtime-core-status.js";
+import type { RuntimeCoreStatusHost } from "./runtime-core-status.js";
 import {
   failTrackedRunWithoutBranchAdvance as failRuntimeTrackedRunWithoutBranchAdvance,
-  type RuntimeCoreTurnProgressHost,
   reconcileCheckpointedPauseResolution as reconcileRuntimeCheckpointedPauseResolution,
   resolveCheckpointedPausedRun as resolveRuntimeCheckpointedPausedRun,
 } from "./runtime-core-turn-progress.js";
+import type { RuntimeCoreTurnProgressHost } from "./runtime-core-turn-progress.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
 
@@ -108,11 +108,11 @@ export async function createRuntimeCoreTrackedRun(
   branchId: string,
   schemaId: string,
   startTurnNodeHash: HashString,
-  steps: Array<{
+  steps: {
     deterministic: boolean;
     id: string;
     sideEffects: boolean;
-  }>
+  }[]
 ): Promise<void> {
   await createRuntimeTrackedRun(
     host,

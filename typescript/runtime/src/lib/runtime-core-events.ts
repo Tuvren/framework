@@ -297,7 +297,7 @@ function synthesizeAssistantMessageEvents(
 
   for (const part of message.parts) {
     switch (part.type) {
-      case "file":
+      case "file": {
         events.push({
           data:
             typeof part.data === "string"
@@ -310,7 +310,8 @@ function synthesizeAssistantMessageEvents(
           type: "file.done",
         });
         break;
-      case "reasoning":
+      }
+      case "reasoning": {
         if (!part.redacted) {
           events.push({
             delta: part.text,
@@ -326,7 +327,8 @@ function synthesizeAssistantMessageEvents(
           type: "reasoning.done",
         });
         break;
-      case "structured":
+      }
+      case "structured": {
         events.push({
           delta: serializeAssistantDeltaValue(part.data),
           messageId,
@@ -341,7 +343,8 @@ function synthesizeAssistantMessageEvents(
           type: "structured.done",
         });
         break;
-      case "text":
+      }
+      case "text": {
         events.push({
           delta: part.text,
           messageId,
@@ -355,7 +358,8 @@ function synthesizeAssistantMessageEvents(
           type: "text.done",
         });
         break;
-      case "tool_call":
+      }
+      case "tool_call": {
         events.push({
           callId: part.callId,
           messageId,
@@ -378,8 +382,10 @@ function synthesizeAssistantMessageEvents(
           type: "tool_call.done",
         });
         break;
-      default:
+      }
+      default: {
         break;
+      }
     }
   }
 

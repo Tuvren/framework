@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  type EpochMs,
-  type HashString,
-  TuvrenRuntimeError,
-} from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { EpochMs, HashString } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   AgentConfig,
@@ -47,41 +44,38 @@ import type { ResolvedExecutionBounds } from "./runtime-core-bounds.js";
 import {
   applyContextEngineeringPlan as applyRuntimeContextEngineeringPlan,
   applyHandoff as applyRuntimeHandoff,
-  type RuntimeCoreContextOpsHost,
 } from "./runtime-core-context-ops.js";
+import type { RuntimeCoreContextOpsHost } from "./runtime-core-context-ops.js";
 import type { IterationPhaseResult } from "./runtime-core-iteration.js";
 import { executeIterationPhase as executeRuntimeIterationPhase } from "./runtime-core-iteration.js";
-import {
-  type HeadState,
-  type LoopState,
-  runExecutionLoop as runRuntimeExecutionLoop,
-} from "./runtime-core-loop.js";
+import { runExecutionLoop as runRuntimeExecutionLoop } from "./runtime-core-loop.js";
+import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type { LoopOutcome } from "./runtime-core-recovery.js";
 import {
   createRunnerHandoffContextPlan as createRuntimeRunnerHandoffContextPlan,
   createToolBatchEnvironment as createRuntimeToolBatchEnvironment,
-  type RuntimeCoreRunnerSupportHost,
 } from "./runtime-core-runner-support.js";
+import type { RuntimeCoreRunnerSupportHost } from "./runtime-core-runner-support.js";
 import {
   applyAfterIterationResolution as applyRuntimeAfterIterationResolution,
   applyRequestedToolBatchIfNeeded as applyRuntimeRequestedToolBatchIfNeeded,
   completeIterationArtifacts as completeRuntimeIterationArtifacts,
   createRunnerExecutionContext as createRuntimeRunnerExecutionContext,
-  type RuntimeCoreRunnerHost,
   stageRunnerMessages as stageRuntimeRunnerMessages,
 } from "./runtime-core-runner.js";
+import type { RuntimeCoreRunnerHost } from "./runtime-core-runner.js";
 import {
   commitPendingExtensionStateUpdates as commitRuntimePendingExtensionStateUpdates,
   incorporateInput as incorporateRuntimeInput,
   incorporateSteering as incorporateRuntimeSteering,
-  type RuntimeCoreStateCommitHost,
 } from "./runtime-core-state-commit.js";
+import type { RuntimeCoreStateCommitHost } from "./runtime-core-state-commit.js";
 import { resumePausedToolExecution as resumeRuntimePausedToolExecution } from "./runtime-core-tool-resume.js";
 import {
   completeIterationRun as completeRuntimeIterationRun,
   createIterationTree as createRuntimeIterationTree,
-  type RuntimeCoreTurnProgressHost,
 } from "./runtime-core-turn-progress.js";
+import type { RuntimeCoreTurnProgressHost } from "./runtime-core-turn-progress.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type { ResumeContext } from "./runtime-execution-types.js";
 import type { ToolExecutionMode } from "./tool-execution.js";
@@ -219,11 +213,11 @@ interface RuntimeIterationPhaseDependencies {
     branchId: string,
     schemaId: string,
     startTurnNodeHash: HashString,
-    steps: Array<{
+    steps: {
       deterministic: boolean;
       id: string;
       sideEffects: boolean;
-    }>
+    }[]
   ): Promise<void>;
   ensureRunnerAssistantEvents(
     handle: RuntimeExecutionHandle,
@@ -313,7 +307,7 @@ export async function runRuntimeExecutionLoopFacade(
         dependencies.applyContextEngineeringPlan(
           activeHandle,
           activeSchemaId,
-          plan as ContextEngineeringPlan,
+          plan,
           activeLoopState,
           updates,
           recoveredHistory
@@ -325,18 +319,23 @@ export async function runRuntimeExecutionLoopFacade(
       commitPendingExtensionStateUpdates: (...args) =>
         dependencies.commitPendingExtensionStateUpdates(...args),
       createId: () => dependencies.createId(),
-      executionBounds: () => dependencies.executionBounds(),
       executeIterationPhase: (...args) =>
         dependencies.executeIterationPhase(...args),
-      recordBoundsToolCalls: (boundsHandle, count) =>
-        dependencies.recordBoundsToolCalls(boundsHandle, count),
+      executionBounds: () => dependencies.executionBounds(),
       incorporateQueuedSteeringIfNeeded: (...args) =>
         dependencies.incorporateQueuedSteeringIfNeeded(...args),
       loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
-      publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
-      publishEvent: (...args) => dependencies.publishEvent(...args),
-      publishProjectedError: (...args) =>
-        dependencies.publishProjectedError(...args),
+      publishCustomEvent: (...args) => {
+        dependencies.publishCustomEvent(...args);
+      },
+      publishEvent: (...args) => {
+        dependencies.publishEvent(...args);
+      },
+      publishProjectedError: (...args) => {
+        dependencies.publishProjectedError(...args);
+      },
+      recordBoundsToolCalls: (boundsHandle, count) =>
+        dependencies.recordBoundsToolCalls(boundsHandle, count),
     },
     handle,
     schemaId,
@@ -384,7 +383,7 @@ export async function executeRuntimeIterationPhaseFacade(
       ) =>
         dependencies.applyAfterIterationResolution(
           activeHandle,
-          activeLoopState as LoopState,
+          activeLoopState,
           activeIterationCount,
           runId,
           resolution,
@@ -398,7 +397,7 @@ export async function executeRuntimeIterationPhaseFacade(
         dependencies.applyRequestedToolBatchIfNeeded({
           ...input,
           headState: input.headState as HeadState,
-          loopState: input.loopState as LoopState,
+          loopState: input.loopState,
         }),
       beginIterationStep: async (runId, stepId) => {
         await dependencies.beginIterationStep(runId, stepId);
@@ -418,7 +417,7 @@ export async function executeRuntimeIterationPhaseFacade(
         dependencies.completeIterationArtifacts(
           activeHandle,
           activeSchemaId,
-          activeLoopState as LoopState,
+          activeLoopState,
           activeHeadState as HeadState,
           activeIterationCount,
           runId,
@@ -427,6 +426,7 @@ export async function executeRuntimeIterationPhaseFacade(
           appendedMessageHashes,
           interruptedToolBatch
         ),
+      createId: () => dependencies.createId(),
       createRunnerExecutionContext: (
         activeHandle,
         activeSchemaId,
@@ -438,15 +438,14 @@ export async function executeRuntimeIterationPhaseFacade(
         dependencies.createRunnerExecutionContext(
           activeHandle,
           activeSchemaId,
-          activeLoopState as LoopState,
+          activeLoopState,
           activeHeadState as HeadState,
           activeIterationCount,
           emittedRunnerEvents
         ),
-      createId: () => dependencies.createId(),
-      stageManifest: (...args) => dependencies.stageManifest(...args),
-      stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
       createTrackedRun: (...args) => dependencies.createTrackedRun(...args),
+      ensureRunnerAssistantEvents: (...args) =>
+        dependencies.ensureRunnerAssistantEvents(...args),
       executeRunner: (...args) => dependencies.executeRunner(...args),
       failInvalidPauseResolutionIfNeeded: (...args) =>
         dependencies.failInvalidPauseResolutionIfNeeded(...args),
@@ -454,15 +453,17 @@ export async function executeRuntimeIterationPhaseFacade(
         dependencies.failTrackedRunWithoutBranchAdvance(...args),
       flushBufferedRunnerEventsIfNeeded: (...args) =>
         dependencies.flushBufferedRunnerEventsIfNeeded(...args),
-      ensureRunnerAssistantEvents: (...args) =>
-        dependencies.ensureRunnerAssistantEvents(...args),
       materializeRunner: (runnerId) => dependencies.materializeRunner(runnerId),
       now: () => dependencies.now(),
+      publishEvent: (...args) => {
+        dependencies.publishEvent(...args);
+      },
       reconcileCheckpointedPauseResolution: (...args) =>
         dependencies.reconcileCheckpointedPauseResolution(...args),
+      stageManifest: (...args) => dependencies.stageManifest(...args),
       stageRunnerMessages: (...args) =>
         dependencies.stageRunnerMessages(...args),
-      publishEvent: (...args) => dependencies.publishEvent(...args),
+      stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
     },
     {
       handle,

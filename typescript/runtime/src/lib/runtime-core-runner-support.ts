@@ -20,10 +20,10 @@ import type {
   HandoffContextPlan,
   RuntimeResolution,
 } from "@tuvren/core/execution";
-import {
-  assertRunnerExecutionResult,
-  type RunnerExecutionContext,
-  type RuntimeRunner,
+import { assertRunnerExecutionResult } from "@tuvren/core/runner";
+import type {
+  RunnerExecutionContext,
+  RuntimeRunner,
 } from "@tuvren/core/runner";
 
 import { TUVREN_SANDBOX_ENDPOINT_ID_PREFIX } from "./binding-resolver.js";
@@ -39,10 +39,8 @@ import { formatToolResultTaskId } from "./runtime-core-response.js";
 import { normalizeError } from "./runtime-core-shared.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import { createServerRateLimiter } from "./server-rate-limiter.js";
-import {
-  ToolBatchStagingError,
-  type ToolBatchEnvironment,
-} from "./tool-execution.js";
+import { ToolBatchStagingError } from "./tool-execution.js";
+import type { ToolBatchEnvironment } from "./tool-execution.js";
 
 /**
  * Host capabilities backing the tool-batch environment and handoff-plan
@@ -155,8 +153,6 @@ export function createToolBatchEnvironment(
     activeAgent: loopState.activeConfig.name,
     branchId: handle.request.branchId,
     capabilityPolicyEngine: policyEngine ?? undefined,
-    policyCapabilityMetadata,
-    policyContextInputs,
     extensions: loopState.activeConfig.extensions ?? [],
     iterationCount,
     manifest,
@@ -165,6 +161,8 @@ export function createToolBatchEnvironment(
       host.defaultMaxParallelToolCalls()
     ),
     now: () => host.now(),
+    policyCapabilityMetadata,
+    policyContextInputs,
     publishCustom: (event) => {
       host.publishCustomEvent(handle, event, loopState);
     },
@@ -174,8 +172,6 @@ export function createToolBatchEnvironment(
     reportSoftError: (error) => {
       host.publishProjectedError(handle, error, false, loopState);
     },
-    runId,
-    sanitizeToolResult: loopState.activeConfig.sanitizeToolResult,
     resolveSandboxExecutor:
       loopState.activeConfig.sandboxExecutors === undefined
         ? undefined
@@ -188,10 +184,10 @@ export function createToolBatchEnvironment(
             )
               ? endpointId.slice(TUVREN_SANDBOX_ENDPOINT_ID_PREFIX.length)
               : endpointId;
-            return loopState.activeConfig.sandboxExecutors?.get(rawId) as
-              | import("@tuvren/core/capabilities").TuvrenSandboxExecutor
-              | undefined;
+            return loopState.activeConfig.sandboxExecutors?.get(rawId);
           },
+    runId,
+    sanitizeToolResult: loopState.activeConfig.sanitizeToolResult,
     serverExecutionRateLimiter: loopState.serverExecutionRateLimiter,
     signal: handle.abortSignal,
     stageResult: async (result, orderIndex, updates = []) => {

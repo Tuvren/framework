@@ -14,12 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  type EpochMs,
-  type HashString,
-  type KernelRecord,
-  TuvrenLineageError,
-} from "@tuvren/core";
+import { TuvrenLineageError } from "@tuvren/core";
+import type { EpochMs, HashString, KernelRecord } from "@tuvren/core";
 import type {
   AgentConfig,
   ContextEngineeringHelpers,
@@ -36,10 +32,8 @@ import type {
 } from "@tuvren/kernel-protocol";
 
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
-import {
-  encryptMessageRecord,
-  type PayloadCodecBinding,
-} from "./payload-codec-seam.js";
+import { encryptMessageRecord } from "./payload-codec-seam.js";
+import type { PayloadCodecBinding } from "./payload-codec-seam.js";
 import type { RuntimeCoreContextOpsHost } from "./runtime-core-context-ops.js";
 import type { HelperBundle } from "./runtime-core-context.js";
 import type { RuntimeCoreEventsHost } from "./runtime-core-events.js";
@@ -101,11 +95,11 @@ interface ContextOpsHostDependencies {
     branchId: string,
     schemaId: string,
     startTurnNodeHash: HashString,
-    steps: Array<{
+    steps: {
       deterministic: boolean;
       id: string;
       sideEffects: boolean;
-    }>
+    }[]
   ): Promise<void>;
   emitStateObservability(
     handle: RuntimeExecutionHandle,
@@ -401,11 +395,11 @@ interface StateCommitHostDependencies {
     branchId: string,
     schemaId: string,
     startTurnNodeHash: HashString,
-    steps: Array<{
+    steps: {
       deterministic: boolean;
       id: string;
       sideEffects: boolean;
-    }>
+    }[]
   ): Promise<void>;
   emitStateObservability(
     handle: RuntimeExecutionHandle,
@@ -543,7 +537,9 @@ export function buildRuntimeCoreContextOpsHost(
     loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
     materializeContextMessages: (hashes, helpers) =>
       dependencies.materializeContextMessages(hashes, helpers),
-    publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
+    publishCustomEvent: (...args) => {
+      dependencies.publishCustomEvent(...args);
+    },
     resolveAgentConfig: (name) => dependencies.resolveAgentConfig?.(name),
     resolveHandoffSourceContext: (...args) =>
       dependencies.resolveHandoffSourceContext(...args),
@@ -552,8 +548,9 @@ export function buildRuntimeCoreContextOpsHost(
       dependencies.storeEventRecord(event as KernelRecord),
     storeKernelRecord: (value, label) =>
       dependencies.storeKernelRecord(value, label),
-    syncRunLeaseStateFromStepResult: (...args) =>
-      dependencies.syncRunLeaseStateFromStepResult(...args),
+    syncRunLeaseStateFromStepResult: (...args) => {
+      dependencies.syncRunLeaseStateFromStepResult(...args);
+    },
     treeCreate: async (schemaId, changes, baseTurnTreeHash) =>
       await dependencies.kernel.tree.create(
         schemaId,
@@ -589,7 +586,9 @@ export function buildRuntimeCorePersistenceHost(
   dependencies: PersistenceHostDependencies
 ): RuntimeCorePersistenceHost {
   return {
-    emitWarning: (warning) => dependencies.emitWarning(warning),
+    emitWarning: (warning) => {
+      dependencies.emitWarning(warning);
+    },
     encodeKernelRecord: (value, label) =>
       dependencies.encodeKernelRecord(value, label),
     encryptMessageRecord: (record) =>
@@ -693,9 +692,9 @@ export function buildRuntimeCoreExpiredRecoveryHost(
       );
     },
     readRecoveredActiveAgentName: (turnTreeHash) =>
-      dependencies.readRecoveredActiveAgentName(turnTreeHash as HashString),
+      dependencies.readRecoveredActiveAgentName(turnTreeHash),
     readRecoveredRuntimeStatus: (turnTreeHash) =>
-      dependencies.readRecoveredRuntimeStatus(turnTreeHash as HashString),
+      dependencies.readRecoveredRuntimeStatus(turnTreeHash),
   };
 }
 
@@ -716,7 +715,6 @@ export function buildRuntimeCoreTurnProgressHost(
     },
     completeKernelRun: async (runId, status, eventHash) =>
       await dependencies.kernel.run.complete(runId, status, eventHash),
-    completeTrackedRun: (...args) => dependencies.completeTrackedRun(...args),
     completeRunStep: async (runId, stepId, eventHash, treeHash) =>
       await dependencies.kernel.run.completeStep(
         runId,
@@ -725,12 +723,14 @@ export function buildRuntimeCoreTurnProgressHost(
         undefined,
         treeHash
       ),
+    completeTrackedRun: (...args) => dependencies.completeTrackedRun(...args),
     emitStateObservability: (...args) =>
       Promise.resolve(dependencies.emitStateObservability(...args)),
     storeEventRecord: async (event) =>
       await dependencies.storeEventRecord(event),
-    syncRunLeaseStateFromStepResult: (...args) =>
-      dependencies.syncRunLeaseStateFromStepResult(...args),
+    syncRunLeaseStateFromStepResult: (...args) => {
+      dependencies.syncRunLeaseStateFromStepResult(...args);
+    },
     treeCreate: async (schemaId, changes, baseTurnTreeHash) =>
       await dependencies.kernel.tree.create(
         schemaId,
@@ -759,11 +759,15 @@ export function buildRuntimeCoreFinalizationHost(
       (await dependencies.kernel.turn.get(turnId)) !== null,
     loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
     now: () => dependencies.now(),
-    publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
-    publishEvent: (handle, event, loopState) =>
-      dependencies.publishEvent(handle, event as never, loopState),
-    publishProjectedError: (handle, error, fatal, loopState) =>
-      dependencies.publishProjectedError(handle, error, fatal, loopState),
+    publishCustomEvent: (...args) => {
+      dependencies.publishCustomEvent(...args);
+    },
+    publishEvent: (handle, event, loopState) => {
+      dependencies.publishEvent(handle, event as never, loopState);
+    },
+    publishProjectedError: (handle, error, fatal, loopState) => {
+      dependencies.publishProjectedError(handle, error, fatal, loopState);
+    },
     resolveFailureActiveConfig: (handle) =>
       dependencies.resolveFailureActiveConfig(handle),
     runComplete: async (runId, status, eventHash) =>
@@ -811,16 +815,21 @@ export function buildRuntimeCoreStartupHost(
       Promise.resolve(dependencies.emitStateObservability(...args)),
     loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
     now: () => dependencies.now(),
-    publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
-    publishEvent: (...args) => dependencies.publishEvent(...args),
+    publishCustomEvent: (...args) => {
+      dependencies.publishCustomEvent(...args);
+    },
+    publishEvent: (...args) => {
+      dependencies.publishEvent(...args);
+    },
     publishPauseOutcome: (handle, pauseContext, loopState) =>
       dependencies.publishPauseOutcome(
         handle,
         pauseContext as PauseContext | undefined,
         loopState
       ),
-    publishProjectedError: (handle, error, fatal, loopState) =>
-      dependencies.publishProjectedError(handle, error, fatal, loopState),
+    publishProjectedError: (handle, error, fatal, loopState) => {
+      dependencies.publishProjectedError(handle, error, fatal, loopState);
+    },
     resolveActiveConfig: (handle, recoveredExecution) => {
       const resumedPauseContext = handle.resumedFrom?.pauseContext;
       const recoveredActiveConfig =
@@ -913,15 +922,18 @@ export function buildRuntimeCoreStateCommitHost(
       await dependencies.kernel.run.completeStep(runId, stepId, eventHash),
     loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
     now: () => dependencies.now(),
-    publishEvent: (...args) => dependencies.publishEvent(...args),
+    publishEvent: (...args) => {
+      dependencies.publishEvent(...args);
+    },
     stageManifest: (...args) => dependencies.stageManifest(...args),
     stageMessage: (...args) => dependencies.stageMessage(...args),
     stageRuntimeStatus: (...args) => dependencies.stageRuntimeStatus(...args),
     stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
     storeEventRecord: async (event) =>
       await dependencies.storeEventRecord(event as KernelRecord),
-    syncRunLeaseStateFromStepResult: (...args) =>
-      dependencies.syncRunLeaseStateFromStepResult(...args),
+    syncRunLeaseStateFromStepResult: (...args) => {
+      dependencies.syncRunLeaseStateFromStepResult(...args);
+    },
   };
 }
 
@@ -944,11 +956,15 @@ export function buildRuntimeCoreRunnerSupportHost(
       dependencies.createFrozenSnapshot(value),
     defaultMaxParallelToolCalls: () => dependencies.defaultMaxParallelToolCalls,
     now: () => dependencies.now(),
-    publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
-    publishEvent: (handle, event, loopState) =>
-      dependencies.publishEvent(handle, event as never, loopState),
-    publishProjectedError: (handle, error, fatal, loopState) =>
-      dependencies.publishProjectedError(handle, error, fatal, loopState),
+    publishCustomEvent: (...args) => {
+      dependencies.publishCustomEvent(...args);
+    },
+    publishEvent: (handle, event, loopState) => {
+      dependencies.publishEvent(handle, event as never, loopState);
+    },
+    publishProjectedError: (handle, error, fatal, loopState) => {
+      dependencies.publishProjectedError(handle, error, fatal, loopState);
+    },
     resolveActiveMaxParallelToolCalls: (
       loopState,
       defaultMaxParallelToolCalls
@@ -961,6 +977,9 @@ export function buildRuntimeCoreRunnerSupportHost(
       dependencies.resolveDefaultHandoffContextBuilder(mode),
     resolveTargetAgent: (targetAgent) =>
       dependencies.resolveTargetAgent(targetAgent),
+    stageToolResultManifest: async (runId, manifest, taskId) => {
+      await dependencies.stageManifest(runId, manifest, taskId);
+    },
     stageToolResultMessage: async (runId, result, orderIndex) =>
       await dependencies.stageMessage(
         runId,
@@ -970,8 +989,5 @@ export function buildRuntimeCoreRunnerSupportHost(
         },
         `tool_result_${orderIndex}_${result.callId}`
       ),
-    stageToolResultManifest: async (runId, manifest, taskId) => {
-      await dependencies.stageManifest(runId, manifest, taskId);
-    },
   };
 }
