@@ -2,11 +2,11 @@ owner: KRT-BT002
 mode: contract_test
 produced:
   date: 2026-10-18
-  commit: 9fce2d1a2a2ff58a1baa26d41a6689107aed47f0
+  commit: e9796643d6c01e209231941cc2aac14bfaa81ae7
   command: "Fresh retained-Biome suppressed and virtual-unsuppressed diagnostics; Oxlint 1.86.0 type-aware diagnostics over typescript/runtime; targeted runtime tests; framework-runtime typecheck and lint; repository typecheck and lint; direct changeset coverage check."
 files:
   - path: suppressions.json
-    sha256: b244da26e0378f5946218ab7439454d198416cafab6c74bfbfc48be71212086f
-    bytes: 119156
+    sha256: ef14b948709c222bcf29d7b12510c3e7f1b41e7e818d9744fe316f87aeea11cd
+    bytes: 118779
     role: measurement
-pass_criteria: "Every one of the 59 planned runtime directive identities plus measured drift has an identity-stable ledger entry preserving its original reason and recording retained-checker and native-admission dispositions from fresh diagnostics. Needed directives remain while Biome owns runtime; the only early deletion follows a reviewed behavior-preserving code fix and fresh proof that Biome no longer fires; no directive is added; runtime and repository typecheck and lint gates pass; direct patch changeset coverage names @tuvren/runtime."
+pass_criteria: "Every one of the 59 planned runtime directive identities plus measured drift has an identity-stable ledger entry preserving its original reason and recording retained-checker and native-admission dispositions from fresh diagnostics. All 59 directives remain while Biome owns runtime because neither dead identity has a qualifying behavior-preserving fix for early deletion; no directive is added or removed; runtime and repository typecheck and lint gates pass; direct patch changeset coverage names @tuvren/runtime."
