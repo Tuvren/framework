@@ -107,12 +107,14 @@ const readRecoveredTurnInitialInputMessage = async (
 
   const turnNodes = kernel.node.walkBack(recoveredHeadTurnNodeHash);
   const turnNodeIterator = turnNodes[Symbol.asyncIterator]();
+  let iteratorExhausted = false;
 
   const readNextTurnNode = async (
     initialInputMessage?: TuvrenMessage
   ): Promise<TuvrenMessage | undefined> => {
     const nextTurnNode = await turnNodeIterator.next();
     if (nextTurnNode.done === true) {
+      iteratorExhausted = true;
       return undefined;
     }
     if (nextTurnNode.value.hash === turn.startTurnNodeHash) {
@@ -146,7 +148,32 @@ const readRecoveredTurnInitialInputMessage = async (
     return await readNextTurnNode(recoveredInput ?? initialInputMessage);
   };
 
-  return await readNextTurnNode();
+  let initialInputMessage: TuvrenMessage | undefined;
+  let recoveryError: unknown;
+  let recoveryFailed = false;
+
+  try {
+    initialInputMessage = await readNextTurnNode();
+  } catch (error: unknown) {
+    recoveryFailed = true;
+    recoveryError = error;
+  }
+
+  if (!iteratorExhausted && turnNodeIterator.return !== undefined) {
+    try {
+      await turnNodeIterator.return();
+    } catch (closeError: unknown) {
+      if (!recoveryFailed) {
+        throw closeError;
+      }
+    }
+  }
+
+  if (recoveryFailed) {
+    throw recoveryError;
+  }
+
+  return initialInputMessage;
 };
 
 /**
