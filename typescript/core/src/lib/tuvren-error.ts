@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const KRAKEN_ERROR_CODE_PATTERN = /^[a-z0-9]+(?:_[a-z0-9]+)*$/;
+const KRAKEN_ERROR_CODE_PATTERN = /^[a-z0-9]+(?:_[a-z0-9]+)*$/u;
 
 /**
  * A stable, machine-readable error code in lowercase `snake_case` (for
@@ -47,7 +47,7 @@ export const isTuvrenErrorCode = (value: unknown): value is TuvrenErrorCode =>
  *
  * @param value - Untrusted candidate code.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TypeError when {@link isTuvrenErrorCode} rejects the value.
+ * @throws {TypeError} When {@link isTuvrenErrorCode} rejects the value.
  */
 export const assertTuvrenErrorCode: (
   value: unknown,

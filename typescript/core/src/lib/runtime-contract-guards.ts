@@ -306,7 +306,7 @@ export const isTuvrenModelResponse = (
  *
  * @param value - Untrusted candidate model response.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_model_response` when
+ * @throws {TuvrenValidationError} With code `invalid_model_response` when
  *   {@link isTuvrenModelResponse} rejects the value.
  */
 export const assertTuvrenModelResponse: (
@@ -323,6 +323,31 @@ export const assertTuvrenModelResponse: (
     );
   }
 };
+
+const isSystemMessage = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, SYSTEM_MESSAGE_KEYS) &&
+  isNonEmptyStringProperty(value, "content") &&
+  !("parts" in value) &&
+  !("providerMetadata" in value);
+
+const isUserMessage = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, USER_MESSAGE_KEYS) &&
+  (value.admissionKey === undefined ||
+    (typeof value.admissionKey === "string" &&
+      value.admissionKey.length > 0)) &&
+  isNonEmptyArray(value.parts) &&
+  value.parts.every(isContentPart);
+
+const isAssistantMessage = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, ASSISTANT_MESSAGE_KEYS) &&
+  isNonEmptyArray(value.parts) &&
+  value.parts.every(isContentPart) &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
+const isToolMessage = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, TOOL_MESSAGE_KEYS) &&
+  isNonEmptyArray(value.parts) &&
+  value.parts.every(isToolResultPart);
 
 /**
  * Returns `true` when `value` is a structurally valid {@link TuvrenMessage}
@@ -353,37 +378,16 @@ export const isTuvrenMessage = (value: unknown): value is TuvrenMessage =>
 
     switch (value.role) {
       case "system": {
-        return (
-          hasOnlyAllowedKeys(value, SYSTEM_MESSAGE_KEYS) &&
-          isNonEmptyStringProperty(value, "content") &&
-          !("parts" in value) &&
-          !("providerMetadata" in value)
-        );
+        return isSystemMessage(value);
       }
       case "user": {
-        return (
-          hasOnlyAllowedKeys(value, USER_MESSAGE_KEYS) &&
-          (value.admissionKey === undefined ||
-            (typeof value.admissionKey === "string" &&
-              value.admissionKey.length > 0)) &&
-          isNonEmptyArray(value.parts) &&
-          value.parts.every(isContentPart)
-        );
+        return isUserMessage(value);
       }
       case "assistant": {
-        return (
-          hasOnlyAllowedKeys(value, ASSISTANT_MESSAGE_KEYS) &&
-          isNonEmptyArray(value.parts) &&
-          value.parts.every(isContentPart) &&
-          isOptionalSerializableRecordProperty(value, "providerMetadata")
-        );
+        return isAssistantMessage(value);
       }
       case "tool": {
-        return (
-          hasOnlyAllowedKeys(value, TOOL_MESSAGE_KEYS) &&
-          isNonEmptyArray(value.parts) &&
-          value.parts.every(isToolResultPart)
-        );
+        return isToolMessage(value);
       }
       default: {
         return false;
@@ -396,7 +400,7 @@ export const isTuvrenMessage = (value: unknown): value is TuvrenMessage =>
  *
  * @param value - Untrusted candidate message.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_tuvren_message` when
+ * @throws {TuvrenValidationError} With code `invalid_tuvren_message` when
  *   {@link isTuvrenMessage} rejects the value.
  */
 export const assertTuvrenMessage: (
@@ -454,7 +458,7 @@ export const isApprovalRequest = (value: unknown): value is ApprovalRequest =>
  *
  * @param value - Untrusted candidate approval request.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_approval_request` when
+ * @throws {TuvrenValidationError} With code `invalid_approval_request` when
  *   {@link isApprovalRequest} rejects the value.
  */
 export const assertApprovalRequest: (
@@ -471,6 +475,59 @@ export const assertApprovalRequest: (
     );
   }
 };
+
+const isProviderTextDelta = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, PROVIDER_TEXT_DELTA_KEYS) &&
+  typeof value.text === "string";
+
+const isProviderReasoningDelta = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, PROVIDER_REASONING_DELTA_KEYS) &&
+  typeof value.text === "string" &&
+  isOptionalStringProperty(value, "signature");
+
+const isProviderStructuredDelta = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, PROVIDER_STRUCTURED_DELTA_KEYS) &&
+  typeof value.delta === "string";
+
+const isProviderStructuredDone = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, PROVIDER_STRUCTURED_DONE_KEYS) &&
+  "data" in value &&
+  isSerializableContractValue(value.data) &&
+  isOptionalStringProperty(value, "name");
+
+const isProviderToolCallStart = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_START_KEYS) &&
+  isNonEmptyStringProperty(value, "providerCallId") &&
+  isNonEmptyStringProperty(value, "name");
+
+const isProviderToolCallArgsDelta = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_ARGS_DELTA_KEYS) &&
+  isNonEmptyStringProperty(value, "providerCallId") &&
+  typeof value.delta === "string";
+
+const isProviderToolCallDone = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_DONE_KEYS) &&
+  isNonEmptyStringProperty(value, "providerCallId") &&
+  isNonEmptyStringProperty(value, "name") &&
+  "input" in value &&
+  isSerializableContractValue(value.input) &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
+const isProviderToolResult = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, PROVIDER_TOOL_RESULT_KEYS) &&
+  isNonEmptyStringProperty(value, "providerCallId") &&
+  isNonEmptyStringProperty(value, "name") &&
+  "result" in value &&
+  isSerializableContractValue(value.result) &&
+  (value.isError === undefined || typeof value.isError === "boolean") &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
+const isProviderFinish = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, PROVIDER_FINISH_KEYS) &&
+  isStringProperty(value, "finishReason") &&
+  FINISH_REASONS.has(value.finishReason) &&
+  isOptionalProviderUsage(value, "usage") &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
 
 /**
  * Returns `true` when `value` is a structurally valid
@@ -505,78 +562,34 @@ export const isProviderStreamChunk = (
 
     switch (value.type) {
       case "text_delta": {
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_TEXT_DELTA_KEYS) &&
-          typeof value.text === "string"
-        );
+        return isProviderTextDelta(value);
       }
       case "reasoning_delta": {
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_REASONING_DELTA_KEYS) &&
-          typeof value.text === "string" &&
-          isOptionalStringProperty(value, "signature")
-        );
+        return isProviderReasoningDelta(value);
       }
       case "reasoning_done": {
         return hasOnlyAllowedKeys(value, PROVIDER_REASONING_DONE_KEYS);
       }
       case "structured_delta": {
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_STRUCTURED_DELTA_KEYS) &&
-          typeof value.delta === "string"
-        );
+        return isProviderStructuredDelta(value);
       }
       case "structured_done": {
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_STRUCTURED_DONE_KEYS) &&
-          "data" in value &&
-          isSerializableContractValue(value.data) &&
-          isOptionalStringProperty(value, "name")
-        );
+        return isProviderStructuredDone(value);
       }
       case "tool_call_start": {
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_START_KEYS) &&
-          isNonEmptyStringProperty(value, "providerCallId") &&
-          isNonEmptyStringProperty(value, "name")
-        );
+        return isProviderToolCallStart(value);
       }
       case "tool_call_args_delta": {
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_ARGS_DELTA_KEYS) &&
-          isNonEmptyStringProperty(value, "providerCallId") &&
-          typeof value.delta === "string"
-        );
+        return isProviderToolCallArgsDelta(value);
       }
       case "tool_call_done": {
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_DONE_KEYS) &&
-          isNonEmptyStringProperty(value, "providerCallId") &&
-          isNonEmptyStringProperty(value, "name") &&
-          "input" in value &&
-          isSerializableContractValue(value.input) &&
-          isOptionalSerializableRecordProperty(value, "providerMetadata")
-        );
+        return isProviderToolCallDone(value);
       }
       case "provider_tool_result": {
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_TOOL_RESULT_KEYS) &&
-          isNonEmptyStringProperty(value, "providerCallId") &&
-          isNonEmptyStringProperty(value, "name") &&
-          "result" in value &&
-          isSerializableContractValue(value.result) &&
-          (value.isError === undefined || typeof value.isError === "boolean") &&
-          isOptionalSerializableRecordProperty(value, "providerMetadata")
-        );
+        return isProviderToolResult(value);
       }
       case "finish": {
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_FINISH_KEYS) &&
-          isStringProperty(value, "finishReason") &&
-          FINISH_REASONS.has(value.finishReason) &&
-          isOptionalProviderUsage(value, "usage") &&
-          isOptionalSerializableRecordProperty(value, "providerMetadata")
-        );
+        return isProviderFinish(value);
       }
       case "error": {
         return (
@@ -594,7 +607,7 @@ export const isProviderStreamChunk = (
  *
  * @param value - Untrusted candidate chunk from a provider adapter.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_provider_stream_chunk`
+ * @throws {TuvrenValidationError} With code `invalid_provider_stream_chunk`
  *   when {@link isProviderStreamChunk} rejects the value.
  */
 export const assertProviderStreamChunk: (
@@ -638,9 +651,9 @@ export const isApprovalResponse = (value: unknown): value is ApprovalResponse =>
  * its exact key set (plus the shared `type`/`timestamp`/`source` envelope
  * keys) and per-field predicates.
  */
-const hasValidStreamEventPayload = (
+const hasValidEarlyStreamEventPayload = (
   value: Record<string, unknown> & { timestamp: EpochMs; type: string }
-): boolean => {
+): boolean | undefined => {
   switch (value.type) {
     case "turn.start": {
       return matchesStreamEventVariant(
@@ -742,6 +755,16 @@ const hasValidStreamEventPayload = (
           isOptionalStringProperty(value, "name")
       );
     }
+    default: {
+      return undefined;
+    }
+  }
+};
+
+const hasValidLateStreamEventPayload = (
+  value: Record<string, unknown> & { timestamp: EpochMs; type: string }
+): boolean => {
+  switch (value.type) {
     case "tool_call.start": {
       return matchesStreamEventVariant(
         value,
@@ -829,7 +852,7 @@ const hasValidStreamEventPayload = (
           isNonEmptyStringProperty(value, "capabilityId") &&
           isNonEmptyStringProperty(value, "executionClass") &&
           isNonEmptyStringProperty(value, "lifecycle") &&
-          TOOL_AUDIT_LIFECYCLES.has(value.lifecycle as string) &&
+          TOOL_AUDIT_LIFECYCLES.has(value.lifecycle) &&
           isNonEmptyStringProperty(value, "runId") &&
           isNonEmptyStringProperty(value, "turnId") &&
           (value.attempt === undefined || typeof value.attempt === "number") &&
@@ -891,6 +914,13 @@ const hasValidStreamEventPayload = (
   }
 };
 
+const hasValidStreamEventPayload = (
+  value: Record<string, unknown> & { timestamp: EpochMs; type: string }
+): boolean => {
+  const earlyResult = hasValidEarlyStreamEventPayload(value);
+  return earlyResult ?? hasValidLateStreamEventPayload(value);
+};
+
 /**
  * Returns `true` when `value` is a structurally valid
  * {@link TuvrenStreamEvent} (KrakenFrameworkSpecification §1.8).
@@ -939,7 +969,7 @@ export const isTuvrenStreamEvent = (
  *
  * @param value - Untrusted candidate stream event.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_stream_event` when
+ * @throws {TuvrenValidationError} With code `invalid_stream_event` when
  *   {@link isTuvrenStreamEvent} rejects the value.
  */
 export const assertTuvrenStreamEvent: (
@@ -956,6 +986,44 @@ export const assertTuvrenStreamEvent: (
     );
   }
 };
+
+const hasRequiredToolDefinitionFields = (
+  value: Record<string, unknown>
+): boolean =>
+  hasOnlyAllowedKeys(value, TOOL_DEFINITION_KEYS) &&
+  isNonEmptyStringProperty(value, "name") &&
+  typeof value.description === "string" &&
+  typeof value.execute === "function" &&
+  isKrakenToolSchema(value.inputSchema);
+
+const hasValidToolDefinitionExecutionPolicy = (
+  value: Record<string, unknown>
+): boolean =>
+  isOptionalApprovalPolicy(value, "approval") &&
+  (value.idempotent === undefined || typeof value.idempotent === "boolean") &&
+  (value.maxRetries === undefined || typeof value.maxRetries === "number") &&
+  isOptionalSerializableRecordProperty(value, "metadata") &&
+  (value.nonRetryable === undefined || typeof value.nonRetryable === "boolean");
+
+const hasValidToolDefinitionCapabilityPolicy = (
+  value: Record<string, unknown>
+): boolean =>
+  (value.outputSchema === undefined ||
+    isKrakenToolSchema(value.outputSchema)) &&
+  (value.requiredCredentialScopes === undefined ||
+    (Array.isArray(value.requiredCredentialScopes) &&
+      value.requiredCredentialScopes.every(
+        (scope) => typeof scope === "string"
+      ))) &&
+  (value.requiredResidency === undefined ||
+    typeof value.requiredResidency === "string") &&
+  (value.requiresUserPresence === undefined ||
+    typeof value.requiresUserPresence === "boolean") &&
+  (value.riskClass === undefined ||
+    value.riskClass === "low" ||
+    value.riskClass === "medium" ||
+    value.riskClass === "high") &&
+  isOptionalTimeoutProperty(value, "timeout");
 
 /**
  * Returns `true` when `value` is a structurally valid
@@ -980,35 +1048,9 @@ export const isTuvrenToolDefinition = (
   safePredicate(
     () =>
       isPlainObject(value) &&
-      hasOnlyAllowedKeys(value, TOOL_DEFINITION_KEYS) &&
-      isNonEmptyStringProperty(value, "name") &&
-      typeof value.description === "string" &&
-      typeof value.execute === "function" &&
-      isKrakenToolSchema(value.inputSchema) &&
-      isOptionalApprovalPolicy(value, "approval") &&
-      (value.idempotent === undefined ||
-        typeof value.idempotent === "boolean") &&
-      (value.maxRetries === undefined ||
-        typeof value.maxRetries === "number") &&
-      isOptionalSerializableRecordProperty(value, "metadata") &&
-      (value.nonRetryable === undefined ||
-        typeof value.nonRetryable === "boolean") &&
-      (value.outputSchema === undefined ||
-        isKrakenToolSchema(value.outputSchema)) &&
-      (value.requiredCredentialScopes === undefined ||
-        (Array.isArray(value.requiredCredentialScopes) &&
-          value.requiredCredentialScopes.every(
-            (s) => typeof s === "string"
-          ))) &&
-      (value.requiredResidency === undefined ||
-        typeof value.requiredResidency === "string") &&
-      (value.requiresUserPresence === undefined ||
-        typeof value.requiresUserPresence === "boolean") &&
-      (value.riskClass === undefined ||
-        value.riskClass === "low" ||
-        value.riskClass === "medium" ||
-        value.riskClass === "high") &&
-      isOptionalTimeoutProperty(value, "timeout")
+      hasRequiredToolDefinitionFields(value) &&
+      hasValidToolDefinitionExecutionPolicy(value) &&
+      hasValidToolDefinitionCapabilityPolicy(value)
   );
 
 /**
@@ -1016,7 +1058,7 @@ export const isTuvrenToolDefinition = (
  *
  * @param value - Untrusted candidate tool definition.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_tool_definition` when
+ * @throws {TuvrenValidationError} With code `invalid_tool_definition` when
  *   {@link isTuvrenToolDefinition} rejects the value.
  */
 export const assertTuvrenToolDefinition: (
@@ -1035,12 +1077,9 @@ export const assertTuvrenToolDefinition: (
 };
 
 /** True when `value[key]` is `undefined` or a valid {@link ApprovalRequest}. */
-const isOptionalApprovalRequest = <
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(
-  value: TObject,
-  key: TKey
+const isOptionalApprovalRequest = (
+  value: Record<string, unknown>,
+  key: string
 ): boolean => value[key] === undefined || isApprovalRequest(value[key]);
 
 /**
@@ -1098,7 +1137,7 @@ export const isExecutionStatus = (value: unknown): value is ExecutionStatus =>
  *
  * @param value - Untrusted candidate execution status.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_execution_status` when
+ * @throws {TuvrenValidationError} With code `invalid_execution_status` when
  *   {@link isExecutionStatus} rejects the value.
  */
 export const assertExecutionStatus: (
@@ -1143,7 +1182,7 @@ export const isApprovalResponseForRequest = (
  *
  * @param value - Untrusted candidate approval response.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_approval_response` when
+ * @throws {TuvrenValidationError} With code `invalid_approval_response` when
  *   {@link isApprovalResponse} rejects the value.
  */
 export const assertApprovalResponse: (
@@ -1168,7 +1207,7 @@ export const assertApprovalResponse: (
  * @param value - Untrusted candidate approval response.
  * @param request - The active approval request the response must cover.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_approval_response` when
+ * @throws {TuvrenValidationError} With code `invalid_approval_response` when
  *   {@link isApprovalResponseForRequest} rejects the value.
  */
 export const assertApprovalResponseForRequest: (
@@ -1198,7 +1237,7 @@ export const assertApprovalResponseForRequest: (
  *
  * @param value - Untrusted candidate manifest.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_context_manifest` when
+ * @throws {TuvrenValidationError} With code `invalid_context_manifest` when
  *   the value is not a valid manifest.
  */
 export const assertContextManifest: (

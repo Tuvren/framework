@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const HASH_STRING_PATTERN = /^[0-9a-f]{64}$/;
+const HASH_STRING_PATTERN = /^[0-9a-f]{64}$/u;
 
 /**
  * A kernel content address: the lowercase 64-character hex encoding of a
@@ -75,7 +75,7 @@ export const isHashString = (value: unknown): value is HashString =>
  *
  * @param value - Untrusted candidate hash.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TypeError when {@link isHashString} rejects the value.
+ * @throws {TypeError} When {@link isHashString} rejects the value.
  */
 export const assertHashString: (
   value: unknown,
@@ -108,7 +108,7 @@ export const isEpochMs = (value: unknown): value is EpochMs =>
  *
  * @param value - Untrusted candidate timestamp.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws RangeError when {@link isEpochMs} rejects the value.
+ * @throws {RangeError} When {@link isEpochMs} rejects the value.
  */
 export const assertEpochMs: (
   value: unknown,
@@ -137,7 +137,7 @@ const isCanonicalKernelBytes = (value: Uint8Array): boolean => {
 
     if (
       !(
-        descriptor?.enumerable &&
+        descriptor?.enumerable === true &&
         Object.hasOwn(descriptor, "value") &&
         Number.isInteger(index) &&
         index >= 0 &&
@@ -175,7 +175,7 @@ const isDenseKernelArray = (
 
     if (
       !(
-        descriptor?.enumerable &&
+        descriptor?.enumerable === true &&
         Object.hasOwn(descriptor, "value") &&
         Number.isInteger(index) &&
         index >= 0 &&
@@ -206,7 +206,7 @@ const isDenseKernelArray = (
 const isPlainKernelObject = (
   value: object
 ): value is Record<string, unknown> => {
-  const prototype = Object.getPrototypeOf(value);
+  const prototype: unknown = Object.getPrototypeOf(value);
 
   if (prototype !== Object.prototype && prototype !== null) {
     return false;
@@ -222,7 +222,9 @@ const isPlainKernelObject = (
     const descriptor = descriptors[key];
 
     if (
-      !(descriptor?.enumerable && Object.hasOwn(descriptor, "value")) ||
+      !(
+        descriptor?.enumerable === true && Object.hasOwn(descriptor, "value")
+      ) ||
       Object.hasOwn(descriptor, "get") ||
       Object.hasOwn(descriptor, "set")
     ) {
@@ -285,6 +287,12 @@ const isKernelRecordValueInternal = (
       activeParents.delete(value);
       return true;
     }
+    case "bigint":
+    case "function":
+    case "symbol":
+    case "undefined": {
+      return false;
+    }
     default: {
       return false;
     }
@@ -317,7 +325,7 @@ export const isKernelRecord = (value: unknown): value is KernelRecord =>
  *
  * @param value - Untrusted candidate record.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TypeError when {@link isKernelRecord} rejects the value.
+ * @throws {TypeError} When {@link isKernelRecord} rejects the value.
  */
 export const assertKernelRecord: (
   value: unknown,

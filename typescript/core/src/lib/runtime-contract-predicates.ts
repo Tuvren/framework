@@ -125,7 +125,7 @@ export const isPlainObject = (
       return false;
     }
 
-    const prototype = Object.getPrototypeOf(value);
+    const prototype: unknown = Object.getPrototypeOf(value);
 
     if (!(prototype === Object.prototype || prototype === null)) {
       return false;
@@ -138,7 +138,7 @@ export const isPlainObject = (
     // Contract-boundary objects must be fully enumerable so they round-trip
     // through normal JSON-like serialization without hidden state.
     return Object.values(Object.getOwnPropertyDescriptors(value)).every(
-      (descriptor) => descriptor.enumerable
+      (descriptor) => descriptor.enumerable === true
     );
   } catch {
     return false;
@@ -162,13 +162,11 @@ export const isNonEmptyStringValue = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
 
 /** True when `value[key]` is a non-empty (after trimming) string. */
-export const isNonEmptyStringProperty = <
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(
-  value: TObject,
+export const isNonEmptyStringProperty = <TKey extends string>(
+  value: Record<string, unknown>,
   key: TKey
-): boolean => isNonEmptyStringValue(value[key]);
+): value is Record<string, unknown> & Record<TKey, string> =>
+  isNonEmptyStringValue(value[key]);
 
 /**
  * True when `value` is a valid {@link EventSource} attribution record
@@ -239,12 +237,9 @@ export const hasCanonicalEpochMsTimestampAndValidSource = (
 };
 
 /** True when `value[key]` is `undefined` or a boolean. */
-export const isOptionalBooleanProperty = <
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(
-  value: TObject,
-  key: TKey
+export const isOptionalBooleanProperty = (
+  value: Record<string, unknown>,
+  key: string
 ): boolean => value[key] === undefined || typeof value[key] === "boolean";
 
 /**
@@ -257,24 +252,18 @@ export const isApprovalPolicy = (value: unknown): value is ApprovalPolicy =>
   typeof value === "boolean" || typeof value === "function";
 
 /** True when `value[key]` is `undefined` or a valid {@link ApprovalPolicy}. */
-export const isOptionalApprovalPolicy = <
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(
-  value: TObject,
-  key: TKey
+export const isOptionalApprovalPolicy = (
+  value: Record<string, unknown>,
+  key: string
 ): boolean => value[key] === undefined || isApprovalPolicy(value[key]);
 
 /**
  * True when `value[key]` is `undefined` or a canonical `HashString`
  * (lowercase 64-character SHA-256 hex digest).
  */
-export const isOptionalHashStringProperty = <
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(
-  value: TObject,
-  key: TKey
+export const isOptionalHashStringProperty = (
+  value: Record<string, unknown>,
+  key: string
 ): boolean => value[key] === undefined || isHashString(value[key]);
 
 const isKrakenJsonObjectWithPredicate = (
@@ -344,6 +333,12 @@ const isKrakenJsonValue = (
         isKrakenJsonValue
       );
     }
+    case "bigint":
+    case "function":
+    case "symbol":
+    case "undefined": {
+      return false;
+    }
     default: {
       return false;
     }
@@ -371,12 +366,9 @@ export const isSerializableRecord = (
  * record (see {@link isSerializableRecord}). Used for optional
  * `providerMetadata`/`metadata`-style fields.
  */
-export const isOptionalSerializableRecordProperty = <
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(
-  value: TObject,
-  key: TKey
+export const isOptionalSerializableRecordProperty = (
+  value: Record<string, unknown>,
+  key: string
 ): boolean => value[key] === undefined || isSerializableRecord(value[key]);
 
 /**
@@ -394,22 +386,16 @@ export const isSerializableContractValue = (
  * True when `value[key]` is `undefined` or any JSON-serializable contract
  * value (see {@link isSerializableContractValue}).
  */
-export const isOptionalSerializableContractValueProperty = <
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(
-  value: TObject,
-  key: TKey
+export const isOptionalSerializableContractValueProperty = (
+  value: Record<string, unknown>,
+  key: string
 ): boolean =>
   value[key] === undefined || isSerializableContractValue(value[key]);
 
 /** True when `value[key]` is a non-negative safe integer. */
-export const isNonNegativeSafeIntegerProperty = <
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(
-  value: TObject,
-  key: TKey
+export const isNonNegativeSafeIntegerProperty = (
+  value: Record<string, unknown>,
+  key: string
 ): boolean => {
   const propertyValue = value[key];
   return (
@@ -430,33 +416,24 @@ export const isProviderUsage = (value: unknown): value is ProviderUsage =>
   isNonNegativeSafeIntegerProperty(value, "outputTokens");
 
 /** True when `value[key]` is `undefined` or a valid {@link ProviderUsage}. */
-export const isOptionalProviderUsage = <
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(
-  value: TObject,
-  key: TKey
+export const isOptionalProviderUsage = (
+  value: Record<string, unknown>,
+  key: string
 ): boolean => value[key] === undefined || isProviderUsage(value[key]);
 
 /** True when `value[key]` is `undefined` or a string (empty allowed). */
-export const isOptionalStringProperty = <
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(
-  value: TObject,
-  key: TKey
+export const isOptionalStringProperty = (
+  value: Record<string, unknown>,
+  key: string
 ): boolean => value[key] === undefined || typeof value[key] === "string";
 
 /**
  * True when `value[key]` is `undefined` or a non-empty (after trimming)
  * string.
  */
-export const isOptionalNonEmptyStringProperty = <
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(
-  value: TObject,
-  key: TKey
+export const isOptionalNonEmptyStringProperty = (
+  value: Record<string, unknown>,
+  key: string
 ): boolean => value[key] === undefined || isNonEmptyStringProperty(value, key);
 
 /** True when `value` is an array with at least one element. */
@@ -472,21 +449,15 @@ export const isTimeoutMs = (value: unknown): boolean =>
  * True when `value[key]` is `undefined` or a valid timeout (non-negative
  * finite number of milliseconds; see {@link isTimeoutMs}).
  */
-export const isOptionalTimeoutProperty = <
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(
-  value: TObject,
-  key: TKey
+export const isOptionalTimeoutProperty = (
+  value: Record<string, unknown>,
+  key: string
 ): boolean => value[key] === undefined || isTimeoutMs(value[key]);
 
 /** True when `value[key]` is a finite number greater than or equal to zero. */
-export const isNonNegativeFiniteNumberProperty = <
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(
-  value: TObject,
-  key: TKey
+export const isNonNegativeFiniteNumberProperty = (
+  value: Record<string, unknown>,
+  key: string
 ): boolean => {
   const numericValue = value[key];
   return (
@@ -500,14 +471,15 @@ export const isNonNegativeFiniteNumberProperty = <
 export const hasUniqueStrings = (values: string[]): boolean =>
   new Set(values).size === values.length;
 
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === "string");
+
 const isValidJsonSchemaType = (value: unknown): boolean =>
   (typeof value === "string" && JSON_SCHEMA_TYPE_NAMES.has(value)) ||
-  (Array.isArray(value) &&
+  (isStringArray(value) &&
     value.length > 0 &&
     hasUniqueStrings(value) &&
-    value.every(
-      (item) => typeof item === "string" && JSON_SCHEMA_TYPE_NAMES.has(item)
-    ));
+    value.every((item) => JSON_SCHEMA_TYPE_NAMES.has(item)));
 
 const hasValidUniqueStringArrayKeyword = (
   value: Record<string, TuvrenJsonValue>,
@@ -519,11 +491,7 @@ const hasValidUniqueStringArrayKeyword = (
 
   const keywordValue = value[key];
 
-  return (
-    Array.isArray(keywordValue) &&
-    keywordValue.every((item) => typeof item === "string") &&
-    hasUniqueStrings(keywordValue)
-  );
+  return isStringArray(keywordValue) && hasUniqueStrings(keywordValue);
 };
 
 const hasValidUniqueStringArrayRecordKeyword = (
@@ -540,9 +508,7 @@ const hasValidUniqueStringArrayRecordKeyword = (
     isKrakenJsonObject(keywordValue, new WeakSet<object>()) &&
     Object.values(keywordValue).every(
       (recordValue) =>
-        Array.isArray(recordValue) &&
-        recordValue.every((item) => typeof item === "string") &&
-        hasUniqueStrings(recordValue)
+        isStringArray(recordValue) && hasUniqueStrings(recordValue)
     )
   );
 };
@@ -568,12 +534,18 @@ const toCanonicalTuvrenJsonValueKey = (value: TuvrenJsonValue): string => {
       }
 
       return `object:{${Object.keys(value)
-        .sort()
+        .toSorted()
         .map(
           (key) =>
             `${JSON.stringify(key)}:${toCanonicalTuvrenJsonValueKey(value[key])}`
         )
         .join(",")}}`;
+    }
+    case "bigint":
+    case "function":
+    case "symbol":
+    case "undefined": {
+      return "unknown";
     }
     default: {
       return "unknown";
@@ -636,7 +608,7 @@ const hasValidFiniteNumberKeyword = (
     return false;
   }
 
-  if (options?.positive) {
+  if (options?.positive === true) {
     return keywordValue > 0;
   }
 
@@ -682,7 +654,7 @@ const hasValidSchemaArrayKeyword = (
 
   return (
     Array.isArray(keywordValue) &&
-    (!options?.requireNonEmpty || keywordValue.length > 0) &&
+    (options?.requireNonEmpty !== true || keywordValue.length > 0) &&
     keywordValue.every(schemaPredicate)
   );
 };

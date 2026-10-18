@@ -1974,12 +1974,15 @@ export interface TurnSnapshot {
   turnTreeHash: HashString;
 }
 
+/** Opaque to the host; see TechSpec §3.8. */
 /** Opaque pagination cursor for {@link TuvrenRuntime.listThreads} (ADR-0036). */
-export type ListThreadsCursor = string; // opaque to host; see TechSpec §3.8
+export type ListThreadsCursor = string;
+/** Opaque to the host; see TechSpec §3.8. */
 /** Opaque pagination cursor for {@link TuvrenRuntime.getTurnHistory} (ADR-0036). */
-export type TurnHistoryCursor = string; // opaque to host; see TechSpec §3.8
+export type TurnHistoryCursor = string;
+/** Opaque to the host; see TechSpec §3.8. */
 /** Opaque pagination cursor for {@link TuvrenRuntime.readBranchMessages} (ADR-0036). */
-export type BranchMessagesCursor = string; // opaque to host; see TechSpec §3.8
+export type BranchMessagesCursor = string;
 
 /**
  * Host-facing projection of the kernel reclamation summary (kernel spec §9.4;

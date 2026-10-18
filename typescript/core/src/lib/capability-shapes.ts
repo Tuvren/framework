@@ -416,7 +416,7 @@ export interface AttachedClientEndpoint {
  *
  * The interface is defined here in @tuvren/core/capabilities so AgentConfig
  * can reference it without a circular dependency. The implementation lives in
- * @tuvren/runtime. Hosts that need dynamic endpoint lifecycle control
+ * `@tuvren/runtime`. Hosts that need dynamic endpoint lifecycle control
  * (e.g. to signal unavailability for conformance testing) can obtain an
  * instance via createClientEndpointBoundary from @tuvren/runtime and pass it
  * as AgentConfig.clientEndpointBoundary.

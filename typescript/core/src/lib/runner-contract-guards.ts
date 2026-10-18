@@ -127,7 +127,7 @@ export const isRuntimeRunner = (value: unknown): value is RuntimeRunner =>
  *
  * @param value - Untrusted candidate runner.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_runner_contract` when the
+ * @throws {TuvrenValidationError} With code `invalid_runner_contract` when the
  *   value is not a valid runner; the offending value is attached as `details`.
  */
 export const assertRuntimeRunner: (
@@ -213,7 +213,7 @@ const assertRunnerMessages = (
       continue;
     }
     assertRunnerMessage(message, `${label}.messages[${index}]`);
-    assistantCount++;
+    assistantCount += 1;
   }
 
   if (assistantCount > 1) {
@@ -254,7 +254,9 @@ const assertRunnerPartialResult = (
     );
   }
 
-  if (!value.messages?.some((message) => message.role === "assistant")) {
+  if (
+    value.messages?.some((message) => message.role === "assistant") !== true
+  ) {
     throw new TuvrenValidationError(
       `${label}.partial requires a staged assistant message`,
       {
@@ -493,7 +495,7 @@ const assertRunnerResolutionCompatibility = (
 
   if (
     value.assistantEventReconciliation !== undefined &&
-    !value.messages?.some((message) => message.role === "assistant")
+    value.messages?.some((message) => message.role === "assistant") !== true
   ) {
     throw new TuvrenValidationError(
       `${label}.assistantEventReconciliation requires an assistant message`,
@@ -757,7 +759,7 @@ const assertRunnerAgentConfigSnapshot: (
  *
  * @param value - Untrusted candidate handoff source context.
  * @param label - Prefix used in error messages (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_runner_result` on the
+ * @throws {TuvrenValidationError} With code `invalid_runner_result` on the
  *   first violated invariant.
  */
 export const assertRunnerHandoffSourceContext: (
@@ -821,7 +823,7 @@ export const assertRunnerHandoffSourceContext: (
  *
  * @param value - Untrusted candidate handoff plan.
  * @param label - Prefix used in error messages (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_runner_result` on any
+ * @throws {TuvrenValidationError} With code `invalid_runner_result` on any
  *   structural or identity mismatch.
  */
 export const assertRunnerHandoffContextPlan: (
@@ -896,7 +898,7 @@ export const assertRunnerHandoffContextPlan: (
  *
  * @param value - Untrusted candidate resolution.
  * @param label - Prefix used in error messages (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_runner_result` when the
+ * @throws {TuvrenValidationError} With code `invalid_runner_result` when the
  *   value is not one of the variants above.
  */
 export const assertRunnerRuntimeResolution: (
@@ -1054,7 +1056,7 @@ const assertRunnerStateUpdates = (value: unknown, label: string): void => {
  *
  * @param value - Untrusted result returned by a runner `execute`/`resume`.
  * @param label - Prefix used in error messages (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_runner_result` naming the
+ * @throws {TuvrenValidationError} With code `invalid_runner_result` naming the
  *   first violated invariant.
  */
 export const assertRunnerExecutionResult: (

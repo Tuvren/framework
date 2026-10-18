@@ -45,7 +45,7 @@ export const isScope = (value: unknown): value is Scope =>
  *
  * @param value - Untrusted candidate scope.
  * @param label - Name used in the error message (defaults to `"scope"`).
- * @throws TypeError when {@link isScope} rejects the value.
+ * @throws {TypeError} When {@link isScope} rejects the value.
  */
 export const assertScope: (
   value: unknown,

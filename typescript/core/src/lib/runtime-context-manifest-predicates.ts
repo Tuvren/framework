@@ -72,6 +72,10 @@ const isContextManifestNameCounters = (
   ) &&
   isNonNegativeSafeIntegerProperty(value, "total");
 
+const isNonNegativeSafeIntegerArray = (value: unknown): value is number[] =>
+  Array.isArray(value) &&
+  value.every((item) => Number.isSafeInteger(item) && item >= 0);
+
 const hasValidLastRoleIndex = (
   roleCount: number,
   lastIndex: number,
@@ -174,6 +178,63 @@ const hasValidTurnBoundaries = (
   );
 };
 
+const hasValidContextManifestRelations = (
+  byRole: ContextManifestCounters,
+  messageCount: number,
+  lastAssistantMessageIndex: unknown,
+  lastUserMessageIndex: unknown,
+  toolCalls: ContextManifestNameCounters,
+  toolResults: ContextManifestNameCounters,
+  turnBoundaries: number[]
+): boolean => {
+  if (
+    !(
+      isMessageIndexValue(lastAssistantMessageIndex, messageCount) &&
+      isMessageIndexValue(lastUserMessageIndex, messageCount)
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    !(
+      hasValidLastRoleIndex(
+        byRole.assistant,
+        lastAssistantMessageIndex,
+        messageCount
+      ) &&
+      hasValidLastRoleIndex(byRole.user, lastUserMessageIndex, messageCount)
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    byRole.assistant + byRole.system + byRole.tool + byRole.user !==
+    messageCount
+  ) {
+    return false;
+  }
+
+  if (
+    !(
+      hasMatchingNamedCounterTotal(toolCalls) &&
+      hasMatchingNamedCounterTotal(toolResults)
+    )
+  ) {
+    return false;
+  }
+
+  return hasValidTurnBoundaries(
+    turnBoundaries,
+    messageCount,
+    byRole.user,
+    lastUserMessageIndex,
+    byRole.assistant,
+    lastAssistantMessageIndex
+  );
+};
+
 /**
  * Returns `true` when `value` is a structurally and arithmetically valid
  * {@link ContextManifest} (KrakenFrameworkSpecification §1.6).
@@ -220,74 +281,25 @@ export const isContextManifest = (value: unknown): value is ContextManifest => {
       isNonNegativeFiniteNumberProperty(value, "tokenEstimate") &&
       isContextManifestNameCounters(toolCalls) &&
       isContextManifestNameCounters(toolResults) &&
-      Array.isArray(value.turnBoundaries) &&
-      value.turnBoundaries.every(
-        (item) => Number.isSafeInteger(item) && item >= 0
-      )
+      isNonNegativeSafeIntegerArray(value.turnBoundaries)
     )
   ) {
     return false;
   }
 
-  if (
-    !(
-      isMessageIndexValue(lastAssistantMessageIndex, messageCount) &&
-      isMessageIndexValue(lastUserMessageIndex, messageCount)
-    )
-  ) {
-    return false;
-  }
-
-  if (
-    !(
-      hasValidLastRoleIndex(
-        byRole.assistant,
-        lastAssistantMessageIndex,
-        messageCount
-      ) &&
-      hasValidLastRoleIndex(byRole.user, lastUserMessageIndex, messageCount)
-    )
-  ) {
-    return false;
-  }
-
-  if (
-    byRole.assistant + byRole.system + byRole.tool + byRole.user !==
-    messageCount
-  ) {
-    return false;
-  }
-
-  if (
-    !(
-      hasMatchingNamedCounterTotal(toolCalls) &&
-      hasMatchingNamedCounterTotal(toolResults)
-    )
-  ) {
-    return false;
-  }
-
-  if (
-    !hasValidTurnBoundaries(
-      value.turnBoundaries,
-      messageCount,
-      byRole.user,
-      lastUserMessageIndex,
-      byRole.assistant,
-      lastAssistantMessageIndex
-    )
-  ) {
-    return false;
-  }
-
-  return true;
+  return hasValidContextManifestRelations(
+    byRole,
+    messageCount,
+    lastAssistantMessageIndex,
+    lastUserMessageIndex,
+    toolCalls,
+    toolResults,
+    value.turnBoundaries
+  );
 };
 
 /** True when `value[key]` is `undefined` or a valid {@link ContextManifest}. */
-export const isOptionalContextManifestProperty = <
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(
-  value: TObject,
-  key: TKey
+export const isOptionalContextManifestProperty = (
+  value: Record<string, unknown>,
+  key: string
 ): boolean => value[key] === undefined || isContextManifest(value[key]);

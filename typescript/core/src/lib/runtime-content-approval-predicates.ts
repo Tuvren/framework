@@ -91,6 +91,49 @@ const APPROVAL_DECISION_KEYS = new Set([
   "message",
 ]);
 
+const isTextContentPart = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, TEXT_PART_KEYS) &&
+  typeof value.text === "string" &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
+const isReasoningContentPart = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, REASONING_PART_KEYS) &&
+  typeof value.text === "string" &&
+  typeof value.redacted === "boolean" &&
+  (value.redacted || value.text.length > 0) &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
+const isToolCallContentPart = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, TOOL_CALL_PART_KEYS) &&
+  isNonEmptyStringProperty(value, "callId") &&
+  isNonEmptyStringProperty(value, "name") &&
+  "input" in value &&
+  isSerializableContractValue(value.input) &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
+const isToolResultContentPart = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, TOOL_RESULT_PART_KEYS) &&
+  isNonEmptyStringProperty(value, "callId") &&
+  isNonEmptyStringProperty(value, "name") &&
+  "output" in value &&
+  isSerializableContractValue(value.output) &&
+  isOptionalBooleanProperty(value, "isError") &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
+const isFileContentPart = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, FILE_PART_KEYS) &&
+  (typeof value.data === "string" || value.data instanceof Uint8Array) &&
+  isNonEmptyStringProperty(value, "mediaType") &&
+  isOptionalStringProperty(value, "filename") &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
+const isStructuredContentPart = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, STRUCTURED_PART_KEYS) &&
+  "data" in value &&
+  isSerializableContractValue(value.data) &&
+  isOptionalStringProperty(value, "name") &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
 /**
  * Returns `true` when `value` is a structurally valid {@link ContentPart}
  * (KrakenFrameworkSpecification §1.1).
@@ -125,59 +168,22 @@ export const isContentPart = (value: unknown): value is ContentPart => {
 
   switch (value.type) {
     case "text": {
-      return (
-        hasOnlyAllowedKeys(value, TEXT_PART_KEYS) &&
-        typeof value.text === "string" &&
-        isOptionalSerializableRecordProperty(value, "providerMetadata")
-      );
+      return isTextContentPart(value);
     }
     case "reasoning": {
-      return (
-        hasOnlyAllowedKeys(value, REASONING_PART_KEYS) &&
-        typeof value.text === "string" &&
-        typeof value.redacted === "boolean" &&
-        (value.redacted || value.text.length > 0) &&
-        isOptionalSerializableRecordProperty(value, "providerMetadata")
-      );
+      return isReasoningContentPart(value);
     }
     case "tool_call": {
-      return (
-        hasOnlyAllowedKeys(value, TOOL_CALL_PART_KEYS) &&
-        isNonEmptyStringProperty(value, "callId") &&
-        isNonEmptyStringProperty(value, "name") &&
-        "input" in value &&
-        isSerializableContractValue(value.input) &&
-        isOptionalSerializableRecordProperty(value, "providerMetadata")
-      );
+      return isToolCallContentPart(value);
     }
     case "tool_result": {
-      return (
-        hasOnlyAllowedKeys(value, TOOL_RESULT_PART_KEYS) &&
-        isNonEmptyStringProperty(value, "callId") &&
-        isNonEmptyStringProperty(value, "name") &&
-        "output" in value &&
-        isSerializableContractValue(value.output) &&
-        isOptionalBooleanProperty(value, "isError") &&
-        isOptionalSerializableRecordProperty(value, "providerMetadata")
-      );
+      return isToolResultContentPart(value);
     }
     case "file": {
-      return (
-        hasOnlyAllowedKeys(value, FILE_PART_KEYS) &&
-        (typeof value.data === "string" || value.data instanceof Uint8Array) &&
-        isNonEmptyStringProperty(value, "mediaType") &&
-        isOptionalStringProperty(value, "filename") &&
-        isOptionalSerializableRecordProperty(value, "providerMetadata")
-      );
+      return isFileContentPart(value);
     }
     case "structured": {
-      return (
-        hasOnlyAllowedKeys(value, STRUCTURED_PART_KEYS) &&
-        "data" in value &&
-        isSerializableContractValue(value.data) &&
-        isOptionalStringProperty(value, "name") &&
-        isOptionalSerializableRecordProperty(value, "providerMetadata")
-      );
+      return isStructuredContentPart(value);
     }
     default: {
       return false;

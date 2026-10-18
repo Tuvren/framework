@@ -93,9 +93,12 @@ export interface ErasedPayload {
 export const isErasedPayload = (value: unknown): value is ErasedPayload =>
   typeof value === "object" &&
   value !== null &&
-  (value as { kind?: unknown }).kind === "erased" &&
-  typeof (value as ErasedPayload).keyRef === "string" &&
-  typeof (value as ErasedPayload).reason === "string";
+  "kind" in value &&
+  value.kind === "erased" &&
+  "keyRef" in value &&
+  typeof value.keyRef === "string" &&
+  "reason" in value &&
+  typeof value.reason === "string";
 
 // ── Codec contract ───────────────────────────────────────────────────────────
 
@@ -162,7 +165,8 @@ export const createIdentityPayloadCodec = (): PayloadCodec =>
 // plaintext record.
 
 /** The 4-byte AEAD envelope magic, ASCII `"TVE1"` (see block comment above). */
-export const ENVELOPE_MAGIC = Uint8Array.of(0x54, 0x56, 0x45, 0x31); // "TVE1"
+// Hexadecimal bytes for the ASCII string `TVE1`.
+export const ENVELOPE_MAGIC = Uint8Array.of(0x54, 0x56, 0x45, 0x31);
 
 /**
  * True when `bytes` begins with {@link ENVELOPE_MAGIC}, i.e. the stored
