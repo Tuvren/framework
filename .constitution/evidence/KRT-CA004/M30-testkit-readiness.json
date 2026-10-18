@@ -187,7 +187,7 @@
       "exports": 404,
       "status": "pass"
     },
-    "declaration_signatures": "byte-identical to predecessor after removing documentation comments",
+    "declaration_signatures": "Source/interface review and the 14-entrypoint, 404-export API freeze confirm the public declaration surface remains unchanged; the saved predecessor declaration artifact was empty and is not used as byte-equality evidence.",
     "fixture_loading": "preserved",
     "telemetry_capture": "preserved",
     "stream_test_semantics": "preserved",
