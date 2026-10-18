@@ -25,7 +25,7 @@
  * AX003.
  */
 export interface ServerRateLimiter {
-  tryAcquire(now?: number): boolean;
+  tryAcquire: (now?: number) => boolean;
 }
 
 export interface ServerRateLimitConfig {

@@ -99,47 +99,48 @@ const estimateFilePayloadLength = (payload: string | Uint8Array): number =>
   typeof payload === "string" ? payload.length : payload.byteLength;
 
 const estimateMessageTokens = (message: TuvrenMessage): number => {
-  const textLength =
-    message.role === "system"
-      ? message.content.length
-      : message.parts.reduce((length, part) => {
-          switch (part.type) {
-            case "file": {
-              return (
-                length +
-                estimateFilePayloadLength(part.data) +
-                (part.filename?.length ?? 0) +
-                part.mediaType.length
-              );
-            }
-            case "reasoning":
-            case "text": {
-              return length + part.text.length;
-            }
-            case "structured": {
-              return length + JSON.stringify(part.data).length;
-            }
-            case "tool_call": {
-              return (
-                length +
-                part.name.length +
-                JSON.stringify(part.input).length +
-                part.callId.length
-              );
-            }
-            case "tool_result": {
-              return (
-                length +
-                part.name.length +
-                JSON.stringify(part.output).length +
-                part.callId.length
-              );
-            }
-            default: {
-              return length;
-            }
-          }
-        }, 0);
+  if (message.role === "system") {
+    return Math.ceil(message.content.length / TOKEN_ESTIMATE_DIVISOR);
+  }
+
+  let textLength = 0;
+  for (const part of message.parts) {
+    switch (part.type) {
+      case "file": {
+        textLength +=
+          estimateFilePayloadLength(part.data) +
+          (part.filename?.length ?? 0) +
+          part.mediaType.length;
+        break;
+      }
+      case "reasoning":
+      case "text": {
+        textLength += part.text.length;
+        break;
+      }
+      case "structured": {
+        textLength += JSON.stringify(part.data).length;
+        break;
+      }
+      case "tool_call": {
+        textLength +=
+          part.name.length +
+          JSON.stringify(part.input).length +
+          part.callId.length;
+        break;
+      }
+      case "tool_result": {
+        textLength +=
+          part.name.length +
+          JSON.stringify(part.output).length +
+          part.callId.length;
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  }
 
   return Math.ceil(textLength / TOKEN_ESTIMATE_DIVISOR);
 };
@@ -195,21 +196,19 @@ const appendMessage = (
       if (isTurnBoundary) {
         manifest.turnBoundaries.push(messageIndex);
       }
-      return;
+      break;
     }
     default: {
-      return;
+      break;
     }
   }
 };
 
-const asRecord = (value: unknown): Record<string, unknown> => {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
 
-  return {};
-};
+const asRecord = (value: unknown): Record<string, unknown> =>
+  isRecord(value) ? value : {};
 
 const applyExtensionStateUpdates = (
   currentState: Record<string, unknown>,

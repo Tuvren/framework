@@ -28,7 +28,6 @@
  * lower level; it carries no host-facing re-exports and is not
  * semver-guaranteed.
  *
- * @packageDocumentation
  */
 export type { BindingResolver } from "./lib/binding-resolver.js";
 export { createBindingResolver } from "./lib/binding-resolver.js";
