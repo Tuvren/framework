@@ -51,10 +51,7 @@ import {
   matchesStreamEventVariant,
   safePredicate,
 } from "./runtime-contract-predicates.js";
-import type {
-  ExecutionStatus,
-  TuvrenToolDefinition,
-} from "./runtime-contract-shapes.js";
+import type { TuvrenToolDefinition } from "./runtime-contract-shapes.js";
 import type {
   ApprovalRequest,
   ApprovalResponse,
@@ -62,6 +59,7 @@ import type {
   TuvrenMessage,
 } from "./runtime-data-contract-shapes.js";
 import type { TuvrenStreamEvent } from "./runtime-event-contract-shapes.js";
+import type { ExecutionStatus } from "./runtime-execution-contract-shapes.js";
 import { FINISH_REASONS } from "./runtime-provider-contract-guards.js";
 import { TuvrenValidationError } from "./tuvren-error.js";
 
