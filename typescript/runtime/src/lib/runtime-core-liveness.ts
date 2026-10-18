@@ -282,7 +282,7 @@ const runLeaseLoop = async (
       return;
     }
 
-    await renewLease();
+    detachPromise(renewLease());
   };
 
   await renewLease();
