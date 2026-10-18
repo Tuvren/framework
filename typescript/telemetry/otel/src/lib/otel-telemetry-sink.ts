@@ -15,7 +15,7 @@
  */
 
 import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api";
-import type { Span, SpanAttributes, Tracer } from "@opentelemetry/api";
+import type { Attributes, Span, Tracer } from "@opentelemetry/api";
 import type {
   TelemetryEvent,
   TelemetrySpan,
@@ -26,6 +26,7 @@ const DEFAULT_INSTRUMENTATION_NAME = "@tuvren/telemetry-otel";
 
 /** Construction options for {@link createOtelTelemetrySink}. */
 export interface CreateOtelTelemetrySinkOptions {
+  /* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @defaultValue tag in the published option documentation. */
   /**
    * Instrumentation scope name used to resolve a tracer via
    * `trace.getTracer` when `tracer` is not supplied.
@@ -33,6 +34,7 @@ export interface CreateOtelTelemetrySinkOptions {
    * @defaultValue `"@tuvren/telemetry-otel"`
    */
   instrumentationName?: string;
+  /* oxlint-enable jsdoc/check-tag-names */
   /** Instrumentation scope version passed to `trace.getTracer`, when resolving a tracer by name. */
   instrumentationVersion?: string;
   /**
@@ -45,8 +47,8 @@ export interface CreateOtelTelemetrySinkOptions {
 /** Drops `undefined`-valued entries, since `SpanAttributes` does not accept them. */
 const toOtelAttributes = (
   attributes: Record<string, boolean | number | string | undefined>
-): SpanAttributes => {
-  const otelAttributes: SpanAttributes = {};
+): Attributes => {
+  const otelAttributes: Attributes = {};
 
   for (const [key, value] of Object.entries(attributes)) {
     if (value !== undefined) {
@@ -162,7 +164,11 @@ export const createOtelTelemetrySink = (
     );
 
   return {
-    event: (event) => emitTelemetryEvent(tracer, event),
-    span: (span) => emitTelemetrySpan(tracer, span),
+    event: (event) => {
+      emitTelemetryEvent(tracer, event);
+    },
+    span: (span) => {
+      emitTelemetrySpan(tracer, span);
+    },
   };
 };
