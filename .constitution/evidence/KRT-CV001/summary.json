@@ -1,0 +1,89 @@
+{
+  "ticket": "KRT-CV001",
+  "result": "pass",
+  "source": {
+    "baseCommit": "5ca9532a19b9ef3294fe5971fa35e16016cbf2fd",
+    "freezeTag": "evidence/wave-1-by-source-freeze-20261018",
+    "frozenByCommit": "0efb4c0c3b314673ece9e9ac9931c50ddce2cb6f",
+    "measuredTree": "0a3a74c705e46c2acc70494a5e92f3daf8313375",
+    "unionTree": "32fd3ce665f6e54b6311363bb876e13f4f6756b8",
+    "milestoneCommit": "d7d749d775cf519f3e1ac31cb81934927830c76b",
+    "milestoneTree": "41846ac56761e416c4d1bf928cbb08a38676d3d5",
+    "candidateDiffSha256": "5c45e8575e059360010f67b3f89ac321cba68bc06ac653addb33724d3aa36aa7",
+    "candidateDiffCommand": "git diff --binary 5ca9532a19b9ef3294fe5971fa35e16016cbf2fd d7d749d775cf519f3e1ac31cb81934927830c76b | sha256sum"
+  },
+  "scope": {
+    "filesChanged": 23,
+    "insertions": 6984,
+    "deletions": 6041,
+    "rawChangedLines": 13025,
+    "proofTreeModeAndBlobMatches": 69,
+    "outOfScopeFilesChanged": 0,
+    "largestOwnedFileLines": 925,
+    "compilerFiles": 797,
+    "historicalCompilerFiles": 789,
+    "compilerCountDriftReason": "Eight already-merged CU runtime extraction leaves joined the current dependency graph.",
+    "liveSiblingSourceFiles": 0,
+    "retainedBiomeDirectives": 4,
+    "reviewedEarlyDirectiveRemovals": 2
+  },
+  "checks": [
+    {
+      "command": "direnv exec . bun run nx run framework-typescript-conformance-adapter:typecheck",
+      "exitCode": 0,
+      "outcome": "Framework adapter source-only typecheck passed."
+    },
+    {
+      "command": "direnv exec . bun run nx run framework-typescript-conformance-adapter:lint",
+      "exitCode": 0,
+      "outcome": "Retained Biome checked 41 files; exactly four final-BY directives retained their original reasons."
+    },
+    {
+      "command": "direnv exec . bun -e 'await import(\"./typescript/conformance-adapter/src/framework-adapter.ts\")'",
+      "exitCode": 0,
+      "outcome": "Fresh source entrypoint import passed."
+    },
+    {
+      "command": "direnv exec . bun run nx run framework-typescript-conformance-adapter:build-batteries-included",
+      "exitCode": 0,
+      "outcome": "Batteries-included build and fresh Node load of the built entrypoint passed."
+    },
+    {
+      "command": "Shared conformance harness for the TypeScript framework implementation",
+      "exitCode": 0,
+      "outcome": "511 of 511 applicable checks passed; 12 were non-applicable."
+    },
+    {
+      "command": "Shared conformance harness for the TypeScript batteries-included implementation",
+      "exitCode": 0,
+      "outcome": "12 of 12 applicable checks passed; 511 were non-applicable."
+    },
+    {
+      "command": "direnv exec . bun run typecheck",
+      "exitCode": 0,
+      "outcome": "All 33 workspace projects and the generated prerequisite passed."
+    },
+    {
+      "command": "TypeScript --listFilesOnly for typescript/conformance-adapter",
+      "exitCode": 0,
+      "outcome": "All 797 compiler files resolve within this checkout; zero resolve from live sibling source."
+    },
+    {
+      "command": "flock /tmp/tuvren-framework-wave-1-gates.lock direnv exec . env PGHOST=/run/user/1000/devenv-3ea1e50/postgres PGPORT=5432 bun run check",
+      "exitCode": 0,
+      "outcome": "Authority, portability, API freeze, format, affected typecheck, test, and lint gates passed."
+    },
+    {
+      "command": "direnv exec . bun run ~/.codex/skills/constitution-tooling/scripts/cli.ts validate --root .",
+      "exitCode": 0,
+      "outcome": "Constitution validation reported zero errors and zero warnings."
+    }
+  ],
+  "review": {
+    "model": "gpt-6.1-sol",
+    "commit": "d7d749d775cf519f3e1ac31cb81934927830c76b",
+    "coverage": "Every changed file and meaningful observation, including execution, error, initialization, export, child-cleanup, scenario, tooling, and whole-change interactions.",
+    "findings": [],
+    "limits": "Broad command results were available as command summaries without durable logs and were not duplicated; focused independent behavior checks passed."
+  }
+}
