@@ -32,6 +32,9 @@ import {
   waitForAbort,
 } from "./runtime-core-test-helpers.ts";
 
+const createRunnerRegistry = (runners: RuntimeRunner[] = []) => {
+  return createBaseRunnerRegistry(runners);
+};
 describe("framework-runtime-core awaitResult", () => {
   test("resolves with status=completed and the final assistant message on a successful turn", async () => {
     const harness = createFakeKernelHarness();
@@ -303,7 +306,3 @@ describe("framework-runtime-core awaitResult", () => {
     expect(events.some((e) => e.type === "turn.start")).toBe(true);
   });
 });
-
-function createRunnerRegistry(runners: RuntimeRunner[] = []) {
-  return createBaseRunnerRegistry(runners);
-}
