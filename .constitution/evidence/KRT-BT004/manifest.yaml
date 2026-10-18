@@ -1,0 +1,20 @@
+owner: KRT-BT004
+mode: contract_test
+produced:
+  date: 2026-10-18
+  commit: 52322ca372e56b14ec7cf3d2edb21b2c152a990f
+  command: "Atomic runtime native admission; full shipped-preset, selection, routing, cache-input, runtime, and final verify proof."
+files:
+  - path: suppressions.json
+    sha256: 3ff93e880fa32a94d4b587e8a905f94f5ce8f20624fdda17c6208364ebf055f5
+    bytes: 79963
+    role: measurement
+  - path: pre-admission.json
+    sha256: fda37a6858e574d09cf984bdc70bc5e6fc4f5f791f67ab2e14c11301c1eb4d6e
+    bytes: 783
+    role: measurement
+  - path: hashplanner-receipt.json
+    sha256: 68c72bc34f4a0d5c0283bb73773219bdc56f7b43f2019c23fe297b002443dfda
+    bytes: 2131
+    role: measurement
+pass_criteria: "All 59 baseline suppression identities retain their original reasons and final dispositions; 30 behavior-proven removals precede admission and 29 remaining directives are removed atomically with native ownership after fresh proof of zero firing counterparts. The canonical runtime target selects 154 code and 7 JSON files, runs 474 shipped rules with zero diagnostics or resolution errors, isolates ordinary Nx caller arguments, hashes 575 inputs including workspace dependency sources, and passes the complete final verification gate."

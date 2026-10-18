@@ -1,0 +1,89 @@
+{
+  "nxVersion": "22.7.12",
+  "nativeApi": "HashPlanInspector.inspectTaskInputs -> HashPlanner.getPlansReference",
+  "projectTarget": "framework-runtime:lint",
+  "expandedFiles": 575,
+  "inputAssertions": [
+    {
+      "file": "typescript/core/src/index.ts",
+      "included": true
+    },
+    {
+      "file": "typescript/core/src/lib/runtime-contract-guards.ts",
+      "included": true
+    },
+    {
+      "file": "biome.jsonc",
+      "included": true
+    },
+    {
+      "file": "oxlint.config.ts",
+      "included": true
+    },
+    {
+      "file": "oxfmt.config.ts",
+      "included": true
+    },
+    {
+      "file": "package.json",
+      "included": true
+    },
+    {
+      "file": "bun.lock",
+      "included": true
+    },
+    {
+      "file": "tools/scripts/json-check.ts",
+      "included": true
+    },
+    {
+      "file": "tools/scripts/json-source-check.ts",
+      "included": true
+    },
+    {
+      "file": "tools/scripts/lib/biome-inventory.ts",
+      "included": true
+    },
+    {
+      "file": "tools/scripts/lib/command-runner.ts",
+      "included": true
+    },
+    {
+      "file": "tools/scripts/lib/json-source-integrity.ts",
+      "included": true
+    },
+    {
+      "file": "Cargo.toml",
+      "included": true
+    },
+    {
+      "file": "Cargo.lock",
+      "included": true
+    },
+    {
+      "file": "rust-toolchain.toml",
+      "included": true
+    }
+  ],
+  "dependencySourceNativeHash": {
+    "file": "typescript/core/src/index.ts",
+    "hash": "7167335596068857064"
+  },
+  "inputs": [
+    "default",
+    "^production",
+    "{workspaceRoot}/biome.jsonc",
+    "{workspaceRoot}/oxlint.config.ts",
+    "{workspaceRoot}/oxfmt.config.ts",
+    "{workspaceRoot}/package.json",
+    "{workspaceRoot}/bun.lock",
+    "{workspaceRoot}/tools/scripts/json-check.ts",
+    "{workspaceRoot}/tools/scripts/json-source-check.ts",
+    "{workspaceRoot}/tools/scripts/lib/biome-inventory.ts",
+    "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+    "{workspaceRoot}/tools/scripts/lib/json-source-integrity.ts",
+    "{workspaceRoot}/Cargo.toml",
+    "{workspaceRoot}/Cargo.lock",
+    "{workspaceRoot}/rust-toolchain.toml"
+  ]
+}
