@@ -254,4 +254,69 @@ tickets:
       evidence: "The amended sections name the field, the staged-with-the-message guarantee, the readBranchMessages read path, the provider exclusion, the no-dedup rule, and the initial-input recovery matching rule, each citing the conformance checks from KRT-CS006. An extended tools/scripts/api-freeze-gate.test.ts assertion verifies .changeset/runtime-cs-host-admission-key.md lists exactly every affected public package at minor, with no missing package, extra package, or wrong release type."
     flows: [flow-context-engineering-steering]
     certainty: assumed
-    status: in_progress
+    status: done
+closeout:
+  tickets_completed: [KRT-CS001, KRT-CS002, KRT-CS008, KRT-CS004, KRT-CS005, KRT-CS006, KRT-CS007]
+  tickets_deferred: []
+  points_completed: 30
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-CS: host admission keys are preserved with durable input and steering messages, excluded from runner and provider requests, matched against the original input during recovery, carried through session steering, and certified across real SQLite process death."
+  candidate_terms:
+    - term: "Admission key"
+      where: "Framework specification sections 1.2 and 1.3 and the core, host, and session TypeSpec contracts."
+  routed_upstream: []
+  follow_ups:
+    - "Harden the M2 test-only SQLite child helper with an explicit subprocess deadline and awaited termination so a Bun test timeout also removes its owned temporary directory. The M6 conformance process helper already applies this cleanup discipline."
+    - "After merge and reconciliation, publish the curated public package set through the authorized Changesets release workflow, then verify npm provenance and a fresh installed-package admission-key scenario."
+  code_decisions:
+    - summary: "Represent the host admission identity as an optional opaque non-empty `admissionKey` on InputSignal and user messages, omitting the property entirely for keyless content so deterministic bytes and hashes remain unchanged."
+      kind: contract_shape
+      paths:
+        - spec/core/typespec/main.tsp
+        - spec/host/typespec/main.tsp
+        - spec/host/session/typespec/main.tsp
+        - typescript/core/src/lib/runtime-contract-shapes.ts
+      commit: d303c2e
+    - summary: "Start an orchestration binding's event iterator before replaying pre-bind steering, preserve complete normalized signals through queued and approval-resumed paths, and close the superseded iterator when generations change."
+      kind: pattern
+      paths:
+        - typescript/runtime/src/lib/orchestration-runtime-node.ts
+        - typescript/runtime/test/admission-key-persistence.test.ts
+      commit: 1a68497
+    - summary: "Project copies of durable user messages at createRunnerExecutionContext and remove host-owned admission keys before runners or providers receive the immutable message snapshot."
+      kind: pattern
+      paths:
+        - typescript/runtime/src/lib/runtime-core-runner.ts
+        - typescript/runtime/test/admission-key-provider-projection.test.ts
+      commit: 15125c5
+    - summary: "Resolve keyed recovery identity by scanning the recovered turn's bounded checkpoint lineage for its earliest incorporated user message, skipping preceding empty preemption checkpoints and excluding later steering messages."
+      kind: pattern
+      paths:
+        - typescript/runtime/src/lib/runtime-core-expired-recovery.ts
+        - typescript/runtime/src/lib/runtime-core-recovery.ts
+        - typescript/runtime/test/runtime-core-recovery-comparison.test.ts
+      commit: 2c7a094
+    - summary: "Exercise SQLite process-death recovery with Bun-built, Bun-spawned Node child hosts because Bun 1.4.2 cannot load better-sqlite3 12.8.0; use raw phase observations, literal SIGKILL, bounded waits, awaited exits, and verified temporary-directory cleanup while shared plans retain all grading."
+      kind: pattern
+      paths:
+        - typescript/conformance-adapter/src/framework-adapter-admission-key.ts
+        - spec/conformance/engine/plans/runtime-api-lifecycle-extended.json
+      commit: 6c6d76b
+  settled:
+    - record: tech-spec/contracts/host-session.meta.yaml
+      evidence:
+        kind: measurement
+        ref: reports/compatibility/evidence/certification-harness.framework-typescript-certification.json
+        version: 29204bd
+        date: 2026-10-17
+        note: "The promoted host-session admission-key check dispatches the owned TypeSpec frame through the binding and verifies the committed message through readBranchMessages."
+    - record: tech-spec/data-models/session-frames.meta.yaml
+      evidence:
+        kind: measurement
+        ref: reports/compatibility/evidence/certification-harness.framework-typescript-certification.json
+        version: 29204bd
+        date: 2026-10-17
+        note: "Generated session schema, binding validation, client carriage, and promoted conformance exercise the optional field while protocol version 1 remains unchanged."
