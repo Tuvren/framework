@@ -17,11 +17,8 @@
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
-import {
-  DEFAULT_SCOPE,
-  type KernelRecord,
-  TuvrenRuntimeError,
-} from "@tuvren/core";
+import { DEFAULT_SCOPE, TuvrenRuntimeError } from "@tuvren/core";
+import type { KernelRecord } from "@tuvren/core";
 import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type {
@@ -34,11 +31,9 @@ import type {
   TelemetrySpan,
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
-import type {
-  RuntimeKernel,
-  RuntimeKernelRunLiveness,
-} from "@tuvren/kernel-protocol";
 import {
+  type RuntimeKernel,
+  type RuntimeKernelRunLiveness,
   encodeDeterministicKernelRecord,
   type RecoveryState,
 } from "@tuvren/kernel-protocol";
@@ -131,12 +126,12 @@ describe("framework-runtime-core", () => {
     expect(() =>
       createTuvrenRuntime({
         defaultRunnerId: "fake",
-        runnerRegistry: createRunnerRegistry([]),
         kernel: harness.kernel,
         runLiveness: {
           executionOwnerId: "worker-1",
           leaseDurationMs: 50,
         },
+        runnerRegistry: createRunnerRegistry([]),
       })
     ).toThrow("kernel.run-liveness extension");
   });
@@ -203,13 +198,13 @@ describe("framework-runtime-core", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 60,
         renewBeforeMs: 20,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -250,12 +245,12 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: telemetry.sink,
     });
     const thread = await runtime.createThread({});
@@ -343,12 +338,12 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const staleTurn = await livenessHarness.kernel.turn.create(
@@ -419,12 +414,12 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const staleTurn = await livenessHarness.kernel.turn.create(
@@ -692,11 +687,11 @@ describe("framework-runtime-core", () => {
       kernel,
       now: () => now,
       payloadCodec: IDENTITY_PAYLOAD_CODEC,
-      runnerRegistry: createRunnerRegistry([runner]),
       runLiveness: {
         executionOwnerId: "replacement-worker",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
@@ -848,11 +843,11 @@ describe("framework-runtime-core", () => {
       kernel: fixture.kernel,
       now: () => 21,
       payloadCodec: IDENTITY_PAYLOAD_CODEC,
-      runnerRegistry: createRunnerRegistry([runner]),
       runLiveness: {
         executionOwnerId: "replacement-worker",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const handle = runtime.executeTurn({
       branchId: fixture.thread.branchId,
@@ -926,11 +921,11 @@ describe("framework-runtime-core", () => {
       kernel: fixture.kernel,
       now: () => 21,
       payloadCodec: IDENTITY_PAYLOAD_CODEC,
-      runnerRegistry: createRunnerRegistry([runner]),
       runLiveness: {
         executionOwnerId: "replacement-worker",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const pausedHandle = runtime.executeTurn({
       branchId: fixture.thread.branchId,
@@ -996,12 +991,12 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const staleTurn = await livenessHarness.kernel.turn.create(
@@ -1094,12 +1089,12 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const staleTurn = await livenessHarness.kernel.turn.create(
@@ -1172,12 +1167,12 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const threadA = await runtime.createThread({});
     const threadB = await runtime.createThread({});
@@ -1257,12 +1252,12 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const staleTurn = await livenessHarness.kernel.turn.create(
@@ -1348,12 +1343,12 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const staleTurn = await livenessHarness.kernel.turn.create(
@@ -1506,7 +1501,7 @@ async function stageTestMessage(
 }
 
 function createRunnerRegistry(
-  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
 ) {
   return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
@@ -1555,7 +1550,7 @@ function isKrakenRunnerFactory(
 }
 
 function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const resume = runner.resume;
+  const { resume } = runner;
 
   return {
     async execute(context) {

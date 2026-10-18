@@ -41,6 +41,7 @@ describe("orchestration-runtime approval", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -84,7 +85,6 @@ describe("orchestration-runtime approval", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -149,6 +149,7 @@ describe("orchestration-runtime approval", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           const toolMessages = context.messages.filter(
@@ -181,7 +182,6 @@ describe("orchestration-runtime approval", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -232,6 +232,7 @@ describe("orchestration-runtime approval", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           const toolMessages = context.messages.filter(
@@ -275,7 +276,6 @@ describe("orchestration-runtime approval", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
