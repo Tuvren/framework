@@ -42,22 +42,6 @@ import {
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function hasToolMessage(messages: readonly unknown[]): boolean {
-  return messages.some(
-    (message) => isRecord(message) && message.role === "tool"
-  );
-}
-
-function readEventType(event: unknown): string | undefined {
-  return isRecord(event) && typeof event.type === "string"
-    ? event.type
-    : undefined;
-}
-
 interface ObservedToolResult {
   callId: unknown;
   errorCode: string | undefined;
@@ -65,7 +49,18 @@ interface ObservedToolResult {
   name: unknown;
 }
 
-function readToolResults(messages: readonly unknown[]): ObservedToolResult[] {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const hasToolMessage = (messages: readonly unknown[]): boolean =>
+  messages.some((message) => isRecord(message) && message.role === "tool");
+
+const readEventType = (event: unknown): string | undefined =>
+  isRecord(event) && typeof event.type === "string" ? event.type : undefined;
+
+const readToolResults = (
+  messages: readonly unknown[]
+): ObservedToolResult[] => {
   const results: ObservedToolResult[] = [];
 
   for (const message of messages) {
@@ -83,7 +78,7 @@ function readToolResults(messages: readonly unknown[]): ObservedToolResult[] {
       // A validation-error tool result carries its stable code on
       // `output.code` (with `output.error` holding the human message); see
       // createValidationErrorToolResult in the runtime.
-      const output = part.output;
+      const { output } = part;
       const errorCode =
         isRecord(output) && typeof output.code === "string"
           ? output.code
@@ -99,7 +94,7 @@ function readToolResults(messages: readonly unknown[]): ObservedToolResult[] {
   }
 
   return results;
-}
+};
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.trust-boundary.approval-gate
@@ -111,28 +106,25 @@ function readToolResults(messages: readonly unknown[]): ObservedToolResult[] {
 // executed — proving the gate cannot be bypassed without a decision.
 // ---------------------------------------------------------------------------
 
-export async function runTrustBoundaryApprovalNonBypassable(
+export const runTrustBoundaryApprovalNonBypassable = async (
   _input: unknown
-): Promise<AdapterProjection> {
+): Promise<AdapterProjection> => {
   const harness = createConformanceKernelHarness();
   const executedToolNames: string[] = [];
   const gatedToolName = "trust-boundary-gated-tool";
-  const runner = createStaticRunner(async () => {
-    await Promise.resolve();
-    return {
-      messages: [
-        assistantToolCalls([
-          {
-            callId: "call-gated",
-            input: { confirm: true },
-            name: gatedToolName,
-          },
-        ]),
-      ],
-      resolution: { type: "continue_iteration" },
-      toolExecutionMode: "parallel",
-    };
-  });
+  const runner = createStaticRunner(() => ({
+    messages: [
+      assistantToolCalls([
+        {
+          callId: "call-gated",
+          input: { confirm: true },
+          name: gatedToolName,
+        },
+      ]),
+    ],
+    resolution: { type: "continue_iteration" },
+    toolExecutionMode: "parallel",
+  }));
   const tools: TuvrenToolDefinition[] = [
     {
       approval: true,
@@ -148,8 +140,8 @@ export async function runTrustBoundaryApprovalNonBypassable(
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
@@ -170,7 +162,9 @@ export async function runTrustBoundaryApprovalNonBypassable(
 
   // No decision is supplied; release the paused turn so the harness tears down.
   handle.cancel();
-  await handle.awaitResult().catch(() => undefined);
+  await handle.awaitResult().catch(() => {
+    // Cancellation rejection is expected while releasing the paused harness turn.
+  });
 
   return {
     result: {
@@ -184,7 +178,7 @@ export async function runTrustBoundaryApprovalNonBypassable(
       },
     },
   };
-}
+};
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.trust-boundary.local-tool-input
@@ -196,15 +190,13 @@ export async function runTrustBoundaryApprovalNonBypassable(
 // `execute` was ever invoked.
 // ---------------------------------------------------------------------------
 
-export async function runTrustBoundaryLocalToolInput(
+export const runTrustBoundaryLocalToolInput = async (
   _input: unknown
-): Promise<AdapterProjection> {
+): Promise<AdapterProjection> => {
   const harness = createConformanceKernelHarness();
   let toolExecuted = false;
   const toolName = "trust-boundary-strict-tool";
-  const runner = createStaticRunner(async (context) => {
-    await Promise.resolve();
-
+  const runner = createStaticRunner((context) => {
     if (!hasToolMessage(context.messages)) {
       return {
         messages: [
@@ -242,8 +234,8 @@ export async function runTrustBoundaryLocalToolInput(
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
@@ -267,4 +259,4 @@ export async function runTrustBoundaryLocalToolInput(
       },
     },
   };
-}
+};

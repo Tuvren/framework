@@ -18,162 +18,65 @@ import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
 import type { ApprovalDecision } from "@tuvren/core/tools";
 import { toAgUiEvents } from "@tuvren/stream-agui";
-import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
+import {
+  createFixtureStream,
+  teeTuvrenStreamEvents,
+} from "@tuvren/stream-core";
 import { toSseFrames } from "@tuvren/stream-sse";
 
 import {
-  type AdapterProjection,
   AGENT_NAME,
   collectValues,
   createRuntimeWithReactRunner,
   createScenarioProvider,
   textSignal,
 } from "./framework-adapter-runtime.ts";
+import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterEventStreamDependencies {
-  isRecord(value: unknown): value is Record<string, unknown>;
-  parseJsonValue(value: string): unknown;
-  readApprovalDecisions(
+  isRecord: (value: unknown) => value is Record<string, unknown>;
+  parseJsonValue: (value: string) => unknown;
+  readApprovalDecisions: (
     record: Record<string, unknown>,
     path: string
-  ): ApprovalDecision[];
-  readFirstToolCallName(
+  ) => ApprovalDecision[];
+  readFirstToolCallName: (
     responses: readonly TuvrenModelResponse[],
     path: string
-  ): string;
-  readModelResponseArrayProperty(
+  ) => string;
+  readModelResponseArrayProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): TuvrenModelResponse[];
-  readProperty(
+  ) => TuvrenModelResponse[];
+  readProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): unknown;
-  readRecordString(record: unknown, key: string): string | undefined;
-  readScenarioInput(input: unknown, operation: string): Record<string, unknown>;
-  readStringProperty(
+  ) => unknown;
+  readRecordString: (record: unknown, key: string) => string | undefined;
+  readScenarioInput: (
+    input: unknown,
+    operation: string
+  ) => Record<string, unknown>;
+  readStringProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): string;
+  ) => string;
 }
 
-export function createFrameworkAdapterEventStream(
+export const createFrameworkAdapterEventStream = (
   dependencies: FrameworkAdapterEventStreamDependencies
 ): {
-  runAgUiProjection(input: unknown): Promise<AdapterProjection>;
-  runSseEagerSubscription(input: unknown): Promise<AdapterProjection>;
-  runSseProjection(input: unknown): Promise<AdapterProjection>;
-} {
-  async function runSseProjection(input: unknown): Promise<AdapterProjection> {
-    const sourceEvents = await runEventStreamScenario(input, "event-stream");
-    const frames = await collectValues(
-      toSseFrames(createEventStream(sourceEvents))
-    );
-    const projectedEvents = frames.map((frame) => ({
-      event: frame.event,
-      payload: dependencies.parseJsonValue(frame.data),
-    }));
-
-    return {
-      events: projectedEvents,
-      result: {
-        events: projectedEvents,
-        sourceEvents,
-      },
-    };
-  }
-
-  async function runSseEagerSubscription(
-    input: unknown
-  ): Promise<AdapterProjection> {
-    const events = await runEventStreamScenario(input, "event-stream");
-    const [sseBranch, directBranch] = teeTuvrenStreamEvents(
-      createEventStream(events),
-      2
-    );
-    const sseFrames = toSseFrames(sseBranch);
-    const directIterator = directBranch[Symbol.asyncIterator]();
-    const firstDirectEvent = await directIterator.next();
-
-    await Promise.resolve();
-    await directIterator.return?.();
-
-    const frames = await collectValues(sseFrames);
-    const projectedEvents = frames.map((frame) => ({
-      event: frame.event,
-      payload: dependencies.parseJsonValue(frame.data),
-    }));
-
-    return {
-      events: projectedEvents,
-      result: {
-        events: projectedEvents,
-        ...(firstDirectEvent.done === false
-          ? { firstDirectEvent: firstDirectEvent.value }
-          : {}),
-      },
-    };
-  }
-
-  async function runAgUiProjection(input: unknown): Promise<AdapterProjection> {
-    const sourceEvents = await runEventStreamScenario(input, "event-stream");
-    const warnings: Array<{ code: string }> = [];
-    const events = await collectValues(
-      toAgUiEvents(createEventStream(sourceEvents), {
-        onWarning(warning) {
-          warnings.push({ code: warning.code });
-        },
-      })
-    );
-
-    return {
-      events,
-      result: {
-        events,
-        sourceEvents,
-        warnings,
-      },
-    };
-  }
-
-  return {
-    runAgUiProjection,
-    runSseEagerSubscription,
-    runSseProjection,
-  };
-
-  function runEventStreamScenario(
-    input: unknown,
-    label: string
-  ): Promise<readonly TuvrenStreamEvent[]> {
-    const scenario = dependencies.readScenarioInput(input, label);
-    const operation = dependencies.readStringProperty(
-      scenario,
-      "operation",
-      `${label}.scenario.operation`
-    );
-
-    switch (operation) {
-      case "event-stream.completed-tool-turn":
-        return runCompletedToolEventStreamTurn(scenario, label);
-      case "event-stream.failed-provider-turn":
-        return runFailedProviderEventStreamTurn(scenario, label);
-      case "event-stream.paused-approval-turn":
-        return runPausedApprovalEventStreamTurn(scenario, label);
-      case "event-stream.resumed-approval-turn":
-        return runResumedApprovalEventStreamTurn(scenario, label);
-      default:
-        throw new Error(`${label} scenario declared unsupported ${operation}`);
-    }
-  }
-
-  async function runCompletedToolEventStreamTurn(
+  runAgUiProjection: (input: unknown) => Promise<AdapterProjection>;
+  runSseEagerSubscription: (input: unknown) => Promise<AdapterProjection>;
+  runSseProjection: (input: unknown) => Promise<AdapterProjection>;
+} => {
+  const runCompletedToolEventStreamTurn = async (
     scenario: Record<string, unknown>,
     label: string
-  ): Promise<readonly TuvrenStreamEvent[]> {
+  ): Promise<readonly TuvrenStreamEvent[]> => {
     const prompt = dependencies.readStringProperty(
       scenario,
       "prompt",
@@ -198,7 +101,9 @@ export function createFrameworkAdapterEventStream(
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        model: createScenarioProvider(providerResponses, () => undefined),
+        model: createScenarioProvider(providerResponses, () => {
+          // This scenario does not observe provider calls.
+        }),
         name: AGENT_NAME,
         tools: [
           {
@@ -216,12 +121,12 @@ export function createFrameworkAdapterEventStream(
     });
 
     return await collectValues(handle.events());
-  }
+  };
 
-  async function runFailedProviderEventStreamTurn(
+  const runFailedProviderEventStreamTurn = async (
     scenario: Record<string, unknown>,
     label: string
-  ): Promise<readonly TuvrenStreamEvent[]> {
+  ): Promise<readonly TuvrenStreamEvent[]> => {
     const prompt = dependencies.readStringProperty(
       scenario,
       "prompt",
@@ -237,7 +142,9 @@ export function createFrameworkAdapterEventStream(
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        model: createScenarioProvider(providerResponses, () => undefined),
+        model: createScenarioProvider(providerResponses, () => {
+          // This scenario does not observe provider calls.
+        }),
         name: AGENT_NAME,
       },
       signal: textSignal(prompt),
@@ -245,12 +152,12 @@ export function createFrameworkAdapterEventStream(
     });
 
     return await collectValues(handle.events());
-  }
+  };
 
-  async function runPausedApprovalEventStreamTurn(
+  const runPausedApprovalEventStreamTurn = async (
     scenario: Record<string, unknown>,
     label: string
-  ): Promise<readonly TuvrenStreamEvent[]> {
+  ): Promise<readonly TuvrenStreamEvent[]> => {
     const prompt = dependencies.readStringProperty(
       scenario,
       "prompt",
@@ -270,7 +177,9 @@ export function createFrameworkAdapterEventStream(
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        model: createScenarioProvider(providerResponses, () => undefined),
+        model: createScenarioProvider(providerResponses, () => {
+          // This scenario does not observe provider calls.
+        }),
         name: AGENT_NAME,
         tools: [
           {
@@ -293,12 +202,12 @@ export function createFrameworkAdapterEventStream(
     });
 
     return await collectValues(handle.events());
-  }
+  };
 
-  async function runResumedApprovalEventStreamTurn(
+  const runResumedApprovalEventStreamTurn = async (
     scenario: Record<string, unknown>,
     label: string
-  ): Promise<readonly TuvrenStreamEvent[]> {
+  ): Promise<readonly TuvrenStreamEvent[]> => {
     const prompt = dependencies.readStringProperty(
       scenario,
       "prompt",
@@ -322,7 +231,9 @@ export function createFrameworkAdapterEventStream(
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        model: createScenarioProvider(providerResponses, () => undefined),
+        model: createScenarioProvider(providerResponses, () => {
+          // This scenario does not observe provider calls.
+        }),
         name: AGENT_NAME,
         tools: [
           {
@@ -379,19 +290,116 @@ export function createFrameworkAdapterEventStream(
     }
 
     return combinedEvents;
-  }
+  };
 
-  function createEventStream(
-    events: readonly TuvrenStreamEvent[]
-  ): AsyncIterable<TuvrenStreamEvent> {
+  const runEventStreamScenario = async (
+    input: unknown,
+    label: string
+  ): Promise<readonly TuvrenStreamEvent[]> => {
+    const scenario = dependencies.readScenarioInput(input, label);
+    const operation = dependencies.readStringProperty(
+      scenario,
+      "operation",
+      `${label}.scenario.operation`
+    );
+
+    switch (operation) {
+      case "event-stream.completed-tool-turn": {
+        return await runCompletedToolEventStreamTurn(scenario, label);
+      }
+      case "event-stream.failed-provider-turn": {
+        return await runFailedProviderEventStreamTurn(scenario, label);
+      }
+      case "event-stream.paused-approval-turn": {
+        return await runPausedApprovalEventStreamTurn(scenario, label);
+      }
+      case "event-stream.resumed-approval-turn": {
+        return await runResumedApprovalEventStreamTurn(scenario, label);
+      }
+      default: {
+        throw new Error(`${label} scenario declared unsupported ${operation}`);
+      }
+    }
+  };
+
+  const runAgUiProjection = async (
+    input: unknown
+  ): Promise<AdapterProjection> => {
+    const sourceEvents = await runEventStreamScenario(input, "event-stream");
+    const warnings: { code: string }[] = [];
+    const events = await collectValues(
+      toAgUiEvents(createFixtureStream(sourceEvents), {
+        onWarning(warning) {
+          warnings.push({ code: warning.code });
+        },
+      })
+    );
+
     return {
-      async *[Symbol.asyncIterator](): AsyncIterator<TuvrenStreamEvent> {
-        await Promise.resolve();
-
-        for (const event of events) {
-          yield structuredClone(event);
-        }
+      events,
+      result: {
+        events,
+        sourceEvents,
+        warnings,
       },
     };
-  }
-}
+  };
+
+  const runSseEagerSubscription = async (
+    input: unknown
+  ): Promise<AdapterProjection> => {
+    const events = await runEventStreamScenario(input, "event-stream");
+    const [sseBranch, directBranch] = teeTuvrenStreamEvents(
+      createFixtureStream(events),
+      2
+    );
+    const sseFrames = toSseFrames(sseBranch);
+    const directIterator = directBranch[Symbol.asyncIterator]();
+    const firstDirectEvent = await directIterator.next();
+
+    await Promise.resolve();
+    await directIterator.return?.();
+
+    const frames = await collectValues(sseFrames);
+    const projectedEvents = frames.map((frame) => ({
+      event: frame.event,
+      payload: dependencies.parseJsonValue(frame.data),
+    }));
+
+    return {
+      events: projectedEvents,
+      result: {
+        events: projectedEvents,
+        ...(firstDirectEvent.done === false
+          ? { firstDirectEvent: firstDirectEvent.value }
+          : {}),
+      },
+    };
+  };
+  const runSseProjection = async (
+    input: unknown
+  ): Promise<AdapterProjection> => {
+    const sourceEvents = await runEventStreamScenario(input, "event-stream");
+    const frames = await collectValues(
+      toSseFrames(createFixtureStream(sourceEvents))
+    );
+    const projectedEvents = frames.map((frame) => ({
+      event: frame.event,
+      payload: dependencies.parseJsonValue(frame.data),
+    }));
+
+    return {
+      events: projectedEvents,
+      result: {
+        events: projectedEvents,
+        sourceEvents,
+      },
+    };
+  };
+
+  return {
+    runAgUiProjection,
+    runSseEagerSubscription,
+    runSseProjection,
+  };
+};
