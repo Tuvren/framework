@@ -186,6 +186,310 @@ export interface RuntimeCoreLoopHost {
   recordBoundsToolCalls(handle: RuntimeExecutionHandle, count: number): number;
 }
 
+/** Build the hard-fail outcome for an exceeded execution bound. (BD006) */
+const boundsFailLoopOutcome = (
+  bound: ExecutionBoundKind,
+  limit: number,
+  observed: number
+): LoopOutcome => {
+  return {
+    resolution: {
+      error: createBoundExceededError(bound, limit, observed),
+      fatality: "hard",
+      type: "fail",
+    },
+  };
+};
+
+/**
+ * Mark the handle as running for the next iteration and publish the
+ * `iteration.start` stream event.
+ */
+const beginIteration = (
+  host: RuntimeCoreLoopHost,
+  handle: RuntimeExecutionHandle,
+  loopState: LoopState,
+  iterationCount: number,
+  now: () => number
+): void => {
+  handle.updateStatus({
+    activeAgent: loopState.activeConfig.name,
+    approval: undefined,
+    iterationCount,
+    pauseReason: undefined,
+    phase: "running",
+  });
+  host.publishEvent(
+    handle,
+    {
+      iterationCount,
+      timestamp: now(),
+      type: "iteration.start",
+    },
+    loopState
+  );
+};
+
+/** Publish the `iteration.end` stream event for the finished iteration. */
+const publishIterationEnd = (
+  host: RuntimeCoreLoopHost,
+  handle: RuntimeExecutionHandle,
+  loopState: LoopState,
+  iterationCount: number,
+  now: () => number
+): void => {
+  host.publishEvent(
+    handle,
+    {
+      iterationCount,
+      timestamp: now(),
+      type: "iteration.end",
+    },
+    loopState
+  );
+};
+
+const uncommittedRecoveredHistory = (
+  loopState: LoopState
+): { messageHashes: HashString[]; messages: TuvrenMessage[] } | undefined => {
+  const recoveryPlan = loopState.interruptedIterationPlan;
+  if (
+    recoveryPlan === undefined ||
+    recoveryPlan.disposition === "re_infer" ||
+    recoveryPlan.stagedMessages.length === 0
+  ) {
+    return undefined;
+  }
+  return {
+    messageHashes: recoveryPlan.stagedMessageHashes,
+    messages: recoveryPlan.stagedMessages,
+  };
+};
+
+const markRecoveredHistoryCommitted = (loopState: LoopState): void => {
+  const recoveryPlan = loopState.interruptedIterationPlan;
+  if (recoveryPlan === undefined || recoveryPlan.stagedMessages.length === 0) {
+    return;
+  }
+
+  loopState.interruptedIterationPlan = {
+    ...recoveryPlan,
+    stagedMessageHashes: [],
+    stagedMessages: [],
+  };
+};
+
+const includeRecoveredIterationHistory = (
+  headState: HeadState,
+  loopState: LoopState
+): HeadState => {
+  const recoveryPlan = loopState.interruptedIterationPlan;
+  const cleanManifest = headState.manifest;
+
+  if (recoveryPlan === undefined || recoveryPlan.disposition === "re_infer") {
+    return { ...headState, manifest: cleanManifest };
+  }
+
+  return {
+    ...headState,
+    manifest: createContextManifest(
+      [...headState.messages, ...recoveryPlan.stagedMessages],
+      cleanManifest.extensions
+    ),
+  };
+};
+
+const recoveredIterationMessages = (
+  headState: HeadState,
+  loopState: LoopState
+): TuvrenMessage[] => {
+  const recoveryPlan = loopState.interruptedIterationPlan;
+
+  if (recoveryPlan === undefined || recoveryPlan.disposition === "re_infer") {
+    return headState.messages;
+  }
+
+  return [...headState.messages, ...recoveryPlan.stagedMessages];
+};
+
+/**
+ * Prepare durable state for one iteration before runner execution.
+ *
+ * Loads the branch head, runs before-iteration extension hooks, and applies
+ * any context-engineering plan the hooks or the agent's context policy
+ * produced (reloading head state after each application). Soft-fail hook
+ * resolutions are downgraded to projected errors; any other hook resolution
+ * commits carried extension state and short-circuits the iteration.
+ */
+const prepareIterationState = async (
+  host: RuntimeCoreLoopHost,
+  handle: RuntimeExecutionHandle,
+  schemaId: string,
+  loopState: LoopState,
+  iterationCount: number
+): Promise<IterationPreparationResult> => {
+  let headState = await host.loadHeadState(handle.request.branchId);
+  headState = includeRecoveredIterationHistory(headState, loopState);
+  handle.updateStatus({
+    manifest: headState.manifest,
+  });
+
+  const beforeIteration = await runBeforeIterationHooks({
+    emit: (event) => {
+      host.publishCustomEvent(handle, event, loopState);
+    },
+    extensions: loopState.activeConfig.extensions ?? [],
+    iterationCount,
+    manifest: headState.manifest,
+    messages: recoveredIterationMessages(headState, loopState),
+    runId: host.createId(),
+    turnId: handle.turnId,
+  });
+  loopState.carriedStateUpdates.push(...beforeIteration.updates);
+
+  if (beforeIteration.resolution !== undefined) {
+    if (
+      beforeIteration.resolution.type === "fail" &&
+      beforeIteration.resolution.fatality === "soft"
+    ) {
+      host.publishProjectedError(
+        handle,
+        beforeIteration.resolution.error,
+        false,
+        loopState
+      );
+    } else {
+      await host.commitPendingExtensionStateUpdates(
+        handle,
+        schemaId,
+        loopState,
+        loopState.carriedStateUpdates,
+        iterationCount
+      );
+      loopState.carriedStateUpdates = [];
+      return {
+        resolution: beforeIteration.resolution,
+      };
+    }
+  }
+
+  if (beforeIteration.cePlan !== undefined) {
+    await host.applyContextEngineeringPlan(
+      handle,
+      schemaId,
+      beforeIteration.cePlan,
+      loopState,
+      loopState.carriedStateUpdates,
+      uncommittedRecoveredHistory(loopState)
+    );
+    loopState.carriedStateUpdates = [];
+    markRecoveredHistoryCommitted(loopState);
+    headState = await host.loadHeadState(handle.request.branchId);
+    headState = includeRecoveredIterationHistory(headState, loopState);
+  }
+
+  const policyPlan = loopState.activeConfig.contextPolicy?.evaluate(
+    headState.manifest,
+    iterationCount
+  );
+
+  if (policyPlan !== undefined && isContextEngineeringPlan(policyPlan)) {
+    await host.applyContextEngineeringPlan(
+      handle,
+      schemaId,
+      policyPlan,
+      loopState,
+      loopState.carriedStateUpdates,
+      uncommittedRecoveredHistory(loopState)
+    );
+    loopState.carriedStateUpdates = [];
+    markRecoveredHistoryCommitted(loopState);
+    headState = await host.loadHeadState(handle.request.branchId);
+    headState = includeRecoveredIterationHistory(headState, loopState);
+  }
+
+  return {
+    headState,
+  };
+};
+
+/**
+ * Convert an executed iteration's resolution into the loop's next action.
+ *
+ * `continue_iteration` and soft failures continue the loop; a pause builds a
+ * resumable {@link LoopOutcome} with pause context (and requires a durable
+ * pause checkpoint); a terminal `handoff` that swaps the active agent also
+ * continues; anything else terminates the turn.
+ */
+const resolveIterationOutcome = async (
+  host: RuntimeCoreLoopHost,
+  handle: RuntimeExecutionHandle,
+  schemaId: string,
+  loopState: LoopState,
+  iterationCount: number,
+  result: ExecutedIterationResult
+): Promise<LoopOutcome | "continue"> => {
+  if (result.resolution.type === "continue_iteration") {
+    return "continue";
+  }
+
+  if (
+    result.resolution.type === "fail" &&
+    result.resolution.fatality === "soft"
+  ) {
+    return "continue";
+  }
+
+  if (result.resolution.type === "pause") {
+    if (result.turnNodeHash === undefined) {
+      throw new TuvrenRuntimeError(
+        "paused iterations must commit a durable pause checkpoint",
+        {
+          code: "missing_pause_checkpoint",
+        }
+      );
+    }
+
+    return {
+      pauseContext: {
+        activeConfig: loopState.activeConfig,
+        activeRunnerId: loopState.activeRunnerId,
+        activeToolRegistry: loopState.activeToolRegistry,
+        approval: result.resolution.approval,
+        carriedStateUpdates: [...loopState.carriedStateUpdates],
+        clientEndpointBoundary: loopState.clientEndpointBoundary,
+        pauseReason: result.resolution.reason,
+        pausedIteration: {
+          iterationCount,
+          response: result.runnerResponse,
+          toolExecutionMode: result.toolExecutionMode,
+          toolResults: result.toolResults,
+        },
+        pausedRunId: result.iterationRunId,
+        pausedTurnNodeHash: result.turnNodeHash,
+      },
+      resolution: result.resolution,
+    };
+  }
+
+  if (
+    await host.applyTerminalAgentTransitionIfNeeded(
+      handle,
+      schemaId,
+      result.resolution,
+      loopState,
+      result.stableHeadTurnNodeHash
+    )
+  ) {
+    return "continue";
+  }
+
+  return {
+    partial: result.partial,
+    resolution: result.resolution,
+  };
+};
+
 /**
  * Run the turn's iteration loop until a terminal {@link LoopOutcome} is
  * produced.
@@ -223,14 +527,14 @@ export interface RuntimeCoreLoopHost {
  * @throws TuvrenRuntimeError with code `missing_pause_checkpoint` when a
  *   pause resolution arrives without a committed pause checkpoint.
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The execution loop is intentionally kept as a single checkpointed control-flow path for cancellation and iteration semantics.
-export async function runExecutionLoop(
+export const runExecutionLoop = async (
   host: RuntimeCoreLoopHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
   now: () => number
-): Promise<LoopOutcome> {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The execution loop is intentionally kept as a single checkpointed control-flow path for cancellation and iteration semantics.
+): Promise<LoopOutcome> => {
   const bounds = host.executionBounds();
 
   while (true) {
@@ -362,308 +666,4 @@ export async function runExecutionLoop(
       nextOutcome
     );
   }
-}
-
-/** Build the hard-fail outcome for an exceeded execution bound. (BD006) */
-function boundsFailLoopOutcome(
-  bound: ExecutionBoundKind,
-  limit: number,
-  observed: number
-): LoopOutcome {
-  return {
-    resolution: {
-      error: createBoundExceededError(bound, limit, observed),
-      fatality: "hard",
-      type: "fail",
-    },
-  };
-}
-
-/**
- * Mark the handle as running for the next iteration and publish the
- * `iteration.start` stream event.
- */
-function beginIteration(
-  host: RuntimeCoreLoopHost,
-  handle: RuntimeExecutionHandle,
-  loopState: LoopState,
-  iterationCount: number,
-  now: () => number
-): void {
-  handle.updateStatus({
-    activeAgent: loopState.activeConfig.name,
-    approval: undefined,
-    iterationCount,
-    pauseReason: undefined,
-    phase: "running",
-  });
-  host.publishEvent(
-    handle,
-    {
-      iterationCount,
-      timestamp: now(),
-      type: "iteration.start",
-    },
-    loopState
-  );
-}
-
-/** Publish the `iteration.end` stream event for the finished iteration. */
-function publishIterationEnd(
-  host: RuntimeCoreLoopHost,
-  handle: RuntimeExecutionHandle,
-  loopState: LoopState,
-  iterationCount: number,
-  now: () => number
-): void {
-  host.publishEvent(
-    handle,
-    {
-      iterationCount,
-      timestamp: now(),
-      type: "iteration.end",
-    },
-    loopState
-  );
-}
-
-/**
- * Prepare durable state for one iteration before runner execution.
- *
- * Loads the branch head, runs before-iteration extension hooks, and applies
- * any context-engineering plan the hooks or the agent's context policy
- * produced (reloading head state after each application). Soft-fail hook
- * resolutions are downgraded to projected errors; any other hook resolution
- * commits carried extension state and short-circuits the iteration.
- */
-async function prepareIterationState(
-  host: RuntimeCoreLoopHost,
-  handle: RuntimeExecutionHandle,
-  schemaId: string,
-  loopState: LoopState,
-  iterationCount: number
-): Promise<IterationPreparationResult> {
-  let headState = await host.loadHeadState(handle.request.branchId);
-  headState = includeRecoveredIterationHistory(headState, loopState);
-  handle.updateStatus({
-    manifest: headState.manifest,
-  });
-
-  const beforeIteration = await runBeforeIterationHooks({
-    emit: (event) => {
-      host.publishCustomEvent(handle, event, loopState);
-    },
-    extensions: loopState.activeConfig.extensions ?? [],
-    iterationCount,
-    manifest: headState.manifest,
-    messages: recoveredIterationMessages(headState, loopState),
-    runId: host.createId(),
-    turnId: handle.turnId,
-  });
-  loopState.carriedStateUpdates.push(...beforeIteration.updates);
-
-  if (beforeIteration.resolution !== undefined) {
-    if (
-      beforeIteration.resolution.type === "fail" &&
-      beforeIteration.resolution.fatality === "soft"
-    ) {
-      host.publishProjectedError(
-        handle,
-        beforeIteration.resolution.error,
-        false,
-        loopState
-      );
-    } else {
-      await host.commitPendingExtensionStateUpdates(
-        handle,
-        schemaId,
-        loopState,
-        loopState.carriedStateUpdates,
-        iterationCount
-      );
-      loopState.carriedStateUpdates = [];
-      return {
-        resolution: beforeIteration.resolution,
-      };
-    }
-  }
-
-  if (beforeIteration.cePlan !== undefined) {
-    await host.applyContextEngineeringPlan(
-      handle,
-      schemaId,
-      beforeIteration.cePlan,
-      loopState,
-      loopState.carriedStateUpdates,
-      uncommittedRecoveredHistory(loopState)
-    );
-    loopState.carriedStateUpdates = [];
-    markRecoveredHistoryCommitted(loopState);
-    headState = await host.loadHeadState(handle.request.branchId);
-    headState = includeRecoveredIterationHistory(headState, loopState);
-  }
-
-  const policyPlan = loopState.activeConfig.contextPolicy?.evaluate(
-    headState.manifest,
-    iterationCount
-  );
-
-  if (policyPlan !== undefined && isContextEngineeringPlan(policyPlan)) {
-    await host.applyContextEngineeringPlan(
-      handle,
-      schemaId,
-      policyPlan,
-      loopState,
-      loopState.carriedStateUpdates,
-      uncommittedRecoveredHistory(loopState)
-    );
-    loopState.carriedStateUpdates = [];
-    markRecoveredHistoryCommitted(loopState);
-    headState = await host.loadHeadState(handle.request.branchId);
-    headState = includeRecoveredIterationHistory(headState, loopState);
-  }
-
-  return {
-    headState,
-  };
-}
-
-function uncommittedRecoveredHistory(
-  loopState: LoopState
-): { messageHashes: HashString[]; messages: TuvrenMessage[] } | undefined {
-  const recoveryPlan = loopState.interruptedIterationPlan;
-  if (
-    recoveryPlan === undefined ||
-    recoveryPlan.disposition === "re_infer" ||
-    recoveryPlan.stagedMessages.length === 0
-  ) {
-    return undefined;
-  }
-  return {
-    messageHashes: recoveryPlan.stagedMessageHashes,
-    messages: recoveryPlan.stagedMessages,
-  };
-}
-
-function markRecoveredHistoryCommitted(loopState: LoopState): void {
-  const recoveryPlan = loopState.interruptedIterationPlan;
-  if (recoveryPlan === undefined || recoveryPlan.stagedMessages.length === 0) {
-    return;
-  }
-
-  loopState.interruptedIterationPlan = {
-    ...recoveryPlan,
-    stagedMessageHashes: [],
-    stagedMessages: [],
-  };
-}
-
-function includeRecoveredIterationHistory(
-  headState: HeadState,
-  loopState: LoopState
-): HeadState {
-  const recoveryPlan = loopState.interruptedIterationPlan;
-  const cleanManifest = headState.manifest;
-
-  if (recoveryPlan === undefined || recoveryPlan.disposition === "re_infer") {
-    return { ...headState, manifest: cleanManifest };
-  }
-
-  return {
-    ...headState,
-    manifest: createContextManifest(
-      [...headState.messages, ...recoveryPlan.stagedMessages],
-      cleanManifest.extensions
-    ),
-  };
-}
-
-function recoveredIterationMessages(
-  headState: HeadState,
-  loopState: LoopState
-): TuvrenMessage[] {
-  const recoveryPlan = loopState.interruptedIterationPlan;
-
-  if (recoveryPlan === undefined || recoveryPlan.disposition === "re_infer") {
-    return headState.messages;
-  }
-
-  return [...headState.messages, ...recoveryPlan.stagedMessages];
-}
-
-/**
- * Convert an executed iteration's resolution into the loop's next action.
- *
- * `continue_iteration` and soft failures continue the loop; a pause builds a
- * resumable {@link LoopOutcome} with pause context (and requires a durable
- * pause checkpoint); a terminal `handoff` that swaps the active agent also
- * continues; anything else terminates the turn.
- */
-async function resolveIterationOutcome(
-  host: RuntimeCoreLoopHost,
-  handle: RuntimeExecutionHandle,
-  schemaId: string,
-  loopState: LoopState,
-  iterationCount: number,
-  result: ExecutedIterationResult
-): Promise<LoopOutcome | "continue"> {
-  if (result.resolution.type === "continue_iteration") {
-    return "continue";
-  }
-
-  if (
-    result.resolution.type === "fail" &&
-    result.resolution.fatality === "soft"
-  ) {
-    return "continue";
-  }
-
-  if (result.resolution.type === "pause") {
-    if (result.turnNodeHash === undefined) {
-      throw new TuvrenRuntimeError(
-        "paused iterations must commit a durable pause checkpoint",
-        {
-          code: "missing_pause_checkpoint",
-        }
-      );
-    }
-
-    return {
-      pauseContext: {
-        activeConfig: loopState.activeConfig,
-        activeRunnerId: loopState.activeRunnerId,
-        activeToolRegistry: loopState.activeToolRegistry,
-        approval: result.resolution.approval,
-        carriedStateUpdates: [...loopState.carriedStateUpdates],
-        clientEndpointBoundary: loopState.clientEndpointBoundary,
-        pauseReason: result.resolution.reason,
-        pausedIteration: {
-          iterationCount,
-          response: result.runnerResponse,
-          toolExecutionMode: result.toolExecutionMode,
-          toolResults: result.toolResults,
-        },
-        pausedRunId: result.iterationRunId,
-        pausedTurnNodeHash: result.turnNodeHash,
-      },
-      resolution: result.resolution,
-    };
-  }
-
-  if (
-    await host.applyTerminalAgentTransitionIfNeeded(
-      handle,
-      schemaId,
-      result.resolution,
-      loopState,
-      result.stableHeadTurnNodeHash
-    )
-  ) {
-    return "continue";
-  }
-
-  return {
-    partial: result.partial,
-    resolution: result.resolution,
-  };
-}
+};
