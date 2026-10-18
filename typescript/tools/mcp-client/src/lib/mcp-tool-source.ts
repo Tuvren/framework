@@ -75,10 +75,12 @@ export type McpTransportConfig =
  * definitions. Returned by {@link createMcpToolSource}.
  */
 export interface McpToolSource {
+  /* oxlint-disable typescript/method-signature-style -- Preserve the published method declarations for the MCP source API. */
   /** Closes the underlying MCP transport/connection. */
   close(): Promise<void>;
   /** Re-lists the server's tools and replaces {@link tools} with the refreshed set. */
   refresh(): Promise<{ tools: TuvrenToolDefinition[] }>;
+  /* oxlint-enable typescript/method-signature-style */
   /** The connected server's advertised name, or the `name` option override. */
   readonly serverName: string;
   /** The current set of translated Tuvren tool definitions (a defensive copy). */
@@ -134,13 +136,19 @@ interface SerializedProviderError {
 /** Default separator between a source's `name` and a tool's original name. */
 const DEFAULT_TOOL_NAME_SEPARATOR = ".";
 
+/** Narrows an unknown value to an array without leaking `any` from `Array.isArray`. */
+const isUnknownArray = (value: unknown): value is unknown[] =>
+  Array.isArray(value);
+
 /** Returns the first `text`-type content part's text from a tool result, if any. */
 const readFirstTextContent = (result: McpSdkToolResult): string | undefined => {
-  if (!("content" in result && Array.isArray(result.content))) {
+  const content: unknown = result.content;
+
+  if (!isUnknownArray(content)) {
     return undefined;
   }
 
-  const textContent = result.content.find(
+  const textContent = content.find(
     (part): part is { text: string; type: "text" } =>
       typeof part === "object" &&
       part !== null &&
@@ -300,7 +308,7 @@ const isTuvrenJsonSchema = (value: unknown): value is TuvrenJsonSchema =>
 /**
  * Narrows an MCP-advertised schema to a `TuvrenJsonSchema`.
  *
- * @throws TuvrenProviderError with code `mcp_tool_list_failed` when the
+ * @throws {TuvrenProviderError} With code `mcp_tool_list_failed` when the
  *   value is not a boolean or JSON-serializable object.
  */
 const toTuvrenJsonSchema = (
@@ -353,7 +361,7 @@ class DefaultMcpToolSource implements McpToolSource {
    * Re-lists the server's tools, replaces the translated tool set, and
    * returns a defensive copy.
    *
-   * @throws TuvrenProviderError with code `mcp_tool_list_failed` when
+   * @throws {TuvrenProviderError} With code `mcp_tool_list_failed` when
    *   listing fails.
    */
   async refresh(): Promise<{ tools: TuvrenToolDefinition[] }> {
@@ -411,7 +419,7 @@ class DefaultMcpToolSource implements McpToolSource {
       tool: defineTool({
         description: advertisedTool.description ?? "",
         execute: async (input, context) =>
-          this.executeTool({
+          await this.executeTool({
             advertisedName: advertisedTool.name,
             context,
             input,
@@ -554,7 +562,7 @@ class DefaultMcpToolSource implements McpToolSource {
  * test-only `client` injection point so tests can substitute a fake
  * `MCPClient` without a real MCP server.
  *
- * @throws TuvrenProviderError with code `mcp_initialize_failed` or
+ * @throws {TuvrenProviderError} With code `mcp_initialize_failed` or
  *   `mcp_tool_list_failed` when connecting or the initial tool listing fails;
  *   the client is closed before the error propagates.
  */
@@ -579,9 +587,10 @@ export const createMcpToolSourceInternal = async (
  * {@link McpToolSource}: the entry point host code uses to add MCP tools to a
  * Tuvren agent.
  *
- * @throws TuvrenProviderError with code `mcp_initialize_failed` or
+ * @throws {TuvrenProviderError} With code `mcp_initialize_failed` or
  *   `mcp_tool_list_failed` when connecting or the initial tool listing fails.
  */
+// oxlint-disable-next-line typescript/promise-function-async -- Return the internal connection promise unchanged so callers retain its established identity and settlement timing.
 export const createMcpToolSource = (
   options: CreateMcpToolSourceOptions
 ): Promise<McpToolSource> => createMcpToolSourceInternal(options);
