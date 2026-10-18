@@ -32,9 +32,9 @@ import { createBindingResolver } from "./binding-resolver.js";
  * - tuvren-client: Tuvren owns orchestration, client owns execution; partial
  *   observability through the dispatch/result envelope.
  */
-export function observationForClass(
+export const observationForClass = (
   executionClass: ExecutionClass
-): CapabilityObservation {
+): CapabilityObservation => {
   switch (executionClass) {
     case "tuvren-server": {
       return {
@@ -86,7 +86,7 @@ export function observationForClass(
       };
     }
   }
-}
+};
 
 /**
  * Build a CapabilityInvocationAttribution for a tool definition, using the
@@ -96,9 +96,9 @@ export function observationForClass(
  * tools resolve to the tuvren-server class. Provider-native and Tuvren-client
  * attribution is additive in Epics AY and AZ respectively.
  */
-export function buildToolAttribution(
+export const buildToolAttribution = (
   tool: TuvrenToolDefinition
-): CapabilityInvocationAttribution {
+): CapabilityInvocationAttribution => {
   const resolver = createBindingResolver();
   const binding = resolver.resolveFromToolDefinition(tool);
 
@@ -114,4 +114,4 @@ export function buildToolAttribution(
     observation: observationForClass(binding.executionClass),
     owner,
   };
-}
+};
