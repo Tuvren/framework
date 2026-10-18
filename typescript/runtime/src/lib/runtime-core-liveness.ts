@@ -109,125 +109,25 @@ export interface RuntimeCoreLivenessHost {
 }
 
 /**
- * Create a kernel run for this handle and remember it as the active run.
- *
- * Any previous lease renewal loop is stopped first. When the kernel exposes
- * run liveness and liveness options are configured, the run is created as a
- * leased run and a background renewal loop is started for it; otherwise a
- * plain (untracked) kernel run is created.
- *
- * @param steps - Declared run steps (id, determinism, side-effect flags)
- *   registered with the kernel run.
- */
-export async function createTrackedRun(
-  host: RuntimeCoreLivenessHost,
-  handle: RuntimeExecutionHandle,
-  runId: string,
-  turnId: string,
-  branchId: string,
-  schemaId: string,
-  startTurnNodeHash: HashString,
-  steps: {
-    deterministic: boolean;
-    id: string;
-    sideEffects: boolean;
-  }[]
-): Promise<void> {
-  stopRunLeaseLoop(host, handle);
-  const leasedRun = await createTrackedRunOnce(host, {
-    branchId,
-    runId,
-    schemaId,
-    startTurnNodeHash,
-    steps,
-    turnId,
-  });
-  host.rememberActiveRunId(handle, runId);
-
-  if (leasedRun !== undefined) {
-    startRunLeaseLoop(host, handle, leasedRun);
-  }
-}
-
-/**
- * Complete a tracked kernel run and release its bookkeeping.
- *
- * Stops the renewal loop for this run (only if it is the leased one), stores
- * the optional completion event record first so its hash can be attached to
- * the completion, and clears the handle's active-run id when it still points
- * at this run.
- *
- * @returns The kernel completion result, including the advanced turn node
- *   hash when the run moved the turn forward.
- */
-export async function completeTrackedRun(
-  host: RuntimeCoreLivenessHost,
-  handle: RuntimeExecutionHandle,
-  runId: string,
-  status: RunCompletionStatus,
-  event?: KernelRecord
-): Promise<{ turnNodeHash?: HashString }> {
-  stopRunLeaseLoop(host, handle, runId);
-  const eventHash =
-    event === undefined ? undefined : await host.storeEventRecord(event);
-  const completion = await host.completeKernelRun(runId, status, eventHash);
-
-  if (host.getActiveRunId(handle) === runId) {
-    host.setNoActiveRunId(handle);
-  }
-
-  return completion;
-}
-
-/**
- * Fold lease data piggybacked on a step-completion result into the handle's
- * active lease.
- *
- * A step completion may renew the lease server-side; adopting the returned
- * fencing token and expiry keeps the background renewal loop from renewing
- * with a stale token. No-op when there is no active lease, the lease belongs
- * to a different run, or the step result carries no lease.
- */
-export function syncRunLeaseStateFromStepResult(
-  host: RuntimeCoreLivenessHost,
-  handle: RuntimeExecutionHandle,
-  runId: string,
-  stepResult: { lease?: { fencingToken: string; leaseExpiresAtMs: EpochMs } }
-): void {
-  const activeLease = host.getActiveLease(handle);
-
-  if (
-    activeLease === undefined ||
-    activeLease.runId !== runId ||
-    stepResult.lease === undefined
-  ) {
-    return;
-  }
-
-  activeLease.fencingToken = stepResult.lease.fencingToken;
-  activeLease.leaseExpiresAtMs = stepResult.lease.leaseExpiresAtMs;
-}
-
-/**
  * Narrow the kernel to its run-liveness-capable type, or `undefined` when the
  * optional `runLiveness` surface is absent.
  */
-function resolveRunLivenessKernel(
+const resolveRunLivenessKernel = (
   kernel: RuntimeKernel
-): (RuntimeKernel & RuntimeKernelRunLiveness) | undefined {
+): (RuntimeKernel & RuntimeKernelRunLiveness) | undefined => {
   if (!hasRunLivenessKernel(kernel)) {
     return undefined;
   }
 
   return kernel;
-}
+};
 
 /**
  * Create the kernel run, preferring a leased run when both the liveness
  * kernel surface and liveness options exist; falls back to a plain kernel
  * run and returns `undefined` (no lease) in that case.
  */
-async function createTrackedRunOnce(
+const createTrackedRunOnce = async (
   host: RuntimeCoreLivenessHost,
   input: {
     branchId: string;
@@ -241,7 +141,7 @@ async function createTrackedRunOnce(
     }[];
     turnId: string;
   }
-): Promise<RunRecord | undefined> {
+): Promise<RunRecord | undefined> => {
   const kernel = host.getRuntimeKernel();
   const livenessKernel = resolveRunLivenessKernel(kernel);
   const livenessOptions = host.getRunLivenessOptions();
@@ -272,51 +172,7 @@ async function createTrackedRunOnce(
   }
 
   return leasedRun;
-}
-
-/**
- * Register the run's lease as the handle's active lease and start the
- * detached background renewal loop; no-op unless liveness is configured and
- * the run record carries full lease data.
- */
-function startRunLeaseLoop(
-  host: RuntimeCoreLivenessHost,
-  handle: RuntimeExecutionHandle,
-  run: RunRecord
-): void {
-  const livenessOptions = host.getRunLivenessOptions();
-  const livenessKernel = resolveRunLivenessKernel(host.getRuntimeKernel());
-
-  if (
-    livenessOptions === undefined ||
-    livenessKernel === undefined ||
-    run.executionOwnerId === undefined ||
-    run.fencingToken === undefined ||
-    run.leaseExpiresAtMs === undefined
-  ) {
-    return;
-  }
-
-  stopRunLeaseLoop(host, handle);
-  const abortController = new AbortController();
-  const activeLease = {
-    abortController,
-    executionOwnerId: run.executionOwnerId,
-    fencingToken: run.fencingToken,
-    leaseExpiresAtMs: run.leaseExpiresAtMs,
-    runId: run.runId,
-  } satisfies ActiveRunLease;
-  host.rememberActiveLease(handle, activeLease);
-  detachPromise(
-    runLeaseLoop(host, {
-      activeLease,
-      handle,
-      kernel: livenessKernel,
-      runId: run.runId,
-      signal: abortController.signal,
-    })
-  );
-}
+};
 
 /**
  * Stop the handle's background lease-renewal loop and clear its active
@@ -325,11 +181,11 @@ function startRunLeaseLoop(
  * @param runId - When given, only stops the loop if the active lease belongs
  *   to this run; otherwise any active lease is stopped.
  */
-export function stopRunLeaseLoop(
+export const stopRunLeaseLoop = (
   host: RuntimeCoreLivenessHost,
   handle: RuntimeExecutionHandle,
   runId?: string
-): void {
+): void => {
   const activeLease = host.getActiveLease(handle);
 
   if (activeLease === undefined) {
@@ -342,7 +198,7 @@ export function stopRunLeaseLoop(
 
   activeLease.abortController.abort();
   host.clearActiveLease(handle);
-}
+};
 
 /**
  * Background lease-renewal loop (see the ADR-0050 comment inside for the
@@ -355,7 +211,7 @@ export function stopRunLeaseLoop(
  * renewal failure while still live aborts the handle with a
  * `runtime_execution_lease_lost` error.
  */
-async function runLeaseLoop(
+const runLeaseLoop = async (
   host: RuntimeCoreLivenessHost,
   input: {
     activeLease: ActiveRunLease;
@@ -364,7 +220,7 @@ async function runLeaseLoop(
     runId: string;
     signal: AbortSignal;
   }
-): Promise<void> {
+): Promise<void> => {
   const livenessOptions = host.getRunLivenessOptions();
 
   if (livenessOptions === undefined) {
@@ -421,4 +277,148 @@ async function runLeaseLoop(
       return;
     }
   }
-}
+};
+
+/**
+ * Register the run's lease as the handle's active lease and start the
+ * detached background renewal loop; no-op unless liveness is configured and
+ * the run record carries full lease data.
+ */
+const startRunLeaseLoop = (
+  host: RuntimeCoreLivenessHost,
+  handle: RuntimeExecutionHandle,
+  run: RunRecord
+): void => {
+  const livenessOptions = host.getRunLivenessOptions();
+  const livenessKernel = resolveRunLivenessKernel(host.getRuntimeKernel());
+
+  if (
+    livenessOptions === undefined ||
+    livenessKernel === undefined ||
+    run.executionOwnerId === undefined ||
+    run.fencingToken === undefined ||
+    run.leaseExpiresAtMs === undefined
+  ) {
+    return;
+  }
+
+  stopRunLeaseLoop(host, handle);
+  const abortController = new AbortController();
+  const activeLease = {
+    abortController,
+    executionOwnerId: run.executionOwnerId,
+    fencingToken: run.fencingToken,
+    leaseExpiresAtMs: run.leaseExpiresAtMs,
+    runId: run.runId,
+  } satisfies ActiveRunLease;
+  host.rememberActiveLease(handle, activeLease);
+  detachPromise(
+    runLeaseLoop(host, {
+      activeLease,
+      handle,
+      kernel: livenessKernel,
+      runId: run.runId,
+      signal: abortController.signal,
+    })
+  );
+};
+
+/**
+ * Create a kernel run for this handle and remember it as the active run.
+ *
+ * Any previous lease renewal loop is stopped first. When the kernel exposes
+ * run liveness and liveness options are configured, the run is created as a
+ * leased run and a background renewal loop is started for it; otherwise a
+ * plain (untracked) kernel run is created.
+ *
+ * @param steps - Declared run steps (id, determinism, side-effect flags)
+ *   registered with the kernel run.
+ */
+export const createTrackedRun = async (
+  host: RuntimeCoreLivenessHost,
+  handle: RuntimeExecutionHandle,
+  runId: string,
+  turnId: string,
+  branchId: string,
+  schemaId: string,
+  startTurnNodeHash: HashString,
+  steps: {
+    deterministic: boolean;
+    id: string;
+    sideEffects: boolean;
+  }[]
+): Promise<void> => {
+  stopRunLeaseLoop(host, handle);
+  const leasedRun = await createTrackedRunOnce(host, {
+    branchId,
+    runId,
+    schemaId,
+    startTurnNodeHash,
+    steps,
+    turnId,
+  });
+  host.rememberActiveRunId(handle, runId);
+
+  if (leasedRun !== undefined) {
+    startRunLeaseLoop(host, handle, leasedRun);
+  }
+};
+
+/**
+ * Complete a tracked kernel run and release its bookkeeping.
+ *
+ * Stops the renewal loop for this run (only if it is the leased one), stores
+ * the optional completion event record first so its hash can be attached to
+ * the completion, and clears the handle's active-run id when it still points
+ * at this run.
+ *
+ * @returns The kernel completion result, including the advanced turn node
+ *   hash when the run moved the turn forward.
+ */
+export const completeTrackedRun = async (
+  host: RuntimeCoreLivenessHost,
+  handle: RuntimeExecutionHandle,
+  runId: string,
+  status: RunCompletionStatus,
+  event?: KernelRecord
+): Promise<{ turnNodeHash?: HashString }> => {
+  stopRunLeaseLoop(host, handle, runId);
+  const eventHash =
+    event === undefined ? undefined : await host.storeEventRecord(event);
+  const completion = await host.completeKernelRun(runId, status, eventHash);
+
+  if (host.getActiveRunId(handle) === runId) {
+    host.setNoActiveRunId(handle);
+  }
+
+  return completion;
+};
+
+/**
+ * Fold lease data piggybacked on a step-completion result into the handle's
+ * active lease.
+ *
+ * A step completion may renew the lease server-side; adopting the returned
+ * fencing token and expiry keeps the background renewal loop from renewing
+ * with a stale token. No-op when there is no active lease, the lease belongs
+ * to a different run, or the step result carries no lease.
+ */
+export const syncRunLeaseStateFromStepResult = (
+  host: RuntimeCoreLivenessHost,
+  handle: RuntimeExecutionHandle,
+  runId: string,
+  stepResult: { lease?: { fencingToken: string; leaseExpiresAtMs: EpochMs } }
+): void => {
+  const activeLease = host.getActiveLease(handle);
+
+  if (
+    activeLease === undefined ||
+    activeLease.runId !== runId ||
+    stepResult.lease === undefined
+  ) {
+    return;
+  }
+
+  activeLease.fencingToken = stepResult.lease.fencingToken;
+  activeLease.leaseExpiresAtMs = stepResult.lease.leaseExpiresAtMs;
+};
