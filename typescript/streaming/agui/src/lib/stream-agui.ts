@@ -73,40 +73,260 @@ const CUSTOM_FALLBACK_WARNING_CODES = {
 } as const;
 
 /**
- * Maps a `TuvrenStreamEvent` stream onto `@ag-ui/core` events.
- *
- * Every emitted event is validated against `EventSchemas` before yielding
- * (see {@link validateAgUiEvent}), so a mapping defect surfaces as a thrown
- * `invalid_agui_event` error rather than propagating a malformed AG-UI
- * payload. Substream lifecycles (text messages, reasoning blocks, tool
- * calls) are tracked in per-id state maps across canonical events; if the
- * enclosing turn ends before a substream's own terminal event arrived, its
- * AG-UI closing events are synthesized so no AG-UI substream is left open
- * (see {@link flushPendingAgUiSubstreams}).
- *
- * Canonical events without a first-class AG-UI counterpart (tool execution
- * events, approvals, file output, non-fatal errors, state checkpoints,
- * steering, structured output) become `CUSTOM` events named
- * `tuvren.runtime.<event.type>`, each reported once through
- * `options.onWarning` with a fixed code from
- * {@link CUSTOM_FALLBACK_WARNING_CODES}.
- *
- * The source iterator is claimed synchronously (before any `await`), so this
- * adapter satisfies a `teeTuvrenStreamEvents` branch's claim-before-first-pull
- * rule immediately upon being called, regardless of when the returned
- * iterable is actually iterated.
+ * @throws TuvrenRuntimeError with code `invalid_agui_event` when `event`
+ *   fails `EventSchemas` validation — a defensive check that a mapping bug in
+ *   this adapter never reaches consumers as a structurally invalid AG-UI
+ *   event.
  */
-export function toAgUiEvents(
-  events: AsyncIterable<TuvrenStreamEvent>,
-  options?: StreamAdapterOptions
-): AsyncIterable<AGUIEvent> {
-  // Claim tee-backed sources immediately so sibling adapter branches can still
-  // subscribe before any one consumer starts pulling the shared source stream.
-  return toAgUiEventsSubscribed(
-    createIteratorIterable(events[Symbol.asyncIterator]()),
-    options
+const validateAgUiEvent = (event: AGUIEvent): AGUIEvent => {
+  try {
+    return EventSchemas.parse(event);
+  } catch (error: unknown) {
+    throw new TuvrenRuntimeError("stream-agui emitted an invalid AG-UI event", {
+      cause: error,
+      code: "invalid_agui_event",
+      details: event,
+    });
+  }
+};
+
+/**
+ * Coerces a value into the plain string AG-UI text fields expect: a string
+ * passes through unchanged; anything else is JSON-serialized, falling back
+ * to the literal `"null"` for values `JSON.stringify` returns `undefined`
+ * for.
+ */
+const serializeAgUiTextValue = (value: unknown): string => {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  const serialized = JSON.stringify(value);
+  return serialized ?? "null";
+};
+
+/**
+ * Derives a distinct AG-UI message id for a reasoning substream from the
+ * canonical assistant `messageId`, so reasoning and text substreams sharing
+ * one canonical message never collide in AG-UI's flat message-id space.
+ */
+const toReasoningMessageId = (messageId: string): string =>
+  `${messageId}:reasoning`;
+
+/**
+ * Defensive exhaustiveness guard for the mapping switch: the `never`
+ * parameter type means TypeScript already flags any unhandled
+ * `TuvrenStreamEvent` variant at compile time; this throws if one somehow
+ * reaches here at runtime (e.g. an event union widened at a version skew).
+ *
+ * @throws TuvrenRuntimeError with code `invalid_stream_adapter_state`, always.
+ */
+const throwUnreachableEvent = (event: never): never => {
+  throw new TuvrenRuntimeError(
+    "stream-agui received an unhandled stream event",
+    {
+      code: "invalid_stream_adapter_state",
+      details: event,
+    }
   );
-}
+};
+
+/** Wraps an already-obtained iterator as a single-use `AsyncIterable` that always returns the same iterator. */
+const createIteratorIterable = <T>(
+  iterator: AsyncIterator<T>
+): AsyncIterable<T> => ({
+  [Symbol.asyncIterator](): AsyncIterator<T> {
+    return iterator;
+  },
+});
+
+/**
+ * @throws TuvrenRuntimeError with code `invalid_stream_adapter_state` when
+ *   `activeRunId`/`activeThreadId` are unset — a `turn.end` arrived without a
+ *   preceding `turn.start` in this stream.
+ */
+const requireActiveRunState = (
+  activeRunId: string | undefined,
+  activeThreadId: string | undefined,
+  event: Extract<TuvrenStreamEvent, { type: "turn.end" }>
+): { runId: string; threadId: string } => {
+  if (activeRunId !== undefined && activeThreadId !== undefined) {
+    return {
+      runId: activeRunId,
+      threadId: activeThreadId,
+    };
+  }
+
+  throw new TuvrenRuntimeError(
+    `turn "${event.turnId}" ended without a preceding turn.start`,
+    {
+      code: "invalid_stream_adapter_state",
+    }
+  );
+};
+
+/** Gets or lazily creates the {@link PendingReasoningState} for `reasoningId`. */
+const ensureReasoningState = (
+  states: Map<string, PendingReasoningState>,
+  reasoningId: string
+): PendingReasoningState => {
+  const existingState = states.get(reasoningId);
+
+  if (existingState !== undefined) {
+    return existingState;
+  }
+
+  const nextState: PendingReasoningState = {
+    messageId: reasoningId,
+    messageStarted: false,
+    started: false,
+  };
+  states.set(reasoningId, nextState);
+  return nextState;
+};
+
+/** Gets or lazily creates the {@link PendingTextState} for `messageId`. */
+const ensureTextState = (
+  states: Map<string, PendingTextState>,
+  messageId: string
+): PendingTextState => {
+  const existingState = states.get(messageId);
+
+  if (existingState !== undefined) {
+    return existingState;
+  }
+
+  const nextState: PendingTextState = {
+    ended: false,
+    messageId,
+    sawContent: false,
+    started: false,
+  };
+  states.set(messageId, nextState);
+  return nextState;
+};
+
+/** Builds a validated AG-UI `CUSTOM` event, optionally attaching the originating canonical event as `rawEvent`. */
+const createCustomAgUiEvent = (
+  name: string,
+  value: unknown,
+  timestamp: number,
+  rawEvent?: TuvrenStreamEvent
+): AGUIEvent =>
+  validateAgUiEvent({
+    name,
+    rawEvent:
+      rawEvent === undefined ? undefined : cloneTuvrenStreamEvent(rawEvent),
+    timestamp,
+    type: EventType.CUSTOM,
+    value,
+  });
+
+/**
+ * Reports the fixed warning code for `warningCode` and wraps `event` as a
+ * `CUSTOM` AG-UI event — the shared path behind every canonical event type
+ * with no first-class AG-UI mapping.
+ */
+const createCustomFallbackEvent = (
+  name: string,
+  event: TuvrenStreamEvent,
+  reportWarning: (warning: { code: string; message: string }) => void,
+  warningCode: keyof typeof CUSTOM_FALLBACK_WARNING_CODES
+): AGUIEvent => {
+  reportWarning({
+    code: CUSTOM_FALLBACK_WARNING_CODES[warningCode],
+    message: `AG-UI requires a CUSTOM fallback for "${event.type}".`,
+  });
+
+  return createCustomAgUiEvent(name, event, event.timestamp, event);
+};
+
+/**
+ * Synthesizes closing AG-UI events for every substream still open when the
+ * enclosing turn ends (`TEXT_MESSAGE_END`, `REASONING_MESSAGE_END`/`REASONING_END`,
+ * `TOOL_CALL_END`), clearing all three state maps afterward.
+ *
+ * AG-UI child streams should never remain open after the enclosing turn
+ * ends, even on failure paths where the canonical stream terminates before
+ * an explicit `*.done` event arrives. The synthesized closes are anchored to
+ * `terminalEvent` (cloned per event via `rawEvent`) so host debuggers can
+ * distinguish adapter cleanup from genuine canonical events.
+ */
+const flushPendingAgUiSubstreams = (
+  reasoningStates: Map<string, PendingReasoningState>,
+  textStates: Map<string, PendingTextState>,
+  toolCallStates: Map<string, PendingToolCallState>,
+  terminalEvent: Extract<TuvrenStreamEvent, { type: "turn.end" }>
+): readonly AGUIEvent[] => {
+  const flushedEvents: AGUIEvent[] = [];
+  const createTerminalRawEvent = (): TuvrenStreamEvent =>
+    cloneTuvrenStreamEvent(terminalEvent);
+
+  // AG-UI child streams should never remain open after the enclosing turn ends,
+  // even on failure paths where the canonical stream terminates before an
+  // explicit *.done event arrives. We anchor the synthesized closes to turn.end
+  // so host debuggers can distinguish adapter cleanup from canonical events.
+  for (const textState of textStates.values()) {
+    if (!textState.started || textState.ended) {
+      continue;
+    }
+
+    flushedEvents.push(
+      validateAgUiEvent({
+        messageId: textState.messageId,
+        rawEvent: createTerminalRawEvent(),
+        timestamp: terminalEvent.timestamp,
+        type: EventType.TEXT_MESSAGE_END,
+      })
+    );
+  }
+  textStates.clear();
+
+  for (const reasoningState of reasoningStates.values()) {
+    if (!reasoningState.started) {
+      continue;
+    }
+
+    if (reasoningState.messageStarted) {
+      flushedEvents.push(
+        validateAgUiEvent({
+          messageId: reasoningState.messageId,
+          rawEvent: createTerminalRawEvent(),
+          timestamp: terminalEvent.timestamp,
+          type: EventType.REASONING_MESSAGE_END,
+        })
+      );
+    }
+
+    flushedEvents.push(
+      validateAgUiEvent({
+        messageId: reasoningState.messageId,
+        rawEvent: createTerminalRawEvent(),
+        timestamp: terminalEvent.timestamp,
+        type: EventType.REASONING_END,
+      })
+    );
+  }
+  reasoningStates.clear();
+
+  for (const toolCallState of toolCallStates.values()) {
+    if (!toolCallState.started) {
+      continue;
+    }
+
+    flushedEvents.push(
+      validateAgUiEvent({
+        rawEvent: createTerminalRawEvent(),
+        timestamp: terminalEvent.timestamp,
+        toolCallId: toolCallState.callId,
+        type: EventType.TOOL_CALL_END,
+      })
+    );
+  }
+  toolCallStates.clear();
+
+  return flushedEvents;
+};
 
 /**
  * The canonical-to-AG-UI mapping table, one `case` per `TuvrenStreamEvent`
@@ -131,7 +351,7 @@ export function toAgUiEvents(
  *   canonical union is encountered (defensive exhaustiveness check).
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Protocol projection intentionally keeps the canonical-to-AG-UI mapping table in one switch.
-async function* toAgUiEventsSubscribed(
+const toAgUiEventsSubscribed = async function* toAgUiEventsSubscribed(
   events: AsyncIterable<TuvrenStreamEvent>,
   options?: StreamAdapterOptions
 ): AsyncIterable<AGUIEvent> {
@@ -629,264 +849,39 @@ async function* toAgUiEventsSubscribed(
       }
     }
   }
-}
-
-/** Builds a validated AG-UI `CUSTOM` event, optionally attaching the originating canonical event as `rawEvent`. */
-function createCustomAgUiEvent(
-  name: string,
-  value: unknown,
-  timestamp: number,
-  rawEvent?: TuvrenStreamEvent
-): AGUIEvent {
-  return validateAgUiEvent({
-    name,
-    rawEvent:
-      rawEvent === undefined ? undefined : cloneTuvrenStreamEvent(rawEvent),
-    timestamp,
-    type: EventType.CUSTOM,
-    value,
-  });
-}
+};
 
 /**
- * Reports the fixed warning code for `warningCode` and wraps `event` as a
- * `CUSTOM` AG-UI event — the shared path behind every canonical event type
- * with no first-class AG-UI mapping.
- */
-function createCustomFallbackEvent(
-  name: string,
-  event: TuvrenStreamEvent,
-  reportWarning: (warning: { code: string; message: string }) => void,
-  warningCode: keyof typeof CUSTOM_FALLBACK_WARNING_CODES
-): AGUIEvent {
-  reportWarning({
-    code: CUSTOM_FALLBACK_WARNING_CODES[warningCode],
-    message: `AG-UI requires a CUSTOM fallback for "${event.type}".`,
-  });
-
-  return createCustomAgUiEvent(name, event, event.timestamp, event);
-}
-
-/**
- * @throws TuvrenRuntimeError with code `invalid_stream_adapter_state` when
- *   `activeRunId`/`activeThreadId` are unset — a `turn.end` arrived without a
- *   preceding `turn.start` in this stream.
- */
-function requireActiveRunState(
-  activeRunId: string | undefined,
-  activeThreadId: string | undefined,
-  event: Extract<TuvrenStreamEvent, { type: "turn.end" }>
-): { runId: string; threadId: string } {
-  if (activeRunId !== undefined && activeThreadId !== undefined) {
-    return {
-      runId: activeRunId,
-      threadId: activeThreadId,
-    };
-  }
-
-  throw new TuvrenRuntimeError(
-    `turn "${event.turnId}" ended without a preceding turn.start`,
-    {
-      code: "invalid_stream_adapter_state",
-    }
-  );
-}
-
-/** Gets or lazily creates the {@link PendingReasoningState} for `reasoningId`. */
-function ensureReasoningState(
-  states: Map<string, PendingReasoningState>,
-  reasoningId: string
-): PendingReasoningState {
-  const existingState = states.get(reasoningId);
-
-  if (existingState !== undefined) {
-    return existingState;
-  }
-
-  const nextState: PendingReasoningState = {
-    messageId: reasoningId,
-    messageStarted: false,
-    started: false,
-  };
-  states.set(reasoningId, nextState);
-  return nextState;
-}
-
-/** Gets or lazily creates the {@link PendingTextState} for `messageId`. */
-function ensureTextState(
-  states: Map<string, PendingTextState>,
-  messageId: string
-): PendingTextState {
-  const existingState = states.get(messageId);
-
-  if (existingState !== undefined) {
-    return existingState;
-  }
-
-  const nextState: PendingTextState = {
-    ended: false,
-    messageId,
-    sawContent: false,
-    started: false,
-  };
-  states.set(messageId, nextState);
-  return nextState;
-}
-
-/**
- * Synthesizes closing AG-UI events for every substream still open when the
- * enclosing turn ends (`TEXT_MESSAGE_END`, `REASONING_MESSAGE_END`/`REASONING_END`,
- * `TOOL_CALL_END`), clearing all three state maps afterward.
+ * Maps a `TuvrenStreamEvent` stream onto `@ag-ui/core` events.
  *
- * AG-UI child streams should never remain open after the enclosing turn
- * ends, even on failure paths where the canonical stream terminates before
- * an explicit `*.done` event arrives. The synthesized closes are anchored to
- * `terminalEvent` (cloned per event via `rawEvent`) so host debuggers can
- * distinguish adapter cleanup from genuine canonical events.
- */
-function flushPendingAgUiSubstreams(
-  reasoningStates: Map<string, PendingReasoningState>,
-  textStates: Map<string, PendingTextState>,
-  toolCallStates: Map<string, PendingToolCallState>,
-  terminalEvent: Extract<TuvrenStreamEvent, { type: "turn.end" }>
-): readonly AGUIEvent[] {
-  const flushedEvents: AGUIEvent[] = [];
-  const createTerminalRawEvent = (): TuvrenStreamEvent =>
-    cloneTuvrenStreamEvent(terminalEvent);
-
-  // AG-UI child streams should never remain open after the enclosing turn ends,
-  // even on failure paths where the canonical stream terminates before an
-  // explicit *.done event arrives. We anchor the synthesized closes to turn.end
-  // so host debuggers can distinguish adapter cleanup from canonical events.
-  for (const textState of textStates.values()) {
-    if (!textState.started || textState.ended) {
-      continue;
-    }
-
-    flushedEvents.push(
-      validateAgUiEvent({
-        messageId: textState.messageId,
-        rawEvent: createTerminalRawEvent(),
-        timestamp: terminalEvent.timestamp,
-        type: EventType.TEXT_MESSAGE_END,
-      })
-    );
-  }
-  textStates.clear();
-
-  for (const reasoningState of reasoningStates.values()) {
-    if (!reasoningState.started) {
-      continue;
-    }
-
-    if (reasoningState.messageStarted) {
-      flushedEvents.push(
-        validateAgUiEvent({
-          messageId: reasoningState.messageId,
-          rawEvent: createTerminalRawEvent(),
-          timestamp: terminalEvent.timestamp,
-          type: EventType.REASONING_MESSAGE_END,
-        })
-      );
-    }
-
-    flushedEvents.push(
-      validateAgUiEvent({
-        messageId: reasoningState.messageId,
-        rawEvent: createTerminalRawEvent(),
-        timestamp: terminalEvent.timestamp,
-        type: EventType.REASONING_END,
-      })
-    );
-  }
-  reasoningStates.clear();
-
-  for (const toolCallState of toolCallStates.values()) {
-    if (!toolCallState.started) {
-      continue;
-    }
-
-    flushedEvents.push(
-      validateAgUiEvent({
-        rawEvent: createTerminalRawEvent(),
-        timestamp: terminalEvent.timestamp,
-        toolCallId: toolCallState.callId,
-        type: EventType.TOOL_CALL_END,
-      })
-    );
-  }
-  toolCallStates.clear();
-
-  return flushedEvents;
-}
-
-/**
- * Coerces a value into the plain string AG-UI text fields expect: a string
- * passes through unchanged; anything else is JSON-serialized, falling back
- * to the literal `"null"` for values `JSON.stringify` returns `undefined`
- * for.
- */
-function serializeAgUiTextValue(value: unknown): string {
-  if (typeof value === "string") {
-    return value;
-  }
-
-  const serialized = JSON.stringify(value);
-  return serialized ?? "null";
-}
-
-/**
- * Derives a distinct AG-UI message id for a reasoning substream from the
- * canonical assistant `messageId`, so reasoning and text substreams sharing
- * one canonical message never collide in AG-UI's flat message-id space.
- */
-function toReasoningMessageId(messageId: string): string {
-  return `${messageId}:reasoning`;
-}
-
-/**
- * @throws TuvrenRuntimeError with code `invalid_agui_event` when `event`
- *   fails `EventSchemas` validation — a defensive check that a mapping bug in
- *   this adapter never reaches consumers as a structurally invalid AG-UI
- *   event.
- */
-function validateAgUiEvent(event: AGUIEvent): AGUIEvent {
-  try {
-    return EventSchemas.parse(event);
-  } catch (error: unknown) {
-    throw new TuvrenRuntimeError("stream-agui emitted an invalid AG-UI event", {
-      cause: error,
-      code: "invalid_agui_event",
-      details: event,
-    });
-  }
-}
-
-/**
- * Defensive exhaustiveness guard for the mapping switch: the `never`
- * parameter type means TypeScript already flags any unhandled
- * `TuvrenStreamEvent` variant at compile time; this throws if one somehow
- * reaches here at runtime (e.g. an event union widened at a version skew).
+ * Every emitted event is validated against `EventSchemas` before yielding
+ * (see {@link validateAgUiEvent}), so a mapping defect surfaces as a thrown
+ * `invalid_agui_event` error rather than propagating a malformed AG-UI
+ * payload. Substream lifecycles (text messages, reasoning blocks, tool
+ * calls) are tracked in per-id state maps across canonical events; if the
+ * enclosing turn ends before a substream's own terminal event arrived, its
+ * AG-UI closing events are synthesized so no AG-UI substream is left open
+ * (see {@link flushPendingAgUiSubstreams}).
  *
- * @throws TuvrenRuntimeError with code `invalid_stream_adapter_state`, always.
+ * Canonical events without a first-class AG-UI counterpart (tool execution
+ * events, approvals, file output, non-fatal errors, state checkpoints,
+ * steering, structured output) become `CUSTOM` events named
+ * `tuvren.runtime.<event.type>`, each reported once through
+ * `options.onWarning` with a fixed code from
+ * {@link CUSTOM_FALLBACK_WARNING_CODES}.
+ *
+ * The source iterator is claimed synchronously (before any `await`), so this
+ * adapter satisfies a `teeTuvrenStreamEvents` branch's claim-before-first-pull
+ * rule immediately upon being called, regardless of when the returned
+ * iterable is actually iterated.
  */
-function throwUnreachableEvent(event: never): never {
-  throw new TuvrenRuntimeError(
-    "stream-agui received an unhandled stream event",
-    {
-      code: "invalid_stream_adapter_state",
-      details: event,
-    }
+export const toAgUiEvents = (
+  events: AsyncIterable<TuvrenStreamEvent>,
+  options?: StreamAdapterOptions
+): AsyncIterable<AGUIEvent> =>
+  // Claim tee-backed sources immediately so sibling adapter branches can still
+  // subscribe before any one consumer starts pulling the shared source stream.
+  toAgUiEventsSubscribed(
+    createIteratorIterable(events[Symbol.asyncIterator]()),
+    options
   );
-}
-
-/** Wraps an already-obtained iterator as a single-use `AsyncIterable` that always returns the same iterator. */
-function createIteratorIterable<T>(
-  iterator: AsyncIterator<T>
-): AsyncIterable<T> {
-  return {
-    [Symbol.asyncIterator](): AsyncIterator<T> {
-      return iterator;
-    },
-  };
-}

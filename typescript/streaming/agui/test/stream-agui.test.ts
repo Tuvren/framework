@@ -26,6 +26,30 @@ import {
 
 import { toAgUiEvents } from "../src/index.ts";
 
+const readErrorCode = (error: unknown): unknown => {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return undefined;
+  }
+
+  return error.code;
+};
+
+const collectStreamValues = async <T>(
+  values: AsyncIterable<T>
+): Promise<T[]> => {
+  const collected: T[] = [];
+
+  for await (const value of values) {
+    collected.push(value);
+  }
+
+  return collected;
+};
+
+const waitForAsyncTurn = async (): Promise<void> => {
+  await Promise.resolve();
+};
+
 const frameworkStreamFixtures = await readFrameworkStreamFixtures();
 
 describe("stream-agui", () => {
@@ -361,25 +385,3 @@ describe("stream-agui", () => {
     });
   });
 });
-
-function readErrorCode(error: unknown): unknown {
-  if (typeof error !== "object" || error === null || !("code" in error)) {
-    return undefined;
-  }
-
-  return error.code;
-}
-
-async function collectStreamValues<T>(values: AsyncIterable<T>): Promise<T[]> {
-  const collected: T[] = [];
-
-  for await (const value of values) {
-    collected.push(value);
-  }
-
-  return collected;
-}
-
-async function waitForAsyncTurn(): Promise<void> {
-  await Promise.resolve();
-}
