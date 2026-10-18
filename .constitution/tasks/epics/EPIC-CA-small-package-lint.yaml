@@ -126,4 +126,49 @@ tickets:
       evidence: Assert every delivered file maps to frozen CA provenance; core, SDK, and MCP each pass source-only typecheck, retained-Biome lint, cold import, and package tests; the seven early-removal identities retain their reviewed proof; and all 29 original admission removals remain protected in final-owned files. Prove the KRT-CA002 directory stays whole, compiler resolution reaches no live sibling source, no target or coverage metadata changes, and the PR carries direct patch Changeset entries for @tuvren/core, @tuvren/sdk, and @tuvren/mcp-client.
     flows: []
     certainty: settled
-    status: planned
+    status: done
+closeout:
+  tickets_completed: [KRT-CA005]
+  tickets_deferred: []
+  points_completed: 5
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-CA: delivered the retained-clean core, SDK, and MCP client preparation slice with frozen provenance, direct patch Changeset coverage, and current contract evidence."
+    - directory: tech-spec
+      type: changed
+      text: "Execution delivered the previously reviewed recursive-predicate injection, acyclic guard/type-family extraction, and MCP return-await convention for later Stage 3 alignment without changing public API shape."
+  candidate_terms: []
+  routed_upstream: []
+  follow_ups:
+    - "EPIC-CX owns final native admission for these packages, including the excluded runtime-contract-shapes bridge and the atomic target and coverage transition."
+    - "The wave lead must require hosted verify and Bazel to pass on the exact rebased PR head before merge."
+  code_decisions:
+    - summary: "Pass the recursive predicate into leaf object and schema helpers to break private validator initialization cycles while preserving traversal, evaluation order, and error behavior."
+      kind: pattern
+      paths:
+        - typescript/core/src/lib/runtime-contract-predicates.ts
+      commit: 4befa79e4db85afdf0443ea64a910e1e8b3e5aca
+    - summary: "Apply predicate injection to dense kernel-record validation so JSON and kernel recursion remain behaviorally identical without declaration hoisting or mutable forward bindings."
+      kind: pattern
+      paths:
+        - typescript/core/src/lib/kernel-records.ts
+      commit: 4befa79e4db85afdf0443ea64a910e1e8b3e5aca
+    - summary: "Use return-await normalization in the MCP tool execution wrapper; the internal microtask observation may change while supported connection, rejection, and test Promise behavior stays protected."
+      kind: convention
+      paths:
+        - typescript/tools/mcp-client/src/lib/mcp-tool-source.ts
+      commit: 4befa79e4db85afdf0443ea64a910e1e8b3e5aca
+    - summary: "Split core guards into acyclic validation leaves and separate data, event, and execution type families through erased imports while preserving public exports, method bivariance, validation behavior, and API snapshots."
+      kind: pattern
+      paths:
+        - typescript/core/src/lib/runner-agent-config-snapshot-guards.ts
+        - typescript/core/src/lib/runner-contract-guards.ts
+        - typescript/core/src/lib/runtime-provider-contract-guards.ts
+        - typescript/core/src/lib/runtime-contract-guards.ts
+        - typescript/core/src/lib/runtime-data-contract-shapes.ts
+        - typescript/core/src/lib/runtime-event-contract-shapes.ts
+        - typescript/core/src/lib/runtime-execution-contract-shapes.ts
+      commit: 4befa79e4db85afdf0443ea64a910e1e8b3e5aca
+  settled: []
