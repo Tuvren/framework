@@ -68,8 +68,8 @@ describe("stream adapter integration", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -178,8 +178,8 @@ describe("stream adapter integration", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const tools: TuvrenToolDefinition[] = [
       {
@@ -323,8 +323,8 @@ describe("stream adapter integration", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -395,8 +395,8 @@ describe("stream adapter integration", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -470,8 +470,8 @@ describe("stream adapter integration", () => {
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -522,7 +522,7 @@ function readStringProperty(value: unknown, propertyName: string): string {
 
   const propertyValue = Reflect.get(value, propertyName);
   if (typeof propertyValue !== "string") {
-    throw new Error(`${propertyName} input must be a string`);
+    throw new TypeError(`${propertyName} input must be a string`);
   }
 
   return propertyValue;

@@ -84,29 +84,27 @@ test("retains the original batch and missing calls after a second recovery crash
     enteredHeld = resolve;
   });
   const runner = {
-    id: "fake",
     async execute() {
       return {
         messages: [assistantText("done")],
         resolution: { reason: "done", type: "end_turn" },
       };
     },
+    id: "fake",
   } satisfies RuntimeRunner;
   const first = createTuvrenRuntime({
     defaultRunnerId: "fake",
     kernel: fixture.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([runner]),
     runLiveness: {
       executionOwnerId: "first-recovery",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const firstHandle = first.executeTurn({
     branchId: fixture.thread.branchId,
-    threadId: fixture.thread.threadId,
-    signal: textSignal("Recover twice"),
     config: {
       name: "primary",
       tools: [
@@ -124,6 +122,8 @@ test("retains the original batch and missing calls after a second recovery crash
         },
       ],
     },
+    signal: textSignal("Recover twice"),
+    threadId: fixture.thread.threadId,
   });
   const firstEvents = collectEvents(firstHandle.events());
   await entered;
@@ -138,6 +138,10 @@ test("retains the original batch and missing calls after a second recovery crash
     kernel: fixture.kernel,
     now: () => 60_000,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
+    runLiveness: {
+      executionOwnerId: "second-recovery",
+      leaseDurationMs: 50_000,
+    },
     runnerRegistry: createRunnerRegistry([
       {
         id: "fake",
@@ -150,15 +154,9 @@ test("retains the original batch and missing calls after a second recovery crash
         },
       },
     ]),
-    runLiveness: {
-      executionOwnerId: "second-recovery",
-      leaseDurationMs: 50_000,
-    },
   });
   const secondHandle = second.executeTurn({
     branchId: fixture.thread.branchId,
-    threadId: fixture.thread.threadId,
-    signal: textSignal("Recover twice"),
     config: {
       name: "primary",
       tools: [
@@ -173,6 +171,8 @@ test("retains the original batch and missing calls after a second recovery crash
         },
       ],
     },
+    signal: textSignal("Recover twice"),
+    threadId: fixture.thread.threadId,
   });
   await collectEvents(secondHandle.events());
   releaseHeld?.();
@@ -208,8 +208,8 @@ test("keeps earlier iteration count when an interrupted assistant is uncommitted
     await fixture.kernel.branch.setHead(fixture.thread.branchId, inputHead);
     return {
       ...recoveryState,
-      lastTurnNodeHash: inputHead,
       consumedStagedResults: [],
+      lastTurnNodeHash: inputHead,
       uncommittedStagedResults: recoveredRun.uncommittedStagedResults,
     };
   };
@@ -219,6 +219,10 @@ test("keeps earlier iteration count when an interrupted assistant is uncommitted
     kernel: fixture.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
+    runLiveness: {
+      executionOwnerId: "count-recovery",
+      leaseDurationMs: 50_000,
+    },
     runnerRegistry: createRunnerRegistry([
       {
         id: "fake",
@@ -231,18 +235,12 @@ test("keeps earlier iteration count when an interrupted assistant is uncommitted
         },
       },
     ]),
-    runLiveness: {
-      executionOwnerId: "count-recovery",
-      leaseDurationMs: 50_000,
-    },
   });
   const handle = runtime.executeTurn({
     branchId: fixture.thread.branchId,
-    threadId: fixture.thread.threadId,
-    signal: textSignal("Recover count"),
     config: {
-      name: "primary",
       maxIterations: 1,
+      name: "primary",
       tools: [
         {
           name: "lookup",
@@ -254,6 +252,8 @@ test("keeps earlier iteration count when an interrupted assistant is uncommitted
         },
       ],
     },
+    signal: textSignal("Recover count"),
+    threadId: fixture.thread.threadId,
   });
   await collectEvents(handle.events());
 
@@ -286,8 +286,8 @@ test("context plans persist the same uncommitted recovered message history they 
     await fixture.kernel.branch.setHead(fixture.thread.branchId, inputHead);
     return {
       ...recoveryState,
-      lastTurnNodeHash: inputHead,
       consumedStagedResults: [],
+      lastTurnNodeHash: inputHead,
       uncommittedStagedResults: recoveredRun.uncommittedStagedResults,
     };
   };
@@ -298,6 +298,10 @@ test("context plans persist the same uncommitted recovered message history they 
     kernel: fixture.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
+    runLiveness: {
+      executionOwnerId: "context-recovery",
+      leaseDurationMs: 50_000,
+    },
     runnerRegistry: createRunnerRegistry([
       {
         id: "fake",
@@ -318,15 +322,9 @@ test("context plans persist the same uncommitted recovered message history they 
         },
       },
     ]),
-    runLiveness: {
-      executionOwnerId: "context-recovery",
-      leaseDurationMs: 50_000,
-    },
   });
   const handle = runtime.executeTurn({
     branchId: fixture.thread.branchId,
-    threadId: fixture.thread.threadId,
-    signal: textSignal("Recover context history"),
     config: {
       contextPolicy: {
         evaluate() {
@@ -343,6 +341,8 @@ test("context plans persist the same uncommitted recovered message history they 
       },
       name: "primary",
     },
+    signal: textSignal("Recover context history"),
+    threadId: fixture.thread.threadId,
   });
   await collectEvents(handle.events());
 
@@ -398,6 +398,10 @@ test("keeps failed partial tool calls context-only through a crash", async () =>
     kernel: liveness.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
+    runLiveness: {
+      executionOwnerId: "partial-original",
+      leaseDurationMs: 50_000,
+    },
     runnerRegistry: createRunnerRegistry([
       {
         id: "fake",
@@ -421,25 +425,21 @@ test("keeps failed partial tool calls context-only through a crash", async () =>
         },
       },
     ]),
-    runLiveness: {
-      executionOwnerId: "partial-original",
-      leaseDurationMs: 50_000,
-    },
   });
   const thread = await original.createThread({});
   const baseTool = {
-    name: "charge",
     description: "charge",
-    inputSchema: { type: "object" },
     execute() {
       return {};
     },
+    inputSchema: { type: "object" },
+    name: "charge",
   };
   const first = original.executeTurn({
     branchId: thread.branchId,
-    threadId: thread.threadId,
-    signal: textSignal("Recover failed partial"),
     config: { name: "primary", tools: [baseTool] },
+    signal: textSignal("Recover failed partial"),
+    threadId: thread.threadId,
   });
   const firstEvents = collectEvents(first.events());
   await ready;
@@ -449,6 +449,10 @@ test("keeps failed partial tool calls context-only through a crash", async () =>
     kernel: liveness.kernel,
     now: () => 60_000,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
+    runLiveness: {
+      executionOwnerId: "partial-replacement",
+      leaseDurationMs: 50_000,
+    },
     runnerRegistry: createRunnerRegistry([
       {
         id: "fake",
@@ -460,15 +464,9 @@ test("keeps failed partial tool calls context-only through a crash", async () =>
         },
       },
     ]),
-    runLiveness: {
-      executionOwnerId: "partial-replacement",
-      leaseDurationMs: 50_000,
-    },
   });
   const second = replacement.executeTurn({
     branchId: thread.branchId,
-    threadId: thread.threadId,
-    signal: textSignal("Recover failed partial"),
     config: {
       name: "primary",
       tools: [
@@ -481,6 +479,8 @@ test("keeps failed partial tool calls context-only through a crash", async () =>
         },
       ],
     },
+    signal: textSignal("Recover failed partial"),
+    threadId: thread.threadId,
   });
   await collectEvents(second.events());
   releaseStage?.();
@@ -517,6 +517,10 @@ test("preserves sequential recovery mode and the first approval gate", async () 
     kernel: liveness.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
+    runLiveness: {
+      executionOwnerId: "sequential-original",
+      leaseDurationMs: 50_000,
+    },
     runnerRegistry: createRunnerRegistry([
       {
         id: "fake",
@@ -534,15 +538,11 @@ test("preserves sequential recovery mode and the first approval gate", async () 
         },
       },
     ]),
-    runLiveness: {
-      executionOwnerId: "sequential-original",
-      leaseDurationMs: 50_000,
-    },
   });
   const thread = await original.createThread({});
   const config = {
-    name: "primary",
     maxIterations: 1,
+    name: "primary",
     tools: [
       {
         name: "lookup",
@@ -556,9 +556,9 @@ test("preserves sequential recovery mode and the first approval gate", async () 
   };
   const first = original.executeTurn({
     branchId: thread.branchId,
-    threadId: thread.threadId,
-    signal: textSignal("Recover sequential"),
     config,
+    signal: textSignal("Recover sequential"),
+    threadId: thread.threadId,
   });
   const firstEvents = collectEvents(first.events());
   await ready;
@@ -576,6 +576,10 @@ test("preserves sequential recovery mode and the first approval gate", async () 
     kernel: liveness.kernel,
     now: () => 60_000,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
+    runLiveness: {
+      executionOwnerId: "sequential-replacement",
+      leaseDurationMs: 50_000,
+    },
     runnerRegistry: createRunnerRegistry([
       {
         id: "fake",
@@ -587,15 +591,9 @@ test("preserves sequential recovery mode and the first approval gate", async () 
         },
       },
     ]),
-    runLiveness: {
-      executionOwnerId: "sequential-replacement",
-      leaseDurationMs: 50_000,
-    },
   });
   const second = replacement.executeTurn({
     branchId: thread.branchId,
-    threadId: thread.threadId,
-    signal: textSignal("Recover sequential"),
     config: {
       ...config,
       tools: [
@@ -613,6 +611,8 @@ test("preserves sequential recovery mode and the first approval gate", async () 
         },
       ],
     },
+    signal: textSignal("Recover sequential"),
+    threadId: thread.threadId,
   });
   const secondEvents = collectEvents(second.events());
   await entered;
@@ -647,6 +647,10 @@ test("restores original call order after parallel results stage out of order", a
     kernel: fixture.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
+    runLiveness: {
+      executionOwnerId: "order-recovery",
+      leaseDurationMs: 50_000,
+    },
     runnerRegistry: createRunnerRegistry([
       {
         id: "fake",
@@ -665,17 +669,10 @@ test("restores original call order after parallel results stage out of order", a
         },
       },
     ]),
-    runLiveness: {
-      executionOwnerId: "order-recovery",
-      leaseDurationMs: 50_000,
-    },
   });
   const handle = runtime.executeTurn({
     branchId: fixture.thread.branchId,
-    threadId: fixture.thread.threadId,
-    signal: textSignal("Recover order"),
     config: {
-      name: "primary",
       extensions: [
         {
           name: "capture-finalized-tool-batch",
@@ -690,6 +687,7 @@ test("restores original call order after parallel results stage out of order", a
           },
         },
       ],
+      name: "primary",
       tools: [
         {
           name: "lookup",
@@ -701,6 +699,8 @@ test("restores original call order after parallel results stage out of order", a
         },
       ],
     },
+    signal: textSignal("Recover order"),
+    threadId: fixture.thread.threadId,
   });
   await collectEvents(handle.events());
 
@@ -734,6 +734,10 @@ test("rebuilds the recovered manifest when one missing call is completed", async
     kernel: fixture.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
+    runLiveness: {
+      executionOwnerId: "single-recovery-manifest",
+      leaseDurationMs: 50_000,
+    },
     runnerRegistry: createRunnerRegistry([
       {
         id: "fake",
@@ -745,15 +749,9 @@ test("rebuilds the recovered manifest when one missing call is completed", async
         },
       },
     ]),
-    runLiveness: {
-      executionOwnerId: "single-recovery-manifest",
-      leaseDurationMs: 50_000,
-    },
   });
   const handle = runtime.executeTurn({
     branchId: fixture.thread.branchId,
-    threadId: fixture.thread.threadId,
-    signal: textSignal("Recover one result"),
     config: {
       name: "primary",
       tools: [
@@ -767,6 +765,8 @@ test("rebuilds the recovered manifest when one missing call is completed", async
         },
       ],
     },
+    signal: textSignal("Recover one result"),
+    threadId: fixture.thread.threadId,
   });
   await collectEvents(handle.events());
 
@@ -791,6 +791,10 @@ test("approval resume keeps missing and durable results in original call order",
     kernel: fixture.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
+    runLiveness: {
+      executionOwnerId: "approval-recovery-order",
+      leaseDurationMs: 50_000,
+    },
     runnerRegistry: createRunnerRegistry([
       {
         id: "fake",
@@ -802,15 +806,9 @@ test("approval resume keeps missing and durable results in original call order",
         },
       },
     ]),
-    runLiveness: {
-      executionOwnerId: "approval-recovery-order",
-      leaseDurationMs: 50_000,
-    },
   });
   const paused = runtime.executeTurn({
     branchId: fixture.thread.branchId,
-    threadId: fixture.thread.threadId,
-    signal: textSignal("Resume in original order"),
     config: {
       name: "primary",
       tools: [
@@ -825,6 +823,8 @@ test("approval resume keeps missing and durable results in original call order",
         },
       ],
     },
+    signal: textSignal("Resume in original order"),
+    threadId: fixture.thread.threadId,
   });
   await collectEvents(paused.events());
   expect(paused.status().phase).toBe("paused");
@@ -873,7 +873,6 @@ test("recovers aroundTool state before accepting its durable tool result", async
     return result;
   };
   const runner = {
-    id: "fake",
     async execute(context) {
       if (context.messages.some((message) => message.role === "tool")) {
         return {
@@ -891,32 +890,33 @@ test("recovers aroundTool state before accepting its durable tool result", async
         toolExecutionMode: "parallel",
       };
     },
+    id: "fake",
   } satisfies RuntimeRunner;
   let sideEffectCalls = 0;
   const extension = {
-    name: "__tuvren_interrupted_tool_batch",
-    aroundTool(_context, next) {
+    async aroundTool(_context, next) {
       return next().then((result) => ({
         result,
         state: { completedCall: "stateful-call" },
       }));
     },
+    name: "__tuvren_interrupted_tool_batch",
   } satisfies TuvrenExtension;
   const firstRuntime = createTuvrenRuntime({
     defaultRunnerId: "fake",
     kernel: liveness.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([runner]),
     runLiveness: {
       executionOwnerId: "state-original",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const thread = await firstRuntime.createThread({});
   const config = {
-    name: "primary",
     extensions: [extension],
+    name: "primary",
     tools: [
       {
         name: "lookup",
@@ -931,9 +931,9 @@ test("recovers aroundTool state before accepting its durable tool result", async
   };
   const first = firstRuntime.executeTurn({
     branchId: thread.branchId,
-    threadId: thread.threadId,
-    signal: textSignal("Recover state"),
     config,
+    signal: textSignal("Recover state"),
+    threadId: thread.threadId,
   });
   const firstEvents = collectEvents(first.events());
   await ready;
@@ -943,17 +943,17 @@ test("recovers aroundTool state before accepting its durable tool result", async
     kernel: liveness.kernel,
     now: () => 60_000,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([runner]),
     runLiveness: {
       executionOwnerId: "state-replacement",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const second = replacement.executeTurn({
     branchId: thread.branchId,
-    threadId: thread.threadId,
-    signal: textSignal("Recover state"),
     config,
+    signal: textSignal("Recover state"),
+    threadId: thread.threadId,
   });
   await collectEvents(second.events());
   const stateAtRecovery = second.status().manifest?.extensions ?? {};
@@ -963,7 +963,7 @@ test("recovers aroundTool state before accepting its durable tool result", async
   const treeManifest = await harness.readBranchManifest(thread.branchId);
   const contextManifestHash = treeManifest["context.manifest"];
   if (typeof contextManifestHash !== "string") {
-    throw new Error("expected recovered context manifest");
+    throw new TypeError("expected recovered context manifest");
   }
   const contextManifestPayload =
     await liveness.kernel.store.get(contextManifestHash);

@@ -46,6 +46,7 @@ describe("orchestration-runtime", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -79,7 +80,6 @@ describe("orchestration-runtime", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -143,6 +143,7 @@ describe("orchestration-runtime", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -159,7 +160,6 @@ describe("orchestration-runtime", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -259,8 +259,8 @@ describe("orchestration-runtime", () => {
     }, "special");
     const framework = createTuvrenRuntime({
       defaultRunnerId: "default",
-      runnerRegistry: createRunnerRegistry([defaultRunner, specialRunner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([defaultRunner, specialRunner]),
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -321,12 +321,12 @@ describe("orchestration-runtime", () => {
       iterationCount: 0,
       phase: "completed",
     });
-    const createThreadInputs: Array<{ schemaId?: string }> = [];
-    const executeTurnInputs: Array<{
+    const createThreadInputs: { schemaId?: string }[] = [];
+    const executeTurnInputs: {
       agentName: string;
       schemaId?: string;
       threadId: string;
-    }> = [];
+    }[] = [];
     let executeCalls = 0;
     const framework = {
       async createBranch() {
@@ -367,31 +367,31 @@ describe("orchestration-runtime", () => {
 
         return null;
       },
-      async setBranchHead() {
-        throw new Error("setBranchHead was not expected");
-      },
-      async listThreads() {
-        return { threads: [] };
-      },
-      async listBranches() {
-        return [];
+      getTurnHistory() {
+        throw new Error("getTurnHistory was not expected");
       },
       async getTurnState() {
         throw new Error("getTurnState was not expected");
       },
-      getTurnHistory() {
-        throw new Error("getTurnHistory was not expected");
+      async listBranches() {
+        return [];
+      },
+      async listThreads() {
+        return { threads: [] };
+      },
+      maintenance: {
+        purgeScope() {
+          throw new Error("purgeScope was not expected");
+        },
+        reclaim() {
+          throw new Error("reclaim was not expected");
+        },
       },
       async readBranchMessages() {
         return { messages: [] };
       },
-      maintenance: {
-        reclaim() {
-          throw new Error("reclaim was not expected");
-        },
-        purgeScope() {
-          throw new Error("purgeScope was not expected");
-        },
+      async setBranchHead() {
+        throw new Error("setBranchHead was not expected");
       },
     } satisfies TuvrenRuntime;
     const orchestration = createOrchestrationRuntime({
@@ -454,17 +454,18 @@ describe("orchestration-runtime", () => {
           );
         }
 
-        return undefined;
+        return;
       },
       beforeTurn() {
         this.beforeTurnCalls += 1;
-        return undefined;
+        return;
       },
       beforeTurnCalls: 0,
       name: "orchestration-mutable-receiver",
     };
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async () => ({
           messages: [assistantText("Hook receiver stayed mutable.")],
@@ -474,7 +475,6 @@ describe("orchestration-runtime", () => {
           },
         })),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -520,6 +520,10 @@ describe("orchestration-runtime", () => {
     };
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
+      resolveAgentConfig(agentName) {
+        return agents[agentName];
+      },
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -557,10 +561,6 @@ describe("orchestration-runtime", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
-      resolveAgentConfig(agentName) {
-        return agents[agentName];
-      },
     });
     const orchestration = createOrchestrationRuntime({
       agents,
@@ -685,31 +685,31 @@ describe("orchestration-runtime", () => {
 
         return null;
       },
-      async setBranchHead() {
-        throw new Error("setBranchHead was not expected");
-      },
-      async listThreads() {
-        return { threads: [] };
-      },
-      async listBranches() {
-        return [];
+      getTurnHistory() {
+        throw new Error("getTurnHistory was not expected");
       },
       async getTurnState() {
         throw new Error("getTurnState was not expected");
       },
-      getTurnHistory() {
-        throw new Error("getTurnHistory was not expected");
+      async listBranches() {
+        return [];
+      },
+      async listThreads() {
+        return { threads: [] };
+      },
+      maintenance: {
+        purgeScope() {
+          throw new Error("purgeScope was not expected");
+        },
+        reclaim() {
+          throw new Error("reclaim was not expected");
+        },
       },
       async readBranchMessages() {
         return { messages: [] };
       },
-      maintenance: {
-        reclaim() {
-          throw new Error("reclaim was not expected");
-        },
-        purgeScope() {
-          throw new Error("purgeScope was not expected");
-        },
+      async setBranchHead() {
+        throw new Error("setBranchHead was not expected");
       },
     } satisfies TuvrenRuntime;
     const orchestration = createOrchestrationRuntime({
@@ -771,6 +771,7 @@ describe("orchestration-runtime", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -818,7 +819,6 @@ describe("orchestration-runtime", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const agents = {
       primary: { name: "primary" },
@@ -898,6 +898,7 @@ describe("orchestration-runtime", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker-alpha") {
@@ -923,7 +924,6 @@ describe("orchestration-runtime", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {

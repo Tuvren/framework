@@ -16,30 +16,19 @@
 
 import { describe, expect, test } from "bun:test";
 
-import {
-  DEFAULT_SCOPE,
-  type KernelRecord,
-  TuvrenRecoveryError,
-} from "@tuvren/core";
-import {
-  ENVELOPE_MAGIC,
-  IDENTITY_PAYLOAD_CODEC,
-  type PayloadCodec,
-} from "@tuvren/core/lifecycle";
+import { DEFAULT_SCOPE, TuvrenRecoveryError } from "@tuvren/core";
+import type { KernelRecord } from "@tuvren/core";
+import { ENVELOPE_MAGIC, IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
+import type { PayloadCodec } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
-import {
-  encodeDeterministicKernelRecord,
-  type RecoveryState,
-  type StagedResult,
-} from "@tuvren/kernel-protocol";
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type { RecoveryState, StagedResult } from "@tuvren/kernel-protocol";
 
 import { createEmptyContextManifest } from "../src/lib/context-manifest.ts";
 import { encryptMessageRecord } from "../src/lib/payload-codec-seam.ts";
 import type { HeadState } from "../src/lib/runtime-core-loop.ts";
-import {
-  deriveInterruptedIterationRecoveryPlan,
-  type InterruptedIterationRecoveryPlan,
-} from "../src/lib/runtime-core-recovery-plan.ts";
+import { deriveInterruptedIterationRecoveryPlan } from "../src/lib/runtime-core-recovery-plan.ts";
+import type { InterruptedIterationRecoveryPlan } from "../src/lib/runtime-core-recovery-plan.ts";
 import {
   createFakeKernelHarness,
   createFakeRunLivenessKernelHarness,
