@@ -29,6 +29,7 @@ import {
   DEFAULT_AGENT_SCHEMA,
 } from "@tuvren/runtime";
 
+import { createFrameworkAdapterRecoveryResult } from "./framework-adapter-recovery-result.ts";
 import {
   assistantText,
   assistantToolCalls,
@@ -36,7 +37,6 @@ import {
   createConformanceIdFactory,
   createConformanceKernelHarness,
   createConformanceRunLivenessKernelHarness,
-  createStaticRunner,
   RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
@@ -221,103 +221,7 @@ export const createFrameworkAdapterRecoveryScenarios = (
   runRecoverResult: (input: unknown) => Promise<AdapterProjection>;
   runRecoverStaleRun: (input: unknown) => Promise<AdapterProjection>;
 } => {
-  const runRecoverResult = async (
-    input: unknown
-  ): Promise<AdapterProjection> => {
-    const scenario = dependencies.readOperationScenario(
-      input,
-      "runtime.recover-result"
-    );
-    const stagedObject = dependencies.readRecordProperty(
-      scenario,
-      "stagedObject",
-      "runtime.recover-result.stagedObject"
-    );
-    const taskId = dependencies.readStringProperty(
-      stagedObject,
-      "taskId",
-      "runtime.recover-result.stagedObject.taskId"
-    );
-    const objectType = dependencies.readStringProperty(
-      stagedObject,
-      "objectType",
-      "runtime.recover-result.stagedObject.objectType"
-    );
-    const payload = dependencies.readProperty(
-      stagedObject,
-      "payload",
-      "runtime.recover-result.stagedObject.payload"
-    );
-    const harness = createConformanceKernelHarness();
-    const runtime = createTuvrenRuntimeCore({
-      createId: createConformanceIdFactory(),
-      defaultRunnerId: RUNNER_ID,
-      kernel: harness.kernel,
-      runnerRegistry: createRunnerRegistry([
-        createStaticRunner(() => ({
-          messages: [assistantText("recovery placeholder")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        })),
-      ]),
-    });
-    const thread = await runtime.createThread({});
-    const recoveryTurnId = "shared-recovery-turn";
-    const runId = "shared-recovery-run";
-
-    const turn = await harness.kernel.turn.create(
-      recoveryTurnId,
-      thread.threadId,
-      thread.branchId,
-      null,
-      thread.rootTurnNodeHash
-    );
-    await harness.kernel.run.create(
-      runId,
-      turn.turnId,
-      thread.branchId,
-      DEFAULT_AGENT_SCHEMA.schemaId,
-      thread.rootTurnNodeHash,
-      [{ deterministic: false, id: taskId, sideEffects: false }]
-    );
-    await harness.kernel.staging.stage(
-      runId,
-      new TextEncoder().encode(JSON.stringify(payload)),
-      taskId,
-      objectType,
-      "completed"
-    );
-
-    const recovery = await harness.kernel.run.recover(runId);
-    const [firstStagedResult] = recovery.uncommittedStagedResults;
-    const recoveryProjection = {
-      firstObjectType: firstStagedResult?.objectType,
-      firstTaskId: firstStagedResult?.taskId,
-      lastTurnNodeHash: recovery.lastTurnNodeHash,
-      uncommittedStagedResults: recovery.uncommittedStagedResults.length,
-    };
-
-    return {
-      evidence: {
-        recovery: recoveryProjection,
-      },
-      result: {
-        recovery: recoveryProjection,
-      },
-      state: {
-        recovery,
-        trace: {
-          recovery: {
-            evidence: {
-              recovery: recoveryProjection,
-            },
-          },
-        },
-      },
-    };
-  };
+  const runRecoverResult = createFrameworkAdapterRecoveryResult(dependencies);
 
   const readInterruptedToolCalls = (
     scenario: Record<string, unknown>
