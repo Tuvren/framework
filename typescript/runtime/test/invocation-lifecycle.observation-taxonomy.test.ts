@@ -77,7 +77,6 @@ function createTelemetryCapture(): {
 } {
   const spans: TelemetrySpan[] = [];
   return {
-    spans,
     sink: {
       event: (_e) => {
         /* noop */
@@ -86,6 +85,7 @@ function createTelemetryCapture(): {
         spans.push(span);
       },
     },
+    spans,
   };
 }
 
@@ -117,7 +117,6 @@ function buildProviderToolMessage(
   executionClass: "provider-native" | "provider-mediated"
 ): TuvrenMessage {
   return {
-    role: "tool",
     parts: [
       {
         callId,
@@ -131,6 +130,7 @@ function buildProviderToolMessage(
         type: "tool_result",
       },
     ],
+    role: "tool",
   };
 }
 
@@ -138,7 +138,6 @@ function makeProviderRunner(
   executionClass: "provider-native" | "provider-mediated"
 ): RuntimeRunner {
   return {
-    id: `ba002-runner-${executionClass}`,
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -157,6 +156,7 @@ function makeProviderRunner(
         resolution: { reason: "done", type: "end_turn" },
       };
     },
+    id: `ba002-runner-${executionClass}`,
     async resume() {
       throw new Error("no");
     },
@@ -165,7 +165,6 @@ function makeProviderRunner(
 
 function makeServerRunner(toolName: string): RuntimeRunner {
   return {
-    id: "ba002-server-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -183,6 +182,7 @@ function makeServerRunner(toolName: string): RuntimeRunner {
         resolution: { reason: "done", type: "end_turn" },
       };
     },
+    id: "ba002-server-runner",
     async resume() {
       throw new Error("no");
     },
@@ -191,7 +191,6 @@ function makeServerRunner(toolName: string): RuntimeRunner {
 
 function makeClientRunner(capabilityId: string): RuntimeRunner {
   return {
-    id: "ba002-client-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -209,6 +208,7 @@ function makeClientRunner(capabilityId: string): RuntimeRunner {
         resolution: { reason: "done", type: "end_turn" },
       };
     },
+    id: "ba002-client-runner",
     async resume() {
       throw new Error("no");
     },
@@ -220,7 +220,6 @@ function makeOkEndpoint(
   capabilityId: string
 ): AttachedClientEndpoint {
   return {
-    endpointId,
     advertisedCapabilities: [
       {
         capabilityId,
@@ -237,6 +236,7 @@ function makeOkEndpoint(
         leaseToken: envelope.leaseToken,
       };
     },
+    endpointId,
   };
 }
 
@@ -251,8 +251,8 @@ describe("BA002 telemetry taxonomy — tuvren-server", () => {
     const toolName = "ba002_server_tool";
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba002-server-runner",
-      runnerRegistry: createRunnerRegistry([makeServerRunner(toolName)]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([makeServerRunner(toolName)]),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -262,10 +262,10 @@ describe("BA002 telemetry taxonomy — tuvren-server", () => {
         name: "agent",
         tools: [
           {
-            name: toolName,
             description: "server tool",
-            inputSchema: { type: "object" },
             execute: async () => ({ ok: true }),
+            inputSchema: { type: "object" },
+            name: toolName,
           },
         ],
       },
@@ -294,8 +294,8 @@ describe("BA002 telemetry taxonomy — tuvren-server", () => {
     const toolName = "ba002_audit_tool";
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba002-server-runner",
-      runnerRegistry: createRunnerRegistry([makeServerRunner(toolName)]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([makeServerRunner(toolName)]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -304,10 +304,10 @@ describe("BA002 telemetry taxonomy — tuvren-server", () => {
         name: "agent",
         tools: [
           {
-            name: toolName,
             description: "audit tool",
-            inputSchema: { type: "object" },
             execute: async () => ({ ok: true }),
+            inputSchema: { type: "object" },
+            name: toolName,
           },
         ],
       },
@@ -335,10 +335,10 @@ describe("BA002 telemetry taxonomy — provider-native", () => {
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba002-runner-provider-native",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         makeProviderRunner("provider-native"),
       ]),
-      kernel: harness.kernel,
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -379,10 +379,10 @@ describe("BA002 telemetry taxonomy — provider-mediated", () => {
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba002-runner-provider-mediated",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         makeProviderRunner("provider-mediated"),
       ]),
-      kernel: harness.kernel,
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -426,17 +426,17 @@ describe("BA002 telemetry taxonomy — tuvren-client", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba002-client-runner",
-      runnerRegistry: createRunnerRegistry([makeClientRunner(capabilityId)]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([makeClientRunner(capabilityId)]),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        name: "agent",
-        clientEndpoints: [endpoint],
         clientEndpointBoundary: boundary,
+        clientEndpoints: [endpoint],
+        name: "agent",
       },
       signal: textSignal("go"),
       threadId: thread.threadId,
@@ -475,10 +475,10 @@ describe("BA002 cross-class observation limits", () => {
       const harness = createFakeKernelHarness();
       const runtime = createTuvrenRuntime({
         defaultRunnerId: `ba002-runner-${executionClass}`,
+        kernel: harness.kernel,
         runnerRegistry: createRunnerRegistry([
           makeProviderRunner(executionClass),
         ]),
-        kernel: harness.kernel,
       });
       const thread = await runtime.createThread({});
       const handle = runtime.executeTurn({
@@ -510,8 +510,8 @@ describe("BA002 cross-class observation limits", () => {
     const toolName = "ba002_obs_tool";
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba002-server-runner",
-      runnerRegistry: createRunnerRegistry([makeServerRunner(toolName)]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([makeServerRunner(toolName)]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -520,10 +520,10 @@ describe("BA002 cross-class observation limits", () => {
         name: "agent",
         tools: [
           {
-            name: toolName,
             description: "obs tool",
-            inputSchema: { type: "object" },
             execute: async () => ({ ok: true }),
+            inputSchema: { type: "object" },
+            name: toolName,
           },
         ],
       },
@@ -548,16 +548,16 @@ describe("BA002 cross-class observation limits", () => {
     const boundary = createClientEndpointBoundary([endpoint]);
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba002-client-runner",
-      runnerRegistry: createRunnerRegistry([makeClientRunner(capabilityId)]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([makeClientRunner(capabilityId)]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        name: "agent",
-        clientEndpoints: [endpoint],
         clientEndpointBoundary: boundary,
+        clientEndpoints: [endpoint],
+        name: "agent",
       },
       signal: textSignal("go"),
       threadId: thread.threadId,

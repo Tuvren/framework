@@ -52,7 +52,7 @@ function makeToolCall(callId: string): ToolCallPart {
 
 const TOOL: TuvrenToolDefinition = {
   description: "a side-effecting capability",
-  execute: () => Promise.resolve(undefined),
+  execute: () => Promise.resolve(),
   inputSchema: { type: "object" },
   name: "side.effect",
 };
@@ -68,8 +68,8 @@ function makeEnvironment(turnId: string, runId: string): ToolBatchEnvironment {
     publishCustom: () => undefined,
     publishEvent: () => undefined,
     runId,
-    turnId,
     signal: undefined,
+    turnId,
   } as unknown as ToolBatchEnvironment;
 }
 

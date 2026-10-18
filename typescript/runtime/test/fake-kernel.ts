@@ -17,32 +17,30 @@
 // biome-ignore-all lint/suspicious/useAwait: The fake kernel mirrors the async production protocol surface.
 import { createHash } from "node:crypto";
 
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { EpochMs, HashString, KernelRecord } from "@tuvren/core";
 import {
-  type EpochMs,
-  type HashString,
-  type KernelRecord,
-  TuvrenRuntimeError,
-} from "@tuvren/core";
-import {
-  type BranchHeadListEntry,
-  type BranchRecord,
-  type ComposedVerdict,
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
   hashTurnNodeIdentity,
   hashTurnTreeIdentity,
-  type PathValue,
-  type RecoveryState,
-  type RunRecord,
-  type RuntimeKernel,
-  type RuntimeKernelRunLiveness,
-  type StagedResult,
-  type StepContext,
-  type StoredThread,
-  type TurnNode,
-  type TurnRecord,
-  type TurnTreeManifest,
-  type TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
+import type {
+  BranchHeadListEntry,
+  BranchRecord,
+  ComposedVerdict,
+  PathValue,
+  RecoveryState,
+  RunRecord,
+  RuntimeKernel,
+  RuntimeKernelRunLiveness,
+  StagedResult,
+  StepContext,
+  StoredThread,
+  TurnNode,
+  TurnRecord,
+  TurnTreeManifest,
+  TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 
 import {
@@ -115,8 +113,8 @@ export function createFakeKernelHarness(): FakeKernelHarness {
     schemas: new Map([[DEFAULT_AGENT_SCHEMA.schemaId, DEFAULT_AGENT_SCHEMA]]),
     threads: new Map(),
     turnNodes: new Map(),
-    turns: new Map(),
     turnTrees: new Map(),
+    turns: new Map(),
   };
   let clock = 1;
 
@@ -373,9 +371,9 @@ export function createFakeKernelHarness(): FakeKernelHarness {
           state,
           {
             "context.manifest": manifestHash,
+            messages: [],
             "runtime.status": null,
             "turn.lineage": null,
-            messages: [],
           },
           schema
         );
@@ -409,14 +407,12 @@ export function createFakeKernelHarness(): FakeKernelHarness {
         return state.threads.get(threadId) ?? null;
       },
       async list(options) {
-        let threads: StoredThread[] = Array.from(state.threads.values()).map(
-          (t) => ({
-            createdAtMs: t.createdAtMs,
-            rootTurnNodeHash: t.rootTurnNodeHash,
-            schemaId: t.schemaId,
-            threadId: t.threadId,
-          })
-        );
+        let threads: StoredThread[] = [...state.threads.values()].map((t) => ({
+          createdAtMs: t.createdAtMs,
+          rootTurnNodeHash: t.rootTurnNodeHash,
+          schemaId: t.schemaId,
+          threadId: t.threadId,
+        }));
 
         if (options?.filter?.schemaId !== undefined) {
           const filterSchemaId = options.filter.schemaId;
@@ -431,7 +427,7 @@ export function createFakeKernelHarness(): FakeKernelHarness {
 
         if (options?.cursor !== undefined) {
           const { lastCreatedAtMs, lastThreadId } = JSON.parse(
-            Buffer.from(options.cursor, "base64url").toString("utf8")
+            Buffer.from(options.cursor, "base64url").toString("utf-8")
           ) as { lastCreatedAtMs: number; lastThreadId: string };
           threads = threads.filter(
             (t) =>
@@ -450,12 +446,12 @@ export function createFakeKernelHarness(): FakeKernelHarness {
                 lastCreatedAtMs: last.createdAtMs,
                 lastThreadId: last.threadId,
               }),
-              "utf8"
+              "utf-8"
             ).toString("base64url");
           }
         }
 
-        return { threads, nextCursor };
+        return { nextCursor, threads };
       },
     },
     tree: {
@@ -610,6 +606,11 @@ export function createFakeKernelHarness(): FakeKernelHarness {
       const manifest = await this.readBranchManifest(branchId);
       return readMessagesFromManifest(manifest);
     },
+    async readBranchRuns(branchId) {
+      return [...state.runs.values()]
+        .filter((run) => run.branchId === branchId)
+        .map(cloneRun);
+    },
     async readBranchRuntimeStatus(branchId) {
       const manifest = await this.readBranchManifest(branchId);
       const runtimeStatusHash = manifest["runtime.status"];
@@ -623,11 +624,6 @@ export function createFakeKernelHarness(): FakeKernelHarness {
       return payload === undefined
         ? null
         : decodeDeterministicKernelRecord(payload);
-    },
-    async readBranchRuns(branchId) {
-      return [...state.runs.values()]
-        .filter((run) => run.branchId === branchId)
-        .map(cloneRun);
     },
     async readRunningStagedMessages(branchId) {
       const run = [...state.runs.values()].find(

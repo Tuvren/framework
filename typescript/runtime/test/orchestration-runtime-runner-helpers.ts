@@ -26,7 +26,7 @@ import type {
 import { createRunnerRegistry as createBaseRunnerRegistry } from "../src/index.ts";
 
 export function createRunnerRegistry(
-  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
 ) {
   return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
@@ -53,7 +53,7 @@ function isKrakenRunnerFactory(
 }
 
 function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const resume = runner.resume;
+  const { resume } = runner;
 
   return {
     async execute(context) {
@@ -122,7 +122,7 @@ export function createStaticRunner(
 
         for (const part of message.parts) {
           switch (part.type) {
-            case "file":
+            case "file": {
               context.runtime.emit({
                 data:
                   typeof part.data === "string"
@@ -135,7 +135,8 @@ export function createStaticRunner(
                 type: "file.done",
               });
               break;
-            case "structured":
+            }
+            case "structured": {
               context.runtime.emit({
                 delta: serializeRunnerDeltaValue(part.data),
                 messageId,
@@ -150,7 +151,8 @@ export function createStaticRunner(
                 type: "structured.done",
               });
               break;
-            case "tool_call":
+            }
+            case "tool_call": {
               context.runtime.emit({
                 callId: part.callId,
                 messageId,
@@ -172,7 +174,8 @@ export function createStaticRunner(
                 type: "tool_call.done",
               });
               break;
-            case "text":
+            }
+            case "text": {
               context.runtime.emit({
                 delta: part.text,
                 messageId,
@@ -186,7 +189,8 @@ export function createStaticRunner(
                 type: "text.done",
               });
               break;
-            case "reasoning":
+            }
+            case "reasoning": {
               if (!part.redacted) {
                 context.runtime.emit({
                   delta: part.text,
@@ -202,8 +206,10 @@ export function createStaticRunner(
                 type: "reasoning.done",
               });
               break;
-            default:
+            }
+            default: {
               break;
+            }
           }
         }
 

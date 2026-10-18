@@ -54,7 +54,6 @@ function makeMultiCallRunner(
   callCount: number
 ): RuntimeRunner {
   return {
-    id: "ax003-runner",
     async execute(context) {
       const toolMessages = context.messages.filter((m) => m.role === "tool");
 
@@ -78,6 +77,7 @@ function makeMultiCallRunner(
         resolution: { reason: "done", type: "end_turn" },
       };
     },
+    id: "ax003-runner",
     async resume() {
       throw new Error("resume not expected");
     },
@@ -104,18 +104,18 @@ async function runTurnWithRateLimit(
   const runner = makeMultiCallRunner(toolName, totalCallsToRequest);
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "ax003-runner",
-    runnerRegistry: createBaseRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createBaseRunnerRegistry([runner]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
     branchId: thread.branchId,
     config: {
       name: "primary",
-      tools: [tool],
       serverExecution: {
         rateLimit: { maxCalls, windowMs: 60_000 },
       },
+      tools: [tool],
     },
     signal: textSignal("ax003 test"),
     threadId: thread.threadId,
@@ -131,12 +131,12 @@ describe("KRT-AX003 — rate limiting", () => {
   const toolName = "ax003-rate-limited-tool";
 
   const simpleTool: TuvrenToolDefinition = {
-    name: toolName,
     description: "simple tool for rate limit testing",
-    inputSchema: { type: "object" },
     execute() {
       return { ok: true };
     },
+    inputSchema: { type: "object" },
+    name: toolName,
   };
 
   test("within-budget invocation executes normally and returns tool result", async () => {
@@ -183,12 +183,12 @@ describe("KRT-AX003 — tenant isolation", () => {
   const toolName = "ax003-isolated-tool";
 
   const simpleTool: TuvrenToolDefinition = {
-    name: toolName,
     description: "simple tool for isolation testing",
-    inputSchema: { type: "object" },
     execute() {
       return { ok: true };
     },
+    inputSchema: { type: "object" },
+    name: toolName,
   };
 
   test("exhausting one runtime's rate limit does not affect another runtime", async () => {
@@ -201,15 +201,15 @@ describe("KRT-AX003 — tenant isolation", () => {
     // Runtime 1: budget 1, requests 2 → second call rate-limited
     const runtime1 = createTuvrenRuntime({
       defaultRunnerId: "ax003-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner1]),
       kernel: harness1.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner1]),
     });
 
     // Runtime 2: budget 5 (no depletion from runtime 1)
     const runtime2 = createTuvrenRuntime({
       defaultRunnerId: "ax003-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner2]),
       kernel: harness2.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner2]),
     });
 
     const thread1 = await runtime1.createThread({});
@@ -217,8 +217,8 @@ describe("KRT-AX003 — tenant isolation", () => {
       branchId: thread1.branchId,
       config: {
         name: "primary",
-        tools: [simpleTool],
         serverExecution: { rateLimit: { maxCalls: 1, windowMs: 60_000 } },
+        tools: [simpleTool],
       },
       signal: textSignal("runtime1 test"),
       threadId: thread1.threadId,
@@ -230,8 +230,8 @@ describe("KRT-AX003 — tenant isolation", () => {
       branchId: thread2.branchId,
       config: {
         name: "primary",
-        tools: [simpleTool],
         serverExecution: { rateLimit: { maxCalls: 5, windowMs: 60_000 } },
+        tools: [simpleTool],
       },
       signal: textSignal("runtime2 test"),
       threadId: thread2.threadId,

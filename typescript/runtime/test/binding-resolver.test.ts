@@ -28,10 +28,10 @@ import { createBindingResolver } from "../src/lib/binding-resolver.ts";
 
 function makeDefineTool(name: string): TuvrenToolDefinition {
   return {
-    name,
     description: `tool ${name}`,
-    inputSchema: { type: "object" },
     execute: async () => ({ result: name }),
+    inputSchema: { type: "object" },
+    name,
   };
 }
 
@@ -43,7 +43,7 @@ function makeMcpToolDefinition(name: string): TuvrenToolDefinition {
     execute: async () => ({ result: name }),
     // MCP tools carry metadata.mcp.serverName (added by @tuvren/mcp-client
     // during tool registration — see mcp-tool-source.ts).
-    metadata: { mcp: { serverName: "mcp-server-id", originalName: name } },
+    metadata: { mcp: { originalName: name, serverName: "mcp-server-id" } },
   };
 }
 
@@ -165,8 +165,8 @@ describe("BindingResolver — registerBinding / resolveById round-trip", () => {
     const resolver = createBindingResolver();
     const binding = {
       capabilityId: "provider.search",
+      endpoint: { id: "openai", kind: "provider-runtime" as const },
       executionClass: "provider-native" as const,
-      endpoint: { kind: "provider-runtime" as const, id: "openai" },
     };
 
     resolver.registerBinding(binding);
@@ -182,8 +182,8 @@ describe("BindingResolver — registerBinding / resolveById round-trip", () => {
     const resolver = createBindingResolver();
     const binding = {
       capabilityId: "web.search",
+      endpoint: { id: "local", kind: "tuvren-in-process" as const },
       executionClass: "tuvren-server" as const,
-      endpoint: { kind: "tuvren-in-process" as const, id: "local" },
     };
 
     resolver.registerBinding(binding);
@@ -199,13 +199,13 @@ describe("BindingResolver — registerBinding / resolveById round-trip", () => {
     const resolver = createBindingResolver();
     resolver.registerBinding({
       capabilityId: "code.execute",
+      endpoint: { id: "local", kind: "tuvren-in-process" as const },
       executionClass: "tuvren-server" as const,
-      endpoint: { kind: "tuvren-in-process" as const, id: "local" },
     });
     resolver.registerBinding({
       capabilityId: "code.execute",
+      endpoint: { id: "browser-ext", kind: "client-endpoint" as const },
       executionClass: "tuvren-client" as const,
-      endpoint: { kind: "client-endpoint" as const, id: "browser-ext" },
     });
 
     const resolved = resolver.resolveById("code.execute");
@@ -232,8 +232,8 @@ describe("BindingResolver — unavailable binding", () => {
     let caught: unknown;
     try {
       resolver.resolveById("unknown-cap");
-    } catch (e) {
-      caught = e;
+    } catch (error) {
+      caught = error;
     }
 
     expect(caught).toBeInstanceOf(TuvrenRuntimeError);

@@ -73,7 +73,7 @@ function readAdmissionKeylessFixture(): AdmissionKeylessFixture {
         "../../../spec/conformance/engine/fixtures/admission-keyless-user-message.json",
         import.meta.url
       ),
-      "utf8"
+      "utf-8"
     )
   );
 

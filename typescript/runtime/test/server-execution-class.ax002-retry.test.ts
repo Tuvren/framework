@@ -53,7 +53,6 @@ import {
 
 function makeRunner(toolName: string, input: unknown = {}): RuntimeRunner {
   return {
-    id: "ax002-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -71,6 +70,7 @@ function makeRunner(toolName: string, input: unknown = {}): RuntimeRunner {
         resolution: { reason: "done", type: "end_turn" },
       };
     },
+    id: "ax002-runner",
     async resume() {
       throw new Error("resume not expected");
     },
@@ -81,8 +81,8 @@ async function runWithTool(tool: TuvrenToolDefinition) {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "ax002-runner",
-    runnerRegistry: createBaseRunnerRegistry([makeRunner(tool.name)]),
     kernel: harness.kernel,
+    runnerRegistry: createBaseRunnerRegistry([makeRunner(tool.name)]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
@@ -112,11 +112,7 @@ describe("KRT-AX002 — idempotent retry", () => {
   test("idempotent tool retried once on retriable failure, then succeeds", async () => {
     let callCount = 0;
     const tool: TuvrenToolDefinition = {
-      name: "ax002-idempotent-retry",
       description: "idempotent tool",
-      idempotent: true,
-      maxRetries: 1,
-      inputSchema: { type: "object" },
       execute() {
         callCount += 1;
         if (callCount === 1) {
@@ -124,6 +120,10 @@ describe("KRT-AX002 — idempotent retry", () => {
         }
         return { result: "ok" };
       },
+      idempotent: true,
+      inputSchema: { type: "object" },
+      maxRetries: 1,
+      name: "ax002-idempotent-retry",
     };
 
     const { events } = await runWithTool(tool);
@@ -137,15 +137,15 @@ describe("KRT-AX002 — idempotent retry", () => {
   test("idempotent tool fails with error after exhausting maxRetries", async () => {
     let callCount = 0;
     const tool: TuvrenToolDefinition = {
-      name: "ax002-idempotent-exhaust",
       description: "idempotent tool that always fails",
-      idempotent: true,
-      maxRetries: 2,
-      inputSchema: { type: "object" },
       execute() {
         callCount += 1;
         throw new Error("persistent failure");
       },
+      idempotent: true,
+      inputSchema: { type: "object" },
+      maxRetries: 2,
+      name: "ax002-idempotent-exhaust",
     };
 
     const { events } = await runWithTool(tool);
@@ -179,16 +179,16 @@ describe("KRT-AX002 — idempotent retry", () => {
   test("non-idempotent tool with maxRetries set is still never retried", async () => {
     let callCount = 0;
     const tool: TuvrenToolDefinition = {
-      name: "ax002-non-idempotent-maxretries",
       description:
         "non-idempotent tool with maxRetries set but idempotent false",
-      idempotent: false,
-      maxRetries: 5,
-      inputSchema: { type: "object" },
       execute() {
         callCount += 1;
         throw new Error("failure");
       },
+      idempotent: false,
+      inputSchema: { type: "object" },
+      maxRetries: 5,
+      name: "ax002-non-idempotent-maxretries",
     };
 
     await runWithTool(tool);
@@ -236,22 +236,22 @@ describe("KRT-AX002 — cancellation", () => {
     const toolName = "ax002-cancel-signal";
 
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "tool that observes abort signal",
-      inputSchema: { type: "object" },
       async execute(_input, context) {
         releaseToolLatch?.(); // signal to the test that execution has started
         await waitForAbort(context.signal);
         signalAbortedDuringExecution = context.signal?.aborted === true;
         return { observed: true };
       },
+      inputSchema: { type: "object" },
+      name: toolName,
     };
 
     const runner = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ax002-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -283,9 +283,7 @@ describe("KRT-AX002 — cancellation", () => {
     const toolName = "ax002-late-completion";
 
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "tool that completes after cancellation",
-      inputSchema: { type: "object" },
       async execute() {
         releaseToolLatch?.(); // signal that execution started
         // Wait until the test releases the tool (after cancel has been called)
@@ -294,13 +292,15 @@ describe("KRT-AX002 — cancellation", () => {
         });
         return { value: LATE_VALUE };
       },
+      inputSchema: { type: "object" },
+      name: toolName,
     };
 
     const runner = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ax002-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({

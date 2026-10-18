@@ -63,12 +63,12 @@ import {
 // ---------------------------------------------------------------------------
 
 const STRICT_INPUT_SCHEMA: import("@tuvren/core/tools").TuvrenJsonSchema = {
-  type: "object",
+  additionalProperties: false,
   properties: {
     value: { type: "number" },
   },
   required: ["value"],
-  additionalProperties: false,
+  type: "object",
 };
 
 // ---------------------------------------------------------------------------
@@ -77,7 +77,6 @@ const STRICT_INPUT_SCHEMA: import("@tuvren/core/tools").TuvrenJsonSchema = {
 
 function makeRunnerWithInput(toolName: string, input: unknown): RuntimeRunner {
   return {
-    id: "ax001-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -95,6 +94,7 @@ function makeRunnerWithInput(toolName: string, input: unknown): RuntimeRunner {
         resolution: { reason: "done", type: "end_turn" },
       };
     },
+    id: "ax001-runner",
     async resume() {
       throw new Error("resume not expected");
     },
@@ -105,8 +105,8 @@ async function runWithTool(tool: TuvrenToolDefinition, runner: RuntimeRunner) {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
     defaultRunnerId: runner.id,
-    runnerRegistry: createBaseRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createBaseRunnerRegistry([runner]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
@@ -137,12 +137,12 @@ describe("KRT-AX001 — input validation", () => {
 
   test("input validation failure surfaces as tool.result isError true", async () => {
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "tool with strict input schema",
-      inputSchema: STRICT_INPUT_SCHEMA,
       execute() {
         return { result: 0 };
       },
+      inputSchema: STRICT_INPUT_SCHEMA,
+      name: toolName,
     };
     const runner = makeRunnerWithInput(toolName, { wrongField: "bad" });
     const events = await runWithTool(tool, runner);
@@ -154,12 +154,12 @@ describe("KRT-AX001 — input validation", () => {
 
   test("input validation failure carries tool_input_validation_failed code", async () => {
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "tool with strict input schema",
-      inputSchema: STRICT_INPUT_SCHEMA,
       execute() {
         return { result: 0 };
       },
+      inputSchema: STRICT_INPUT_SCHEMA,
+      name: toolName,
     };
     const runner = makeRunnerWithInput(toolName, { wrongField: "bad" });
     const events = await runWithTool(tool, runner);
@@ -172,13 +172,13 @@ describe("KRT-AX001 — input validation", () => {
   test("tool body is not executed when input validation fails", async () => {
     let executed = false;
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "spy tool",
-      inputSchema: STRICT_INPUT_SCHEMA,
       execute() {
         executed = true;
         return { result: 0 };
       },
+      inputSchema: STRICT_INPUT_SCHEMA,
+      name: toolName,
     };
     const runner = makeRunnerWithInput(toolName, { wrongField: "bad" });
     await runWithTool(tool, runner);
@@ -189,13 +189,13 @@ describe("KRT-AX001 — input validation", () => {
   test("within-contract input passes validation and executes normally", async () => {
     let executedWith: unknown;
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "spy tool",
-      inputSchema: STRICT_INPUT_SCHEMA,
       execute(input) {
         executedWith = input;
         return { result: (input as { value: number }).value };
       },
+      inputSchema: STRICT_INPUT_SCHEMA,
+      name: toolName,
     };
     const runner = makeRunnerWithInput(toolName, { value: 42 });
     const events = await runWithTool(tool, runner);
@@ -214,24 +214,24 @@ describe("KRT-AX001 — output validation", () => {
   const toolName = "ax001-validate-output";
 
   const OUTPUT_SCHEMA: import("@tuvren/core/tools").TuvrenJsonSchema = {
-    type: "object",
+    additionalProperties: false,
     properties: {
       count: { type: "number" },
     },
     required: ["count"],
-    additionalProperties: false,
+    type: "object",
   };
 
   test("output validation failure surfaces as tool.result isError true", async () => {
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "tool with output schema",
-      inputSchema: { type: "object" },
-      outputSchema: OUTPUT_SCHEMA,
       execute() {
         // Return an output that violates the outputSchema
         return { wrongField: "invalid" };
       },
+      inputSchema: { type: "object" },
+      name: toolName,
+      outputSchema: OUTPUT_SCHEMA,
     };
 
     const runner = makeRunnerWithInput(toolName, {});
@@ -244,13 +244,13 @@ describe("KRT-AX001 — output validation", () => {
 
   test("output validation failure carries tool_result_validation_failed code", async () => {
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "tool with output schema",
-      inputSchema: { type: "object" },
-      outputSchema: OUTPUT_SCHEMA,
       execute() {
         return { wrongField: "invalid" };
       },
+      inputSchema: { type: "object" },
+      name: toolName,
+      outputSchema: OUTPUT_SCHEMA,
     };
 
     const runner = makeRunnerWithInput(toolName, {});
@@ -263,13 +263,13 @@ describe("KRT-AX001 — output validation", () => {
 
   test("within-contract output passes validation and result is unchanged", async () => {
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "tool with output schema",
-      inputSchema: { type: "object" },
-      outputSchema: OUTPUT_SCHEMA,
       execute() {
         return { count: 7 };
       },
+      inputSchema: { type: "object" },
+      name: toolName,
+      outputSchema: OUTPUT_SCHEMA,
     };
 
     const runner = makeRunnerWithInput(toolName, {});
@@ -302,10 +302,7 @@ describe("KRT-AX001 — output validation", () => {
 
   test("direct error result from tool bypasses output schema validation", async () => {
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "tool that returns direct error result",
-      inputSchema: { type: "object" },
-      outputSchema: OUTPUT_SCHEMA,
       execute(_input, context) {
         // Return a direct ToolResultPart with isError: true — should bypass output validation
         return {
@@ -316,6 +313,9 @@ describe("KRT-AX001 — output validation", () => {
           type: "tool_result" as const,
         };
       },
+      inputSchema: { type: "object" },
+      name: toolName,
+      outputSchema: OUTPUT_SCHEMA,
     };
 
     const runner = makeRunnerWithInput(toolName, {});

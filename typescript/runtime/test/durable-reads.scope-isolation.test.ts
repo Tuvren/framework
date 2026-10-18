@@ -44,13 +44,13 @@ import {
 } from "@tuvren/core";
 import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
-import {
-  encodeDeterministicKernelRecord,
-  type RuntimeBackend,
-  type RuntimeKernel,
-  type StoredBranch,
-  type StoredThread,
-  type TurnTreeManifest,
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type {
+  RuntimeBackend,
+  RuntimeKernel,
+  StoredBranch,
+  StoredThread,
+  TurnTreeManifest,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import {

@@ -74,8 +74,8 @@ describe("KRT-AO002 cursor encode/decode", () => {
     expect(page1.nextCursor).toBeDefined();
 
     const page2 = await listThreads(kernel, {
-      limit: 10,
       cursor: page1.nextCursor as ListThreadsCursor,
+      limit: 10,
     });
     expect(page2.threads).toHaveLength(1);
     expect(page2.nextCursor).toBeUndefined();
@@ -97,10 +97,10 @@ describe("KRT-AO002 cursor encode/decode", () => {
   test("decoding a valid-base64 but wrong-kind cursor raises invalid_durable_read_cursor", async () => {
     const wrongKind = Buffer.from(
       JSON.stringify({
-        v: 1,
         kind: "wrong-kind",
-        lastThreadId: "x",
         lastCreatedAtMs: 1,
+        lastThreadId: "x",
+        v: 1,
       })
     ).toString("base64url");
     const kernel = makeKernel();
@@ -116,8 +116,8 @@ describe("KRT-AO002 cursor encode/decode", () => {
     await kernel.thread.create("t2", DEFAULT_AGENT_SCHEMA.schemaId, "b2");
 
     const page1 = await listThreads(kernel, {
-      limit: 1,
       filter: { schemaId: "tuvren.agent.v1" },
+      limit: 1,
     });
     expect(page1.nextCursor).toBeDefined();
 
@@ -139,12 +139,12 @@ describe("KRT-AO002 cursor encode/decode", () => {
     );
 
     const badCursor = Buffer.from(
-      JSON.stringify({ v: 1, kind: "list-threads" })
+      JSON.stringify({ kind: "list-threads", v: 1 })
     ).toString("base64url");
 
     const gen = getTurnHistory(
       kernel,
-      { threadId: thread.threadId, branchId: thread.branchId },
+      { branchId: thread.branchId, threadId: thread.threadId },
       { before: badCursor as TurnHistoryCursor }
     );
 
@@ -169,18 +169,18 @@ describe("KRT-AO002 cursor encode/decode", () => {
     // any real head, referencing position 5 (beyond any actual messages).
     const staleCursor = Buffer.from(
       JSON.stringify({
-        v: 1,
-        kind: "branch-messages",
-        branchId: thread.branchId,
-        positionFromOldest: 5,
         branchHeadAtCursorIssuance: "0".repeat(64), // fake old head
+        branchId: thread.branchId,
+        kind: "branch-messages",
+        positionFromOldest: 5,
+        v: 1,
       })
     ).toString("base64url");
 
     await expect(
       readBranchMessages(kernel, PLAINTEXT_BINDING, {
-        branchId: thread.branchId,
         after: staleCursor as BranchMessagesCursor,
+        branchId: thread.branchId,
       })
     ).rejects.toMatchObject({ code: "durable_read_cursor_head_drift" });
   });
@@ -237,8 +237,8 @@ describe("KRT-AO004 getTurnState", () => {
     );
 
     const snapshot = await getTurnState(kernel, {
-      threadId: thread.threadId,
       branchId: thread.branchId,
+      threadId: thread.threadId,
     });
 
     expect(snapshot.turnNodeHash).toBe(thread.rootTurnNodeHash);
@@ -262,8 +262,8 @@ describe("KRT-AO004 getTurnState", () => {
     );
 
     const snapshot = await getTurnState(kernel, {
-      threadId: thread.threadId,
       branchId: thread.branchId,
+      threadId: thread.threadId,
       turnNodeHash: thread.rootTurnNodeHash,
     });
 
@@ -275,7 +275,7 @@ describe("KRT-AO004 getTurnState", () => {
     await kernel.schema.register(DEFAULT_AGENT_SCHEMA);
 
     await expect(
-      getTurnState(kernel, { threadId: "t1", branchId: "nonexistent" })
+      getTurnState(kernel, { branchId: "nonexistent", threadId: "t1" })
     ).rejects.toBeInstanceOf(TuvrenLineageError);
   });
 });
@@ -296,7 +296,7 @@ describe("KRT-AO004 getTurnHistory", () => {
     const snapshots: import("@tuvren/core/execution").TurnSnapshot[] = [];
     for await (const snap of getTurnHistory(
       kernel,
-      { threadId: thread.threadId, branchId: thread.branchId },
+      { branchId: thread.branchId, threadId: thread.threadId },
       { limit: 10 }
     )) {
       snapshots.push(snap);
@@ -318,7 +318,7 @@ describe("KRT-AO004 getTurnHistory", () => {
     const snapshots: import("@tuvren/core/execution").TurnSnapshot[] = [];
     for await (const snap of getTurnHistory(
       kernel,
-      { threadId: thread.threadId, branchId: thread.branchId },
+      { branchId: thread.branchId, threadId: thread.threadId },
       { limit: 0 }
     )) {
       snapshots.push(snap);
@@ -330,8 +330,8 @@ describe("KRT-AO004 getTurnHistory", () => {
   test("throws TuvrenLineageError for an unknown branchId", async () => {
     const kernel = makeKernel();
     const gen = getTurnHistory(kernel, {
-      threadId: "t1",
       branchId: "nonexistent",
+      threadId: "t1",
     });
 
     await expect(gen.next()).rejects.toBeInstanceOf(TuvrenLineageError);
@@ -385,18 +385,18 @@ describe("KRT-AO005 readBranchMessages", () => {
     // Manufacture a stale cursor beyond actual message count.
     const staleCursor = Buffer.from(
       JSON.stringify({
-        v: 1,
-        kind: "branch-messages",
-        branchId: thread.branchId,
-        positionFromOldest: 99,
         branchHeadAtCursorIssuance: "0".repeat(64),
+        branchId: thread.branchId,
+        kind: "branch-messages",
+        positionFromOldest: 99,
+        v: 1,
       })
     ).toString("base64url");
 
     await expect(
       readBranchMessages(kernel, PLAINTEXT_BINDING, {
-        branchId: thread.branchId,
         after: staleCursor as BranchMessagesCursor,
+        branchId: thread.branchId,
       })
     ).rejects.toMatchObject({ code: "durable_read_cursor_head_drift" });
   });
@@ -436,8 +436,8 @@ describe("TuvrenRuntime durable-read surface wiring", () => {
   test("getTurnState is accessible on the assembled runtime", async () => {
     const thread = await runtime.createThread({});
     const snapshot = await runtime.getTurnState({
-      threadId: thread.threadId,
       branchId: thread.branchId,
+      threadId: thread.threadId,
     });
     expect(snapshot.turnNodeHash).toBe(thread.rootTurnNodeHash);
   });
@@ -446,8 +446,8 @@ describe("TuvrenRuntime durable-read surface wiring", () => {
     const thread = await runtime.createThread({});
     const snapshots: import("@tuvren/core/execution").TurnSnapshot[] = [];
     for await (const snap of runtime.getTurnHistory({
-      threadId: thread.threadId,
       branchId: thread.branchId,
+      threadId: thread.threadId,
     })) {
       snapshots.push(snap);
     }

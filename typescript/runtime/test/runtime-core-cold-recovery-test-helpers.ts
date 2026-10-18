@@ -8,13 +8,12 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-import { DEFAULT_SCOPE, type KernelRecord } from "@tuvren/core";
+import { DEFAULT_SCOPE } from "@tuvren/core";
+import type { KernelRecord } from "@tuvren/core";
 import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
-import {
-  encodeDeterministicKernelRecord,
-  type RuntimeKernel,
-} from "@tuvren/kernel-protocol";
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type { RuntimeKernel } from "@tuvren/kernel-protocol";
 
 import { DEFAULT_AGENT_SCHEMA } from "../src/index.ts";
 import { encryptMessageRecord } from "../src/lib/payload-codec-seam.ts";
