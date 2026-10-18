@@ -64,20 +64,6 @@ const forEachSequentially = async <T>(
   }
 };
 
-type TestPayloadCodec = {
-  [TKey in keyof PayloadCodec]: PayloadCodec[TKey] extends (
-    ...parameters: infer TParameters
-  ) => Promise<infer TResult>
-    ? (...parameters: TParameters) => TResult | Promise<TResult>
-    : PayloadCodec[TKey];
-};
-
-const wrapTestPayloadCodec = (codec: TestPayloadCodec): PayloadCodec => ({
-  ...codec,
-  decrypt: fromSynchronousVariadicAwaited(codec.decrypt),
-  encrypt: fromSynchronousVariadicAwaited(codec.encrypt),
-});
-
 const isMessage = (value: unknown): value is TuvrenMessage => {
   const record = toOptionalRecord(value);
   return (
@@ -221,30 +207,29 @@ const toolResult = (callId: string, value: number): TuvrenMessage => ({
   role: "tool",
 });
 
-const createEnvelopeCodec = (erased = false): PayloadCodec =>
-  wrapTestPayloadCodec({
-    decrypt(stored) {
-      if (erased) {
-        return {
-          keyRef: "destroyed-test-key",
-          reason: "test key erased",
-          status: "erased" as const,
-        };
-      }
-
+const createEnvelopeCodec = (erased = false): PayloadCodec => ({
+  decrypt: fromSynchronousVariadicAwaited((stored) => {
+    if (erased) {
       return {
-        plaintext: stored.slice(ENVELOPE_MAGIC.length),
-        status: "available" as const,
+        keyRef: "destroyed-test-key",
+        reason: "test key erased",
+        status: "erased" as const,
       };
-    },
-    encrypt(plaintext) {
-      const envelope = new Uint8Array(ENVELOPE_MAGIC.length + plaintext.length);
-      envelope.set(ENVELOPE_MAGIC);
-      envelope.set(plaintext, ENVELOPE_MAGIC.length);
-      return envelope;
-    },
-    id: erased ? "test-erased-envelope" : "test-envelope",
-  });
+    }
+
+    return {
+      plaintext: stored.slice(ENVELOPE_MAGIC.length),
+      status: "available" as const,
+    };
+  }),
+  encrypt: fromSynchronousVariadicAwaited((plaintext) => {
+    const envelope = new Uint8Array(ENVELOPE_MAGIC.length + plaintext.length);
+    envelope.set(ENVELOPE_MAGIC);
+    envelope.set(plaintext, ENVELOPE_MAGIC.length);
+    return envelope;
+  }),
+  id: erased ? "test-erased-envelope" : "test-envelope",
+});
 
 const requireAssistantMessage = (
   message: TuvrenMessage

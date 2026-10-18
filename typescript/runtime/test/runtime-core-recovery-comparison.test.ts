@@ -67,36 +67,8 @@ import {
   fromSynchronousVariadicAwaited,
 } from "./runtime-core-test-helpers.ts";
 
-interface TestRuntimeRunner {
-  execute: (
-    context: Parameters<RuntimeRunner["execute"]>[0]
-  ) =>
-    | Awaited<ReturnType<RuntimeRunner["execute"]>>
-    | ReturnType<RuntimeRunner["execute"]>;
-  id: string;
-  resume?: (
-    context: Parameters<NonNullable<RuntimeRunner["resume"]>>[0]
-  ) =>
-    | Awaited<ReturnType<RuntimeRunner["execute"]>>
-    | ReturnType<RuntimeRunner["execute"]>;
-}
-
-const wrapTestRunner = (runner: TestRuntimeRunner): RuntimeRunner => {
-  const { resume } = runner;
-
-  return {
-    execute: fromSynchronousVariadicAwaited(runner.execute),
-    id: runner.id,
-    ...(resume === undefined
-      ? {}
-      : {
-          resume: fromSynchronousVariadicAwaited(resume),
-        }),
-  };
-};
-
-const createRunnerRegistry = (runners: TestRuntimeRunner[] = []) =>
-  createBaseRunnerRegistry(runners.map(wrapTestRunner));
+const createRunnerRegistry = (runners: RuntimeRunner[] = []) =>
+  createBaseRunnerRegistry(runners);
 
 const RESUME_TEXT = "Resume with the same payload";
 const KEYED_RECOVERY_TEXT = "Recover this keyed request";
@@ -242,18 +214,18 @@ const executeKeyedRecovery = async (retryKey: string) => {
   const kernel: RuntimeKernel & RuntimeKernelRunLiveness =
     livenessHarness.kernel;
   const runner = {
-    execute: () => ({
+    execute: fromSynchronousVariadicAwaited(() => ({
       messages: [assistantText(`Recovery result for key ${retryKey}.`)],
       resolution: {
         reason: "done",
         type: "end_turn" as const,
       },
-    }),
+    })),
     id: "fake",
     resume: () => {
       throw new Error("resume was not expected");
     },
-  } satisfies TestRuntimeRunner;
+  } satisfies RuntimeRunner;
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
     kernel,
@@ -322,15 +294,15 @@ const executeKeyedRecoveryAfterEmptyInputPreemption = async () => {
     backend,
   });
   const runner = {
-    execute: () => ({
+    execute: fromSynchronousVariadicAwaited(() => ({
       messages: [assistantText("Completed the fresh keyed request.")],
       resolution: { reason: "done", type: "end_turn" as const },
-    }),
+    })),
     id: "fake",
     resume: () => {
       throw new Error("resume was not expected");
     },
-  } satisfies TestRuntimeRunner;
+  } satisfies RuntimeRunner;
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
     kernel,
@@ -641,15 +613,15 @@ describe("framework-runtime-core", () => {
       backend: createMemoryBackend({ now: () => nowMs }),
     });
     const runner = {
-      execute: () => ({
+      execute: fromSynchronousVariadicAwaited(() => ({
         messages: [assistantText("Completed the keyed request.")],
         resolution: { reason: "done", type: "end_turn" as const },
-      }),
+      })),
       id: "fake",
       resume: () => {
         throw new Error("resume was not expected");
       },
-    } satisfies TestRuntimeRunner;
+    } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       kernel,
@@ -724,15 +696,15 @@ describe("framework-runtime-core", () => {
       backend: createMemoryBackend({ now: () => nowMs }),
     });
     const runner = {
-      execute: () => ({
+      execute: fromSynchronousVariadicAwaited(() => ({
         messages: [assistantText("Completed the keyed request.")],
         resolution: { reason: "done", type: "end_turn" as const },
-      }),
+      })),
       id: "fake",
       resume: () => {
         throw new Error("resume was not expected");
       },
-    } satisfies TestRuntimeRunner;
+    } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       kernel,
@@ -843,24 +815,26 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const livenessHarness = createFakeRunLivenessKernelHarness(harness);
     const runner = {
-      execute: (context) => {
-        expect(
-          context.messages.filter((message) => message.role === "user").length
-        ).toBe(1);
+      execute: fromSynchronousVariadicAwaited(
+        (context: Parameters<RuntimeRunner["execute"]>[0]) => {
+          expect(
+            context.messages.filter((message) => message.role === "user").length
+          ).toBe(1);
 
-        return {
-          messages: [assistantText("Resumed the nested JSON request.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+          return {
+            messages: [assistantText("Resumed the nested JSON request.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+      ),
       id: "fake",
       resume: () => {
         throw new Error("resume was not expected");
       },
-    } satisfies TestRuntimeRunner;
+    } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       kernel: livenessHarness.kernel,

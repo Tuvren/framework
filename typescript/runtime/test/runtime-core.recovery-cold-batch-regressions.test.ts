@@ -35,34 +35,6 @@ import {
   toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
 
-interface TestRuntimeRunner {
-  execute: (
-    context: Parameters<RuntimeRunner["execute"]>[0]
-  ) =>
-    | Awaited<ReturnType<RuntimeRunner["execute"]>>
-    | ReturnType<RuntimeRunner["execute"]>;
-  id: string;
-  resume?: (
-    context: Parameters<NonNullable<RuntimeRunner["resume"]>>[0]
-  ) =>
-    | Awaited<ReturnType<RuntimeRunner["execute"]>>
-    | ReturnType<RuntimeRunner["execute"]>;
-}
-
-const wrapTestRunner = (runner: TestRuntimeRunner): RuntimeRunner => {
-  const { resume } = runner;
-
-  return {
-    execute: fromSynchronousVariadicAwaited(runner.execute),
-    id: runner.id,
-    ...(resume === undefined
-      ? {}
-      : {
-          resume: fromSynchronousVariadicAwaited(resume),
-        }),
-  };
-};
-
 const requireAssistantMessage = (
   message: TuvrenMessage
 ): Extract<TuvrenMessage, { role: "assistant" }> => {
@@ -84,8 +56,8 @@ const toolResultMessage = (callId: string, value: number): TuvrenMessage => ({
   role: "tool",
 });
 
-const createRunnerRegistry = (runners: TestRuntimeRunner[] = []) =>
-  createBaseRunnerRegistry(runners.map(wrapTestRunner));
+const createRunnerRegistry = (runners: RuntimeRunner[] = []) =>
+  createBaseRunnerRegistry(runners);
 test("retains the original batch and missing calls after a second recovery crash", async () => {
   const assistant = requireAssistantMessage(
     assistantToolCalls([
@@ -105,14 +77,12 @@ test("retains the original batch and missing calls after a second recovery crash
   const { promise: fastCompleted, resolve: markFastCompleted } =
     Promise.withResolvers<true>();
   const runner = {
-    execute() {
-      return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
-      };
-    },
+    execute: fromSynchronousVariadicAwaited(() => ({
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    })),
     id: "fake",
-  } satisfies TestRuntimeRunner;
+  } satisfies RuntimeRunner;
   const first = createTuvrenRuntime({
     defaultRunnerId: "fake",
     kernel: fixture.kernel,
@@ -164,13 +134,13 @@ test("retains the original batch and missing calls after a second recovery crash
     },
     runnerRegistry: createRunnerRegistry([
       {
-        execute() {
+        execute: fromSynchronousVariadicAwaited(() => {
           runnerDispatchCounts.push(secondDispatches.length);
           return {
             messages: [assistantText("done")],
             resolution: { reason: "done", type: "end_turn" },
           };
-        },
+        }),
         id: "fake",
       },
     ]),
@@ -245,13 +215,13 @@ test("keeps earlier iteration count when an interrupted assistant is uncommitted
     },
     runnerRegistry: createRunnerRegistry([
       {
-        execute() {
+        execute: fromSynchronousVariadicAwaited(() => {
           runnerCalls += 1;
           return {
             messages: [assistantText("unexpected extra iteration")],
             resolution: { reason: "done", type: "end_turn" },
           };
-        },
+        }),
         id: "fake",
       },
     ]),
@@ -324,21 +294,23 @@ test("context plans persist the same uncommitted recovered message history they 
     },
     runnerRegistry: createRunnerRegistry([
       {
-        execute(context) {
-          runnerSawRecoveredHistory ||= context.messages.some(
-            (message) =>
-              message.role === "assistant" &&
-              message.parts.some(
-                (part) =>
-                  part.type === "tool_call" &&
-                  part.callId === "uncommitted-completed"
-              )
-          );
-          return {
-            messages: [assistantText("context history persisted")],
-            resolution: { reason: "done", type: "end_turn" },
-          };
-        },
+        execute: fromSynchronousVariadicAwaited(
+          (context: Parameters<RuntimeRunner["execute"]>[0]) => {
+            runnerSawRecoveredHistory ||= context.messages.some(
+              (message) =>
+                message.role === "assistant" &&
+                message.parts.some(
+                  (part) =>
+                    part.type === "tool_call" &&
+                    part.callId === "uncommitted-completed"
+                )
+            );
+            return {
+              messages: [assistantText("context history persisted")],
+              resolution: { reason: "done", type: "end_turn" },
+            };
+          }
+        ),
         id: "fake",
       },
     ]),
@@ -420,24 +392,22 @@ test("keeps failed partial tool calls context-only through a crash", async () =>
     },
     runnerRegistry: createRunnerRegistry([
       {
-        execute() {
-          return {
-            messages: [
-              assistantToolCalls([
-                { callId: "must-not-execute", input: {}, name: "charge" },
-              ]),
-            ],
-            partial: true,
-            resolution: {
-              error: new TuvrenRuntimeError("partial failed", {
-                code: "probe_partial_failure",
-              }),
-              fatality: "hard",
-              type: "fail",
-            },
-            toolExecutionMode: "sequential",
-          };
-        },
+        execute: fromSynchronousVariadicAwaited(() => ({
+          messages: [
+            assistantToolCalls([
+              { callId: "must-not-execute", input: {}, name: "charge" },
+            ]),
+          ],
+          partial: true,
+          resolution: {
+            error: new TuvrenRuntimeError("partial failed", {
+              code: "probe_partial_failure",
+            }),
+            fatality: "hard",
+            type: "fail",
+          },
+          toolExecutionMode: "sequential",
+        })),
         id: "fake",
       },
     ]),
@@ -471,12 +441,10 @@ test("keeps failed partial tool calls context-only through a crash", async () =>
     },
     runnerRegistry: createRunnerRegistry([
       {
-        execute() {
-          return {
-            messages: [assistantText("recovered")],
-            resolution: { reason: "done", type: "end_turn" },
-          };
-        },
+        execute: fromSynchronousVariadicAwaited(() => ({
+          messages: [assistantText("recovered")],
+          resolution: { reason: "done", type: "end_turn" },
+        })),
         id: "fake",
       },
     ]),
@@ -535,18 +503,16 @@ test("preserves sequential recovery mode and the first approval gate", async () 
     },
     runnerRegistry: createRunnerRegistry([
       {
-        execute() {
-          return {
-            messages: [
-              assistantToolCalls([
-                { callId: "first-sequential", input: {}, name: "lookup" },
-                { callId: "second-sequential", input: {}, name: "lookup" },
-              ]),
-            ],
-            resolution: { type: "continue_iteration" },
-            toolExecutionMode: "sequential",
-          };
-        },
+        execute: fromSynchronousVariadicAwaited(() => ({
+          messages: [
+            assistantToolCalls([
+              { callId: "first-sequential", input: {}, name: "lookup" },
+              { callId: "second-sequential", input: {}, name: "lookup" },
+            ]),
+          ],
+          resolution: { type: "continue_iteration" },
+          toolExecutionMode: "sequential",
+        })),
         id: "fake",
       },
     ]),
@@ -590,12 +556,10 @@ test("preserves sequential recovery mode and the first approval gate", async () 
     },
     runnerRegistry: createRunnerRegistry([
       {
-        execute() {
-          return {
-            messages: [assistantText("done")],
-            resolution: { reason: "done", type: "end_turn" },
-          };
-        },
+        execute: fromSynchronousVariadicAwaited(() => ({
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" },
+        })),
         id: "fake",
       },
     ]),
@@ -658,19 +622,21 @@ test("restores original call order after parallel results stage out of order", a
     },
     runnerRegistry: createRunnerRegistry([
       {
-        execute(context) {
-          observedCallIds = context.messages
-            .filter((message) => message.role === "tool")
-            .flatMap((message) =>
-              message.parts.flatMap((part) =>
-                part.type === "tool_result" ? [part.callId] : []
-              )
-            );
-          return {
-            messages: [assistantText("recovered in original order")],
-            resolution: { reason: "done", type: "end_turn" },
-          };
-        },
+        execute: fromSynchronousVariadicAwaited(
+          (context: Parameters<RuntimeRunner["execute"]>[0]) => {
+            observedCallIds = context.messages
+              .filter((message) => message.role === "tool")
+              .flatMap((message) =>
+                message.parts.flatMap((part) =>
+                  part.type === "tool_result" ? [part.callId] : []
+                )
+              );
+            return {
+              messages: [assistantText("recovered in original order")],
+              resolution: { reason: "done", type: "end_turn" },
+            };
+          }
+        ),
         id: "fake",
       },
     ]),
@@ -744,12 +710,10 @@ test("rebuilds the recovered manifest when one missing call is completed", async
     },
     runnerRegistry: createRunnerRegistry([
       {
-        execute() {
-          return {
-            messages: [assistantText("single recovered result")],
-            resolution: { reason: "done", type: "end_turn" },
-          };
-        },
+        execute: fromSynchronousVariadicAwaited(() => ({
+          messages: [assistantText("single recovered result")],
+          resolution: { reason: "done", type: "end_turn" },
+        })),
         id: "fake",
       },
     ]),
@@ -801,12 +765,10 @@ test("approval resume keeps missing and durable results in original call order",
     },
     runnerRegistry: createRunnerRegistry([
       {
-        execute() {
-          return {
-            messages: [assistantText("approved recovered result")],
-            resolution: { reason: "done", type: "end_turn" },
-          };
-        },
+        execute: fromSynchronousVariadicAwaited(() => ({
+          messages: [assistantText("approved recovered result")],
+          resolution: { reason: "done", type: "end_turn" },
+        })),
         id: "fake",
       },
     ]),
@@ -874,25 +836,27 @@ test("recovers aroundTool state before accepting its durable tool result", async
     return result;
   };
   const runner = {
-    execute(context) {
-      if (context.messages.some((message) => message.role === "tool")) {
+    execute: fromSynchronousVariadicAwaited(
+      (context: Parameters<RuntimeRunner["execute"]>[0]) => {
+        if (context.messages.some((message) => message.role === "tool")) {
+          return {
+            messages: [assistantText("state recovered")],
+            resolution: { reason: "done", type: "end_turn" },
+          };
+        }
         return {
-          messages: [assistantText("state recovered")],
-          resolution: { reason: "done", type: "end_turn" },
+          messages: [
+            assistantToolCalls([
+              { callId: "stateful-call", input: {}, name: "lookup" },
+            ]),
+          ],
+          resolution: { type: "continue_iteration" },
+          toolExecutionMode: "parallel",
         };
       }
-      return {
-        messages: [
-          assistantToolCalls([
-            { callId: "stateful-call", input: {}, name: "lookup" },
-          ]),
-        ],
-        resolution: { type: "continue_iteration" },
-        toolExecutionMode: "parallel",
-      };
-    },
+    ),
     id: "fake",
-  } satisfies TestRuntimeRunner;
+  } satisfies RuntimeRunner;
   let sideEffectCalls = 0;
   const extension = {
     async aroundTool(_context, next) {

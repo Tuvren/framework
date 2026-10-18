@@ -32,22 +32,8 @@ import {
   textSignal,
 } from "./runtime-core-test-helpers.ts";
 
-interface TestRuntimeRunner {
-  execute: (
-    context: Parameters<RuntimeRunner["execute"]>[0]
-  ) =>
-    | Awaited<ReturnType<RuntimeRunner["execute"]>>
-    | ReturnType<RuntimeRunner["execute"]>;
-  id: string;
-}
-
-const createRunnerRegistry = (runners: TestRuntimeRunner[] = []) =>
-  createBaseRunnerRegistry(
-    runners.map((runner): RuntimeRunner => ({
-      execute: fromSynchronousVariadicAwaited(runner.execute),
-      id: runner.id,
-    }))
-  );
+const createRunnerRegistry = (runners: RuntimeRunner[] = []) =>
+  createBaseRunnerRegistry(runners);
 
 const forEachSequentially = async <T>(
   values: readonly T[],
@@ -158,13 +144,11 @@ test("recovery dispatches missing calls before any context-engineering run", asy
     }
     return await beginStep(...args);
   };
-  const runner: TestRuntimeRunner = {
-    execute() {
-      return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
-      };
-    },
+  const runner: RuntimeRunner = {
+    execute: fromSynchronousVariadicAwaited(() => ({
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    })),
     id: "fake",
   };
   const runtime = createTuvrenRuntime({
