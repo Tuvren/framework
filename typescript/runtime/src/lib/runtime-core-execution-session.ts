@@ -44,66 +44,66 @@ import type {
  * between them.
  */
 interface RuntimeExecutionStartDependencies {
-  completeExecution(
+  completeExecution: (
     handle: RuntimeExecutionHandle,
     resolution: RuntimeResolution,
     partial: boolean,
     loopState: LoopState,
     enteredIterationLoop: boolean
-  ): Promise<void>;
-  completeRecoveredTerminalExecution(
+  ) => Promise<void>;
+  completeRecoveredTerminalExecution: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     recoveredExecution: ExpiredExecutionRecovery
-  ): Promise<void>;
-  createExecutionLoopState(
+  ) => Promise<void>;
+  createExecutionLoopState: (
     handle: RuntimeExecutionHandle,
     recoveredExecution?: ExpiredExecutionRecovery
-  ): LoopState;
-  createExecutionTurnIfNeeded(
+  ) => LoopState;
+  createExecutionTurnIfNeeded: (
     handle: RuntimeExecutionHandle,
     branchHeadHash: HashString,
     reuseRecoveredTurn: boolean
-  ): Promise<void>;
-  emitRecoveryFailed(
+  ) => Promise<void>;
+  emitRecoveryFailed: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     error: unknown
-  ): void;
-  emitRecoveryResumed(
+  ) => void;
+  emitRecoveryResumed: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     recoveredExecution: ExpiredExecutionRecovery
-  ): void;
-  emitStateObservability(
+  ) => void;
+  emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
     iterationCount: number,
     manifest?: ContextManifest
-  ): void;
-  finishResumedExecutionStart(
+  ) => void;
+  finishResumedExecutionStart: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState
-  ): Promise<boolean>;
-  handleExecutionFailure(
+  ) => Promise<boolean>;
+  handleExecutionFailure: (
     handle: RuntimeExecutionHandle,
     error: unknown
-  ): Promise<void>;
-  prepareFreshExecutionStart(
+  ) => Promise<void>;
+  prepareFreshExecutionStart: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     recoveredExecutionMode: ExpiredExecutionRecovery["mode"],
     recoveredIterationCount?: number,
     needsInputReincorporation?: boolean
-  ): Promise<boolean>;
-  prepareResumedExecutionStartPrelude(
+  ) => Promise<boolean>;
+  prepareResumedExecutionStartPrelude: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState
-  ): Promise<
+  ) => Promise<
     | {
         completed: boolean;
         pendingStateObservability?: {
@@ -114,31 +114,36 @@ interface RuntimeExecutionStartDependencies {
       }
     | undefined
   >;
-  publishApprovalResolved(
+  publishApprovalResolved: (
     handle: RuntimeExecutionHandle,
     response: ApprovalResponse | undefined,
     loopState: LoopState
-  ): void;
-  publishPauseOutcome(
+  ) => void;
+  publishPauseOutcome: (
     handle: RuntimeExecutionHandle,
     pauseContext: PauseContext | undefined,
     loopState: LoopState
-  ): boolean;
-  publishTurnStart(handle: RuntimeExecutionHandle, loopState: LoopState): void;
-  recoverExpiredExecutionBranchIfNeeded(
+  ) => boolean;
+  publishTurnStart: (
+    handle: RuntimeExecutionHandle,
+    loopState: LoopState
+  ) => void;
+  recoverExpiredExecutionBranchIfNeeded: (
     branchId: string,
     signal: ExecutionSessionRequest["signal"]
-  ): Promise<ExpiredExecutionRecovery | undefined>;
-  resolveExecutionBranchHead(
+  ) => Promise<ExpiredExecutionRecovery | undefined>;
+  resolveExecutionBranchHead: (
     handle: RuntimeExecutionHandle
-  ): Promise<HashString>;
-  resolveExecutionSchemaId(request: ExecutionSessionRequest): Promise<string>;
-  runExecutionLoop(
+  ) => Promise<HashString>;
+  resolveExecutionSchemaId: (
+    request: ExecutionSessionRequest
+  ) => Promise<string>;
+  runExecutionLoop: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState
-  ): Promise<LoopOutcome>;
-  stopRunLeaseLoop(handle: RuntimeExecutionHandle): void;
+  ) => Promise<LoopOutcome>;
+  stopRunLeaseLoop: (handle: RuntimeExecutionHandle) => void;
 }
 
 /**
@@ -227,6 +232,200 @@ export const createRuntimeResumedExecutionHandle = (
   return handle;
 };
 
+interface RuntimeExecutionStartContext {
+  loopState: LoopState;
+  recoveredExecution: ExpiredExecutionRecovery | undefined;
+  schemaId: string;
+}
+
+const shouldSkipRuntimeExecutionStart = async (
+  handle: RuntimeExecutionHandle
+): Promise<boolean> => {
+  const pendingPausedCancellation = handle.getPendingPausedCancellation();
+
+  if (pendingPausedCancellation !== undefined) {
+    await pendingPausedCancellation;
+    return true;
+  }
+
+  if (handle.status().phase !== "running") {
+    return true;
+  }
+
+  return handle.resumedFrom === undefined && handle.abortSignal.aborted;
+};
+
+const recoverExpiredExecution = async (
+  dependencies: RuntimeExecutionStartDependencies,
+  handle: RuntimeExecutionHandle
+): Promise<ExpiredExecutionRecovery | undefined> => {
+  let recoveredExecution: ExpiredExecutionRecovery | undefined;
+
+  try {
+    recoveredExecution =
+      await dependencies.recoverExpiredExecutionBranchIfNeeded(
+        handle.request.branchId,
+        handle.request.signal
+      );
+  } catch (error: unknown) {
+    dependencies.emitRecoveryFailed(
+      handle,
+      dependencies.createExecutionLoopState(handle),
+      error
+    );
+    throw error;
+  }
+
+  if (recoveredExecution?.recoveryContended !== true) {
+    return recoveredExecution;
+  }
+
+  const error = createStaleRecoveryContendedError();
+  dependencies.emitRecoveryFailed(
+    handle,
+    dependencies.createExecutionLoopState(handle, recoveredExecution),
+    error
+  );
+  throw error;
+};
+
+const prepareRuntimeExecutionStartContext = async (
+  dependencies: RuntimeExecutionStartDependencies,
+  handle: RuntimeExecutionHandle
+): Promise<RuntimeExecutionStartContext> => {
+  const schemaId = await dependencies.resolveExecutionSchemaId(handle.request);
+  handle.setSchemaId(schemaId);
+  const initialBranchHeadHash =
+    await dependencies.resolveExecutionBranchHead(handle);
+  const recoveredExecution = await recoverExpiredExecution(
+    dependencies,
+    handle
+  );
+
+  if (recoveredExecution?.turnId !== undefined) {
+    handle.setTurnId(recoveredExecution.turnId);
+  }
+
+  const branchHeadHash =
+    recoveredExecution?.preempted === true
+      ? await dependencies.resolveExecutionBranchHead(handle)
+      : initialBranchHeadHash;
+  await dependencies.createExecutionTurnIfNeeded(
+    handle,
+    branchHeadHash,
+    recoveredExecution?.turnId !== undefined
+  );
+  const loopState = dependencies.createExecutionLoopState(
+    handle,
+    recoveredExecution
+  );
+
+  if (recoveredExecution?.preempted === true) {
+    dependencies.emitRecoveryResumed(handle, loopState, recoveredExecution);
+  }
+
+  return { loopState, recoveredExecution, schemaId };
+};
+
+const completeRuntimeExecutionPrelude = async (
+  dependencies: RuntimeExecutionStartDependencies,
+  handle: RuntimeExecutionHandle,
+  context: RuntimeExecutionStartContext
+): Promise<boolean> => {
+  const { loopState, recoveredExecution, schemaId } = context;
+  const resumedStart = await dependencies.prepareResumedExecutionStartPrelude(
+    handle,
+    schemaId,
+    loopState
+  );
+
+  if (resumedStart?.completed === true) {
+    return true;
+  }
+
+  dependencies.publishTurnStart(handle, loopState);
+
+  if (resumedStart !== undefined) {
+    dependencies.publishApprovalResolved(
+      handle,
+      handle.resumedFrom?.approval,
+      loopState
+    );
+
+    if (resumedStart.pendingStateObservability !== undefined) {
+      dependencies.emitStateObservability(
+        handle,
+        loopState,
+        resumedStart.pendingStateObservability.turnNodeHash,
+        resumedStart.pendingStateObservability.iterationCount,
+        resumedStart.pendingStateObservability.manifest
+      );
+    }
+  }
+
+  if (
+    resumedStart !== undefined &&
+    (await dependencies.finishResumedExecutionStart(
+      handle,
+      schemaId,
+      loopState
+    ))
+  ) {
+    return true;
+  }
+
+  if (
+    resumedStart === undefined &&
+    recoveredExecution?.mode === "complete_terminal_status"
+  ) {
+    await dependencies.completeRecoveredTerminalExecution(
+      handle,
+      loopState,
+      recoveredExecution
+    );
+    return true;
+  }
+
+  return (
+    resumedStart === undefined &&
+    (await dependencies.prepareFreshExecutionStart(
+      handle,
+      schemaId,
+      loopState,
+      recoveredExecution?.mode,
+      recoveredExecution?.iterationCount,
+      recoveredExecution?.needsInputReincorporation ?? false
+    ))
+  );
+};
+
+const completeRuntimeExecutionLoop = async (
+  dependencies: RuntimeExecutionStartDependencies,
+  handle: RuntimeExecutionHandle,
+  context: RuntimeExecutionStartContext
+): Promise<void> => {
+  const { loopState, schemaId } = context;
+  const outcome = await dependencies.runExecutionLoop(
+    handle,
+    schemaId,
+    loopState
+  );
+
+  if (
+    dependencies.publishPauseOutcome(handle, outcome.pauseContext, loopState)
+  ) {
+    return;
+  }
+
+  await dependencies.completeExecution(
+    handle,
+    outcome.resolution,
+    outcome.partial ?? false,
+    loopState,
+    loopState.enteredIterationLoop
+  );
+};
+
 /**
  * Drive a runtime execution session from start to terminal outcome.
  *
@@ -249,165 +448,22 @@ export const createRuntimeResumedExecutionHandle = (
 export const startRuntimeExecutionSession = async (
   dependencies: RuntimeExecutionStartDependencies,
   handle: RuntimeExecutionHandle
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Session startup intentionally linearizes recovery, resume, publication, and prelude checkpoints in one place.
 ): Promise<void> => {
   try {
-    const pendingPausedCancellation = handle.getPendingPausedCancellation();
-
-    if (pendingPausedCancellation !== undefined) {
-      await pendingPausedCancellation;
+    if (await shouldSkipRuntimeExecutionStart(handle)) {
       return;
     }
 
-    if (handle.status().phase !== "running") {
-      return;
-    }
-
-    if (handle.resumedFrom === undefined && handle.abortSignal.aborted) {
-      return;
-    }
-
-    const schemaId = await dependencies.resolveExecutionSchemaId(
-      handle.request
-    );
-    handle.setSchemaId(schemaId);
-    const initialBranchHeadHash =
-      await dependencies.resolveExecutionBranchHead(handle);
-    let recoveredExecution: ExpiredExecutionRecovery | undefined;
-
-    try {
-      recoveredExecution =
-        await dependencies.recoverExpiredExecutionBranchIfNeeded(
-          handle.request.branchId,
-          handle.request.signal
-        );
-    } catch (error: unknown) {
-      dependencies.emitRecoveryFailed(
-        handle,
-        dependencies.createExecutionLoopState(handle),
-        error
-      );
-      throw error;
-    }
-
-    if (recoveredExecution?.recoveryContended === true) {
-      const error = createStaleRecoveryContendedError();
-      dependencies.emitRecoveryFailed(
-        handle,
-        dependencies.createExecutionLoopState(handle, recoveredExecution),
-        error
-      );
-      throw error;
-    }
-
-    if (recoveredExecution?.turnId !== undefined) {
-      handle.setTurnId(recoveredExecution.turnId);
-    }
-
-    const branchHeadHash =
-      recoveredExecution?.preempted === true
-        ? await dependencies.resolveExecutionBranchHead(handle)
-        : initialBranchHeadHash;
-    await dependencies.createExecutionTurnIfNeeded(
-      handle,
-      branchHeadHash,
-      recoveredExecution?.turnId !== undefined
-    );
-    const loopState = dependencies.createExecutionLoopState(
-      handle,
-      recoveredExecution
+    const context = await prepareRuntimeExecutionStartContext(
+      dependencies,
+      handle
     );
 
-    if (recoveredExecution?.preempted === true) {
-      dependencies.emitRecoveryResumed(handle, loopState, recoveredExecution);
-    }
-
-    const resumedStart = await dependencies.prepareResumedExecutionStartPrelude(
-      handle,
-      schemaId,
-      loopState
-    );
-
-    if (resumedStart?.completed === true) {
+    if (await completeRuntimeExecutionPrelude(dependencies, handle, context)) {
       return;
     }
 
-    dependencies.publishTurnStart(handle, loopState);
-
-    if (resumedStart !== undefined) {
-      dependencies.publishApprovalResolved(
-        handle,
-        handle.resumedFrom?.approval,
-        loopState
-      );
-
-      if (resumedStart.pendingStateObservability !== undefined) {
-        dependencies.emitStateObservability(
-          handle,
-          loopState,
-          resumedStart.pendingStateObservability.turnNodeHash,
-          resumedStart.pendingStateObservability.iterationCount,
-          resumedStart.pendingStateObservability.manifest
-        );
-      }
-    }
-
-    if (
-      resumedStart !== undefined &&
-      (await dependencies.finishResumedExecutionStart(
-        handle,
-        schemaId,
-        loopState
-      ))
-    ) {
-      return;
-    }
-
-    if (
-      resumedStart === undefined &&
-      recoveredExecution?.mode === "complete_terminal_status"
-    ) {
-      await dependencies.completeRecoveredTerminalExecution(
-        handle,
-        loopState,
-        recoveredExecution
-      );
-      return;
-    }
-
-    if (
-      resumedStart === undefined &&
-      (await dependencies.prepareFreshExecutionStart(
-        handle,
-        schemaId,
-        loopState,
-        recoveredExecution?.mode,
-        recoveredExecution?.iterationCount,
-        recoveredExecution?.needsInputReincorporation ?? false
-      ))
-    ) {
-      return;
-    }
-
-    const outcome = await dependencies.runExecutionLoop(
-      handle,
-      schemaId,
-      loopState
-    );
-
-    if (
-      dependencies.publishPauseOutcome(handle, outcome.pauseContext, loopState)
-    ) {
-      return;
-    }
-
-    await dependencies.completeExecution(
-      handle,
-      outcome.resolution,
-      outcome.partial ?? false,
-      loopState,
-      loopState.enteredIterationLoop
-    );
+    await completeRuntimeExecutionLoop(dependencies, handle, context);
   } catch (error: unknown) {
     await dependencies.handleExecutionFailure(handle, error);
   } finally {

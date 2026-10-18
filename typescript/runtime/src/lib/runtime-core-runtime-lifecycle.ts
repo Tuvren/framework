@@ -84,8 +84,8 @@ export const checkpointRuntimeCoreResumeRunningStatus = async (
       turnNodeHash: HashString;
     }
   | undefined
-> => {
-  return await checkpointRuntimeResumeRunningStatus(
+> =>
+  await checkpointRuntimeResumeRunningStatus(
     host,
     handle,
     schemaId,
@@ -93,7 +93,6 @@ export const checkpointRuntimeCoreResumeRunningStatus = async (
     iterationCount,
     emitObservability
   );
-};
 
 /**
  * Facade over the liveness module's `createTrackedRun`: create a kernel run
@@ -136,13 +135,8 @@ export const recoverRuntimeCoreExpiredExecutionBranchIfNeeded = async (
   host: RuntimeCoreExpiredRecoveryHost,
   branchId: string,
   signal: ExecutionSessionRequest["signal"]
-): Promise<ExpiredExecutionRecovery | undefined> => {
-  return await recoverRuntimeExpiredExecutionBranchIfNeeded(
-    host,
-    branchId,
-    signal
-  );
-};
+): Promise<ExpiredExecutionRecovery | undefined> =>
+  await recoverRuntimeExpiredExecutionBranchIfNeeded(host, branchId, signal);
 
 /**
  * Facade over the liveness module's `completeTrackedRun`: complete a
@@ -156,9 +150,8 @@ export const completeRuntimeCoreTrackedRun = async (
   runId: string,
   status: RunCompletionStatus,
   event?: KernelRecord
-): Promise<{ turnNodeHash?: HashString }> => {
-  return await completeRuntimeTrackedRun(host, handle, runId, status, event);
-};
+): Promise<{ turnNodeHash?: HashString }> =>
+  await completeRuntimeTrackedRun(host, handle, runId, status, event);
 
 /**
  * Facade over the liveness module's `stopRunLeaseLoop`: stop the handle's
@@ -250,15 +243,14 @@ export const reconcileRuntimeCoreCheckpointedPauseResolution = async (
   runId: string,
   turnId: string,
   resolution: RuntimeResolution
-): Promise<RuntimeResolution> => {
-  return await reconcileRuntimeCheckpointedPauseResolution(
+): Promise<RuntimeResolution> =>
+  await reconcileRuntimeCheckpointedPauseResolution(
     host,
     checkpointedPause,
     runId,
     turnId,
     resolution
   );
-};
 
 /**
  * Facade over the turn-progress module's `resolveCheckpointedPausedRun`:

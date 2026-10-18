@@ -15,6 +15,7 @@
  */
 
 import type { HashString } from "@tuvren/core";
+import type { ClientEndpointBoundary } from "@tuvren/core/capabilities";
 import type {
   ContextManifest,
   RuntimeResolution,
@@ -39,20 +40,20 @@ import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
  * sequencing stays testable in isolation.
  */
 export interface RuntimeCoreStartupHost {
-  applyTerminalAgentTransitionIfNeeded(
+  applyTerminalAgentTransitionIfNeeded: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     resolution: RuntimeResolution,
     loopState: LoopState,
     stableHeadTurnNodeHash?: HashString
-  ): Promise<boolean>;
-  checkpointResumeRunningStatus(
+  ) => Promise<boolean>;
+  checkpointResumeRunningStatus: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     iterationCount: number,
     emitObservability?: boolean
-  ): Promise<
+  ) => Promise<
     | {
         iterationCount: number;
         manifest?: ContextManifest;
@@ -60,45 +61,45 @@ export interface RuntimeCoreStartupHost {
       }
     | undefined
   >;
-  commitPendingExtensionStateUpdates(
+  commitPendingExtensionStateUpdates: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     updates: ExtensionStateUpdate[],
     iterationCount: number
-  ): Promise<void>;
-  completeExecution(
+  ) => Promise<void>;
+  completeExecution: (
     handle: RuntimeExecutionHandle,
     resolution: RuntimeResolution,
     partial: boolean,
     loopState: LoopState,
     enteredIterationLoop: boolean
-  ): Promise<void>;
-  createActiveToolRegistry(
+  ) => Promise<void>;
+  createActiveToolRegistry: (
     runtimeTools: ExecutionSessionRequest["tools"] | undefined,
     config: LoopState["activeConfig"],
-    clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary
-  ): ToolRegistry;
-  createClientEndpointBoundaryFromConfig(
+    clientEndpointBoundary?: ClientEndpointBoundary
+  ) => ToolRegistry;
+  createClientEndpointBoundaryFromConfig: (
     config: LoopState["activeConfig"]
-  ): import("@tuvren/core/capabilities").ClientEndpointBoundary | undefined;
-  createId(): string;
-  defaultRunnerId(): string;
-  emitStateObservability(
+  ) => ClientEndpointBoundary | undefined;
+  createId: () => string;
+  defaultRunnerId: () => string;
+  emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
     iterationCount: number,
     manifest?: ContextManifest
-  ): Promise<void>;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  now(): number;
-  publishCustomEvent(
+  ) => void;
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  now: () => number;
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  publishEvent(
+  ) => void;
+  publishEvent: (
     handle: RuntimeExecutionHandle,
     event: {
       resumedFrom?: HashString;
@@ -111,48 +112,48 @@ export interface RuntimeCoreStartupHost {
       type: string;
     },
     loopState: LoopState
-  ): void;
-  publishPauseOutcome(
+  ) => void;
+  publishPauseOutcome: (
     handle: RuntimeExecutionHandle,
     pauseContext: unknown,
     loopState: LoopState
-  ): boolean;
-  publishProjectedError(
+  ) => boolean;
+  publishProjectedError: (
     handle: RuntimeExecutionHandle,
     error: Error,
     fatal: boolean,
     loopState: LoopState
-  ): void;
-  resolveActiveConfig(
+  ) => void;
+  resolveActiveConfig: (
     handle: RuntimeExecutionHandle,
     recoveredExecution?: ExpiredExecutionRecovery
-  ): LoopState["activeConfig"];
-  resolveBranchHeadHash(
+  ) => LoopState["activeConfig"];
+  resolveBranchHeadHash: (
     branchId: string,
     threadId: string
-  ): Promise<HashString>;
-  resolveParentTurnId(
+  ) => Promise<HashString>;
+  resolveParentTurnId: (
     threadId: string,
     branchId: string,
     explicitParentTurnId?: string | null
-  ): Promise<string | null>;
-  resumePausedToolExecution(
+  ) => Promise<string | null>;
+  resumePausedToolExecution: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     resumeContext: NonNullable<RuntimeExecutionHandle["resumedFrom"]>
-  ): Promise<{
+  ) => Promise<{
     partial?: boolean;
     pauseContext?: unknown;
     resolution: RuntimeResolution;
   }>;
-  turnCreate(
+  turnCreate: (
     turnId: string,
     threadId: string,
     branchId: string,
     parentTurnId: string | null,
     branchHeadHash: HashString
-  ): Promise<void>;
+  ) => Promise<void>;
 }
 
 /**
@@ -544,6 +545,4 @@ export const resolveExecutionBranchHead = async (
   host: RuntimeCoreStartupHost,
   branchId: string,
   threadId: string
-): Promise<HashString> => {
-  return await host.resolveBranchHeadHash(branchId, threadId);
-};
+): Promise<HashString> => await host.resolveBranchHeadHash(branchId, threadId);

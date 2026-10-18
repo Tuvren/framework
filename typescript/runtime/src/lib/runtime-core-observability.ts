@@ -16,7 +16,10 @@
 
 import type { HashString, KernelRecord } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
-import type { ContextManifest } from "@tuvren/core/execution";
+import type {
+  ContextManifest,
+  RuntimeResolution,
+} from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 
 import {
@@ -31,6 +34,7 @@ import {
   publishProjectedError as publishRuntimeProjectedError,
 } from "./runtime-core-events.js";
 import type { RuntimeCoreEventsHost } from "./runtime-core-events.js";
+import type { InterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
 import type { LoopState } from "./runtime-core-loop.js";
 import {
   stageManifest as stageRuntimeManifest,
@@ -55,7 +59,7 @@ export const emitRuntimeWarning = <TWarning>(
   try {
     onWarning?.(warning);
   } catch {
-    return;
+    // Host warnings are intentionally best-effort.
   }
 };
 
@@ -73,15 +77,8 @@ export const stageRuntimeManifestRecord = async (
     loopState: LoopState;
   },
   taskId?: string
-): Promise<HashString> => {
-  return await stageRuntimeManifest(
-    host,
-    runId,
-    manifest,
-    warningContext,
-    taskId
-  );
-};
+): Promise<HashString> =>
+  await stageRuntimeManifest(host, runId, manifest, warningContext, taskId);
 
 /**
  * Facade over the persistence module's `stageMessage`: stage an encoded
@@ -92,9 +89,8 @@ export const stageRuntimeMessageRecord = async (
   runId: string,
   message: TuvrenMessage,
   taskId: string
-): Promise<HashString> => {
-  return await stageRuntimeMessage(host, runId, message, taskId);
-};
+): Promise<HashString> =>
+  await stageRuntimeMessage(host, runId, message, taskId);
 
 /**
  * Facade over the persistence module's `stageTurnLineage`: stage the
@@ -105,16 +101,15 @@ export const stageRuntimeTurnLineageRecord = async (
   runId: string,
   turnId: string,
   taskId: string,
-  interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
-): Promise<HashString> => {
-  return await stageRuntimeTurnLineage(
+  interruptedToolBatch?: InterruptedToolBatchDescriptor
+): Promise<HashString> =>
+  await stageRuntimeTurnLineage(
     host,
     runId,
     turnId,
     taskId,
     interruptedToolBatch
   );
-};
 
 /**
  * Facade over the persistence module's `stageRuntimeStatus`: stage a
@@ -125,9 +120,8 @@ export const stageRuntimeStatusRecordValue = async (
   runId: string,
   status: DurableRuntimeStatus,
   taskId: string
-): Promise<HashString> => {
-  return await stageRuntimeStatusRecord(host, runId, status, taskId);
-};
+): Promise<HashString> =>
+  await stageRuntimeStatusRecord(host, runId, status, taskId);
 
 /**
  * Facade over the persistence module's `storeKernelRecord`: encode and
@@ -137,9 +131,7 @@ export const storeRuntimeKernelRecordValue = async (
   host: RuntimeCorePersistenceHost,
   value: unknown,
   label: string
-): Promise<HashString> => {
-  return await storeRuntimeKernelRecord(host, value, label);
-};
+): Promise<HashString> => await storeRuntimeKernelRecord(host, value, label);
 
 /**
  * Facade over the persistence module's `storeEventRecord`: store an event
@@ -148,9 +140,7 @@ export const storeRuntimeKernelRecordValue = async (
 export const storeRuntimeEventKernelRecord = async (
   host: RuntimeCorePersistenceHost,
   event: KernelRecord
-): Promise<HashString> => {
-  return await storeRuntimeEventRecord(host, event);
-};
+): Promise<HashString> => await storeRuntimeEventRecord(host, event);
 
 /**
  * Facade over the events module's `publishCustomEvent`: wrap a named payload
@@ -188,9 +178,8 @@ export const createRuntimePublishedStreamEvent = (
   handle: RuntimeExecutionHandle,
   event: TuvrenStreamEvent,
   loopState: LoopState
-): TuvrenStreamEvent => {
-  return createRuntimePublishedEvent(host, handle, event, loopState);
-};
+): TuvrenStreamEvent =>
+  createRuntimePublishedEvent(host, handle, event, loopState);
 
 /**
  * Facade over the events module's `createRunnerPublishedEvent`: validate a
@@ -202,9 +191,8 @@ export const createRuntimeRunnerStreamEvent = (
   handle: RuntimeExecutionHandle,
   event: TuvrenStreamEvent,
   loopState: LoopState
-): TuvrenStreamEvent => {
-  return createRuntimeRunnerPublishedEvent(host, handle, event, loopState);
-};
+): TuvrenStreamEvent =>
+  createRuntimeRunnerPublishedEvent(host, handle, event, loopState);
 
 /**
  * Facade over the events module's `flushBufferedRunnerEvents`: flush
@@ -224,11 +212,10 @@ export const flushRuntimeBufferedEvents = (
  */
 export const flushRuntimeBufferedEventsIfResolutionAllows = (
   handle: RuntimeExecutionHandle,
-  resolution: import("@tuvren/core/execution").RuntimeResolution,
+  resolution: RuntimeResolution,
   events: TuvrenStreamEvent[]
-): TuvrenStreamEvent[] => {
-  return flushRuntimeBufferedRunnerEventsIfNeeded(handle, resolution, events);
-};
+): TuvrenStreamEvent[] =>
+  flushRuntimeBufferedRunnerEventsIfNeeded(handle, resolution, events);
 
 /**
  * Facade over the events module's `ensureRunnerAssistantEvents`: when the
@@ -242,15 +229,14 @@ export const ensureRuntimeAssistantEvents = (
   messages: TuvrenMessage[],
   emittedEvents: TuvrenStreamEvent[],
   loopState: LoopState
-): TuvrenStreamEvent[] => {
-  return ensureRuntimeRunnerAssistantEvents(
+): TuvrenStreamEvent[] =>
+  ensureRuntimeRunnerAssistantEvents(
     host,
     handle,
     messages,
     emittedEvents,
     loopState
   );
-};
 
 /**
  * Facade over the events module's `publishProjectedError`: project an error,
