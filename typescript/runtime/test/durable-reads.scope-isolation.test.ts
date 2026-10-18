@@ -76,6 +76,16 @@ const PLAINTEXT_BINDING: PayloadCodecBinding = {
   scope: DEFAULT_SCOPE,
 };
 
+const captureError = async (promise: Promise<unknown>): Promise<unknown> => {
+  try {
+    await promise;
+  } catch (error: unknown) {
+    return error;
+  }
+
+  throw new Error("expected promise to reject");
+};
+
 // ── Seeding ──────────────────────────────────────────────────────────────────
 
 interface SeededScopeState {
@@ -218,26 +228,32 @@ const assertSurfaceHidden = async (
   // The thread itself is invisible, so enumerating its branches surfaces the
   // same "unknown thread" error a caller would get for any id that never
   // existed — it never leaks that another scope owns this thread.
-  await expect(
-    listBranches(kernel, { threadId: seeded.threadId })
-  ).rejects.toBeInstanceOf(TuvrenRuntimeError);
+  expect(
+    await captureError(listBranches(kernel, { threadId: seeded.threadId }))
+  ).toBeInstanceOf(TuvrenRuntimeError);
 
-  await expect(
-    getTurnState(kernel, {
-      branchId: seeded.branchId,
-      threadId: seeded.threadId,
-    })
-  ).rejects.toBeInstanceOf(TuvrenLineageError);
+  expect(
+    await captureError(
+      getTurnState(kernel, {
+        branchId: seeded.branchId,
+        threadId: seeded.threadId,
+      })
+    )
+  ).toBeInstanceOf(TuvrenLineageError);
 
   const history = getTurnHistory(kernel, {
     branchId: seeded.branchId,
     threadId: seeded.threadId,
   });
-  await expect(history.next()).rejects.toBeInstanceOf(TuvrenLineageError);
+  expect(await captureError(history.next())).toBeInstanceOf(TuvrenLineageError);
 
-  await expect(
-    readBranchMessages(kernel, PLAINTEXT_BINDING, { branchId: seeded.branchId })
-  ).rejects.toBeInstanceOf(TuvrenLineageError);
+  expect(
+    await captureError(
+      readBranchMessages(kernel, PLAINTEXT_BINDING, {
+        branchId: seeded.branchId,
+      })
+    )
+  ).toBeInstanceOf(TuvrenLineageError);
 
   expect(await kernel.store.has(seeded.messageHash)).toBe(false);
   expect(await kernel.store.get(seeded.messageHash)).toBeNull();

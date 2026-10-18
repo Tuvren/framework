@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
 import type { ToolResultEvent, ToolStartEvent } from "@tuvren/core/events";
@@ -35,6 +34,7 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   textSignal,
 } from "./runtime-core-test-helpers.ts";
 
@@ -42,41 +42,37 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const makeRunner = (toolName: string): RuntimeRunner => {
-  return {
-    async execute(context) {
-      const toolMessages = context.messages.filter((m) => m.role === "tool");
-      if (toolMessages.length === 0) {
-        return {
-          messages: [
-            assistantToolCalls([
-              { callId: "call-1", input: { q: "test" }, name: toolName },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" },
-          toolExecutionMode: "parallel",
-        };
-      }
+const makeRunner = (toolName: string): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    const toolMessages = context.messages.filter((m) => m.role === "tool");
+    if (toolMessages.length === 0) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "complete", type: "end_turn" },
+        messages: [
+          assistantToolCalls([
+            { callId: "call-1", input: { q: "test" }, name: toolName },
+          ]),
+        ],
+        resolution: { type: "continue_iteration" },
+        toolExecutionMode: "parallel",
       };
-    },
-    id: "fake",
-    async resume() {
-      throw new Error("resume not expected");
-    },
-  };
-};
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "complete", type: "end_turn" },
+    };
+  }),
+  id: "fake",
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("resume not expected");
+  }),
+});
 
-const makeTool = (name: string): TuvrenToolDefinition => {
-  return {
-    description: `test tool ${name}`,
-    execute: async (input) => ({ result: input }),
-    inputSchema: { properties: { q: { type: "string" } }, type: "object" },
-    name,
-  };
-};
+const makeTool = (name: string): TuvrenToolDefinition => ({
+  description: `test tool ${name}`,
+  execute: (input) => ({ result: input }),
+  inputSchema: { properties: { q: { type: "string" } }, type: "object" },
+  name,
+});
 
 const runToolTurn = async (toolName: string) => {
   const harness = createFakeKernelHarness();
@@ -92,7 +88,7 @@ const runToolTurn = async (toolName: string) => {
     signal: textSignal("run"),
     threadId: thread.threadId,
   });
-  return collectEvents(handle.events());
+  return await collectEvents(handle.events());
 };
 
 // ---------------------------------------------------------------------------

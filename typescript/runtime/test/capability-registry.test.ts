@@ -24,18 +24,14 @@ import { createCapabilityRegistry } from "../src/lib/capability-registry.ts";
 // Helpers
 // ---------------------------------------------------------------------------
 
-const makeCapability = (id: string): Capability => {
-  return { id };
-};
+const makeCapability = (id: string): Capability => ({ id });
 
-const makeSurface = (name: string, capabilityId: string): ToolSurface => {
-  return {
-    capabilityId,
-    description: `surface for ${capabilityId}`,
-    inputSchema: { type: "object" },
-    name,
-  };
-};
+const makeSurface = (name: string, capabilityId: string): ToolSurface => ({
+  capabilityId,
+  description: `surface for ${capabilityId}`,
+  inputSchema: { type: "object" },
+  name,
+});
 
 // ---------------------------------------------------------------------------
 // Surface-vs-capability separation
@@ -163,17 +159,17 @@ describe("CapabilityRegistry — eligible surface candidate set", () => {
   test("registering the same surface name twice throws", () => {
     const registry = createCapabilityRegistry();
     registry.registerSurface(makeSurface("search", "web.search"));
-    expect(() =>
-      registry.registerSurface(makeSurface("search", "web.search"))
-    ).toThrow();
+    expect(() => {
+      registry.registerSurface(makeSurface("search", "web.search"));
+    }).toThrow();
   });
 
   test("registering the same capability id twice throws", () => {
     const registry = createCapabilityRegistry();
     registry.registerCapability(makeCapability("web.search"));
-    expect(() =>
-      registry.registerCapability(makeCapability("web.search"))
-    ).toThrow();
+    expect(() => {
+      registry.registerCapability(makeCapability("web.search"));
+    }).toThrow();
   });
 
   // Design note: "one surface can map to different capabilities by context"
@@ -195,8 +191,8 @@ describe("CapabilityRegistry — eligible surface candidate set", () => {
     registryB.registerCapability(makeCapability("tuvren.search"));
     registryB.registerSurface(makeSurface("search", "tuvren.search"));
 
-    const surfaceA = registryA.getEligibleSurfaces()[0];
-    const surfaceB = registryB.getEligibleSurfaces()[0];
+    const [surfaceA] = registryA.getEligibleSurfaces();
+    const [surfaceB] = registryB.getEligibleSurfaces();
 
     expect(surfaceA?.name).toBe("search");
     expect(surfaceB?.name).toBe("search");

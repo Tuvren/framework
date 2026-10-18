@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import {
   mkdtemp,
@@ -25,7 +24,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import path from "node:path";
 
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import type { InputSignal, TuvrenRuntime } from "@tuvren/core/execution";
@@ -55,12 +54,10 @@ import {
 const BACKEND_NAMES = ["memory", "sqlite"] as const;
 const SQLITE_READY_PREFIX = "READY\n";
 
-const keyedSignal = (text: string, admissionKey: string): InputSignal => {
-  return {
-    admissionKey,
-    parts: [{ text, type: "text" }],
-  };
-};
+const keyedSignal = (text: string, admissionKey: string): InputSignal => ({
+  admissionKey,
+  parts: [{ text, type: "text" }],
+});
 
 const createOrchestrationFixture = (options?: {
   delayChildBinding?: boolean;
@@ -113,9 +110,9 @@ const createOrchestrationFixture = (options?: {
     kernel,
     runnerRegistry: createRunnerRegistry([runner]),
   });
-  const childBindingGate = Promise.withResolvers<void>();
-  if (!options?.delayChildBinding) {
-    childBindingGate.resolve();
+  const childBindingGate = Promise.withResolvers<null>();
+  if (options?.delayChildBinding !== true) {
+    childBindingGate.resolve(null);
   }
   const framework: TuvrenRuntime = {
     createBranch: async (input) => await runtime.createBranch(input),
@@ -145,30 +142,30 @@ const createOrchestrationFixture = (options?: {
 
   return {
     orchestration,
-    releaseChildBinding: () => childBindingGate.resolve(),
+    releaseChildBinding: () => {
+      childBindingGate.resolve(null);
+    },
     runtime,
   };
 };
 
-const expectedKeyedUserMessages = (): UserMessage[] => {
-  return [
-    {
-      admissionKey: "initial-key",
-      parts: [{ text: "Initial keyed input", type: "text" }],
-      role: "user",
-    },
-    {
-      admissionKey: "steering-key-a",
-      parts: [{ text: "Repeated steering", type: "text" }],
-      role: "user",
-    },
-    {
-      admissionKey: "steering-key-b",
-      parts: [{ text: "Repeated steering", type: "text" }],
-      role: "user",
-    },
-  ];
-};
+const expectedKeyedUserMessages = (): UserMessage[] => [
+  {
+    admissionKey: "initial-key",
+    parts: [{ text: "Initial keyed input", type: "text" }],
+    role: "user",
+  },
+  {
+    admissionKey: "steering-key-a",
+    parts: [{ text: "Repeated steering", type: "text" }],
+    role: "user",
+  },
+  {
+    admissionKey: "steering-key-b",
+    parts: [{ text: "Repeated steering", type: "text" }],
+    role: "user",
+  },
+];
 
 const readTextStream = async (
   stream: ReadableStream<Uint8Array>,
@@ -178,18 +175,21 @@ const readTextStream = async (
   const decoder = new TextDecoder();
   let accumulatedText = "";
 
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        accumulatedText += decoder.decode();
-        return accumulatedText;
-      }
-
-      const chunk = decoder.decode(value, { stream: true });
-      accumulatedText += chunk;
-      onText(accumulatedText);
+  const consume = async (): Promise<string> => {
+    const { done, value } = await reader.read();
+    if (done) {
+      accumulatedText += decoder.decode();
+      return accumulatedText;
     }
+
+    const chunk = decoder.decode(value, { stream: true });
+    accumulatedText += chunk;
+    onText(accumulatedText);
+    return await consume();
+  };
+
+  try {
+    return await consume();
   } finally {
     reader.releaseLock();
   }
@@ -201,14 +201,13 @@ const withTimeout = async <T>(
   message: string
 ): Promise<T> => {
   let timeout: ReturnType<typeof setTimeout> | undefined;
+  const timeoutResult = Promise.withResolvers<T>();
 
   try {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_resolve, reject) => {
-        timeout = setTimeout(() => reject(new Error(message)), timeoutMs);
-      }),
-    ]);
+    timeout = setTimeout(() => {
+      timeoutResult.reject(new Error(message));
+    }, timeoutMs);
+    return await Promise.race([promise, timeoutResult.promise]);
   } finally {
     if (timeout !== undefined) {
       clearTimeout(timeout);
@@ -227,11 +226,27 @@ interface SqlitePersistenceScenarioOptions {
 const SQLITE_READINESS_TIMEOUT_MS = 1000;
 const SQLITE_PROCESS_TIMEOUT_MS = 1500;
 
+const parseTuvrenMessages = (value: unknown): TuvrenMessage[] => {
+  if (!Array.isArray(value)) {
+    throw new TypeError("SQLite child scenario returned malformed messages");
+  }
+
+  const messages: TuvrenMessage[] = [];
+  for (const [index, message] of value.entries()) {
+    assertTuvrenMessage(message, `SQLite child message ${index.toString()}`);
+    messages.push(message);
+  }
+  return messages;
+};
+
 const runSqlitePersistenceScenario = async (
   options: SqlitePersistenceScenarioOptions = {}
 ): Promise<TuvrenMessage[]> => {
   const temporaryDirectory = await mkdtemp(
-    join(options.temporaryDirectoryParent ?? tmpdir(), "tuvren-cs002-sqlite-")
+    path.join(
+      options.temporaryDirectoryParent ?? tmpdir(),
+      "tuvren-cs002-sqlite-"
+    )
   );
   let child: ReturnType<typeof spawn> | undefined;
   let childExit: Promise<number> | undefined;
@@ -253,28 +268,30 @@ const runSqlitePersistenceScenario = async (
 
     if (!buildResult.success) {
       throw new Error(
-        `failed to build SQLite child scenario: ${buildResult.logs.join("\n")}`
+        `failed to build SQLite child scenario: ${buildResult.logs
+          .map((log) => log.message)
+          .join("\n")}`
       );
     }
 
     await symlink(
       new URL("../../kernel/backends/sqlite/node_modules", import.meta.url)
         .pathname,
-      join(temporaryDirectory, "node_modules"),
+      path.join(temporaryDirectory, "node_modules"),
       "dir"
     );
     await symlink(
       new URL("../../kernel/backends/sqlite/migrations", import.meta.url)
         .pathname,
-      join(temporaryDirectory, "migrations"),
+      path.join(temporaryDirectory, "migrations"),
       "dir"
     );
 
     child = spawn(
       [
         "node",
-        join(temporaryDirectory, "sqlite-scenario.mjs"),
-        join(temporaryDirectory, "runtime.sqlite"),
+        path.join(temporaryDirectory, "sqlite-scenario.mjs"),
+        path.join(temporaryDirectory, "runtime.sqlite"),
         options.childMode ?? "",
       ],
       {
@@ -292,11 +309,11 @@ const runSqlitePersistenceScenario = async (
     }
 
     let ready = false;
-    const readiness = Promise.withResolvers<void>();
+    const readiness = Promise.withResolvers<null>();
     stdoutTask = readTextStream(stdout, (accumulatedText) => {
       if (!ready && accumulatedText.includes(SQLITE_READY_PREFIX)) {
         ready = true;
-        readiness.resolve();
+        readiness.resolve(null);
       }
     });
     stderrTask = new Response(stderr).text();
@@ -333,17 +350,7 @@ const runSqlitePersistenceScenario = async (
         ? standardOutput.slice(SQLITE_READY_PREFIX.length)
         : standardOutput
     );
-    if (!Array.isArray(messages)) {
-      throw new TypeError("SQLite child scenario returned malformed messages");
-    }
-
-    const validatedMessages: TuvrenMessage[] = [];
-    for (const [index, message] of messages.entries()) {
-      assertTuvrenMessage(message, `SQLite child message ${index.toString()}`);
-      validatedMessages.push(message);
-    }
-
-    return validatedMessages;
+    return parseTuvrenMessages(messages);
   } finally {
     try {
       if (child !== undefined && childExit !== undefined) {
@@ -364,6 +371,37 @@ const runSqlitePersistenceScenario = async (
   }
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+const readFixtureMessage = (
+  value: unknown
+): AdmissionKeylessFixture["message"] => {
+  assertTuvrenMessage(value, "admission-keyless fixture message");
+  if (value.role !== "user" || value.parts.length !== 1) {
+    throw new Error("admission-keyless fixture has a malformed message");
+  }
+
+  const [part] = value.parts;
+  if (part?.type !== "text") {
+    throw new Error("admission-keyless fixture has a malformed text part");
+  }
+
+  return {
+    parts: [part],
+    role: "user",
+  };
+};
+
+const readFixtureIdentity = (
+  value: unknown
+): AdmissionKeylessFixture["identityPayloadCodec"] => {
+  if (!isRecord(value) || typeof value.messageHash !== "string") {
+    throw new Error("admission-keyless fixture has malformed identity data");
+  }
+  return { messageHash: value.messageHash };
+};
+
 const readAdmissionKeylessFixture =
   async (): Promise<AdmissionKeylessFixture> => {
     const fixture: unknown = JSON.parse(
@@ -376,47 +414,27 @@ const readAdmissionKeylessFixture =
       )
     );
 
-    if (
-      fixture === null ||
-      typeof fixture !== "object" ||
-      !("message" in fixture) ||
-      fixture.message === null ||
-      typeof fixture.message !== "object" ||
-      !("role" in fixture.message) ||
-      fixture.message.role !== "user" ||
-      !("parts" in fixture.message) ||
-      !Array.isArray(fixture.message.parts) ||
-      fixture.message.parts.length !== 1 ||
-      fixture.message.parts[0] === null ||
-      typeof fixture.message.parts[0] !== "object" ||
-      !("type" in fixture.message.parts[0]) ||
-      fixture.message.parts[0].type !== "text" ||
-      !("text" in fixture.message.parts[0]) ||
-      typeof fixture.message.parts[0].text !== "string" ||
-      !("identityPayloadCodec" in fixture) ||
-      fixture.identityPayloadCodec === null ||
-      typeof fixture.identityPayloadCodec !== "object" ||
-      !("messageHash" in fixture.identityPayloadCodec) ||
-      typeof fixture.identityPayloadCodec.messageHash !== "string"
-    ) {
+    if (!isRecord(fixture)) {
       throw new Error("admission-keyless user-message fixture is malformed");
     }
 
     return {
-      identityPayloadCodec: {
-        messageHash: fixture.identityPayloadCodec.messageHash,
-      },
-      message: {
-        parts: [
-          {
-            text: fixture.message.parts[0].text,
-            type: "text",
-          },
-        ],
-        role: "user",
-      },
+      identityPayloadCodec: readFixtureIdentity(fixture.identityPayloadCodec),
+      message: readFixtureMessage(fixture.message),
     };
   };
+
+const captureRejection = async (
+  promise: Promise<unknown>
+): Promise<unknown> => {
+  try {
+    await promise;
+  } catch (error: unknown) {
+    return error;
+  }
+
+  throw new Error("expected promise to reject");
+};
 
 describe("KRT-CS002 admission-key persistence", () => {
   for (const backendName of BACKEND_NAMES) {
@@ -429,8 +447,8 @@ describe("KRT-CS002 admission-key persistence", () => {
       }
 
       const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
-      const firstIterationReady = Promise.withResolvers<void>();
-      const releaseFirstIteration = Promise.withResolvers<void>();
+      const firstIterationReady = Promise.withResolvers<null>();
+      const releaseFirstIteration = Promise.withResolvers<null>();
       const runner = createStaticRunner(async (context) => {
         const repeatedSteeringCount = context.messages.filter(
           (message) =>
@@ -442,7 +460,7 @@ describe("KRT-CS002 admission-key persistence", () => {
         ).length;
 
         if (repeatedSteeringCount === 0) {
-          firstIterationReady.resolve();
+          firstIterationReady.resolve(null);
           await releaseFirstIteration.promise;
           return {
             messages: [assistantText("Waiting for repeated steering.")],
@@ -479,7 +497,7 @@ describe("KRT-CS002 admission-key persistence", () => {
       await firstIterationReady.promise;
       handle.steer(keyedSignal("Repeated steering", "steering-key-a"));
       handle.steer(keyedSignal("Repeated steering", "steering-key-b"));
-      releaseFirstIteration.resolve();
+      releaseFirstIteration.resolve(null);
       await eventsPromise;
 
       const { messages } = await runtime.readBranchMessages({
@@ -503,7 +521,7 @@ describe("KRT-CS002 admission-key persistence", () => {
       defaultRunnerId: "fake",
       kernel,
       runnerRegistry: createRunnerRegistry([
-        createStaticRunner(async () => ({
+        createStaticRunner(() => ({
           messages: [],
           resolution: { reason: "done", type: "end_turn" },
         })),
@@ -531,14 +549,14 @@ describe("KRT-CS002 admission-key persistence", () => {
 
   test("reaps a child that misses the SQLite process deadline and removes only its directory", async () => {
     const temporaryParent = await mkdtemp(
-      join(tmpdir(), "tuvren-cs002-timeout-parent-")
+      path.join(tmpdir(), "tuvren-cs002-timeout-parent-")
     );
-    const unrelatedFile = join(temporaryParent, "keep.txt");
+    const unrelatedFile = path.join(temporaryParent, "keep.txt");
     await writeFile(unrelatedFile, "unrelated");
     let childReaped = false;
 
     try {
-      await expect(
+      const timeoutError = await captureRejection(
         runSqlitePersistenceScenario({
           childMode: "hang-after-ready",
           onChildReaped: () => {
@@ -548,9 +566,13 @@ describe("KRT-CS002 admission-key persistence", () => {
           readinessTimeoutMs: 1000,
           temporaryDirectoryParent: temporaryParent,
         })
-      ).rejects.toThrow(
-        "SQLite child scenario exceeded its 150ms process deadline"
       );
+      expect(timeoutError).toBeInstanceOf(Error);
+      if (timeoutError instanceof Error) {
+        expect(timeoutError.message).toBe(
+          "SQLite child scenario exceeded its 150ms process deadline"
+        );
+      }
 
       expect(childReaped).toBe(true);
       expect(await readdir(temporaryParent)).toEqual(["keep.txt"]);
@@ -616,9 +638,10 @@ describe("KRT-CS002 admission-key persistence", () => {
       "stale_running_recovery"
     );
 
-    expect(
-      (await runtime.readBranchMessages({ branchId: thread.branchId })).messages
-    ).toEqual([
+    const stagedMessages = await runtime.readBranchMessages({
+      branchId: thread.branchId,
+    });
+    expect(stagedMessages.messages).toEqual([
       {
         admissionKey: "staged-before-checkpoint",
         parts: [{ text: "Durable staged steering", type: "text" }],
@@ -672,9 +695,10 @@ describe("KRT-CS002 admission-key persistence", () => {
       "stale_running_recovery"
     );
 
-    expect(
-      (await runtime.readBranchMessages({ branchId: thread.branchId })).messages
-    ).toEqual([]);
+    const unstagedMessages = await runtime.readBranchMessages({
+      branchId: thread.branchId,
+    });
+    expect(unstagedMessages.messages).toEqual([]);
   });
 
   test("preserves a key through bound orchestration steering", async () => {
@@ -692,9 +716,10 @@ describe("KRT-CS002 admission-key persistence", () => {
     handle.steer(keyedSignal("Orchestration steering", "bound-key"));
     await capture.done;
 
-    expect(
-      (await runtime.readBranchMessages({ branchId: thread.branchId })).messages
-    ).toContainEqual({
+    const boundMessages = await runtime.readBranchMessages({
+      branchId: thread.branchId,
+    });
+    expect(boundMessages.messages).toContainEqual({
       admissionKey: "bound-key",
       parts: [{ text: "Orchestration steering", type: "text" }],
       role: "user",
@@ -726,11 +751,12 @@ describe("KRT-CS002 admission-key persistence", () => {
     await rootCapture.done;
 
     expect(childResult.status).toBe("completed");
-    const childThread = (
-      await runtime.listThreads({
-        filter: { schemaId: DEFAULT_AGENT_SCHEMA.schemaId },
-      })
-    ).threads.find((candidate) => candidate.threadId !== thread.threadId);
+    const childThreads = await runtime.listThreads({
+      filter: { schemaId: DEFAULT_AGENT_SCHEMA.schemaId },
+    });
+    const childThread = childThreads.threads.find(
+      (candidate) => candidate.threadId !== thread.threadId
+    );
 
     if (childThread === undefined) {
       throw new Error("expected the orchestration child thread");
@@ -744,10 +770,10 @@ describe("KRT-CS002 admission-key persistence", () => {
       throw new Error("expected the orchestration child branch");
     }
 
-    expect(
-      (await runtime.readBranchMessages({ branchId: childBranch.branchId }))
-        .messages
-    ).toContainEqual({
+    const childMessages = await runtime.readBranchMessages({
+      branchId: childBranch.branchId,
+    });
+    expect(childMessages.messages).toContainEqual({
       admissionKey: "pre-bind-key",
       parts: [{ text: "Pre-bind steering", type: "text" }],
       role: "user",
