@@ -15,10 +15,8 @@
  */
 
 import type { RuntimeRunner } from "@tuvren/core/runner";
-import {
-  createDuplexSessionBinding,
-  type SessionSteerFrame,
-} from "@tuvren/host-session";
+import { createDuplexSessionBinding } from "@tuvren/host-session";
+import type { SessionSteerFrame } from "@tuvren/host-session";
 import { createRunnerRegistry, createTuvrenRuntime } from "@tuvren/runtime";
 
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
@@ -37,10 +35,10 @@ const INITIAL_TEXT = "Start host-session admission-key carriage";
 const STEERING_TEXT = "Host-session keyed steering";
 const ADMISSION_KEY = "host-session-admission-key";
 
-function containsSteeringMessage(
+const containsSteeringMessage = (
   messages: Parameters<RuntimeRunner["execute"]>[0]["messages"]
-): boolean {
-  return messages.some(
+): boolean =>
+  messages.some(
     (message) =>
       "role" in message &&
       message.role === "user" &&
@@ -48,71 +46,67 @@ function containsSteeringMessage(
         (part) => part.type === "text" && part.text === STEERING_TEXT
       )
   );
-}
 
-export async function runAdmissionKeySteerCarriage(): Promise<AdapterProjection> {
-  const harness = createConformanceKernelHarness();
-  let releaseInitialIteration: (() => void) | undefined;
-  let signalInitialIterationStarted: (() => void) | undefined;
-  const initialIterationStarted = new Promise<void>((resolve) => {
-    signalInitialIterationStarted = resolve;
-  });
-  const initialIterationRelease = new Promise<void>((resolve) => {
-    releaseInitialIteration = resolve;
-  });
-  const runner: RuntimeRunner = {
-    async execute(context) {
-      if (containsSteeringMessage(context.messages)) {
+export const runAdmissionKeySteerCarriage =
+  async (): Promise<AdapterProjection> => {
+    const harness = createConformanceKernelHarness();
+    const initialIterationStarted = Promise.withResolvers<undefined>();
+    const initialIterationRelease = Promise.withResolvers<undefined>();
+    const runner: RuntimeRunner = {
+      async execute(context) {
+        if (containsSteeringMessage(context.messages)) {
+          return {
+            messages: [assistantText("Keyed steering incorporated.")],
+            resolution: { reason: "done", type: "end_turn" },
+          };
+        }
+
+        initialIterationStarted.resolve();
+        await initialIterationRelease.promise;
         return {
-          messages: [assistantText("Keyed steering incorporated.")],
-          resolution: { reason: "done", type: "end_turn" },
+          messages: [assistantText("Waiting for steering.")],
+          resolution: { type: "continue_iteration" },
         };
-      }
+      },
+      id: RUNNER_ID,
+    };
+    const runtime = createTuvrenRuntime({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: AGENT_NAME },
+      signal: textSignal(INITIAL_TEXT),
+      threadId: thread.threadId,
+    });
+    const binding = createDuplexSessionBinding(handle, {
+      sessionId: SESSION_ID,
+    });
+    const outboundPromise = collectValues(binding.outbound());
 
-      signalInitialIterationStarted?.();
-      await initialIterationRelease;
-      return {
-        messages: [assistantText("Waiting for steering.")],
-        resolution: { type: "continue_iteration" },
-      };
-    },
-    id: RUNNER_ID,
+    await initialIterationStarted.promise;
+    const dispatchedFrame: SessionSteerFrame = {
+      correlationId: "corr-host-session-admission-key-1",
+      kind: "steer",
+      protocolVersion: "1",
+      sessionId: SESSION_ID,
+      signal: {
+        admissionKey: ADMISSION_KEY,
+        parts: [{ text: STEERING_TEXT, type: "text" }],
+      },
+    };
+    binding.dispatchInbound(dispatchedFrame);
+    initialIterationRelease.resolve();
+    await outboundPromise;
+    await handle.awaitResult();
+
+    const { messages: committedMessages } = await runtime.readBranchMessages({
+      branchId: thread.branchId,
+    });
+    const observation = { committedMessages, dispatchedFrame };
+    return { evidence: observation, result: observation };
   };
-  const runtime = createTuvrenRuntime({
-    createId: createConformanceIdFactory(),
-    defaultRunnerId: RUNNER_ID,
-    kernel: harness.kernel,
-    runnerRegistry: createRunnerRegistry([runner]),
-  });
-  const thread = await runtime.createThread({});
-  const handle = runtime.executeTurn({
-    branchId: thread.branchId,
-    config: { name: AGENT_NAME },
-    signal: textSignal(INITIAL_TEXT),
-    threadId: thread.threadId,
-  });
-  const binding = createDuplexSessionBinding(handle, { sessionId: SESSION_ID });
-  const outboundPromise = collectValues(binding.outbound());
-
-  await initialIterationStarted;
-  const dispatchedFrame: SessionSteerFrame = {
-    correlationId: "corr-host-session-admission-key-1",
-    kind: "steer",
-    protocolVersion: "1",
-    sessionId: SESSION_ID,
-    signal: {
-      admissionKey: ADMISSION_KEY,
-      parts: [{ text: STEERING_TEXT, type: "text" }],
-    },
-  };
-  binding.dispatchInbound(dispatchedFrame);
-  releaseInitialIteration?.();
-  await outboundPromise;
-  await handle.awaitResult();
-
-  const { messages: committedMessages } = await runtime.readBranchMessages({
-    branchId: thread.branchId,
-  });
-  const observation = { committedMessages, dispatchedFrame };
-  return { evidence: observation, result: observation };
-}

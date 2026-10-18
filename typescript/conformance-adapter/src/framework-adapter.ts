@@ -14,25 +14,11 @@
  * limitations under the License.
  */
 
-import type { TuvrenJsonSchema } from "@tuvren/core/messages";
-import { assertTuvrenMessage } from "@tuvren/core/messages";
+import { createAdapterErrorEnvelope } from "../../../tools/conformance/adapter-protocol/index.js";
 import type {
-  StructuredOutputRequest,
-  TuvrenModelResponse,
-  TuvrenPrompt,
-} from "@tuvren/core/provider";
-import type { ApprovalDecision } from "@tuvren/core/tools";
-import {
-  assertProviderStreamChunk,
-  assertTuvrenModelResponse,
-  type ProviderStreamChunk,
-} from "@tuvren/provider-api";
-
-import {
-  type AdapterCapabilities,
-  type AdapterControls,
-  createAdapterErrorEnvelope,
-  type OperationOutcome,
+  AdapterCapabilities,
+  AdapterControls,
+  OperationOutcome,
 } from "../../../tools/conformance/adapter-protocol/index.js";
 import { runAdmissionKeySteerCarriage } from "./framework-adapter-admission-key-session.ts";
 import { createFrameworkAdapterAdmissionKeyScenarios } from "./framework-adapter-admission-key.ts";
@@ -63,15 +49,34 @@ import {
   runExecutionBoundsWallClockSignalDelivery,
   runExecutionBoundsWithinBounds,
 } from "./framework-adapter-execution-bounds.ts";
+import {
+  isRecord,
+  parseJsonValue,
+  readApprovalDecisions,
+  readAssistantText,
+  readFirstToolCallName,
+  readFirstToolCallNameOptional,
+  readModelResponseArrayProperty,
+  readModelResponseProperty,
+  readOperationScenario,
+  readPendingToolCalls,
+  readPromptProperty,
+  readProperty,
+  readProviderStreamChunks,
+  readRecordProperty,
+  readRecordString,
+  readResponseFormatProperty,
+  readScenarioInput,
+  readScenarioToolCall,
+  readScenarioToolCalls,
+  readStringProperty,
+} from "./framework-adapter-input.ts";
 import { runInvocationLifecycleCrossClass } from "./framework-adapter-invocation-lifecycle.ts";
 import { createFrameworkAdapterOrchestration } from "./framework-adapter-orchestration.ts";
 import { createFrameworkAdapterProvingHost } from "./framework-adapter-proving-host.ts";
 import { createFrameworkAdapterRunner } from "./framework-adapter-runner.ts";
 import { createFrameworkAdapterRuntimeScenarios } from "./framework-adapter-runtime-scenarios.ts";
-import type {
-  AdapterProjection,
-  ScenarioToolCall,
-} from "./framework-adapter-runtime.ts";
+import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 import { createFrameworkAdapterSchemaAuthoring } from "./framework-adapter-schema-authoring.ts";
 import {
   runSanitizeSeamToolResult,
@@ -81,13 +86,15 @@ import {
   runSecretIsolationTelemetry,
 } from "./framework-adapter-secret-isolation.ts";
 import {
-  runApprovalResponseResume,
-  runCancelCooperative,
-  runCancelWhilePaused,
   runDispatchTimeout,
   runGraceWindowExpiry,
   runReattachRedelivery,
   runSequenceContinuity,
+} from "./framework-adapter-session-lifecycle.ts";
+import {
+  runApprovalResponseResume,
+  runCancelCooperative,
+  runCancelWhilePaused,
   runStaleClientResult,
   runValidateFrameFixtures,
 } from "./framework-adapter-session.ts";
@@ -114,22 +121,22 @@ export type {
 } from "../../../tools/conformance/adapter-protocol/index.js";
 
 export interface ImplementationAdapter {
-  dispatch(
+  dispatch: (
     operation: string,
     input: unknown,
     controls: AdapterControls
-  ): Promise<OperationOutcome>;
-  events(
+  ) => Promise<OperationOutcome>;
+  events: (
     operation: string,
     input: unknown,
     controls: AdapterControls
-  ): AsyncIterable<unknown>;
-  initialize(
+  ) => AsyncIterable<unknown>;
+  initialize: (
     packetId: string,
     planVersion: string
-  ): Promise<AdapterCapabilities>;
-  inspectState?(query: unknown): Promise<unknown | null>;
-  shutdown(): Promise<void>;
+  ) => AdapterCapabilities | Promise<AdapterCapabilities>;
+  inspectState?: (query: unknown) => Promise<unknown>;
+  shutdown: () => Promise<void>;
 }
 interface OperationObservation {
   adapterEvents: number;
@@ -137,6 +144,69 @@ interface OperationObservation {
   status: OperationStatus;
 }
 type OperationStatus = "completed" | "failed" | "paused";
+
+const toObservedErrorEnvelope = (error: unknown): Record<string, unknown> => {
+  if (error instanceof Error) {
+    const envelope: Record<string, unknown> = {
+      code:
+        isRecord(error) && typeof error.code === "string"
+          ? error.code
+          : "adapter_operation_failed",
+      message: error.message,
+    };
+
+    if (isRecord(error) && error.details !== undefined) {
+      envelope.details = error.details;
+    }
+
+    return envelope;
+  }
+
+  return { ...createAdapterErrorEnvelope(error) };
+};
+
+const readFirstErrorEnvelope = (
+  events: readonly unknown[]
+): Record<string, unknown> | undefined => {
+  for (const event of events) {
+    if (isRecord(event) && isRecord(event.error)) {
+      return event.error;
+    }
+  }
+
+  return undefined;
+};
+
+const errorToEnvelope = (error: Error): Record<string, unknown> => {
+  const errorRecord: Record<string, unknown> = isRecord(error) ? error : {};
+  const code =
+    typeof errorRecord.code === "string" ? errorRecord.code : "runner_error";
+  const envelope: Record<string, unknown> = {
+    code,
+    message: error.message,
+  };
+
+  if (errorRecord.details !== undefined) {
+    envelope.details = errorRecord.details;
+  }
+
+  return envelope;
+};
+
+const projectionStatus = (projection: AdapterProjection): OperationStatus => {
+  if (isRecord(projection.result) && projection.result.error !== undefined) {
+    return "failed";
+  }
+
+  return "completed";
+};
+
+const throwIfCancelled = (controls: AdapterControls): void => {
+  if (controls.cancel !== undefined) {
+    throw new Error(controls.cancel.reason);
+  }
+};
+
 const runnerScenarios = createFrameworkAdapterRunner({
   errorToEnvelope,
   readApprovalDecisions,
@@ -199,6 +269,326 @@ const runtimeScenarios = createFrameworkAdapterRuntimeScenarios({
   readStringProperty,
 });
 
+type OperationHandler = (
+  input: unknown,
+  controls: AdapterControls
+) => AdapterProjection | Promise<AdapterProjection>;
+
+const fromSynchronous = <Argument, Value>(
+  operation: (argument: Argument) => Value
+): ((argument: Argument) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(argument: Argument) => Value],
+    [Argument],
+    Promise<Value>
+  >(Promise, operation);
+
+const fromSynchronousWithoutArguments = <Value>(
+  operation: () => Value
+): (() => Promise<Value>) =>
+  Promise.try.bind<typeof Promise, [() => Value], [], Promise<Value>>(
+    Promise,
+    operation
+  );
+
+const fromSingleSynchronousValue = <Value>(
+  readValue: () => Value
+): AsyncIterable<Value> => ({
+  [Symbol.asyncIterator]: () => {
+    let emitted = false;
+
+    return {
+      next: fromSynchronousWithoutArguments((): IteratorResult<Value> => {
+        if (emitted) {
+          return { done: true, value: undefined };
+        }
+
+        emitted = true;
+        return { done: false, value: readValue() };
+      }),
+    };
+  },
+});
+
+const fromSynchronousWithTwoArguments = <First, Second, Value>(
+  operation: (first: First, second: Second) => Value
+): ((first: First, second: Second) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(first: First, second: Second) => Value],
+    [First, Second],
+    Promise<Value>
+  >(Promise, operation);
+
+const runCancelledRuntimeTurn: OperationHandler = async (_input, controls) =>
+  await runtimeScenarios.runCancelledRuntimeTurn(controls);
+
+const runCapabilityOrchestrationFoundationFromInput: OperationHandler = async (
+  input
+) =>
+  await runCapabilityOrchestrationFoundation(
+    readStringProperty(
+      readOperationScenario(
+        input,
+        "runtime.capability-orchestration.foundation"
+      ),
+      "toolName",
+      "runtime.capability-orchestration.foundation.toolName"
+    )
+  );
+
+const OPERATION_HANDLERS = new Map<string, OperationHandler>([
+  ["runtime.execute-turn", runtimeScenarios.runCompletedRuntimeTurn],
+  ["runtime.cancel-execution", runCancelledRuntimeTurn],
+  ["runtime.approval-resolve", runtimeScenarios.runApprovalResume],
+  ["runtime.operational-telemetry", runtimeScenarios.runOperationalTelemetry],
+  ["runtime.branch-create", runtimeScenarios.runBranchCreate],
+  [
+    "runtime.durable-read.list-threads",
+    runtimeScenarios.runDurableReadListThreads,
+  ],
+  [
+    "runtime.durable-read.list-threads-paginate",
+    runtimeScenarios.runDurableReadListThreadsPaginate,
+  ],
+  [
+    "runtime.durable-read.list-threads-capability-rejected",
+    runtimeScenarios.runDurableReadListThreadsCapabilityRejected,
+  ],
+  [
+    "runtime.durable-read.list-branches",
+    runtimeScenarios.runDurableReadListBranches,
+  ],
+  [
+    "runtime.durable-read.get-turn-state",
+    runtimeScenarios.runDurableReadGetTurnState,
+  ],
+  [
+    "runtime.durable-read.get-turn-state-lineage",
+    runtimeScenarios.runDurableReadGetTurnStateLineage,
+  ],
+  [
+    "runtime.durable-read.get-turn-history",
+    runtimeScenarios.runDurableReadGetTurnHistory,
+  ],
+  [
+    "runtime.durable-read.read-branch-messages",
+    runtimeScenarios.runDurableReadReadBranchMessages,
+  ],
+  [
+    "runtime.durable-read.read-branch-messages-head-drift",
+    runtimeScenarios.runDurableReadReadBranchMessagesHeadDrift,
+  ],
+  ["runtime.handle-terminal-value", runtimeScenarios.runHandleTerminalValue],
+  ["runtime.provider-generate", runtimeScenarios.runProviderGenerate],
+  ["runtime.provider-stream", runtimeScenarios.runProviderStream],
+  ["runtime.tool-execute", runtimeScenarios.runToolExecution],
+  [
+    "runtime.validate-structured-output",
+    runtimeScenarios.runStructuredValidationFailure,
+  ],
+  ["runtime.context-transform", runtimeScenarios.runContextTransform],
+  ["runtime.recover-result", runtimeScenarios.runRecoverResult],
+  ["runtime.recover-stale-run", runtimeScenarios.runRecoverStaleRun],
+  [
+    "runtime.client-result-as-proposal",
+    runtimeScenarios.runClientResultAsProposal,
+  ],
+  [
+    "runtime.admission-key.crash-recovery",
+    admissionKeyScenarios.runCrashRecovery,
+  ],
+  [
+    "runtime.admission-key.provider-exclusion",
+    admissionKeyScenarios.runProviderExclusion,
+  ],
+  [
+    "runtime.admission-key.initial-input-recovery",
+    admissionKeyScenarios.runInitialInputRecovery,
+  ],
+  [
+    "runtime.admission-key.keyless-identity",
+    admissionKeyScenarios.runKeylessIdentity,
+  ],
+  [
+    "runtime.orchestration.launch-preconditions",
+    orchestrationScenarios.runOrchestrationLaunchPreconditions,
+  ],
+  [
+    "runtime.orchestration.lifecycle-locality",
+    orchestrationScenarios.runOrchestrationLifecycleLocality,
+  ],
+  [
+    "runtime.orchestration.event-surfaces",
+    orchestrationScenarios.runOrchestrationEventSurfaces,
+  ],
+  [
+    "runtime.orchestration.execution-inheritance",
+    orchestrationScenarios.runOrchestrationExecutionInheritance,
+  ],
+  [
+    "runtime.orchestration.nested-attribution",
+    orchestrationScenarios.runOrchestrationNestedAttribution,
+  ],
+  [
+    "runtime.batteries-included.lifecycle",
+    batteriesIncludedScenarios.runBatteriesIncludedLifecycle,
+  ],
+  [
+    "runtime.proving-host.headless-transcript-replay",
+    provingHostScenarios.runHeadlessTranscriptReplay,
+  ],
+  [
+    "runtime.schema-authoring.route",
+    schemaAuthoringScenarios.runSchemaAuthoringRoute,
+  ],
+  [
+    "runtime.schema-authoring.define-tool",
+    schemaAuthoringScenarios.runSchemaAuthoringDefineTool,
+  ],
+  ["runner.execute", runnerScenarios.runRunnerExecute],
+  ["runner.resume", runnerScenarios.runRunnerResume],
+  ["runner.checkpoint", runnerScenarios.runRunnerCheckpoint],
+  [
+    "event-stream.runtime-agui-projection",
+    eventStreamScenarios.runAgUiProjection,
+  ],
+  [
+    "event-stream.runtime-sse-eager-subscription",
+    eventStreamScenarios.runSseEagerSubscription,
+  ],
+  [
+    "event-stream.runtime-sse-projection",
+    eventStreamScenarios.runSseProjection,
+  ],
+  ["event-stream-sse.decode-trace", eventStreamSseScenarios.runDecodeTrace],
+  [
+    "event-stream-sse.report-wire-compliance",
+    eventStreamSseScenarios.runReportWireCompliance,
+  ],
+  [
+    "event-stream-resume.replay-scenario",
+    eventStreamResumeScenarios.runReplayScenario,
+  ],
+  [
+    "event-stream-resume.sse-reconnect",
+    eventStreamResumeScenarios.runSseReconnect,
+  ],
+  [
+    "runtime.capability-orchestration.foundation",
+    runCapabilityOrchestrationFoundationFromInput,
+  ],
+  [
+    "runtime.capability-orchestration.policy-decisions",
+    runCapabilityOrchestrationPolicyDecisions,
+  ],
+  [
+    "runtime.capability-orchestration.integration",
+    runCapabilityOrchestrationIntegration,
+  ],
+  [
+    "runtime.invocation-lifecycle.cross-class",
+    runInvocationLifecycleCrossClass,
+  ],
+  ["runtime.execution-bounds.max-iterations", runExecutionBoundsMaxIterations],
+  ["runtime.execution-bounds.max-tool-calls", runExecutionBoundsMaxToolCalls],
+  ["runtime.execution-bounds.max-wall-clock", runExecutionBoundsMaxWallClock],
+  [
+    "runtime.execution-bounds.wall-clock-signal-delivery",
+    runExecutionBoundsWallClockSignalDelivery,
+  ],
+  [
+    "runtime.execution-bounds.concurrency-throttle",
+    runExecutionBoundsConcurrencyThrottle,
+  ],
+  ["runtime.execution-bounds.invalid-config", runExecutionBoundsInvalidConfig],
+  ["runtime.execution-bounds.within-bounds", runExecutionBoundsWithinBounds],
+  ["runtime.secret-isolation.surfaces", runSecretIsolationRuntimeApi],
+  ["runtime.secret-isolation.telemetry", runSecretIsolationTelemetry],
+  [
+    "runtime.secret-isolation.provider-bridge",
+    runSecretIsolationProviderBridge,
+  ],
+  ["runtime.sanitize-seam.tool-result", runSanitizeSeamToolResult],
+  ["runtime.scope-isolation.surfaces", runScopeIsolationSurfaces],
+  [
+    "runtime.trust-boundary.approval-gate",
+    runTrustBoundaryApprovalNonBypassable,
+  ],
+  ["runtime.trust-boundary.local-tool-input", runTrustBoundaryLocalToolInput],
+  ["runtime.tuvren-client.lifecycle", runTuvrenClientLifecycle],
+  [
+    "runtime.tuvren-client.network-reconnect-redelivery",
+    runTuvrenClientNetworkReconnectRedelivery,
+  ],
+  ["runtime.tuvren-client.result-durability", runTuvrenClientResultDurability],
+  ["runtime.tuvren-server.lifecycle", runTuvrenServerLifecycle],
+  [
+    "runtime.tuvren-server.binding-classification",
+    runTuvrenServerBindingClassification,
+  ],
+  ["runtime.tuvren-server.cancellation", runTuvrenServerCancellation],
+  ["runtime.tuvren-server.tenant-isolation", runTuvrenServerTenantIsolation],
+  [
+    "runtime.capability-policy.exposure-dimensions",
+    runCapabilityPolicyExposureDimensions,
+  ],
+  [
+    "runtime.capability-policy.invocation-dimensions",
+    runCapabilityPolicyInvocationDimensions,
+  ],
+  ["runtime.capability-policy.composition", runCapabilityPolicyComposition],
+  [
+    "runtime.capability-policy.wired-invocation-denial",
+    runCapabilityPolicyWiredInvocationDenial,
+  ],
+  [
+    "runtime.capability-policy.nonretryable-policy",
+    runCapabilityPolicyNonretryablePolicy,
+  ],
+  [
+    "runtime.capability-policy.wired-risk-approval",
+    runCapabilityPolicyWiredRiskApproval,
+  ],
+  ["host-session.stale-client-result", runStaleClientResult],
+  ["host-session.approval-response-resume", runApprovalResponseResume],
+  ["host-session.cancel-cooperative", runCancelCooperative],
+  ["host-session.cancel-while-paused", runCancelWhilePaused],
+  ["host-session.validate-frame-fixtures", runValidateFrameFixtures],
+  ["host-session.reattach-redelivery", runReattachRedelivery],
+  ["host-session.grace-window-expiry", runGraceWindowExpiry],
+  ["host-session.dispatch-timeout", runDispatchTimeout],
+  ["host-session.sequence-continuity", runSequenceContinuity],
+  ["host-session.admission-key-steer-carriage", runAdmissionKeySteerCarriage],
+  ["event-stream-ws.decode-trace", eventStreamWsScenarios.runDecodeTrace],
+  [
+    "event-stream-ws.session-roundtrip",
+    eventStreamWsScenarios.runSessionRoundtrip,
+  ],
+  [
+    "event-stream-ws.reconnect-with-cursor",
+    eventStreamWsScenarios.runReconnectWithCursor,
+  ],
+  [
+    "event-stream-ws.handshake-rejections",
+    eventStreamWsScenarios.runHandshakeRejections,
+  ],
+  ["event-stream-ws.policy-closures", eventStreamWsScenarios.runPolicyClosures],
+]);
+
+const projectOperation = async (
+  operation: string,
+  input: unknown,
+  controls: AdapterControls
+): Promise<AdapterProjection> => {
+  const handler = OPERATION_HANDLERS.get(operation);
+  if (handler === undefined) {
+    throw new Error(`unsupported promoted framework operation ${operation}`);
+  }
+  return await handler(input, controls);
+};
+
 export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
   private capabilities?: AdapterCapabilities;
   private readonly observations = new Map<string, OperationObservation>();
@@ -213,11 +603,7 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
     throwIfCancelled(controls);
 
     try {
-      const projection = await this.projectOperation(
-        operation,
-        input,
-        controls
-      );
+      const projection = await projectOperation(operation, input, controls);
       const status = projectionStatus(projection);
       this.latestState = projection.state ?? null;
       this.observations.set(operation, {
@@ -248,78 +634,82 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
     }
   }
 
-  async *events(
+  events(
     operation: string,
     _input: unknown,
     controls: AdapterControls
   ): AsyncIterable<unknown> {
-    await Promise.resolve();
-    this.requireInitialized();
-    throwIfCancelled(controls);
+    return fromSingleSynchronousValue(() => {
+      this.requireInitialized();
+      throwIfCancelled(controls);
 
-    const observation = this.observations.get(operation);
-    const event = {
-      operation,
-      status: observation?.status ?? "completed",
-      type: "adapter.operation.observed",
-    };
+      const observation = this.observations.get(operation);
+      const event = {
+        operation,
+        status: observation?.status ?? "completed",
+        type: "adapter.operation.observed",
+      };
 
-    if (observation !== undefined) {
-      this.observations.set(operation, {
-        ...observation,
-        adapterEvents: observation.adapterEvents + 1,
-      });
-    }
+      if (observation !== undefined) {
+        this.observations.set(operation, {
+          ...observation,
+          adapterEvents: observation.adapterEvents + 1,
+        });
+      }
 
-    yield event;
+      return event;
+    });
   }
 
-  initialize(
-    packetId: string,
-    planVersion: string
-  ): Promise<AdapterCapabilities> {
-    this.capabilities = {
-      adapterId: "typescript-framework",
-      capabilities: [
-        "framework.runner-api",
-        "framework.event-stream",
-        "framework.event-stream-sse",
-        "framework.event-stream-resume",
-        "framework.host-session",
-        "framework.event-stream-ws",
-        "framework.orchestration",
-        "framework.run-liveness",
-        "framework.react-runner",
-        "framework.runtime-api",
-        "framework.tool-contracts",
-        "providers.framework-owned-approval-boundary",
-        "providers.framework-owned-tool-execution",
-        "providers.rejects-native-strict-structured-output",
-      ],
-      packetId,
-      planVersion,
-    };
-    return Promise.resolve(this.capabilities);
-  }
+  initialize = fromSynchronousWithTwoArguments(
+    (packetId: string, planVersion: string): AdapterCapabilities =>
+      this.setCapabilities({
+        adapterId: "typescript-framework",
+        capabilities: [
+          "framework.runner-api",
+          "framework.event-stream",
+          "framework.event-stream-sse",
+          "framework.event-stream-resume",
+          "framework.host-session",
+          "framework.event-stream-ws",
+          "framework.orchestration",
+          "framework.run-liveness",
+          "framework.react-runner",
+          "framework.runtime-api",
+          "framework.tool-contracts",
+          "providers.framework-owned-approval-boundary",
+          "providers.framework-owned-tool-execution",
+          "providers.rejects-native-strict-structured-output",
+        ],
+        packetId,
+        planVersion,
+      })
+  );
 
-  inspectState(query: unknown): Promise<unknown | null> {
+  inspectState = fromSynchronous((query: unknown): unknown => {
     if (!isRecord(query) || typeof query.operation !== "string") {
-      return Promise.resolve(this.latestState);
+      return this.latestState;
     }
 
     const observation = this.observations.get(query.operation);
 
-    return Promise.resolve({
-      ...(this.latestState ?? {}),
+    return {
+      ...this.latestState,
       adapter: observation,
-    });
-  }
+    };
+  });
 
-  shutdown(): Promise<void> {
+  shutdown = fromSynchronousWithoutArguments((): void => {
     this.capabilities = undefined;
     this.latestState = null;
     this.observations.clear();
-    return Promise.resolve();
+  });
+
+  protected setCapabilities(
+    capabilities: AdapterCapabilities
+  ): AdapterCapabilities {
+    this.capabilities = capabilities;
+    return capabilities;
   }
 
   private requireInitialized(): AdapterCapabilities {
@@ -329,671 +719,4 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
 
     return this.capabilities;
   }
-
-  private projectOperation(
-    operation: string,
-    input: unknown,
-    controls: AdapterControls
-  ): Promise<AdapterProjection> {
-    // This switch is language-local adapter routing only; shared plans own the
-    // assertions and expected semantics, and this file must only measure TS behavior.
-    switch (operation) {
-      case "runtime.execute-turn":
-        return runtimeScenarios.runCompletedRuntimeTurn(input);
-      case "runtime.cancel-execution":
-        return runtimeScenarios.runCancelledRuntimeTurn(controls);
-      case "runtime.approval-resolve":
-        return runtimeScenarios.runApprovalResume(input);
-      case "runtime.operational-telemetry":
-        return runtimeScenarios.runOperationalTelemetry(input);
-      case "runtime.branch-create":
-        return runtimeScenarios.runBranchCreate();
-      case "runtime.durable-read.list-threads":
-        return runtimeScenarios.runDurableReadListThreads();
-      case "runtime.durable-read.list-threads-paginate":
-        return runtimeScenarios.runDurableReadListThreadsPaginate();
-      case "runtime.durable-read.list-threads-capability-rejected":
-        return runtimeScenarios.runDurableReadListThreadsCapabilityRejected();
-      case "runtime.durable-read.list-branches":
-        return runtimeScenarios.runDurableReadListBranches();
-      case "runtime.durable-read.get-turn-state":
-        return runtimeScenarios.runDurableReadGetTurnState();
-      case "runtime.durable-read.get-turn-state-lineage":
-        return runtimeScenarios.runDurableReadGetTurnStateLineage();
-      case "runtime.durable-read.get-turn-history":
-        return runtimeScenarios.runDurableReadGetTurnHistory();
-      case "runtime.durable-read.read-branch-messages":
-        return runtimeScenarios.runDurableReadReadBranchMessages();
-      case "runtime.durable-read.read-branch-messages-head-drift":
-        return runtimeScenarios.runDurableReadReadBranchMessagesHeadDrift();
-      case "runtime.handle-terminal-value":
-        return runtimeScenarios.runHandleTerminalValue(input);
-      case "runtime.provider-generate":
-        return runtimeScenarios.runProviderGenerate(input);
-      case "runtime.provider-stream":
-        return runtimeScenarios.runProviderStream(input);
-      case "runtime.tool-execute":
-        return runtimeScenarios.runToolExecution(input);
-      case "runtime.validate-structured-output":
-        return runtimeScenarios.runStructuredValidationFailure(input);
-      case "runtime.context-transform":
-        return runtimeScenarios.runContextTransform(input);
-      case "runtime.recover-result":
-        return runtimeScenarios.runRecoverResult(input);
-      case "runtime.recover-stale-run":
-        return runtimeScenarios.runRecoverStaleRun(input);
-      case "runtime.client-result-as-proposal":
-        return runtimeScenarios.runClientResultAsProposal(input);
-      case "runtime.admission-key.crash-recovery":
-        return admissionKeyScenarios.runCrashRecovery(input);
-      case "runtime.admission-key.provider-exclusion":
-        return admissionKeyScenarios.runProviderExclusion(input);
-      case "runtime.admission-key.initial-input-recovery":
-        return admissionKeyScenarios.runInitialInputRecovery(input);
-      case "runtime.admission-key.keyless-identity":
-        return admissionKeyScenarios.runKeylessIdentity(input);
-      case "runtime.orchestration.launch-preconditions":
-        return orchestrationScenarios.runOrchestrationLaunchPreconditions(
-          input
-        );
-      case "runtime.orchestration.lifecycle-locality":
-        return orchestrationScenarios.runOrchestrationLifecycleLocality(input);
-      case "runtime.orchestration.event-surfaces":
-        return orchestrationScenarios.runOrchestrationEventSurfaces(input);
-      case "runtime.orchestration.execution-inheritance":
-        return orchestrationScenarios.runOrchestrationExecutionInheritance(
-          input
-        );
-      case "runtime.orchestration.nested-attribution":
-        return orchestrationScenarios.runOrchestrationNestedAttribution(input);
-      case "runtime.batteries-included.lifecycle":
-        return batteriesIncludedScenarios.runBatteriesIncludedLifecycle(input);
-      case "runtime.proving-host.headless-transcript-replay":
-        return provingHostScenarios.runHeadlessTranscriptReplay(input);
-      case "runtime.schema-authoring.route":
-        return schemaAuthoringScenarios.runSchemaAuthoringRoute(input);
-      case "runtime.schema-authoring.define-tool":
-        return schemaAuthoringScenarios.runSchemaAuthoringDefineTool(input);
-      case "runner.execute":
-        return runnerScenarios.runRunnerExecute(input);
-      case "runner.resume":
-        return runnerScenarios.runRunnerResume(input);
-      case "runner.checkpoint":
-        return runnerScenarios.runRunnerCheckpoint(input);
-      case "event-stream.runtime-agui-projection":
-        return eventStreamScenarios.runAgUiProjection(input);
-      case "event-stream.runtime-sse-eager-subscription":
-        return eventStreamScenarios.runSseEagerSubscription(input);
-      case "event-stream.runtime-sse-projection":
-        return eventStreamScenarios.runSseProjection(input);
-      case "event-stream-sse.decode-trace":
-        return eventStreamSseScenarios.runDecodeTrace(input);
-      case "event-stream-sse.report-wire-compliance":
-        return eventStreamSseScenarios.runReportWireCompliance(input);
-      case "event-stream-resume.replay-scenario":
-        return eventStreamResumeScenarios.runReplayScenario(input);
-      case "event-stream-resume.sse-reconnect":
-        return eventStreamResumeScenarios.runSseReconnect(input);
-      case "runtime.capability-orchestration.foundation":
-        return runCapabilityOrchestrationFoundation(
-          readStringProperty(
-            readOperationScenario(
-              input,
-              "runtime.capability-orchestration.foundation"
-            ),
-            "toolName",
-            "runtime.capability-orchestration.foundation.toolName"
-          )
-        );
-      case "runtime.capability-orchestration.policy-decisions":
-        return runCapabilityOrchestrationPolicyDecisions();
-      case "runtime.capability-orchestration.integration":
-        return runCapabilityOrchestrationIntegration();
-      case "runtime.invocation-lifecycle.cross-class":
-        return runInvocationLifecycleCrossClass();
-      case "runtime.execution-bounds.max-iterations":
-        return runExecutionBoundsMaxIterations();
-      case "runtime.execution-bounds.max-tool-calls":
-        return runExecutionBoundsMaxToolCalls();
-      case "runtime.execution-bounds.max-wall-clock":
-        return runExecutionBoundsMaxWallClock();
-      case "runtime.execution-bounds.wall-clock-signal-delivery":
-        return runExecutionBoundsWallClockSignalDelivery();
-      case "runtime.execution-bounds.concurrency-throttle":
-        return runExecutionBoundsConcurrencyThrottle();
-      case "runtime.execution-bounds.invalid-config":
-        return runExecutionBoundsInvalidConfig();
-      case "runtime.execution-bounds.within-bounds":
-        return runExecutionBoundsWithinBounds();
-      case "runtime.secret-isolation.surfaces":
-        return runSecretIsolationRuntimeApi(input);
-      case "runtime.secret-isolation.telemetry":
-        return runSecretIsolationTelemetry(input);
-      case "runtime.secret-isolation.provider-bridge":
-        return runSecretIsolationProviderBridge(input);
-      case "runtime.sanitize-seam.tool-result":
-        return runSanitizeSeamToolResult(input);
-      case "runtime.scope-isolation.surfaces":
-        return runScopeIsolationSurfaces(input);
-      case "runtime.trust-boundary.approval-gate":
-        return runTrustBoundaryApprovalNonBypassable(input);
-      case "runtime.trust-boundary.local-tool-input":
-        return runTrustBoundaryLocalToolInput(input);
-      case "runtime.tuvren-client.lifecycle":
-        return runTuvrenClientLifecycle();
-      case "runtime.tuvren-client.network-reconnect-redelivery":
-        return runTuvrenClientNetworkReconnectRedelivery();
-      case "runtime.tuvren-client.result-durability":
-        return runTuvrenClientResultDurability();
-      case "runtime.tuvren-server.lifecycle":
-        return runTuvrenServerLifecycle();
-      case "runtime.tuvren-server.binding-classification":
-        return runTuvrenServerBindingClassification();
-      case "runtime.tuvren-server.cancellation":
-        return runTuvrenServerCancellation();
-      case "runtime.tuvren-server.tenant-isolation":
-        return runTuvrenServerTenantIsolation();
-      case "runtime.capability-policy.exposure-dimensions":
-        return runCapabilityPolicyExposureDimensions();
-      case "runtime.capability-policy.invocation-dimensions":
-        return runCapabilityPolicyInvocationDimensions();
-      case "runtime.capability-policy.composition":
-        return runCapabilityPolicyComposition();
-      case "runtime.capability-policy.wired-invocation-denial":
-        return runCapabilityPolicyWiredInvocationDenial();
-      case "runtime.capability-policy.nonretryable-policy":
-        return runCapabilityPolicyNonretryablePolicy();
-      case "runtime.capability-policy.wired-risk-approval":
-        return runCapabilityPolicyWiredRiskApproval();
-      case "host-session.stale-client-result":
-        return runStaleClientResult();
-      case "host-session.approval-response-resume":
-        return runApprovalResponseResume();
-      case "host-session.cancel-cooperative":
-        return runCancelCooperative();
-      case "host-session.cancel-while-paused":
-        return runCancelWhilePaused();
-      case "host-session.validate-frame-fixtures":
-        return runValidateFrameFixtures(input);
-      case "host-session.reattach-redelivery":
-        return runReattachRedelivery();
-      case "host-session.grace-window-expiry":
-        return runGraceWindowExpiry();
-      case "host-session.dispatch-timeout":
-        return runDispatchTimeout();
-      case "host-session.sequence-continuity":
-        return runSequenceContinuity();
-      case "host-session.admission-key-steer-carriage":
-        return runAdmissionKeySteerCarriage();
-      case "event-stream-ws.decode-trace":
-        return eventStreamWsScenarios.runDecodeTrace(input);
-      case "event-stream-ws.session-roundtrip":
-        return eventStreamWsScenarios.runSessionRoundtrip();
-      case "event-stream-ws.reconnect-with-cursor":
-        return eventStreamWsScenarios.runReconnectWithCursor();
-      case "event-stream-ws.handshake-rejections":
-        return eventStreamWsScenarios.runHandshakeRejections(input);
-      case "event-stream-ws.policy-closures":
-        return eventStreamWsScenarios.runPolicyClosures(input);
-      default:
-        throw new Error(
-          `unsupported promoted framework operation ${operation}`
-        );
-    }
-  }
-}
-
-function toObservedErrorEnvelope(error: unknown): Record<string, unknown> {
-  if (error instanceof Error) {
-    const envelope: Record<string, unknown> = {
-      code:
-        isRecord(error) && typeof error.code === "string"
-          ? error.code
-          : "adapter_operation_failed",
-      message: error.message,
-    };
-
-    if (isRecord(error) && error.details !== undefined) {
-      envelope.details = error.details;
-    }
-
-    return envelope;
-  }
-
-  return { ...createAdapterErrorEnvelope(error) };
-}
-
-function readFirstErrorEnvelope(
-  events: readonly unknown[]
-): Record<string, unknown> | undefined {
-  for (const event of events) {
-    if (isRecord(event) && isRecord(event.error)) {
-      return event.error;
-    }
-  }
-
-  return undefined;
-}
-
-function errorToEnvelope(error: Error): Record<string, unknown> {
-  const errorRecord: Record<string, unknown> = isRecord(error) ? error : {};
-  const code =
-    typeof errorRecord.code === "string" ? errorRecord.code : "runner_error";
-  const envelope: Record<string, unknown> = {
-    code,
-    message: error.message,
-  };
-
-  if (errorRecord.details !== undefined) {
-    envelope.details = errorRecord.details;
-  }
-
-  return envelope;
-}
-
-function readRecordString(value: unknown, key: string): string | undefined {
-  return isRecord(value) && typeof value[key] === "string"
-    ? value[key]
-    : undefined;
-}
-
-function parseJsonValue(value: string): unknown {
-  return JSON.parse(value);
-}
-
-function projectionStatus(projection: AdapterProjection): OperationStatus {
-  if (isRecord(projection.result) && projection.result.error !== undefined) {
-    return "failed";
-  }
-
-  return "completed";
-}
-
-function throwIfCancelled(controls: AdapterControls): void {
-  if (controls.cancel !== undefined) {
-    throw new Error(controls.cancel.reason);
-  }
-}
-
-type JsonValue =
-  | boolean
-  | null
-  | number
-  | string
-  | JsonValue[]
-  | { [key: string]: JsonValue };
-
-function readOperationScenario(
-  input: unknown,
-  operation: string
-): Record<string, unknown> {
-  const scenario = readScenarioInput(input, operation);
-  const scenarioOperation = readStringProperty(
-    scenario,
-    "operation",
-    `${operation}.scenario.operation`
-  );
-
-  if (scenarioOperation !== operation) {
-    throw new Error(
-      `${operation} scenario declared operation ${scenarioOperation}`
-    );
-  }
-
-  return scenario;
-}
-
-function readScenarioInput(
-  input: unknown,
-  label: string
-): Record<string, unknown> {
-  const envelope = readRecord(input, `${label}.input`);
-  const scenario = readRecordProperty(
-    envelope,
-    "scenario",
-    `${label}.input.scenario`
-  );
-
-  return scenario;
-}
-
-function readPromptProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): TuvrenPrompt {
-  const value = readRecordProperty(source, key, label);
-  const messages = readArrayProperty(value, "messages", `${label}.messages`);
-  const promptMessages = messages.map((message, index) => {
-    assertTuvrenMessage(message, `${label}.messages[${index}]`);
-    return structuredClone(message);
-  });
-  const responseFormat =
-    value.responseFormat === undefined
-      ? undefined
-      : readResponseFormat(value.responseFormat, `${label}.responseFormat`);
-
-  return responseFormat === undefined
-    ? { messages: promptMessages }
-    : { messages: promptMessages, responseFormat };
-}
-
-function readModelResponseProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): TuvrenModelResponse {
-  const value = readRecordProperty(source, key, label);
-  assertTuvrenModelResponse(value, label);
-  return structuredClone(value);
-}
-
-function readModelResponseArrayProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): TuvrenModelResponse[] {
-  return readArrayProperty(source, key, label).map((value, index) => {
-    assertTuvrenModelResponse(value, `${label}[${index}]`);
-    return structuredClone(value);
-  });
-}
-
-function readFirstToolCallName(
-  responses: readonly TuvrenModelResponse[],
-  label: string
-): string {
-  const toolCallName = readFirstToolCallNameOptional(responses, label);
-
-  if (toolCallName !== undefined) {
-    return toolCallName;
-  }
-
-  throw new Error(`${label} must contain a tool_call part`);
-}
-
-function readFirstToolCallNameOptional(
-  responses: readonly TuvrenModelResponse[],
-  _label: string
-): string | undefined {
-  for (const response of responses) {
-    for (const part of response.parts) {
-      if (part.type === "tool_call") {
-        return part.name;
-      }
-    }
-  }
-
-  return undefined;
-}
-
-function readProviderStreamChunks(
-  scenario: Record<string, unknown>,
-  label: string
-): ProviderStreamChunk[] {
-  const values = readArrayProperty(scenario, "streamChunks", label);
-  return values.map((value, index) => {
-    assertProviderStreamChunk(value, `${label}[${index}]`);
-    return structuredClone(value);
-  });
-}
-
-function readResponseFormatProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): StructuredOutputRequest {
-  return readResponseFormat(readProperty(source, key, label), label);
-}
-
-function readResponseFormat(
-  value: unknown,
-  label: string
-): StructuredOutputRequest {
-  const record = readRecord(value, label);
-  const schema = readJsonSchemaProperty(record, "schema", `${label}.schema`);
-  const name =
-    record.name === undefined
-      ? undefined
-      : readStringProperty(record, "name", `${label}.name`);
-  const strict =
-    record.strict === undefined
-      ? undefined
-      : readBooleanProperty(record, "strict", `${label}.strict`);
-
-  return {
-    ...(name === undefined ? {} : { name }),
-    schema,
-    ...(strict === undefined ? {} : { strict }),
-  };
-}
-
-function readScenarioToolCalls(
-  scenario: Record<string, unknown>,
-  label: string
-): ScenarioToolCall[] {
-  return readArrayProperty(scenario, "toolCalls", label).map((value, index) =>
-    readScenarioToolCall(
-      readRecord(value, `${label}[${index}]`),
-      `${label}[${index}]`
-    )
-  );
-}
-
-function readScenarioToolCall(
-  record: Record<string, unknown>,
-  label: string
-): ScenarioToolCall {
-  return {
-    callId: readStringProperty(record, "callId", `${label}.callId`),
-    input: readProperty(record, "input", `${label}.input`),
-    name: readStringProperty(record, "name", `${label}.name`),
-    output: record.output,
-    requiresApproval:
-      record.requiresApproval === undefined
-        ? undefined
-        : readBooleanProperty(
-            record,
-            "requiresApproval",
-            `${label}.requiresApproval`
-          ),
-    throwMessage:
-      record.throwMessage === undefined
-        ? undefined
-        : readStringProperty(record, "throwMessage", `${label}.throwMessage`),
-  };
-}
-
-function readPendingToolCalls(
-  scenario: Record<string, unknown>,
-  label: string
-): ScenarioToolCall[] {
-  return readArrayProperty(scenario, "pendingToolCalls", label).map(
-    (value, index) =>
-      readScenarioToolCall(
-        readRecord(value, `${label}[${index}]`),
-        `${label}[${index}]`
-      )
-  );
-}
-
-function readApprovalDecisions(
-  scenario: Record<string, unknown>,
-  label: string
-): ApprovalDecision[] {
-  return readArrayProperty(scenario, "approvalDecisions", label).map(
-    (value, index) => {
-      const record = readRecord(value, `${label}[${index}]`);
-      return {
-        callId: readStringProperty(
-          record,
-          "callId",
-          `${label}[${index}].callId`
-        ),
-        ...(record.message === undefined
-          ? {}
-          : {
-              message: readStringProperty(
-                record,
-                "message",
-                `${label}[${index}].message`
-              ),
-            }),
-        type: readStringProperty(record, "type", `${label}[${index}].type`),
-      };
-    }
-  );
-}
-
-function readAssistantText(
-  messages: readonly unknown[],
-  expectedText: string
-): string | undefined {
-  for (const message of messages) {
-    if (!isRecord(message) || message.role !== "assistant") {
-      continue;
-    }
-
-    const parts = message.parts;
-
-    if (!Array.isArray(parts)) {
-      continue;
-    }
-
-    for (const part of parts) {
-      if (
-        isRecord(part) &&
-        part.type === "text" &&
-        part.text === expectedText
-      ) {
-        return expectedText;
-      }
-    }
-  }
-
-  return undefined;
-}
-
-function readJsonSchemaProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): TuvrenJsonSchema {
-  const value = readProperty(source, key, label);
-
-  if (typeof value === "boolean") {
-    return value;
-  }
-
-  return readJsonObject(value, label);
-}
-
-function readArrayProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): unknown[] {
-  const value = readProperty(source, key, label);
-
-  if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array`);
-  }
-
-  return value;
-}
-
-function readRecordProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): Record<string, unknown> {
-  return readRecord(readProperty(source, key, label), label);
-}
-
-function readStringProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): string {
-  const value = readProperty(source, key, label);
-
-  if (typeof value !== "string") {
-    throw new Error(`${label} must be a string`);
-  }
-
-  return value;
-}
-
-function readBooleanProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): boolean {
-  const value = readProperty(source, key, label);
-
-  if (typeof value !== "boolean") {
-    throw new Error(`${label} must be a boolean`);
-  }
-
-  return value;
-}
-
-function readProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): unknown {
-  if (!(key in source)) {
-    throw new Error(`${label} is required`);
-  }
-
-  return source[key];
-}
-
-function readRecord(value: unknown, label: string): Record<string, unknown> {
-  if (!isRecord(value) || Array.isArray(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-
-  return value;
-}
-
-function readJsonValue(value: unknown, label: string): JsonValue {
-  if (
-    value === null ||
-    typeof value === "boolean" ||
-    typeof value === "string"
-  ) {
-    return value;
-  }
-
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((item, index) =>
-      readJsonValue(item, `${label}[${index}]`)
-    );
-  }
-
-  return readJsonObject(value, label);
-}
-
-function readJsonObject(
-  value: unknown,
-  label: string
-): { [key: string]: JsonValue } {
-  const record = readRecord(value, label);
-  const object: { [key: string]: JsonValue } = {};
-
-  for (const [key, item] of Object.entries(record)) {
-    object[key] = readJsonValue(item, `${label}.${key}`);
-  }
-
-  return object;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
