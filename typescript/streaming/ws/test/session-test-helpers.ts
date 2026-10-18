@@ -59,10 +59,12 @@ export interface FakeBinding {
 }
 
 /** A finite outbound iterable that observes `.return()` calls and closes normally after its frames are exhausted. */
-export function createFiniteOutboundIterable(frames: SessionOutboundFrame[]): {
+export const createFiniteOutboundIterable = (
+  frames: SessionOutboundFrame[]
+): {
   iterable: AsyncIterable<SessionOutboundFrame>;
   returnCallCount: () => number;
-} {
+} => {
   let index = 0;
   let returnCallCount = 0;
 
@@ -90,15 +92,15 @@ export function createFiniteOutboundIterable(frames: SessionOutboundFrame[]): {
   };
 
   return { iterable, returnCallCount: () => returnCallCount };
-}
+};
 
 /** An outbound iterable that yields its frames and then hangs forever, modeling a still-open live connection until `.return()` releases it. */
-export function createHangingOutboundIterable(
+export const createHangingOutboundIterable = (
   frames: SessionOutboundFrame[] = []
 ): {
   iterable: AsyncIterable<SessionOutboundFrame>;
   returnCallCount: () => number;
-} {
+} => {
   let index = 0;
   let returnCallCount = 0;
 
@@ -126,28 +128,26 @@ export function createHangingOutboundIterable(
   };
 
   return { iterable, returnCallCount: () => returnCallCount };
-}
+};
 
-export function emptyAsyncIterable(): AsyncIterable<SessionOutboundFrame> {
-  return {
-    [Symbol.asyncIterator](): AsyncIterator<SessionOutboundFrame> {
-      return {
-        next(): Promise<IteratorResult<SessionOutboundFrame>> {
-          return Promise.resolve({ done: true, value: undefined });
-        },
-      };
-    },
-  };
-}
+export const emptyAsyncIterable = (): AsyncIterable<SessionOutboundFrame> => ({
+  [Symbol.asyncIterator](): AsyncIterator<SessionOutboundFrame> {
+    return {
+      next(): Promise<IteratorResult<SessionOutboundFrame>> {
+        return Promise.resolve({ done: true, value: undefined });
+      },
+    };
+  },
+});
 
 /** A structural fake `DuplexSessionBinding`: records `outbound()` claims and `dispatchInbound()` calls; the session (and, transitively, the transport under test) only relies on the structural contract. */
-export function createFakeBinding(
+export const createFakeBinding = (
   outbound?: {
     iterable: AsyncIterable<SessionOutboundFrame>;
     returnCallCount: () => number;
   },
   sessionId: string = SESSION_ID
-): FakeBinding {
+): FakeBinding => {
   let claimCount = 0;
   const dispatched: unknown[] = [];
 
@@ -178,21 +178,20 @@ export function createFakeBinding(
     dispatched,
     outboundReturnCallCount: () => outbound?.returnCallCount() ?? 0,
   };
-}
+};
 
 /** Builds a {@link RemoteClientSession} over a fake binding with test-friendly defaults (generous grace/timeout so they never fire incidentally; override per test as needed). */
-export function createTestSession(
+export const createTestSession = (
   overrides: Partial<RemoteClientSessionOptions> & {
     binding: DuplexSessionBinding;
   }
-): RemoteClientSession {
-  return createRemoteClientSession({
+): RemoteClientSession =>
+  createRemoteClientSession({
     disconnectGraceMs: 10_000,
     dispatchTimeoutMs: 10_000,
     replayBufferCapacity: 100,
     ...overrides,
   });
-}
 
 // ---------------------------------------------------------------------------
 // A real DuplexSessionBinding over a fake ExecutionHandle, for the one test
@@ -247,10 +246,10 @@ export class FakeEventSource implements AsyncIterable<FakeEvent> {
   }
 }
 
-export function createFakeExecutionHandle(): {
+export const createFakeExecutionHandle = (): {
   events: FakeEventSource;
   handle: ExecutionHandle;
-} {
+} => {
   const events = new FakeEventSource();
   const neverSettles = new Promise<ExecutionResult>(() => undefined);
   neverSettles.catch(() => undefined);
@@ -267,24 +266,26 @@ export function createFakeExecutionHandle(): {
   } as unknown as ExecutionHandle;
 
   return { events, handle };
-}
+};
 
 /** A real `DuplexSessionBinding` (packet `tuvren.framework.host-session`) over a fake `ExecutionHandle`, for tests that need genuine `clientEndpoint.dispatch()` / `client_result` round trips rather than a structural outbound-frame fake. */
-export function createRealBinding(sessionId: string = SESSION_ID): {
+export const createRealBinding = (
+  sessionId: string = SESSION_ID
+): {
   binding: DuplexSessionBinding;
   events: FakeEventSource;
-} {
+} => {
   const { events, handle } = createFakeExecutionHandle();
   const binding = createDuplexSessionBinding(handle, { sessionId });
   return { binding, events };
-}
+};
 
 /** A bare `RemoteClientSessionSink` fake for tests that attach directly to a session (bypassing the WS transport entirely) to prime its replay buffer or observe raw session frames. */
 export interface FakeSessionSink extends RemoteClientSessionSink {
   sent: { cursor: string | undefined; frame: SessionOutboundFrame }[];
 }
 
-export function createFakeSessionSink(): FakeSessionSink {
+export const createFakeSessionSink = (): FakeSessionSink => {
   const sent: {
     cursor: string | undefined;
     frame: SessionOutboundFrame;
@@ -295,14 +296,14 @@ export function createFakeSessionSink(): FakeSessionSink {
     },
     sent,
   };
-}
+};
 
 export interface FakeSink extends WsSocketSink {
   closes: { code: number; reason: string | undefined }[];
   sent: unknown[];
 }
 
-export function createFakeSink(): FakeSink {
+export const createFakeSink = (): FakeSink => {
   const sent: unknown[] = [];
   const closes: { code: number; reason: string | undefined }[] = [];
 
@@ -316,10 +317,12 @@ export function createFakeSink(): FakeSink {
     },
     sent,
   };
-}
+};
 
 /** A fake sink whose `bufferedAmount()` is scripted call-by-call; the last scripted value repeats once the script is exhausted. */
-export function createScriptedBufferedAmountSink(script: number[]): FakeSink {
+export const createScriptedBufferedAmountSink = (
+  script: number[]
+): FakeSink => {
   const sink = createFakeSink();
   let index = 0;
 
@@ -330,7 +333,7 @@ export function createScriptedBufferedAmountSink(script: number[]): FakeSink {
   };
 
   return sink;
-}
+};
 
 /**
  * Flushes the internal ingest promise chain so async processing (including a
@@ -338,48 +341,44 @@ export function createScriptedBufferedAmountSink(script: number[]): FakeSink {
  * microtask hops from the underlying session's own event pump) completes
  * before assertions run.
  */
-export async function flushMicrotasks(): Promise<void> {
+export const flushMicrotasks = async (): Promise<void> => {
   for (let i = 0; i < 500; i += 1) {
     await Promise.resolve();
   }
   await new Promise<void>((resolve) => setTimeout(resolve, 0));
-}
+};
 
-export function delay(ms: number): Promise<void> {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms));
-}
+export const delay = (ms: number): Promise<void> =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-export function handshakeMessage(
+export const handshakeMessage = (
   overrides: Partial<{
     authToken: string;
     cursor: string;
     protocolVersion: string;
     sessionId: string;
   }> = {}
-): string {
-  return JSON.stringify({
+): string =>
+  JSON.stringify({
     kind: "handshake",
     protocolVersion: "1",
     ...overrides,
   });
-}
 
-export function eventOutboundFrame(
+export const eventOutboundFrame = (
   event: TuvrenStreamEvent,
   sessionId: string = SESSION_ID
-): SessionOutboundFrame {
-  return {
-    event,
-    kind: "event",
-    protocolVersion: "1",
-    sessionId,
-  };
-}
+): SessionOutboundFrame => ({
+  event,
+  kind: "event",
+  protocolVersion: "1",
+  sessionId,
+});
 
-export function clientInvocationOutboundFrame(
+export const clientInvocationOutboundFrame = (
   sessionId: string = SESSION_ID,
   overrides: Partial<ClientInvocationEnvelope> = {}
-): SessionOutboundFrame {
+): SessionOutboundFrame => {
   const invocation: ClientInvocationEnvelope = {
     callId: "call-1",
     capabilityId: "capability.example",
@@ -394,4 +393,4 @@ export function clientInvocationOutboundFrame(
     protocolVersion: "1",
     sessionId,
   };
-}
+};

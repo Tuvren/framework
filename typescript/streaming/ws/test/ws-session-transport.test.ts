@@ -150,12 +150,12 @@ describe("createWsSessionTransport: claim and lifecycle", () => {
 });
 
 describe("createWsSessionTransport: happy path", () => {
-  async function startHandshakedTransport(
+  const startHandshakedTransport = async (
     outboundFrames: SessionOutboundFrame[]
   ): Promise<{
     sink: FakeSink;
     transport: WsSessionTransport;
-  }> {
+  }> => {
     const fake = createFakeBinding(
       createFiniteOutboundIterable(outboundFrames)
     );
@@ -168,7 +168,7 @@ describe("createWsSessionTransport: happy path", () => {
     await flushMicrotasks();
 
     return { sink, transport };
-  }
+  };
 
   test("handshake with no cursor acks resumeStatus none", async () => {
     const { sink } = await startHandshakedTransport([]);
@@ -614,11 +614,11 @@ describe("createWsSessionTransport: handshake close codes", () => {
 });
 
 describe("createWsSessionTransport: post-handshake inbound routing", () => {
-  async function startHandshakedTransport(): Promise<{
+  const startHandshakedTransport = async (): Promise<{
     fake: ReturnType<typeof createFakeBinding>;
     sink: FakeSink;
     transport: WsSessionTransport;
-  }> {
+  }> => {
     const fake = createFakeBinding(createHangingOutboundIterable([]));
     const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
@@ -629,7 +629,7 @@ describe("createWsSessionTransport: post-handshake inbound routing", () => {
     await flushMicrotasks();
 
     return { fake, sink, transport };
-  }
+  };
 
   test("a frame envelope's inner frame reaches the binding verbatim", async () => {
     const { fake, transport } = await startHandshakedTransport();
