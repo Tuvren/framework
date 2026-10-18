@@ -286,19 +286,20 @@ closeout:
         - typescript/runtime/src/lib/orchestration-runtime-node.ts
         - typescript/runtime/test/admission-key-persistence.test.ts
       commit: 1a68497
-    - summary: "Project copies of durable user messages at createRunnerExecutionContext and remove host-owned admission keys before runners or providers receive the immutable message snapshot."
+    - summary: "Project copies of durable user messages at createRunnerExecutionContext and remove host-owned admission keys from direct runner messages, handoff source contexts, helper lookups, and provider requests."
       kind: pattern
       paths:
         - typescript/runtime/src/lib/runtime-core-runner.ts
         - typescript/runtime/test/admission-key-provider-projection.test.ts
-      commit: 15125c5
-    - summary: "Resolve keyed recovery identity by scanning the recovered turn's bounded checkpoint lineage for its earliest incorporated user message, skipping preceding empty preemption checkpoints and excluding later steering messages."
+        - typescript/runtime/test/runtime-core.handoff-runner.test.ts
+      commit: 8be5acd
+    - summary: "Resolve keyed recovery identity by scanning the recovered turn's bounded checkpoint lineage for the user message staged with `input_message` provenance, skipping empty preemption checkpoints and excluding steering messages even when a steer is the first consumed user message."
       kind: pattern
       paths:
         - typescript/runtime/src/lib/runtime-core-expired-recovery.ts
         - typescript/runtime/src/lib/runtime-core-recovery.ts
         - typescript/runtime/test/runtime-core-recovery-comparison.test.ts
-      commit: 2c7a094
+      commit: 8be5acd
     - summary: "Exercise SQLite process-death recovery with Bun-built, Bun-spawned Node child hosts because Bun 1.4.2 cannot load better-sqlite3 12.8.0; use raw phase observations, literal SIGKILL, bounded waits, awaited exits, and verified temporary-directory cleanup while shared plans retain all grading."
       kind: pattern
       paths:
