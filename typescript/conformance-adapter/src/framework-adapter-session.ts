@@ -26,7 +26,8 @@
  */
 
 import { readdir, readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import path from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type {
@@ -63,8 +64,8 @@ import {
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
-const REPO_ROOT = resolve(import.meta.dirname, "../../..");
-const HOST_SESSION_JSON_SCHEMA_DIR = resolve(
+const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
+const HOST_SESSION_JSON_SCHEMA_DIR = path.resolve(
   REPO_ROOT,
   "spec/host/session/artifacts/json-schema"
 );
@@ -72,6 +73,19 @@ const SESSION_INBOUND_FRAME_ID =
   "https://tuvren.dev/schemas/framework/host-session/SessionInboundFrame.json";
 const SESSION_OUTBOUND_FRAME_ID =
   "https://tuvren.dev/schemas/framework/host-session/SessionOutboundFrame.json";
+
+const fromSynchronous = <Argument, Value>(
+  operation: (argument: Argument) => Value
+): ((argument: Argument) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(argument: Argument) => Value],
+    [Argument],
+    Promise<Value>
+  >(Promise, operation);
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 // ---------------------------------------------------------------------------
 // Shared runtime-wiring helpers
@@ -94,7 +108,7 @@ const SESSION_OUTBOUND_FRAME_ID =
  * be called.
  */
 interface DeferredClientEndpoint extends AttachedClientEndpoint {
-  setDelegate(delegate: AttachedClientEndpoint): void;
+  setDelegate: (delegate: AttachedClientEndpoint) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -213,7 +227,7 @@ const createDeferredClientEndpoint = (
 
   return {
     advertisedCapabilities,
-    dispatch(
+    async dispatch(
       envelope: ClientInvocationEnvelope
     ): Promise<ClientReportedResult> {
       if (delegate === undefined) {
@@ -221,7 +235,7 @@ const createDeferredClientEndpoint = (
           "host-session conformance adapter dispatched a client invocation before the duplex session binding was wired"
         );
       }
-      return delegate.dispatch(envelope);
+      return await delegate.dispatch(envelope);
     },
     endpointId,
     setDelegate(nextDelegate: AttachedClientEndpoint): void {
@@ -230,90 +244,112 @@ const createDeferredClientEndpoint = (
   };
 };
 
-const waitForAbort = (signal: AbortSignal | undefined): Promise<void> => {
+const waitForAbort = async (signal: AbortSignal | undefined): Promise<void> => {
   if (signal === undefined || signal.aborted) {
-    return Promise.resolve();
+    return;
   }
 
-  return new Promise((resolve) => {
-    signal.addEventListener("abort", () => resolve(), { once: true });
-  });
+  const aborted = Promise.withResolvers<undefined>();
+  signal.addEventListener(
+    "abort",
+    () => {
+      aborted.resolve();
+    },
+    { once: true }
+  );
+  await aborted.promise;
+};
+
+const waitForUntil = async (
+  predicate: () => boolean,
+  deadline: number
+): Promise<void> => {
+  if (predicate()) {
+    return;
+  }
+  if (Date.now() > deadline) {
+    throw new Error("host-session conformance adapter waitFor timed out");
+  }
+
+  await delay(5);
+  await waitForUntil(predicate, deadline);
 };
 
 export const waitFor = async (
   predicate: () => boolean,
   timeoutMs = 5000
 ): Promise<void> => {
-  const start = Date.now();
-  while (!predicate()) {
-    if (Date.now() - start > timeoutMs) {
-      throw new Error("host-session conformance adapter waitFor timed out");
-    }
-    await new Promise((resolveDelay) => setTimeout(resolveDelay, 5));
+  await waitForUntil(predicate, Date.now() + timeoutMs);
+};
+
+const drainFrames = async (
+  iterator: AsyncIterator<SessionOutboundFrame>,
+  sink: SessionOutboundFrame[]
+): Promise<void> => {
+  const step = await iterator.next();
+  if (step.done === true) {
+    return;
+  }
+  sink.push(step.value);
+  await drainFrames(iterator, sink);
+};
+
+const isFrameOfKind = <Kind extends SessionOutboundFrame["kind"]>(
+  frame: SessionOutboundFrame,
+  kind: Kind
+): frame is Extract<SessionOutboundFrame, { kind: Kind }> =>
+  frame.kind === kind;
+
+const ignoreDrainFailure = async (operation: Promise<void>): Promise<void> => {
+  try {
+    await operation;
+  } catch {
+    // The background drain has no result channel; callers observe collected frames.
   }
 };
 
 /** Drains a binding's outbound frame stream into `sink` until it closes. */
-const drainFramesInBackground = (
+const drainFramesInBackground = async (
   outbound: AsyncIterable<SessionOutboundFrame>,
   sink: SessionOutboundFrame[]
-): void => {
+): Promise<void> => {
   const iterator = outbound[Symbol.asyncIterator]();
-  const loop = (async () => {
-    for (;;) {
-      const step = await iterator.next();
-      if (step.done) {
-        return;
-      }
-      sink.push(step.value);
-    }
-  })();
+  const loop = drainFrames(iterator, sink);
 
-  // Fire-and-forget: the only observable effect is `sink` growing, which
-  // callers poll for via `waitFor`.
-  loop.catch(() => {
-    // The background drain has no result channel; callers observe collected frames.
-  });
+  await ignoreDrainFailure(loop);
 };
 
 const eventFramePayloads = (
   frames: readonly SessionOutboundFrame[]
-): unknown[] => {
-  return frames
+): unknown[] =>
+  frames
     .filter(
       (frame): frame is Extract<SessionOutboundFrame, { kind: "event" }> =>
         frame.kind === "event"
     )
     .map((frame) => frame.event);
-};
 
 export const createSingleToolCallRunner = (
   toolName: string,
   callId: string,
   finalText: string
-): RuntimeRunner => {
-  return {
-    async execute(context) {
-      await Promise.resolve();
-
-      if (!context.messages.some((message) => message.role === "tool")) {
-        return {
-          messages: [
-            assistantToolCalls([{ callId, input: {}, name: toolName }]),
-          ],
-          resolution: { type: "continue_iteration" },
-          toolExecutionMode: "parallel",
-        };
-      }
-
+): RuntimeRunner => ({
+  execute: fromSynchronous((context) => {
+    if (!context.messages.some((message) => message.role === "tool")) {
       return {
-        messages: [assistantText(finalText)],
-        resolution: { reason: "done", type: "end_turn" },
+        messages: [assistantToolCalls([{ callId, input: {}, name: toolName }])],
+        resolution: { type: "continue_iteration" },
+        toolExecutionMode: "parallel",
       };
-    },
-    id: RUNNER_ID,
-  };
-};
+    }
+
+    return {
+      messages: [assistantText(finalText)],
+      resolution: { reason: "done", type: "end_turn" },
+    };
+  }),
+  id: RUNNER_ID,
+});
 
 // ---------------------------------------------------------------------------
 // Operation: host-session.stale-client-result
@@ -369,18 +405,16 @@ export const runStaleClientResult = async (): Promise<AdapterProjection> => {
   const nextFrameOfKind = async <Kind extends SessionOutboundFrame["kind"]>(
     kind: Kind
   ): Promise<Extract<SessionOutboundFrame, { kind: Kind }>> => {
-    for (;;) {
-      const step = await iterator.next();
-      if (step.done) {
-        throw new Error(
-          `host-session outbound stream ended before observing frame kind "${kind}"`
-        );
-      }
-      observedFrames.push(step.value);
-      if (step.value.kind === kind) {
-        return step.value as Extract<SessionOutboundFrame, { kind: Kind }>;
-      }
+    const step = await iterator.next();
+    if (step.done === true) {
+      throw new Error(
+        `host-session outbound stream ended before observing frame kind "${kind}"`
+      );
     }
+    observedFrames.push(step.value);
+    return isFrameOfKind(step.value, kind)
+      ? step.value
+      : await nextFrameOfKind(kind);
   };
 
   const invocationFrame = await nextFrameOfKind("client_invocation");
@@ -411,13 +445,7 @@ export const runStaleClientResult = async (): Promise<AdapterProjection> => {
 
   // Drain any remaining outbound frames (final turn.end event etc.) until
   // the binding closes the queue behind a completed handle.
-  for (;;) {
-    const step = await iterator.next();
-    if (step.done) {
-      break;
-    }
-    observedFrames.push(step.value);
-  }
+  await drainFrames(iterator, observedFrames);
 
   const observation = {
     accepted: { callId },
@@ -483,7 +511,7 @@ export const runApprovalResponseResume =
       sessionId: SESSION_ID,
     });
     const frames: SessionOutboundFrame[] = [];
-    drainFramesInBackground(binding.outbound(), frames);
+    const drainPromise = drainFramesInBackground(binding.outbound(), frames);
 
     await waitFor(() => pausedHandle.status().phase === "paused");
 
@@ -500,12 +528,10 @@ export const runApprovalResponseResume =
     await resumedHandle.awaitResult();
     await waitFor(() =>
       eventFramePayloads(frames).some(
-        (event) =>
-          typeof event === "object" &&
-          event !== null &&
-          (event as Record<string, unknown>).type === "turn.end"
+        (event) => isRecord(event) && event.type === "turn.end"
       )
     );
+    await drainPromise;
 
     const approvalObservation = {
       handleSwapped: resumedHandle !== pausedHandle,
@@ -559,7 +585,7 @@ export const runCancelCooperative = async (): Promise<AdapterProjection> => {
     sessionId: SESSION_ID,
   });
   const frames: SessionOutboundFrame[] = [];
-  drainFramesInBackground(binding.outbound(), frames);
+  const drainPromise = drainFramesInBackground(binding.outbound(), frames);
 
   const resultPromise = handle.awaitResult();
   await waitFor(() => runnerStarted);
@@ -584,6 +610,7 @@ export const runCancelCooperative = async (): Promise<AdapterProjection> => {
   }
 
   await waitFor(() => toolObservedAbort);
+  await drainPromise;
 
   const cancelObservation = {
     awaitResultErrorCode,
@@ -600,24 +627,31 @@ export const runCancelCooperative = async (): Promise<AdapterProjection> => {
 };
 
 const loadHostSessionFrameValidators =
-  (): Promise<HostSessionFrameValidators> => {
+  async (): Promise<HostSessionFrameValidators> => {
     validatorsPromise ??= (async () => {
       const ajv = new Ajv2020({ allErrors: true, strict: false });
       const entries = await readdir(HOST_SESSION_JSON_SCHEMA_DIR, {
         withFileTypes: true,
       });
 
-      for (const entry of entries) {
-        if (!(entry.isFile() && entry.name.endsWith(".json"))) {
-          continue;
-        }
-
-        const schema = JSON.parse(
-          await readFile(
-            resolve(HOST_SESSION_JSON_SCHEMA_DIR, entry.name),
-            "utf-8"
-          )
-        ) as AnySchema;
+      const schemas = await Promise.all(
+        entries
+          .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+          .map(async (entry): Promise<AnySchema> => {
+            const source = await readFile(
+              path.resolve(HOST_SESSION_JSON_SCHEMA_DIR, entry.name),
+              "utf-8"
+            );
+            const schema: unknown = JSON.parse(source);
+            if (!(typeof schema === "boolean" || isRecord(schema))) {
+              throw new Error(
+                `host-session schema ${entry.name} must be an object or boolean`
+              );
+            }
+            return schema;
+          })
+      );
+      for (const schema of schemas) {
         ajv.addSchema(schema);
       }
 
@@ -633,7 +667,7 @@ const loadHostSessionFrameValidators =
       return { inbound, outbound };
     })();
 
-    return validatorsPromise;
+    return await validatorsPromise;
   };
 
 export const runCancelWhilePaused = async (): Promise<AdapterProjection> => {
@@ -682,18 +716,10 @@ export const runCancelWhilePaused = async (): Promise<AdapterProjection> => {
   let outboundClosed = false;
   const iterator = binding.outbound()[Symbol.asyncIterator]();
   const drainLoop = (async () => {
-    for (;;) {
-      const step = await iterator.next();
-      if (step.done) {
-        outboundClosed = true;
-        return;
-      }
-      frames.push(step.value);
-    }
+    await drainFrames(iterator, frames);
+    outboundClosed = true;
   })();
-  drainLoop.catch(() => {
-    // The cancellation scenario observes closure through the handle and frame state.
-  });
+  const drainPromise = ignoreDrainFailure(drainLoop);
 
   const resultPromise = handle.awaitResult();
   await waitFor(() => handle.status().phase === "paused");
@@ -720,6 +746,7 @@ export const runCancelWhilePaused = async (): Promise<AdapterProjection> => {
   }
 
   await waitFor(() => outboundClosed);
+  await drainPromise;
 
   const observation = {
     awaitResultStatus,
@@ -732,10 +759,6 @@ export const runCancelWhilePaused = async (): Promise<AdapterProjection> => {
     evidence: observation,
     result: observation,
   };
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 };
 
 const readFixtureEntry = (
@@ -782,7 +805,7 @@ export const runValidateFrameFixtures = async (
       fixture.direction === "inbound"
         ? validators.inbound
         : validators.outbound;
-    const actualValid = validate(fixture.frame) === true;
+    const actualValid = validate(fixture.frame);
 
     return {
       actualValid,
@@ -822,14 +845,13 @@ const createRecordingSessionSink = (): RemoteClientSessionSink & {
 const sentFramesOfKind = <Kind extends SessionOutboundFrame["kind"]>(
   sent: readonly RecordedSessionFrame[],
   kind: Kind
-): Extract<SessionOutboundFrame, { kind: Kind }>[] => {
-  return sent
+): Extract<SessionOutboundFrame, { kind: Kind }>[] =>
+  sent
     .map((entry) => entry.frame)
     .filter(
       (frame): frame is Extract<SessionOutboundFrame, { kind: Kind }> =>
         frame.kind === kind
     );
-};
 
 /**
  * A deterministic, test-controlled `RemoteSessionClock`: timers only fire
@@ -851,16 +873,18 @@ const sentFramesOfKind = <Kind extends SessionOutboundFrame["kind"]>(
  */
 const createFakeSessionClock = (): {
   clock: RemoteSessionClock;
-  fireOldest(): void;
-  pendingCount(): number;
-  pendingCountWithMs(ms: number): number;
+  fireOldest: () => void;
+  pendingCount: () => number;
+  pendingCountWithMs: (ms: number) => number;
 } => {
   let nextId = 0;
   const timers = new Map<number, { callback: () => void; ms: number }>();
 
   const clock: RemoteSessionClock = {
     clearTimeout(handle: unknown): void {
-      timers.delete(handle as number);
+      if (typeof handle === "number") {
+        timers.delete(handle);
+      }
     },
     scheduleTimeout(callback: () => void, ms: number): unknown {
       const id = nextId;
@@ -873,8 +897,7 @@ const createFakeSessionClock = (): {
   return {
     clock,
     fireOldest(): void {
-      const ids = [...timers.keys()].sort((a, b) => a - b);
-      const id = ids[0];
+      const [id] = [...timers.keys()].toSorted((a, b) => a - b);
       if (id === undefined) {
         throw new Error("createFakeSessionClock.fireOldest: no pending timer");
       }
@@ -917,11 +940,8 @@ const findPersistedToolResultOutput = (
   return undefined;
 };
 
-const toolResultOutputCode = (output: unknown): string | undefined => {
-  return isRecord(output) && typeof output.code === "string"
-    ? output.code
-    : undefined;
-};
+const toolResultOutputCode = (output: unknown): string | undefined =>
+  isRecord(output) && typeof output.code === "string" ? output.code : undefined;
 
 export const runReattachRedelivery = async (): Promise<AdapterProjection> => {
   const harness = createConformanceKernelHarness();
@@ -969,7 +989,7 @@ export const runReattachRedelivery = async (): Promise<AdapterProjection> => {
     () => sentFramesOfKind(sink1.sent, "client_invocation").length > 0
   );
   const firstInvocation = sentFramesOfKind(sink1.sent, "client_invocation")[0]
-    ?.invocation as ClientInvocationEnvelope;
+    ?.invocation;
 
   // Simulate a dropped link: detach without ever answering the call.
   session.detach();
@@ -980,7 +1000,7 @@ export const runReattachRedelivery = async (): Promise<AdapterProjection> => {
     () => sentFramesOfKind(sink2.sent, "client_invocation").length > 0
   );
   const secondInvocation = sentFramesOfKind(sink2.sent, "client_invocation")[0]
-    ?.invocation as ClientInvocationEnvelope;
+    ?.invocation;
 
   session.dispatchInbound({
     correlationId: "corr-reattach-accept-1",
@@ -1280,12 +1300,12 @@ export const runSequenceContinuity = async (): Promise<AdapterProjection> => {
       ).length >= 2
   );
   const invocation = sentFramesOfKind(sink1.sent, "client_invocation")[0]
-    ?.invocation as ClientInvocationEnvelope;
-  const eventFramesBeforeDetach = sink1.sent.filter(
+    ?.invocation;
+  const firstEventFrameBeforeDetach = sink1.sent.find(
     (entry): entry is RecordedSessionFrame & { cursor: string } =>
       entry.frame.kind === "event" && typeof entry.cursor === "string"
   );
-  const cursorAtFirstEvent = eventFramesBeforeDetach[0]?.cursor;
+  const cursorAtFirstEvent = firstEventFrameBeforeDetach?.cursor;
   const sequenceAtFirstEvent =
     cursorAtFirstEvent === undefined
       ? undefined
@@ -1334,9 +1354,7 @@ export const runSequenceContinuity = async (): Promise<AdapterProjection> => {
   const expectedReplaySequences =
     sequenceAtFirstEvent === undefined
       ? []
-      : replayedSequences.map(
-          (_, index) => (sequenceAtFirstEvent as number) + 1 + index
-        );
+      : replayedSequences.map((_, index) => sequenceAtFirstEvent + 1 + index);
 
   const observation = {
     expectedReplaySequences,
@@ -1346,15 +1364,15 @@ export const runSequenceContinuity = async (): Promise<AdapterProjection> => {
         sequence !== null &&
         sequence > (sequenceAtFirstEvent ?? Number.NEGATIVE_INFINITY)
     ),
+    replayGaplessAndContiguous:
+      JSON.stringify(replayedSequences) ===
+      JSON.stringify(expectedReplaySequences),
     // Guards the vacuous-empty case: expectedReplaySequences is derived from
     // replayedSequences' own length, so with zero replayed events both the
     // gapless and no-restart comparisons would be trivially true. A resumed
     // reattach in this scenario must actually replay the events recorded
     // while detached; a plan assertion requires this to be true.
     replayObservedAtLeastOneEvent: replayedSequences.length > 0,
-    replayGaplessAndContiguous:
-      JSON.stringify(replayedSequences) ===
-      JSON.stringify(expectedReplaySequences),
     replayedSequences,
     resumeStatus,
   };
