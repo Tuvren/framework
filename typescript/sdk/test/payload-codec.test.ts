@@ -24,8 +24,8 @@ import {
   isPayloadEnvelope,
 } from "@tuvren/core/lifecycle";
 
-import { createAesGcmPayloadCodec } from '../src/lib/payload-codec.js';
-import type { PayloadKeyring } from '../src/lib/payload-codec.js';
+import { createAesGcmPayloadCodec } from "../src/lib/payload-codec.js";
+import type { PayloadKeyring } from "../src/lib/payload-codec.js";
 
 const SCOPE = "tenant.acme";
 const CONTEXT: PayloadCodecContext = { edge: "message", scope: SCOPE };

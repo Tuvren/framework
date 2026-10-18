@@ -16,8 +16,8 @@
 
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 
-import { createStreamAdapterWarningReporter } from './stream-core.js';
-import type { StreamAdapterOptions } from './stream-core.js';
+import { createStreamAdapterWarningReporter } from "./stream-core.js";
+import type { StreamAdapterOptions } from "./stream-core.js";
 
 /**
  * Placeholder turn identity for events observed before any `turn.start`.
@@ -289,7 +289,7 @@ export interface ReplayBuffer {
 export function createReplayBuffer(options: {
   capacity: number;
 }): ReplayBuffer {
-  const {capacity} = options;
+  const { capacity } = options;
 
   if (!Number.isInteger(capacity) || capacity < 1) {
     throw new RangeError(

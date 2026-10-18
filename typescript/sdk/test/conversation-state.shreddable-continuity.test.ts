@@ -45,8 +45,8 @@ import {
   createStaticRunner,
 } from "../../runtime/test/orchestration-runtime-runner-helpers.ts";
 import { textSignal } from "../../runtime/test/runtime-core-test-helpers.ts";
-import { createAesGcmPayloadCodec } from '../src/lib/payload-codec.js';
-import type { PayloadKeyring } from '../src/lib/payload-codec.js';
+import { createAesGcmPayloadCodec } from "../src/lib/payload-codec.js";
+import type { PayloadKeyring } from "../src/lib/payload-codec.js";
 
 const SCOPE = "tenant.conversation-state-continuity";
 // A provider-namespaced continuity artifact (e.g. a Google thought signature or

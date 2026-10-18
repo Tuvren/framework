@@ -16,8 +16,8 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { EventType } from '@ag-ui/core';
-import type { AGUIEvent } from '@ag-ui/core';
+import { EventType } from "@ag-ui/core";
+import type { AGUIEvent } from "@ag-ui/core";
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import {
   createFixtureStream,

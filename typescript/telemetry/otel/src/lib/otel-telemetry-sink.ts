@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
-import type { Span, SpanAttributes, Tracer } from '@opentelemetry/api';
+import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api";
+import type { Span, SpanAttributes, Tracer } from "@opentelemetry/api";
 import type {
   TelemetryEvent,
   TelemetrySpan,

@@ -18,8 +18,8 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { loadConformancePlan } from '../../../tools/conformance/plan-compiler/index.js';
-import type { CompiledConformancePlan } from '../../../tools/conformance/plan-compiler/index.js';
+import { loadConformancePlan } from "../../../tools/conformance/plan-compiler/index.js";
+import type { CompiledConformancePlan } from "../../../tools/conformance/plan-compiler/index.js";
 
 const REPO_ROOT = resolve(import.meta.dir, "../../..");
 const FRAMEWORK_PACKET_PATHS: readonly string[] = [
@@ -86,7 +86,9 @@ function readPlanReferences(
   }
 
   if (!Array.isArray(value)) {
-    throw new TypeError(`${label}.conformancePlans must be an array when present`);
+    throw new TypeError(
+      `${label}.conformancePlans must be an array when present`
+    );
   }
 
   return value.map((entry, index) =>

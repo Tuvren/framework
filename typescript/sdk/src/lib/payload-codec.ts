@@ -30,8 +30,12 @@
  * package stays free of any host-runtime dependency.
  */
 
-import { ENVELOPE_MAGIC, isPayloadEnvelope } from '@tuvren/core/lifecycle';
-import type { PayloadCodec, PayloadCodecContext, PayloadDecryptResult } from '@tuvren/core/lifecycle';
+import { ENVELOPE_MAGIC, isPayloadEnvelope } from "@tuvren/core/lifecycle";
+import type {
+  PayloadCodec,
+  PayloadCodecContext,
+  PayloadDecryptResult,
+} from "@tuvren/core/lifecycle";
 
 // The behavior-free identity codec and the envelope discriminant now live on the
 // `@tuvren/core` ABI tier (ADR-0057, breaking the sdk⇄runtime cycle). The public

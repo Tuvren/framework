@@ -15,8 +15,8 @@
  */
 
 import { TuvrenRuntimeError } from "@tuvren/core";
-import { assertTuvrenStreamEvent } from '@tuvren/core/events';
-import type { TuvrenStreamEvent } from '@tuvren/core/events';
+import { assertTuvrenStreamEvent } from "@tuvren/core/events";
+import type { TuvrenStreamEvent } from "@tuvren/core/events";
 
 const UINT8_ARRAY_JSON_MARKER = "Uint8Array";
 
