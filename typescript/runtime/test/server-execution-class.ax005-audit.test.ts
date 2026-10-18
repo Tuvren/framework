@@ -49,7 +49,7 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeRunner(toolName: string, input: unknown = {}): RuntimeRunner {
+const makeRunner = (toolName: string, input: unknown = {}): RuntimeRunner => {
   return {
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
@@ -73,12 +73,12 @@ function makeRunner(toolName: string, input: unknown = {}): RuntimeRunner {
       throw new Error("no");
     },
   };
-}
+};
 
-async function runWithTool(
+const runWithTool = async (
   tool: TuvrenToolDefinition,
   config: Record<string, unknown> = {}
-) {
+) => {
   const harness = createFakeKernelHarness();
   const runner = makeRunner(tool.name);
   const runtime = createTuvrenRuntime({
@@ -94,9 +94,9 @@ async function runWithTool(
     threadId: thread.threadId,
   });
   return collectEvents(handle.events());
-}
+};
 
-function findAuditEvents(events: unknown[]) {
+const findAuditEvents = (events: unknown[]) => {
   return events.filter(
     (e) =>
       typeof e === "object" &&
@@ -104,7 +104,7 @@ function findAuditEvents(events: unknown[]) {
       "type" in e &&
       (e as Record<string, unknown>).type === "tool.audit"
   ) as Record<string, unknown>[];
-}
+};
 
 // ---------------------------------------------------------------------------
 // Lifecycle audit signals

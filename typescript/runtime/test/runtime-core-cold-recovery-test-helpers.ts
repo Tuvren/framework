@@ -22,11 +22,29 @@ import {
   createFakeRunLivenessKernelHarness,
 } from "./fake-kernel.ts";
 
-export async function prepareExpiredToolBatch(
+const stageTestMessage = async (
+  kernel: RuntimeKernel,
+  runId: string,
+  taskId: string,
+  message: TuvrenMessage
+): Promise<void> => {
+  await kernel.staging.stage(
+    runId,
+    await encryptMessageRecord(
+      { codec: IDENTITY_PAYLOAD_CODEC, scope: DEFAULT_SCOPE },
+      encodeDeterministicKernelRecord(message as unknown as KernelRecord)
+    ),
+    taskId,
+    "message",
+    "completed"
+  );
+};
+
+export const prepareExpiredToolBatch = async (
   suffix: string,
   signalText: string,
   interruptedMessages: TuvrenMessage[]
-) {
+) => {
   const harness = createFakeKernelHarness();
   const livenessHarness = createFakeRunLivenessKernelHarness(harness);
   const thread = await livenessHarness.kernel.thread.create(
@@ -96,22 +114,4 @@ export async function prepareExpiredToolBatch(
     staleTurn,
     thread,
   };
-}
-
-async function stageTestMessage(
-  kernel: RuntimeKernel,
-  runId: string,
-  taskId: string,
-  message: TuvrenMessage
-): Promise<void> {
-  await kernel.staging.stage(
-    runId,
-    await encryptMessageRecord(
-      { codec: IDENTITY_PAYLOAD_CODEC, scope: DEFAULT_SCOPE },
-      encodeDeterministicKernelRecord(message as unknown as KernelRecord)
-    ),
-    taskId,
-    "message",
-    "completed"
-  );
-}
+};
