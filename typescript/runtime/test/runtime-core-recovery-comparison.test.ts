@@ -34,6 +34,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { createMemoryBackend } from "@tuvren/backend-memory";
+import { assertKernelRecord } from "@tuvren/core";
 import type { KernelRecord } from "@tuvren/core";
 import type { InputSignal } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
@@ -46,7 +47,7 @@ import type {
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
 import {
-  createRunnerRegistry,
+  createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
   DEFAULT_AGENT_SCHEMA,
 } from "../src/index.ts";
@@ -63,31 +64,59 @@ import {
   assistantText,
   collectEvents,
   extractTurnId,
+  fromSynchronousVariadicAwaited,
 } from "./runtime-core-test-helpers.ts";
+
+interface TestRuntimeRunner {
+  execute: (
+    context: Parameters<RuntimeRunner["execute"]>[0]
+  ) =>
+    | Awaited<ReturnType<RuntimeRunner["execute"]>>
+    | ReturnType<RuntimeRunner["execute"]>;
+  id: string;
+  resume?: (
+    context: Parameters<NonNullable<RuntimeRunner["resume"]>>[0]
+  ) =>
+    | Awaited<ReturnType<RuntimeRunner["execute"]>>
+    | ReturnType<RuntimeRunner["execute"]>;
+}
+
+const wrapTestRunner = (runner: TestRuntimeRunner): RuntimeRunner => {
+  const { resume } = runner;
+
+  return {
+    execute: fromSynchronousVariadicAwaited(runner.execute),
+    id: runner.id,
+    ...(resume === undefined
+      ? {}
+      : {
+          resume: fromSynchronousVariadicAwaited(resume),
+        }),
+  };
+};
+
+const createRunnerRegistry = (runners: TestRuntimeRunner[] = []) =>
+  createBaseRunnerRegistry(runners.map(wrapTestRunner));
 
 const RESUME_TEXT = "Resume with the same payload";
 const KEYED_RECOVERY_TEXT = "Recover this keyed request";
 
-const nestedResumeData = () => {
-  return {
-    filters: { limit: 10, tags: ["alpha", "beta"] },
-    nested: { enabled: true, note: null },
-    retry: 2,
-  };
-};
+const nestedResumeData = () => ({
+  filters: { limit: 10, tags: ["alpha", "beta"] },
+  nested: { enabled: true, note: null },
+  retry: 2,
+});
 
-const keyReorderedResumeData = () => {
-  return {
-    filters: { limit: 10, tags: ["alpha", "beta"] },
-    nested: { enabled: true, note: null },
-    retry: 2,
-  };
-};
+const keyReorderedResumeData = () => ({
+  filters: { limit: 10, tags: ["alpha", "beta"] },
+  nested: { enabled: true, note: null },
+  retry: 2,
+});
 
 /** Stage `data` through the deterministic kernel roundtrip the recovery path
  * reads, exactly as a durable user message was persisted. */
-const durableResumeUserMessage = (data: KernelRecord): TuvrenMessage => {
-  return decodeKrakenMessageRecord(
+const durableResumeUserMessage = (data: KernelRecord): TuvrenMessage =>
+  decodeKrakenMessageRecord(
     encodeDeterministicKernelRecord({
       parts: [
         { text: RESUME_TEXT, type: "text" },
@@ -102,22 +131,19 @@ const durableResumeUserMessage = (data: KernelRecord): TuvrenMessage => {
     }),
     "recovered user message"
   );
-};
 
 /** The live inbound signal carrying the same nested JSON data. */
-const resumeSignal = (data: KernelRecord): InputSignal => {
-  return {
-    parts: [
-      { text: RESUME_TEXT, type: "text" },
-      {
-        data,
-        name: "resume-context",
-        providerMetadata: { attempt: 1, source: "test" },
-        type: "structured",
-      },
-    ],
-  };
-};
+const resumeSignal = (data: KernelRecord): InputSignal => ({
+  parts: [
+    { text: RESUME_TEXT, type: "text" },
+    {
+      data,
+      name: "resume-context",
+      providerMetadata: { attempt: 1, source: "test" },
+      type: "structured",
+    },
+  ],
+});
 
 const requireUserMessage = (message: TuvrenMessage) => {
   if (message.role !== "user") {
@@ -127,20 +153,16 @@ const requireUserMessage = (message: TuvrenMessage) => {
   return message;
 };
 
-const keyedSignal = (admissionKey: string): InputSignal => {
-  return {
-    admissionKey,
-    parts: [{ text: KEYED_RECOVERY_TEXT, type: "text" }],
-  };
-};
+const keyedSignal = (admissionKey: string): InputSignal => ({
+  admissionKey,
+  parts: [{ text: KEYED_RECOVERY_TEXT, type: "text" }],
+});
 
-const keyedUserMessage = (admissionKey: string): TuvrenMessage => {
-  return {
-    admissionKey,
-    parts: [{ text: KEYED_RECOVERY_TEXT, type: "text" }],
-    role: "user",
-  };
-};
+const keyedUserMessage = (admissionKey: string): TuvrenMessage => ({
+  admissionKey,
+  parts: [{ text: KEYED_RECOVERY_TEXT, type: "text" }],
+  role: "user",
+});
 
 const checkpointUserMessage = async (
   kernel: RuntimeKernel,
@@ -155,6 +177,7 @@ const checkpointUserMessage = async (
     turnId: string;
   }
 ): Promise<string> => {
+  assertKernelRecord(input.message, "recovery checkpoint message");
   await kernel.run.create(
     input.runId,
     input.turnId,
@@ -166,7 +189,7 @@ const checkpointUserMessage = async (
   await kernel.run.beginStep(input.runId, input.stepId);
   await kernel.staging.stage(
     input.runId,
-    encodeDeterministicKernelRecord(input.message as unknown as KernelRecord),
+    encodeDeterministicKernelRecord(input.message),
     input.taskId,
     "message",
     "completed"
@@ -219,17 +242,18 @@ const executeKeyedRecovery = async (retryKey: string) => {
   const kernel: RuntimeKernel & RuntimeKernelRunLiveness =
     livenessHarness.kernel;
   const runner = {
-    execute: async () =>
-      Promise.resolve({
-        messages: [assistantText(`Recovery result for key ${retryKey}.`)],
-        resolution: {
-          reason: "done",
-          type: "end_turn" as const,
-        },
-      }),
+    execute: () => ({
+      messages: [assistantText(`Recovery result for key ${retryKey}.`)],
+      resolution: {
+        reason: "done",
+        type: "end_turn" as const,
+      },
+    }),
     id: "fake",
-    resume: async () => Promise.reject(new Error("resume was not expected")),
-  } satisfies RuntimeRunner;
+    resume: () => {
+      throw new Error("resume was not expected");
+    },
+  } satisfies TestRuntimeRunner;
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
     kernel,
@@ -298,14 +322,15 @@ const executeKeyedRecoveryAfterEmptyInputPreemption = async () => {
     backend,
   });
   const runner = {
-    execute: async () =>
-      Promise.resolve({
-        messages: [assistantText("Completed the fresh keyed request.")],
-        resolution: { reason: "done", type: "end_turn" as const },
-      }),
+    execute: () => ({
+      messages: [assistantText("Completed the fresh keyed request.")],
+      resolution: { reason: "done", type: "end_turn" as const },
+    }),
     id: "fake",
-    resume: async () => Promise.reject(new Error("resume was not expected")),
-  } satisfies RuntimeRunner;
+    resume: () => {
+      throw new Error("resume was not expected");
+    },
+  } satisfies TestRuntimeRunner;
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
     kernel,
@@ -386,11 +411,10 @@ const executeKeyedRecoveryAfterEmptyInputPreemption = async () => {
     async (tx) => await tx.runs.get(laterRunId)
   );
   expect(runBeforeRecovery?.status).toBe("running");
-  const recoveredUsers = (
-    await runtime.readBranchMessages({
-      branchId: thread.branchId,
-    })
-  ).messages.filter(
+  const recoveredMessages = await runtime.readBranchMessages({
+    branchId: thread.branchId,
+  });
+  const recoveredUsers = recoveredMessages.messages.filter(
     (message): message is Extract<TuvrenMessage, { role: "user" }> =>
       "role" in message && message.role === "user"
   );
@@ -407,11 +431,10 @@ const executeKeyedRecoveryAfterEmptyInputPreemption = async () => {
   );
   expect(runAfterRecovery?.status).toBe("failed");
   expect(runAfterRecovery?.preemptionReason).toBe("stale_running_recovery");
-  const freshUsers = (
-    await runtime.readBranchMessages({
-      branchId: thread.branchId,
-    })
-  ).messages.filter(
+  const freshMessages = await runtime.readBranchMessages({
+    branchId: thread.branchId,
+  });
+  const freshUsers = freshMessages.messages.filter(
     (message): message is Extract<TuvrenMessage, { role: "user" }> =>
       "role" in message && message.role === "user"
   );
@@ -618,14 +641,15 @@ describe("framework-runtime-core", () => {
       backend: createMemoryBackend({ now: () => nowMs }),
     });
     const runner = {
-      execute: async () =>
-        Promise.resolve({
-          messages: [assistantText("Completed the keyed request.")],
-          resolution: { reason: "done", type: "end_turn" as const },
-        }),
+      execute: () => ({
+        messages: [assistantText("Completed the keyed request.")],
+        resolution: { reason: "done", type: "end_turn" as const },
+      }),
       id: "fake",
-      resume: async () => Promise.reject(new Error("resume was not expected")),
-    } satisfies RuntimeRunner;
+      resume: () => {
+        throw new Error("resume was not expected");
+      },
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       kernel,
@@ -684,9 +708,10 @@ describe("framework-runtime-core", () => {
     await collectEvents(retry.events());
 
     expect(retry.status().phase).toBe("completed");
-    expect(
-      (await runtime.readBranchMessages({ branchId: thread.branchId })).messages
-    ).toContainEqual({
+    const retryMessages = await runtime.readBranchMessages({
+      branchId: thread.branchId,
+    });
+    expect(retryMessages.messages).toContainEqual({
       admissionKey: "B",
       parts: [{ text: KEYED_RECOVERY_TEXT, type: "text" }],
       role: "user",
@@ -699,14 +724,15 @@ describe("framework-runtime-core", () => {
       backend: createMemoryBackend({ now: () => nowMs }),
     });
     const runner = {
-      execute: async () =>
-        Promise.resolve({
-          messages: [assistantText("Completed the keyed request.")],
-          resolution: { reason: "done", type: "end_turn" as const },
-        }),
+      execute: () => ({
+        messages: [assistantText("Completed the keyed request.")],
+        resolution: { reason: "done", type: "end_turn" as const },
+      }),
       id: "fake",
-      resume: async () => Promise.reject(new Error("resume was not expected")),
-    } satisfies RuntimeRunner;
+      resume: () => {
+        throw new Error("resume was not expected");
+      },
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       kernel,
@@ -773,9 +799,10 @@ describe("framework-runtime-core", () => {
     await collectEvents(retry.events());
 
     expect(retry.status().phase).toBe("completed");
-    const keyedUserMessages = (
-      await runtime.readBranchMessages({ branchId: thread.branchId })
-    ).messages.filter(
+    const branchMessages = await runtime.readBranchMessages({
+      branchId: thread.branchId,
+    });
+    const keyedUserMessages = branchMessages.messages.filter(
       (message): message is Extract<TuvrenMessage, { role: "user" }> =>
         "role" in message &&
         message.role === "user" &&
@@ -821,17 +848,19 @@ describe("framework-runtime-core", () => {
           context.messages.filter((message) => message.role === "user").length
         ).toBe(1);
 
-        return Promise.resolve({
+        return {
           messages: [assistantText("Resumed the nested JSON request.")],
           resolution: {
             reason: "done",
             type: "end_turn",
           },
-        });
+        };
       },
       id: "fake",
-      resume: async () => Promise.reject(new Error("resume was not expected")),
-    } satisfies RuntimeRunner;
+      resume: () => {
+        throw new Error("resume was not expected");
+      },
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       kernel: livenessHarness.kernel,

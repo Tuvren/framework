@@ -16,8 +16,11 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { DEFAULT_SCOPE, TuvrenRecoveryError } from "@tuvren/core";
-import type { KernelRecord } from "@tuvren/core";
+import {
+  assertKernelRecord,
+  DEFAULT_SCOPE,
+  TuvrenRecoveryError,
+} from "@tuvren/core";
 import { ENVELOPE_MAGIC, IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import type { PayloadCodec } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
@@ -35,15 +38,45 @@ import {
 } from "./fake-kernel.ts";
 import {
   assistantToolCalls,
+  fromSynchronousVariadicAwaited,
   toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
 
 const TURN_ID = "turn_interrupted_iteration";
 const STALE_RUN_ID = "run_interrupted_iteration";
 
-const iterateSteps = (): RecoveryState["stepSequence"] => {
-  return [{ deterministic: false, id: "iterate", sideEffects: true }];
+const iterateSteps = (): RecoveryState["stepSequence"] => [
+  { deterministic: false, id: "iterate", sideEffects: true },
+];
+
+const forEachSequentially = async <T>(
+  values: readonly T[],
+  operation: (value: T, index: number) => Promise<void>,
+  index = 0
+): Promise<void> => {
+  if (index < values.length) {
+    const value = values[index];
+    if (value === undefined) {
+      throw new Error(`missing sequential value at index ${index.toString()}`);
+    }
+    await operation(value, index);
+    await forEachSequentially(values, operation, index + 1);
+  }
 };
+
+type TestPayloadCodec = {
+  [TKey in keyof PayloadCodec]: PayloadCodec[TKey] extends (
+    ...parameters: infer TParameters
+  ) => Promise<infer TResult>
+    ? (...parameters: TParameters) => TResult | Promise<TResult>
+    : PayloadCodec[TKey];
+};
+
+const wrapTestPayloadCodec = (codec: TestPayloadCodec): PayloadCodec => ({
+  ...codec,
+  decrypt: fromSynchronousVariadicAwaited(codec.decrypt),
+  encrypt: fromSynchronousVariadicAwaited(codec.encrypt),
+});
 
 const isMessage = (value: unknown): value is TuvrenMessage => {
   const record = toOptionalRecord(value);
@@ -118,9 +151,8 @@ const stageMessage = async (
   message: TuvrenMessage,
   taskId: string
 ): Promise<StagedResult> => {
-  const record = encodeDeterministicKernelRecord(
-    message as unknown as KernelRecord
-  );
+  assertKernelRecord(message, "recovery plan staged message");
+  const record = encodeDeterministicKernelRecord(message);
   const encrypted = await encryptMessageRecord(
     { codec: fixture.codec, scope: DEFAULT_SCOPE },
     record
@@ -141,11 +173,11 @@ const stageMessages = async (
 ): Promise<StagedResult[]> => {
   const results: StagedResult[] = [];
 
-  for (const [index, message] of messages.entries()) {
+  await forEachSequentially(messages, async (message, index) => {
     results.push(
       await stageMessage(fixture, message, `task_${index.toString()}`)
     );
-  }
+  });
 
   return results;
 };
@@ -154,8 +186,8 @@ const derivePlan = async (
   fixture: Fixture,
   recoveredHeadState: HeadState,
   recoveryState: RecoveryState
-): Promise<InterruptedIterationRecoveryPlan> => {
-  return await deriveInterruptedIterationRecoveryPlan({
+): Promise<InterruptedIterationRecoveryPlan> =>
+  await deriveInterruptedIterationRecoveryPlan({
     kernel: fixture.kernel,
     payloadCodecBinding: { codec: fixture.codec, scope: DEFAULT_SCOPE },
     recoveredHeadState,
@@ -163,7 +195,6 @@ const derivePlan = async (
     staleRunId: STALE_RUN_ID,
     turnId: TURN_ID,
   });
-};
 
 const expectPlan = (
   plan: InterruptedIterationRecoveryPlan,
@@ -178,45 +209,42 @@ const expectPlan = (
   );
 };
 
-const toolResult = (callId: string, value: number): TuvrenMessage => {
-  return {
-    parts: [
-      {
-        callId,
-        name: "lookup",
-        output: { value },
-        type: "tool_result",
-      },
-    ],
-    role: "tool",
-  };
-};
+const toolResult = (callId: string, value: number): TuvrenMessage => ({
+  parts: [
+    {
+      callId,
+      name: "lookup",
+      output: { value },
+      type: "tool_result",
+    },
+  ],
+  role: "tool",
+});
 
-const createEnvelopeCodec = (erased = false): PayloadCodec => {
-  return {
+const createEnvelopeCodec = (erased = false): PayloadCodec =>
+  wrapTestPayloadCodec({
     decrypt(stored) {
       if (erased) {
-        return Promise.resolve({
+        return {
           keyRef: "destroyed-test-key",
           reason: "test key erased",
           status: "erased" as const,
-        });
+        };
       }
 
-      return Promise.resolve({
+      return {
         plaintext: stored.slice(ENVELOPE_MAGIC.length),
         status: "available" as const,
-      });
+      };
     },
     encrypt(plaintext) {
       const envelope = new Uint8Array(ENVELOPE_MAGIC.length + plaintext.length);
       envelope.set(ENVELOPE_MAGIC);
       envelope.set(plaintext, ENVELOPE_MAGIC.length);
-      return Promise.resolve(envelope);
+      return envelope;
     },
     id: erased ? "test-erased-envelope" : "test-envelope",
-  };
-};
+  });
 
 const requireAssistantMessage = (
   message: TuvrenMessage
@@ -359,20 +387,24 @@ describe("interrupted iteration recovery plan", () => {
       iterateSteps()
     );
 
-    for (const [index, message] of [
-      TOOL_CALLS,
-      toolResult("call_one", 1),
-      toolResult("call_two", 2),
-      toolResult("call_three", 3),
-    ].entries()) {
-      await livenessHarness.kernel.staging.stage(
-        "run_prior_completed_tool_batch",
-        encodeDeterministicKernelRecord(message as unknown as KernelRecord),
-        `prior_batch_${index.toString()}`,
-        "message",
-        "completed"
-      );
-    }
+    await forEachSequentially(
+      [
+        TOOL_CALLS,
+        toolResult("call_one", 1),
+        toolResult("call_two", 2),
+        toolResult("call_three", 3),
+      ],
+      async (message, index) => {
+        assertKernelRecord(message, "prior completed tool batch message");
+        await livenessHarness.kernel.staging.stage(
+          "run_prior_completed_tool_batch",
+          encodeDeterministicKernelRecord(message),
+          `prior_batch_${index.toString()}`,
+          "message",
+          "completed"
+        );
+      }
+    );
 
     const completedBatch = await livenessHarness.kernel.run.completeStep(
       "run_prior_completed_tool_batch",
@@ -431,13 +463,12 @@ describe("interrupted iteration recovery plan", () => {
       codec: IDENTITY_PAYLOAD_CODEC,
       kernel: livenessHarness.kernel,
       async loadHeadState() {
+        const messages = await harness.readBranchMessages(thread.branchId);
         return {
           branchHeadHash: branch.headTurnNodeHash,
           manifest: createEmptyContextManifest(),
           messageHashes,
-          messages: (await harness.readBranchMessages(thread.branchId)).filter(
-            isMessage
-          ),
+          messages: messages.filter(isMessage),
           turnNode,
         };
       },
@@ -513,5 +544,5 @@ describe("interrupted iteration recovery plan", () => {
 interface Fixture {
   codec: PayloadCodec;
   kernel: ReturnType<typeof createFakeKernelHarness>["kernel"];
-  loadHeadState(): Promise<HeadState>;
+  loadHeadState: () => Promise<HeadState>;
 }

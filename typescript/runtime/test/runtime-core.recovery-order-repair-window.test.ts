@@ -5,11 +5,9 @@
  * you may not use this file except in compliance with the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { expect, test } from "bun:test";
 
-import { DEFAULT_SCOPE } from "@tuvren/core";
-import type { KernelRecord } from "@tuvren/core";
+import { assertKernelRecord, DEFAULT_SCOPE } from "@tuvren/core";
 import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { RuntimeRunner } from "@tuvren/core/runner";
@@ -17,7 +15,7 @@ import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 import type { RuntimeKernel } from "@tuvren/kernel-protocol";
 
 import {
-  createRunnerRegistry,
+  createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
   DEFAULT_AGENT_SCHEMA,
 } from "../src/index.ts";
@@ -30,8 +28,41 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   textSignal,
 } from "./runtime-core-test-helpers.ts";
+
+interface TestRuntimeRunner {
+  execute: (
+    context: Parameters<RuntimeRunner["execute"]>[0]
+  ) =>
+    | Awaited<ReturnType<RuntimeRunner["execute"]>>
+    | ReturnType<RuntimeRunner["execute"]>;
+  id: string;
+}
+
+const createRunnerRegistry = (runners: TestRuntimeRunner[] = []) =>
+  createBaseRunnerRegistry(
+    runners.map((runner): RuntimeRunner => ({
+      execute: fromSynchronousVariadicAwaited(runner.execute),
+      id: runner.id,
+    }))
+  );
+
+const forEachSequentially = async <T>(
+  values: readonly T[],
+  operation: (value: T, index: number) => Promise<void>,
+  index = 0
+): Promise<void> => {
+  if (index < values.length) {
+    const value = values[index];
+    if (value === undefined) {
+      throw new Error(`missing sequential value at index ${index.toString()}`);
+    }
+    await operation(value, index);
+    await forEachSequentially(values, operation, index + 1);
+  }
+};
 
 const stageMessage = async (
   kernel: RuntimeKernel,
@@ -39,11 +70,12 @@ const stageMessage = async (
   taskId: string,
   message: TuvrenMessage
 ): Promise<void> => {
+  assertKernelRecord(message, "recovery repair staged message");
   await kernel.staging.stage(
     runId,
     await encryptMessageRecord(
       { codec: IDENTITY_PAYLOAD_CODEC, scope: DEFAULT_SCOPE },
-      encodeDeterministicKernelRecord(message as unknown as KernelRecord)
+      encodeDeterministicKernelRecord(message)
     ),
     taskId,
     "message",
@@ -110,12 +142,12 @@ test("recovery dispatches missing calls before any context-engineering run", asy
     { callId: "missing-third", input: {}, name: "lookup" },
   ]);
   await stageMessage(liveness.kernel, staleRun, "assistant", assistant);
-  for (const [index, callId] of ["second", "first"].entries()) {
+  await forEachSequentially(["second", "first"], async (callId, index) => {
     await stageMessage(liveness.kernel, staleRun, `result_${index}`, {
       parts: [{ callId, name: "lookup", output: {}, type: "tool_result" }],
       role: "tool",
     });
-  }
+  });
 
   let contextEngineeringRuns = 0;
   const dispatched: string[] = [];
@@ -126,8 +158,8 @@ test("recovery dispatches missing calls before any context-engineering run", asy
     }
     return await beginStep(...args);
   };
-  const runner: RuntimeRunner = {
-    async execute() {
+  const runner: TestRuntimeRunner = {
+    execute() {
       return {
         messages: [assistantText("done")],
         resolution: { reason: "done", type: "end_turn" },
@@ -152,13 +184,13 @@ test("recovery dispatches missing calls before any context-engineering run", asy
       name: "primary",
       tools: [
         {
-          name: "lookup",
           description: "lookup",
-          inputSchema: { type: "object" },
           execute(_input, context) {
             dispatched.push(context.callId);
             return {};
           },
+          inputSchema: { type: "object" },
+          name: "lookup",
         },
       ],
     },
