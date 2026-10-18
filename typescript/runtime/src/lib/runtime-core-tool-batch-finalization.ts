@@ -71,7 +71,7 @@ export function finalizeToolBatchProjection(
   // Identical assistant messages can share a content hash across Turns. The
   // interrupted batch is the latest matching occurrence in the active path.
   const assistantIndex = hashes.lastIndexOf(assistantMessageHash);
-  if (assistantIndex < 0) {
+  if (assistantIndex === -1) {
     return { headState, toolResults: fallbackToolResults };
   }
   const originalCalls = assistant.parts.filter(

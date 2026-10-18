@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenRecoveryError } from "@tuvren/core";
+import { TuvrenRecoveryError } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
 import type {
   ToolCallPart,
   ToolResultPart,
@@ -226,7 +227,7 @@ function appendHeadMessagesFromAssistant(
   messages: TuvrenMessage[]
 ): void {
   const assistantIndex = headState.messageHashes.indexOf(assistantHash);
-  if (assistantIndex < 0) {
+  if (assistantIndex === -1) {
     return;
   }
 
@@ -244,13 +245,13 @@ function createReInferencePlan(
   return {
     completedCallIds: [],
     completedToolResultHashes: [],
-    completedToolResultsOutOfOrder: false,
     completedToolResults: [],
+    completedToolResultsOutOfOrder: false,
     disposition: "re_infer",
     missingToolCalls: [],
     originalToolCalls: [],
-    stagedMessages: recovered.stagedMessages,
     stagedMessageHashes: recovered.stagedMessageHashes,
+    stagedMessages: recovered.stagedMessages,
     ...(descriptor === undefined ? {} : { descriptor }),
   };
 }
@@ -468,8 +469,8 @@ async function readInterruptedMessages(
     interruptedMessageHashes,
     messages,
     messagesByHash,
-    stagedMessages,
     stagedMessageHashes,
+    stagedMessages,
   };
 }
 

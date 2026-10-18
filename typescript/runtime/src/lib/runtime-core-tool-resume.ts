@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
 import type {
   ContextManifest,
   RuntimeResolution,
@@ -26,10 +27,8 @@ import {
   createContextManifest,
   updateContextManifest,
 } from "./context-manifest.js";
-import {
-  runAfterIterationHooks,
-  type ExtensionStateUpdate,
-} from "./extension-runtime.js";
+import { runAfterIterationHooks } from "./extension-runtime.js";
+import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type { LoopOutcome } from "./runtime-core-recovery.js";
 import {
@@ -42,10 +41,10 @@ import { normalizeError } from "./runtime-core-shared.js";
 import { finalizeToolBatchProjection } from "./runtime-core-tool-batch-finalization.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type { PauseContext, ResumeContext } from "./runtime-execution-types.js";
-import {
-  resumeToolBatch,
-  type ToolBatchEnvironment,
-  type ToolBatchOutcome,
+import { resumeToolBatch } from "./tool-execution.js";
+import type {
+  ToolBatchEnvironment,
+  ToolBatchOutcome,
 } from "./tool-execution.js";
 
 /**
@@ -83,11 +82,11 @@ export interface RuntimeCoreToolResumeHost {
     branchId: string,
     schemaId: string,
     startTurnNodeHash: HashString,
-    steps: Array<{
+    steps: {
       deterministic: boolean;
       id: string;
       sideEffects: boolean;
-    }>
+    }[]
   ): Promise<void>;
   failTrackedRunWithoutBranchAdvance(
     handle: RuntimeExecutionHandle,
@@ -179,7 +178,7 @@ export async function resumePausedToolExecution(
   loopState: LoopState,
   resumeContext: ResumeContext
 ): Promise<LoopOutcome> {
-  const pausedIteration = resumeContext.pauseContext.pausedIteration;
+  const { pausedIteration } = resumeContext.pauseContext;
 
   loopState.enteredIterationLoop = true;
   const headState = await host.loadHeadState(handle.request.branchId);
@@ -451,7 +450,7 @@ export async function finalizeRejectedPausedToolCancellation(
   loopState: LoopState,
   pauseContext: PauseContext
 ): Promise<LoopOutcome> {
-  const pausedIteration = pauseContext.pausedIteration;
+  const { pausedIteration } = pauseContext;
 
   loopState.enteredIterationLoop = true;
   const headState = await host.loadHeadState(handle.request.branchId);
