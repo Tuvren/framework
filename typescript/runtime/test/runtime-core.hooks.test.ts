@@ -30,6 +30,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   collectEvents,
   delay,
@@ -40,17 +41,15 @@ import {
 
 const isKrakenRunnerFactory = (
   entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory => {
-  return "create" in entry && typeof entry.create === "function";
-};
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
 
-const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
-  return (result.messages ?? []).some(
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&
       message.parts.some((part) => part.type === "tool_call")
   );
-};
 
 const normalizeRunnerResult = (
   result: RunnerExecutionResult
@@ -69,7 +68,7 @@ const normalizeRunnerResult = (
 };
 
 const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
-  const { resume } = runner;
+  const resume = runner.resume?.bind(runner);
 
   return {
     async execute(context) {
@@ -103,14 +102,12 @@ const wrapRunnerEntry = (
 
 const createRunnerRegistry = (
   runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) => {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-};
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("keeps runtime hook receiver state mutable across live extension execution", async () => {
     interface ReceiverExtension extends TuvrenExtension {
-      beforeIteration(): undefined;
-      beforeTurn(): undefined;
+      beforeIteration: () => undefined;
+      beforeTurn: () => undefined;
       beforeTurnCalls: number;
     }
 
@@ -122,12 +119,9 @@ describe("framework-runtime-core", () => {
             `expected beforeTurnCalls to be 1, received ${this.beforeTurnCalls}`
           );
         }
-
-        return;
       },
       beforeTurn() {
         this.beforeTurnCalls += 1;
-        return;
       },
       beforeTurnCalls: 0,
       name: "mutable-receiver",
@@ -137,19 +131,17 @@ describe("framework-runtime-core", () => {
       kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         {
-          async execute() {
-            return {
-              messages: [assistantText("Hook receiver stayed mutable.")],
-              resolution: {
-                reason: "done",
-                type: "end_turn",
-              },
-            };
-          },
+          execute: fromSynchronousVariadicAwaited(() => ({
+            messages: [assistantText("Hook receiver stayed mutable.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          })),
           id: "fake",
-          async resume() {
+          resume: fromSynchronousVariadicAwaited(() => {
             throw new Error("resume was not expected");
-          },
+          }),
         } satisfies RuntimeRunner,
       ]),
     });
@@ -180,7 +172,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let runnerCalls = 0;
     const runner = {
-      async execute(_context) {
+      execute: fromSynchronousVariadicAwaited((_context) => {
         runnerCalls += 1;
         return {
           messages: [assistantText("This should not run.")],
@@ -189,11 +181,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -236,7 +228,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let runnerCalls = 0;
     const runner = {
-      async execute(_context) {
+      execute: fromSynchronousVariadicAwaited((_context) => {
         runnerCalls += 1;
         return {
           messages: [assistantText("This should not run.")],
@@ -245,11 +237,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -292,7 +284,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let runnerCalls = 0;
     const runner = {
-      async execute(_context) {
+      execute: fromSynchronousVariadicAwaited((_context) => {
         runnerCalls += 1;
         return {
           messages: [assistantText("Runner still completed.")],
@@ -301,11 +293,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -320,7 +312,6 @@ describe("framework-runtime-core", () => {
           {
             async beforeIteration() {
               await delay(30);
-              return;
             },
             name: "slow-hook",
             timeout: 5,
@@ -350,19 +341,17 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let lateEmitAttempts = 0;
     const runner = {
-      async execute(_context) {
-        return {
-          messages: [assistantText("Runner still completed.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited((_context) => ({
+        messages: [assistantText("Runner still completed.")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -384,7 +373,6 @@ describe("framework-runtime-core", () => {
                 },
                 name: "late-event",
               });
-              return;
             },
             name: "slow-hook",
             timeout: 5,
@@ -411,19 +399,17 @@ describe("framework-runtime-core", () => {
   test("surfaces afterTurn cleanup failures as non-fatal error events", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(_context) {
-        return {
-          messages: [assistantText("Finished main execution.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited((_context) => ({
+        messages: [assistantText("Finished main execution.")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",

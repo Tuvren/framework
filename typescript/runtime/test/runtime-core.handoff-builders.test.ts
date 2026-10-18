@@ -35,6 +35,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   collectEvents,
   extractSingleUserText,
@@ -45,17 +46,15 @@ import {
 
 const isKrakenRunnerFactory = (
   entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory => {
-  return "create" in entry && typeof entry.create === "function";
-};
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
 
-const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
-  return (result.messages ?? []).some(
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&
       message.parts.some((part) => part.type === "tool_call")
   );
-};
 
 const normalizeRunnerResult = (
   result: RunnerExecutionResult
@@ -74,7 +73,7 @@ const normalizeRunnerResult = (
 };
 
 const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
-  const { resume } = runner;
+  const resume = runner.resume?.bind(runner);
 
   return {
     async execute(context) {
@@ -108,9 +107,7 @@ const wrapRunnerEntry = (
 
 const createRunnerRegistry = (
   runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) => {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-};
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("preserve_trace handoff preserves chronological summarized trace without raw tool traces", () => {
     let storedMessage: TuvrenMessage | null = null;
@@ -243,7 +240,7 @@ describe("framework-runtime-core", () => {
     let storedMessage: TuvrenMessage | null = null;
     const builder = createPreserveTraceHandoffContextBuilder();
     const longAssistantText = `First line with spacing\n${"x".repeat(180)}`;
-    const normalizedText = longAssistantText.replaceAll(/\s+/g, " ").trim();
+    const normalizedText = longAssistantText.replaceAll(/\s+/gu, " ").trim();
     const expectedSummary = `${normalizedText.slice(0, 117)}...`;
 
     builder({
@@ -337,7 +334,7 @@ describe("framework-runtime-core", () => {
       },
     };
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         if (context.config.name === "reviewer") {
           return {
             messages: [assistantText("Reviewer picked up the handoff.")],
@@ -367,11 +364,11 @@ describe("framework-runtime-core", () => {
             type: "handoff",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -404,7 +401,7 @@ describe("framework-runtime-core", () => {
     };
     let capturedSourceContext: HandoffSourceContext | undefined;
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         if (context.config.name === "reviewer") {
           return {
             messages: [assistantText("Reviewer finished.")],
@@ -460,7 +457,7 @@ describe("framework-runtime-core", () => {
             type: "handoff",
           },
         };
-      },
+      }),
       id: "fake",
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
@@ -628,7 +625,7 @@ describe("framework-runtime-core", () => {
         agentName === "reviewer" ? { name: "reviewer" } : undefined,
       runnerRegistry: createRunnerRegistry([
         {
-          async execute(context) {
+          execute: fromSynchronousVariadicAwaited((context) => {
             if (context.config.name === "primary") {
               return {
                 messages: [assistantText("Final visible output")],
@@ -651,11 +648,11 @@ describe("framework-runtime-core", () => {
                 type: "end_turn",
               },
             };
-          },
+          }),
           id: "fake",
-          async resume() {
+          resume: fromSynchronousVariadicAwaited(() => {
             throw new Error("resume was not expected");
-          },
+          }),
         } satisfies RuntimeRunner,
       ]),
     });

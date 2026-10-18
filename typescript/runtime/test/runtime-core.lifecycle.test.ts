@@ -30,6 +30,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   assistantToolCalls,
   collectEvents,
@@ -44,8 +45,8 @@ import {
 const _hasAssistantTextMessage = (
   messages: readonly unknown[],
   expectedText: string
-): boolean => {
-  return messages.some((message) => {
+): boolean =>
+  messages.some((message) => {
     const record = toOptionalRecord(message);
 
     if (record?.role !== "assistant" || !Array.isArray(record.parts)) {
@@ -57,13 +58,12 @@ const _hasAssistantTextMessage = (
       return partRecord?.type === "text" && partRecord.text === expectedText;
     });
   });
-};
 
 const _countUserTextMessages = (
   messages: readonly unknown[],
   expectedText: string
-): number => {
-  return messages.filter((message) => {
+): number =>
+  messages.filter((message) => {
     const record = toOptionalRecord(message);
 
     if (record?.role !== "user" || !Array.isArray(record.parts)) {
@@ -75,21 +75,18 @@ const _countUserTextMessages = (
       return partRecord?.type === "text" && partRecord.text === expectedText;
     });
   }).length;
-};
 
 const isKrakenRunnerFactory = (
   entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory => {
-  return "create" in entry && typeof entry.create === "function";
-};
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
 
-const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
-  return (result.messages ?? []).some(
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&
       message.parts.some((part) => part.type === "tool_call")
   );
-};
 
 const normalizeRunnerResult = (
   result: RunnerExecutionResult
@@ -108,7 +105,7 @@ const normalizeRunnerResult = (
 };
 
 const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
-  const { resume } = runner;
+  const resume = runner.resume?.bind(runner);
 
   return {
     async execute(context) {
@@ -142,22 +139,25 @@ const wrapRunnerEntry = (
 
 const createRunnerRegistry = (
   runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) => {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-};
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("fails the active iteration run before finalizing post-start runtime errors", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute() {
-        return JSON.parse(
-          '{"activeAgent":"primary","messages":[{"role":"assistant","parts":[123]}],"resolution":{"reason":"done","type":"end_turn"}}'
-        );
-      },
+      execute: fromSynchronousVariadicAwaited(() => {
+        const malformedMessage = assistantText("invalid");
+        Object.defineProperty(malformedMessage, "parts", { value: [123] });
+        const result = {
+          messages: [malformedMessage],
+          resolution: { reason: "done", type: "end_turn" },
+        } satisfies RunnerExecutionResult;
+        Object.defineProperty(result, "activeAgent", { value: "primary" });
+        return result;
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -190,7 +190,7 @@ describe("framework-runtime-core", () => {
   test("uses per-turn tools instead of agent-configured tools at turn start", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const toolMessages = extractToolMessages(context.messages);
 
         if (toolMessages.length === 0) {
@@ -227,11 +227,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -306,7 +306,7 @@ describe("framework-runtime-core", () => {
         let instanceCalls = 0;
 
         return {
-          async execute(_context) {
+          execute: fromSynchronousVariadicAwaited((_context) => {
             instanceCalls += 1;
             overallCalls += 1;
             callSequence.push(`instance-${instanceId}-call-${instanceCalls}`);
@@ -325,11 +325,11 @@ describe("framework-runtime-core", () => {
                       type: "end_turn",
                     },
             };
-          },
+          }),
           id: "fake",
-          async resume() {
+          resume: fromSynchronousVariadicAwaited(() => {
             throw new Error("resume was not expected");
-          },
+          }),
         } satisfies RuntimeRunner;
       },
       id: "fake",
@@ -356,19 +356,17 @@ describe("framework-runtime-core", () => {
   test("rejects malformed persisted manifests at the read boundary", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(_context) {
-        return {
-          messages: [assistantText("Turn complete.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited((_context) => ({
+        messages: [assistantText("Turn complete.")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -429,19 +427,17 @@ describe("framework-runtime-core", () => {
       schemaId: "custom.agent.v1",
     } satisfies TurnTreeSchema;
     const runner = {
-      async execute(_context) {
-        return {
-          messages: [assistantText("Used the custom schema.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited((_context) => ({
+        messages: [assistantText("Used the custom schema.")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
 
     await harness.kernel.schema.register(customSchema);
@@ -471,9 +467,8 @@ describe("framework-runtime-core", () => {
     const headTurnNode = await harness.kernel.node.get(branch.headTurnNodeHash);
 
     expect(headTurnNode?.schemaId).toBe(customSchema.schemaId);
-    expect((await harness.kernel.thread.get(thread.threadId))?.schemaId).toBe(
-      customSchema.schemaId
-    );
+    const storedThread = await harness.kernel.thread.get(thread.threadId);
+    expect(storedThread?.schemaId).toBe(customSchema.schemaId);
   });
 
   test("rejects custom schemas that omit the framework turn lineage path", async () => {
@@ -497,11 +492,19 @@ describe("framework-runtime-core", () => {
       runnerRegistry: createRunnerRegistry(),
     });
 
-    await expect(
-      runtime.createThread({
-        schemaId: "invalid.custom.agent.v1",
-      })
-    ).rejects.toThrow('must define single path "turn.lineage"');
+    const createThreadError = await runtime
+      .createThread({ schemaId: "invalid.custom.agent.v1" })
+      .then(
+        () => null,
+        (error: unknown) => error
+      );
+    expect(createThreadError).toBeInstanceOf(Error);
+    if (!(createThreadError instanceof Error)) {
+      throw new Error("expected schema validation to reject with an Error");
+    }
+    expect(createThreadError.message).toContain(
+      'must define single path "turn.lineage"'
+    );
   });
 
   test("finalizes durable runtime status for post-start fatal failures", async () => {

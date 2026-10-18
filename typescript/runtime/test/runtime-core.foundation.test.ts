@@ -146,7 +146,7 @@ describe("framework-runtime-core", () => {
     const registry = createToolRegistry([originalTool]);
     const firstRead = registry.get("search");
     const secondRead = registry.get("search");
-    const listedRead = registry.list()[0];
+    const [listedRead] = registry.list();
 
     if (
       firstRead === undefined ||
@@ -285,17 +285,14 @@ describe("framework-runtime-core", () => {
     const extension: ReceiverExtension = {
       afterTurn() {
         this.afterTurnCalls += 1;
-        return;
       },
       afterTurnCalls: 0,
       beforeIteration() {
         this.beforeIterationCalls += 1;
-        return;
       },
       beforeIterationCalls: 0,
       beforeTurn() {
         this.beforeTurnCalls += 1;
-        return;
       },
       beforeTurnCalls: 0,
       name: "receiver-aware",
@@ -312,7 +309,7 @@ describe("framework-runtime-core", () => {
 
     await runBeforeTurnHooks({
       emit() {
-        return;
+        // This hook test does not inspect emitted events.
       },
       extensions: [extension],
       iterationCount: 0,
@@ -323,7 +320,7 @@ describe("framework-runtime-core", () => {
     });
     await runBeforeIterationHooks({
       emit() {
-        return;
+        // This hook test does not inspect emitted events.
       },
       extensions: [extension],
       iterationCount: 1,
@@ -334,7 +331,7 @@ describe("framework-runtime-core", () => {
     });
     await runAfterTurnHooks({
       emit() {
-        return;
+        // This hook test does not inspect emitted events.
       },
       extensions: [extension],
       iterationCount: 1,
@@ -420,7 +417,7 @@ describe("framework-runtime-core", () => {
 
     await runBeforeTurnHooks({
       emit() {
-        return;
+        // This hook test does not inspect emitted events.
       },
       extensions: [
         {
@@ -446,7 +443,6 @@ describe("framework-runtime-core", () => {
                 count: 200,
               },
             };
-            return;
           },
           name: "viewer",
         },

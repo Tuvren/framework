@@ -25,6 +25,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   collectEvents,
   textSignal,
@@ -32,33 +33,32 @@ import {
   waitForAbort,
 } from "./runtime-core-test-helpers.ts";
 
-const createRunnerRegistry = (runners: RuntimeRunner[] = []) => {
-  return createBaseRunnerRegistry(runners);
-};
+const createRunnerRegistry = (runners: RuntimeRunner[] = []) =>
+  createBaseRunnerRegistry(runners);
 describe("framework-runtime-core awaitResult", () => {
   test("resolves with status=completed and the final assistant message on a successful turn", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "msg-1",
           role: "assistant",
           timestamp: context.runtime.now(),
           type: "message.start",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           delta: "Hello world.",
           messageId: "msg-1",
           timestamp: context.runtime.now(),
           type: "text.delta",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "msg-1",
           text: "Hello world.",
           timestamp: context.runtime.now(),
           type: "text.done",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           finishReason: "stop",
           messageId: "msg-1",
           timestamp: context.runtime.now(),
@@ -103,12 +103,14 @@ describe("framework-runtime-core awaitResult", () => {
   test("resolves (does not reject) with status=failed when the runner returns an error resolution", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute() {
+      execute: fromSynchronousVariadicAwaited(() => {
+        const malformedMessage = assistantText("invalid");
+        Object.defineProperty(malformedMessage, "parts", { value: [123] });
         return {
-          messages: JSON.parse('[{"role":"assistant","parts":[123]}]'),
+          messages: [malformedMessage],
           resolution: { reason: "done", type: "end_turn" },
         };
-      },
+      }),
       id: "fake",
     } satisfies RuntimeRunner;
 
@@ -167,7 +169,11 @@ describe("framework-runtime-core awaitResult", () => {
     await waitFor(() => runnerStarted);
     handle.cancel();
 
-    await expect(resultPromise).rejects.toMatchObject({
+    const cancellationError = await resultPromise.then(
+      () => null,
+      (error: unknown) => error
+    );
+    expect(cancellationError).toMatchObject({
       code: "execution_cancelled",
     });
     expect(handle.status().phase).toBe("failed");
@@ -177,13 +183,13 @@ describe("framework-runtime-core awaitResult", () => {
     const harness = createFakeKernelHarness();
     let executeCalls = 0;
     const runner = {
-      async execute() {
+      execute: fromSynchronousVariadicAwaited(() => {
         executeCalls += 1;
         return {
           messages: [assistantText("Should not run.")],
           resolution: { reason: "done", type: "end_turn" },
         };
-      },
+      }),
       id: "fake",
     } satisfies RuntimeRunner;
 
@@ -203,7 +209,11 @@ describe("framework-runtime-core awaitResult", () => {
     handle.cancel();
     const resultPromise = handle.awaitResult();
 
-    await expect(resultPromise).rejects.toMatchObject({
+    const cancellationError = await resultPromise.then(
+      () => null,
+      (error: unknown) => error
+    );
+    expect(cancellationError).toMatchObject({
       code: "execution_cancelled",
     });
     expect(handle.status().phase).toBe("failed");
@@ -213,12 +223,10 @@ describe("framework-runtime-core awaitResult", () => {
   test("returns the same ExecutionResult when awaited multiple times (idempotent)", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute() {
-        return {
-          messages: [assistantText("Done.")],
-          resolution: { reason: "done", type: "end_turn" },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited(() => ({
+        messages: [assistantText("Done.")],
+        resolution: { reason: "done", type: "end_turn" },
+      })),
       id: "fake",
     } satisfies RuntimeRunner;
 
@@ -250,25 +258,25 @@ describe("framework-runtime-core awaitResult", () => {
     const harness = createFakeKernelHarness();
     const runner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "msg-2",
           role: "assistant",
           timestamp: context.runtime.now(),
           type: "message.start",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           delta: "Concurrent.",
           messageId: "msg-2",
           timestamp: context.runtime.now(),
           type: "text.delta",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "msg-2",
           text: "Concurrent.",
           timestamp: context.runtime.now(),
           type: "text.done",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           finishReason: "stop",
           messageId: "msg-2",
           timestamp: context.runtime.now(),

@@ -30,6 +30,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   assistantToolCalls,
   collectEvents,
@@ -40,17 +41,15 @@ import {
 
 const isKrakenRunnerFactory = (
   entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory => {
-  return "create" in entry && typeof entry.create === "function";
-};
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
 
-const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
-  return (result.messages ?? []).some(
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&
       message.parts.some((part) => part.type === "tool_call")
   );
-};
 
 const normalizeRunnerResult = (
   result: RunnerExecutionResult
@@ -69,7 +68,7 @@ const normalizeRunnerResult = (
 };
 
 const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
-  const { resume } = runner;
+  const resume = runner.resume?.bind(runner);
 
   return {
     async execute(context) {
@@ -103,27 +102,23 @@ const wrapRunnerEntry = (
 
 const createRunnerRegistry = (
   runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) => {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-};
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("passes synthesized assistant response data into afterIteration hooks", async () => {
     const harness = createFakeKernelHarness();
     let capturedFinishReason: string | undefined;
     const runner = {
-      async execute(_context) {
-        return {
-          messages: [assistantText("Truncated assistant output.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited((_context) => ({
+        messages: [assistantText("Truncated assistant output.")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -138,7 +133,6 @@ describe("framework-runtime-core", () => {
           {
             afterIteration(context) {
               capturedFinishReason = context.response.finishReason;
-              return;
             },
             name: "response-capture",
           },
@@ -158,21 +152,19 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let capturedFinishReason: string | undefined;
     const runner = {
-      async execute(_context) {
-        return {
-          messages: [assistantText("Interrupted assistant output.")],
-          partial: true,
-          resolution: {
-            error: new Error("execution interrupted"),
-            fatality: "hard",
-            type: "fail",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited((_context) => ({
+        messages: [assistantText("Interrupted assistant output.")],
+        partial: true,
+        resolution: {
+          error: new Error("execution interrupted"),
+          fatality: "hard",
+          type: "fail",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -187,7 +179,6 @@ describe("framework-runtime-core", () => {
           {
             afterIteration(context) {
               capturedFinishReason = context.response.finishReason;
-              return;
             },
             name: "response-capture",
           },
@@ -214,22 +205,20 @@ describe("framework-runtime-core", () => {
       },
     ]);
     const runner = {
-      async execute(_context) {
-        return {
-          messages: [partialToolCall],
-          partial: true,
-          resolution: {
-            error: new Error("execution interrupted"),
-            fatality: "hard",
-            type: "fail",
-          },
-          toolExecutionMode: "sequential",
-        };
-      },
+      execute: fromSynchronousVariadicAwaited((_context) => ({
+        messages: [partialToolCall],
+        partial: true,
+        resolution: {
+          error: new Error("execution interrupted"),
+          fatality: "hard",
+          type: "fail",
+        },
+        toolExecutionMode: "sequential",
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -267,25 +256,25 @@ describe("framework-runtime-core", () => {
     let capturedResponse: TuvrenModelResponse | undefined;
     const runner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "message-1",
           role: "assistant",
           timestamp: context.runtime.now(),
           type: "message.start",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           delta: "Visible output",
           messageId: "message-1",
           timestamp: context.runtime.now(),
           type: "text.delta",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "message-1",
           text: "Visible output",
           timestamp: context.runtime.now(),
           type: "text.done",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           finishReason: "length",
           messageId: "message-1",
           timestamp: context.runtime.now(),
@@ -313,9 +302,9 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -330,7 +319,6 @@ describe("framework-runtime-core", () => {
           {
             afterIteration(context) {
               capturedResponse = context.response;
-              return;
             },
             name: "response-capture",
           },
@@ -365,31 +353,29 @@ describe("framework-runtime-core", () => {
         }
       | undefined;
     const runner = {
-      async execute() {
-        return {
-          messages: [
-            assistantText("First assistant message."),
-            {
-              parts: [
-                {
-                  data: { ok: true },
-                  name: "summary",
-                  type: "structured",
-                },
-              ],
-              role: "assistant",
-            },
-          ],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
+      execute: fromSynchronousVariadicAwaited(() => ({
+        messages: [
+          assistantText("First assistant message."),
+          {
+            parts: [
+              {
+                data: { ok: true },
+                name: "summary",
+                type: "structured",
+              },
+            ],
+            role: "assistant",
           },
-        };
-      },
+        ],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -407,7 +393,6 @@ describe("framework-runtime-core", () => {
                 finishReason: context.response.finishReason,
                 parts: context.response.parts,
               };
-              return;
             },
             name: "response-capture",
           },
@@ -440,7 +425,7 @@ describe("framework-runtime-core", () => {
       toolOutput: unknown;
     }[] = [];
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const toolMessages = extractToolMessages(context.messages);
 
         if (toolMessages.length === 0) {
@@ -467,11 +452,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -489,27 +474,26 @@ describe("framework-runtime-core", () => {
                 return;
               }
 
-              const firstPart = context.response.parts[0];
-              const firstToolResult = context.toolResults?.[0];
+              const [firstPart] = context.response.parts;
+              const [firstToolResult] = context.toolResults ?? [];
               capturedSnapshots.push({
                 resolutionType: context.resolution.type,
                 responsePartName:
                   firstPart?.type === "tool_call" ? firstPart.name : undefined,
                 toolOutput: firstToolResult?.output,
               });
-              return;
             },
             name: "capture",
           },
           {
             afterIteration(context) {
-              const firstToolResult = context.toolResults?.[0];
+              const [firstToolResult] = context.toolResults ?? [];
 
               if (firstToolResult !== undefined) {
                 firstToolResult.output = { mutated: true };
               }
 
-              const firstPart = context.response.parts[0];
+              const [firstPart] = context.response.parts;
 
               if (firstPart?.type === "tool_call") {
                 firstPart.name = "mutated";
@@ -521,7 +505,6 @@ describe("framework-runtime-core", () => {
                   type: "end_turn",
                 });
               }
-              return;
             },
             name: "mutate",
           },

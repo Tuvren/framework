@@ -17,6 +17,7 @@
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
+import type { InputSignal } from "@tuvren/core/execution";
 import type {
   RunnerExecutionResult,
   RuntimeRunner,
@@ -29,6 +30,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   collectEvents,
   delay,
@@ -36,22 +38,36 @@ import {
   hasAssistantText,
   readBranchContextManifest,
   textSignal,
+  toKrakenMessages,
   waitForAsync,
 } from "./runtime-core-test-helpers.ts";
 
-const isKrakenRunnerFactory = (
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory => {
-  return "create" in entry && typeof entry.create === "function";
+const signalWithAdmissionKey = (
+  text: string,
+  admissionKey: unknown
+): InputSignal => {
+  const signal = textSignal(text);
+  Object.defineProperty(signal, "admissionKey", { value: admissionKey });
+  return signal;
 };
 
-const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
-  return (result.messages ?? []).some(
+const malformedPartsSignal = (): InputSignal => {
+  const signal = textSignal("invalid");
+  Object.defineProperty(signal, "parts", { value: [123] });
+  return signal;
+};
+
+const isKrakenRunnerFactory = (
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
+
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&
       message.parts.some((part) => part.type === "tool_call")
   );
-};
 
 const normalizeRunnerResult = (
   result: RunnerExecutionResult
@@ -70,7 +86,7 @@ const normalizeRunnerResult = (
 };
 
 const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
-  const { resume } = runner;
+  const resume = runner.resume?.bind(runner);
 
   return {
     async execute(context) {
@@ -104,9 +120,7 @@ const wrapRunnerEntry = (
 
 const createRunnerRegistry = (
   runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) => {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-};
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("rejects malformed steering signals before they can be incorporated", async () => {
     const harness = createFakeKernelHarness();
@@ -140,9 +154,9 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -164,30 +178,24 @@ describe("framework-runtime-core", () => {
         "Waiting for steering."
       )
     );
-    expect(() => handle.steer(JSON.parse('{"parts":[123]}'))).toThrow(
-      "steering signal must be a valid TuvrenMessage"
-    );
-    expect(() =>
-      handle.steer(
-        JSON.parse(
-          '{"admissionKey":"","parts":[{"text":"Empty key","type":"text"}]}'
-        )
-      )
-    ).toThrow("steering signal must be a valid TuvrenMessage");
-    expect(() =>
-      handle.steer(
-        JSON.parse(
-          '{"admissionKey":7,"parts":[{"text":"Non-string key","type":"text"}]}'
-        )
-      )
-    ).toThrow("steering signal must be a valid TuvrenMessage");
+    expect(() => {
+      handle.steer(malformedPartsSignal());
+    }).toThrow("steering signal must be a valid TuvrenMessage");
+    expect(() => {
+      handle.steer(signalWithAdmissionKey("Empty key", ""));
+    }).toThrow("steering signal must be a valid TuvrenMessage");
+    expect(() => {
+      handle.steer(signalWithAdmissionKey("Non-string key", 7));
+    }).toThrow("steering signal must be a valid TuvrenMessage");
     handle.steer(textSignal("Injected steering"));
     await eventsPromise;
     const manifest = await readBranchContextManifest(
       harness.kernel,
       thread.branchId
     );
-    const messages = await harness.readBranchMessages(thread.branchId);
+    const messages = toKrakenMessages(
+      await harness.readBranchMessages(thread.branchId)
+    );
 
     expect(handle.status().phase).toBe("completed");
     expect(manifest.turnBoundaries).toEqual([0]);
@@ -291,9 +299,7 @@ describe("framework-runtime-core", () => {
       )
     );
     handle.steer(
-      JSON.parse(
-        '{"admissionKey":"  host-key-steering  ","parts":[{"text":"Keyed steering","type":"text"}]}'
-      )
+      signalWithAdmissionKey("Keyed steering", "  host-key-steering  ")
     );
     await eventsPromise;
 
@@ -343,9 +349,9 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -387,7 +393,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let firstExecuteSawSteering = false;
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         firstExecuteSawSteering = context.messages.some(
           (message) =>
             message.role === "user" &&
@@ -404,11 +410,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -423,9 +429,9 @@ describe("framework-runtime-core", () => {
       threadId: thread.threadId,
     });
 
-    expect(() => handle.steer(textSignal("Injected too early"))).toThrow(
-      "steer() is only valid while execution is running"
-    );
+    expect(() => {
+      handle.steer(textSignal("Injected too early"));
+    }).toThrow("steer() is only valid while execution is running");
     await collectEvents(handle.events());
 
     expect(firstExecuteSawSteering).toBe(false);
