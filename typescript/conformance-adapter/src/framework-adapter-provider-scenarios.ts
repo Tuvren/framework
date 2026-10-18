@@ -114,7 +114,138 @@ export interface FrameworkAdapterProviderScenarioDependencies {
   ): string;
 }
 
-export function createFrameworkAdapterProviderScenarios(
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+const readEventType = (event: unknown): string | undefined => {
+  return isRecord(event) && typeof event.type === "string"
+    ? event.type
+    : undefined;
+};
+
+const findEventIndex = (
+  events: readonly unknown[],
+  type: string,
+  callId?: string
+): number => {
+  return events.findIndex((event) => {
+    if (readEventType(event) !== type) {
+      return false;
+    }
+
+    return callId === undefined || (isRecord(event) && event.callId === callId);
+  });
+};
+
+const isFirstToolCallIdOwnedByFramework = (
+  response: TuvrenModelResponse
+): boolean => {
+  for (const part of response.parts) {
+    if (part.type !== "tool_call") {
+      continue;
+    }
+
+    const providerCallId = isRecord(part.providerMetadata)
+      ? part.providerMetadata.providerCallId
+      : undefined;
+
+    return typeof providerCallId === "string" && part.callId !== providerCallId;
+  }
+
+  return false;
+};
+
+const didParallelWaveStartBeforeResults = (
+  events: readonly unknown[]
+): boolean => {
+  const resultIndex = findEventIndex(events, "tool.result");
+
+  if (resultIndex < 0) {
+    return false;
+  }
+
+  const startedCallIds = new Set<string>();
+
+  for (let index = 0; index < resultIndex; index += 1) {
+    const event = events[index];
+
+    if (
+      isRecord(event) &&
+      event.type === "tool.start" &&
+      typeof event.callId === "string"
+    ) {
+      startedCallIds.add(event.callId);
+    }
+  }
+
+  return startedCallIds.size >= 2;
+};
+
+const readToolResultParts = (
+  messages: readonly unknown[]
+): Record<string, unknown>[] => {
+  const results: Record<string, unknown>[] = [];
+
+  for (const message of messages) {
+    if (!isRecord(message) || message.role !== "tool") {
+      continue;
+    }
+
+    const { parts } = message;
+
+    if (!Array.isArray(parts)) {
+      continue;
+    }
+
+    for (const part of parts) {
+      if (!isRecord(part)) {
+        continue;
+      }
+
+      results.push({
+        callId: part.callId,
+        isError: part.isError === true,
+        name: part.name,
+        output: part.output,
+      });
+    }
+  }
+
+  return results;
+};
+
+const resolveSchemaDialect = (schema: unknown): string => {
+  if (!isRecord(schema) || schema.$schema === undefined) {
+    return "draft-07";
+  }
+
+  if (typeof schema.$schema !== "string") {
+    return "unsupported";
+  }
+
+  if (schema.$schema.includes("2020-12")) {
+    return "draft-2020-12";
+  }
+
+  if (schema.$schema.includes("2019-09")) {
+    return "draft-2019-09";
+  }
+
+  if (schema.$schema.includes("draft-07")) {
+    return "draft-07";
+  }
+
+  return "unsupported";
+};
+
+const readErrorCode = (error: Error): string | undefined => {
+  return isRecord(error) && typeof error.code === "string"
+    ? error.code
+    : undefined;
+};
+
+export const createFrameworkAdapterProviderScenarios = (
   dependencies: FrameworkAdapterProviderScenarioDependencies
 ): {
   runContextTransform(input: unknown): Promise<AdapterProjection>;
@@ -122,10 +253,10 @@ export function createFrameworkAdapterProviderScenarios(
   runProviderStream(input: unknown): Promise<AdapterProjection>;
   runStructuredValidationFailure(input: unknown): Promise<AdapterProjection>;
   runToolExecution(input: unknown): Promise<AdapterProjection>;
-} {
-  async function runProviderGenerate(
+} => {
+  const runProviderGenerate = async (
     input: unknown
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runtime.provider-generate"
@@ -180,9 +311,11 @@ export function createFrameworkAdapterProviderScenarios(
         },
       },
     };
-  }
+  };
 
-  async function runProviderStream(input: unknown): Promise<AdapterProjection> {
+  const runProviderStream = async (
+    input: unknown
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runtime.provider-stream"
@@ -269,9 +402,35 @@ export function createFrameworkAdapterProviderScenarios(
         },
       },
     };
-  }
+  };
 
-  async function runToolExecution(input: unknown): Promise<AdapterProjection> {
+  const readScenarioToolCallList = (
+    scenario: Record<string, unknown>
+  ): ReturnType<
+    FrameworkAdapterProviderScenarioDependencies["readScenarioToolCalls"]
+  > => {
+    if (Array.isArray(scenario.toolCalls)) {
+      return dependencies.readScenarioToolCalls(
+        scenario,
+        "runtime.tool-execute.toolCalls"
+      );
+    }
+
+    if (!isRecord(scenario.toolCall)) {
+      throw new Error("runtime.tool-execute.toolCall must be an object");
+    }
+
+    return [
+      dependencies.readScenarioToolCall(
+        scenario.toolCall,
+        "runtime.tool-execute.toolCall"
+      ),
+    ];
+  };
+
+  const runToolExecution = async (
+    input: unknown
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runtime.tool-execute"
@@ -403,11 +562,11 @@ export function createFrameworkAdapterProviderScenarios(
         },
       },
     };
-  }
+  };
 
-  async function runStructuredValidationFailure(
+  const runStructuredValidationFailure = async (
     input: unknown
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runtime.validate-structured-output"
@@ -473,11 +632,71 @@ export function createFrameworkAdapterProviderScenarios(
         },
       },
     };
-  }
+  };
 
-  async function runContextTransform(
+  const readCheckpointHashes = (events: readonly unknown[]): string[] => {
+    const hashes: string[] = [];
+
+    for (const event of events) {
+      if (!isRecord(event) || event.type !== "state.checkpoint") {
+        continue;
+      }
+
+      const { turnNodeHash } = event;
+
+      if (typeof turnNodeHash !== "string") {
+        continue;
+      }
+
+      assertHashString(turnNodeHash, "state.checkpoint.turnNodeHash");
+      hashes.push(turnNodeHash);
+    }
+
+    return hashes;
+  };
+
+  const readRunnerObservedMessageCount = (
+    events: readonly unknown[]
+  ): number | undefined => {
+    for (const event of events) {
+      if (!isRecord(event) || event.type !== "custom") {
+        continue;
+      }
+
+      if (event.name !== "runner.executed" || !isRecord(event.data)) {
+        continue;
+      }
+
+      const { messageCount } = event.data;
+
+      if (typeof messageCount === "number") {
+        return messageCount;
+      }
+    }
+
+    return undefined;
+  };
+
+  const readSnapshotMessageCounts = (events: readonly unknown[]): number[] => {
+    const counts: number[] = [];
+
+    for (const event of events) {
+      if (
+        isRecord(event) &&
+        event.type === "state.snapshot" &&
+        isRecord(event.manifest) &&
+        typeof event.manifest.messageCount === "number"
+      ) {
+        counts.push(event.manifest.messageCount);
+      }
+    }
+
+    return counts;
+  };
+
+  const runContextTransform = async (
     input: unknown
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runtime.context-transform"
@@ -618,7 +837,7 @@ export function createFrameworkAdapterProviderScenarios(
         },
       },
     };
-  }
+  };
 
   return {
     runContextTransform,
@@ -627,219 +846,4 @@ export function createFrameworkAdapterProviderScenarios(
     runStructuredValidationFailure,
     runToolExecution,
   };
-
-  function readCheckpointHashes(events: readonly unknown[]): string[] {
-    const hashes: string[] = [];
-
-    for (const event of events) {
-      if (!isRecord(event) || event.type !== "state.checkpoint") {
-        continue;
-      }
-
-      const { turnNodeHash } = event;
-
-      if (typeof turnNodeHash !== "string") {
-        continue;
-      }
-
-      assertHashString(turnNodeHash, "state.checkpoint.turnNodeHash");
-      hashes.push(turnNodeHash);
-    }
-
-    return hashes;
-  }
-
-  function readRunnerObservedMessageCount(
-    events: readonly unknown[]
-  ): number | undefined {
-    for (const event of events) {
-      if (!isRecord(event) || event.type !== "custom") {
-        continue;
-      }
-
-      if (event.name !== "runner.executed" || !isRecord(event.data)) {
-        continue;
-      }
-
-      const { messageCount } = event.data;
-
-      if (typeof messageCount === "number") {
-        return messageCount;
-      }
-    }
-
-    return undefined;
-  }
-
-  function readSnapshotMessageCounts(events: readonly unknown[]): number[] {
-    const counts: number[] = [];
-
-    for (const event of events) {
-      if (
-        isRecord(event) &&
-        event.type === "state.snapshot" &&
-        isRecord(event.manifest) &&
-        typeof event.manifest.messageCount === "number"
-      ) {
-        counts.push(event.manifest.messageCount);
-      }
-    }
-
-    return counts;
-  }
-
-  function readScenarioToolCallList(
-    scenario: Record<string, unknown>
-  ): ReturnType<
-    FrameworkAdapterProviderScenarioDependencies["readScenarioToolCalls"]
-  > {
-    if (Array.isArray(scenario.toolCalls)) {
-      return dependencies.readScenarioToolCalls(
-        scenario,
-        "runtime.tool-execute.toolCalls"
-      );
-    }
-
-    if (!isRecord(scenario.toolCall)) {
-      throw new Error("runtime.tool-execute.toolCall must be an object");
-    }
-
-    return [
-      dependencies.readScenarioToolCall(
-        scenario.toolCall,
-        "runtime.tool-execute.toolCall"
-      ),
-    ];
-  }
-}
-
-function readErrorCode(error: Error): string | undefined {
-  return isRecord(error) && typeof error.code === "string"
-    ? error.code
-    : undefined;
-}
-
-function resolveSchemaDialect(schema: unknown): string {
-  if (!isRecord(schema) || schema.$schema === undefined) {
-    return "draft-07";
-  }
-
-  if (typeof schema.$schema !== "string") {
-    return "unsupported";
-  }
-
-  if (schema.$schema.includes("2020-12")) {
-    return "draft-2020-12";
-  }
-
-  if (schema.$schema.includes("2019-09")) {
-    return "draft-2019-09";
-  }
-
-  if (schema.$schema.includes("draft-07")) {
-    return "draft-07";
-  }
-
-  return "unsupported";
-}
-
-function findEventIndex(
-  events: readonly unknown[],
-  type: string,
-  callId?: string
-): number {
-  return events.findIndex((event) => {
-    if (readEventType(event) !== type) {
-      return false;
-    }
-
-    return callId === undefined || (isRecord(event) && event.callId === callId);
-  });
-}
-
-function didParallelWaveStartBeforeResults(
-  events: readonly unknown[]
-): boolean {
-  const resultIndex = findEventIndex(events, "tool.result");
-
-  if (resultIndex < 0) {
-    return false;
-  }
-
-  const startedCallIds = new Set<string>();
-
-  for (let index = 0; index < resultIndex; index += 1) {
-    const event = events[index];
-
-    if (
-      isRecord(event) &&
-      event.type === "tool.start" &&
-      typeof event.callId === "string"
-    ) {
-      startedCallIds.add(event.callId);
-    }
-  }
-
-  return startedCallIds.size >= 2;
-}
-
-function isFirstToolCallIdOwnedByFramework(
-  response: TuvrenModelResponse
-): boolean {
-  for (const part of response.parts) {
-    if (part.type !== "tool_call") {
-      continue;
-    }
-
-    const providerCallId = isRecord(part.providerMetadata)
-      ? part.providerMetadata.providerCallId
-      : undefined;
-
-    return typeof providerCallId === "string" && part.callId !== providerCallId;
-  }
-
-  return false;
-}
-
-function readEventType(event: unknown): string | undefined {
-  return isRecord(event) && typeof event.type === "string"
-    ? event.type
-    : undefined;
-}
-
-function readToolResultParts(
-  messages: readonly unknown[]
-): Record<string, unknown>[] {
-  const results: Record<string, unknown>[] = [];
-
-  for (const message of messages) {
-    if (!isRecord(message) || message.role !== "tool") {
-      continue;
-    }
-
-    const { parts } = message;
-
-    if (!Array.isArray(parts)) {
-      continue;
-    }
-
-    for (const part of parts) {
-      if (!isRecord(part)) {
-        continue;
-      }
-
-      results.push({
-        callId: part.callId,
-        isError: part.isError === true,
-        name: part.name,
-        output: part.output,
-      });
-    }
-  }
-
-  return results;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+};
