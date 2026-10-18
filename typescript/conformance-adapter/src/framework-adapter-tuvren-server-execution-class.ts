@@ -44,12 +44,15 @@ import {
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-const makeSingleCallRunner = (toolName: string, input: unknown = {}) => {
-  return createStaticRunner(async (context) => {
+const makeSingleCallRunner = (toolName: string, input: unknown = {}) =>
+  createStaticRunner(async (context) => {
     await Promise.resolve();
     if (!context.messages.some((m) => m.role === "tool")) {
       return {
@@ -65,10 +68,9 @@ const makeSingleCallRunner = (toolName: string, input: unknown = {}) => {
       resolution: { reason: "done", type: "end_turn" as const },
     };
   });
-};
 
-const makeMultiCallRunner = (toolName: string, callCount: number) => {
-  return createStaticRunner(async (context) => {
+const makeMultiCallRunner = (toolName: string, callCount: number) =>
+  createStaticRunner(async (context) => {
     await Promise.resolve();
     const toolMessages = context.messages.filter((m) => m.role === "tool");
     if (toolMessages.length < callCount) {
@@ -91,7 +93,6 @@ const makeMultiCallRunner = (toolName: string, callCount: number) => {
       resolution: { reason: "done", type: "end_turn" as const },
     };
   });
-};
 
 const runTurn = async (
   tool: TuvrenToolDefinition,
@@ -123,17 +124,23 @@ const runTurn = async (
   return events;
 };
 
-const findEvent = (events: unknown[], type: string) => {
-  return events.find((e) => (e as Record<string, unknown>).type === type) as
-    | Record<string, unknown>
-    | undefined;
-};
+const findEvent = (
+  events: readonly unknown[],
+  type: string
+): Record<string, unknown> | undefined =>
+  events.find(
+    (event): event is Record<string, unknown> =>
+      isRecord(event) && event.type === type
+  );
 
-const findAllEvents = (events: unknown[], type: string) => {
-  return events.filter(
-    (e) => (e as Record<string, unknown>).type === type
-  ) as Record<string, unknown>[];
-};
+const findAllEvents = (
+  events: readonly unknown[],
+  type: string
+): Record<string, unknown>[] =>
+  events.filter(
+    (event): event is Record<string, unknown> =>
+      isRecord(event) && event.type === type
+  );
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.tuvren-server.lifecycle
@@ -393,15 +400,13 @@ export const runTuvrenServerBindingClassification =
     // from the real tool.result event so the AX005 check detects regressions in
     // capability-attribution.ts rather than asserting a hardcoded adapter constant.
     const mcpEvents = await runTurn(mcpTool);
-    const mcpToolResult = findEvent(mcpEvents, "tool.result") as
-      | { attribution?: Record<string, unknown> }
-      | undefined;
-    const mcpAttribution = mcpToolResult?.attribution as
-      | Record<string, unknown>
-      | undefined;
-    const productionObservation = mcpAttribution?.observation as
-      | Record<string, unknown>
-      | undefined;
+    const mcpToolResult = findEvent(mcpEvents, "tool.result");
+    const mcpAttribution = isRecord(mcpToolResult?.attribution)
+      ? mcpToolResult.attribution
+      : undefined;
+    const productionObservation = isRecord(mcpAttribution?.observation)
+      ? mcpAttribution.observation
+      : undefined;
 
     const evidence = {
       tuvrenServer: {
@@ -447,10 +452,10 @@ export const runTuvrenServerCancellation =
     const TOOL_NAME = "ax006-cancellation-tool";
     const harness = createConformanceKernelHarness();
 
-    let releaseToolLatch: (() => void) | undefined;
-    const toolStarted = new Promise<void>((resolve) => {
-      releaseToolLatch = resolve;
-    });
+    const toolStartedBarrier = Promise.withResolvers<undefined>();
+    const releaseToolLatch = (): void => {
+      toolStartedBarrier.resolve();
+    };
     let releaseTool: (() => void) | undefined;
 
     const runner = createStaticRunner(async (context) => {
@@ -488,10 +493,12 @@ export const runTuvrenServerCancellation =
           {
             description: "cancellation tool",
             async execute() {
-              releaseToolLatch?.();
-              await new Promise<void>((resolve) => {
-                releaseTool = resolve;
-              });
+              releaseToolLatch();
+              const toolReleaseBarrier = Promise.withResolvers<undefined>();
+              releaseTool = () => {
+                toolReleaseBarrier.resolve();
+              };
+              await toolReleaseBarrier.promise;
               return { value: LATE_VALUE };
             },
             inputSchema: { type: "object" },
@@ -503,33 +510,37 @@ export const runTuvrenServerCancellation =
       threadId: thread.threadId,
     });
 
-    const eventsPromise = collectValues(handle.events()).then(
-      (v) => ({ ok: true as const, value: v }),
-      () => ({ ok: false as const, value: [] })
-    );
+    const eventsPromise = (async () => {
+      try {
+        return {
+          ok: true as const,
+          value: await collectValues(handle.events()),
+        };
+      } catch {
+        return { ok: false as const, value: [] };
+      }
+    })();
 
-    await toolStarted;
+    await toolStartedBarrier.promise;
     handle.cancel();
     releaseTool?.();
     await eventsPromise;
 
     const messages = await harness.readBranchMessages(thread.branchId);
     const toolMessages = messages.filter(
-      (m) => (m as Record<string, unknown>).role === "tool"
+      (message): message is Record<string, unknown> =>
+        isRecord(message) && message.role === "tool"
     );
-    const lateResultPresent = toolMessages.some((m) => {
-      const { parts } = m as Record<string, unknown>;
+    const lateResultPresent = toolMessages.some((message) => {
+      const { parts } = message;
       if (!Array.isArray(parts)) {
         return false;
       }
-      return parts.some((p) => {
-        const { output } = p as Record<string, unknown>;
-        return (
-          output !== null &&
-          typeof output === "object" &&
-          "value" in (output as Record<string, unknown>) &&
-          (output as Record<string, unknown>).value === LATE_VALUE
-        );
+      return parts.some((part) => {
+        if (!(isRecord(part) && isRecord(part.output))) {
+          return false;
+        }
+        return part.output.value === LATE_VALUE;
       });
     });
 
@@ -607,7 +618,7 @@ export const runTuvrenServerTenantIsolation =
         signal: textSignal("isolation test"),
         threadId: thread.threadId,
       });
-      return collectValues(handle.events());
+      return await collectValues(handle.events());
     };
 
     const eventsA = await runIsolatedTurn(1, 2);
@@ -615,20 +626,20 @@ export const runTuvrenServerTenantIsolation =
     const limitedInA = toolResultsA.some(
       (r) =>
         r.isError === true &&
-        (r.output as Record<string, unknown>)?.code ===
-          "tool_invocation_rate_limited"
+        isRecord(r.output) &&
+        r.output.code === "tool_invocation_rate_limited"
     );
-    const successInA = toolResultsA.some((r) => !r.isError);
+    const successInA = toolResultsA.some((r) => r.isError !== true);
 
     const eventsB = await runIsolatedTurn(5, 1);
     const toolResultsB = findAllEvents(eventsB, "tool.result");
     const limitedInB = toolResultsB.some(
       (r) =>
         r.isError === true &&
-        (r.output as Record<string, unknown>)?.code ===
-          "tool_invocation_rate_limited"
+        isRecord(r.output) &&
+        r.output.code === "tool_invocation_rate_limited"
     );
-    const successInB = toolResultsB.some((r) => !r.isError);
+    const successInB = toolResultsB.some((r) => r.isError !== true);
 
     const evidence = {
       tuvrenServer: {

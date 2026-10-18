@@ -53,18 +53,20 @@ export interface AdapterProjection {
 
 export interface ConformanceKernelHarness {
   kernel: RuntimeKernel & RuntimeKernelRunLiveness;
-  readBranchManifest(branchId: string): Promise<TurnTreeManifest>;
-  readBranchMessages(branchId: string): Promise<unknown[]>;
-  readBranchRuns(branchId: string): Promise<RunRecord[]>;
-  readBranchRuntimeStatus(branchId: string): Promise<unknown | null>;
-  readRunningStagedMessages(branchId: string): Promise<unknown[]>;
-  readTurnNodeManifest(turnNodeHash: CoreHashString): Promise<TurnTreeManifest>;
-  readTurnNodeMessages(turnNodeHash: CoreHashString): Promise<unknown[]>;
+  readBranchManifest: (branchId: string) => Promise<TurnTreeManifest>;
+  readBranchMessages: (branchId: string) => Promise<unknown[]>;
+  readBranchRuns: (branchId: string) => Promise<RunRecord[]>;
+  readBranchRuntimeStatus: (branchId: string) => Promise<unknown>;
+  readRunningStagedMessages: (branchId: string) => Promise<unknown[]>;
+  readTurnNodeManifest: (
+    turnNodeHash: CoreHashString
+  ) => Promise<TurnTreeManifest>;
+  readTurnNodeMessages: (turnNodeHash: CoreHashString) => Promise<unknown[]>;
 }
 
 export interface ConformanceRunLivenessKernelHarness {
-  getPreemptCalls(): number;
-  getRenewLeaseCalls(): number;
+  getPreemptCalls: () => number;
+  getRenewLeaseCalls: () => number;
   kernel: RuntimeKernel & RuntimeKernelRunLiveness;
   leasedRuns: Map<string, RunRecord>;
 }
@@ -81,31 +83,39 @@ export interface ScenarioToolCall {
 export const RUNNER_ID = "typescript-conformance-runner";
 export const AGENT_NAME = "typescript-conformance-agent";
 
+const readStoredRecords = async (
+  kernel: RuntimeKernel,
+  hashes: readonly unknown[]
+): Promise<unknown[]> => {
+  const records: unknown[] = [];
+  const readAt = async (index: number): Promise<void> => {
+    if (index >= hashes.length) {
+      return;
+    }
+
+    const hash = hashes[index];
+
+    if (isHashString(hash)) {
+      const payload = await kernel.store.get(hash);
+
+      if (payload !== null) {
+        records.push(decodeDeterministicKernelRecord(payload));
+      }
+    }
+
+    await readAt(index + 1);
+  };
+
+  await readAt(0);
+  return records;
+};
+
 const readMessagesFromManifest = async (
   kernel: RuntimeKernel,
   manifest: TurnTreeManifest
 ): Promise<unknown[]> => {
   const hashes = manifest.messages;
-
-  if (!Array.isArray(hashes)) {
-    return [];
-  }
-
-  const messages: unknown[] = [];
-
-  for (const hash of hashes) {
-    if (!isHashString(hash)) {
-      continue;
-    }
-
-    const payload = await kernel.store.get(hash);
-
-    if (payload !== null) {
-      messages.push(decodeDeterministicKernelRecord(payload));
-    }
-  }
-
-  return messages;
+  return Array.isArray(hashes) ? await readStoredRecords(kernel, hashes) : [];
 };
 
 export const createConformanceKernelHarness = (options?: {
@@ -138,16 +148,13 @@ export const createConformanceKernelHarness = (options?: {
     },
     async readBranchMessages(branchId) {
       const manifest = await this.readBranchManifest(branchId);
-      return readMessagesFromManifest(kernel, manifest);
+      return await readMessagesFromManifest(kernel, manifest);
     },
     async readBranchRuns(branchId) {
-      return await backend.transact((tx) =>
-        tx.runs
-          .listByBranch(branchId)
-          .then((storedRuns) =>
-            storedRuns.map((storedRun) => decodeStoredRun(storedRun))
-          )
-      );
+      return await backend.transact(async (tx) => {
+        const storedRuns = await tx.runs.listByBranch(branchId);
+        return storedRuns.map((storedRun) => decodeStoredRun(storedRun));
+      });
     },
     async readBranchRuntimeStatus(branchId) {
       const manifest = await this.readBranchManifest(branchId);
@@ -169,21 +176,10 @@ export const createConformanceKernelHarness = (options?: {
       }
 
       const stagedResults = await kernel.staging.current(runningRun.runId);
-      const stagedMessages: unknown[] = [];
-
-      for (const stagedResult of stagedResults) {
-        if (stagedResult.objectType !== "message") {
-          continue;
-        }
-
-        const payload = await kernel.store.get(stagedResult.objectHash);
-
-        if (payload !== null) {
-          stagedMessages.push(decodeDeterministicKernelRecord(payload));
-        }
-      }
-
-      return stagedMessages;
+      const messageHashes = stagedResults
+        .filter((stagedResult) => stagedResult.objectType === "message")
+        .map((stagedResult) => stagedResult.objectHash);
+      return await readStoredRecords(kernel, messageHashes);
     },
     async readTurnNodeManifest(turnNodeHash) {
       const turnNode = await kernel.node.get(turnNodeHash);
@@ -196,7 +192,7 @@ export const createConformanceKernelHarness = (options?: {
     },
     async readTurnNodeMessages(turnNodeHash) {
       const manifest = await this.readTurnNodeManifest(turnNodeHash);
-      return readMessagesFromManifest(kernel, manifest);
+      return await readMessagesFromManifest(kernel, manifest);
     },
   };
 };
@@ -304,7 +300,11 @@ export const createConformanceIdFactory = (): (() => string) => {
 
   // Compatibility evidence is checked in, so conformance-only runtime IDs stay
   // deterministic while the production runtime keeps its random default IDs.
-  return () => `conformance-id-${nextId++}`;
+  return () => {
+    const id = `conformance-id-${nextId}`;
+    nextId += 1;
+    return id;
+  };
 };
 
 export const createScenarioProvider = (
@@ -312,22 +312,26 @@ export const createScenarioProvider = (
   onGenerate: () => void
 ): TuvrenProvider => {
   let responseIndex = 0;
+  const generate = Promise.try.bind<
+    typeof Promise,
+    [() => TuvrenModelResponse],
+    [],
+    Promise<TuvrenModelResponse>
+  >(Promise, () => {
+    onGenerate();
+
+    const response = responses[responseIndex] ?? responses.at(-1);
+
+    if (response === undefined) {
+      throw new Error("runner scenario must provide at least one response");
+    }
+
+    responseIndex += 1;
+    return structuredClone(response);
+  });
 
   return {
-    generate() {
-      onGenerate();
-
-      const response = responses[responseIndex] ?? responses.at(-1);
-
-      if (response === undefined) {
-        return Promise.reject(
-          new Error("runner scenario must provide at least one response")
-        );
-      }
-
-      responseIndex += 1;
-      return Promise.resolve(structuredClone(response));
-    },
+    generate,
     id: "provider",
     async *stream() {
       await Promise.resolve();
@@ -355,43 +359,43 @@ export const createStaticRunner = (
   execute: (
     context: RunnerExecutionContext
   ) => RunnerExecutionResult | Promise<RunnerExecutionResult>
-): RuntimeRunner => {
-  return {
-    execute(context) {
-      return Promise.resolve(execute(context));
-    },
-    id: RUNNER_ID,
-  };
-};
+): RuntimeRunner => ({
+  async execute(context) {
+    return await execute(context);
+  },
+  id: RUNNER_ID,
+});
 
-const createContextManifest = (): ContextManifest => {
-  return {
-    byRole: {
-      assistant: 0,
-      system: 0,
-      tool: 0,
-      user: 1,
-    },
-    extensions: {},
-    lastAssistantMessageIndex: -1,
-    lastUserMessageIndex: 0,
-    messageCount: 1,
-    tokenEstimate: 0,
-    toolCalls: {
-      byName: {},
-      total: 0,
-    },
-    toolResults: {
-      byName: {},
-      total: 0,
-    },
-    turnBoundaries: [0],
-  };
-};
+const createContextManifest = (): ContextManifest => ({
+  byRole: {
+    assistant: 0,
+    system: 0,
+    tool: 0,
+    user: 1,
+  },
+  extensions: {},
+  lastAssistantMessageIndex: -1,
+  lastUserMessageIndex: 0,
+  messageCount: 1,
+  tokenEstimate: 0,
+  toolCalls: {
+    byName: {},
+    total: 0,
+  },
+  toolResults: {
+    byName: {},
+    total: 0,
+  },
+  turnBoundaries: [0],
+});
 
 export const createClock = (): (() => number) => {
   let now = 1;
-  return () => now++;
+  return () => {
+    const currentTime = now;
+    now += 1;
+    return currentTime;
+  };
 };
 
 const createToolRegistry = (
@@ -488,36 +492,31 @@ export const createRunnerExecutionContext = (input?: {
   };
 };
 
-export const assistantText = (text: string): TuvrenMessage => {
-  return {
-    parts: [{ text, type: "text" }],
-    role: "assistant",
-  };
-};
+export const assistantText = (text: string): TuvrenMessage => ({
+  parts: [{ text, type: "text" }],
+  role: "assistant",
+});
 
 const toToolCallPart = (call: {
   callId: string;
   input: unknown;
   name: string;
-}): ToolCallPart => {
-  return {
-    callId: call.callId,
-    input: call.input,
-    name: call.name,
-    type: "tool_call",
-  };
-};
+}): ToolCallPart => ({
+  callId: call.callId,
+  input: call.input,
+  name: call.name,
+  type: "tool_call",
+});
 
 export const assistantToolCalls = (
   calls: readonly ScenarioToolCall[]
 ): TuvrenMessage => {
-  const firstCall = calls[0];
+  const [firstCall, ...remainingCalls] = calls;
 
   if (firstCall === undefined) {
     throw new Error("tool call scenario must contain at least one call");
   }
 
-  const remainingCalls = calls.slice(1);
   const parts: [ToolCallPart, ...ToolCallPart[]] = [
     toToolCallPart(firstCall),
     ...remainingCalls.map(toToolCallPart),
@@ -529,11 +528,9 @@ export const assistantToolCalls = (
   };
 };
 
-export const textSignal = (text: string): InputSignal => {
-  return {
-    parts: [{ text, type: "text" }],
-  };
-};
+export const textSignal = (text: string): InputSignal => ({
+  parts: [{ text, type: "text" }],
+});
 
 export const collectValues = async <T>(
   values: AsyncIterable<T>
