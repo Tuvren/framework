@@ -28,7 +28,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Search",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: 123,
         name: "search",
@@ -41,7 +41,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad required schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           required: [7],
@@ -55,7 +55,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad properties schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           properties: "oops",
@@ -69,7 +69,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad nested property schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           properties: {
@@ -85,7 +85,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad schema type",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           type: "banana",
@@ -98,7 +98,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad schema type array",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           type: ["object", "banana"],
@@ -111,7 +111,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad empty schema type array",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           type: [],
@@ -124,7 +124,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad duplicate schema type array",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           type: ["string", "string"],
@@ -137,7 +137,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad duplicate required entries",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           properties: {
@@ -154,7 +154,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad items schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           items: 123,
@@ -168,7 +168,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad additionalProperties schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           additionalProperties: 123,
@@ -182,7 +182,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad propertyNames schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           propertyNames: 123,
@@ -196,7 +196,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad oneOf schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           oneOf: [123],
@@ -209,7 +209,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad minLength schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           minLength: "abc",
@@ -223,7 +223,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad enum schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           enum: "not-an-array",
@@ -237,7 +237,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad empty enum schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           enum: [],
@@ -251,7 +251,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad duplicate enum schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           enum: ["a", "a"],
@@ -265,7 +265,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad allOf schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           allOf: "oops",
@@ -279,7 +279,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad anyOf schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           anyOf: 123,
@@ -293,7 +293,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad prefixItems schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           prefixItems: 123,
@@ -307,7 +307,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad empty oneOf schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           oneOf: [],
@@ -320,7 +320,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad $ref schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           $ref: 123,
@@ -333,7 +333,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad $defs schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           $defs: [1],
@@ -347,7 +347,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad title schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           title: 123,
@@ -361,7 +361,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Bad description schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           description: 123,
@@ -394,7 +394,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Class-backed schema tool",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: new ExampleSchema(),
         name: "class-schema",
@@ -420,7 +420,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Lazy custom schema",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: new LazySchema(),
         name: "lazy-custom-schema",
@@ -434,7 +434,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Constrained number tool",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           multipleOf: 0.1,
@@ -450,7 +450,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Unsatisfiable numeric bounds",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: {
           maximum: 3,
@@ -467,7 +467,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Search",
         execute() {
-          return undefined;
+          return;
         },
         extra: 1,
         inputSchema: true,
@@ -481,7 +481,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Search",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: true,
         metadata: {
@@ -500,7 +500,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
         approval: 7,
         description: "Search",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: true,
         name: "search",
@@ -511,7 +511,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Search",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: true,
         metadata: 7,
@@ -523,7 +523,7 @@ describe("runtime-contract-guards tool definition contracts", () => {
       isTuvrenToolDefinition({
         description: "Search",
         execute() {
-          return undefined;
+          return;
         },
         inputSchema: true,
         name: "search",

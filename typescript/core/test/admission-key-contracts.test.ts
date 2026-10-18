@@ -112,7 +112,7 @@ function loadJsonSchemas(directoryUrl: URL): Ajv2020 {
     }
 
     const schema: unknown = JSON.parse(
-      readFileSync(new URL(fileName, directoryUrl), "utf8")
+      readFileSync(new URL(fileName, directoryUrl), "utf-8")
     );
 
     if (!isAjvSchema(schema)) {
@@ -135,7 +135,7 @@ function isAjvSchema(value: unknown): value is AnySchema {
 function readSchema(directoryUrl: URL, schemaId: string): JsonSchemaShape {
   const fileName = schemaId.slice(schemaId.lastIndexOf("/") + 1);
   const schema: unknown = JSON.parse(
-    readFileSync(new URL(fileName, directoryUrl), "utf8")
+    readFileSync(new URL(fileName, directoryUrl), "utf-8")
   );
 
   if (

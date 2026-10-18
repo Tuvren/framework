@@ -176,7 +176,7 @@ function loadJsonSchemas(directoryUrl: URL): Ajv2020 {
 
   for (const entry of entries) {
     const schemaPath = join(directory, entry);
-    const schema = JSON.parse(readFileSync(schemaPath, "utf8"));
+    const schema = JSON.parse(readFileSync(schemaPath, "utf-8"));
     ajv.addSchema(schema);
   }
 
