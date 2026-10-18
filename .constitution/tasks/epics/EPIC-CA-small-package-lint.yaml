@@ -166,7 +166,6 @@ closeout:
         - typescript/core/src/lib/runner-agent-config-snapshot-guards.ts
         - typescript/core/src/lib/runner-contract-guards.ts
         - typescript/core/src/lib/runtime-provider-contract-guards.ts
-        - typescript/core/src/lib/runtime-contract-guards.ts
         - typescript/core/src/lib/runtime-data-contract-shapes.ts
         - typescript/core/src/lib/runtime-event-contract-shapes.ts
         - typescript/core/src/lib/runtime-execution-contract-shapes.ts
