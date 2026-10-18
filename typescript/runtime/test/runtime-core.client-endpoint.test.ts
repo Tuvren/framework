@@ -60,17 +60,18 @@ import {
 // ---------------------------------------------------------------------------
 
 let idCounter = 0;
-function makeId() {
+
+const makeId = () => {
   idCounter += 1;
   return `test-id-${idCounter}`;
-}
+};
 
 /** A mock client endpoint that immediately returns a fixed result. */
-function makeOkEndpoint(
+const makeOkEndpoint = (
   endpointId: string,
   capabilityId: string,
   content: unknown
-): AttachedClientEndpoint {
+): AttachedClientEndpoint => {
   return {
     advertisedCapabilities: [
       {
@@ -90,13 +91,13 @@ function makeOkEndpoint(
     },
     endpointId,
   };
-}
+};
 
 /** A mock client endpoint that returns a stale leaseToken (simulates a stale late-completion). */
-function makeStaleEndpoint(
+const makeStaleEndpoint = (
   endpointId: string,
   capabilityId: string
-): AttachedClientEndpoint {
+): AttachedClientEndpoint => {
   return {
     advertisedCapabilities: [
       {
@@ -116,14 +117,14 @@ function makeStaleEndpoint(
     },
     endpointId,
   };
-}
+};
 
 /** A mock client endpoint for a client-side MCP tool. */
-function makeClientMcpEndpoint(
+const makeClientMcpEndpoint = (
   endpointId: string,
   capabilityId: string,
   mcpServerName: string
-): AttachedClientEndpoint {
+): AttachedClientEndpoint => {
   return {
     advertisedCapabilities: [
       {
@@ -144,10 +145,10 @@ function makeClientMcpEndpoint(
     },
     endpointId,
   };
-}
+};
 
 /** Build a runner that requests one tool call then ends. */
-function makeOneCallRunner(toolName: string, input: unknown = {}) {
+const makeOneCallRunner = (toolName: string, input: unknown = {}) => {
   return {
     execute(context: RunnerExecutionContext): Promise<RunnerExecutionResult> {
       const hasToolResult = context.messages.some((m) => m.role === "tool");
@@ -167,13 +168,13 @@ function makeOneCallRunner(toolName: string, input: unknown = {}) {
     },
     id: "test-runner",
   };
-}
+};
 
-async function runTurnWithClientEndpoint(
+const runTurnWithClientEndpoint = async (
   endpoint: AttachedClientEndpoint,
   toolName: string,
   input: unknown = {}
-) {
+) => {
   const harness = createFakeKernelHarness();
   const runner = makeOneCallRunner(toolName, input);
   const runtime = createTuvrenRuntime({
@@ -197,8 +198,7 @@ async function runTurnWithClientEndpoint(
   const events = await collectEvents(handle.events());
   const result = await handle.awaitResult();
   return { events, result };
-}
-
+};
 // ---------------------------------------------------------------------------
 // KRT-AZ001 + AZ002: Attach, dispatch, result capture
 // ---------------------------------------------------------------------------
