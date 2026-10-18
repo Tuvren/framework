@@ -37,8 +37,8 @@ const ADMISSION_KEY = "host-session-admission-key";
 
 const containsSteeringMessage = (
   messages: Parameters<RuntimeRunner["execute"]>[0]["messages"]
-): boolean => {
-  return messages.some(
+): boolean =>
+  messages.some(
     (message) =>
       "role" in message &&
       message.role === "user" &&
@@ -46,19 +46,12 @@ const containsSteeringMessage = (
         (part) => part.type === "text" && part.text === STEERING_TEXT
       )
   );
-};
 
 export const runAdmissionKeySteerCarriage =
   async (): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
-    let releaseInitialIteration: (() => void) | undefined;
-    let signalInitialIterationStarted: (() => void) | undefined;
-    const initialIterationStarted = new Promise<void>((resolve) => {
-      signalInitialIterationStarted = resolve;
-    });
-    const initialIterationRelease = new Promise<void>((resolve) => {
-      releaseInitialIteration = resolve;
-    });
+    const initialIterationStarted = Promise.withResolvers<undefined>();
+    const initialIterationRelease = Promise.withResolvers<undefined>();
     const runner: RuntimeRunner = {
       async execute(context) {
         if (containsSteeringMessage(context.messages)) {
@@ -68,8 +61,8 @@ export const runAdmissionKeySteerCarriage =
           };
         }
 
-        signalInitialIterationStarted?.();
-        await initialIterationRelease;
+        initialIterationStarted.resolve();
+        await initialIterationRelease.promise;
         return {
           messages: [assistantText("Waiting for steering.")],
           resolution: { type: "continue_iteration" },
@@ -95,7 +88,7 @@ export const runAdmissionKeySteerCarriage =
     });
     const outboundPromise = collectValues(binding.outbound());
 
-    await initialIterationStarted;
+    await initialIterationStarted.promise;
     const dispatchedFrame: SessionSteerFrame = {
       correlationId: "corr-host-session-admission-key-1",
       kind: "steer",
@@ -107,7 +100,7 @@ export const runAdmissionKeySteerCarriage =
       },
     };
     binding.dispatchInbound(dispatchedFrame);
-    releaseInitialIteration?.();
+    initialIterationRelease.resolve();
     await outboundPromise;
     await handle.awaitResult();
 

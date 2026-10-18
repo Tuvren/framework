@@ -28,7 +28,7 @@
  */
 
 import { readdir, readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import path from "node:path";
 
 import type { AttachedClientEndpoint } from "@tuvren/core/capabilities";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
@@ -50,7 +50,7 @@ import type {
   WsSessionTransport,
   WsSocketSink,
 } from "@tuvren/stream-ws";
-import type { AnySchema, ValidateFunction } from "ajv";
+import type { ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
@@ -66,8 +66,8 @@ import {
   waitFor,
 } from "./framework-adapter-session.ts";
 
-const REPO_ROOT = resolve(import.meta.dirname, "../../..");
-const WS_JSON_SCHEMA_DIR = resolve(
+const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
+const WS_JSON_SCHEMA_DIR = path.resolve(
   REPO_ROOT,
   "spec/streaming/ws/artifacts/json-schema"
 );
@@ -99,7 +99,7 @@ const WS_ADAPTER_DISPATCH_TIMEOUT_MS = 30_000;
 const WS_ADAPTER_REPLAY_BUFFER_CAPACITY = 200;
 
 interface SessionComposition {
-  attachTransport(sink: WsSocketSink): WsSessionTransport;
+  attachTransport: (sink: WsSocketSink) => WsSessionTransport;
   session: RemoteClientSession;
 }
 
@@ -153,40 +153,105 @@ interface FakeBindingResult {
   dispatched: unknown[];
 }
 
-const unusedClientEndpoint: AttachedClientEndpoint = {
-  advertisedCapabilities: [],
-  dispatch(): Promise<never> {
-    return Promise.reject(
-      new Error(
-        "event-stream-ws conformance fake binding clientEndpoint.dispatch is unused"
-      )
-    );
-  },
-  endpointId: "event-stream-ws-conformance-unused-endpoint",
-};
-
 interface RecordingSink extends WsSocketSink {
   closes: { code: number; reason: string | undefined }[];
   sent: unknown[];
 }
 
+interface SchemaDirectoryEntry {
+  isFile: () => boolean;
+  name: string;
+}
+
+type WsSchema = boolean | Record<string, unknown>;
+
 let wsValidatorsPromise: Promise<Map<string, ValidateFunction>> | undefined;
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+const fromSynchronous = <Argument, Value>(
+  operation: (argument: Argument) => Value
+): ((argument: Argument) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(argument: Argument) => Value],
+    [Argument],
+    Promise<Value>
+  >(Promise, operation);
+
+const fromSynchronousWithoutArguments = <Value>(
+  operation: () => Value
+): (() => Promise<Value>) =>
+  Promise.try.bind<typeof Promise, [() => Value], [], Promise<Value>>(
+    Promise,
+    operation
+  );
+
+const unusedClientEndpoint: AttachedClientEndpoint = {
+  advertisedCapabilities: [],
+  dispatch: fromSynchronous((_envelope: unknown): never => {
+    throw new Error(
+      "event-stream-ws conformance fake binding clientEndpoint.dispatch is unused"
+    );
+  }),
+  endpointId: "event-stream-ws-conformance-unused-endpoint",
 };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const readFixtureRecord = (
   input: unknown,
   operation: string
 ): Record<string, unknown> => {
-  if (isRecord(input) && isRecord((input as { fixture?: unknown }).fixture)) {
-    return (input as { fixture: Record<string, unknown> }).fixture;
+  if (isRecord(input) && isRecord(input.fixture)) {
+    return input.fixture;
   }
 
   throw new Error(
     `${operation} expects the runner to supply the resolved fixture object under input.fixture`
   );
+};
+
+const readRecordedMessages = (
+  messages: readonly unknown[],
+  label: string
+): Record<string, unknown>[] => {
+  const records: Record<string, unknown>[] = [];
+  for (const message of messages) {
+    if (!isRecord(message)) {
+      throw new Error(`${label} emitted a non-object WebSocket message`);
+    }
+    records.push(message);
+  }
+  return records;
+};
+
+const hasStringCursor = (
+  message: Record<string, unknown>
+): message is Record<string, unknown> & { cursor: string } =>
+  typeof message.cursor === "string";
+
+const readWsSchemas = async (
+  entries: readonly SchemaDirectoryEntry[],
+  schemas: WsSchema[] = [],
+  index = 0
+): Promise<WsSchema[]> => {
+  const entry = entries[index];
+  if (entry === undefined) {
+    return schemas;
+  }
+  if (entry.isFile() && entry.name.endsWith(".json")) {
+    const schema: unknown = JSON.parse(
+      await readFile(path.resolve(WS_JSON_SCHEMA_DIR, entry.name), "utf-8")
+    );
+    if (!(typeof schema === "boolean" || isRecord(schema))) {
+      throw new Error(
+        `event-stream-ws schema ${entry.name} must contain an object or boolean schema`
+      );
+    }
+    schemas.push(schema);
+  }
+  await readWsSchemas(entries, schemas, index + 1);
+  return schemas;
 };
 
 const readStringField = (
@@ -254,22 +319,19 @@ const projectParsedMessage = (
 // Operation: decode trace
 // ---------------------------------------------------------------------------
 
-const runDecodeTrace = (input: unknown): Promise<AdapterProjection> => {
+const runDecodeTrace = fromSynchronous((input: unknown): AdapterProjection => {
   const fixture = readFixtureRecord(input, "decode-trace");
   const wire = readStringField(fixture, "wire");
   const parsed = parseWsMessage(wire);
 
-  return Promise.resolve({
-    result: { ws: { decode: projectParsedMessage(parsed) } },
-  });
-};
+  return { result: { ws: { decode: projectParsedMessage(parsed) } } };
+});
 
 const readSessionScenarioFixture = (
   input: unknown,
   label: string
-): Record<string, unknown> => {
-  return readFixtureRecord(input, `event-stream-ws.${label}`);
-};
+): Record<string, unknown> =>
+  readFixtureRecord(input, `event-stream-ws.${label}`);
 
 const createFakeBinding = (
   outboundFrames: SessionOutboundFrame[],
@@ -278,6 +340,15 @@ const createFakeBinding = (
   const dispatched: unknown[] = [];
   let index = 0;
   let claimed = false;
+
+  // biome-ignore lint/suspicious/useAwait: intentionally synchronous resolution.
+  const createAvailableFrames = async function* createAvailableFrames() {
+    while (index < outboundFrames.length) {
+      const value = outboundFrames[index];
+      index += 1;
+      yield value;
+    }
+  };
 
   const binding: DuplexSessionBinding = {
     clientEndpoint: unusedClientEndpoint,
@@ -296,26 +367,27 @@ const createFakeBinding = (
         );
       }
       claimed = true;
+      const availableFrames = createAvailableFrames();
+      const pendingOutbound =
+        Promise.withResolvers<IteratorResult<SessionOutboundFrame>>();
 
       return {
         [Symbol.asyncIterator](): AsyncIterator<SessionOutboundFrame> {
           return {
-            next(): Promise<IteratorResult<SessionOutboundFrame>> {
-              if (index < outboundFrames.length) {
-                const value = outboundFrames[index] as SessionOutboundFrame;
-                index += 1;
-                return Promise.resolve({ done: false, value });
+            async next(): Promise<IteratorResult<SessionOutboundFrame>> {
+              const available = await availableFrames.next();
+              if (available.done !== true) {
+                return available;
               }
 
-              return new Promise<IteratorResult<SessionOutboundFrame>>(() => {
-                // Never resolves: models a still-open live connection.
-              });
+              return await pendingOutbound.promise;
             },
-            // biome-ignore lint/suspicious/useAwait: intentionally synchronous resolution.
-            async return(): Promise<IteratorResult<SessionOutboundFrame>> {
-              index = outboundFrames.length;
-              return { done: true, value: undefined };
-            },
+            return: fromSynchronousWithoutArguments(
+              (): IteratorResult<SessionOutboundFrame> => {
+                index = outboundFrames.length;
+                return { done: true, value: undefined };
+              }
+            ),
           };
         },
       };
@@ -329,14 +401,13 @@ const createFakeBinding = (
 /** Wraps a structural fake `DuplexSessionBinding` in a `RemoteClientSession` with generous grace/timeout defaults (these fixtures never exercise reattach/redelivery — only handshake and heartbeat/backpressure policy — so the exact values are not load-bearing). */
 const createTestRemoteClientSession = (
   binding: DuplexSessionBinding
-): RemoteClientSession => {
-  return createRemoteClientSession({
+): RemoteClientSession =>
+  createRemoteClientSession({
     binding,
     disconnectGraceMs: WS_ADAPTER_DISCONNECT_GRACE_MS,
     dispatchTimeoutMs: WS_ADAPTER_DISPATCH_TIMEOUT_MS,
     replayBufferCapacity: WS_ADAPTER_REPLAY_BUFFER_CAPACITY,
   });
-};
 
 const createRecordingSink = (): RecordingSink => {
   const sent: unknown[] = [];
@@ -479,7 +550,10 @@ const createScriptedBufferedAmountSink = (script: number[]): RecordingSink => {
   let index = 0;
 
   sink.bufferedAmount = (): number => {
-    const value = script[Math.min(index, script.length - 1)] as number;
+    const value = script[Math.min(index, script.length - 1)];
+    if (value === undefined) {
+      throw new Error("event-stream-ws buffered amount script is empty");
+    }
     index += 1;
     return value;
   };
@@ -557,12 +631,16 @@ const runPolicyClosures = async (
     JSON.stringify({ kind: "handshake", protocolVersion: "1" })
   );
   await waitFor(() => backpressureSink.closes.length > 0);
+  const backpressureMessages = readRecordedMessages(
+    backpressureSink.sent,
+    "event-stream-ws policy-closures"
+  );
 
   const observation = {
     backpressureCloseCode: backpressureSink.closes[0]?.code ?? null,
-    backpressureSentFrameCount: (
-      backpressureSink.sent as Record<string, unknown>[]
-    ).filter((message) => message.kind === "frame").length,
+    backpressureSentFrameCount: backpressureMessages.filter(
+      (message) => message.kind === "frame"
+    ).length,
     heartbeatCloseCode: livenessSink.closes[0]?.code ?? null,
   };
 
@@ -593,11 +671,10 @@ const createSessionComposition = (
 
 const countFrameMessagesWithCursor = (
   messages: readonly Record<string, unknown>[]
-): number => {
-  return messages.filter(
+): number =>
+  messages.filter(
     (message) => message.kind === "frame" && typeof message.cursor === "string"
   ).length;
-};
 
 const runReconnectWithCursor = async (): Promise<AdapterProjection> => {
   const harness = createConformanceKernelHarness();
@@ -650,14 +727,21 @@ const runReconnectWithCursor = async (): Promise<AdapterProjection> => {
   await waitFor(
     () =>
       countFrameMessagesWithCursor(
-        firstSink.sent as Record<string, unknown>[]
+        readRecordedMessages(
+          firstSink.sent,
+          "event-stream-ws reconnect first sink"
+        )
       ) >= 2
   );
 
-  const firstFrames = (firstSink.sent as Record<string, unknown>[]).filter(
-    (message) => message.kind === "frame" && typeof message.cursor === "string"
-  );
-  const midCursor = firstFrames[0]?.cursor as string;
+  const firstFrame = readRecordedMessages(
+    firstSink.sent,
+    "event-stream-ws reconnect first sink"
+  ).find((message) => message.kind === "frame" && hasStringCursor(message));
+  if (firstFrame === undefined || !hasStringCursor(firstFrame)) {
+    throw new Error("event-stream-ws reconnect captured no cursor frame");
+  }
+  const midCursor = firstFrame.cursor;
   const midSequence = decodeResumeCursor(midCursor)?.sequence;
 
   // Simulated drop: detaches this sink from the session (ADR-0063 decision
@@ -680,15 +764,16 @@ const runReconnectWithCursor = async (): Promise<AdapterProjection> => {
   // currently attached — the second one.
   await waitFor(() => secondSink.closes.length > 0);
 
-  const secondSent = secondSink.sent as Record<string, unknown>[];
-  const ack = secondSent[0];
+  const secondSent = readRecordedMessages(
+    secondSink.sent,
+    "event-stream-ws reconnect second sink"
+  );
+  const [ack] = secondSent;
   const replayedSequences = secondSent
     .slice(1)
     .filter((message) => message.kind === "frame")
-    .map(
-      (message) =>
-        decodeResumeCursor(message.cursor as string)?.sequence ?? null
-    );
+    .filter(hasStringCursor)
+    .map((message) => decodeResumeCursor(message.cursor)?.sequence ?? null);
   const expectedReplaySequences =
     midSequence === undefined
       ? []
@@ -703,19 +788,15 @@ const runReconnectWithCursor = async (): Promise<AdapterProjection> => {
   return { result: { ws: { reconnect: observation } } };
 };
 
-const loadWsMessageValidators = (): Promise<Map<string, ValidateFunction>> => {
+const loadWsMessageValidators = async (): Promise<
+  Map<string, ValidateFunction>
+> => {
   wsValidatorsPromise ??= (async () => {
     const ajv = new Ajv2020({ allErrors: true, strict: false });
     const entries = await readdir(WS_JSON_SCHEMA_DIR, { withFileTypes: true });
+    const schemas = await readWsSchemas(entries);
 
-    for (const entry of entries) {
-      if (!(entry.isFile() && entry.name.endsWith(".json"))) {
-        continue;
-      }
-
-      const schema = JSON.parse(
-        await readFile(resolve(WS_JSON_SCHEMA_DIR, entry.name), "utf-8")
-      ) as AnySchema;
+    for (const schema of schemas) {
       ajv.addSchema(schema);
     }
 
@@ -736,7 +817,7 @@ const loadWsMessageValidators = (): Promise<Map<string, ValidateFunction>> => {
     return validators;
   })();
 
-  return wsValidatorsPromise;
+  return await wsValidatorsPromise;
 };
 
 const validateWsMessage = (
@@ -746,7 +827,7 @@ const validateWsMessage = (
   const kind = typeof message.kind === "string" ? message.kind : undefined;
   const validate = kind === undefined ? undefined : validators.get(kind);
 
-  return validate !== undefined && validate(message) === true;
+  return validate?.(message) ?? false;
 };
 
 // ---------------------------------------------------------------------------
@@ -755,11 +836,8 @@ const validateWsMessage = (
 
 const isStrictlyIncreasingFromZero = (
   sequences: readonly (number | null)[]
-): boolean => {
-  return (
-    sequences.length > 0 && sequences.every((value, index) => value === index)
-  );
-};
+): boolean =>
+  sequences.length > 0 && sequences.every((value, index) => value === index);
 
 const runSessionRoundtrip = async (): Promise<AdapterProjection> => {
   const harness = createConformanceKernelHarness();
@@ -803,15 +881,14 @@ const runSessionRoundtrip = async (): Promise<AdapterProjection> => {
   await waitFor(() => sink.closes.length > 0);
 
   const validators = await loadWsMessageValidators();
-  const sent = sink.sent as Record<string, unknown>[];
-  const first = sent[0];
-  const subsequent = sent.slice(1);
+  const sent = readRecordedMessages(
+    sink.sent,
+    "event-stream-ws session roundtrip"
+  );
+  const [first, ...subsequent] = sent;
   const cursorSequences = subsequent
-    .filter((message) => typeof message.cursor === "string")
-    .map(
-      (message) =>
-        decodeResumeCursor(message.cursor as string)?.sequence ?? null
-    );
+    .filter(hasStringCursor)
+    .map((message) => decodeResumeCursor(message.cursor)?.sequence ?? null);
 
   const observation = {
     allMessagesSchemaValid: sent.every((message) =>
@@ -833,17 +910,15 @@ const runSessionRoundtrip = async (): Promise<AdapterProjection> => {
 };
 
 export const createFrameworkAdapterEventStreamWs = (): {
-  runDecodeTrace(input: unknown): Promise<AdapterProjection>;
-  runHandshakeRejections(input: unknown): Promise<AdapterProjection>;
-  runPolicyClosures(input: unknown): Promise<AdapterProjection>;
-  runReconnectWithCursor(): Promise<AdapterProjection>;
-  runSessionRoundtrip(): Promise<AdapterProjection>;
-} => {
-  return {
-    runDecodeTrace,
-    runHandshakeRejections,
-    runPolicyClosures,
-    runReconnectWithCursor,
-    runSessionRoundtrip,
-  };
-};
+  runDecodeTrace: (input: unknown) => Promise<AdapterProjection>;
+  runHandshakeRejections: (input: unknown) => Promise<AdapterProjection>;
+  runPolicyClosures: (input: unknown) => Promise<AdapterProjection>;
+  runReconnectWithCursor: () => Promise<AdapterProjection>;
+  runSessionRoundtrip: () => Promise<AdapterProjection>;
+} => ({
+  runDecodeTrace,
+  runHandshakeRejections,
+  runPolicyClosures,
+  runReconnectWithCursor,
+  runSessionRoundtrip,
+});
