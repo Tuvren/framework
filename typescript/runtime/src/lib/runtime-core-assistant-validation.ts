@@ -73,27 +73,19 @@ interface AssistantBoundaryValidation {
  */
 export const isAssistantContentStreamEvent = (
   type: TuvrenStreamEvent["type"]
-): boolean => {
-  switch (type) {
-    case "message.start":
-    case "text.delta":
-    case "text.done":
-    case "reasoning.delta":
-    case "reasoning.done":
-    case "file.done":
-    case "structured.delta":
-    case "structured.done":
-    case "tool_call.start":
-    case "tool_call.args_delta":
-    case "tool_call.done":
-    case "message.done": {
-      return true;
-    }
-    default: {
-      return false;
-    }
-  }
-};
+): boolean =>
+  type === "message.start" ||
+  type === "text.delta" ||
+  type === "text.done" ||
+  type === "reasoning.delta" ||
+  type === "reasoning.done" ||
+  type === "file.done" ||
+  type === "structured.delta" ||
+  type === "structured.done" ||
+  type === "tool_call.start" ||
+  type === "tool_call.args_delta" ||
+  type === "tool_call.done" ||
+  type === "message.done";
 
 /**
  * Returns whether a stream event type participates in structural (non-delta)
@@ -106,23 +98,15 @@ export const isAssistantContentStreamEvent = (
  */
 export const isAssistantValidationEvent = (
   type: TuvrenStreamEvent["type"]
-): boolean => {
-  switch (type) {
-    case "message.start":
-    case "text.done":
-    case "reasoning.done":
-    case "file.done":
-    case "structured.done":
-    case "tool_call.start":
-    case "tool_call.done":
-    case "message.done": {
-      return true;
-    }
-    default: {
-      return false;
-    }
-  }
-};
+): boolean =>
+  type === "message.start" ||
+  type === "text.done" ||
+  type === "reasoning.done" ||
+  type === "file.done" ||
+  type === "structured.done" ||
+  type === "tool_call.start" ||
+  type === "tool_call.done" ||
+  type === "message.done";
 
 /**
  * Asserts that a runner-emitted stream event uses only the event types
@@ -131,38 +115,23 @@ export const isAssistantValidationEvent = (
  * Shared-core lifecycle events (run, turn, tool, error projections, and so
  * on) are owned by the runtime and must never be emitted by runners.
  *
- * @throws TuvrenRuntimeError with code `invalid_stream_event` when the event
+ * @throws {TuvrenRuntimeError} With code `invalid_stream_event` when the event
  * type is not runner-emittable.
  */
 export const assertRunnerRuntimeEvent = (event: TuvrenStreamEvent): void => {
-  switch (event.type) {
-    case "custom":
-    case "message.start":
-    case "text.delta":
-    case "text.done":
-    case "reasoning.delta":
-    case "reasoning.done":
-    case "file.done":
-    case "structured.delta":
-    case "structured.done":
-    case "tool_call.start":
-    case "tool_call.args_delta":
-    case "tool_call.done":
-    case "message.done": {
-      return;
-    }
-    default: {
-      throw new TuvrenRuntimeError(
-        `runners must not emit shared-core event type "${event.type}" directly`,
-        {
-          code: "invalid_stream_event",
-          details: {
-            eventType: event.type,
-          },
-        }
-      );
-    }
+  if (event.type === "custom" || isAssistantContentStreamEvent(event.type)) {
+    return;
   }
+
+  throw new TuvrenRuntimeError(
+    `runners must not emit shared-core event type "${event.type}" directly`,
+    {
+      code: "invalid_stream_event",
+      details: {
+        eventType: event.type,
+      },
+    }
+  );
 };
 
 /**
@@ -172,9 +141,8 @@ export const assertRunnerRuntimeEvent = (event: TuvrenStreamEvent): void => {
  * @returns `JSON.stringify(value)`, or the string `"null"` when the value is
  * not JSON-serializable (for example `undefined`).
  */
-export const serializeAssistantDeltaValue = (value: unknown): string => {
-  return JSON.stringify(value) ?? "null";
-};
+export const serializeAssistantDeltaValue = (value: unknown): string =>
+  JSON.stringify(value) ?? "null";
 
 /**
  * Returns true when the emitted assistant events are envelope-only (just
@@ -184,13 +152,10 @@ export const serializeAssistantDeltaValue = (value: unknown): string => {
  */
 const isProviderOnlyResponseEventSet = (
   assistantEvents: TuvrenStreamEvent[]
-): boolean => {
-  return (
-    assistantEvents.length === 2 &&
-    assistantEvents[0]?.type === "message.start" &&
-    assistantEvents[1]?.type === "message.done"
-  );
-};
+): boolean =>
+  assistantEvents.length === 2 &&
+  assistantEvents[0]?.type === "message.start" &&
+  assistantEvents[1]?.type === "message.done";
 
 /**
  * Returns true for a tool-role message whose parts are all provider-owned
@@ -251,25 +216,10 @@ const validateMissingAssistantMessage = (
 
 const getAssistantEventMessageId = (
   event: TuvrenStreamEvent
-): string | undefined => {
-  switch (event.type) {
-    case "file.done":
-    case "message.done":
-    case "message.start":
-    case "reasoning.delta":
-    case "reasoning.done":
-    case "structured.delta":
-    case "structured.done":
-    case "text.delta":
-    case "text.done":
-    case "tool_call.start": {
-      return event.messageId;
-    }
-    default: {
-      return undefined;
-    }
-  }
-};
+): string | undefined =>
+  "messageId" in event && event.type !== "steering.incorporated"
+    ? event.messageId
+    : undefined;
 
 const assistantEventBelongsToCurrentMessage = (
   event: TuvrenStreamEvent,
@@ -546,6 +496,9 @@ const validateRunnerAssistantDeltaEvent = (
     }
     case "text": {
       return validateTextAssistantDeltaEvent(currentPart, event, state);
+    }
+    case "tool_result": {
+      return createAssistantDeltaValidationError();
     }
     case "tool_call": {
       return validateToolCallAssistantDeltaEvent(currentPart, event, state);
