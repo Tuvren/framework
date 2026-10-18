@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
@@ -30,6 +29,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   assistantToolCalls,
   collectEvents,
@@ -38,29 +38,91 @@ import {
   textSignal,
 } from "./runtime-core-test-helpers.ts";
 
+const isKrakenRunnerFactory = (
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
+
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
+    (message) =>
+      message.role === "assistant" &&
+      message.parts.some((part) => part.type === "tool_call")
+  );
+
+const normalizeRunnerResult = (
+  result: RunnerExecutionResult
+): RunnerExecutionResult => {
+  if (
+    result.toolExecutionMode !== undefined ||
+    !requestsToolExecution(result)
+  ) {
+    return result;
+  }
+
+  return {
+    ...result,
+    toolExecutionMode: "parallel",
+  };
+};
+
+const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
+  const resume = runner.resume?.bind(runner);
+
+  return {
+    async execute(context) {
+      return normalizeRunnerResult(await runner.execute(context));
+    },
+    id: runner.id,
+    ...(resume === undefined
+      ? {}
+      : {
+          async resume(context) {
+            return normalizeRunnerResult(await resume(context));
+          },
+        }),
+  };
+};
+
+const wrapRunnerEntry = (
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): RuntimeRunner | RuntimeRunnerFactory => {
+  if (isKrakenRunnerFactory(entry)) {
+    return {
+      create() {
+        return wrapRunner(entry.create());
+      },
+      id: entry.id,
+    };
+  }
+
+  return wrapRunner(entry);
+};
+
+const createRunnerRegistry = (
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("passes synthesized assistant response data into afterIteration hooks", async () => {
     const harness = createFakeKernelHarness();
     let capturedFinishReason: string | undefined;
     const runner = {
-      async execute(_context) {
-        return {
-          messages: [assistantText("Truncated assistant output.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited((_context) => ({
+        messages: [assistantText("Truncated assistant output.")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -70,7 +132,6 @@ describe("framework-runtime-core", () => {
           {
             afterIteration(context) {
               capturedFinishReason = context.response.finishReason;
-              return undefined;
             },
             name: "response-capture",
           },
@@ -90,26 +151,24 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let capturedFinishReason: string | undefined;
     const runner = {
-      async execute(_context) {
-        return {
-          messages: [assistantText("Interrupted assistant output.")],
-          partial: true,
-          resolution: {
-            error: new Error("execution interrupted"),
-            fatality: "hard",
-            type: "fail",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited((_context) => ({
+        messages: [assistantText("Interrupted assistant output.")],
+        partial: true,
+        resolution: {
+          error: new Error("execution interrupted"),
+          fatality: "hard",
+          type: "fail",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -119,7 +178,6 @@ describe("framework-runtime-core", () => {
           {
             afterIteration(context) {
               capturedFinishReason = context.response.finishReason;
-              return undefined;
             },
             name: "response-capture",
           },
@@ -146,27 +204,25 @@ describe("framework-runtime-core", () => {
       },
     ]);
     const runner = {
-      async execute(_context) {
-        return {
-          messages: [partialToolCall],
-          partial: true,
-          resolution: {
-            error: new Error("execution interrupted"),
-            fatality: "hard",
-            type: "fail",
-          },
-          toolExecutionMode: "sequential",
-        };
-      },
+      execute: fromSynchronousVariadicAwaited((_context) => ({
+        messages: [partialToolCall],
+        partial: true,
+        resolution: {
+          error: new Error("execution interrupted"),
+          fatality: "hard",
+          type: "fail",
+        },
+        toolExecutionMode: "sequential",
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -199,25 +255,25 @@ describe("framework-runtime-core", () => {
     let capturedResponse: TuvrenModelResponse | undefined;
     const runner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "message-1",
           role: "assistant",
           timestamp: context.runtime.now(),
           type: "message.start",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           delta: "Visible output",
           messageId: "message-1",
           timestamp: context.runtime.now(),
           type: "text.delta",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "message-1",
           text: "Visible output",
           timestamp: context.runtime.now(),
           type: "text.done",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           finishReason: "length",
           messageId: "message-1",
           timestamp: context.runtime.now(),
@@ -245,14 +301,14 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -262,7 +318,6 @@ describe("framework-runtime-core", () => {
           {
             afterIteration(context) {
               capturedResponse = context.response;
-              return undefined;
             },
             name: "response-capture",
           },
@@ -297,36 +352,34 @@ describe("framework-runtime-core", () => {
         }
       | undefined;
     const runner = {
-      async execute() {
-        return {
-          messages: [
-            assistantText("First assistant message."),
-            {
-              parts: [
-                {
-                  data: { ok: true },
-                  name: "summary",
-                  type: "structured",
-                },
-              ],
-              role: "assistant",
-            },
-          ],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
+      execute: fromSynchronousVariadicAwaited(() => ({
+        messages: [
+          assistantText("First assistant message."),
+          {
+            parts: [
+              {
+                data: { ok: true },
+                name: "summary",
+                type: "structured",
+              },
+            ],
+            role: "assistant",
           },
-        };
-      },
+        ],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -339,7 +392,6 @@ describe("framework-runtime-core", () => {
                 finishReason: context.response.finishReason,
                 parts: context.response.parts,
               };
-              return undefined;
             },
             name: "response-capture",
           },
@@ -366,13 +418,13 @@ describe("framework-runtime-core", () => {
 
   test("clones afterIteration resolution, response, and toolResults per hook invocation", async () => {
     const harness = createFakeKernelHarness();
-    const capturedSnapshots: Array<{
+    const capturedSnapshots: {
       resolutionType: string;
       responsePartName?: string;
       toolOutput: unknown;
-    }> = [];
+    }[] = [];
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const toolMessages = extractToolMessages(context.messages);
 
         if (toolMessages.length === 0) {
@@ -399,16 +451,16 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -418,30 +470,29 @@ describe("framework-runtime-core", () => {
           {
             afterIteration(context) {
               if (context.resolution.type !== "continue_iteration") {
-                return undefined;
+                return;
               }
 
-              const firstPart = context.response.parts[0];
-              const firstToolResult = context.toolResults?.[0];
+              const [firstPart] = context.response.parts;
+              const [firstToolResult] = context.toolResults ?? [];
               capturedSnapshots.push({
                 resolutionType: context.resolution.type,
                 responsePartName:
                   firstPart?.type === "tool_call" ? firstPart.name : undefined,
                 toolOutput: firstToolResult?.output,
               });
-              return undefined;
             },
             name: "capture",
           },
           {
             afterIteration(context) {
-              const firstToolResult = context.toolResults?.[0];
+              const [firstToolResult] = context.toolResults ?? [];
 
               if (firstToolResult !== undefined) {
                 firstToolResult.output = { mutated: true };
               }
 
-              const firstPart = context.response.parts[0];
+              const [firstPart] = context.response.parts;
 
               if (firstPart?.type === "tool_call") {
                 firstPart.name = "mutated";
@@ -453,7 +504,6 @@ describe("framework-runtime-core", () => {
                   type: "end_turn",
                 });
               }
-              return undefined;
             },
             name: "mutate",
           },
@@ -495,72 +545,3 @@ describe("framework-runtime-core", () => {
     expect(handle.status().phase).toBe("completed");
   });
 });
-
-function createRunnerRegistry(
-  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
-) {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-}
-
-function wrapRunnerEntry(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): RuntimeRunner | RuntimeRunnerFactory {
-  if (isKrakenRunnerFactory(entry)) {
-    return {
-      create() {
-        return wrapRunner(entry.create());
-      },
-      id: entry.id,
-    };
-  }
-
-  return wrapRunner(entry);
-}
-
-function isKrakenRunnerFactory(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory {
-  return "create" in entry && typeof entry.create === "function";
-}
-
-function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const resume = runner.resume;
-
-  return {
-    async execute(context) {
-      return normalizeRunnerResult(await runner.execute(context));
-    },
-    id: runner.id,
-    ...(resume === undefined
-      ? {}
-      : {
-          async resume(context) {
-            return normalizeRunnerResult(await resume(context));
-          },
-        }),
-  };
-}
-
-function normalizeRunnerResult(
-  result: RunnerExecutionResult
-): RunnerExecutionResult {
-  if (
-    result.toolExecutionMode !== undefined ||
-    !requestsToolExecution(result)
-  ) {
-    return result;
-  }
-
-  return {
-    ...result,
-    toolExecutionMode: "parallel",
-  };
-}
-
-function requestsToolExecution(result: RunnerExecutionResult): boolean {
-  return (result.messages ?? []).some(
-    (message) =>
-      message.role === "assistant" &&
-      message.parts.some((part) => part.type === "tool_call")
-  );
-}

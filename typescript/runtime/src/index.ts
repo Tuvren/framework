@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional internal-engine surface.
-
 /**
  * `@tuvren/runtime` — the internal orchestration engine (ADR-0057).
  *
@@ -28,7 +26,6 @@
  * lower level; it carries no host-facing re-exports and is not
  * semver-guaranteed.
  *
- * @packageDocumentation
  */
 export type { BindingResolver } from "./lib/binding-resolver.js";
 export { createBindingResolver } from "./lib/binding-resolver.js";

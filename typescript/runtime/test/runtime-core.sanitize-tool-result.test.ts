@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 /**
  * Integration tests for the ADR-0064 host sanitization seam
  * (`AgentConfig.sanitizeToolResult`).
@@ -35,7 +33,7 @@ import { TOOL_RESULT_SANITIZATION_FAILED } from "@tuvren/core/errors";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { SanitizeToolResultContext } from "@tuvren/core/execution";
 import type { ToolResultPart, TuvrenMessage } from "@tuvren/core/messages";
-import type { RunnerExecutionResult, RuntimeRunner } from "@tuvren/core/runner";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 
 import {
   createRunnerRegistry as createBaseRunnerRegistry,
@@ -43,131 +41,120 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   assistantToolCalls,
   collectEvents,
   extractToolMessages,
   textSignal,
+  toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
 
 const MARKER = "SECRET-token-abc123";
 const SCRUBBED = "[redacted]";
 
 /** Builds a one-shot runner requesting the given tool calls, then ending the turn. */
-function makeRunner(
+const makeRunner = (
   calls: [
     { callId: string; input: unknown; name: string },
-    ...Array<{ callId: string; input: unknown; name: string }>,
+    ...{ callId: string; input: unknown; name: string }[],
   ]
-): RuntimeRunner {
-  return {
-    id: "fake",
-    execute(context): Promise<RunnerExecutionResult> {
-      const hasToolResult = context.messages.some((m) => m.role === "tool");
-      if (!hasToolResult) {
-        return Promise.resolve({
-          messages: [assistantToolCalls(calls)],
-          resolution: { type: "continue_iteration" as const },
-          toolExecutionMode: "parallel" as const,
-        });
-      }
-      return Promise.resolve({
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" as const },
-      });
-    },
-  };
-}
+): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    const hasToolResult = context.messages.some((m) => m.role === "tool");
+    if (!hasToolResult) {
+      return {
+        messages: [assistantToolCalls(calls)],
+        resolution: { type: "continue_iteration" as const },
+        toolExecutionMode: "parallel" as const,
+      };
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" as const },
+    };
+  }),
+  id: "fake",
+});
 
-function toolResultEvents(events: unknown[]): (TuvrenStreamEvent & {
-  type: "tool.result";
-  callId: string;
-  isError?: boolean;
-  output?: unknown;
-})[] {
-  return events.filter(
-    (e) => (e as TuvrenStreamEvent).type === "tool.result"
-  ) as (TuvrenStreamEvent & {
-    type: "tool.result";
-    callId: string;
-    isError?: boolean;
-    output?: unknown;
-  })[];
-}
+const toolResultEvents = (
+  events: TuvrenStreamEvent[]
+): Extract<TuvrenStreamEvent, { type: "tool.result" }>[] =>
+  events.filter(
+    (event): event is Extract<TuvrenStreamEvent, { type: "tool.result" }> =>
+      event.type === "tool.result"
+  );
 
-async function stagedToolResultParts(
+const stagedToolResultParts = async (
   harness: ReturnType<typeof createFakeKernelHarness>,
   branchId: string
-): Promise<ToolResultPart[]> {
+): Promise<ToolResultPart[]> => {
   const messages = await harness.readBranchMessages(branchId);
-  return extractToolMessages(messages).flatMap(
-    (message) => message.parts as ToolResultPart[]
+  return extractToolMessages(messages).flatMap((message) =>
+    message.parts.filter(
+      (part): part is ToolResultPart => part.type === "tool_result"
+    )
   );
-}
+};
 
 /** Builds a pre-staged provider tool message (AY003). */
-function buildProviderToolMessage(opts: {
+const buildProviderToolMessage = (opts: {
   callId: string;
   executionClass: "provider-native" | "provider-mediated";
   name: string;
   output: unknown;
-}): TuvrenMessage {
-  return {
-    role: "tool",
-    parts: [
-      {
-        callId: opts.callId,
-        name: opts.name,
-        output: opts.output,
-        providerMetadata: {
-          executionClass: opts.executionClass,
-          owner: "provider",
-          providerCallId: opts.callId,
-        },
-        type: "tool_result",
+}): TuvrenMessage => ({
+  parts: [
+    {
+      callId: opts.callId,
+      name: opts.name,
+      output: opts.output,
+      providerMetadata: {
+        executionClass: opts.executionClass,
+        owner: "provider",
+        providerCallId: opts.callId,
       },
-    ],
-  };
-}
+      type: "tool_result",
+    },
+  ],
+  role: "tool",
+});
 
 /** One-shot runner returning a single pre-staged provider tool message. */
-function makeProviderRunner(
+const makeProviderRunner = (
   executionClass: "provider-native" | "provider-mediated",
   output: unknown
-): RuntimeRunner {
-  return {
-    id: "provider-sanitize-runner",
-    execute(context): Promise<RunnerExecutionResult> {
-      if (!context.messages.some((m) => m.role === "tool")) {
-        return Promise.resolve({
-          messages: [
-            buildProviderToolMessage({
-              callId: "prov-sanitize-call",
-              executionClass,
-              name: "code_execution",
-              output,
-            }),
-          ],
-          resolution: { type: "continue_iteration" as const },
-        });
-      }
-      return Promise.resolve({
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" as const },
-      });
-    },
-  };
-}
-
+): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    if (!context.messages.some((m) => m.role === "tool")) {
+      return {
+        messages: [
+          buildProviderToolMessage({
+            callId: "prov-sanitize-call",
+            executionClass,
+            name: "code_execution",
+            output,
+          }),
+        ],
+        resolution: { type: "continue_iteration" as const },
+      };
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" as const },
+    };
+  }),
+  id: "provider-sanitize-runner",
+});
 describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () => {
   test("the scrubbed form — not the original — lands in durable kernel history", async () => {
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createBaseRunnerRegistry([
         makeRunner([{ callId: "call-1", input: {}, name: "echo" }]),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -183,7 +170,7 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
         tools: [
           {
             description: "echo a secret-bearing marker",
-            execute: () => Promise.resolve({ text: MARKER }),
+            execute: () => ({ text: MARKER }),
             inputSchema: { type: "object" },
             name: "echo",
           },
@@ -207,10 +194,10 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createBaseRunnerRegistry([
         makeRunner([{ callId: "call-1", input: {}, name: "echo" }]),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -223,7 +210,7 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
         tools: [
           {
             description: "echo a secret-bearing marker",
-            execute: () => Promise.resolve({ text: MARKER }),
+            execute: () => ({ text: MARKER }),
             inputSchema: { type: "object" },
             name: "echo",
           },
@@ -246,13 +233,13 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
     const recordedContexts: SanitizeToolResultContext[] = [];
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createBaseRunnerRegistry([
         makeRunner([
           { callId: "call-known", input: {}, name: "echo" },
           { callId: "call-unknown", input: {}, name: "does-not-exist" },
         ]),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -266,7 +253,7 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
         tools: [
           {
             description: "echo",
-            execute: () => Promise.resolve({ ok: true }),
+            execute: () => ({ ok: true }),
             inputSchema: { type: "object" },
             name: "echo",
           },
@@ -297,10 +284,10 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createBaseRunnerRegistry([
         makeRunner([{ callId: "call-1", input: {}, name: "boom" }]),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -308,7 +295,7 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
       config: {
         name: "primary",
         sanitizeToolResult(result) {
-          if (!result.isError) {
+          if (result.isError !== true) {
             return result;
           }
           return {
@@ -348,10 +335,10 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createBaseRunnerRegistry([
         makeRunner([{ callId: "call-1", input: {}, name: "echo" }]),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -364,7 +351,7 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
         tools: [
           {
             description: "echo",
-            execute: () => Promise.resolve({ ok: true }),
+            execute: () => ({ ok: true }),
             inputSchema: { type: "object" },
             name: "echo",
           },
@@ -382,15 +369,13 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
     const results = toolResultEvents(events);
     expect(results).toHaveLength(1);
     expect(results[0]?.isError).toBe(true);
-    const output = results[0]?.output as
-      | { code?: string; error?: string }
-      | undefined;
+    const output = toOptionalRecord(results[0]?.output);
     expect(output?.code).toBe(TOOL_RESULT_SANITIZATION_FAILED);
 
     const staged = await stagedToolResultParts(harness, thread.branchId);
     expect(staged).toHaveLength(1);
     expect(staged[0]?.isError).toBe(true);
-    expect((staged[0]?.output as { code?: string } | undefined)?.code).toBe(
+    expect(toOptionalRecord(staged[0]?.output)?.code).toBe(
       TOOL_RESULT_SANITIZATION_FAILED
     );
   });
@@ -399,10 +384,10 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createBaseRunnerRegistry([
         makeRunner([{ callId: "call-1", input: {}, name: "echo" }]),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -412,7 +397,7 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
         tools: [
           {
             description: "echo a secret-bearing marker",
-            execute: () => Promise.resolve({ text: MARKER }),
+            execute: () => ({ text: MARKER }),
             inputSchema: { type: "object" },
             name: "echo",
           },
@@ -437,10 +422,10 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createBaseRunnerRegistry([
         makeRunner([{ callId: "call-identity", input: {}, name: "echo" }]),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -451,18 +436,17 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
         // content is the host's to sanitize, identity is not — kernel
         // skip-by-callId recovery and the client-endpoint echo check key on
         // it, so the framework re-stamps callId/name/type after the hook.
-        sanitizeToolResult: (result) =>
-          ({
-            callId: "mangled-by-host",
-            isError: result.isError,
-            name: "wrong-name",
-            output: { text: SCRUBBED },
-            type: "tool_result",
-          }) as ToolResultPart,
+        sanitizeToolResult: (result) => ({
+          callId: "mangled-by-host",
+          isError: result.isError,
+          name: "wrong-name",
+          output: { text: SCRUBBED },
+          type: "tool_result",
+        }),
         tools: [
           {
             description: "echo a secret-bearing marker",
-            execute: () => Promise.resolve({ text: MARKER }),
+            execute: () => ({ text: MARKER }),
             inputSchema: { type: "object" },
             name: "echo",
           },
@@ -489,10 +473,10 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
     let observedToolResults: ToolResultPart[] | undefined;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createBaseRunnerRegistry([
         makeRunner([{ callId: "call-hooks", input: {}, name: "echo" }]),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -510,7 +494,6 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
               ) {
                 observedToolResults = context.toolResults;
               }
-              return undefined;
             },
             name: "tool-result-observer",
           },
@@ -523,7 +506,7 @@ describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () 
         tools: [
           {
             description: "echo a secret-bearing marker",
-            execute: () => Promise.resolve({ text: MARKER }),
+            execute: () => ({ text: MARKER }),
             inputSchema: { type: "object" },
             name: "echo",
           },
@@ -550,12 +533,12 @@ describe("host sanitization seam (ADR-0064): pre-staged provider tool messages (
     const recordedContexts: SanitizeToolResultContext[] = [];
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "provider-sanitize-runner",
+      kernel: harness.kernel,
       runnerRegistry: createBaseRunnerRegistry([
         makeProviderRunner("provider-mediated", {
           outputs: [{ text: MARKER, type: "text" }],
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -602,12 +585,12 @@ describe("host sanitization seam (ADR-0064): pre-staged provider tool messages (
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "provider-sanitize-runner",
+      kernel: harness.kernel,
       runnerRegistry: createBaseRunnerRegistry([
         makeProviderRunner("provider-mediated", {
           outputs: [{ text: MARKER, type: "text" }],
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -629,7 +612,7 @@ describe("host sanitization seam (ADR-0064): pre-staged provider tool messages (
     const staged = await stagedToolResultParts(harness, thread.branchId);
     expect(staged).toHaveLength(1);
     expect(staged[0]?.isError).toBe(true);
-    expect((staged[0]?.output as { code?: string } | undefined)?.code).toBe(
+    expect(toOptionalRecord(staged[0]?.output)?.code).toBe(
       TOOL_RESULT_SANITIZATION_FAILED
     );
     expect(JSON.stringify(staged)).not.toContain(MARKER);
@@ -640,9 +623,7 @@ describe("host sanitization seam (ADR-0064): pre-staged provider tool messages (
     );
     expect(providerResult).toBeDefined();
     expect(providerResult?.isError).toBe(true);
-    const output = providerResult?.output as
-      | { code?: string; error?: string }
-      | undefined;
+    const output = toOptionalRecord(providerResult?.output);
     expect(output?.code).toBe(TOOL_RESULT_SANITIZATION_FAILED);
   });
 
@@ -650,12 +631,12 @@ describe("host sanitization seam (ADR-0064): pre-staged provider tool messages (
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "provider-sanitize-runner",
+      kernel: harness.kernel,
       runnerRegistry: createBaseRunnerRegistry([
         makeProviderRunner("provider-native", {
           outputs: [{ text: MARKER, type: "text" }],
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
