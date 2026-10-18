@@ -1,0 +1,158 @@
+{
+  "baseline_commit": "fd8ee5d4060ddfce23e250c32a675d41cca255b9",
+  "measurement_commit": "e1f883f53bafded44d4a830496de73dcee3edd0c",
+  "baseline": [
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts::lint/correctness/noUndeclaredVariables::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts",
+      "directive": "  // biome-ignore lint/correctness/noUndeclaredVariables: This parent path runs under Bun; the Node child never calls it.",
+      "rule": "lint/correctness/noUndeclaredVariables",
+      "original_reason": "This parent path runs under Bun; the Node child never calls it.",
+      "line": 476
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts::lint/correctness/noUndeclaredVariables::2",
+      "path": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts",
+      "directive": "  // biome-ignore lint/correctness/noUndeclaredVariables: This parent path runs under Bun; the Node child never calls it.",
+      "rule": "lint/correctness/noUndeclaredVariables",
+      "original_reason": "This parent path runs under Bun; the Node child never calls it.",
+      "line": 513
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts",
+      "directive": "  // biome-ignore lint/suspicious/useAwait: encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously",
+      "line": 84
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts",
+      "directive": "            // biome-ignore lint/suspicious/useAwait: intentionally synchronous resolution.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "intentionally synchronous resolution.",
+      "line": 675
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-capability-policy.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-capability-policy.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: adapter operations must return Promise<AdapterProjection> per adapter contract",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "adapter operations must return Promise<AdapterProjection> per adapter contract",
+      "line": 17
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts",
+      "directive": "          // biome-ignore lint/suspicious/useAwait: async required by TuvrenToolDefinition.execute contract",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "async required by TuvrenToolDefinition.execute contract",
+      "line": 400
+    }
+  ],
+  "live": [
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts::lint/correctness/noUndeclaredVariables::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts",
+      "directive": "  // biome-ignore lint/correctness/noUndeclaredVariables: This parent path runs under Bun; the Node child never calls it.",
+      "rule": "lint/correctness/noUndeclaredVariables",
+      "original_reason": "This parent path runs under Bun; the Node child never calls it.",
+      "line": 477
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts::lint/correctness/noUndeclaredVariables::2",
+      "path": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts",
+      "directive": "  // biome-ignore lint/correctness/noUndeclaredVariables: This parent path runs under Bun; the Node child never calls it.",
+      "rule": "lint/correctness/noUndeclaredVariables",
+      "original_reason": "This parent path runs under Bun; the Node child never calls it.",
+      "line": 514
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts",
+      "directive": "  // biome-ignore lint/suspicious/useAwait: encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously",
+      "line": 84
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts",
+      "directive": "            // biome-ignore lint/suspicious/useAwait: intentionally synchronous resolution.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "intentionally synchronous resolution.",
+      "line": 671
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-capability-policy.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-capability-policy.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: adapter operations must return Promise<AdapterProjection> per adapter contract",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "adapter operations must return Promise<AdapterProjection> per adapter contract",
+      "line": 17
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts",
+      "directive": "          // biome-ignore lint/suspicious/useAwait: async required by TuvrenToolDefinition.execute contract",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "async required by TuvrenToolDefinition.execute contract",
+      "line": 400
+    }
+  ],
+  "inventories": {
+    "typescript/conformance-adapter": [
+      {
+        "identity": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts::lint/correctness/noUndeclaredVariables::1",
+        "path": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts",
+        "directive": "  // biome-ignore lint/correctness/noUndeclaredVariables: This parent path runs under Bun; the Node child never calls it.",
+        "rule": "lint/correctness/noUndeclaredVariables",
+        "original_reason": "This parent path runs under Bun; the Node child never calls it.",
+        "line": 477
+      },
+      {
+        "identity": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts::lint/correctness/noUndeclaredVariables::2",
+        "path": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts",
+        "directive": "  // biome-ignore lint/correctness/noUndeclaredVariables: This parent path runs under Bun; the Node child never calls it.",
+        "rule": "lint/correctness/noUndeclaredVariables",
+        "original_reason": "This parent path runs under Bun; the Node child never calls it.",
+        "line": 514
+      },
+      {
+        "identity": "typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts",
+        "directive": "  // biome-ignore lint/suspicious/useAwait: encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously",
+        "line": 84
+      },
+      {
+        "identity": "typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts",
+        "directive": "            // biome-ignore lint/suspicious/useAwait: intentionally synchronous resolution.",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "intentionally synchronous resolution.",
+        "line": 671
+      },
+      {
+        "identity": "typescript/conformance-adapter/src/framework-adapter-capability-policy.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/conformance-adapter/src/framework-adapter-capability-policy.ts",
+        "directive": "// biome-ignore-all lint/suspicious/useAwait: adapter operations must return Promise<AdapterProjection> per adapter contract",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "adapter operations must return Promise<AdapterProjection> per adapter contract",
+        "line": 17
+      },
+      {
+        "identity": "typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts::lint/suspicious/useAwait::1",
+        "path": "typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts",
+        "directive": "          // biome-ignore lint/suspicious/useAwait: async required by TuvrenToolDefinition.execute contract",
+        "rule": "lint/suspicious/useAwait",
+        "original_reason": "async required by TuvrenToolDefinition.execute contract",
+        "line": 400
+      }
+    ],
+    "typescript/kernel/conformance-adapter": [],
+    "typescript/providers/conformance-adapter": []
+  }
+}
