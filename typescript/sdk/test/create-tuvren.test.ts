@@ -36,10 +36,10 @@ import type {
 
 // ── Test doubles ─────────────────────────────────────────────────────────────
 
-function makeMockBackend(): {
+const makeMockBackend = (): {
   backend: RuntimeBackend & { close(): Promise<void> };
   closed: { count: number };
-} {
+} => {
   const inner = createMemoryBackend();
   const closed = { count: 0 };
   const backend = Object.assign(inner, {
@@ -49,20 +49,22 @@ function makeMockBackend(): {
     },
   });
   return { backend, closed };
-}
+};
 
-function makeThrowingBackend(): RuntimeBackend & { close(): Promise<void> } {
+const makeThrowingBackend = (): RuntimeBackend & { close(): Promise<void> } => {
   const inner = createMemoryBackend();
   return Object.assign(inner, {
     close(): Promise<void> {
       return Promise.reject(new Error("backend close error"));
     },
   });
-}
+};
 
-function makeMockMcpSource(name = "test-server"): McpToolSource & {
+const makeMockMcpSource = (
+  name = "test-server"
+): McpToolSource & {
   closed: { count: number };
-} {
+} => {
   const closed = { count: 0 };
   return {
     close() {
@@ -76,59 +78,57 @@ function makeMockMcpSource(name = "test-server"): McpToolSource & {
     serverName: name,
     tools: [],
   };
-}
+};
 
-function makeMinimalRunnerFactory(id = "test-runner"): RuntimeRunnerFactory {
-  return {
-    create() {
-      return {
-        execute() {
-          return Promise.resolve({
-            messages: [],
-            resolution: { reason: "done", type: "end_turn" },
-          });
-        },
-        id,
-        resume() {
-          return Promise.reject(new Error("resume not expected"));
-        },
-      };
-    },
-    id,
-  };
-}
+const makeMinimalRunnerFactory = (
+  id = "test-runner"
+): RuntimeRunnerFactory => ({
+  create() {
+    return {
+      execute() {
+        return Promise.resolve({
+          messages: [],
+          resolution: { reason: "done", type: "end_turn" },
+        });
+      },
+      id,
+      resume() {
+        return Promise.reject(new Error("resume not expected"));
+      },
+    };
+  },
+  id,
+});
 
-function makeMinimalTool(name = "test-tool"): TuvrenToolDefinition {
-  return {
-    description: "A test tool",
-    execute(_input: unknown) {
-      return { ok: true };
-    },
-    inputSchema: { properties: {}, type: "object" },
-    name,
-  };
-}
+const makeMinimalTool = (name = "test-tool"): TuvrenToolDefinition => ({
+  description: "A test tool",
+  execute(_input: unknown) {
+    return { ok: true };
+  },
+  inputSchema: { properties: {}, type: "object" },
+  name,
+});
 
 /**
  * The instances-only base options: a fresh memory backend and a minimal runner
  * factory. Spread overrides on top for the field under test.
  */
-function baseOptions(
+const baseOptions = (
   overrides?: Partial<CreateTuvrenOptions>
-): CreateTuvrenOptions {
-  return {
-    backend: createMemoryBackend(),
-    runner: makeMinimalRunnerFactory(),
-    ...overrides,
-  };
-}
+): CreateTuvrenOptions => ({
+  backend: createMemoryBackend(),
+  runner: makeMinimalRunnerFactory(),
+  ...overrides,
+});
 
 // ── Shared helper ─────────────────────────────────────────────────────────────
 
-async function createThreadAndVerify(instance: TuvrenInstance): Promise<void> {
+const createThreadAndVerify = async (
+  instance: TuvrenInstance
+): Promise<void> => {
   const { threadId } = await instance.runtime.createThread({});
   expect(typeof threadId).toBe("string");
-}
+};
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 

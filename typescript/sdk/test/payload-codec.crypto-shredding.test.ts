@@ -48,14 +48,16 @@ const SCOPE = "tenant.crypto-shredding";
 const PROVIDER_SECRET = "SENSITIVE-PROVIDER-RESULT-4242";
 const USER_SECRET = "USER-PII-name-and-ssn";
 
-function createKeyring(keys: Map<string, Uint8Array>): PayloadKeyring {
-  return { resolve: (keyRef) => keys.get(keyRef) };
-}
+const createKeyring = (keys: Map<string, Uint8Array>): PayloadKeyring => ({
+  resolve: (keyRef) => keys.get(keyRef),
+});
 
-function buildRuntime(options: { keys?: Map<string, Uint8Array> }): {
+const buildRuntime = (options: {
+  keys?: Map<string, Uint8Array>;
+}): {
   framework: ReturnType<typeof createTuvrenRuntime>;
   kernel: ReturnType<typeof createRuntimeKernel>;
-} {
+} => {
   const kernel = createRuntimeKernel({
     backend: createMemoryBackend({ scope: SCOPE }),
   });
@@ -78,11 +80,11 @@ function buildRuntime(options: { keys?: Map<string, Uint8Array> }): {
         }),
   });
   return { framework, kernel };
-}
+};
 
-async function runOneTurn(runtime: {
+const runOneTurn = async (runtime: {
   framework: ReturnType<typeof createTuvrenRuntime>;
-}): Promise<{ branchId: string; threadId: string }> {
+}): Promise<{ branchId: string; threadId: string }> => {
   const thread = await runtime.framework.createThread({});
   const handle = runtime.framework.executeTurn({
     branchId: thread.branchId,
@@ -93,12 +95,12 @@ async function runOneTurn(runtime: {
   const result = await handle.awaitResult();
   expect(result.status).toBe("completed");
   return { branchId: thread.branchId, threadId: thread.threadId };
-}
+};
 
-async function readMessageHashes(
+const readMessageHashes = async (
   kernel: ReturnType<typeof createRuntimeKernel>,
   branchId: string
-): Promise<string[]> {
+): Promise<string[]> => {
   const branch = await kernel.branch.get(branchId);
   if (branch === null) {
     throw new Error("branch missing");
@@ -111,11 +113,10 @@ async function readMessageHashes(
   return Array.isArray(resolved)
     ? resolved.filter((h): h is string => typeof h === "string")
     : [];
-}
+};
 
-function bytesContainText(bytes: Uint8Array, text: string): boolean {
-  return Buffer.from(bytes).includes(Buffer.from(text, "utf-8"));
-}
+const bytesContainText = (bytes: Uint8Array, text: string): boolean =>
+  Buffer.from(bytes).includes(Buffer.from(text, "utf-8"));
 
 describe("KRT-BF005 crypto-shredding payload envelope", () => {
   test("encrypts untrusted-edge messages so the kernel only holds ciphertext", async () => {

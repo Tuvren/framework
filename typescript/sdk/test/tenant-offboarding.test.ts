@@ -60,16 +60,14 @@ const SCOPE_B = "tenant.B";
 // ADR-0057: createTuvren requires a constructed runner factory instance. These
 // maintenance-surface tests never execute a turn, so a minimal end-turn factory
 // suffices — the runner is registered but never invoked.
-function offboardingRunnerFactory(): RuntimeRunnerFactory {
-  return {
-    create: () =>
-      createStaticRunner(() => ({
-        messages: [],
-        resolution: { reason: "done", type: "end_turn" },
-      })),
-    id: "offboarding-test-runner",
-  };
-}
+const offboardingRunnerFactory = (): RuntimeRunnerFactory => ({
+  create: () =>
+    createStaticRunner(() => ({
+      messages: [],
+      resolution: { reason: "done", type: "end_turn" },
+    })),
+  id: "offboarding-test-runner",
+});
 
 interface Tenant {
   framework: ReturnType<typeof createTuvrenRuntime>;
@@ -77,16 +75,16 @@ interface Tenant {
   providerSecret: string;
 }
 
-function createKeyring(keys: Map<string, Uint8Array>): PayloadKeyring {
-  return { resolve: (keyRef) => keys.get(keyRef) };
-}
+const createKeyring = (keys: Map<string, Uint8Array>): PayloadKeyring => ({
+  resolve: (keyRef) => keys.get(keyRef),
+});
 
-function buildTenant(input: {
+const buildTenant = (input: {
   scope: string;
   store: MemoryScopeStore;
   codec: PayloadCodec;
   providerSecret: string;
-}): Tenant {
+}): Tenant => {
   const backend = createMemoryBackend({
     scope: input.scope,
     store: input.store,
@@ -109,13 +107,13 @@ function buildTenant(input: {
     scope: input.scope,
   });
   return { framework, kernel, providerSecret: input.providerSecret };
-}
+};
 
-async function runTurn(
+const runTurn = async (
   tenant: Tenant,
   thread: { branchId: string; threadId: string },
   userSecret: string
-): Promise<void> {
+): Promise<void> => {
   const handle = tenant.framework.executeTurn({
     branchId: thread.branchId,
     config: { name: "agent" },
@@ -124,23 +122,23 @@ async function runTurn(
   });
   const result = await handle.awaitResult();
   expect(result.status).toBe("completed");
-}
+};
 
-async function headHash(tenant: Tenant, branchId: string): Promise<string> {
+const headHash = async (tenant: Tenant, branchId: string): Promise<string> => {
   const branch = await tenant.kernel.branch.get(branchId);
   if (branch === null) {
     throw new Error("branch missing");
   }
   return branch.headTurnNodeHash;
-}
+};
 
-async function readPlaintext(
+const readPlaintext = async (
   tenant: Tenant,
   branchId: string
-): Promise<string> {
+): Promise<string> => {
   const read = await tenant.framework.readBranchMessages({ branchId });
   return JSON.stringify(read.messages);
-}
+};
 
 describe("KRT-BF006 tenant offboarding flow", () => {
   test("offboarding scope A shreds its payloads and reclaims its unreferenced state without touching scope B", async () => {
