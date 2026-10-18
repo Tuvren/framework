@@ -27,6 +27,7 @@
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import type {
   AttachedClientEndpoint,
+  ClientEndpointBoundary,
   ClientInvocationEnvelope,
   ClientReportedResult,
 } from "@tuvren/core/capabilities";
@@ -110,16 +111,39 @@ const NETWORK_RECONNECT_CAP = "az006.client.network-reconnect";
 
 const RESULT_DURABILITY_CAP = "az006.client.result-durability";
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const fromSynchronous = <Argument, Value>(
+  operation: (argument: Argument) => Value
+): ((argument: Argument) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(argument: Argument) => Value],
+    [Argument],
+    Promise<Value>
+  >(Promise, operation);
+
+const NO_TOOL_RESULT: unknown = new Map<string, unknown>().get("result");
+
+const fromSynchronousWithoutArguments = <Value>(
+  operation: () => Value
+): (() => Promise<Value>) =>
+  Promise.try.bind<typeof Promise, [() => Value], [], Promise<Value>>(
+    Promise,
+    operation
+  );
+
+const resolveWithoutResult = fromSynchronousWithoutArguments(
+  (): unknown => NO_TOOL_RESULT
+);
 
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-const makeSingleCallRunner = (toolName: string) => {
-  return createStaticRunner(async (context) => {
+const makeSingleCallRunner = (toolName: string) =>
+  createStaticRunner(async (context) => {
     await Promise.resolve();
     if (!context.messages.some((m) => m.role === "tool")) {
       return {
@@ -137,91 +161,79 @@ const makeSingleCallRunner = (toolName: string) => {
       resolution: { reason: "done", type: "end_turn" as const },
     };
   });
-};
 
 const makeOkEndpoint = (
   endpointId: string,
   capabilityId: string,
   content: unknown
-): AttachedClientEndpoint => {
-  return {
-    advertisedCapabilities: [
-      {
-        capabilityId,
-        description: `${capabilityId} conformance cap`,
-        inputSchema: { type: "object" },
-      },
-    ],
-    dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      return Promise.resolve({
-        callId: envelope.callId,
-        content,
-        leaseToken: envelope.leaseToken,
-      });
+): AttachedClientEndpoint => ({
+  advertisedCapabilities: [
+    {
+      capabilityId,
+      description: `${capabilityId} conformance cap`,
+      inputSchema: { type: "object" },
     },
-    endpointId,
-  };
-};
+  ],
+  dispatch: fromSynchronous(
+    (envelope: ClientInvocationEnvelope): ClientReportedResult => ({
+      callId: envelope.callId,
+      content,
+      leaseToken: envelope.leaseToken,
+    })
+  ),
+  endpointId,
+});
 
 const makeClientMcpEndpoint = (
   endpointId: string,
   capabilityId: string,
   mcpServerName: string,
   content: unknown
-): AttachedClientEndpoint => {
-  return {
-    advertisedCapabilities: [
-      {
-        capabilityId,
-        description: `${capabilityId} client-mcp cap`,
-        inputSchema: { type: "object" },
-        mcpServerName,
-      },
-    ],
-    dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      return Promise.resolve({
-        callId: envelope.callId,
-        content,
-        leaseToken: envelope.leaseToken,
-      });
+): AttachedClientEndpoint => ({
+  advertisedCapabilities: [
+    {
+      capabilityId,
+      description: `${capabilityId} client-mcp cap`,
+      inputSchema: { type: "object" },
+      mcpServerName,
     },
-    endpointId,
-  };
-};
+  ],
+  dispatch: fromSynchronous(
+    (envelope: ClientInvocationEnvelope): ClientReportedResult => ({
+      callId: envelope.callId,
+      content,
+      leaseToken: envelope.leaseToken,
+    })
+  ),
+  endpointId,
+});
 
 const makeStaleEndpoint = (
   endpointId: string,
   capabilityId: string
-): AttachedClientEndpoint => {
-  return {
-    advertisedCapabilities: [
-      {
-        capabilityId,
-        description: `${capabilityId} stale cap`,
-        inputSchema: { type: "object" },
-      },
-    ],
-    dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      return Promise.resolve({
-        callId: envelope.callId,
-        content: { staleContent: true },
-        leaseToken: "stale-token-for-conformance", // will never match the envelope token
-      });
+): AttachedClientEndpoint => ({
+  advertisedCapabilities: [
+    {
+      capabilityId,
+      description: `${capabilityId} stale cap`,
+      inputSchema: { type: "object" },
     },
-    endpointId,
-  };
-};
+  ],
+  dispatch: fromSynchronous(
+    (envelope: ClientInvocationEnvelope): ClientReportedResult => ({
+      callId: envelope.callId,
+      content: { staleContent: true },
+      // Deliberately never matches the envelope token.
+      leaseToken: "stale-token-for-conformance",
+    })
+  ),
+  endpointId,
+});
 
 const runTurn = async (
   toolName: string,
   endpoints: AttachedClientEndpoint[],
-  clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary
+  clientEndpointBoundary?: ClientEndpointBoundary
 ) => {
   const harness = createConformanceKernelHarness();
   const runner = makeSingleCallRunner(toolName);
@@ -249,11 +261,14 @@ const runTurn = async (
   return { events, result };
 };
 
-const findAllEvents = (events: unknown[], type: string) => {
-  return events.filter(
-    (e) => (e as Record<string, unknown>).type === type
-  ) as Record<string, unknown>[];
-};
+const findAllEvents = (
+  events: readonly unknown[],
+  type: string
+): Record<string, unknown>[] =>
+  events.filter(
+    (event): event is Record<string, unknown> =>
+      isRecord(event) && event.type === type
+  );
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.tuvren-client.lifecycle
@@ -277,9 +292,7 @@ export const runTuvrenClientLifecycle =
     const normalResultEvents = findAllEvents(normalRun.events, "tool.result");
     const normalStartEvents = findAllEvents(normalRun.events, "tool.start");
     const normalAuditEvents = findAllEvents(normalRun.events, "tool.audit");
-    const normalResultEvent = normalResultEvents[0] as
-      | Record<string, unknown>
-      | undefined;
+    const [normalResultEvent] = normalResultEvents;
 
     // --- 2. Unavailable endpoint: detach before turn, assert typed code ---
     const UNAVAILABLE_CAP = "az006.client.unavailable";
@@ -301,24 +314,20 @@ export const runTuvrenClientLifecycle =
       unavailableRun.events,
       "tool.result"
     );
-    const unavailableResultEvent = unavailableResultEvents[0] as
-      | Record<string, unknown>
-      | undefined;
-    const unavailableOutput = unavailableResultEvent?.output as
-      | Record<string, unknown>
-      | undefined;
+    const [unavailableResultEvent] = unavailableResultEvents;
+    const unavailableOutput = isRecord(unavailableResultEvent?.output)
+      ? unavailableResultEvent.output
+      : undefined;
 
     // --- 3. Stale late-completion: endpoint echoes wrong leaseToken ---
     const STALE_CAP = "az006.client.stale";
     const staleEndpoint = makeStaleEndpoint("ep-stale", STALE_CAP);
     const staleRun = await runTurn(STALE_CAP, [staleEndpoint]);
     const staleResultEvents = findAllEvents(staleRun.events, "tool.result");
-    const staleResultEvent = staleResultEvents[0] as
-      | Record<string, unknown>
-      | undefined;
-    const staleOutput = staleResultEvent?.output as
-      | Record<string, unknown>
-      | undefined;
+    const [staleResultEvent] = staleResultEvents;
+    const staleOutput = isRecord(staleResultEvent?.output)
+      ? staleResultEvent.output
+      : undefined;
 
     // --- 4. Client-side MCP binding classification ---
     const CLIENT_MCP_CAP = "az006.client.mcp";
@@ -336,7 +345,7 @@ export const runTuvrenClientLifecycle =
     const resolver = createBindingResolver();
     const mcpBinding = resolver.resolveFromToolDefinition({
       description: "client mcp",
-      execute: () => Promise.resolve(undefined),
+      execute: resolveWithoutResult,
       inputSchema: { type: "object" },
       metadata: {
         clientEndpointId: "ep-mcp",
@@ -395,7 +404,10 @@ const createNetworkPeerRecordingSink = (
       // via `session.isEnded()`, not per-sink close bookkeeping.
     },
     send(data: string): void {
-      const parsed = JSON.parse(data) as Record<string, unknown>;
+      const parsed: unknown = JSON.parse(data);
+      if (!isRecord(parsed)) {
+        throw new TypeError("WebSocket session payload must be an object");
+      }
       sent.push(parsed);
       onMessage(parsed);
     },
@@ -415,7 +427,7 @@ export const runTuvrenClientNetworkReconnectRedelivery =
     });
     const thread = await runtime.createThread({});
 
-    let bindingClientEndpoint: AttachedClientEndpoint | undefined;
+    const bindingState: { clientEndpoint?: AttachedClientEndpoint } = {};
     const deferredEndpoint: AttachedClientEndpoint = {
       advertisedCapabilities: [
         {
@@ -425,15 +437,15 @@ export const runTuvrenClientNetworkReconnectRedelivery =
           inputSchema: { type: "object" },
         },
       ],
-      dispatch(
+      async dispatch(
         envelope: ClientInvocationEnvelope
       ): Promise<ClientReportedResult> {
-        if (bindingClientEndpoint === undefined) {
+        if (bindingState.clientEndpoint === undefined) {
           throw new Error(
             "az006 network-reconnect adapter dispatched a client invocation before the duplex session binding was wired"
           );
         }
-        return bindingClientEndpoint.dispatch(envelope);
+        return await bindingState.clientEndpoint.dispatch(envelope);
       },
       endpointId: "ep-az006-network-reconnect",
     };
@@ -447,7 +459,7 @@ export const runTuvrenClientNetworkReconnectRedelivery =
     const binding = createDuplexSessionBinding(handle, {
       sessionId: NETWORK_RECONNECT_SESSION_ID,
     });
-    bindingClientEndpoint = binding.clientEndpoint;
+    bindingState.clientEndpoint = binding.clientEndpoint;
 
     const session = createRemoteClientSession({
       binding,
@@ -508,7 +520,8 @@ export const runTuvrenClientNetworkReconnectRedelivery =
       }
 
       if (inFlightCallIds.has(callId)) {
-        return; // Redelivery of an already-in-flight call: dedup, no re-invoke.
+        // Redelivery of an already-in-flight call: dedup, no re-invoke.
+        return;
       }
       inFlightCallIds.add(callId);
       effectCount += 1;
@@ -556,7 +569,8 @@ export const runTuvrenClientNetworkReconnectRedelivery =
       (message) =>
         message.kind === "frame" && typeof message.cursor === "string"
     );
-    const midCursor = firstFrames.at(-1)?.cursor as string | undefined;
+    const lastCursor = firstFrames.at(-1)?.cursor;
+    const midCursor = typeof lastCursor === "string" ? lastCursor : undefined;
 
     // Simulated socket drop, not session.close(): detaches this sink from the
     // still-alive session (ADR-0063 decision 4). The reply is still withheld.
@@ -592,7 +606,9 @@ export const runTuvrenClientNetworkReconnectRedelivery =
         (message) =>
           message.kind === "frame" && typeof message.cursor === "string"
       )
-      .map((message) => message.cursor as string);
+      .flatMap((message) =>
+        typeof message.cursor === "string" ? [message.cursor] : []
+      );
     const redeliveredInvocationCount = secondSink.sent.filter(
       (message) =>
         message.kind === "frame" &&
@@ -641,18 +657,18 @@ export const runTuvrenClientResultDurability =
           inputSchema: { type: "object" },
         },
       ],
-      dispatch(
-        envelope: ClientInvocationEnvelope
-      ): Promise<ClientReportedResult> {
-        if (typeof envelope.idempotencyKey === "string") {
-          idempotencyKeysSeen.add(envelope.idempotencyKey);
+      dispatch: fromSynchronous(
+        (envelope: ClientInvocationEnvelope): ClientReportedResult => {
+          if (typeof envelope.idempotencyKey === "string") {
+            idempotencyKeysSeen.add(envelope.idempotencyKey);
+          }
+          return {
+            callId: envelope.callId,
+            content: { acknowledged: true },
+            leaseToken: envelope.leaseToken,
+          };
         }
-        return Promise.resolve({
-          callId: envelope.callId,
-          content: { acknowledged: true },
-          leaseToken: envelope.leaseToken,
-        });
-      },
+      ),
       endpointId: "ep-az006-result-durability",
     };
 
