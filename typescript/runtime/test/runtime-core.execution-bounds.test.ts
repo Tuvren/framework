@@ -58,7 +58,7 @@ interface TelemetryCapture {
   sink: TuvrenTelemetrySink;
 }
 
-function createTelemetryCapture(): TelemetryCapture {
+const createTelemetryCapture = (): TelemetryCapture => {
   const events: TelemetryEvent[] = [];
   return {
     events,
@@ -71,8 +71,50 @@ function createTelemetryCapture(): TelemetryCapture {
       },
     },
   };
-}
+};
 
+const createBoundsRuntime = (options: {
+  bounds?: RuntimeCoreOptions["bounds"];
+  runner: RuntimeRunner;
+  now?: () => EpochMs;
+  telemetry?: TuvrenTelemetrySink;
+}) => {
+  const harness = createFakeKernelHarness();
+  const runtime = createTuvrenRuntime({
+    defaultRunnerId: options.runner.id,
+    kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([options.runner]),
+    ...(options.bounds === undefined ? {} : { bounds: options.bounds }),
+    ...(options.now === undefined ? {} : { now: options.now }),
+    ...(options.telemetry === undefined
+      ? {}
+      : { telemetry: options.telemetry }),
+  });
+  return { harness, runtime };
+};
+
+const expectBoundsFailure = (
+  result: ExecutionResult,
+  bound: ExecutionBoundExceededDetails["bound"]
+): ExecutionBoundExceededDetails => {
+  expect(result.status).toBe("failed");
+  if (result.status !== "failed") {
+    throw new Error("expected a failed result");
+  }
+  expect(result.error.code).toBe("execution_bound_exceeded");
+  const details = result.error.details as ExecutionBoundExceededDetails;
+  expect(details.bound).toBe(bound);
+  expect(typeof details.limit).toBe("number");
+  expect(typeof details.observed).toBe("number");
+  return details;
+};
+
+const eventIndex = (
+  events: TuvrenStreamEvent[],
+  predicate: (event: TuvrenStreamEvent) => boolean
+): number => {
+  return events.findIndex(predicate);
+};
 /** A runner that never stops — it always requests another iteration. */
 const runawayTextRunner = {
   async execute() {
@@ -86,49 +128,6 @@ const runawayTextRunner = {
     throw new Error("resume was not expected");
   },
 } satisfies RuntimeRunner;
-
-function createBoundsRuntime(options: {
-  bounds?: RuntimeCoreOptions["bounds"];
-  runner: RuntimeRunner;
-  now?: () => EpochMs;
-  telemetry?: TuvrenTelemetrySink;
-}) {
-  const harness = createFakeKernelHarness();
-  const runtime = createTuvrenRuntime({
-    defaultRunnerId: options.runner.id,
-    kernel: harness.kernel,
-    runnerRegistry: createRunnerRegistry([options.runner]),
-    ...(options.bounds === undefined ? {} : { bounds: options.bounds }),
-    ...(options.now === undefined ? {} : { now: options.now }),
-    ...(options.telemetry === undefined
-      ? {}
-      : { telemetry: options.telemetry }),
-  });
-  return { harness, runtime };
-}
-
-function expectBoundsFailure(
-  result: ExecutionResult,
-  bound: ExecutionBoundExceededDetails["bound"]
-): ExecutionBoundExceededDetails {
-  expect(result.status).toBe("failed");
-  if (result.status !== "failed") {
-    throw new Error("expected a failed result");
-  }
-  expect(result.error.code).toBe("execution_bound_exceeded");
-  const details = result.error.details as ExecutionBoundExceededDetails;
-  expect(details.bound).toBe(bound);
-  expect(typeof details.limit).toBe("number");
-  expect(typeof details.observed).toBe("number");
-  return details;
-}
-
-function eventIndex(
-  events: TuvrenStreamEvent[],
-  predicate: (event: TuvrenStreamEvent) => boolean
-): number {
-  return events.findIndex(predicate);
-}
 
 // ── Tests ───────────────────────────────────────────────────────────────────
 
