@@ -40,6 +40,193 @@ import {
 
 const TURN_ID = "turn_interrupted_iteration";
 const STALE_RUN_ID = "run_interrupted_iteration";
+
+const iterateSteps = (): RecoveryState["stepSequence"] => {
+  return [{ deterministic: false, id: "iterate", sideEffects: true }];
+};
+
+const isMessage = (value: unknown): value is TuvrenMessage => {
+  const record = toOptionalRecord(value);
+  return (
+    record?.role === "system" ||
+    record?.role === "user" ||
+    record?.role === "assistant" ||
+    record?.role === "tool"
+  );
+};
+
+const createFixture = async (
+  codec: PayloadCodec = IDENTITY_PAYLOAD_CODEC
+): Promise<Fixture> => {
+  const harness = createFakeKernelHarness();
+  const thread = await harness.kernel.thread.create(
+    "thread_interrupted_iteration",
+    "tuvren.agent.v1",
+    "branch_interrupted_iteration"
+  );
+  await harness.kernel.turn.create(
+    TURN_ID,
+    thread.threadId,
+    thread.branchId,
+    null,
+    thread.rootTurnNodeHash
+  );
+  await harness.kernel.run.create(
+    STALE_RUN_ID,
+    TURN_ID,
+    thread.branchId,
+    "tuvren.agent.v1",
+    thread.rootTurnNodeHash,
+    iterateSteps()
+  );
+
+  return {
+    codec,
+    kernel: harness.kernel,
+    async loadHeadState() {
+      const branch = await harness.kernel.branch.get(thread.branchId);
+
+      if (branch === null) {
+        throw new Error("expected recovery fixture branch");
+      }
+
+      const turnNode = await harness.kernel.node.get(branch.headTurnNodeHash);
+
+      if (turnNode === null) {
+        throw new Error("expected recovery fixture turn node");
+      }
+
+      const manifest = await harness.readBranchManifest(thread.branchId);
+      const messageHashes = Array.isArray(manifest.messages)
+        ? manifest.messages
+        : [];
+      const messages = await harness.readBranchMessages(thread.branchId);
+
+      return {
+        branchHeadHash: branch.headTurnNodeHash,
+        manifest: createEmptyContextManifest(),
+        messageHashes,
+        messages: messages.filter(isMessage),
+        turnNode,
+      };
+    },
+  };
+};
+
+const stageMessage = async (
+  fixture: Fixture,
+  message: TuvrenMessage,
+  taskId: string
+): Promise<StagedResult> => {
+  const record = encodeDeterministicKernelRecord(
+    message as unknown as KernelRecord
+  );
+  const encrypted = await encryptMessageRecord(
+    { codec: fixture.codec, scope: DEFAULT_SCOPE },
+    record
+  );
+  const staged = await fixture.kernel.staging.stage(
+    STALE_RUN_ID,
+    encrypted,
+    taskId,
+    "message",
+    "completed"
+  );
+  return staged.stagedResult;
+};
+
+const stageMessages = async (
+  fixture: Fixture,
+  messages: TuvrenMessage[]
+): Promise<StagedResult[]> => {
+  const results: StagedResult[] = [];
+
+  for (const [index, message] of messages.entries()) {
+    results.push(
+      await stageMessage(fixture, message, `task_${index.toString()}`)
+    );
+  }
+
+  return results;
+};
+
+const derivePlan = async (
+  fixture: Fixture,
+  recoveredHeadState: HeadState,
+  recoveryState: RecoveryState
+): Promise<InterruptedIterationRecoveryPlan> => {
+  return await deriveInterruptedIterationRecoveryPlan({
+    kernel: fixture.kernel,
+    payloadCodecBinding: { codec: fixture.codec, scope: DEFAULT_SCOPE },
+    recoveredHeadState,
+    recoveryState,
+    staleRunId: STALE_RUN_ID,
+    turnId: TURN_ID,
+  });
+};
+
+const expectPlan = (
+  plan: InterruptedIterationRecoveryPlan,
+  disposition: InterruptedIterationRecoveryPlan["disposition"],
+  completedCallIds: string[],
+  missingCallIds: string[]
+): void => {
+  expect(plan.disposition).toBe(disposition);
+  expect(plan.completedCallIds).toEqual(completedCallIds);
+  expect(plan.missingToolCalls.map((call) => call.callId)).toEqual(
+    missingCallIds
+  );
+};
+
+const toolResult = (callId: string, value: number): TuvrenMessage => {
+  return {
+    parts: [
+      {
+        callId,
+        name: "lookup",
+        output: { value },
+        type: "tool_result",
+      },
+    ],
+    role: "tool",
+  };
+};
+
+const createEnvelopeCodec = (erased = false): PayloadCodec => {
+  return {
+    decrypt(stored) {
+      if (erased) {
+        return Promise.resolve({
+          keyRef: "destroyed-test-key",
+          reason: "test key erased",
+          status: "erased" as const,
+        });
+      }
+
+      return Promise.resolve({
+        plaintext: stored.slice(ENVELOPE_MAGIC.length),
+        status: "available" as const,
+      });
+    },
+    encrypt(plaintext) {
+      const envelope = new Uint8Array(ENVELOPE_MAGIC.length + plaintext.length);
+      envelope.set(ENVELOPE_MAGIC);
+      envelope.set(plaintext, ENVELOPE_MAGIC.length);
+      return Promise.resolve(envelope);
+    },
+    id: erased ? "test-erased-envelope" : "test-envelope",
+  };
+};
+
+const requireAssistantMessage = (
+  message: TuvrenMessage
+): Extract<TuvrenMessage, { role: "assistant" }> => {
+  if (message.role !== "assistant") {
+    throw new Error("expected assistant message");
+  }
+
+  return message;
+};
 const TOOL_CALLS = requireAssistantMessage(
   assistantToolCalls([
     { callId: "call_one", input: { value: 1 }, name: "lookup" },
@@ -327,191 +514,4 @@ interface Fixture {
   codec: PayloadCodec;
   kernel: ReturnType<typeof createFakeKernelHarness>["kernel"];
   loadHeadState(): Promise<HeadState>;
-}
-
-async function createFixture(
-  codec: PayloadCodec = IDENTITY_PAYLOAD_CODEC
-): Promise<Fixture> {
-  const harness = createFakeKernelHarness();
-  const thread = await harness.kernel.thread.create(
-    "thread_interrupted_iteration",
-    "tuvren.agent.v1",
-    "branch_interrupted_iteration"
-  );
-  await harness.kernel.turn.create(
-    TURN_ID,
-    thread.threadId,
-    thread.branchId,
-    null,
-    thread.rootTurnNodeHash
-  );
-  await harness.kernel.run.create(
-    STALE_RUN_ID,
-    TURN_ID,
-    thread.branchId,
-    "tuvren.agent.v1",
-    thread.rootTurnNodeHash,
-    iterateSteps()
-  );
-
-  return {
-    codec,
-    kernel: harness.kernel,
-    async loadHeadState() {
-      const branch = await harness.kernel.branch.get(thread.branchId);
-
-      if (branch === null) {
-        throw new Error("expected recovery fixture branch");
-      }
-
-      const turnNode = await harness.kernel.node.get(branch.headTurnNodeHash);
-
-      if (turnNode === null) {
-        throw new Error("expected recovery fixture turn node");
-      }
-
-      const manifest = await harness.readBranchManifest(thread.branchId);
-      const messageHashes = Array.isArray(manifest.messages)
-        ? manifest.messages
-        : [];
-      const messages = await harness.readBranchMessages(thread.branchId);
-
-      return {
-        branchHeadHash: branch.headTurnNodeHash,
-        manifest: createEmptyContextManifest(),
-        messageHashes,
-        messages: messages.filter(isMessage),
-        turnNode,
-      };
-    },
-  };
-}
-
-async function stageMessages(
-  fixture: Fixture,
-  messages: TuvrenMessage[]
-): Promise<StagedResult[]> {
-  const results: StagedResult[] = [];
-
-  for (const [index, message] of messages.entries()) {
-    results.push(
-      await stageMessage(fixture, message, `task_${index.toString()}`)
-    );
-  }
-
-  return results;
-}
-
-async function stageMessage(
-  fixture: Fixture,
-  message: TuvrenMessage,
-  taskId: string
-): Promise<StagedResult> {
-  const record = encodeDeterministicKernelRecord(
-    message as unknown as KernelRecord
-  );
-  const encrypted = await encryptMessageRecord(
-    { codec: fixture.codec, scope: DEFAULT_SCOPE },
-    record
-  );
-  const staged = await fixture.kernel.staging.stage(
-    STALE_RUN_ID,
-    encrypted,
-    taskId,
-    "message",
-    "completed"
-  );
-  return staged.stagedResult;
-}
-
-async function derivePlan(
-  fixture: Fixture,
-  recoveredHeadState: HeadState,
-  recoveryState: RecoveryState
-): Promise<InterruptedIterationRecoveryPlan> {
-  return await deriveInterruptedIterationRecoveryPlan({
-    kernel: fixture.kernel,
-    payloadCodecBinding: { codec: fixture.codec, scope: DEFAULT_SCOPE },
-    recoveredHeadState,
-    recoveryState,
-    staleRunId: STALE_RUN_ID,
-    turnId: TURN_ID,
-  });
-}
-
-function expectPlan(
-  plan: InterruptedIterationRecoveryPlan,
-  disposition: InterruptedIterationRecoveryPlan["disposition"],
-  completedCallIds: string[],
-  missingCallIds: string[]
-): void {
-  expect(plan.disposition).toBe(disposition);
-  expect(plan.completedCallIds).toEqual(completedCallIds);
-  expect(plan.missingToolCalls.map((call) => call.callId)).toEqual(
-    missingCallIds
-  );
-}
-
-function toolResult(callId: string, value: number): TuvrenMessage {
-  return {
-    parts: [
-      {
-        callId,
-        name: "lookup",
-        output: { value },
-        type: "tool_result",
-      },
-    ],
-    role: "tool",
-  };
-}
-
-function iterateSteps(): RecoveryState["stepSequence"] {
-  return [{ deterministic: false, id: "iterate", sideEffects: true }];
-}
-
-function isMessage(value: unknown): value is TuvrenMessage {
-  const record = toOptionalRecord(value);
-  return (
-    record?.role === "system" ||
-    record?.role === "user" ||
-    record?.role === "assistant" ||
-    record?.role === "tool"
-  );
-}
-
-function createEnvelopeCodec(erased = false): PayloadCodec {
-  return {
-    decrypt(stored) {
-      if (erased) {
-        return Promise.resolve({
-          keyRef: "destroyed-test-key",
-          reason: "test key erased",
-          status: "erased" as const,
-        });
-      }
-
-      return Promise.resolve({
-        plaintext: stored.slice(ENVELOPE_MAGIC.length),
-        status: "available" as const,
-      });
-    },
-    encrypt(plaintext) {
-      const envelope = new Uint8Array(ENVELOPE_MAGIC.length + plaintext.length);
-      envelope.set(ENVELOPE_MAGIC);
-      envelope.set(plaintext, ENVELOPE_MAGIC.length);
-      return Promise.resolve(envelope);
-    },
-    id: erased ? "test-erased-envelope" : "test-envelope",
-  };
-}
-
-function requireAssistantMessage(
-  message: TuvrenMessage
-): Extract<TuvrenMessage, { role: "assistant" }> {
-  if (message.role !== "assistant") {
-    throw new Error("expected assistant message");
-  }
-
-  return message;
 }
