@@ -27,16 +27,16 @@ import type {
 } from "@tuvren/core/capabilities";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { ExecutionHandle, ExecutionResult } from "@tuvren/core/execution";
-import {
-  createDuplexSessionBinding,
-  type DuplexSessionBinding,
-  type SessionOutboundFrame,
+import { createDuplexSessionBinding } from "@tuvren/host-session";
+import type {
+  DuplexSessionBinding,
+  SessionOutboundFrame,
 } from "@tuvren/host-session";
-import {
-  createRemoteClientSession,
-  type RemoteClientSession,
-  type RemoteClientSessionOptions,
-  type RemoteClientSessionSink,
+import { createRemoteClientSession } from "@tuvren/remote-session";
+import type {
+  RemoteClientSession,
+  RemoteClientSessionOptions,
+  RemoteClientSessionSink,
 } from "@tuvren/remote-session";
 
 import type { WsSocketSink } from "../src/lib/ws-session-transport.js";
@@ -75,7 +75,7 @@ export function createFiniteOutboundIterable(frames: SessionOutboundFrame[]): {
             return { done: true, value: undefined };
           }
 
-          const value = frames[index] as SessionOutboundFrame;
+          const value = frames[index];
           index += 1;
           return { done: false, value };
         },
@@ -107,7 +107,7 @@ export function createHangingOutboundIterable(
       return {
         next(): Promise<IteratorResult<SessionOutboundFrame>> {
           if (index < frames.length) {
-            const value = frames[index] as SessionOutboundFrame;
+            const value = frames[index];
             index += 1;
             return Promise.resolve({ done: false, value });
           }
@@ -213,7 +213,7 @@ export class FakeEventSource implements AsyncIterable<FakeEvent> {
   private claimed = false;
   private readonly closed = false;
   private readonly items: FakeEvent[] = [];
-  private readonly waiters: Array<(result: IteratorResult<FakeEvent>) => void> =
+  private readonly waiters: ((result: IteratorResult<FakeEvent>) => void)[] =
     [];
 
   push(event: FakeEvent): void {
@@ -281,14 +281,14 @@ export function createRealBinding(sessionId: string = SESSION_ID): {
 
 /** A bare `RemoteClientSessionSink` fake for tests that attach directly to a session (bypassing the WS transport entirely) to prime its replay buffer or observe raw session frames. */
 export interface FakeSessionSink extends RemoteClientSessionSink {
-  sent: Array<{ cursor: string | undefined; frame: SessionOutboundFrame }>;
+  sent: { cursor: string | undefined; frame: SessionOutboundFrame }[];
 }
 
 export function createFakeSessionSink(): FakeSessionSink {
-  const sent: Array<{
+  const sent: {
     cursor: string | undefined;
     frame: SessionOutboundFrame;
-  }> = [];
+  }[] = [];
   return {
     send(frame: SessionOutboundFrame, cursor?: string): void {
       sent.push({ cursor, frame });
@@ -298,13 +298,13 @@ export function createFakeSessionSink(): FakeSessionSink {
 }
 
 export interface FakeSink extends WsSocketSink {
-  closes: Array<{ code: number; reason: string | undefined }>;
+  closes: { code: number; reason: string | undefined }[];
   sent: unknown[];
 }
 
 export function createFakeSink(): FakeSink {
   const sent: unknown[] = [];
-  const closes: Array<{ code: number; reason: string | undefined }> = [];
+  const closes: { code: number; reason: string | undefined }[] = [];
 
   return {
     close(code: number, reason?: string): void {
@@ -324,7 +324,7 @@ export function createScriptedBufferedAmountSink(script: number[]): FakeSink {
   let index = 0;
 
   sink.bufferedAmount = (): number => {
-    const value = script[Math.min(index, script.length - 1)] as number;
+    const value = script[Math.min(index, script.length - 1)];
     index += 1;
     return value;
   };

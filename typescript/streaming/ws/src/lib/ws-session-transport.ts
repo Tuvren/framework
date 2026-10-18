@@ -19,14 +19,16 @@ import type { SessionOutboundFrame } from "@tuvren/host-session";
 import {
   REMOTE_SESSION_ALREADY_ATTACHED,
   REMOTE_SESSION_ENDED,
-  type RemoteClientSession,
-  type RemoteClientSessionAttachResult,
-  type RemoteClientSessionSink,
 } from "@tuvren/remote-session";
-import {
-  createStreamAdapterWarningReporter,
-  type StreamAdapterOptions,
-  type StreamAdapterWarning,
+import type {
+  RemoteClientSession,
+  RemoteClientSessionAttachResult,
+  RemoteClientSessionSink,
+} from "@tuvren/remote-session";
+import { createStreamAdapterWarningReporter } from "@tuvren/stream-core";
+import type {
+  StreamAdapterOptions,
+  StreamAdapterWarning,
 } from "@tuvren/stream-core";
 
 import {
@@ -37,7 +39,8 @@ import {
   WS_CLOSE_CODE_PROTOCOL_VERSION_UNSUPPORTED,
   WS_CLOSE_CODE_SESSION_NOT_FOUND,
 } from "./ws-close-codes.js";
-import { type ParsedWsMessage, parseWsMessage } from "./ws-messages.js";
+import { parseWsMessage } from "./ws-messages.js";
+import type { ParsedWsMessage } from "./ws-messages.js";
 
 /** Standard WebSocket normal-closure code (RFC 6455 §7.4.1), not part of ADR-0062's 4000-range application vocabulary. */
 const WS_CLOSE_CODE_NORMAL = 1000;
@@ -321,7 +324,7 @@ export function createWsSessionTransport(
     }
 
     const pingSentAt = Date.now();
-    const timeoutMs = options.heartbeat.timeoutMs;
+    const { timeoutMs } = options.heartbeat;
 
     const timer = setTimeout(() => {
       heartbeatTimeoutTimers.delete(timer);
@@ -458,10 +461,10 @@ export function createWsSessionTransport(
     sink: RemoteClientSessionSink;
   } {
     let released = false;
-    const queued: Array<{
+    const queued: {
       cursor: string | undefined;
       frame: SessionOutboundFrame;
-    }> = [];
+    }[] = [];
 
     const sink: RemoteClientSessionSink = {
       send(frame: SessionOutboundFrame, cursor?: string): void {
@@ -610,7 +613,7 @@ export function createWsSessionTransport(
       return;
     }
 
-    const message = parsed.message;
+    const { message } = parsed;
 
     if (message.protocolVersion !== SUPPORTED_PROTOCOL_VERSION) {
       doClose(

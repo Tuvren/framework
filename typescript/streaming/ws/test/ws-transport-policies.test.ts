@@ -458,7 +458,7 @@ describe("createWsSessionTransport: overflow keeps the unsent event frame resuma
     // sequenced and recorded by the session (event recording happens
     // unconditionally, before the budget check ever runs) but never sent.
     const sentFrames = (
-      overflowSink.sent as Array<{ kind: string; cursor?: string }>
+      overflowSink.sent as { kind: string; cursor?: string }[]
     ).filter((message) => message.kind === "frame");
 
     expect(sentFrames).toHaveLength(2);
@@ -479,10 +479,10 @@ describe("createWsSessionTransport: overflow keeps the unsent event frame resuma
     expect(ack.resumeStatus).toBe("resumed");
 
     const replayed = (
-      secondSink.sent.slice(1) as Array<{
+      secondSink.sent.slice(1) as {
         kind: string;
         frame: { event: { type: string } };
-      }>
+      }[]
     ).filter((message) => message.kind === "frame");
 
     // Exactly the recorded-but-unsent third frame comes back.

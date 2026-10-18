@@ -15,8 +15,7 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import { assertTuvrenStreamEvent } from "@tuvren/core/events";
@@ -73,7 +72,7 @@ export interface TelemetryCapture {
   readonly spans: TelemetrySpan[];
 }
 
-const FRAMEWORK_TESTKIT_ROOT = dirname(fileURLToPath(import.meta.url));
+const FRAMEWORK_TESTKIT_ROOT = import.meta.dirname;
 const STREAM_FIXTURE_PATHS = [
   resolve(
     FRAMEWORK_TESTKIT_ROOT,
@@ -150,10 +149,10 @@ export async function collectTuvrenStreamEvents(
  *   `assertTuvrenStreamEvent` on every entry).
  */
 export async function readFrameworkStreamFixtures(): Promise<FrameworkStreamFixtureSet> {
-  const fixture = (await readFirstJsonFile(
+  const fixture = await readFirstJsonFile(
     STREAM_FIXTURE_PATHS,
     "stream-events fixture"
-  )) as unknown;
+  );
 
   assertFrameworkStreamFixtureSet(fixture, "stream-events fixture");
   return fixture;
@@ -340,7 +339,7 @@ async function readFirstJsonFile(
 
   for (const path of paths) {
     try {
-      return JSON.parse(await readFile(path, "utf8")) as unknown;
+      return JSON.parse(await readFile(path, "utf-8")) as unknown;
     } catch (error) {
       if (isNotFoundError(error)) {
         errors.push(path);
@@ -377,7 +376,7 @@ function assertTuvrenStreamEvents(
   label: string
 ): asserts value is readonly TuvrenStreamEvent[] {
   if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array`);
+    throw new TypeError(`${label} must be an array`);
   }
 
   for (const [index, event] of value.entries()) {

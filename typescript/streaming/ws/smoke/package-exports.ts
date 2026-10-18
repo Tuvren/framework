@@ -37,7 +37,7 @@ describe("stream-ws package exports", () => {
 
   test("createWsSessionTransport resolves and does something minimal end-to-end", () => {
     const sent: string[] = [];
-    const closes: Array<{ code: number; reason: string | undefined }> = [];
+    const closes: { code: number; reason: string | undefined }[] = [];
 
     async function* emptyOutbound() {
       // No frames; the session observes completion once it drains this.

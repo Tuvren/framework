@@ -23,10 +23,8 @@ import {
   streamAdapterFixtures,
 } from "@tuvren/stream-core";
 
-import {
-  createWsSessionTransport,
-  type WsSessionTransport,
-} from "../src/lib/ws-session-transport.js";
+import { createWsSessionTransport } from "../src/lib/ws-session-transport.js";
+import type { WsSessionTransport } from "../src/lib/ws-session-transport.js";
 import {
   clientInvocationOutboundFrame,
   createFakeBinding,
@@ -37,11 +35,11 @@ import {
   createRealBinding,
   createTestSession,
   eventOutboundFrame,
-  type FakeSink,
   flushMicrotasks,
   handshakeMessage,
   SESSION_ID,
 } from "./session-test-helpers.js";
+import type { FakeSink } from "./session-test-helpers.js";
 
 describe("createWsSessionTransport: claim and lifecycle", () => {
   test("a second start() throws", () => {
@@ -53,7 +51,9 @@ describe("createWsSessionTransport: claim and lifecycle", () => {
     });
 
     transport.start();
-    expect(() => transport.start()).toThrow();
+    expect(() => {
+      transport.start();
+    }).toThrow();
   });
 
   test("ingest() before start() throws", () => {
@@ -64,13 +64,15 @@ describe("createWsSessionTransport: claim and lifecycle", () => {
       sink: createFakeSink(),
     });
 
-    expect(() => transport.ingest(handshakeMessage())).toThrow();
+    expect(() => {
+      transport.ingest(handshakeMessage());
+    }).toThrow();
   });
 
   test("a sink that throws on the handshake_ack send closes 1011 and detaches instead of wedging half-initialized", async () => {
     const fake = createFakeBinding(createHangingOutboundIterable([]));
     const session = createTestSession({ binding: fake.binding });
-    const closes: Array<{ code: number; reason: string | undefined }> = [];
+    const closes: { code: number; reason: string | undefined }[] = [];
     const throwingSink = {
       close(code: number, reason?: string): void {
         closes.push({ code, reason });
@@ -185,11 +187,11 @@ describe("createWsSessionTransport: happy path", () => {
     const { sink } = await startHandshakedTransport(outboundFrames);
 
     // First message is the handshake_ack; the rest are frame envelopes.
-    const frameMessages = sink.sent.slice(1) as Array<{
+    const frameMessages = sink.sent.slice(1) as {
       cursor?: string;
       frame: SessionOutboundFrame;
       kind: "frame";
-    }>;
+    }[];
 
     expect(frameMessages).toHaveLength(events.length);
 
@@ -275,11 +277,11 @@ describe("createWsSessionTransport: resume and redelivery across a reconnect", (
     transportOne.ingest(handshakeMessage());
     await flushMicrotasks();
 
-    const sentFrameMessages = sinkOne.sent.slice(1) as Array<{
+    const sentFrameMessages = sinkOne.sent.slice(1) as {
       cursor: string;
       frame: SessionOutboundFrame;
       kind: "frame";
-    }>;
+    }[];
     expect(sentFrameMessages).toHaveLength(outboundFrames.length);
 
     // Close the first socket (not the session) partway through, then attach
@@ -287,7 +289,7 @@ describe("createWsSessionTransport: resume and redelivery across a reconnect", (
     // partway through what the first socket already received.
     transportOne.close();
 
-    const resumeCursor = sentFrameMessages[1]?.cursor as string;
+    const resumeCursor = sentFrameMessages[1]?.cursor;
     const expectedTail = sentFrameMessages.slice(2);
 
     const sinkTwo = createFakeSink();
@@ -307,11 +309,11 @@ describe("createWsSessionTransport: resume and redelivery across a reconnect", (
       sessionId: SESSION_ID,
     });
 
-    const replayedMessages = sinkTwo.sent.slice(1) as Array<{
+    const replayedMessages = sinkTwo.sent.slice(1) as {
       cursor: string;
       frame: SessionOutboundFrame;
       kind: "frame";
-    }>;
+    }[];
 
     expect(replayedMessages).toHaveLength(expectedTail.length);
     replayedMessages.forEach((message, index) => {
@@ -320,7 +322,7 @@ describe("createWsSessionTransport: resume and redelivery across a reconnect", (
       // there is only ever one sequencer (ADR-0063), owned by the session,
       // not recreated per transport.
       expect(decodeResumeCursor(message.cursor)?.sequence).toBe(
-        decodeResumeCursor(expectedTail[index]?.cursor as string)?.sequence
+        decodeResumeCursor(expectedTail[index]?.cursor)?.sequence
       );
       expect(message.cursor).toBe(expectedTail[index]?.cursor);
       expect(message.frame).toEqual(expectedTail[index]?.frame);
@@ -357,7 +359,7 @@ describe("createWsSessionTransport: resume and redelivery across a reconnect", (
     await flushMicrotasks();
 
     const invocationMessages = (
-      sinkOne.sent as Array<{ frame?: { kind: string } }>
+      sinkOne.sent as { frame?: { kind: string } }[]
     ).filter((message) => message.frame?.kind === "client_invocation");
     expect(invocationMessages).toHaveLength(1);
 
@@ -377,7 +379,7 @@ describe("createWsSessionTransport: resume and redelivery across a reconnect", (
     await flushMicrotasks();
 
     const redeliveredMessages = (
-      sinkTwo.sent as Array<{ frame?: { invocation?: { callId?: string } } }>
+      sinkTwo.sent as { frame?: { invocation?: { callId?: string } } }[]
     ).filter((message) => message.frame?.invocation !== undefined);
 
     expect(redeliveredMessages).toHaveLength(1);
@@ -464,7 +466,7 @@ describe("createWsSessionTransport: handshake close codes", () => {
     ]);
 
     // Further ingest after close must not dispatch anything further.
-    transport.ingest(JSON.stringify({ kind: "frame", frame: {} }));
+    transport.ingest(JSON.stringify({ frame: {}, kind: "frame" }));
     await flushMicrotasks();
     expect(fake.dispatched).toEqual([]);
     expect(sink.closes).toHaveLength(1);
