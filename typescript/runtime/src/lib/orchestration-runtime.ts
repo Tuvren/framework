@@ -16,7 +16,8 @@
 
 import { randomUUID } from "node:crypto";
 
-import { type EpochMs, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { EpochMs } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   AgentConfig,
@@ -30,11 +31,11 @@ import type {
 } from "@tuvren/core/execution";
 import type { ApprovalResponse } from "@tuvren/core/tools";
 
-import {
-  type ChildSpawnRequest,
-  type ExecutionBinding,
-  OrchestrationNode,
-  type OrchestrationRuntimeNodeHost,
+import { OrchestrationNode } from "./orchestration-runtime-node.js";
+import type {
+  ChildSpawnRequest,
+  ExecutionBinding,
+  OrchestrationRuntimeNodeHost,
 } from "./orchestration-runtime-node.js";
 import {
   cloneExecutionStatus,
@@ -76,17 +77,17 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
   private active = true;
   private inactiveStatus?: ExecutionStatus;
   private readonly node: OrchestrationNode;
-  private readonly spawnedChildNodes: Array<{
+  private readonly spawnedChildNodes: {
     node: OrchestrationNode;
     workerId: string;
-  }> = [];
+  }[] = [];
 
   constructor(
     node: OrchestrationNode,
-    existingChildren?: ReadonlyArray<{
+    existingChildren?: readonly {
       node: OrchestrationNode;
       workerId: string;
-    }>
+    }[]
   ) {
     this.node = node;
     if (existingChildren !== undefined) {
@@ -294,8 +295,8 @@ class OrchestrationRuntimeImpl
     const handle = this.framework.executeTurn({
       branchId: input.branchId,
       config,
-      runnerId: input.runnerId,
       parentTurnId: input.parentTurnId,
+      runnerId: input.runnerId,
       schemaId: input.schemaId,
       signal: input.signal,
       threadId: input.threadId,
@@ -305,8 +306,8 @@ class OrchestrationRuntimeImpl
       binding: {
         agent: input.agent,
         branchId: input.branchId,
-        runnerId: input.runnerId,
         handle,
+        runnerId: input.runnerId,
         schemaId: input.schemaId,
         threadId: input.threadId,
         tools: requestedTools,
@@ -363,8 +364,8 @@ class OrchestrationRuntimeImpl
     return {
       agent: input.agent,
       branchId: childThread.branchId,
-      runnerId: parentBinding.runnerId,
       handle: childHandle,
+      runnerId: parentBinding.runnerId,
       schemaId: resolvedSchemaId,
       threadId: childThread.threadId,
       tools: parentBinding.tools,

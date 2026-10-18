@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { type EpochMs, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { EpochMs } from "@tuvren/core";
 import type {
   TuvrenErrorProjection,
   TuvrenStreamEvent,
@@ -444,7 +445,7 @@ export class OrchestrationNode {
     const childBindingPromise =
       this.currentBinding === undefined
         ? this.requireCurrentBindingAsync("spawn").then(async (binding) => {
-            const phase = binding.handle.status().phase;
+            const { phase } = binding.handle.status();
 
             if (phase !== "running") {
               throw new TuvrenRuntimeError(
@@ -465,7 +466,7 @@ export class OrchestrationNode {
             );
           })
         : (() => {
-            const phase = this.currentBinding.handle.status().phase;
+            const { phase } = this.currentBinding.handle.status();
 
             if (phase !== "running") {
               throw new TuvrenRuntimeError(
@@ -529,7 +530,7 @@ export class OrchestrationNode {
     return {
       ...event,
       source: {
-        ...(event.source ?? {}),
+        ...event.source,
         agent: event.source?.agent ?? binding.agent,
         threadId: event.source?.threadId ?? binding.threadId,
         workerId: event.source?.workerId ?? binding.workerId,
@@ -559,7 +560,7 @@ export class OrchestrationNode {
   }
 
   private finalizeCurrentBinding(binding: ExecutionBinding): void {
-    const phase = binding.handle.status().phase;
+    const { phase } = binding.handle.status();
     this.selfPhase = phase;
 
     if (phase === "paused") {
@@ -680,7 +681,7 @@ export class OrchestrationNode {
     }
 
     this.selfResultResolved = true;
-    this.resultState.resolve(undefined);
+    this.resultState.resolve();
   }
 
   private async observeChildSettlement(
