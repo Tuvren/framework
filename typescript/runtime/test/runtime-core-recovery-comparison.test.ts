@@ -38,10 +38,10 @@ import type { KernelRecord } from "@tuvren/core";
 import type { InputSignal } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { RuntimeRunner } from "@tuvren/core/runner";
-import {
-  encodeDeterministicKernelRecord,
-  type RuntimeKernel,
-  type RuntimeKernelRunLiveness,
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type {
+  RuntimeKernel,
+  RuntimeKernelRunLiveness,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
@@ -78,9 +78,9 @@ function nestedResumeData() {
 
 function keyReorderedResumeData() {
   return {
+    filters: { limit: 10, tags: ["alpha", "beta"] },
+    nested: { enabled: true, note: null },
     retry: 2,
-    nested: { note: null, enabled: true },
-    filters: { tags: ["alpha", "beta"], limit: 10 },
   };
 }
 
@@ -219,7 +219,7 @@ async function executeKeyedRecovery(retryKey: string) {
   const kernel: RuntimeKernel & RuntimeKernelRunLiveness =
     livenessHarness.kernel;
   const runner = {
-    execute: () =>
+    execute: async () =>
       Promise.resolve({
         messages: [assistantText(`Recovery result for key ${retryKey}.`)],
         resolution: {
@@ -228,7 +228,7 @@ async function executeKeyedRecovery(retryKey: string) {
         },
       }),
     id: "fake",
-    resume: () => Promise.reject(new Error("resume was not expected")),
+    resume: async () => Promise.reject(new Error("resume was not expected")),
   } satisfies RuntimeRunner;
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
@@ -298,13 +298,13 @@ async function executeKeyedRecoveryAfterEmptyInputPreemption() {
     backend,
   });
   const runner = {
-    execute: () =>
+    execute: async () =>
       Promise.resolve({
         messages: [assistantText("Completed the fresh keyed request.")],
         resolution: { reason: "done", type: "end_turn" as const },
       }),
     id: "fake",
-    resume: () => Promise.reject(new Error("resume was not expected")),
+    resume: async () => Promise.reject(new Error("resume was not expected")),
   } satisfies RuntimeRunner;
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
@@ -382,8 +382,8 @@ async function executeKeyedRecoveryAfterEmptyInputPreemption() {
   nowMs = 21;
   const expiredBeforeRecovery = await kernel.runLiveness.listExpired(nowMs);
   expect(expiredBeforeRecovery.map((run) => run.runId)).toContain(laterRunId);
-  const runBeforeRecovery = await backend.transact(async (tx) =>
-    tx.runs.get(laterRunId)
+  const runBeforeRecovery = await backend.transact(
+    async (tx) => await tx.runs.get(laterRunId)
   );
   expect(runBeforeRecovery?.status).toBe("running");
   const recoveredUsers = (
@@ -402,8 +402,8 @@ async function executeKeyedRecoveryAfterEmptyInputPreemption() {
     threadId: thread.threadId,
   });
   const events = await collectEvents(handle.events());
-  const runAfterRecovery = await backend.transact(async (tx) =>
-    tx.runs.get(laterRunId)
+  const runAfterRecovery = await backend.transact(
+    async (tx) => await tx.runs.get(laterRunId)
   );
   expect(runAfterRecovery?.status).toBe("failed");
   expect(runAfterRecovery?.preemptionReason).toBe("stale_running_recovery");
@@ -418,8 +418,8 @@ async function executeKeyedRecoveryAfterEmptyInputPreemption() {
 
   return {
     freshUsers,
-    recoveredUsers,
     recoveredTurnId: staleTurn.turnId,
+    recoveredUsers,
     resultTurnId: extractTurnId(events),
   };
 }
@@ -619,13 +619,13 @@ describe("framework-runtime-core", () => {
       backend: createMemoryBackend({ now: () => nowMs }),
     });
     const runner = {
-      execute: () =>
+      execute: async () =>
         Promise.resolve({
           messages: [assistantText("Completed the keyed request.")],
           resolution: { reason: "done", type: "end_turn" as const },
         }),
       id: "fake",
-      resume: () => Promise.reject(new Error("resume was not expected")),
+      resume: async () => Promise.reject(new Error("resume was not expected")),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -700,13 +700,13 @@ describe("framework-runtime-core", () => {
       backend: createMemoryBackend({ now: () => nowMs }),
     });
     const runner = {
-      execute: () =>
+      execute: async () =>
         Promise.resolve({
           messages: [assistantText("Completed the keyed request.")],
           resolution: { reason: "done", type: "end_turn" as const },
         }),
       id: "fake",
-      resume: () => Promise.reject(new Error("resume was not expected")),
+      resume: async () => Promise.reject(new Error("resume was not expected")),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -831,16 +831,16 @@ describe("framework-runtime-core", () => {
         });
       },
       id: "fake",
-      resume: () => Promise.reject(new Error("resume was not expected")),
+      resume: async () => Promise.reject(new Error("resume was not expected")),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const staleTurn = await livenessHarness.kernel.turn.create(

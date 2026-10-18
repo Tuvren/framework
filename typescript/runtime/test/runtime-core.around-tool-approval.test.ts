@@ -76,7 +76,7 @@ describe("framework-runtime-core", () => {
     let sameAroundMetadataRef = false;
     let sameExecuteMetadataRef = false;
     const methodExtension: MethodAroundToolExtension = {
-      aroundTool(_context, next) {
+      async aroundTool(_context, next) {
         this.aroundToolCalls += 1;
 
         if (this.label !== "method" || this.aroundToolCalls !== 1) {
@@ -90,7 +90,8 @@ describe("framework-runtime-core", () => {
       name: "method-around-tool",
     };
     const aroundToolSpec: AroundToolSpecReceiver = {
-      handler(context, next) {
+      calls: 0,
+      async handler(context, next) {
         this.calls += 1;
 
         if (
@@ -103,7 +104,6 @@ describe("framework-runtime-core", () => {
 
         return next();
       },
-      calls: 0,
       label: "spec",
       tools: ["email"],
     };
@@ -137,7 +137,7 @@ describe("framework-runtime-core", () => {
       metadata: originalMetadata,
       name: "email",
     };
-    methodExtension.aroundTool = function (context, next) {
+    methodExtension.aroundTool = async function aroundTool(context, next) {
       this.aroundToolCalls += 1;
       sameAroundToolRef = context.tool === originalTool;
       sameAroundMetadataRef = context.tool.metadata === originalMetadata;
@@ -208,8 +208,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -283,8 +283,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const pausedHandle = runtime.executeTurn({
@@ -420,8 +420,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -540,8 +540,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -653,8 +653,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -662,7 +662,7 @@ describe("framework-runtime-core", () => {
       config: {
         extensions: [
           {
-            aroundTool(context, next) {
+            async aroundTool(context, next) {
               if (
                 context.manifest.extensions.b !== null &&
                 typeof context.manifest.extensions.b === "object" &&
@@ -683,7 +683,7 @@ describe("framework-runtime-core", () => {
             },
           },
           {
-            aroundTool(context, next) {
+            async aroundTool(context, next) {
               observedState = {
                 extensionState: globalThis.structuredClone(
                   context.extensionState
@@ -742,7 +742,7 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
 ) {
   return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
@@ -769,7 +769,7 @@ function isKrakenRunnerFactory(
 }
 
 function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const resume = runner.resume;
+  const { resume } = runner;
 
   return {
     async execute(context) {

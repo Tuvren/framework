@@ -47,6 +47,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => ({
           messages: [assistantText(`Finished ${context.config.name}.`)],
@@ -56,7 +57,6 @@ describe("orchestration-runtime child lifecycle", () => {
           },
         })),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -88,6 +88,7 @@ describe("orchestration-runtime child lifecycle", () => {
     let executeCalls = 0;
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => {
           executeCalls += 1;
@@ -100,7 +101,6 @@ describe("orchestration-runtime child lifecycle", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -128,6 +128,7 @@ describe("orchestration-runtime child lifecycle", () => {
     let executeCalls = 0;
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => {
           executeCalls += 1;
@@ -140,7 +141,6 @@ describe("orchestration-runtime child lifecycle", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -168,6 +168,7 @@ describe("orchestration-runtime child lifecycle", () => {
     let executeCalls = 0;
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => {
           executeCalls += 1;
@@ -180,7 +181,6 @@ describe("orchestration-runtime child lifecycle", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -218,6 +218,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           await delay(20);
@@ -230,7 +231,6 @@ describe("orchestration-runtime child lifecycle", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -298,31 +298,31 @@ describe("orchestration-runtime child lifecycle", () => {
 
         return null;
       },
-      async setBranchHead() {
-        throw new Error("setBranchHead was not expected");
-      },
-      async listThreads() {
-        return { threads: [] };
-      },
-      async listBranches() {
-        return [];
+      getTurnHistory() {
+        throw new Error("getTurnHistory was not expected");
       },
       async getTurnState() {
         throw new Error("getTurnState was not expected");
       },
-      getTurnHistory() {
-        throw new Error("getTurnHistory was not expected");
+      async listBranches() {
+        return [];
+      },
+      async listThreads() {
+        return { threads: [] };
+      },
+      maintenance: {
+        purgeScope() {
+          throw new Error("purgeScope was not expected");
+        },
+        reclaim() {
+          throw new Error("reclaim was not expected");
+        },
       },
       async readBranchMessages() {
         return { messages: [] };
       },
-      maintenance: {
-        reclaim() {
-          throw new Error("reclaim was not expected");
-        },
-        purgeScope() {
-          throw new Error("purgeScope was not expected");
-        },
+      async setBranchHead() {
+        throw new Error("setBranchHead was not expected");
       },
     } satisfies TuvrenRuntime;
     const orchestration = createOrchestrationRuntime({
@@ -351,7 +351,7 @@ describe("orchestration-runtime child lifecycle", () => {
     }
     expect(childResult.error.message).toBe("child start failed");
     await delay(40);
-    const events = subtreeCapture.events;
+    const { events } = subtreeCapture;
 
     expect(events.filter((event) => event.type === "error")).toHaveLength(1);
   });
@@ -360,6 +360,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -383,7 +384,6 @@ describe("orchestration-runtime child lifecycle", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -446,6 +446,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -469,7 +470,6 @@ describe("orchestration-runtime child lifecycle", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -518,6 +518,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -551,7 +552,6 @@ describe("orchestration-runtime child lifecycle", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -591,6 +591,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "raw",
+      kernel: harness.kernel,
       runnerRegistry: createBaseRunnerRegistry([
         {
           async execute(context) {
@@ -616,7 +617,6 @@ describe("orchestration-runtime child lifecycle", () => {
           id: "raw",
         } satisfies RuntimeRunner,
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -656,6 +656,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -690,7 +691,6 @@ describe("orchestration-runtime child lifecycle", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -737,6 +737,7 @@ describe("orchestration-runtime child lifecycle", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -784,7 +785,6 @@ describe("orchestration-runtime child lifecycle", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {

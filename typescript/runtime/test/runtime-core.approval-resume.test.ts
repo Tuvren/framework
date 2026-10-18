@@ -83,8 +83,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const pausedHandle = runtime.executeTurn({
@@ -203,8 +203,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const pausedHandle = runtime.executeTurn({
@@ -214,7 +214,7 @@ describe("framework-runtime-core", () => {
           {
             afterIteration(context) {
               if (context.resolution.type !== "pause") {
-                return undefined;
+                return;
               }
 
               return {
@@ -324,8 +324,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const pausedHandle = runtime.executeTurn({
@@ -333,13 +333,13 @@ describe("framework-runtime-core", () => {
       config: {
         extensions: [
           {
-            name: "approval-around-state",
-            aroundTool(_context, next) {
+            async aroundTool(_context, next) {
               return next().then((result) => ({
                 result,
                 state: { resumed: true },
               }));
             },
+            name: "approval-around-state",
           },
         ],
         name: "primary",
@@ -372,9 +372,9 @@ describe("framework-runtime-core", () => {
     const resumedHandle = pausedHandle.resolveApproval({
       decisions: [{ callId: "call-email", type: "approve" }],
     });
-    expect(() => pausedHandle.cancel()).toThrow(
-      "cancel() is not valid once approval has been resolved"
-    );
+    expect(() => {
+      pausedHandle.cancel();
+    }).toThrow("cancel() is not valid once approval has been resolved");
     const resumedEvents = await collectEvents(resumedHandle.events());
 
     expect(pausedHandle.status().phase).toBe("paused");
@@ -437,8 +437,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const pausedHandle = runtime.executeTurn({
@@ -569,8 +569,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const pausedHandle = runtime.executeTurn({
@@ -699,8 +699,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -819,8 +819,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const config = {
@@ -926,7 +926,7 @@ function isMessagePartsSnapshot(value: unknown): value is MessagePartsSnapshot {
 }
 
 function createRunnerRegistry(
-  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
 ) {
   return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
@@ -953,7 +953,7 @@ function isKrakenRunnerFactory(
 }
 
 function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const resume = runner.resume;
+  const { resume } = runner;
 
   return {
     async execute(context) {

@@ -8,14 +8,13 @@
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { expect, test } from "bun:test";
 
-import { DEFAULT_SCOPE, type KernelRecord } from "@tuvren/core";
+import { DEFAULT_SCOPE } from "@tuvren/core";
+import type { KernelRecord } from "@tuvren/core";
 import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { RuntimeRunner } from "@tuvren/core/runner";
-import {
-  encodeDeterministicKernelRecord,
-  type RuntimeKernel,
-} from "@tuvren/kernel-protocol";
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type { RuntimeKernel } from "@tuvren/kernel-protocol";
 
 import {
   createRunnerRegistry,
@@ -129,29 +128,27 @@ test("recovery dispatches missing calls before any context-engineering run", asy
     return await beginStep(...args);
   };
   const runner: RuntimeRunner = {
-    id: "fake",
     async execute() {
       return {
         messages: [assistantText("done")],
         resolution: { reason: "done", type: "end_turn" },
       };
     },
+    id: "fake",
   };
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
     kernel: liveness.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([runner]),
     runLiveness: {
       executionOwnerId: "replacement-owner",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const handle = runtime.executeTurn({
     branchId: thread.branchId,
-    threadId: thread.threadId,
-    signal: textSignal("recover batch"),
     config: {
       name: "primary",
       tools: [
@@ -166,6 +163,8 @@ test("recovery dispatches missing calls before any context-engineering run", asy
         },
       ],
     },
+    signal: textSignal("recover batch"),
+    threadId: thread.threadId,
   });
   await collectEvents(handle.events());
 
