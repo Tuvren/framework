@@ -124,19 +124,14 @@ const fromSynchronous = <Argument, Value>(
     Promise<Value>
   >(Promise, operation);
 
-const NO_TOOL_RESULT: unknown = new Map<string, unknown>().get("result");
-
-const fromSynchronousWithoutArguments = <Value>(
-  operation: () => Value
-): (() => Promise<Value>) =>
-  Promise.try.bind<typeof Promise, [() => Value], [], Promise<Value>>(
-    Promise,
-    operation
-  );
-
-const resolveWithoutResult = fromSynchronousWithoutArguments(
-  (): unknown => NO_TOOL_RESULT
-);
+const resolveWithoutResult: () => Promise<void> = Promise.try.bind<
+  typeof Promise,
+  [() => void],
+  [],
+  Promise<void>
+>(Promise, (): void => {
+  // Client-side MCP execution has no local result value.
+});
 
 // ---------------------------------------------------------------------------
 // Shared helpers
