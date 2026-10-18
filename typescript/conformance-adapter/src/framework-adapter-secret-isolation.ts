@@ -66,15 +66,77 @@ interface SecretFixture {
   providerApiKey: string;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+// ---------------------------------------------------------------------------
+// Operation: runtime.secret-isolation.provider-bridge
+//
+// Exercises the AI SDK provider bridge (createAiSdkProviderBridge) directly at
+// the TuvrenProvider generate/stream level -- NOT through a full kernel/
+// runtime turn, which is deliberately out of scope for this probe (KRT-BK004).
+// A fake LanguageModelV3 embeds the fixture's pattern-shaped
+// `bridgeRequestToken` in two representative places: a credential-shaped
+// requestBody value (Scenario: request-body secrets are screened) and a
+// signed-URL-shaped response header (Scenario: response headers carrying
+// signed URLs or tokens are screened). Both the `.generate()` result's
+// `providerMetadata.aiSdkBridge` and the `.stream()` result's terminal
+// "finish" chunk `providerMetadata.aiSdkBridge` are returned as RAW
+// observation -- this adapter performs no scanning or grading; the plan's
+// secretAbsence/secretPatternAbsence assertions own the verdict.
+// ---------------------------------------------------------------------------
+
+interface ProviderBridgeSecretIsolationFixture {
+  bridgeRequestToken: string;
+}
+
+// ---------------------------------------------------------------------------
+// Operation: runtime.scope-isolation.surfaces
+//
+// Constructs two runtimes bound to distinct Scopes (ADR-0048, KRT-BE008), drives
+// a turn under each, and records a transcript per Scope. Returns the RAW
+// telemetry and transcript surfaces for both Scopes plus the distinct Scope
+// identifiers observed on each surface. The plan owns the verdict: each Scope's
+// surfaces must carry only that Scope and none of the other Scope's identifier.
+// Nothing here grades; the cross-Scope comparison lives entirely in the plan's
+// resultField and secretAbsence assertions.
+// ---------------------------------------------------------------------------
+
+interface ScopeSurfaceObservation {
+  observedTelemetryScopes: string[];
+  observedTranscriptScope: string | undefined;
+  telemetry: { events: TelemetryEvent[]; spans: TelemetrySpan[] };
+  transcript: unknown[];
+}
+
+// ---------------------------------------------------------------------------
+// Operation: runtime.sanitize-seam.tool-result
+//
+// ADR-0064 §4, following ADR-0044 §4's precedent ("absence of secret material
+// is asserted by conformance ... never by trusting that the hook was
+// called"): a tuvren-client capability reports an error result whose content
+// embeds the fixture's `sanitizeSeamMarker`. `AgentConfig.sanitizeToolResult`
+// scrubs it. `stageAndEmitResult` (typescript/runtime/src/lib/
+// tool-execution-helpers.ts) is the single chokepoint that applies the hook
+// before BOTH durable staging and the canonical `tool.result` event, so this
+// operation returns the RAW persisted tool_result part (read back from
+// kernel state after the turn completes) and the RAW captured `tool.result`
+// event — never the hook's return value directly. The plan's secretAbsence
+// assertions (scanning both surfaces for the marker) and resultField
+// assertions (requiring the scrubbed replacement text) own the verdict; this
+// adapter performs no scanning or grading.
+// ---------------------------------------------------------------------------
+
+const SANITIZE_SEAM_CAP = "sanitize-seam.client.marker-bearing";
+const SANITIZE_SEAM_CALL_ID = "sanitize-seam-call-1";
+const SANITIZE_SEAM_SCRUBBED_MARKER = "[scrubbed-by-host-policy]";
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+};
 
-function readString(value: unknown, fallback: string): string {
+const readString = (value: unknown, fallback: string): string => {
   return typeof value === "string" && value.length > 0 ? value : fallback;
-}
+};
 
-function readSecretFixture(input: unknown): SecretFixture {
+const readSecretFixture = (input: unknown): SecretFixture => {
   const fixture =
     isRecord(input) && isRecord(input.fixture) ? input.fixture : {};
   const headerAuth = isRecord(fixture.mcpHeaderAuth)
@@ -89,13 +151,13 @@ function readSecretFixture(input: unknown): SecretFixture {
     postgresPassword: readString(fixture.postgresPassword, "missing-pg"),
     providerApiKey: readString(fixture.providerApiKey, "missing-provider"),
   };
-}
+};
 
-function createTelemetryCapture(): {
+const createTelemetryCapture = (): {
   events: TelemetryEvent[];
   sink: TuvrenTelemetrySink;
   spans: TelemetrySpan[];
-} {
+} => {
   const events: TelemetryEvent[] = [];
   const spans: TelemetrySpan[] = [];
   return {
@@ -110,19 +172,19 @@ function createTelemetryCapture(): {
     },
     spans,
   };
-}
+};
 
-async function readPersistedRecords(
+const readPersistedRecords = async (
   harness: ConformanceKernelHarness,
   branchId: string
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, unknown>> => {
   return {
     manifest: await harness.readBranchManifest(branchId),
     messages: await harness.readBranchMessages(branchId),
     runs: await harness.readBranchRuns(branchId),
     runtimeStatus: await harness.readBranchRuntimeStatus(branchId),
   };
-}
+};
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.secret-isolation.surfaces
@@ -133,9 +195,9 @@ async function readPersistedRecords(
 // secrets reach the persisted records, stream events, or transcript.
 // ---------------------------------------------------------------------------
 
-export async function runSecretIsolationRuntimeApi(
+export const runSecretIsolationRuntimeApi = async (
   input: unknown
-): Promise<AdapterProjection> {
+): Promise<AdapterProjection> => {
   const fixture = readSecretFixture(input);
   const harness = createConformanceKernelHarness();
   const runner = createStaticRunner(async () => {
@@ -201,7 +263,7 @@ export async function runSecretIsolationRuntimeApi(
       transcript,
     },
   };
-}
+};
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.secret-isolation.telemetry
@@ -211,9 +273,9 @@ export async function runSecretIsolationRuntimeApi(
 // it, so the captured telemetry attributes and error summaries are secret-free.
 // ---------------------------------------------------------------------------
 
-export async function runSecretIsolationTelemetry(
+export const runSecretIsolationTelemetry = async (
   input: unknown
-): Promise<AdapterProjection> {
+): Promise<AdapterProjection> => {
   const fixture = readSecretFixture(input);
   const capture = createTelemetryCapture();
   const harness = createConformanceKernelHarness();
@@ -249,32 +311,11 @@ export async function runSecretIsolationTelemetry(
       },
     },
   };
-}
+};
 
-// ---------------------------------------------------------------------------
-// Operation: runtime.secret-isolation.provider-bridge
-//
-// Exercises the AI SDK provider bridge (createAiSdkProviderBridge) directly at
-// the TuvrenProvider generate/stream level -- NOT through a full kernel/
-// runtime turn, which is deliberately out of scope for this probe (KRT-BK004).
-// A fake LanguageModelV3 embeds the fixture's pattern-shaped
-// `bridgeRequestToken` in two representative places: a credential-shaped
-// requestBody value (Scenario: request-body secrets are screened) and a
-// signed-URL-shaped response header (Scenario: response headers carrying
-// signed URLs or tokens are screened). Both the `.generate()` result's
-// `providerMetadata.aiSdkBridge` and the `.stream()` result's terminal
-// "finish" chunk `providerMetadata.aiSdkBridge` are returned as RAW
-// observation -- this adapter performs no scanning or grading; the plan's
-// secretAbsence/secretPatternAbsence assertions own the verdict.
-// ---------------------------------------------------------------------------
-
-interface ProviderBridgeSecretIsolationFixture {
-  bridgeRequestToken: string;
-}
-
-function readProviderBridgeSecretFixture(
+const readProviderBridgeSecretFixture = (
   input: unknown
-): ProviderBridgeSecretIsolationFixture {
+): ProviderBridgeSecretIsolationFixture => {
   const fixture =
     isRecord(input) && isRecord(input.fixture) ? input.fixture : {};
   return {
@@ -283,15 +324,15 @@ function readProviderBridgeSecretFixture(
       "missing-bridge-request-token"
     ),
   };
-}
+};
 
-function createSecretIsolationBridgeUsage() {
+const createSecretIsolationBridgeUsage = () => {
   return {
     inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 1, total: 1 },
     outputTokens: { reasoning: 0, text: 1, total: 1 },
     raw: { provider: "secret-isolation-probe-provider" },
   };
-}
+};
 
 // This factory intentionally has no explicit `LanguageModelV3` return-type
 // annotation: `@ai-sdk/provider` is not resolvable as a bare specifier from
@@ -302,7 +343,7 @@ function createSecretIsolationBridgeUsage() {
 // resolves `LanguageModelV3` through the bridge package's own (already
 // resolvable) import. The handful of `as const` markers below preserve the
 // literal types (`"text"`, `"stop"`, `"v3"`, ...) that assignability needs.
-function createSecretIsolationProviderBridgeModel(token: string) {
+const createSecretIsolationProviderBridgeModel = (token: string) => {
   // A credential-shaped requestBody value that is NOT equal to any of the
   // fixture's other (already covered) exact secrets.
   const requestBody = JSON.stringify({
@@ -365,9 +406,9 @@ function createSecretIsolationProviderBridgeModel(token: string) {
     specificationVersion: "v3" as const,
     supportedUrls: {},
   };
-}
+};
 
-function readFinishChunkAiSdkBridge(chunks: readonly unknown[]): unknown {
+const readFinishChunkAiSdkBridge = (chunks: readonly unknown[]): unknown => {
   const finishChunk = chunks.find(
     (chunk): chunk is Record<string, unknown> =>
       isRecord(chunk) && chunk.type === "finish"
@@ -376,11 +417,11 @@ function readFinishChunkAiSdkBridge(chunks: readonly unknown[]): unknown {
     ? finishChunk.providerMetadata
     : undefined;
   return isRecord(providerMetadata) ? providerMetadata.aiSdkBridge : undefined;
-}
+};
 
-export async function runSecretIsolationProviderBridge(
+export const runSecretIsolationProviderBridge = async (
   input: unknown
-): Promise<AdapterProjection> {
+): Promise<AdapterProjection> => {
   const fixture = readProviderBridgeSecretFixture(input);
   const prompt: TuvrenPrompt = {
     messages: [
@@ -422,28 +463,9 @@ export async function runSecretIsolationProviderBridge(
           : { aiSdkBridge: streamAiSdkBridge },
     },
   };
-}
+};
 
-// ---------------------------------------------------------------------------
-// Operation: runtime.scope-isolation.surfaces
-//
-// Constructs two runtimes bound to distinct Scopes (ADR-0048, KRT-BE008), drives
-// a turn under each, and records a transcript per Scope. Returns the RAW
-// telemetry and transcript surfaces for both Scopes plus the distinct Scope
-// identifiers observed on each surface. The plan owns the verdict: each Scope's
-// surfaces must carry only that Scope and none of the other Scope's identifier.
-// Nothing here grades; the cross-Scope comparison lives entirely in the plan's
-// resultField and secretAbsence assertions.
-// ---------------------------------------------------------------------------
-
-interface ScopeSurfaceObservation {
-  observedTelemetryScopes: string[];
-  observedTranscriptScope: string | undefined;
-  telemetry: { events: TelemetryEvent[]; spans: TelemetrySpan[] };
-  transcript: unknown[];
-}
-
-function readScopePair(input: unknown): { scopeA: string; scopeB: string } {
+const readScopePair = (input: unknown): { scopeA: string; scopeB: string } => {
   // Defaults diverge within the secret-absence partial-token prefix window so a
   // legitimately different Scope never trips the scanner's prefix heuristic.
   // The runner wraps the plan's `input` in a `{ checkInput }` envelope, so honor
@@ -456,12 +478,12 @@ function readScopePair(input: unknown): { scopeA: string; scopeB: string } {
     scopeA: readString(record.scopeA, "tuvren.scope.alpha"),
     scopeB: readString(record.scopeB, "tuvren.scope.bravo"),
   };
-}
+};
 
-function distinctTelemetryScopes(
+const distinctTelemetryScopes = (
   events: readonly TelemetryEvent[],
   spans: readonly TelemetrySpan[]
-): string[] {
+): string[] => {
   const scopes = new Set<string>();
   for (const event of events) {
     scopes.add(event.lineage.scope);
@@ -470,11 +492,11 @@ function distinctTelemetryScopes(
     scopes.add(span.lineage.scope);
   }
   return [...scopes].sort();
-}
+};
 
-function readTranscriptScope(
+const readTranscriptScope = (
   transcript: readonly unknown[]
-): string | undefined {
+): string | undefined => {
   for (const record of transcript) {
     if (
       isRecord(record) &&
@@ -486,11 +508,11 @@ function readTranscriptScope(
     }
   }
   return undefined;
-}
+};
 
-async function captureScopeSurfaces(
+const captureScopeSurfaces = async (
   scope: string
-): Promise<ScopeSurfaceObservation> {
+): Promise<ScopeSurfaceObservation> => {
   const capture = createTelemetryCapture();
   const harness = createConformanceKernelHarness();
   const runner = createStaticRunner(async () => {
@@ -567,11 +589,11 @@ async function captureScopeSurfaces(
     telemetry: { events: capture.events, spans: capture.spans },
     transcript,
   };
-}
+};
 
-export async function runScopeIsolationSurfaces(
+export const runScopeIsolationSurfaces = async (
   input: unknown
-): Promise<AdapterProjection> {
+): Promise<AdapterProjection> => {
   const { scopeA, scopeB } = readScopePair(input);
   const [scopeASurfaces, scopeBSurfaces] = await Promise.all([
     captureScopeSurfaces(scopeA),
@@ -584,40 +606,18 @@ export async function runScopeIsolationSurfaces(
       scopeB: scopeBSurfaces,
     },
   };
-}
+};
 
-// ---------------------------------------------------------------------------
-// Operation: runtime.sanitize-seam.tool-result
-//
-// ADR-0064 §4, following ADR-0044 §4's precedent ("absence of secret material
-// is asserted by conformance ... never by trusting that the hook was
-// called"): a tuvren-client capability reports an error result whose content
-// embeds the fixture's `sanitizeSeamMarker`. `AgentConfig.sanitizeToolResult`
-// scrubs it. `stageAndEmitResult` (typescript/runtime/src/lib/
-// tool-execution-helpers.ts) is the single chokepoint that applies the hook
-// before BOTH durable staging and the canonical `tool.result` event, so this
-// operation returns the RAW persisted tool_result part (read back from
-// kernel state after the turn completes) and the RAW captured `tool.result`
-// event — never the hook's return value directly. The plan's secretAbsence
-// assertions (scanning both surfaces for the marker) and resultField
-// assertions (requiring the scrubbed replacement text) own the verdict; this
-// adapter performs no scanning or grading.
-// ---------------------------------------------------------------------------
-
-const SANITIZE_SEAM_CAP = "sanitize-seam.client.marker-bearing";
-const SANITIZE_SEAM_CALL_ID = "sanitize-seam-call-1";
-const SANITIZE_SEAM_SCRUBBED_MARKER = "[scrubbed-by-host-policy]";
-
-function readSanitizeSeamMarker(input: unknown): string {
+const readSanitizeSeamMarker = (input: unknown): string => {
   const fixture =
     isRecord(input) && isRecord(input.fixture) ? input.fixture : {};
   return readString(fixture.sanitizeSeamMarker, "missing-sanitize-seam-marker");
-}
+};
 
-function findToolResultPart(
+const findToolResultPart = (
   messages: readonly unknown[],
   callId: string
-): Record<string, unknown> | undefined {
+): Record<string, unknown> | undefined => {
   for (const message of messages) {
     if (!isRecord(message) || message.role !== "tool") {
       continue;
@@ -637,11 +637,11 @@ function findToolResultPart(
     }
   }
   return undefined;
-}
+};
 
-export async function runSanitizeSeamToolResult(
+export const runSanitizeSeamToolResult = async (
   input: unknown
-): Promise<AdapterProjection> {
+): Promise<AdapterProjection> => {
   const marker = readSanitizeSeamMarker(input);
   const harness = createConformanceKernelHarness();
   const runner = createStaticRunner(async (context) => {
@@ -734,4 +734,4 @@ export async function runSanitizeSeamToolResult(
       },
     },
   };
-}
+};
