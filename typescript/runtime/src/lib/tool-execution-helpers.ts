@@ -1021,15 +1021,20 @@ export const stageImmediateResults = async (
   orderedResults: StagedToolResult[][],
   startBarrier: ToolStartBarrier
 ): Promise<void> => {
-  const stageResultsAtIndex = async (index: number): Promise<void> => {
+  const stageResultsAtIndex = async (startIndex: number): Promise<void> => {
+    let index = startIndex;
+
+    while (
+      index < immediateResults.length &&
+      immediateResults[index].length === 0
+    ) {
+      index += 1;
+    }
+
     if (index >= immediateResults.length) {
       return;
     }
     const results = immediateResults[index];
-    if (results.length === 0) {
-      await stageResultsAtIndex(index + 1);
-      return;
-    }
 
     const staged = await stageAndEmitResults(
       environment,
