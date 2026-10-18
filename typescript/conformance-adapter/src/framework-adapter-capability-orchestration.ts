@@ -21,7 +21,6 @@ import {
 } from "@tuvren/runtime";
 
 import {
-  type AdapterProjection,
   AGENT_NAME,
   assistantText,
   assistantToolCalls,
@@ -32,6 +31,17 @@ import {
   RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
+import type { AdapterProjection } from "./framework-adapter-runtime.ts";
+
+const fromSynchronous = <Argument, Value>(
+  operation: (argument: Argument) => Value
+): ((argument: Argument) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(argument: Argument) => Value],
+    [Argument],
+    Promise<Value>
+  >(Promise, operation);
 
 /**
  * Runs a single defineTool tool execution and returns evidence about the
@@ -42,40 +52,41 @@ import {
  * - Attribution is additive (existing event fields survive)
  * - Observation limits for tuvren-server are full lifecycle
  */
-export async function runCapabilityOrchestrationFoundation(
+export const runCapabilityOrchestrationFoundation = async (
   toolName: string
-): Promise<AdapterProjection> {
+): Promise<AdapterProjection> => {
   const harness = createConformanceKernelHarness();
   let toolCallCount = 0;
 
-  const runner = createStaticRunner(async (context) => {
-    await Promise.resolve();
-    if (!context.messages.some((m) => m.role === "tool")) {
+  const runner = createStaticRunner(
+    fromSynchronous((context) => {
+      if (!context.messages.some((m) => m.role === "tool")) {
+        return {
+          messages: [
+            assistantToolCalls([
+              {
+                callId: "cap-call-1",
+                input: { q: "conformance" },
+                name: toolName,
+              },
+            ]),
+          ],
+          resolution: { type: "continue_iteration" as const },
+          toolExecutionMode: "parallel",
+        };
+      }
       return {
-        messages: [
-          assistantToolCalls([
-            {
-              callId: "cap-call-1",
-              input: { q: "conformance" },
-              name: toolName,
-            },
-          ]),
-        ],
-        resolution: { type: "continue_iteration" as const },
-        toolExecutionMode: "parallel",
+        messages: [assistantText("capability orchestration conformance done")],
+        resolution: { reason: "done", type: "end_turn" as const },
       };
-    }
-    return {
-      messages: [assistantText("capability orchestration conformance done")],
-      resolution: { reason: "done", type: "end_turn" as const },
-    };
-  });
+    })
+  );
 
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
 
   const thread = await runtime.createThread({});
@@ -101,35 +112,20 @@ export async function runCapabilityOrchestrationFoundation(
 
   const events = await collectValues(handle.events());
 
-  const toolStartEvent = events.find(
-    (e): e is Extract<(typeof events)[number], { type: "tool.start" }> =>
-      (e as { type?: unknown }).type === "tool.start"
-  );
-  const toolResultEvent = events.find(
-    (e): e is Extract<(typeof events)[number], { type: "tool.result" }> =>
-      (e as { type?: unknown }).type === "tool.result"
-  );
+  const toolStartEvent = events.find((event) => event.type === "tool.start");
+  const toolResultEvent = events.find((event) => event.type === "tool.result");
 
-  const startAttribution = (
-    toolStartEvent as Record<string, unknown> | undefined
-  )?.attribution as Record<string, unknown> | undefined;
-  const resultAttribution = (
-    toolResultEvent as Record<string, unknown> | undefined
-  )?.attribution as Record<string, unknown> | undefined;
-  const observation = startAttribution?.observation as
-    | Record<string, unknown>
-    | undefined;
+  const startAttribution = toolStartEvent?.attribution;
+  const resultAttribution = toolResultEvent?.attribution;
+  const observation = startAttribution?.observation;
 
   const evidence = {
     capabilityOrchestration: {
       backCompat: {
-        startEventCallId: (
-          toolStartEvent as Record<string, unknown> | undefined
-        )?.callId,
-        startEventName: (toolStartEvent as Record<string, unknown> | undefined)
-          ?.name,
-        startEventType: (toolStartEvent as Record<string, unknown> | undefined)
-          ?.type,
+        resultAttribution: {
+          executionClass: resultAttribution?.executionClass,
+          owner: resultAttribution?.owner,
+        },
         startAttribution: {
           capabilityId: startAttribution?.capabilityId,
           executionClass: startAttribution?.executionClass,
@@ -144,17 +140,16 @@ export async function runCapabilityOrchestrationFoundation(
           },
           owner: startAttribution?.owner,
         },
-        resultAttribution: {
-          executionClass: resultAttribution?.executionClass,
-          owner: resultAttribution?.owner,
-        },
+        startEventCallId: toolStartEvent?.callId,
+        startEventName: toolStartEvent?.name,
+        startEventType: toolStartEvent?.type,
         toolCallCount,
       },
     },
   };
 
   return { evidence, result: evidence };
-}
+};
 
 /**
  * Exercises both Capability Policy Engine decision points:
@@ -168,163 +163,163 @@ export async function runCapabilityOrchestrationFoundation(
  * - Invocation-time wired: a denied capability produces tool.result isError:true
  * - Permitted surfaces/capabilities pass through unaffected
  */
-export async function runCapabilityOrchestrationPolicyDecisions(): Promise<AdapterProjection> {
-  const deniedSurface = "denied-surface";
-  const deniedToolName = "denied-tool";
-  const permittedSurface = "permitted-surface";
+export const runCapabilityOrchestrationPolicyDecisions =
+  async (): Promise<AdapterProjection> => {
+    const deniedSurface = "denied-surface";
+    const deniedToolName = "denied-tool";
+    const permittedSurface = "permitted-surface";
 
-  const engine = createCapabilityPolicyEngine({
-    deniedCapabilityIds: new Set([deniedToolName]),
-    deniedSurfaceNames: new Set([deniedSurface]),
-  });
+    const engine = createCapabilityPolicyEngine({
+      deniedCapabilityIds: new Set([deniedToolName]),
+      deniedSurfaceNames: new Set([deniedSurface]),
+    });
 
-  const context = {
-    modelId: "conformance-model",
-    permissions: [] as string[],
-    providerId: "conformance-provider",
-  };
-
-  // --- Part 1: Standalone policy-unit decisions ---
-  const exposureDecisions = engine.evaluateExposure(
-    [
-      {
-        capabilityId: deniedToolName,
-        description: "Denied surface",
-        inputSchema: { type: "object" },
-        name: deniedSurface,
-      },
-      {
-        capabilityId: "permitted.capability",
-        description: "Permitted surface",
-        inputSchema: { type: "object" },
-        name: permittedSurface,
-      },
-    ],
-    context
-  );
-
-  const deniedExposure = exposureDecisions.find(
-    (d) => d.surfaceName === deniedSurface
-  );
-  const permittedExposure = exposureDecisions.find(
-    (d) => d.surfaceName === permittedSurface
-  );
-
-  const deniedInvocationDecision = engine.evaluateInvocation(
-    {
-      capabilityId: deniedToolName,
-      endpoint: { id: "test", kind: "tuvren-in-process" },
-      executionClass: "tuvren-server",
-    },
-    context
-  );
-
-  const permittedInvocationDecision = engine.evaluateInvocation(
-    {
-      capabilityId: "permitted.capability",
-      endpoint: { id: "test", kind: "tuvren-in-process" },
-      executionClass: "tuvren-server",
-    },
-    context
-  );
-
-  // --- Part 2: Wired invocation denial → tool.result isError:true ---
-  const harness = createConformanceKernelHarness();
-  let deniedToolExecuted = false;
-
-  const runner = createStaticRunner(async (ctx) => {
-    await Promise.resolve();
-    if (!ctx.messages.some((m) => m.role === "tool")) {
-      return {
-        messages: [
-          assistantToolCalls([
-            {
-              callId: "denied-call-1",
-              input: {},
-              name: deniedToolName,
-            },
-          ]),
-        ],
-        resolution: { type: "continue_iteration" as const },
-        toolExecutionMode: "parallel",
-      };
-    }
-    return {
-      messages: [assistantText("capability policy conformance done")],
-      resolution: { reason: "done", type: "end_turn" as const },
+    const context = {
+      modelId: "conformance-model",
+      permissions: [] as string[],
+      providerId: "conformance-provider",
     };
-  });
 
-  const runtime = createTuvrenRuntimeCore({
-    createId: createConformanceIdFactory(),
-    defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
-    kernel: harness.kernel,
-  });
-
-  const thread = await runtime.createThread({});
-  const handle = runtime.executeTurn({
-    branchId: thread.branchId,
-    config: {
-      capabilityPolicyEngine: engine,
-      name: AGENT_NAME,
-      tools: [
+    // --- Part 1: Standalone policy-unit decisions ---
+    const exposureDecisions = engine.evaluateExposure(
+      [
         {
-          description: "Denied capability tool",
-          execute() {
-            deniedToolExecuted = true;
-            return { ok: true };
-          },
+          capabilityId: deniedToolName,
+          description: "Denied surface",
           inputSchema: { type: "object" },
-          name: deniedToolName,
+          name: deniedSurface,
+        },
+        {
+          capabilityId: "permitted.capability",
+          description: "Permitted surface",
+          inputSchema: { type: "object" },
+          name: permittedSurface,
         },
       ],
-    },
-    signal: textSignal("capability policy denial test"),
-    threadId: thread.threadId,
-  });
+      context
+    );
 
-  const events = await collectValues(handle.events());
+    const deniedExposure = exposureDecisions.find(
+      (d) => d.surfaceName === deniedSurface
+    );
+    const permittedExposure = exposureDecisions.find(
+      (d) => d.surfaceName === permittedSurface
+    );
 
-  const toolResultEvent = events.find(
-    (e) => (e as unknown as Record<string, unknown>).type === "tool.result"
-  );
-  const toolResultIsError =
-    (toolResultEvent as unknown as Record<string, unknown> | undefined)
-      ?.isError === true;
+    const deniedInvocationDecision = engine.evaluateInvocation(
+      {
+        capabilityId: deniedToolName,
+        endpoint: { id: "test", kind: "tuvren-in-process" },
+        executionClass: "tuvren-server",
+      },
+      context
+    );
 
-  const evidence = {
-    capabilityPolicy: {
-      exposure: {
-        denied: {
-          exposed: deniedExposure?.exposed,
-          hasReason:
-            typeof deniedExposure?.reason === "string" &&
-            (deniedExposure.reason ?? "").length > 0,
-          surfaceName: deniedExposure?.surfaceName,
+    const permittedInvocationDecision = engine.evaluateInvocation(
+      {
+        capabilityId: "permitted.capability",
+        endpoint: { id: "test", kind: "tuvren-in-process" },
+        executionClass: "tuvren-server",
+      },
+      context
+    );
+
+    // --- Part 2: Wired invocation denial → tool.result isError:true ---
+    const harness = createConformanceKernelHarness();
+    let deniedToolExecuted = false;
+
+    const runner = createStaticRunner(
+      fromSynchronous((ctx) => {
+        if (!ctx.messages.some((m) => m.role === "tool")) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: "denied-call-1",
+                  input: {},
+                  name: deniedToolName,
+                },
+              ]),
+            ],
+            resolution: { type: "continue_iteration" as const },
+            toolExecutionMode: "parallel",
+          };
+        }
+        return {
+          messages: [assistantText("capability policy conformance done")],
+          resolution: { reason: "done", type: "end_turn" as const },
+        };
+      })
+    );
+
+    const runtime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
+    });
+
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        capabilityPolicyEngine: engine,
+        name: AGENT_NAME,
+        tools: [
+          {
+            description: "Denied capability tool",
+            execute() {
+              deniedToolExecuted = true;
+              return { ok: true };
+            },
+            inputSchema: { type: "object" },
+            name: deniedToolName,
+          },
+        ],
+      },
+      signal: textSignal("capability policy denial test"),
+      threadId: thread.threadId,
+    });
+
+    const events = await collectValues(handle.events());
+
+    const toolResultEvent = events.find(
+      (event) => event.type === "tool.result"
+    );
+    const toolResultIsError = toolResultEvent?.isError === true;
+
+    const evidence = {
+      capabilityPolicy: {
+        exposure: {
+          denied: {
+            exposed: deniedExposure?.exposed,
+            hasReason:
+              typeof deniedExposure?.reason === "string" &&
+              (deniedExposure.reason ?? "").length > 0,
+            surfaceName: deniedExposure?.surfaceName,
+          },
+          permitted: {
+            exposed: permittedExposure?.exposed,
+            surfaceName: permittedExposure?.surfaceName,
+          },
         },
-        permitted: {
-          exposed: permittedExposure?.exposed,
-          surfaceName: permittedExposure?.surfaceName,
+        invocation: {
+          denied: {
+            admitted: deniedInvocationDecision.admitted,
+            capabilityId: deniedInvocationDecision.capabilityId,
+            deniedToolExecuted,
+            hasReason:
+              typeof deniedInvocationDecision.reason === "string" &&
+              (deniedInvocationDecision.reason ?? "").length > 0,
+            toolResultIsError,
+          },
+          permitted: {
+            admitted: permittedInvocationDecision.admitted,
+            capabilityId: permittedInvocationDecision.capabilityId,
+          },
         },
       },
-      invocation: {
-        denied: {
-          admitted: deniedInvocationDecision.admitted,
-          capabilityId: deniedInvocationDecision.capabilityId,
-          deniedToolExecuted,
-          hasReason:
-            typeof deniedInvocationDecision.reason === "string" &&
-            (deniedInvocationDecision.reason ?? "").length > 0,
-          toolResultIsError,
-        },
-        permitted: {
-          admitted: permittedInvocationDecision.admitted,
-          capabilityId: permittedInvocationDecision.capabilityId,
-        },
-      },
-    },
+    };
+
+    return { evidence, result: evidence };
   };
-
-  return { evidence, result: evidence };
-}
