@@ -11,7 +11,7 @@ files:
     bytes: 25772
     role: measurement
   - path: M25-sdk-readiness.json
-    sha256: 196a9c07cffa50db4611fa349d28a73cf7e89131afcc8c05b31cc61f1d705e0b
-    bytes: 11168
+    sha256: 6fb3792c2f61cd34fc28fa2324caab504dd5a00fc9b51b11c9d302ce7a12c3b0
+    bytes: 13087
     role: measurement
 pass_criteria: The complete core and SDK code and JSON selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics and no unused directive; every contract-preserving native exception is measured and reasoned; legacy Biome directives are removed in the same changes as each canonical native target and coverage transfer; public API, Promise timing, error behavior, schema boundaries and release metadata remain unchanged; focused and repository gates pass. KRT-CA004 remains in progress until all later package admissions complete.

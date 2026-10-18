@@ -139,7 +139,9 @@
         "original_reason": "This subpath entrypoint is the intentional advanced composition surface.",
         "native_candidate_rule": "oxc/no-barrel-file",
         "equivalent_native_rule": null,
-        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "fresh_retained_diagnostics": 1,
+        "fresh_retained_disposition": "original-diagnostic-still-fires-after-admission"
       },
       {
         "identity": "typescript/sdk/src/index.ts::lint/performance/noBarrelFile::1",
@@ -148,7 +150,9 @@
         "original_reason": "This package root is the intentional SDK surface.",
         "native_candidate_rule": "oxc/no-barrel-file",
         "equivalent_native_rule": null,
-        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart",
+        "fresh_retained_diagnostics": 1,
+        "fresh_retained_disposition": "original-diagnostic-still-fires-after-admission"
       },
       {
         "identity": "typescript/sdk/test/conversation-state.shreddable-continuity.test.ts::lint/suspicious/useAwait::1",
@@ -156,7 +160,10 @@
         "rule": "lint/suspicious/useAwait",
         "original_reason": "Test runners intentionally match the async framework runner contract.",
         "equivalent_native_rule": "eslint/require-await",
-        "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason"
+        "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason",
+        "fresh_retained_diagnostics": 0,
+        "fresh_retained_disposition": "original-useAwait-diagnostic-no-longer-fires-after-behavior-preserving-code-fix",
+        "native_equivalent_firing": true
       },
       {
         "identity": "typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts::lint/suspicious/useAwait::1",
@@ -164,7 +171,10 @@
         "rule": "lint/suspicious/useAwait",
         "original_reason": "Test runners intentionally match the async framework runner contract.",
         "equivalent_native_rule": "eslint/require-await",
-        "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason"
+        "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason",
+        "fresh_retained_diagnostics": 0,
+        "fresh_retained_disposition": "original-useAwait-diagnostic-no-longer-fires-after-behavior-preserving-code-fix",
+        "native_equivalent_firing": true
       },
       {
         "identity": "typescript/sdk/test/payload-codec.crypto-shredding.test.ts::lint/suspicious/useAwait::1",
@@ -172,7 +182,10 @@
         "rule": "lint/suspicious/useAwait",
         "original_reason": "Test runners intentionally match the async framework runner contract.",
         "equivalent_native_rule": "eslint/require-await",
-        "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason"
+        "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason",
+        "fresh_retained_diagnostics": 0,
+        "fresh_retained_disposition": "original-useAwait-diagnostic-no-longer-fires-after-behavior-preserving-code-fix",
+        "native_equivalent_firing": true
       },
       {
         "identity": "typescript/sdk/test/tenant-offboarding.test.ts::lint/suspicious/useAwait::1",
@@ -180,14 +193,43 @@
         "rule": "lint/suspicious/useAwait",
         "original_reason": "Test runners intentionally match the async framework runner contract.",
         "equivalent_native_rule": "eslint/require-await",
-        "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason"
+        "native_admission_disposition": "replaced-at-atomic-native-admission-with-measured-equivalent-and-original-reason",
+        "fresh_retained_diagnostics": 0,
+        "fresh_retained_disposition": "original-useAwait-diagnostic-no-longer-fires-after-behavior-preserving-code-fix",
+        "native_equivalent_firing": true
       }
     ],
     "drift": {
       "added": [],
       "removed": [],
       "reason_changed": []
-    }
+    },
+    "fresh_retained_biome": {
+      "command": "bunx --bun @biomejs/biome check typescript/sdk --reporter=json --max-diagnostics=none",
+      "exit": 1,
+      "files": 21,
+      "errors": 6,
+      "warnings": 0,
+      "report_sha256": "9d46f91543495ff8d557a5f6643f09d86c388d1830bd411faac5db6676dcff7d",
+      "report_retained": false,
+      "diagnostics": {
+        "lint/performance/noBarrelFile": 2,
+        "lint/suspicious/noEmptyBlockStatements": 2,
+        "lint/complexity/noVoid": 2
+      }
+    },
+    "fresh_unrelated_diagnostics": [
+      {
+        "path": "typescript/sdk/test/create-tuvren.test.ts",
+        "rule": "lint/suspicious/noEmptyBlockStatements",
+        "count": 2
+      },
+      {
+        "path": "typescript/sdk/test/create-tuvren.test.ts",
+        "rule": "lint/complexity/noVoid",
+        "count": 2
+      }
+    ]
   },
   "negative_controls": {
     "unused_directive": {
