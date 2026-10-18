@@ -2,12 +2,12 @@ owner: KRT-CT001
 mode: contract_test
 produced:
   date: 2026-10-18
-  commit: 1c74c19666a5c02d7aa6d18ff1067f98bb3f5ed4
-  command: "Frozen identity comparison; retained Biome and Oxfmt checks; compiler-isolation inventory; cold runtime import; focused runtime tests; Changeset coverage; framework-runtime typecheck; API freeze; affected workspace check; complete milestone review."
+  commit: ba23c2fc0855b03d37f25cf95f80f02dbb2af24b
+  command: "Frozen identity comparison plus accepted lease-renewal correction; retained Biome and Oxfmt checks; compiler-isolation inventory; cold runtime import; focused runtime and renewal tests; constant-space resource probe; Changeset coverage; framework-runtime typecheck; API freeze; affected workspace check; complete milestone review."
 result: pass
 files:
   - path: delivery-provenance.json
-    sha256: a4de2053c4a6dddc9ce452a6f434361dcef759f53031fbb6d863bb0d78536aa7
-    bytes: 2010
+    sha256: 5b2e91b2ede9995ca57ecce6f05b43d9cfde6037d3bcf743fdb020dfa3a3e89b
+    bytes: 2543
     role: summary
-pass_criteria: "All owned source files match the durable CT measured tree, the declared checks pass on the assembled CU plus CT delivery, compiler resolution uses no live sibling source, the direct runtime Changeset is present, and complete milestone review finds no defect."
+pass_criteria: "The 38 unchanged owned source files match the durable CT measured tree, the one accepted liveness correction has explicit reviewed provenance, the declared checks pass on the assembled CU plus CT delivery, compiler resolution uses no live sibling source, and the direct runtime Changeset is present."
