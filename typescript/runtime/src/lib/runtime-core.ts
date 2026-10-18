@@ -99,10 +99,7 @@ import type {
   RuntimeCoreOptions,
 } from "./runtime-core-options.js";
 import {
-  DEFAULT_AGENT_SCHEMA as defaultAgentSchemaValue,
-  DEFAULT_AGENT_SCHEMA_ID as defaultAgentSchemaIdValue,
-  DEFAULT_MANIFEST_EXTENSION_STATE_WARNING_BUDGET_BYTES as defaultManifestExtensionStateWarningBudgetBytesValue,
-  DEFAULT_MAX_PARALLEL_TOOL_CALLS as defaultMaxParallelToolCallsValue,
+  DEFAULT_AGENT_SCHEMA,
   resolveRuntimeCoreOptions,
 } from "./runtime-core-options.js";
 import { hasRunLivenessKernel } from "./runtime-core-response.js";
@@ -133,18 +130,12 @@ export type {
   RuntimeRunLivenessOptions,
   RuntimeWarning,
 } from "./runtime-core-options.js";
-export const {
+export {
   DEFAULT_AGENT_SCHEMA,
   DEFAULT_AGENT_SCHEMA_ID,
   DEFAULT_MANIFEST_EXTENSION_STATE_WARNING_BUDGET_BYTES,
   DEFAULT_MAX_PARALLEL_TOOL_CALLS,
-} = {
-  DEFAULT_AGENT_SCHEMA: defaultAgentSchemaValue,
-  DEFAULT_AGENT_SCHEMA_ID: defaultAgentSchemaIdValue,
-  DEFAULT_MANIFEST_EXTENSION_STATE_WARNING_BUDGET_BYTES:
-    defaultManifestExtensionStateWarningBudgetBytesValue,
-  DEFAULT_MAX_PARALLEL_TOOL_CALLS: defaultMaxParallelToolCallsValue,
-};
+} from "./runtime-core-options.js";
 
 /**
  * Per-logical-turn execution-bounds accounting (ADR-0043, KRT-BD006), keyed by
