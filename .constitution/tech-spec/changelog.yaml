@@ -1,4 +1,15 @@
 entries:
+  - version: v0.47.8
+    date: 2026-10-18
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+    changed:
+      - "Corrected the host-session and session-frames sidecars to cite the checked-in framework certification report as repository evidence at its producing commit. Both records remain settled; no compatibility report was copied into constitutional evidence or promoted as a semantic oracle."
+      - "Corrected the active ultracite-biome BOM row to pin the actual manifest alias spec `npm:ultracite@7.4.2`. The alias uses repository evidence from package.json, while its note records Bun's canonical ultracite@7.4.2 lock resolution and the retained alias contract tests; no dependency changed."
+      - "Aligned all five EPIC-CS code decisions in guidelines.md: optional-key omission preserves keyless identity; orchestration starts event consumption before pre-bind replay; runner, provider, handoff, and helper reads use copies while durable writes retain keys; recovery selects `input_message` provenance across empty checkpoints and first-steer cases; and Bun builds then spawns Node children for measured better-sqlite3 process-death proof. Boundary-owned authority and shared conformance remain the semantic oracle."
+      - "Left the Admission key candidate glossary term routed to the normal Stage-1 follow-up; this Stage-3 alignment adds no product term or upstream semantic decision."
   - version: v0.47.7
     date: 2026-10-17
     by: stage

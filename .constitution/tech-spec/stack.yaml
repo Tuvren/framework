@@ -93,17 +93,17 @@ bill_of_materials:
       note: "Final M10 audit matches stack, manifest, lock, and installed metadata. Native OXC preset assertions pass; the Ultracite CLI is not used."
   - name: ultracite-biome
     role: tooling
-    version: "7.4.2"
-    ecosystem: bun
+    version: "npm:ultracite@7.4.2"
+    ecosystem: other
     justification: "Keeps the Biome preset stable during the OXC lint ratchet: biome.jsonc extends ultracite-biome/biome/core while un-aliased ultracite supplies OXC presets (ADR-0070). The alias is installed and normalized Biome lint output was verified unchanged against the retained preset (KRT-BP007); the alias stays in place until CB removes it and Biome together."
     radar: hold
     certainty: settled
     evidence:
       kind: repository
-      ref: bun.lock
-      version: "7.4.2"
-      date: 2026-10-01
-      note: "The manifest alias npm:ultracite@7.4.2 resolves through the Bun lock alias key to ultracite@7.4.2. Installed metadata and normalized retained Biome diagnostic parity agree. Retire the alias together with Biome."
+      ref: package.json
+      version: "npm:ultracite@7.4.2"
+      date: 2026-10-18
+      note: "This row pins the active manifest alias rather than a package with the canonical name ultracite-biome, so the unsupported alias form uses the other ecosystem. bun.lock resolves the ultracite-biome alias key to ultracite@7.4.2, biome.jsonc imports ultracite-biome/biome/core, and the retained alias contract tests pin both representations. Retire the alias together with Biome."
   - name: "@changesets/cli"
     role: tooling
     version: "3.0.3"
