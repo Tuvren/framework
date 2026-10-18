@@ -73,7 +73,7 @@ const CUSTOM_FALLBACK_WARNING_CODES = {
 } as const;
 
 /**
- * @throws TuvrenRuntimeError with code `invalid_agui_event` when `event`
+ * @throws {TuvrenRuntimeError} With code `invalid_agui_event` when `event`
  *   fails `EventSchemas` validation — a defensive check that a mapping bug in
  *   this adapter never reaches consumers as a structurally invalid AG-UI
  *   event.
@@ -119,7 +119,7 @@ const toReasoningMessageId = (messageId: string): string =>
  * `TuvrenStreamEvent` variant at compile time; this throws if one somehow
  * reaches here at runtime (e.g. an event union widened at a version skew).
  *
- * @throws TuvrenRuntimeError with code `invalid_stream_adapter_state`, always.
+ * @throws {TuvrenRuntimeError} With code `invalid_stream_adapter_state`, always.
  */
 const throwUnreachableEvent = (event: never): never => {
   throw new TuvrenRuntimeError(
@@ -141,7 +141,7 @@ const createIteratorIterable = <T>(
 });
 
 /**
- * @throws TuvrenRuntimeError with code `invalid_stream_adapter_state` when
+ * @throws {TuvrenRuntimeError} With code `invalid_stream_adapter_state` when
  *   `activeRunId`/`activeThreadId` are unset — a `turn.end` arrived without a
  *   preceding `turn.start` in this stream.
  */
@@ -345,11 +345,13 @@ const flushPendingAgUiSubstreams = (
  *   no prior `tool_call.start`/`args_delta` arrived, from the durable final
  *   input.
  *
- * @throws TuvrenRuntimeError with code `invalid_stream_adapter_state` when a
+ * @throws {TuvrenRuntimeError} With code `invalid_stream_adapter_state` when a
  *   `turn.end` arrives with no matching `turn.start` (see
  *   {@link requireActiveRunState}), or when an event type outside the
  *   canonical union is encountered (defensive exhaustiveness check).
+ * @yields {AGUIEvent} Each validated AG-UI projection event in canonical input order.
  */
+/* oxlint-disable eslint/complexity -- Protocol projection intentionally keeps the canonical-to-AG-UI mapping table in one switch. */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Protocol projection intentionally keeps the canonical-to-AG-UI mapping table in one switch.
 const toAgUiEventsSubscribed = async function* toAgUiEventsSubscribed(
   events: AsyncIterable<TuvrenStreamEvent>,
@@ -850,6 +852,7 @@ const toAgUiEventsSubscribed = async function* toAgUiEventsSubscribed(
     }
   }
 };
+/* oxlint-enable eslint/complexity */
 
 /**
  * Maps a `TuvrenStreamEvent` stream onto `@ag-ui/core` events.
