@@ -44,10 +44,10 @@ import {
   waitForAsync,
 } from "./runtime-core-test-helpers.ts";
 
-function hasAssistantTextMessage(
+const hasAssistantTextMessage = (
   messages: readonly unknown[],
   expectedText: string
-): boolean {
+): boolean => {
   return messages.some((message) => {
     const record =
       message === null || typeof message !== "object"
@@ -66,12 +66,12 @@ function hasAssistantTextMessage(
       return partRecord?.type === "text" && partRecord.text === expectedText;
     });
   });
-}
+};
 
-function countUserTextMessages(
+const countUserTextMessages = (
   messages: readonly unknown[],
   expectedText: string
-): number {
+): number => {
   return messages.filter((message) => {
     const record =
       message === null || typeof message !== "object"
@@ -90,8 +90,76 @@ function countUserTextMessages(
       return partRecord?.type === "text" && partRecord.text === expectedText;
     });
   }).length;
-}
+};
 
+const isKrakenRunnerFactory = (
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): entry is RuntimeRunnerFactory => {
+  return "create" in entry && typeof entry.create === "function";
+};
+
+const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
+  return (result.messages ?? []).some(
+    (message) =>
+      message.role === "assistant" &&
+      message.parts.some((part) => part.type === "tool_call")
+  );
+};
+
+const normalizeRunnerResult = (
+  result: RunnerExecutionResult
+): RunnerExecutionResult => {
+  if (
+    result.toolExecutionMode !== undefined ||
+    !requestsToolExecution(result)
+  ) {
+    return result;
+  }
+
+  return {
+    ...result,
+    toolExecutionMode: "parallel",
+  };
+};
+
+const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
+  const { resume } = runner;
+
+  return {
+    async execute(context) {
+      return normalizeRunnerResult(await runner.execute(context));
+    },
+    id: runner.id,
+    ...(resume === undefined
+      ? {}
+      : {
+          async resume(context) {
+            return normalizeRunnerResult(await resume(context));
+          },
+        }),
+  };
+};
+
+const wrapRunnerEntry = (
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): RuntimeRunner | RuntimeRunnerFactory => {
+  if (isKrakenRunnerFactory(entry)) {
+    return {
+      create() {
+        return wrapRunner(entry.create());
+      },
+      id: entry.id,
+    };
+  }
+
+  return wrapRunner(entry);
+};
+
+const createRunnerRegistry = (
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
+) => {
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
+};
 describe("framework-runtime-core", () => {
   test("drops runner output that arrives after lease loss aborts the execution", async () => {
     const harness = createFakeKernelHarness();
@@ -474,72 +542,3 @@ describe("framework-runtime-core", () => {
     expect(handle.status().phase).toBe("completed");
   });
 });
-
-function createRunnerRegistry(
-  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-}
-
-function wrapRunnerEntry(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): RuntimeRunner | RuntimeRunnerFactory {
-  if (isKrakenRunnerFactory(entry)) {
-    return {
-      create() {
-        return wrapRunner(entry.create());
-      },
-      id: entry.id,
-    };
-  }
-
-  return wrapRunner(entry);
-}
-
-function isKrakenRunnerFactory(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory {
-  return "create" in entry && typeof entry.create === "function";
-}
-
-function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const { resume } = runner;
-
-  return {
-    async execute(context) {
-      return normalizeRunnerResult(await runner.execute(context));
-    },
-    id: runner.id,
-    ...(resume === undefined
-      ? {}
-      : {
-          async resume(context) {
-            return normalizeRunnerResult(await resume(context));
-          },
-        }),
-  };
-}
-
-function normalizeRunnerResult(
-  result: RunnerExecutionResult
-): RunnerExecutionResult {
-  if (
-    result.toolExecutionMode !== undefined ||
-    !requestsToolExecution(result)
-  ) {
-    return result;
-  }
-
-  return {
-    ...result,
-    toolExecutionMode: "parallel",
-  };
-}
-
-function requestsToolExecution(result: RunnerExecutionResult): boolean {
-  return (result.messages ?? []).some(
-    (message) =>
-      message.role === "assistant" &&
-      message.parts.some((part) => part.type === "tool_call")
-  );
-}

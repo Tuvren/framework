@@ -33,12 +33,12 @@ import {
   textSignal,
 } from "./runtime-core-test-helpers.ts";
 
-async function stageMessage(
+const stageMessage = async (
   kernel: RuntimeKernel,
   runId: string,
   taskId: string,
   message: TuvrenMessage
-): Promise<void> {
+): Promise<void> => {
   await kernel.staging.stage(
     runId,
     await encryptMessageRecord(
@@ -49,8 +49,7 @@ async function stageMessage(
     "message",
     "completed"
   );
-}
-
+};
 test("recovery dispatches missing calls before any context-engineering run", async () => {
   const harness = createFakeKernelHarness();
   const liveness = createFakeRunLivenessKernelHarness(harness);
