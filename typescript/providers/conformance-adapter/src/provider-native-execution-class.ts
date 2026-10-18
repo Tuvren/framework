@@ -35,12 +35,12 @@ import { createAiSdkProviderBridge } from "../../bridge-ai-sdk/src/index.ts";
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function createKernel() {
+const createKernel = () => {
   const backend = createMemoryBackend();
   return createRuntimeKernel({ backend });
-}
+};
 
-function createMockNativeModel(): LanguageModelV3 {
+const createMockNativeModel = (): LanguageModelV3 => {
   return {
     async doGenerate() {
       await Promise.resolve();
@@ -72,31 +72,31 @@ function createMockNativeModel(): LanguageModelV3 {
     specificationVersion: "v3",
     supportedUrls: {},
   };
-}
+};
 
-async function collectEventStream(
+const collectEventStream = async (
   iterable: AsyncIterable<Record<string, unknown>>
-): Promise<Record<string, unknown>[]> {
+): Promise<Record<string, unknown>[]> => {
   const events: Record<string, unknown>[] = [];
   for await (const event of iterable) {
     events.push(event);
   }
   return events;
-}
+};
 
-function findEventByType(
+const findEventByType = (
   events: Record<string, unknown>[],
   type: string
-): Record<string, unknown> | undefined {
+): Record<string, unknown> | undefined => {
   return events.find((e) => e.type === type);
-}
+};
 
-function filterEventsByType(
+const filterEventsByType = (
   events: Record<string, unknown>[],
   type: string
-): Record<string, unknown>[] {
+): Record<string, unknown>[] => {
   return events.filter((e) => e.type === type);
-}
+};
 
 // ---------------------------------------------------------------------------
 // Operation: providers.provider-native.attribution
@@ -106,9 +106,9 @@ function filterEventsByType(
 // Projects observable evidence for provider-native execution class checks.
 // ---------------------------------------------------------------------------
 
-export async function runProviderNativeAttribution(): Promise<
+export const runProviderNativeAttribution = async (): Promise<
   Record<string, unknown>
-> {
+> => {
   let localExecuteCalled = false;
   const kernel = createKernel();
   const bridge = createAiSdkProviderBridge({ model: createMockNativeModel() });
@@ -228,4 +228,4 @@ export async function runProviderNativeAttribution(): Promise<
       turnStatus: turnEndEvent?.status,
     },
   };
-}
+};

@@ -78,7 +78,7 @@ tickets:
       evidence: "Assert module initialization, cyclic imports and conformance outcomes match the pre-reorder baseline. Run scoped tests, repository typecheck and bun run conformance on the same implementation. Preserve error and event ordering, not just lint success."
     flows: []
     certainty: settled
-    status: planned
+    status: in_progress
   - id: KRT-BY004
     title: Clear remaining rules and switch clean project targets
     type: Chore

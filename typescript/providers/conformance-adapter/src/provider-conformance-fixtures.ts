@@ -43,29 +43,71 @@ const MANIFEST_PATH_SEGMENTS = [
 const MANIFEST_SCHEMA_RELATIVE_PATH = "../schemas/suite-manifest.schema.json";
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 
-export const providerConformanceFixtures: ProviderConformanceFixtureSet =
-  loadProviderConformanceFixtures();
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
+};
 
-function loadProviderConformanceFixtures(): ProviderConformanceFixtureSet {
-  const manifestPath = resolveFixturePath(
-    import.meta.url,
-    MANIFEST_PATH_SEGMENTS
+const assertTuvrenPrompt: (
+  value: unknown,
+  label: string
+) => asserts value is TuvrenPrompt = (
+  value: unknown,
+  label: string
+): asserts value is TuvrenPrompt => {
+  if (!isRecord(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+
+  // The boundary-owned JSON Schema defines the complete prompt shape. This
+  // explicit guard keeps the fixture loader's local type narrowing readable.
+  if (!Array.isArray(value.messages) || value.messages.length === 0) {
+    throw new Error(`${label}.messages must be a non-empty array`);
+  }
+};
+
+const assertProviderConformanceFixtureSet: (
+  value: unknown
+) => asserts value is ProviderConformanceFixtureSet = (
+  value: unknown
+): asserts value is ProviderConformanceFixtureSet => {
+  if (!isRecord(value)) {
+    throw new Error("provider conformance fixture set must be an object");
+  }
+
+  assertTuvrenPrompt(value.prompt, "prompt");
+  assertTuvrenModelResponse(value.response, "response");
+  assertTuvrenPrompt(value.structuredPrompt, "structuredPrompt");
+  assertTuvrenPrompt(value.toolPrompt, "toolPrompt");
+};
+
+const readJsonSchema = (value: unknown): AnySchema => {
+  if (typeof value === "boolean" || isRecord(value)) {
+    return value;
+  }
+
+  throw new Error("provider conformance schema must be an object or boolean");
+};
+
+const assertSchemaValid = (
+  schema: AnySchema,
+  value: unknown,
+  label: string
+): void => {
+  const validate = ajv.compile(schema);
+
+  if (validate(value)) {
+    return;
+  }
+
+  throw new Error(
+    `${label} failed JSON Schema validation: ${ajv.errorsText(validate.errors)}`
   );
-  const manifest = readConformanceManifest(manifestPath);
-  const fixturePath = join(dirname(manifestPath), manifest.fixturePath);
-  const schemaPath = join(dirname(manifestPath), manifest.fixtureSchemaPath);
-  const fixture = JSON.parse(readFileSync(fixturePath, "utf-8"));
-  const schema = readJsonSchema(JSON.parse(readFileSync(schemaPath, "utf-8")));
+};
 
-  assertSchemaValid(schema, fixture, "provider conformance fixture");
-  assertProviderConformanceFixtureSet(fixture);
-  return fixture;
-}
-
-function resolveFixturePath(
+const resolveFixturePath = (
   metaUrl: string,
   pathSegments: readonly string[]
-): string {
+): string => {
   const currentFilePath = fileURLToPath(metaUrl);
   let currentDirectory = dirname(currentFilePath);
 
@@ -80,12 +122,14 @@ function resolveFixturePath(
   }
 
   throw new Error("unable to locate provider conformance fixture file");
-}
+};
 
-function readConformanceManifest(manifestPath: string): {
+const readConformanceManifest = (
+  manifestPath: string
+): {
   fixturePath: string;
   fixtureSchemaPath: string;
-} {
+} => {
   const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
   const manifestSchema = readJsonSchema(
     JSON.parse(
@@ -117,60 +161,23 @@ function readConformanceManifest(manifestPath: string): {
     fixturePath: fixture.path,
     fixtureSchemaPath: manifest.fixtureSchemaPath,
   };
-}
+};
 
-function readJsonSchema(value: unknown): AnySchema {
-  if (typeof value === "boolean" || isRecord(value)) {
-    return value;
-  }
-
-  throw new Error("provider conformance schema must be an object or boolean");
-}
-
-function assertSchemaValid(
-  schema: AnySchema,
-  value: unknown,
-  label: string
-): void {
-  const validate = ajv.compile(schema);
-
-  if (validate(value)) {
-    return;
-  }
-
-  throw new Error(
-    `${label} failed JSON Schema validation: ${ajv.errorsText(validate.errors)}`
+const loadProviderConformanceFixtures = (): ProviderConformanceFixtureSet => {
+  const manifestPath = resolveFixturePath(
+    import.meta.url,
+    MANIFEST_PATH_SEGMENTS
   );
-}
+  const manifest = readConformanceManifest(manifestPath);
+  const fixturePath = join(dirname(manifestPath), manifest.fixturePath);
+  const schemaPath = join(dirname(manifestPath), manifest.fixtureSchemaPath);
+  const fixture = JSON.parse(readFileSync(fixturePath, "utf-8"));
+  const schema = readJsonSchema(JSON.parse(readFileSync(schemaPath, "utf-8")));
 
-function assertProviderConformanceFixtureSet(
-  value: unknown
-): asserts value is ProviderConformanceFixtureSet {
-  if (!isRecord(value)) {
-    throw new Error("provider conformance fixture set must be an object");
-  }
+  assertSchemaValid(schema, fixture, "provider conformance fixture");
+  assertProviderConformanceFixtureSet(fixture);
+  return fixture;
+};
 
-  assertTuvrenPrompt(value.prompt, "prompt");
-  assertTuvrenModelResponse(value.response, "response");
-  assertTuvrenPrompt(value.structuredPrompt, "structuredPrompt");
-  assertTuvrenPrompt(value.toolPrompt, "toolPrompt");
-}
-
-function assertTuvrenPrompt(
-  value: unknown,
-  label: string
-): asserts value is TuvrenPrompt {
-  if (!isRecord(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-
-  // The boundary-owned JSON Schema defines the complete prompt shape. This
-  // explicit guard keeps the fixture loader's local type narrowing readable.
-  if (!Array.isArray(value.messages) || value.messages.length === 0) {
-    throw new Error(`${label}.messages must be a non-empty array`);
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
+export const providerConformanceFixtures: ProviderConformanceFixtureSet =
+  loadProviderConformanceFixtures();
