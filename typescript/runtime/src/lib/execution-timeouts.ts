@@ -44,7 +44,7 @@ const hasTimeout = (timeoutMilliseconds: number | undefined): boolean =>
  * @param options - Optional `onTimeout` hook invoked with the created error
  *   before rejection.
  * @returns The action's result when it settles before the deadline.
- * @throws The `createTimeoutError()` error on expiry, or whatever the action
+ * @throws {Error} The `createTimeoutError()` error on expiry, or whatever the action
  *   itself rejects with.
  */
 export const runWithTimeout = async <T>(
@@ -52,27 +52,24 @@ export const runWithTimeout = async <T>(
   timeoutMilliseconds: number | undefined,
   createTimeoutError: () => Error,
   options?: {
-    onTimeout?(error: Error): void;
+    onTimeout?: (error: Error) => void;
   }
 ): Promise<T> => {
   if (!hasTimeout(timeoutMilliseconds)) {
     return await action();
   }
 
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => {
-      const timeoutError = createTimeoutError();
-      options?.onTimeout?.(timeoutError);
-      reject(timeoutError);
-    }, timeoutMilliseconds);
-  });
+  const { promise: timeoutPromise, reject: rejectTimeout } =
+    Promise.withResolvers<never>();
+  const timeoutId = setTimeout(() => {
+    const timeoutError = createTimeoutError();
+    options?.onTimeout?.(timeoutError);
+    rejectTimeout(timeoutError);
+  }, timeoutMilliseconds);
 
   try {
     return await Promise.race([Promise.resolve(action()), timeoutPromise]);
   } finally {
-    if (timeoutId !== undefined) {
-      clearTimeout(timeoutId);
-    }
+    clearTimeout(timeoutId);
   }
 };

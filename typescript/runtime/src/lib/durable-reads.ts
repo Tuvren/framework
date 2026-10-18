@@ -64,8 +64,47 @@ interface BranchMessagesCursorPayload {
 
 // ── Cursor encode/decode helpers (KRT-AO002) ─────────────────────────────────
 
-const encodeCursor = <T>(payload: T): string =>
+const encodeCursor = (payload: unknown): string =>
   Buffer.from(JSON.stringify(payload)).toString("base64url");
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+const isListThreadsFilter = (
+  value: unknown
+): value is ListThreadsCursorPayload["filter"] =>
+  value === undefined ||
+  (isRecord(value) &&
+    (value.schemaId === undefined || typeof value.schemaId === "string"));
+
+const isListThreadsCursorPayload = (
+  value: unknown
+): value is ListThreadsCursorPayload =>
+  isRecord(value) &&
+  value.v === 1 &&
+  value.kind === "list-threads" &&
+  typeof value.lastThreadId === "string" &&
+  typeof value.lastCreatedAtMs === "number" &&
+  isListThreadsFilter(value.filter);
+
+const isTurnHistoryCursorPayload = (
+  value: unknown
+): value is TurnHistoryCursorPayload =>
+  isRecord(value) &&
+  value.v === 1 &&
+  value.kind === "turn-history" &&
+  typeof value.branchId === "string" &&
+  typeof value.lastTurnNodeHash === "string";
+
+const isBranchMessagesCursorPayload = (
+  value: unknown
+): value is BranchMessagesCursorPayload =>
+  isRecord(value) &&
+  value.v === 1 &&
+  value.kind === "branch-messages" &&
+  typeof value.branchId === "string" &&
+  typeof value.positionFromOldest === "number" &&
+  typeof value.branchHeadAtCursorIssuance === "string";
 
 const decodeCursorRaw = (token: string): unknown => {
   // Buffer.from(token, "base64url") does not throw on invalid input; it
@@ -84,63 +123,39 @@ const decodeListThreadsCursor = (
   token: ListThreadsCursor
 ): ListThreadsCursorPayload => {
   const parsed = decodeCursorRaw(token);
-  if (
-    typeof parsed !== "object" ||
-    parsed === null ||
-    (parsed as ListThreadsCursorPayload).v !== 1 ||
-    (parsed as ListThreadsCursorPayload).kind !== "list-threads" ||
-    typeof (parsed as ListThreadsCursorPayload).lastThreadId !== "string" ||
-    typeof (parsed as ListThreadsCursorPayload).lastCreatedAtMs !== "number"
-  ) {
+  if (!isListThreadsCursorPayload(parsed)) {
     throw new TuvrenValidationError(
       "list-threads cursor payload has unexpected shape",
       { code: "invalid_durable_read_cursor" }
     );
   }
-  return parsed as ListThreadsCursorPayload;
+  return parsed;
 };
 
 const decodeTurnHistoryCursor = (
   token: TurnHistoryCursor
 ): TurnHistoryCursorPayload => {
   const parsed = decodeCursorRaw(token);
-  if (
-    typeof parsed !== "object" ||
-    parsed === null ||
-    (parsed as TurnHistoryCursorPayload).v !== 1 ||
-    (parsed as TurnHistoryCursorPayload).kind !== "turn-history" ||
-    typeof (parsed as TurnHistoryCursorPayload).branchId !== "string" ||
-    typeof (parsed as TurnHistoryCursorPayload).lastTurnNodeHash !== "string"
-  ) {
+  if (!isTurnHistoryCursorPayload(parsed)) {
     throw new TuvrenValidationError(
       "turn-history cursor payload has unexpected shape",
       { code: "invalid_durable_read_cursor" }
     );
   }
-  return parsed as TurnHistoryCursorPayload;
+  return parsed;
 };
 
 const decodeBranchMessagesCursor = (
   token: BranchMessagesCursor
 ): BranchMessagesCursorPayload => {
   const parsed = decodeCursorRaw(token);
-  if (
-    typeof parsed !== "object" ||
-    parsed === null ||
-    (parsed as BranchMessagesCursorPayload).v !== 1 ||
-    (parsed as BranchMessagesCursorPayload).kind !== "branch-messages" ||
-    typeof (parsed as BranchMessagesCursorPayload).branchId !== "string" ||
-    typeof (parsed as BranchMessagesCursorPayload).positionFromOldest !==
-      "number" ||
-    typeof (parsed as BranchMessagesCursorPayload)
-      .branchHeadAtCursorIssuance !== "string"
-  ) {
+  if (!isBranchMessagesCursorPayload(parsed)) {
     throw new TuvrenValidationError(
       "branch-messages cursor payload has unexpected shape",
       { code: "invalid_durable_read_cursor" }
     );
   }
-  return parsed as BranchMessagesCursorPayload;
+  return parsed;
 };
 
 // ── listThreads (KRT-AO003) ──────────────────────────────────────────────────
@@ -175,11 +190,11 @@ export const listThreads = async (
   const kernelResult = await kernel.thread.list({
     cursor: cursorPayload
       ? encodeCursor({
-          v: 1 as const,
-          kind: "list-threads" as const,
-          lastThreadId: cursorPayload.lastThreadId,
-          lastCreatedAtMs: cursorPayload.lastCreatedAtMs,
           filter: cursorPayload.filter,
+          kind: "list-threads" as const,
+          lastCreatedAtMs: cursorPayload.lastCreatedAtMs,
+          lastThreadId: cursorPayload.lastThreadId,
+          v: 1 as const,
         })
       : undefined,
     filter: options?.filter,
@@ -300,17 +315,17 @@ export const getTurnState = async (
   }
 
   if (input.turnNodeHash === undefined) {
-    return buildTurnSnapshot(kernel, branch.headTurnNodeHash);
+    return await buildTurnSnapshot(kernel, branch.headTurnNodeHash);
   }
 
   // Lineage validation: verify the requested node is on this branch's lineage.
   if (input.turnNodeHash === branch.headTurnNodeHash) {
-    return buildTurnSnapshot(kernel, input.turnNodeHash);
+    return await buildTurnSnapshot(kernel, input.turnNodeHash);
   }
 
   for await (const node of kernel.node.walkBack(branch.headTurnNodeHash)) {
     if (node.hash === input.turnNodeHash) {
-      return buildTurnSnapshot(kernel, input.turnNodeHash);
+      return await buildTurnSnapshot(kernel, input.turnNodeHash);
     }
   }
 
@@ -480,6 +495,51 @@ const resolveCursorStartIndex = async (
   return position;
 };
 
+const appendStoredMessages = async (
+  kernel: RuntimeKernel,
+  payloadCodecBinding: PayloadCodecBinding,
+  hashes: readonly string[],
+  messages: (ErasedPayload | TuvrenMessage)[],
+  index = 0
+): Promise<void> => {
+  const hash = hashes[index];
+  if (hash === undefined) {
+    return;
+  }
+
+  const bytes = await kernel.store.get(hash);
+  if (bytes === null) {
+    throw new TuvrenPersistenceError(
+      `message object "${hash}" is referenced in the branch tree but missing from the store`,
+      { code: "kernel_store_object_missing" }
+    );
+  }
+
+  // Crypto-shredding seam (KRT-BF005): decrypt before decoding. A shredded
+  // payload surfaces as a typed erased marker so the durable read is total
+  // rather than a crash; its lineage hash is unchanged and still listed.
+  const decrypted = await decryptStoredMessage(payloadCodecBinding, bytes);
+  if (decrypted.status === "erased") {
+    messages.push({
+      keyRef: decrypted.keyRef,
+      kind: "erased",
+      reason: decrypted.reason,
+    });
+  } else {
+    const decoded = decodeDeterministicKernelRecord(decrypted.plaintext);
+    assertTuvrenMessage(decoded, `message at "${hash}"`);
+    messages.push(decoded);
+  }
+
+  await appendStoredMessages(
+    kernel,
+    payloadCodecBinding,
+    hashes,
+    messages,
+    index + 1
+  );
+};
+
 // ── readBranchMessages (KRT-AO005) ───────────────────────────────────────────
 
 export const readBranchMessages = async (
@@ -547,31 +607,12 @@ export const readBranchMessages = async (
 
   const slicedHashes = messageHashes.slice(startIndex, endIndex);
   const messages: (ErasedPayload | TuvrenMessage)[] = [];
-
-  for (const hash of slicedHashes) {
-    const bytes = await kernel.store.get(hash);
-    if (bytes === null) {
-      throw new TuvrenPersistenceError(
-        `message object "${hash}" is referenced in the branch tree but missing from the store`,
-        { code: "kernel_store_object_missing" }
-      );
-    }
-    // Crypto-shredding seam (KRT-BF005): decrypt before decoding. A shredded
-    // payload surfaces as a typed erased marker so the durable read is total
-    // rather than a crash; its lineage hash is unchanged and still listed.
-    const decrypted = await decryptStoredMessage(payloadCodecBinding, bytes);
-    if (decrypted.status === "erased") {
-      messages.push({
-        keyRef: decrypted.keyRef,
-        kind: "erased",
-        reason: decrypted.reason,
-      });
-      continue;
-    }
-    const decoded = decodeDeterministicKernelRecord(decrypted.plaintext);
-    assertTuvrenMessage(decoded, `message at "${hash}"`);
-    messages.push(decoded);
-  }
+  await appendStoredMessages(
+    kernel,
+    payloadCodecBinding,
+    slicedHashes,
+    messages
+  );
 
   if (endIndex >= messageHashes.length) {
     return { messages };

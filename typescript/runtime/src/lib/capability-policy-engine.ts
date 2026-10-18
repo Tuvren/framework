@@ -38,22 +38,22 @@ export interface PolicyDimension {
    * return null to pass. The built-in framework dimensions are evaluated
    * before this method is called.
    */
-  checkExposure(
+  checkExposure: (
     surface: ToolSurface,
     metadata: PolicyCapabilityMetadata | undefined,
     context: CapabilityPolicyContext
-  ): string | null;
+  ) => string | null;
   /**
    * Evaluate invocation-time policy for a single binding.
    * Return a non-empty reason string to deny the invocation;
    * return null to pass. The built-in framework dimensions are evaluated
    * before this method is called.
    */
-  checkInvocation(
+  checkInvocation: (
     binding: Binding,
     metadata: PolicyCapabilityMetadata | undefined,
     context: CapabilityPolicyContext
-  ): string | null;
+  ) => string | null;
 }
 
 /**
@@ -137,10 +137,10 @@ const checkActiveEndpointExposure = (
   metadata: PolicyCapabilityMetadata | undefined,
   context: CapabilityPolicyContext
 ): string | null => {
-  if (!metadata?.requiresActiveEndpoint) {
+  if (metadata?.requiresActiveEndpoint !== true) {
     return null;
   }
-  if (context.unavailableCapabilityIds?.has(capabilityId)) {
+  if (context.unavailableCapabilityIds?.has(capabilityId) === true) {
     return `capability "${capabilityId}" requires an active endpoint but none is currently attached`;
   }
   return null;
@@ -185,7 +185,7 @@ const checkUserPresenceInvocation = (
   metadata: PolicyCapabilityMetadata | undefined,
   context: CapabilityPolicyContext
 ): string | null => {
-  if (!metadata?.requiresUserPresence) {
+  if (metadata?.requiresUserPresence !== true) {
     return null;
   }
   if (context.userPresent === false) {

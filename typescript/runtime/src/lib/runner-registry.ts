@@ -84,7 +84,7 @@ class BasicRunnerRegistry implements RunnerRegistry {
  *   string `id`, unique within the registry.
  * @returns A {@link RunnerRegistry} supporting `register`, `resolve`, and
  *   `list`.
- * @throws TuvrenRuntimeError with code `invalid_runner_registration` when an
+ * @throws {TuvrenRuntimeError} With code `invalid_runner_registration` when an
  *   entry has no non-empty `id`, or `duplicate_runner_registration` when two
  *   entries share an id.
  */
@@ -109,7 +109,7 @@ export const createRunnerRegistry = (
  *
  * @param entry - The runner or runner factory resolved from a registry.
  * @returns The materialized, shape-validated runner.
- * @throws TuvrenValidationError when the materialized value does not satisfy
+ * @throws {Error} When the materialized value does not satisfy
  *   the `RuntimeRunner` contract (via `assertRuntimeRunner`).
  */
 export const materializeRunner = (entry: RunnerEntry): RuntimeRunner => {
