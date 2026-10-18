@@ -32,7 +32,10 @@ const firstModules = [
   "../src/lib/extension-runtime.ts",
   "../src/lib/handoff-builders.ts",
   "../src/lib/idempotency-identity.ts",
+  "../src/lib/orchestration-runtime-lazy-stream.ts",
   "../src/lib/payload-codec-seam.ts",
+  "../src/lib/runtime-core-hosts-persistence.ts",
+  "../src/lib/runtime-core-runner-result.ts",
   "../src/lib/runner-registry.ts",
   "../src/lib/server-rate-limiter.ts",
   "../src/lib/telemetry-secret-screening.ts",
@@ -60,10 +63,14 @@ if (firstModule === undefined) {
   }
 } else {
   test("retains canonical runtime results after fresh module initialization", async () => {
-    const initializedModule: Record<string, unknown> = await import(
-      firstModule
-    );
+    const initializedModule: unknown = await import(firstModule);
     const runtime: typeof Runtime = await import("../src/index.ts");
+
+    if (typeof initializedModule !== "object" || initializedModule === null) {
+      throw new TypeError(
+        "expected the initialized runtime module to be an object"
+      );
+    }
 
     expect(Object.keys(initializedModule).length).toBeGreaterThan(0);
     expect(Object.values(initializedModule)).not.toContain(undefined);

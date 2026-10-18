@@ -34,7 +34,6 @@ import type {
 } from "@tuvren/kernel-protocol";
 
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
-import { encryptMessageRecord } from "./payload-codec-seam.js";
 import type { PayloadCodecBinding } from "./payload-codec-seam.js";
 import type { RuntimeCoreContextOpsHost } from "./runtime-core-context-ops.js";
 import type { HelperBundle } from "./runtime-core-context.js";
@@ -47,7 +46,6 @@ import type {
   RuntimeCoreLivenessHost,
 } from "./runtime-core-liveness.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
-import type { RuntimeCorePersistenceHost } from "./runtime-core-persistence.js";
 import type {
   DurableRuntimeStatus,
   LoopOutcome,
@@ -149,27 +147,6 @@ interface ContextOpsHostDependencies {
     runId: string,
     stepResult: { lease?: { fencingToken: string; leaseExpiresAtMs: EpochMs } }
   ) => void;
-}
-
-/** Dependencies for {@link buildRuntimeCorePersistenceHost}. */
-interface PersistenceHostDependencies {
-  emitWarning: (warning: {
-    activeAgent: string;
-    budgetBytes: number;
-    code: "manifest_extension_state_budget_exceeded";
-    extensionName: string;
-    observedBytes: number;
-    runId: string;
-    threadId: string;
-    turnId: string;
-  }) => void;
-  encodeKernelRecord: (value: unknown, label: string) => Uint8Array;
-  getManifestExtensionStateWarningBudgetBytes: () => false | number;
-  getOrCreateManifestExtensionStateWarningKeys: (
-    handle: RuntimeExecutionHandle
-  ) => Set<string>;
-  kernel: RuntimeKernel;
-  payloadCodecBinding: PayloadCodecBinding;
 }
 
 /** Dependencies for {@link buildRuntimeCoreLivenessHost}. */
@@ -581,39 +558,6 @@ export const buildRuntimeCoreEventsHost = (
   createId,
   enableStateObservability,
   now,
-});
-
-/**
- * Builds the host seam for the persistence module
- * (`runtime-core-persistence.ts`): kernel record encoding, the
- * crypto-shredding message-encryption seam, manifest extension-state budget
- * warnings, and the kernel `staging.stage` / `store.put` writes.
- */
-export const buildRuntimeCorePersistenceHost = (
-  dependencies: PersistenceHostDependencies
-): RuntimeCorePersistenceHost => ({
-  emitWarning: (warning) => {
-    dependencies.emitWarning(warning);
-  },
-  encodeKernelRecord: (value, label) =>
-    dependencies.encodeKernelRecord(value, label),
-  encryptMessageRecord: async (record) =>
-    await encryptMessageRecord(dependencies.payloadCodecBinding, record),
-  getManifestExtensionStateWarningBudgetBytes: () =>
-    dependencies.getManifestExtensionStateWarningBudgetBytes(),
-  getOrCreateManifestExtensionStateWarningKeys: (handle) =>
-    dependencies.getOrCreateManifestExtensionStateWarningKeys(handle),
-  stageRecord: async (runId, record, taskId, objectType) => {
-    const stageResult = await dependencies.kernel.staging.stage(
-      runId,
-      record,
-      taskId,
-      objectType,
-      "completed"
-    );
-    return stageResult.objectHash;
-  },
-  storeRecord: async (record) => await dependencies.kernel.store.put(record),
 });
 
 /**

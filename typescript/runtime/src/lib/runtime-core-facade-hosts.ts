@@ -51,13 +51,13 @@ import {
   buildRuntimeCoreRunnerHost,
   buildRuntimeCoreToolResumeHost,
 } from "./runtime-core-hosts-execution.js";
+import { buildRuntimeCorePersistenceHost } from "./runtime-core-hosts-persistence.js";
 import {
   buildRuntimeCoreContextOpsHost,
   buildRuntimeCoreEventsHost,
   buildRuntimeCoreExpiredRecoveryHost,
   buildRuntimeCoreFinalizationHost,
   buildRuntimeCoreLivenessHost,
-  buildRuntimeCorePersistenceHost,
   buildRuntimeCoreRunnerSupportHost,
   buildRuntimeCoreStartupHost,
   buildRuntimeCoreStateCommitHost,
