@@ -9,12 +9,19 @@
     "measured_tree": "ae968b46b3f8fe76c9940c914d55057f02eb07ac",
     "union_tree": "32fd3ce665f6e54b6311363bb876e13f4f6756b8",
     "owned_files_checked": 39,
-    "mode_or_blob_mismatches": 0
+    "unchanged_mode_or_blob_matches": 38,
+    "accepted_correctness_fixes": [
+      {
+        "path": "typescript/runtime/src/lib/runtime-core-liveness.ts",
+        "commit": "ba23c2fc0855b03d37f25cf95f80f02dbb2af24b",
+        "reason": "Detach successive lease renewals so completed cycles settle instead of retaining a promise chain for the lifetime of the run."
+      }
+    ]
   },
   "delivery": {
     "changed_paths": 40,
     "raw_changed_lines": 12948,
-    "candidate_diff_sha256": "52c7a9573c5d84367811652d943a235afeec89494175922b3b2e84c369187ad3",
+    "review_fix_commit": "ba23c2fc0855b03d37f25cf95f80f02dbb2af24b",
     "changeset": ".changeset/runtime-core-lint-prep.md",
     "changeset_release": "@tuvren/runtime patch",
     "constitution_paths_in_source_commit": 0,
@@ -26,6 +33,8 @@
     {"name":"compiler-isolation","result":"pass","detail":"718 files; zero live source from another framework checkout"},
     {"name":"cold-runtime-import","result":"pass"},
     {"name":"focused-runtime-tests","result":"pass","detail":"13 tests; 49 assertions"},
+    {"name":"lease-renewal-test","result":"pass","detail":"focused renewal scenario"},
+    {"name":"lease-renewal-resource-probe","result":"pass","detail":"200000 cycles; at most two transient active invocations"},
     {"name":"changeset-coverage","result":"pass","detail":"one directly covered publishable package"},
     {"name":"framework-runtime-typecheck","result":"pass"},
     {"name":"api-freeze","result":"pass","detail":"14 entrypoints; 404 exports unchanged"},
