@@ -29,7 +29,8 @@ import { join } from "node:path";
 
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import type { InputSignal, TuvrenRuntime } from "@tuvren/core/execution";
-import { assertTuvrenMessage, type TuvrenMessage } from "@tuvren/core/messages";
+import { assertTuvrenMessage } from "@tuvren/core/messages";
+import type { TuvrenMessage } from "@tuvren/core/messages";
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { build, spawn } from "bun";
@@ -190,7 +191,7 @@ describe("KRT-CS002 admission-key persistence", () => {
 
       expect(childReaped).toBe(true);
       expect(await readdir(temporaryParent)).toEqual(["keep.txt"]);
-      expect(await readFile(unrelatedFile, "utf8")).toBe("unrelated");
+      expect(await readFile(unrelatedFile, "utf-8")).toBe("unrelated");
     } finally {
       await rm(temporaryParent, { force: true, recursive: true });
     }
@@ -531,7 +532,7 @@ async function runSqlitePersistenceScenario(
   try {
     const buildResult = await build({
       entrypoints: [
-        new URL("./fixtures/admission-key-sqlite-child.ts", import.meta.url)
+        new URL("fixtures/admission-key-sqlite-child.ts", import.meta.url)
           .pathname,
       ],
       external: ["better-sqlite3"],
@@ -573,8 +574,8 @@ async function runSqlitePersistenceScenario(
       }
     );
     childExit = child.exited;
-    const stdout = child.stdout;
-    const stderr = child.stderr;
+    const { stdout } = child;
+    const { stderr } = child;
     if (
       !(stdout instanceof ReadableStream && stderr instanceof ReadableStream)
     ) {
@@ -624,7 +625,7 @@ async function runSqlitePersistenceScenario(
         : standardOutput
     );
     if (!Array.isArray(messages)) {
-      throw new Error("SQLite child scenario returned malformed messages");
+      throw new TypeError("SQLite child scenario returned malformed messages");
     }
 
     const validatedMessages: TuvrenMessage[] = [];
@@ -714,7 +715,7 @@ async function readAdmissionKeylessFixture(): Promise<AdmissionKeylessFixture> {
         "../../../spec/conformance/engine/fixtures/admission-keyless-user-message.json",
         import.meta.url
       ),
-      "utf8"
+      "utf-8"
     )
   );
 

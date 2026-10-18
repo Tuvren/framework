@@ -44,7 +44,6 @@ import {
 
 function makeRunner(toolName: string): RuntimeRunner {
   return {
-    id: "fake",
     async execute(context) {
       const toolMessages = context.messages.filter((m) => m.role === "tool");
       if (toolMessages.length === 0) {
@@ -63,6 +62,7 @@ function makeRunner(toolName: string): RuntimeRunner {
         resolution: { reason: "complete", type: "end_turn" },
       };
     },
+    id: "fake",
     async resume() {
       throw new Error("resume not expected");
     },
@@ -82,8 +82,8 @@ async function runToolTurn(toolName: string) {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
-    runnerRegistry: createBaseRunnerRegistry([makeRunner(toolName)]),
     kernel: harness.kernel,
+    runnerRegistry: createBaseRunnerRegistry([makeRunner(toolName)]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
@@ -185,8 +185,8 @@ describe("Capability attribution — telemetry spans (AW006)", () => {
     const toolName = "attrib-tool";
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createBaseRunnerRegistry([makeRunner(toolName)]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([makeRunner(toolName)]),
       telemetry: sink,
     });
     const thread = await runtime.createThread({});
@@ -274,13 +274,13 @@ describe("Capability attribution — stream-event guard contract", () => {
   test("tool.result with valid attribution passes the guard", () => {
     expect(
       isTuvrenStreamEvent({
+        attribution: validAttribution,
         callId: "c1",
         isError: false,
         name: "tool-x",
         output: { ok: true },
         timestamp: 1000,
         type: "tool.result",
-        attribution: validAttribution,
       })
     ).toBe(true);
   });

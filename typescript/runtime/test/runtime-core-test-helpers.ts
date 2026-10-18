@@ -34,8 +34,8 @@ import type { RuntimeRunner } from "@tuvren/core/runner";
 import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
-  type RuntimeKernel,
 } from "@tuvren/kernel-protocol";
+import type { RuntimeKernel } from "@tuvren/kernel-protocol";
 
 export async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
   const collected: T[] = [];
@@ -244,7 +244,7 @@ export function createStubExecutionHandle(
       }
     },
     events() {
-      return (async function* () {
+      return (async function* events() {
         await closedPromise;
         yield* [];
       })();
@@ -290,11 +290,11 @@ export function assistantToolCalls(
       input: unknown;
       name: string;
     },
-    ...Array<{
+    ...{
       callId: string;
       input: unknown;
       name: string;
-    }>,
+    }[],
   ]
 ): TuvrenMessage {
   const parts = toNonEmptyArray(
@@ -383,7 +383,7 @@ export function createStaticExecutionHandle(
       });
     },
     cancel() {
-      return undefined;
+      return;
     },
     async *events() {
       await Promise.resolve();
@@ -399,7 +399,7 @@ export function createStaticExecutionHandle(
       return status;
     },
     steer() {
-      return undefined;
+      return;
     },
   };
 }
@@ -618,7 +618,7 @@ export async function readBranchContextManifest(
 }
 
 export function extractTurnId(
-  events: Array<{ type: string; turnId?: string }>
+  events: { type: string; turnId?: string }[]
 ): string {
   for (const event of events) {
     if (event.type === "turn.start" && typeof event.turnId === "string") {

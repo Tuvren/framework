@@ -64,7 +64,6 @@ function createTelemetryCapture(): {
 } {
   const spans: TelemetrySpan[] = [];
   return {
-    spans,
     sink: {
       event: (_e) => {
         /* noop */
@@ -73,6 +72,7 @@ function createTelemetryCapture(): {
         spans.push(s);
       },
     },
+    spans,
   };
 }
 
@@ -82,7 +82,6 @@ function buildProviderToolMessage(
   executionClass: "provider-native" | "provider-mediated"
 ): TuvrenMessage {
   return {
-    role: "tool",
     parts: [
       {
         callId,
@@ -96,6 +95,7 @@ function buildProviderToolMessage(
         type: "tool_result",
       },
     ],
+    role: "tool",
   };
 }
 
@@ -109,7 +109,6 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
     const harness = createFakeKernelHarness();
     const toolName = "ba004_server_tool";
     const runner: RuntimeRunner = {
-      id: "ba004-server",
       async execute(ctx) {
         if (!ctx.messages.some((m) => m.role === "tool")) {
           return {
@@ -125,14 +124,15 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
           resolution: { reason: "done", type: "end_turn" },
         };
       },
+      id: "ba004-server",
       async resume() {
         throw new Error("no");
       },
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba004-server",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -142,10 +142,10 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
         name: "agent",
         tools: [
           {
-            name: toolName,
             description: "t",
-            inputSchema: { type: "object" },
             execute: async () => ({ ok: true }),
+            inputSchema: { type: "object" },
+            name: toolName,
           },
         ],
       },
@@ -175,7 +175,6 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
     const runner: RuntimeRunner = {
-      id: "ba004-pn",
       async execute(ctx) {
         if (!ctx.messages.some((m) => m.role === "tool")) {
           return {
@@ -190,14 +189,15 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
           resolution: { reason: "done", type: "end_turn" },
         };
       },
+      id: "ba004-pn",
       async resume() {
         throw new Error("no");
       },
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba004-pn",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -241,7 +241,6 @@ describe("BA004 lifecycle telemetry — no secret material", () => {
     const harness = createFakeKernelHarness();
     const toolName = "ba004_secret_check_tool";
     const runner: RuntimeRunner = {
-      id: "ba004-secret",
       async execute(ctx) {
         if (!ctx.messages.some((m) => m.role === "tool")) {
           return {
@@ -263,14 +262,15 @@ describe("BA004 lifecycle telemetry — no secret material", () => {
           resolution: { reason: "done", type: "end_turn" },
         };
       },
+      id: "ba004-secret",
       async resume() {
         throw new Error("no");
       },
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba004-secret",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -280,10 +280,10 @@ describe("BA004 lifecycle telemetry — no secret material", () => {
         name: "agent",
         tools: [
           {
-            name: toolName,
             description: "secret check",
-            inputSchema: { type: "object" },
             execute: async () => ({ ok: true }),
+            inputSchema: { type: "object" },
+            name: toolName,
           },
         ],
       },

@@ -83,7 +83,6 @@ import {
 
 function makeRunner(toolName: string): RuntimeRunner {
   return {
-    id: "bg004-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -101,6 +100,7 @@ function makeRunner(toolName: string): RuntimeRunner {
         resolution: { reason: "done", type: "end_turn" },
       };
     },
+    id: "bg004-runner",
     async resume() {
       throw new Error("resume not expected");
     },
@@ -124,13 +124,13 @@ async function runWithLeaseLoss(
   });
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "bg004-runner",
-    runnerRegistry: createBaseRunnerRegistry([makeRunner(tool.name)]),
     kernel: livenessHarness.kernel,
     runLiveness: {
       executionOwnerId: "worker-1",
       leaseDurationMs: 40,
       renewBeforeMs: 20,
     },
+    runnerRegistry: createBaseRunnerRegistry([makeRunner(tool.name)]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
@@ -207,7 +207,6 @@ async function runClientDispatchWithLeaseLoss(
         inputSchema: { type: "object" },
       },
     ],
-    endpointId: "bg004-endpoint",
     async dispatch(
       envelope: ClientInvocationEnvelope
     ): Promise<ClientReportedResult> {
@@ -221,6 +220,7 @@ async function runClientDispatchWithLeaseLoss(
         leaseToken: envelope.leaseToken,
       };
     },
+    endpointId: "bg004-endpoint",
   };
 
   const livenessHarness = createFakeRunLivenessKernelHarness(harness, {
@@ -238,13 +238,13 @@ async function runClientDispatchWithLeaseLoss(
   });
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "bg004-runner",
-    runnerRegistry: createBaseRunnerRegistry([makeRunner(capabilityId)]),
     kernel: livenessHarness.kernel,
     runLiveness: {
       executionOwnerId: "worker-1",
       leaseDurationMs: 40,
       renewBeforeMs: 20,
     },
+    runnerRegistry: createBaseRunnerRegistry([makeRunner(capabilityId)]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
@@ -273,16 +273,16 @@ describe("KRT-BG004 — no retry under lost run authority", () => {
     });
 
     const tool: TuvrenToolDefinition = {
-      name: "bg004-nonretryable",
       description: "nonRetryable side-effecting tool",
-      nonRetryable: true,
-      inputSchema: { type: "object" },
       async execute(_input, context) {
         callCount += 1;
         releaseStarted?.();
         await waitForAbort(context.signal);
         return { value: LATE_VALUE };
       },
+      inputSchema: { type: "object" },
+      name: "bg004-nonretryable",
+      nonRetryable: true,
     };
 
     const { branchId, harness } = await runWithLeaseLoss(tool, toolStarted);
@@ -303,11 +303,7 @@ describe("KRT-BG004 — no retry under lost run authority", () => {
     });
 
     const tool: TuvrenToolDefinition = {
-      name: "bg004-idempotent",
       description: "idempotent tool with a generous retry budget",
-      idempotent: true,
-      maxRetries: 2,
-      inputSchema: { type: "object" },
       async execute(_input, context) {
         callCount += 1;
         releaseStarted?.();
@@ -316,6 +312,10 @@ describe("KRT-BG004 — no retry under lost run authority", () => {
         // abort-break must abandon retries the moment authority is lost.
         throw new Error("failure surfaced under the dead owner");
       },
+      idempotent: true,
+      inputSchema: { type: "object" },
+      maxRetries: 2,
+      name: "bg004-idempotent",
     };
 
     await runWithLeaseLoss(tool, toolStarted);
@@ -333,7 +333,6 @@ function makeRecordingEndpoint(
   onDispatch: () => void
 ): AttachedClientEndpoint {
   return {
-    endpointId: "bg004-endpoint",
     advertisedCapabilities: [
       {
         capabilityId,
@@ -351,6 +350,7 @@ function makeRecordingEndpoint(
         leaseToken: envelope.leaseToken,
       };
     },
+    endpointId: "bg004-endpoint",
   };
 }
 
