@@ -1,0 +1,114 @@
+id: CT
+name: Runtime core lint preparation delivery
+kind: tooling
+capabilities: []
+depends_on:
+  - CU
+scope:
+  paths:
+    - .changeset/runtime-core-lint-prep.md
+    - .constitution/evidence/KRT-CT001
+    - typescript/runtime/src/lib/runtime-core-assistant-validation-sequences.ts
+    - typescript/runtime/src/lib/runtime-core-assistant-validation.ts
+    - typescript/runtime/src/lib/runtime-core-bounds.ts
+    - typescript/runtime/src/lib/runtime-core-context-ops.ts
+    - typescript/runtime/src/lib/runtime-core-context.ts
+    - typescript/runtime/src/lib/runtime-core-events.ts
+    - typescript/runtime/src/lib/runtime-core-execution-controller.ts
+    - typescript/runtime/src/lib/runtime-core-execution-orchestration.ts
+    - typescript/runtime/src/lib/runtime-core-expired-recovery.ts
+    - typescript/runtime/src/lib/runtime-core-facade-adapters.ts
+    - typescript/runtime/src/lib/runtime-core-facade-execution.ts
+    - typescript/runtime/src/lib/runtime-core-facade-hosts.ts
+    - typescript/runtime/src/lib/runtime-core-facade-ops.ts
+    - typescript/runtime/src/lib/runtime-core-facade-utils.ts
+    - typescript/runtime/src/lib/runtime-core-finalization.ts
+    - typescript/runtime/src/lib/runtime-core-head-state.ts
+    - typescript/runtime/src/lib/runtime-core-hosts-execution.ts
+    - typescript/runtime/src/lib/runtime-core-hosts-persistence.ts
+    - typescript/runtime/src/lib/runtime-core-hosts.ts
+    - typescript/runtime/src/lib/runtime-core-interrupted-metadata.ts
+    - typescript/runtime/src/lib/runtime-core-liveness.ts
+    - typescript/runtime/src/lib/runtime-core-observability.ts
+    - typescript/runtime/src/lib/runtime-core-options.ts
+    - typescript/runtime/src/lib/runtime-core-persistence.ts
+    - typescript/runtime/src/lib/runtime-core-recovery-plan.ts
+    - typescript/runtime/src/lib/runtime-core-recovery.ts
+    - typescript/runtime/src/lib/runtime-core-response.ts
+    - typescript/runtime/src/lib/runtime-core-runner.ts
+    - typescript/runtime/src/lib/runtime-core-runtime-lifecycle.ts
+    - typescript/runtime/src/lib/runtime-core-shared.ts
+    - typescript/runtime/src/lib/runtime-core-startup.ts
+    - typescript/runtime/src/lib/runtime-core-state-commit.ts
+    - typescript/runtime/src/lib/runtime-core-status.ts
+    - typescript/runtime/src/lib/runtime-core-telemetry.ts
+    - typescript/runtime/src/lib/runtime-core-tool-batch-finalization.ts
+    - typescript/runtime/src/lib/runtime-core-tool-resume.ts
+    - typescript/runtime/src/lib/runtime-core-transition-support.ts
+    - typescript/runtime/src/lib/runtime-core-turn-progress.ts
+    - typescript/runtime/src/lib/runtime-core.ts
+  tech_spec_patchable: []
+estimated_diff_lines: 14500
+estimate_source: planned
+tickets:
+  - id: KRT-CT001
+    title: Deliver the reviewed runtime core slice after execution helpers
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - .changeset/runtime-core-lint-prep.md
+        - .constitution/evidence/KRT-CT001
+        - typescript/runtime/src/lib/runtime-core-assistant-validation-sequences.ts
+        - typescript/runtime/src/lib/runtime-core-assistant-validation.ts
+        - typescript/runtime/src/lib/runtime-core-bounds.ts
+        - typescript/runtime/src/lib/runtime-core-context-ops.ts
+        - typescript/runtime/src/lib/runtime-core-context.ts
+        - typescript/runtime/src/lib/runtime-core-events.ts
+        - typescript/runtime/src/lib/runtime-core-execution-controller.ts
+        - typescript/runtime/src/lib/runtime-core-execution-orchestration.ts
+        - typescript/runtime/src/lib/runtime-core-expired-recovery.ts
+        - typescript/runtime/src/lib/runtime-core-facade-adapters.ts
+        - typescript/runtime/src/lib/runtime-core-facade-execution.ts
+        - typescript/runtime/src/lib/runtime-core-facade-hosts.ts
+        - typescript/runtime/src/lib/runtime-core-facade-ops.ts
+        - typescript/runtime/src/lib/runtime-core-facade-utils.ts
+        - typescript/runtime/src/lib/runtime-core-finalization.ts
+        - typescript/runtime/src/lib/runtime-core-head-state.ts
+        - typescript/runtime/src/lib/runtime-core-hosts-execution.ts
+        - typescript/runtime/src/lib/runtime-core-hosts-persistence.ts
+        - typescript/runtime/src/lib/runtime-core-hosts.ts
+        - typescript/runtime/src/lib/runtime-core-interrupted-metadata.ts
+        - typescript/runtime/src/lib/runtime-core-liveness.ts
+        - typescript/runtime/src/lib/runtime-core-observability.ts
+        - typescript/runtime/src/lib/runtime-core-options.ts
+        - typescript/runtime/src/lib/runtime-core-persistence.ts
+        - typescript/runtime/src/lib/runtime-core-recovery-plan.ts
+        - typescript/runtime/src/lib/runtime-core-recovery.ts
+        - typescript/runtime/src/lib/runtime-core-response.ts
+        - typescript/runtime/src/lib/runtime-core-runner.ts
+        - typescript/runtime/src/lib/runtime-core-runtime-lifecycle.ts
+        - typescript/runtime/src/lib/runtime-core-shared.ts
+        - typescript/runtime/src/lib/runtime-core-startup.ts
+        - typescript/runtime/src/lib/runtime-core-state-commit.ts
+        - typescript/runtime/src/lib/runtime-core-status.ts
+        - typescript/runtime/src/lib/runtime-core-telemetry.ts
+        - typescript/runtime/src/lib/runtime-core-tool-batch-finalization.ts
+        - typescript/runtime/src/lib/runtime-core-tool-resume.ts
+        - typescript/runtime/src/lib/runtime-core-transition-support.ts
+        - typescript/runtime/src/lib/runtime-core-turn-progress.ts
+        - typescript/runtime/src/lib/runtime-core.ts
+    verification:
+      command: bun run nx run framework-runtime:typecheck
+      expected: Exit 0; the cumulative CU then CT tree passes source-only typecheck, retained Biome, cold import, and focused core behavior tests.
+    stop_conditions:
+      - STOP if CU is not merged, a whole-file dependency falls outside the declared slice, or runtime behavior changes; do not improvise.
+      - STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise.
+    description: After EPIC-CU, deliver the exact whole-file runtime-core slice from frozen EPIC-BT. This carries the KRT-BT001 safe-fix and KRT-BT003 definition-ordering outcomes for the core modules. The dependency is mandatory because the extracted iteration, runner-result, and tool-execution edges do not form a valid standalone CT tree. Preserve original initialization order, source reviews, OD-09 decisions, and public behavior. Keep retained Biome ownership and every still-needed directive; do not switch project metadata or coverage. Add a direct patch Changeset for @tuvren/runtime and compactly map the assembled files back to their frozen commits and reviews. Feasibility measured 12943 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 13448, leaving 1552 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast.
+    acceptance:
+      mode: contract_test
+      evidence: Assert the CU+CT cumulative tree matches frozen blobs and passes runtime source-only typecheck, retained-Biome lint, a fresh runtime entrypoint import, and focused foundation/execution-lifecycle tests. Prove the compiler inventory resolves no live sibling source, initialization remains clean, no project target or coverage file changes, and the PR has a direct @tuvren/runtime patch Changeset.
+    flows: []
+    certainty: settled
+    status: planned

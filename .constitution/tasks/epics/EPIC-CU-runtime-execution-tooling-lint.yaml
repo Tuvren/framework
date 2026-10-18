@@ -1,0 +1,145 @@
+id: CU
+name: Runtime execution and native lint tooling delivery
+kind: tooling
+capabilities: []
+depends_on:
+  - BQ
+  - CS
+scope:
+  paths:
+    - .changeset/runtime-execution-tooling-lint-prep.md
+    - .constitution/evidence/KRT-CU001
+    - tools/scripts/lib/biome-oxc-discovery.test.ts
+    - tools/scripts/lib/native-lint-routing-argv.test.ts
+    - tools/scripts/lib/native-lint-routing.ts
+    - tools/scripts/verify.ts
+    - typescript/runtime/src/lib/binding-resolver.ts
+    - typescript/runtime/src/lib/capability-attribution.ts
+    - typescript/runtime/src/lib/capability-policy-engine.ts
+    - typescript/runtime/src/lib/capability-registry.ts
+    - typescript/runtime/src/lib/client-endpoint-boundary.ts
+    - typescript/runtime/src/lib/context-manifest.ts
+    - typescript/runtime/src/lib/durable-reads.ts
+    - typescript/runtime/src/lib/execution-timeouts.ts
+    - typescript/runtime/src/lib/extension-runtime.ts
+    - typescript/runtime/src/lib/handoff-builders.ts
+    - typescript/runtime/src/lib/idempotency-identity.ts
+    - typescript/runtime/src/lib/orchestration-runtime-lazy-stream.ts
+    - typescript/runtime/src/lib/orchestration-runtime-node.ts
+    - typescript/runtime/src/lib/orchestration-runtime.ts
+    - typescript/runtime/src/lib/payload-codec-seam.ts
+    - typescript/runtime/src/lib/runner-registry.ts
+    - typescript/runtime/src/lib/runtime-core-iteration.ts
+    - typescript/runtime/src/lib/runtime-core-runner-result.ts
+    - typescript/runtime/src/lib/runtime-core-runner-support.ts
+    - typescript/runtime/src/lib/runtime-execution-handle.ts
+    - typescript/runtime/src/lib/runtime-execution-types.ts
+    - typescript/runtime/src/lib/server-rate-limiter.ts
+    - typescript/runtime/src/lib/telemetry-secret-screening.ts
+    - typescript/runtime/src/lib/tool-execution-batch.ts
+    - typescript/runtime/src/lib/tool-execution-errors.ts
+    - typescript/runtime/src/lib/tool-execution-helpers.ts
+    - typescript/runtime/src/lib/tool-execution-resolution.ts
+    - typescript/runtime/src/lib/tool-execution-single.ts
+    - typescript/runtime/src/lib/tool-execution-staging.ts
+    - typescript/runtime/src/lib/tool-execution-validation.ts
+    - typescript/runtime/src/lib/tool-execution.ts
+    - typescript/runtime/src/lib/tool-registry.ts
+    - typescript/runtime/test/admission-key-compatibility.test.ts
+    - typescript/runtime/test/admission-key-provider-projection.test.ts
+    - typescript/runtime/test/binding-resolver.test.ts
+    - typescript/runtime/test/capability-registry.test.ts
+    - typescript/runtime/test/client-endpoint-boundary.test.ts
+    - typescript/runtime/test/durable-reads.scope-isolation.test.ts
+    - typescript/runtime/test/durable-reads.test.ts
+    - typescript/runtime/test/extension-runtime.test.ts
+    - typescript/runtime/test/fake-run-liveness-kernel.ts
+    - typescript/runtime/test/fixtures/admission-key-sqlite-child.ts
+    - typescript/runtime/test/idempotency-identity.test.ts
+    - typescript/runtime/test/runtime-core-cold-recovery-test-helpers.ts
+    - typescript/runtime/test/runtime-core-recovery-comparison.test.ts
+    - typescript/runtime/test/runtime-core-recovery-plan.test.ts
+    - typescript/runtime/test/runtime-core-shared.test.ts
+    - typescript/runtime/test/runtime-core-test-helpers.ts
+    - typescript/runtime/test/runtime-core.foundation.test.ts
+    - typescript/runtime/tsup.config.ts
+  tech_spec_patchable: []
+estimated_diff_lines: 14000
+estimate_source: planned
+tickets:
+  - id: KRT-CU001
+    title: Deliver the reviewed runtime execution and lint-tooling slice
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - .changeset/runtime-execution-tooling-lint-prep.md
+        - .constitution/evidence/KRT-CU001
+        - tools/scripts/lib/biome-oxc-discovery.test.ts
+        - tools/scripts/lib/native-lint-routing-argv.test.ts
+        - tools/scripts/lib/native-lint-routing.ts
+        - tools/scripts/verify.ts
+        - typescript/runtime/src/lib/binding-resolver.ts
+        - typescript/runtime/src/lib/capability-attribution.ts
+        - typescript/runtime/src/lib/capability-policy-engine.ts
+        - typescript/runtime/src/lib/capability-registry.ts
+        - typescript/runtime/src/lib/client-endpoint-boundary.ts
+        - typescript/runtime/src/lib/context-manifest.ts
+        - typescript/runtime/src/lib/durable-reads.ts
+        - typescript/runtime/src/lib/execution-timeouts.ts
+        - typescript/runtime/src/lib/extension-runtime.ts
+        - typescript/runtime/src/lib/handoff-builders.ts
+        - typescript/runtime/src/lib/idempotency-identity.ts
+        - typescript/runtime/src/lib/orchestration-runtime-lazy-stream.ts
+        - typescript/runtime/src/lib/orchestration-runtime-node.ts
+        - typescript/runtime/src/lib/orchestration-runtime.ts
+        - typescript/runtime/src/lib/payload-codec-seam.ts
+        - typescript/runtime/src/lib/runner-registry.ts
+        - typescript/runtime/src/lib/runtime-core-iteration.ts
+        - typescript/runtime/src/lib/runtime-core-runner-result.ts
+        - typescript/runtime/src/lib/runtime-core-runner-support.ts
+        - typescript/runtime/src/lib/runtime-execution-handle.ts
+        - typescript/runtime/src/lib/runtime-execution-types.ts
+        - typescript/runtime/src/lib/server-rate-limiter.ts
+        - typescript/runtime/src/lib/telemetry-secret-screening.ts
+        - typescript/runtime/src/lib/tool-execution-batch.ts
+        - typescript/runtime/src/lib/tool-execution-errors.ts
+        - typescript/runtime/src/lib/tool-execution-helpers.ts
+        - typescript/runtime/src/lib/tool-execution-resolution.ts
+        - typescript/runtime/src/lib/tool-execution-single.ts
+        - typescript/runtime/src/lib/tool-execution-staging.ts
+        - typescript/runtime/src/lib/tool-execution-validation.ts
+        - typescript/runtime/src/lib/tool-execution.ts
+        - typescript/runtime/src/lib/tool-registry.ts
+        - typescript/runtime/test/admission-key-compatibility.test.ts
+        - typescript/runtime/test/admission-key-provider-projection.test.ts
+        - typescript/runtime/test/binding-resolver.test.ts
+        - typescript/runtime/test/capability-registry.test.ts
+        - typescript/runtime/test/client-endpoint-boundary.test.ts
+        - typescript/runtime/test/durable-reads.scope-isolation.test.ts
+        - typescript/runtime/test/durable-reads.test.ts
+        - typescript/runtime/test/extension-runtime.test.ts
+        - typescript/runtime/test/fake-run-liveness-kernel.ts
+        - typescript/runtime/test/fixtures/admission-key-sqlite-child.ts
+        - typescript/runtime/test/idempotency-identity.test.ts
+        - typescript/runtime/test/runtime-core-cold-recovery-test-helpers.ts
+        - typescript/runtime/test/runtime-core-recovery-comparison.test.ts
+        - typescript/runtime/test/runtime-core-recovery-plan.test.ts
+        - typescript/runtime/test/runtime-core-shared.test.ts
+        - typescript/runtime/test/runtime-core-test-helpers.ts
+        - typescript/runtime/test/runtime-core.foundation.test.ts
+        - typescript/runtime/tsup.config.ts
+    verification:
+      command: bun run nx run framework-runtime:typecheck
+      expected: Exit 0; the exact frozen slice passes source-only typecheck, retained Biome, cold import, focused runtime tests, and the native-routing regression matrix.
+    stop_conditions:
+      - STOP if a file differs from the frozen BT provenance, a new source seam is required, or retained Biome fails; do not improvise.
+      - STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise.
+    description: Deliver the exact whole-file execution, tool workflow, helper, and shared native-lint routing slice from frozen EPIC-BT head 6a181a8e590ad2d9600f9a0547c0ecfe8ae4185f. This carries the KRT-BT001 safe-fix and KRT-BT003 ordering outcomes on its owned runtime files plus KRT-BT004's shared routing prerequisite; the final admission outcome stays in BT. Preserve original milestone reviews, OD-09 decisions, public behavior, and file/blob provenance. This slice owns the frozen tools/scripts/verify.ts version that registers native-lint-routing-argv.test.ts, but it adds no future adapter registry entries. Keep the runtime lint target, Biome coverage, all still-needed directives, and final admission metadata unchanged. Add a direct patch Changeset for @tuvren/runtime. Reuse compact historical evidence; do not recreate raw logs, change policy, or refactor source during assembly. Feasibility measured 12301 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 12806, leaving 2194 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast.
+    acceptance:
+      mode: contract_test
+      evidence: Assert every delivered file matches the frozen BT source identity and the assembled tree passes source-only runtime typecheck, retained-Biome lint, a fresh runtime entrypoint import, the focused tool-execution tests, and the complete native-routing/argv regression matrix. Assert tools/scripts/verify.ts preserves the original nine BP follow-up suites, registers the BT argv suite exactly once, and contains neither future adapter registry name. Prove the compiler inventory resolves no live sibling source, preserve all public behavior, and require a direct @tuvren/runtime patch Changeset.
+    flows: []
+    certainty: settled
+    status: planned
