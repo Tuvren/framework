@@ -84,24 +84,209 @@ type NodeChild = Bun.Subprocess<"ignore", "pipe", "ignore">;
 interface SpawnedNodeChild {
   process: NodeChild;
 }
-export function createFrameworkAdapterAdmissionKeyScenarios(
-  dependencies: AdmissionKeyScenarioDependencies
-) {
+const readCrashScenario = (
+  dependencies: AdmissionKeyScenarioDependencies,
+  scenario: Record<string, unknown>
+): CrashScenario => {
+  const crashPointValue = dependencies.readStringProperty(
+    scenario,
+    "crashPoint",
+    "crashRecovery.crashPoint"
+  );
+  if (
+    crashPointValue !== "queued" &&
+    crashPointValue !== "staged" &&
+    crashPointValue !== "committed_before_event"
+  ) {
+    throw new Error("crashRecovery.crashPoint is unsupported");
+  }
+  const steeringKeysValue = scenario.steeringKeys;
+  if (
+    !Array.isArray(steeringKeysValue) ||
+    steeringKeysValue.length !== 2 ||
+    typeof steeringKeysValue[0] !== "string" ||
+    typeof steeringKeysValue[1] !== "string"
+  ) {
+    throw new Error("crashRecovery.steeringKeys must contain two strings");
+  }
   return {
-    runCrashRecovery: async (input: unknown) =>
-      await runCrashRecoveryScenario(dependencies, input),
-    runInitialInputRecovery: async (input: unknown) =>
-      await runInitialInputRecoveryScenario(dependencies, input),
-    runKeylessIdentity: async (input: unknown) =>
-      await runKeylessIdentityScenario(dependencies, input),
-    runProviderExclusion: async (input: unknown) =>
-      await runProviderExclusionScenario(dependencies, input),
+    crashPoint: crashPointValue,
+    initialKey: dependencies.readStringProperty(
+      scenario,
+      "initialKey",
+      "crashRecovery.initialKey"
+    ),
+    steeringKeys: [steeringKeysValue[0], steeringKeysValue[1]],
+    text: dependencies.readStringProperty(
+      scenario,
+      "text",
+      "crashRecovery.text"
+    ),
   };
-}
-async function runCrashRecoveryScenario(
+};
+const buildNodeChild = async (temporaryDirectory: string): Promise<string> => {
+  const childPath = join(temporaryDirectory, "admission-key-child.mjs");
+  // biome-ignore lint/correctness/noUndeclaredVariables: This parent path runs under Bun; the Node child never calls it.
+  const buildResult = await Bun.build({
+    entrypoints: [import.meta.path],
+    external: ["better-sqlite3"],
+    format: "esm",
+    naming: "admission-key-child.mjs",
+    outdir: temporaryDirectory,
+    target: "node",
+  });
+  if (!buildResult.success) {
+    throw new Error(
+      `failed to build admission-key process helper: ${buildResult.logs.join("\n")}`
+    );
+  }
+  return childPath;
+};
+const linkNodeChildAssets = async (
+  temporaryDirectory: string
+): Promise<void> => {
+  await Promise.all([
+    symlink(
+      new URL("../../kernel/backends/sqlite/node_modules", import.meta.url)
+        .pathname,
+      join(temporaryDirectory, "node_modules"),
+      "dir"
+    ),
+    symlink(
+      new URL("../../kernel/backends/sqlite/migrations", import.meta.url)
+        .pathname,
+      join(temporaryDirectory, "migrations"),
+      "dir"
+    ),
+  ]);
+};
+const spawnNodeChild = (
+  childPath: string,
+  role: "recover" | "write",
+  args: string[]
+): SpawnedNodeChild => {
+  // biome-ignore lint/correctness/noUndeclaredVariables: This parent path runs under Bun; the Node child never calls it.
+  const child = Bun.spawn({
+    cmd: ["node", childPath, CHILD_MARKER, role, ...args],
+    stderr: "ignore",
+    stdin: "ignore",
+    stdout: "pipe",
+  });
+  return { process: child };
+};
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+const isStreamEvent = (value: unknown): value is TuvrenStreamEvent => {
+  return isRecord(value) && typeof value.type === "string";
+};
+const isInputSignal = (value: unknown): value is InputSignal => {
+  return isRecord(value) && Array.isArray(value.parts);
+};
+const readPhaseReadyMessage = (value: unknown): PhaseReadyMessage => {
+  if (
+    !isRecord(value) ||
+    value.kind !== "phase-ready" ||
+    typeof value.branchId !== "string" ||
+    typeof value.threadId !== "string" ||
+    !Array.isArray(value.events) ||
+    !Array.isArray(value.suppliedSignals)
+  ) {
+    throw new Error("writer child returned malformed phase-ready IPC");
+  }
+  return {
+    branchId: value.branchId,
+    events: value.events.filter(isStreamEvent),
+    kind: value.kind,
+    suppliedSignals: value.suppliedSignals.filter(isInputSignal),
+    threadId: value.threadId,
+  };
+};
+const withDeadline = async <T>(
+  promise: Promise<T>,
+  label: string,
+  timeoutMs: number
+): Promise<T> => {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_resolve, reject) => {
+    timeout = setTimeout(
+      () =>
+        reject(new Error(`${label} timed out after ${timeoutMs.toString()}ms`)),
+      timeoutMs
+    );
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeout !== undefined) {
+      clearTimeout(timeout);
+    }
+  }
+};
+const readChildMessage = async (
+  child: NodeChild,
+  timeoutMs: number
+): Promise<unknown> => {
+  const reader = child.stdout.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  try {
+    while (true) {
+      const newlineIndex = buffer.indexOf("\n");
+      if (newlineIndex !== -1) {
+        return JSON.parse(buffer.slice(0, newlineIndex));
+      }
+      const read = await withDeadline(
+        reader.read(),
+        "child IPC message",
+        timeoutMs
+      );
+      if (read.done) {
+        throw new Error("admission-key child closed IPC before a message");
+      }
+      buffer += decoder.decode(read.value, { stream: true });
+    }
+  } finally {
+    reader.releaseLock();
+  }
+};
+const awaitChildExit = async (child: NodeChild): Promise<number> => {
+  return await withDeadline(
+    child.exited,
+    `child ${child.pid.toString()} exit`,
+    PARENT_EXIT_WAIT_MS
+  );
+};
+const readRecoveryMessage = (value: unknown): RecoveryMessage => {
+  if (
+    !isRecord(value) ||
+    value.kind !== "recovery-result" ||
+    !isRecord(value.observation)
+  ) {
+    throw new Error("recovery child returned malformed IPC");
+  }
+  return { kind: value.kind, observation: value.observation };
+};
+const killAndReap = async (child: NodeChild): Promise<void> => {
+  if (child.exitCode === null) {
+    child.kill("SIGKILL");
+  }
+  await awaitChildExit(child);
+};
+const assertOwnedTemporaryDirectory = (directory: string): void => {
+  if (
+    !directory.startsWith(TEMPORARY_PREFIX) ||
+    directory === TEMPORARY_PREFIX
+  ) {
+    throw new Error(
+      `refusing to remove unowned temporary directory ${directory}`
+    );
+  }
+};
+const runCrashRecoveryScenario = async (
   dependencies: AdmissionKeyScenarioDependencies,
   input: unknown
-): Promise<AdapterProjection> {
+): Promise<AdapterProjection> => {
   const scenario = readCrashScenario(
     dependencies,
     dependencies.readOperationScenario(
@@ -178,123 +363,106 @@ async function runCrashRecoveryScenario(
       }
     }
   }
-}
-async function runProviderExclusionScenario(
-  dependencies: AdmissionKeyScenarioDependencies,
-  input: unknown
-): Promise<AdapterProjection> {
-  const scenario = dependencies.readOperationScenario(
-    input,
-    "runtime.admission-key.provider-exclusion"
+};
+const checkpointUserMessage = async (
+  kernel: RuntimeKernel,
+  input: {
+    branchId: string;
+    message: KeyedTextUserMessage;
+    runId: string;
+    startTurnNodeHash: string;
+    stepId: "incorporate_input" | "incorporate_steering";
+    turnId: string;
+  }
+): Promise<string> => {
+  await kernel.run.create(
+    input.runId,
+    input.turnId,
+    input.branchId,
+    DEFAULT_AGENT_SCHEMA.schemaId,
+    input.startTurnNodeHash,
+    [{ deterministic: false, id: input.stepId, sideEffects: false }]
   );
-  const initialText = dependencies.readStringProperty(
-    scenario,
-    "initialText",
-    "providerExclusion.initialText"
+  await kernel.run.beginStep(input.runId, input.stepId);
+  await kernel.staging.stage(
+    input.runId,
+    encodeDeterministicKernelRecord({
+      admissionKey: input.message.admissionKey,
+      parts: input.message.parts.map((part) => ({
+        text: part.text,
+        type: part.type,
+      })),
+      role: input.message.role,
+    }),
+    input.stepId === "incorporate_input" ? "input_message" : "steering_message",
+    "message",
+    "completed"
   );
-  const initialKey = dependencies.readStringProperty(
-    scenario,
-    "initialKey",
-    "providerExclusion.initialKey"
+  await kernel.staging.stage(
+    input.runId,
+    encodeDeterministicKernelRecord({ activeTurnId: input.turnId }),
+    `${input.stepId}_turn_lineage`,
+    "turn_lineage",
+    "completed"
   );
-  const steeringText = dependencies.readStringProperty(
-    scenario,
-    "steeringText",
-    "providerExclusion.steeringText"
-  );
-  const steeringKey = dependencies.readStringProperty(
-    scenario,
-    "steeringKey",
-    "providerExclusion.steeringKey"
-  );
-  const capturedPrompts: TuvrenMessage[][] = [];
-  const firstRequestReceived = Promise.withResolvers<void>();
-  const releaseFirstRequest = Promise.withResolvers<void>();
-  let requestCount = 0;
-  const provider: TuvrenProvider = {
-    async generate(prompt: TuvrenPrompt): Promise<TuvrenModelResponse> {
-      capturedPrompts.push(structuredClone(prompt.messages));
-      requestCount += 1;
-      if (requestCount === 1) {
-        firstRequestReceived.resolve();
-        await withDeadline(
-          releaseFirstRequest.promise,
-          "provider first-request release",
-          CHILD_WAIT_MS
-        );
-      }
-      return {
-        finishReason: "stop",
-        parts: [
-          {
-            text: requestCount === 1 ? "Continue." : "Completed.",
-            type: "text",
-          },
-        ],
-      };
-    },
-    id: "admission-key-recording-provider",
-    async *stream() {
-      await Promise.resolve();
-      yield* [];
-    },
-  };
-  const runtime = createTuvrenRuntime({
-    defaultRunnerId: REACT_RUNNER_ID,
-    kernel: createRuntimeKernel({ backend: createMemoryBackend() }),
-    runnerRegistry: createRunnerRegistry([
-      createReActRunner({ providerCallMode: "generate" }),
-    ]),
-  });
-  const thread = await runtime.createThread({});
-  const handle = runtime.executeTurn({
-    branchId: thread.branchId,
-    config: {
-      loopPolicy: {
-        evaluate(_response, _manifest, iterationCount) {
-          return {
-            continue: iterationCount === 1,
-            executeTools: false,
-            reason: "done",
-          };
-        },
-      },
-      model: provider,
-      name: "primary",
-    },
-    signal: keyedSignal(initialText, initialKey),
-    threadId: thread.threadId,
-  });
-  const eventsPromise = collectEvents(handle.events());
-  await withDeadline(
-    firstRequestReceived.promise,
-    "provider first request",
-    CHILD_WAIT_MS
-  );
-  handle.steer(keyedSignal(steeringText, steeringKey));
-  releaseFirstRequest.resolve();
-  const events = await withDeadline(
-    eventsPromise,
-    "provider exclusion execution",
-    CHILD_WAIT_MS
-  );
-  const { messages } = await runtime.readBranchMessages({
-    branchId: thread.branchId,
-  });
+  const step = await kernel.run.completeStep(input.runId, input.stepId);
+  await kernel.run.complete(input.runId, "completed");
+  if (step.turnNodeHash === undefined) {
+    throw new Error(`${input.stepId} did not checkpoint`);
+  }
+  await kernel.turn.updateHead(input.turnId, step.turnNodeHash);
+  await kernel.branch.setHead(input.branchId, step.turnNodeHash);
+  return step.turnNodeHash;
+};
+const keyedUserMessage = (
+  text: string,
+  admissionKey: string
+): KeyedTextUserMessage => {
+  return { admissionKey, parts: [{ text, type: "text" }], role: "user" };
+};
+const observePreemptions = (
+  kernel: RuntimeKernel & RuntimeKernelRunLiveness,
+  observations: RecoveryState[]
+): RuntimeKernel & RuntimeKernelRunLiveness => {
   return {
-    events,
-    result: {
-      providerExclusion: {
-        capturedPrompts,
-        durableMessages: messages,
+    ...kernel,
+    runLiveness: {
+      ...kernel.runLiveness,
+      async preemptExpired(runId, ownerId, nowMs, reason) {
+        const recovery = await kernel.runLiveness.preemptExpired(
+          runId,
+          ownerId,
+          nowMs,
+          reason
+        );
+        observations.push(structuredClone(recovery));
+        return recovery;
       },
     },
   };
-}
-async function runInitialInputRecoveryScenario(
+};
+const keyedSignal = (text: string, admissionKey: string): InputSignal => {
+  return { admissionKey, parts: [{ text, type: "text" }] };
+};
+const captureEvents = async (
+  iterable: AsyncIterable<TuvrenStreamEvent>,
+  events: TuvrenStreamEvent[]
+): Promise<void> => {
+  for await (const event of iterable) {
+    events.push(event);
+  }
+};
+const collectEvents = async (
+  iterable: AsyncIterable<TuvrenStreamEvent>
+): Promise<TuvrenStreamEvent[]> => {
+  const events: TuvrenStreamEvent[] = [];
+  await captureEvents(iterable, events);
+  return events;
+};
+const runInitialInputRecoveryScenario = async (
   dependencies: AdmissionKeyScenarioDependencies,
   input: unknown
-): Promise<AdapterProjection> {
+): Promise<AdapterProjection> => {
   const scenario = dependencies.readOperationScenario(
     input,
     "runtime.admission-key.initial-input-recovery"
@@ -419,11 +587,11 @@ async function runInitialInputRecoveryScenario(
       },
     },
   };
-}
-async function runKeylessIdentityScenario(
+};
+const runKeylessIdentityScenario = async (
   dependencies: AdmissionKeyScenarioDependencies,
   input: unknown
-): Promise<AdapterProjection> {
+): Promise<AdapterProjection> => {
   const scenario = dependencies.readOperationScenario(
     input,
     "runtime.admission-key.keyless-identity"
@@ -471,300 +639,139 @@ async function runKeylessIdentityScenario(
       },
     },
   };
-}
-async function buildNodeChild(temporaryDirectory: string): Promise<string> {
-  const childPath = join(temporaryDirectory, "admission-key-child.mjs");
-  // biome-ignore lint/correctness/noUndeclaredVariables: This parent path runs under Bun; the Node child never calls it.
-  const buildResult = await Bun.build({
-    entrypoints: [import.meta.path],
-    external: ["better-sqlite3"],
-    format: "esm",
-    naming: "admission-key-child.mjs",
-    outdir: temporaryDirectory,
-    target: "node",
-  });
-  if (!buildResult.success) {
-    throw new Error(
-      `failed to build admission-key process helper: ${buildResult.logs.join("\n")}`
-    );
-  }
-  return childPath;
-}
-async function linkNodeChildAssets(temporaryDirectory: string): Promise<void> {
-  await Promise.all([
-    symlink(
-      new URL("../../kernel/backends/sqlite/node_modules", import.meta.url)
-        .pathname,
-      join(temporaryDirectory, "node_modules"),
-      "dir"
-    ),
-    symlink(
-      new URL("../../kernel/backends/sqlite/migrations", import.meta.url)
-        .pathname,
-      join(temporaryDirectory, "migrations"),
-      "dir"
-    ),
-  ]);
-}
-function spawnNodeChild(
-  childPath: string,
-  role: "recover" | "write",
-  args: string[]
-): SpawnedNodeChild {
-  // biome-ignore lint/correctness/noUndeclaredVariables: This parent path runs under Bun; the Node child never calls it.
-  const child = Bun.spawn({
-    cmd: ["node", childPath, CHILD_MARKER, role, ...args],
-    stderr: "ignore",
-    stdin: "ignore",
-    stdout: "pipe",
-  });
-  return { process: child };
-}
-async function readChildMessage(
-  child: NodeChild,
-  timeoutMs: number
-): Promise<unknown> {
-  const reader = child.stdout.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  try {
-    while (true) {
-      const newlineIndex = buffer.indexOf("\n");
-      if (newlineIndex !== -1) {
-        return JSON.parse(buffer.slice(0, newlineIndex));
-      }
-      const read = await withDeadline(
-        reader.read(),
-        "child IPC message",
-        timeoutMs
-      );
-      if (read.done) {
-        throw new Error("admission-key child closed IPC before a message");
-      }
-      buffer += decoder.decode(read.value, { stream: true });
-    }
-  } finally {
-    reader.releaseLock();
-  }
-}
-async function awaitChildExit(child: NodeChild): Promise<number> {
-  return await withDeadline(
-    child.exited,
-    `child ${child.pid.toString()} exit`,
-    PARENT_EXIT_WAIT_MS
-  );
-}
-async function killAndReap(child: NodeChild): Promise<void> {
-  if (child.exitCode === null) {
-    child.kill("SIGKILL");
-  }
-  await awaitChildExit(child);
-}
-async function withDeadline<T>(
-  promise: Promise<T>,
-  label: string,
-  timeoutMs: number
-): Promise<T> {
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  const timeoutPromise = new Promise<never>((_resolve, reject) => {
-    timeout = setTimeout(
-      () =>
-        reject(new Error(`${label} timed out after ${timeoutMs.toString()}ms`)),
-      timeoutMs
-    );
-  });
-  try {
-    return await Promise.race([promise, timeoutPromise]);
-  } finally {
-    if (timeout !== undefined) {
-      clearTimeout(timeout);
-    }
-  }
-}
-function assertOwnedTemporaryDirectory(directory: string): void {
-  if (
-    !directory.startsWith(TEMPORARY_PREFIX) ||
-    directory === TEMPORARY_PREFIX
-  ) {
-    throw new Error(
-      `refusing to remove unowned temporary directory ${directory}`
-    );
-  }
-}
-function readCrashScenario(
+};
+const runProviderExclusionScenario = async (
   dependencies: AdmissionKeyScenarioDependencies,
-  scenario: Record<string, unknown>
-): CrashScenario {
-  const crashPointValue = dependencies.readStringProperty(
-    scenario,
-    "crashPoint",
-    "crashRecovery.crashPoint"
+  input: unknown
+): Promise<AdapterProjection> => {
+  const scenario = dependencies.readOperationScenario(
+    input,
+    "runtime.admission-key.provider-exclusion"
   );
-  if (
-    crashPointValue !== "queued" &&
-    crashPointValue !== "staged" &&
-    crashPointValue !== "committed_before_event"
-  ) {
-    throw new Error("crashRecovery.crashPoint is unsupported");
-  }
-  const steeringKeysValue = scenario.steeringKeys;
-  if (
-    !Array.isArray(steeringKeysValue) ||
-    steeringKeysValue.length !== 2 ||
-    typeof steeringKeysValue[0] !== "string" ||
-    typeof steeringKeysValue[1] !== "string"
-  ) {
-    throw new Error("crashRecovery.steeringKeys must contain two strings");
-  }
-  return {
-    crashPoint: crashPointValue,
-    initialKey: dependencies.readStringProperty(
-      scenario,
-      "initialKey",
-      "crashRecovery.initialKey"
-    ),
-    steeringKeys: [steeringKeysValue[0], steeringKeysValue[1]],
-    text: dependencies.readStringProperty(
-      scenario,
-      "text",
-      "crashRecovery.text"
-    ),
-  };
-}
-function readPhaseReadyMessage(value: unknown): PhaseReadyMessage {
-  if (
-    !isRecord(value) ||
-    value.kind !== "phase-ready" ||
-    typeof value.branchId !== "string" ||
-    typeof value.threadId !== "string" ||
-    !Array.isArray(value.events) ||
-    !Array.isArray(value.suppliedSignals)
-  ) {
-    throw new Error("writer child returned malformed phase-ready IPC");
-  }
-  return {
-    branchId: value.branchId,
-    events: value.events.filter(isStreamEvent),
-    kind: value.kind,
-    suppliedSignals: value.suppliedSignals.filter(isInputSignal),
-    threadId: value.threadId,
-  };
-}
-function readRecoveryMessage(value: unknown): RecoveryMessage {
-  if (
-    !isRecord(value) ||
-    value.kind !== "recovery-result" ||
-    !isRecord(value.observation)
-  ) {
-    throw new Error("recovery child returned malformed IPC");
-  }
-  return { kind: value.kind, observation: value.observation };
-}
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function isStreamEvent(value: unknown): value is TuvrenStreamEvent {
-  return isRecord(value) && typeof value.type === "string";
-}
-function isInputSignal(value: unknown): value is InputSignal {
-  return isRecord(value) && Array.isArray(value.parts);
-}
-function keyedSignal(text: string, admissionKey: string): InputSignal {
-  return { admissionKey, parts: [{ text, type: "text" }] };
-}
-function keyedUserMessage(
-  text: string,
-  admissionKey: string
-): KeyedTextUserMessage {
-  return { admissionKey, parts: [{ text, type: "text" }], role: "user" };
-}
-async function collectEvents(
-  iterable: AsyncIterable<TuvrenStreamEvent>
-): Promise<TuvrenStreamEvent[]> {
-  const events: TuvrenStreamEvent[] = [];
-  await captureEvents(iterable, events);
-  return events;
-}
-async function captureEvents(
-  iterable: AsyncIterable<TuvrenStreamEvent>,
-  events: TuvrenStreamEvent[]
-): Promise<void> {
-  for await (const event of iterable) {
-    events.push(event);
-  }
-}
-function observePreemptions(
-  kernel: RuntimeKernel & RuntimeKernelRunLiveness,
-  observations: RecoveryState[]
-): RuntimeKernel & RuntimeKernelRunLiveness {
-  return {
-    ...kernel,
-    runLiveness: {
-      ...kernel.runLiveness,
-      async preemptExpired(runId, ownerId, nowMs, reason) {
-        const recovery = await kernel.runLiveness.preemptExpired(
-          runId,
-          ownerId,
-          nowMs,
-          reason
+  const initialText = dependencies.readStringProperty(
+    scenario,
+    "initialText",
+    "providerExclusion.initialText"
+  );
+  const initialKey = dependencies.readStringProperty(
+    scenario,
+    "initialKey",
+    "providerExclusion.initialKey"
+  );
+  const steeringText = dependencies.readStringProperty(
+    scenario,
+    "steeringText",
+    "providerExclusion.steeringText"
+  );
+  const steeringKey = dependencies.readStringProperty(
+    scenario,
+    "steeringKey",
+    "providerExclusion.steeringKey"
+  );
+  const capturedPrompts: TuvrenMessage[][] = [];
+  const firstRequestReceived = Promise.withResolvers<void>();
+  const releaseFirstRequest = Promise.withResolvers<void>();
+  let requestCount = 0;
+  const provider: TuvrenProvider = {
+    async generate(prompt: TuvrenPrompt): Promise<TuvrenModelResponse> {
+      capturedPrompts.push(structuredClone(prompt.messages));
+      requestCount += 1;
+      if (requestCount === 1) {
+        firstRequestReceived.resolve();
+        await withDeadline(
+          releaseFirstRequest.promise,
+          "provider first-request release",
+          CHILD_WAIT_MS
         );
-        observations.push(structuredClone(recovery));
-        return recovery;
+      }
+      return {
+        finishReason: "stop",
+        parts: [
+          {
+            text: requestCount === 1 ? "Continue." : "Completed.",
+            type: "text",
+          },
+        ],
+      };
+    },
+    id: "admission-key-recording-provider",
+    async *stream() {
+      await Promise.resolve();
+      yield* [];
+    },
+  };
+  const runtime = createTuvrenRuntime({
+    defaultRunnerId: REACT_RUNNER_ID,
+    kernel: createRuntimeKernel({ backend: createMemoryBackend() }),
+    runnerRegistry: createRunnerRegistry([
+      createReActRunner({ providerCallMode: "generate" }),
+    ]),
+  });
+  const thread = await runtime.createThread({});
+  const handle = runtime.executeTurn({
+    branchId: thread.branchId,
+    config: {
+      loopPolicy: {
+        evaluate(_response, _manifest, iterationCount) {
+          return {
+            continue: iterationCount === 1,
+            executeTools: false,
+            reason: "done",
+          };
+        },
+      },
+      model: provider,
+      name: "primary",
+    },
+    signal: keyedSignal(initialText, initialKey),
+    threadId: thread.threadId,
+  });
+  const eventsPromise = collectEvents(handle.events());
+  await withDeadline(
+    firstRequestReceived.promise,
+    "provider first request",
+    CHILD_WAIT_MS
+  );
+  handle.steer(keyedSignal(steeringText, steeringKey));
+  releaseFirstRequest.resolve();
+  const events = await withDeadline(
+    eventsPromise,
+    "provider exclusion execution",
+    CHILD_WAIT_MS
+  );
+  const { messages } = await runtime.readBranchMessages({
+    branchId: thread.branchId,
+  });
+  return {
+    events,
+    result: {
+      providerExclusion: {
+        capturedPrompts,
+        durableMessages: messages,
       },
     },
   };
-}
-async function checkpointUserMessage(
-  kernel: RuntimeKernel,
-  input: {
-    branchId: string;
-    message: KeyedTextUserMessage;
-    runId: string;
-    startTurnNodeHash: string;
-    stepId: "incorporate_input" | "incorporate_steering";
-    turnId: string;
-  }
-): Promise<string> {
-  await kernel.run.create(
-    input.runId,
-    input.turnId,
-    input.branchId,
-    DEFAULT_AGENT_SCHEMA.schemaId,
-    input.startTurnNodeHash,
-    [{ deterministic: false, id: input.stepId, sideEffects: false }]
-  );
-  await kernel.run.beginStep(input.runId, input.stepId);
-  await kernel.staging.stage(
-    input.runId,
-    encodeDeterministicKernelRecord({
-      admissionKey: input.message.admissionKey,
-      parts: input.message.parts.map((part) => ({
-        text: part.text,
-        type: part.type,
-      })),
-      role: input.message.role,
-    }),
-    input.stepId === "incorporate_input" ? "input_message" : "steering_message",
-    "message",
-    "completed"
-  );
-  await kernel.staging.stage(
-    input.runId,
-    encodeDeterministicKernelRecord({ activeTurnId: input.turnId }),
-    `${input.stepId}_turn_lineage`,
-    "turn_lineage",
-    "completed"
-  );
-  const step = await kernel.run.completeStep(input.runId, input.stepId);
-  await kernel.run.complete(input.runId, "completed");
-  if (step.turnNodeHash === undefined) {
-    throw new Error(`${input.stepId} did not checkpoint`);
-  }
-  await kernel.turn.updateHead(input.turnId, step.turnNodeHash);
-  await kernel.branch.setHead(input.branchId, step.turnNodeHash);
-  return step.turnNodeHash;
-}
-async function runWriterChild(config: WriterChildConfig): Promise<void> {
+};
+export const createFrameworkAdapterAdmissionKeyScenarios = (
+  dependencies: AdmissionKeyScenarioDependencies
+) => {
+  return {
+    runCrashRecovery: async (input: unknown) =>
+      await runCrashRecoveryScenario(dependencies, input),
+    runInitialInputRecovery: async (input: unknown) =>
+      await runInitialInputRecoveryScenario(dependencies, input),
+    runKeylessIdentity: async (input: unknown) =>
+      await runKeylessIdentityScenario(dependencies, input),
+    runProviderExclusion: async (input: unknown) =>
+      await runProviderExclusionScenario(dependencies, input),
+  };
+};
+const writeChildMessage = (
+  message: PhaseReadyMessage | RecoveryMessage
+): void => {
+  process.stdout.write(`${JSON.stringify(message)}\n`);
+};
+const runWriterChild = async (config: WriterChildConfig): Promise<void> => {
   const backend = createSqliteBackend({
     databasePath: config.databasePath,
     now: () => WRITER_NOW_MS,
@@ -895,8 +902,8 @@ async function runWriterChild(config: WriterChildConfig): Promise<void> {
   releaseFirstRunner.resolve();
   await withDeadline(draining, "writer execution", CHILD_WAIT_MS);
   throw new Error("writer execution passed its requested crash barrier");
-}
-async function runRecoveryChild(config: RecoveryChildConfig): Promise<void> {
+};
+const runRecoveryChild = async (config: RecoveryChildConfig): Promise<void> => {
   const backend = createSqliteBackend({
     databasePath: config.databasePath,
     now: () => RECOVERY_NOW_MS,
@@ -956,10 +963,7 @@ async function runRecoveryChild(config: RecoveryChildConfig): Promise<void> {
   } finally {
     await backend.close();
   }
-}
-function writeChildMessage(message: PhaseReadyMessage | RecoveryMessage): void {
-  process.stdout.write(`${JSON.stringify(message)}\n`);
-}
+};
 if (process.argv[2] === CHILD_MARKER) {
   const role = process.argv[3];
   if (role !== "write" && role !== "recover") {
