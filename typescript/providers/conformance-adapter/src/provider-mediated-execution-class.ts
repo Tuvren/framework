@@ -34,12 +34,12 @@ import { createAiSdkProviderBridge } from "../../bridge-ai-sdk/src/index.ts";
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function createKernel() {
+const createKernel = () => {
   const backend = createMemoryBackend();
   return createRuntimeKernel({ backend });
-}
+};
 
-function createMockMediatedModel(): LanguageModelV3 {
+const createMockMediatedModel = (): LanguageModelV3 => {
   return {
     async doGenerate() {
       await Promise.resolve();
@@ -70,31 +70,31 @@ function createMockMediatedModel(): LanguageModelV3 {
     specificationVersion: "v3",
     supportedUrls: {},
   };
-}
+};
 
-async function collectEventStream(
+const collectEventStream = async (
   iterable: AsyncIterable<Record<string, unknown>>
-): Promise<Record<string, unknown>[]> {
+): Promise<Record<string, unknown>[]> => {
   const events: Record<string, unknown>[] = [];
   for await (const event of iterable) {
     events.push(event);
   }
   return events;
-}
+};
 
-function findEventByType(
+const findEventByType = (
   events: Record<string, unknown>[],
   type: string
-): Record<string, unknown> | undefined {
+): Record<string, unknown> | undefined => {
   return events.find((e) => e.type === type);
-}
+};
 
-function filterEventsByType(
+const filterEventsByType = (
   events: Record<string, unknown>[],
   type: string
-): Record<string, unknown>[] {
+): Record<string, unknown>[] => {
   return events.filter((e) => e.type === type);
-}
+};
 
 // ---------------------------------------------------------------------------
 // Operation: providers.provider-mediated.attribution
@@ -104,9 +104,9 @@ function filterEventsByType(
 // evidence for provider-mediated execution class checks.
 // ---------------------------------------------------------------------------
 
-export async function runProviderMediatedAttribution(): Promise<
+export const runProviderMediatedAttribution = async (): Promise<
   Record<string, unknown>
-> {
+> => {
   let localExecuteCalled = false;
   const kernel = createKernel();
   const bridge = createAiSdkProviderBridge({
@@ -230,4 +230,4 @@ export async function runProviderMediatedAttribution(): Promise<
       turnStatus: turnEndEvent?.status,
     },
   };
-}
+};
