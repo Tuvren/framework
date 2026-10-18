@@ -22,6 +22,7 @@ import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { createRunnerRegistry, createTuvrenRuntime } from "../../src/index.ts";
 
 const databasePath = process.argv[2];
+const mode = process.argv[3];
 if (databasePath === undefined || databasePath.length === 0) {
   throw new Error("SQLite child scenario requires a database path");
 }
@@ -29,6 +30,12 @@ if (databasePath === undefined || databasePath.length === 0) {
 const backend = createSqliteBackend({ databasePath });
 
 try {
+  process.stdout.write("READY\n");
+  if (mode === "hang-after-ready") {
+    // Keep the child alive until the parent enforces its process deadline.
+    await new Promise<void>((resolve) => setTimeout(resolve, 60_000));
+  }
+
   const runner = {
     async execute(context) {
       const repeatedSteeringCount = context.messages.filter(
