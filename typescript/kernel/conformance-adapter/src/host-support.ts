@@ -25,11 +25,13 @@ import {
   assertRecoveryState,
   assertTurnTreeChangeSet,
   assertTurnTreeSchema,
-  type RecoveryState,
-  type RuntimeBackend,
-  type StagedResult,
-  type TurnTreeChangeSet,
-  type TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
+import type {
+  RecoveryState,
+  RuntimeBackend,
+  StagedResult,
+  TurnTreeChangeSet,
+  TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
@@ -41,7 +43,7 @@ const CANONICAL_SCHEMA_URL = new URL(
 );
 
 const SQLITE_RESTART_SCENARIO_URL = new URL(
-  "./sqlite-restart-recovery-scenario.mjs",
+  "sqlite-restart-recovery-scenario.mjs",
   import.meta.url
 );
 
@@ -156,10 +158,10 @@ export async function runRestartRecoveryPhase(
     let stderr = "";
 
     child.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString("utf8");
+      stdout += chunk.toString("utf-8");
     });
     child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString("utf8");
+      stderr += chunk.toString("utf-8");
     });
     child.on("error", reject);
     child.on("close", (code, signal) => {
@@ -178,7 +180,7 @@ export async function runRestartRecoveryPhase(
 }
 
 export async function loadCanonicalSchema(): Promise<TurnTreeSchema> {
-  canonicalSchemaPromise ??= readFile(CANONICAL_SCHEMA_URL, "utf8")
+  canonicalSchemaPromise ??= readFile(CANONICAL_SCHEMA_URL, "utf-8")
     .then((contents) => JSON.parse(contents) as unknown)
     .then((value) => {
       assertTurnTreeSchema(value, "canonical kernel conformance schema");
@@ -208,16 +210,21 @@ export async function stageFixtureResult(
 
 export function normalizeLogicalErrorCode(code: string): string {
   switch (code) {
-    case "kernel_runtime_lineage_mismatch":
+    case "kernel_runtime_lineage_mismatch": {
       return "turn_node_thread_mismatch";
-    case "kernel_runtime_run_lease_owner_mismatch":
+    }
+    case "kernel_runtime_run_lease_owner_mismatch": {
       return "run_lease_owner_mismatch";
-    case "kernel_runtime_run_lease_token_mismatch":
+    }
+    case "kernel_runtime_run_lease_token_mismatch": {
       return "run_lease_token_mismatch";
-    case "kernel_runtime_turn_head_lineage_mismatch":
+    }
+    case "kernel_runtime_turn_head_lineage_mismatch": {
       return "turn_head_lateral_move";
-    default:
+    }
+    default: {
       return code;
+    }
   }
 }
 
@@ -284,9 +291,9 @@ export function readLogicalFixture(
     branchHeadListEntry[1],
     "branchHeadListEntry[1]"
   );
-  const recoveryState = fixture.recoveryState;
+  const { recoveryState } = fixture;
   assertRecoveryState(recoveryState, "recoveryState");
-  const turnTreeChangeSet = fixture.turnTreeChangeSet;
+  const { turnTreeChangeSet } = fixture;
   assertTurnTreeChangeSet(turnTreeChangeSet, schema, "turnTreeChangeSet");
 
   return {
@@ -323,7 +330,7 @@ export function readRecord(
 
 function readArray(value: unknown, label: string): unknown[] {
   if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array`);
+    throw new TypeError(`${label} must be an array`);
   }
 
   return value;
@@ -331,7 +338,7 @@ function readArray(value: unknown, label: string): unknown[] {
 
 export function readString(value: unknown, label: string): string {
   if (typeof value !== "string") {
-    throw new Error(`${label} must be a string`);
+    throw new TypeError(`${label} must be a string`);
   }
 
   return value;

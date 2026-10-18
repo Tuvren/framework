@@ -114,10 +114,10 @@ export async function runProviderMediatedAttribution(): Promise<
   });
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "react",
+    kernel,
     runnerRegistry: createRunnerRegistry([
       createReActRunner({ providerCallMode: "generate" }),
     ]),
-    kernel,
   });
 
   const thread = await runtime.createThread({});

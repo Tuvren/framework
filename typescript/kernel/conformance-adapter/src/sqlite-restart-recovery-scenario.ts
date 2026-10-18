@@ -146,7 +146,7 @@ async function runReadPhase(
   databasePath: string,
   metadataPath: string
 ): Promise<Record<string, unknown>> {
-  const metadata = parseRestartMetadata(await readFile(metadataPath, "utf8"));
+  const metadata = parseRestartMetadata(await readFile(metadataPath, "utf-8"));
   const { createRuntimeKernel, createSqliteBackend } = await loadNodeRuntime();
   const kernel = createRuntimeKernel({
     backend: createSqliteBackend({ databasePath }),
@@ -286,7 +286,9 @@ function readRequiredStringField(value: unknown, fieldName: string): string {
   const fieldValue = Reflect.get(value, fieldName);
 
   if (typeof fieldValue !== "string") {
-    throw new Error(`restart metadata field "${fieldName}" must be a string`);
+    throw new TypeError(
+      `restart metadata field "${fieldName}" must be a string`
+    );
   }
 
   return fieldValue;
