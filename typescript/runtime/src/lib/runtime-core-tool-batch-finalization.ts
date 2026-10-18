@@ -9,6 +9,7 @@
  */
 
 import type { HashString } from "@tuvren/core";
+import type { ContextManifest } from "@tuvren/core/execution";
 import type {
   ToolCallPart,
   ToolResultPart,
@@ -17,7 +18,7 @@ import type {
 
 interface ToolBatchHistoryState {
   branchHeadHash: HashString;
-  manifest: import("@tuvren/core/execution").ContextManifest;
+  manifest: ContextManifest;
   messageHashes: HashString[];
   messages: TuvrenMessage[];
   turnNode: { turnTreeHash: HashString };

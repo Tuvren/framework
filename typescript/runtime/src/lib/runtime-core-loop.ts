@@ -16,6 +16,7 @@
 
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type { HashString } from "@tuvren/core";
+import type { ClientEndpointBoundary } from "@tuvren/core/capabilities";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   AgentConfig,
@@ -45,6 +46,7 @@ import {
 import type { LoopOutcome } from "./runtime-core-recovery.js";
 import type { TurnLineageRecord } from "./runtime-core-response.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
+import type { ServerRateLimiter } from "./server-rate-limiter.js";
 
 /**
  * Immutable snapshot of a branch head as loaded from the kernel.
@@ -91,13 +93,13 @@ export interface LoopState {
    */
   carriedStateUpdates: ExtensionStateUpdate[];
   /** Boundary for tuvren-client execution class dispatch. (KRT-AZ001) */
-  clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary;
+  clientEndpointBoundary?: ClientEndpointBoundary;
   /** True once the turn has entered at least one loop iteration. */
   enteredIterationLoop: boolean;
   /** One-shot durable batch plan consumed before the first recovered model call. */
   interruptedIterationPlan?: InterruptedIterationRecoveryPlan;
   /** Cached rate limiter for the active agent's server execution class. (AX003) */
-  serverExecutionRateLimiter?: import("./server-rate-limiter.js").ServerRateLimiter;
+  serverExecutionRateLimiter?: ServerRateLimiter;
 }
 
 /**
@@ -123,7 +125,7 @@ export interface IterationPreparationResult {
  * and exercised in isolation.
  */
 export interface RuntimeCoreLoopHost {
-  applyContextEngineeringPlan(
+  applyContextEngineeringPlan: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     plan: ContextEngineeringPlan,
@@ -133,57 +135,60 @@ export interface RuntimeCoreLoopHost {
       messageHashes: HashString[];
       messages: TuvrenMessage[];
     }
-  ): Promise<void>;
-  applyTerminalAgentTransitionIfNeeded(
+  ) => Promise<void>;
+  applyTerminalAgentTransitionIfNeeded: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     resolution: RuntimeResolution,
     loopState: LoopState,
     stableHeadTurnNodeHash: HashString
-  ): Promise<boolean>;
+  ) => Promise<boolean>;
   /** Absolute wall-clock deadline (epoch ms) for the active turn. (BD006) */
-  boundsDeadlineMs(handle: RuntimeExecutionHandle): number;
-  commitPendingExtensionStateUpdates(
+  boundsDeadlineMs: (handle: RuntimeExecutionHandle) => number;
+  commitPendingExtensionStateUpdates: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     updates: ExtensionStateUpdate[],
     iterationCount: number
-  ): Promise<void>;
-  createId(): string;
-  executeIterationPhase(
+  ) => Promise<void>;
+  createId: () => string;
+  executeIterationPhase: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     headState: HeadState | undefined,
     iterationCount: number
-  ): Promise<IterationPhaseResult>;
+  ) => Promise<IterationPhaseResult>;
   /** The framework-enforced execution bounds for this runtime instance. (BD006) */
-  executionBounds(): ResolvedExecutionBounds;
-  incorporateQueuedSteeringIfNeeded(
+  executionBounds: () => ResolvedExecutionBounds;
+  incorporateQueuedSteeringIfNeeded: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState
-  ): Promise<void>;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  publishCustomEvent(
+  ) => Promise<void>;
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  publishEvent(
+  ) => void;
+  publishEvent: (
     handle: RuntimeExecutionHandle,
     event: TuvrenStreamEvent,
     loopState: LoopState
-  ): void;
-  publishProjectedError(
+  ) => void;
+  publishProjectedError: (
     handle: RuntimeExecutionHandle,
     error: Error,
     fatal: boolean,
     loopState: LoopState
-  ): void;
+  ) => void;
   /** Record `count` more tool calls and return the new per-turn cumulative. (BD006) */
-  recordBoundsToolCalls(handle: RuntimeExecutionHandle, count: number): number;
+  recordBoundsToolCalls: (
+    handle: RuntimeExecutionHandle,
+    count: number
+  ) => number;
 }
 
 /** Build the hard-fail outcome for an exceeded execution bound. (BD006) */
@@ -191,15 +196,13 @@ const boundsFailLoopOutcome = (
   bound: ExecutionBoundKind,
   limit: number,
   observed: number
-): LoopOutcome => {
-  return {
-    resolution: {
-      error: createBoundExceededError(bound, limit, observed),
-      fatality: "hard",
-      type: "fail",
-    },
-  };
-};
+): LoopOutcome => ({
+  resolution: {
+    error: createBoundExceededError(bound, limit, observed),
+    fatality: "hard",
+    type: "fail",
+  },
+});
 
 /**
  * Mark the handle as running for the next iteration and publish the
@@ -524,7 +527,7 @@ const resolveIterationOutcome = async (
  * @param now - Clock used for bounds checks and event timestamps.
  * @returns The terminal outcome of the turn (resolution, optional pause
  *   context, and partial-output flag).
- * @throws TuvrenRuntimeError with code `missing_pause_checkpoint` when a
+ * @throws {TuvrenRuntimeError} With code `missing_pause_checkpoint` when a
  *   pause resolution arrives without a committed pause checkpoint.
  */
 export const runExecutionLoop = async (
@@ -533,11 +536,11 @@ export const runExecutionLoop = async (
   schemaId: string,
   loopState: LoopState,
   now: () => number
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The execution loop is intentionally kept as a single checkpointed control-flow path for cancellation and iteration semantics.
 ): Promise<LoopOutcome> => {
   const bounds = host.executionBounds();
 
-  while (true) {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The execution loop is intentionally kept as a single checkpointed control-flow path for cancellation and iteration semantics.
+  const runNextIteration = async (): Promise<LoopOutcome> => {
     const currentIterationCount = handle.status().iterationCount;
 
     // Framework execution-bounds guard (ADR-0043, BD006), enforced above the
@@ -658,12 +661,14 @@ export const runExecutionLoop = async (
         return cancelledBeforeContinue;
       }
 
-      continue;
+      return await runNextIteration();
     }
 
     return (
       createCancelledLoopOutcome(handle, nextOutcome.partial ?? false) ??
       nextOutcome
     );
-  }
+  };
+
+  return await runNextIteration();
 };

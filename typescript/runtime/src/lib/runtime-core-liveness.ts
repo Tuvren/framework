@@ -75,13 +75,13 @@ export interface RuntimeCoreLivenessOptions {
  * bookkeeping, clock access, and event-record storage.
  */
 export interface RuntimeCoreLivenessHost {
-  clearActiveLease(handle: RuntimeExecutionHandle): void;
-  completeKernelRun(
+  clearActiveLease: (handle: RuntimeExecutionHandle) => void;
+  completeKernelRun: (
     runId: string,
     status: RunCompletionStatus,
     eventHash?: HashString
-  ): Promise<{ turnNodeHash?: HashString }>;
-  createKernelRun(
+  ) => Promise<{ turnNodeHash?: HashString }>;
+  createKernelRun: (
     runId: string,
     turnId: string,
     branchId: string,
@@ -92,20 +92,22 @@ export interface RuntimeCoreLivenessHost {
       id: string;
       sideEffects: boolean;
     }[]
-  ): Promise<void>;
-  getActiveLease(handle: RuntimeExecutionHandle): ActiveRunLease | undefined;
-  getActiveRunId(handle: RuntimeExecutionHandle): string | undefined;
-  getNow(): EpochMs;
-  getRunLivenessOptions(): RuntimeCoreLivenessOptions | undefined;
-  getRuntimeKernel(): RuntimeKernel;
-  rememberActiveLease(
+  ) => Promise<void>;
+  getActiveLease: (
+    handle: RuntimeExecutionHandle
+  ) => ActiveRunLease | undefined;
+  getActiveRunId: (handle: RuntimeExecutionHandle) => string | undefined;
+  getNow: () => EpochMs;
+  getRunLivenessOptions: () => RuntimeCoreLivenessOptions | undefined;
+  getRuntimeKernel: () => RuntimeKernel;
+  rememberActiveLease: (
     handle: RuntimeExecutionHandle,
     lease: ActiveRunLease
-  ): void;
-  rememberActiveRunId(handle: RuntimeExecutionHandle, runId: string): void;
-  runPhase(handle: RuntimeExecutionHandle): string;
-  setNoActiveRunId(handle: RuntimeExecutionHandle): void;
-  storeEventRecord(event: KernelRecord): Promise<HashString>;
+  ) => void;
+  rememberActiveRunId: (handle: RuntimeExecutionHandle, runId: string) => void;
+  runPhase: (handle: RuntimeExecutionHandle) => string;
+  setNoActiveRunId: (handle: RuntimeExecutionHandle) => void;
+  storeEventRecord: (event: KernelRecord) => Promise<HashString>;
 }
 
 /**
@@ -151,8 +153,7 @@ const createTrackedRunOnce = async (
       : await livenessKernel.runLiveness.createLeasedRun({
           branchId: input.branchId,
           executionOwnerId: livenessOptions.executionOwnerId,
-          leaseExpiresAtMs: (host.getNow() +
-            livenessOptions.leaseDurationMs) as EpochMs,
+          leaseExpiresAtMs: host.getNow() + livenessOptions.leaseDurationMs,
           runId: input.runId,
           schemaId: input.schemaId,
           startTurnNodeHash: input.startTurnNodeHash,
@@ -227,7 +228,11 @@ const runLeaseLoop = async (
     return;
   }
 
-  while (!input.signal.aborted) {
+  const renewLease = async (): Promise<void> => {
+    if (input.signal.aborted) {
+      return;
+    }
+
     // Backend-authoritative lease clock (ADR-0050): schedule renewal by the
     // elapsed local lease window (leaseDurationMs - renewBeforeMs) rather than by
     // comparing a backend-time lease expiry against this worker's wall clock.
@@ -264,7 +269,7 @@ const runLeaseLoop = async (
         input.runId,
         input.activeLease.executionOwnerId,
         input.activeLease.fencingToken,
-        (host.getNow() + livenessOptions.leaseDurationMs) as EpochMs
+        host.getNow() + livenessOptions.leaseDurationMs
       );
       input.activeLease.fencingToken = renewed.fencingToken;
       input.activeLease.leaseExpiresAtMs = renewed.leaseExpiresAtMs;
@@ -276,7 +281,11 @@ const runLeaseLoop = async (
       input.handle.abortWithError(createRunLeaseLostError(error));
       return;
     }
-  }
+
+    await renewLease();
+  };
+
+  await renewLease();
 };
 
 /**
