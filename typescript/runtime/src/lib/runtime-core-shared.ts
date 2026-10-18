@@ -36,9 +36,9 @@ import { assertTuvrenMessage } from "@tuvren/core/messages";
  */
 export class AsyncEventQueue<T> implements AsyncIterable<T> {
   private closed = false;
-  private readonly items: Array<{ value: T }> = [];
+  private readonly items: { value: T }[] = [];
   private onClose?: () => void;
-  private readonly waiters: Array<(value: IteratorResult<T>) => void> = [];
+  private readonly waiters: ((value: IteratorResult<T>) => void)[] = [];
 
   /**
    * @param onClose - Invoked once when the queue is closed, whether by
@@ -345,7 +345,7 @@ function cloneValuePreservingFunctions<T>(
   }
 
   if (value instanceof Date) {
-    return new Date(value.getTime()) as T;
+    return new Date(value) as T;
   }
 
   if (value instanceof Map) {

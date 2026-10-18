@@ -17,21 +17,21 @@
 import type { EpochMs, HashString } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { ExecutionBoundExceededDetails } from "@tuvren/core/execution";
-import {
-  NoopTelemetrySink,
-  type TelemetryAttributeValue,
-  type TelemetryDestination,
-  type TelemetryEvent,
-  type TelemetryEventKind,
-  type TelemetryLineage,
-  type TelemetryOperationalSignal,
-  type TelemetryOperationalSignalKind,
-  type TelemetryRoute,
-  type TelemetryRouting,
-  type TelemetrySpan,
-  type TelemetrySpanError,
-  type TelemetrySpanKind,
-  type TuvrenTelemetrySink,
+import { NoopTelemetrySink } from "@tuvren/core/telemetry";
+import type {
+  TelemetryAttributeValue,
+  TelemetryDestination,
+  TelemetryEvent,
+  TelemetryEventKind,
+  TelemetryLineage,
+  TelemetryOperationalSignal,
+  TelemetryOperationalSignalKind,
+  TelemetryRoute,
+  TelemetryRouting,
+  TelemetrySpan,
+  TelemetrySpanError,
+  TelemetrySpanKind,
+  TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
 
 import type { LoopState } from "./runtime-core-loop.js";
@@ -204,7 +204,7 @@ export function createRuntimeTelemetryEmitter(input: {
   // content-funnel commit. Every runtime telemetry record fans out to both the
   // emission sink and (if routed) the durable destination.
   const safeDeliver = (
-    records: ReadonlyArray<TelemetryEvent | TelemetrySpan>
+    records: readonly (TelemetryEvent | TelemetrySpan)[]
   ) => {
     if (destination === undefined) {
       return;
@@ -450,15 +450,17 @@ export function createRuntimeTelemetryEmitter(input: {
       });
     },
     eventFromStream: (handle, event, loopState) => {
-      const atMs = event.timestamp as EpochMs;
+      const atMs = event.timestamp;
 
       switch (event.type) {
-        case "turn.start":
+        case "turn.start": {
           handleTurnStart(handle, atMs, loopState, event.resumedFrom);
           return;
-        case "turn.end":
+        }
+        case "turn.end": {
           handleTurnEnd(handle, atMs, loopState, event.status);
           return;
+        }
         case "iteration.start": {
           iterationStarts.set(handle, {
             atMs,
@@ -466,16 +468,19 @@ export function createRuntimeTelemetryEmitter(input: {
           });
           return;
         }
-        case "iteration.end":
+        case "iteration.end": {
           handleIterationEnd(handle, atMs, loopState);
           return;
-        case "tool.start":
+        }
+        case "tool.start": {
           handleToolStart(handle, atMs, event.callId);
           return;
-        case "tool.result":
+        }
+        case "tool.result": {
           handleToolResult(handle, atMs, loopState, event);
           return;
-        case "approval.requested":
+        }
+        case "approval.requested": {
           emitEvent(
             "approval.requested",
             handle,
@@ -483,7 +488,8 @@ export function createRuntimeTelemetryEmitter(input: {
             baseAttributes(handle, loopState)
           );
           return;
-        case "approval.resolved":
+        }
+        case "approval.resolved": {
           emitEvent(
             "approval.resolved",
             handle,
@@ -491,14 +497,18 @@ export function createRuntimeTelemetryEmitter(input: {
             baseAttributes(handle, loopState)
           );
           return;
-        case "state.checkpoint":
+        }
+        case "state.checkpoint": {
           handleCheckpoint(handle, atMs, loopState, event.turnNodeHash);
           return;
-        case "error":
+        }
+        case "error": {
           handleRuntimeError(handle, atMs, loopState, event.error);
           return;
-        default:
+        }
+        default: {
           return;
+        }
       }
     },
     recovery: (recoveryInput) => {

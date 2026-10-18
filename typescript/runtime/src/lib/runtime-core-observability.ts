@@ -29,11 +29,10 @@ import {
   publishCustomEvent as publishRuntimeCustomEvent,
   publishEvent as publishRuntimeEvent,
   publishProjectedError as publishRuntimeProjectedError,
-  type RuntimeCoreEventsHost,
 } from "./runtime-core-events.js";
+import type { RuntimeCoreEventsHost } from "./runtime-core-events.js";
 import type { LoopState } from "./runtime-core-loop.js";
 import {
-  type RuntimeCorePersistenceHost,
   stageManifest as stageRuntimeManifest,
   stageMessage as stageRuntimeMessage,
   stageRuntimeStatus as stageRuntimeStatusRecord,
@@ -41,6 +40,7 @@ import {
   storeEventRecord as storeRuntimeEventRecord,
   storeKernelRecord as storeRuntimeKernelRecord,
 } from "./runtime-core-persistence.js";
+import type { RuntimeCorePersistenceHost } from "./runtime-core-persistence.js";
 import type { DurableRuntimeStatus } from "./runtime-core-recovery.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 

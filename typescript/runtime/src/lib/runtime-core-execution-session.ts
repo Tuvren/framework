@@ -28,10 +28,8 @@ import type {
   LoopOutcome,
 } from "./runtime-core-recovery.js";
 import { createStaleRecoveryContendedError } from "./runtime-core-response.js";
-import {
-  RuntimeExecutionHandle,
-  type RuntimeExecutionHandleRuntime,
-} from "./runtime-execution-handle.js";
+import { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
+import type { RuntimeExecutionHandleRuntime } from "./runtime-execution-handle.js";
 import type {
   ExecutionSessionRequest,
   PauseContext,
@@ -173,11 +171,11 @@ export function createRuntimeExecutionHandle(
     {
       ...request,
       config: cloneAgentConfigForRequest(request.config),
+      signal: normalizedSignal,
       tools:
         request.tools === undefined
           ? undefined
           : createFrozenSnapshot(request.tools),
-      signal: normalizedSignal,
     },
     createId(),
     request.schemaId ?? defaultAgentSchemaId

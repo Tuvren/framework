@@ -24,10 +24,8 @@ import type { ToolRegistry } from "@tuvren/core/tools";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import { runBeforeTurnHooks } from "./extension-runtime.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
-import {
-  createCancelledLoopOutcome,
-  type ExpiredExecutionRecovery,
-} from "./runtime-core-recovery.js";
+import { createCancelledLoopOutcome } from "./runtime-core-recovery.js";
+import type { ExpiredExecutionRecovery } from "./runtime-core-recovery.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
 
