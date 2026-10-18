@@ -235,7 +235,7 @@ function isOptionalCapabilityAttribution(
   if (!isPlainObject(parent.attribution)) {
     return false;
   }
-  const attr = parent.attribution as Record<string, unknown>;
+  const attr = parent.attribution;
   return (
     typeof attr.capabilityId === "string" &&
     attr.capabilityId.length > 0 &&
@@ -351,14 +351,15 @@ export function isTuvrenMessage(value: unknown): value is TuvrenMessage {
     }
 
     switch (value.role) {
-      case "system":
+      case "system": {
         return (
           hasOnlyAllowedKeys(value, SYSTEM_MESSAGE_KEYS) &&
           isNonEmptyStringProperty(value, "content") &&
           !("parts" in value) &&
           !("providerMetadata" in value)
         );
-      case "user":
+      }
+      case "user": {
         return (
           hasOnlyAllowedKeys(value, USER_MESSAGE_KEYS) &&
           (value.admissionKey === undefined ||
@@ -367,21 +368,25 @@ export function isTuvrenMessage(value: unknown): value is TuvrenMessage {
           isNonEmptyArray(value.parts) &&
           value.parts.every(isContentPart)
         );
-      case "assistant":
+      }
+      case "assistant": {
         return (
           hasOnlyAllowedKeys(value, ASSISTANT_MESSAGE_KEYS) &&
           isNonEmptyArray(value.parts) &&
           value.parts.every(isContentPart) &&
           isOptionalSerializableRecordProperty(value, "providerMetadata")
         );
-      case "tool":
+      }
+      case "tool": {
         return (
           hasOnlyAllowedKeys(value, TOOL_MESSAGE_KEYS) &&
           isNonEmptyArray(value.parts) &&
           value.parts.every(isToolResultPart)
         );
-      default:
+      }
+      default: {
         return false;
+      }
     }
   });
 }
@@ -494,44 +499,51 @@ export function isProviderStreamChunk(
     }
 
     switch (value.type) {
-      case "text_delta":
+      case "text_delta": {
         return (
           hasOnlyAllowedKeys(value, PROVIDER_TEXT_DELTA_KEYS) &&
           typeof value.text === "string"
         );
-      case "reasoning_delta":
+      }
+      case "reasoning_delta": {
         return (
           hasOnlyAllowedKeys(value, PROVIDER_REASONING_DELTA_KEYS) &&
           typeof value.text === "string" &&
           isOptionalStringProperty(value, "signature")
         );
-      case "reasoning_done":
+      }
+      case "reasoning_done": {
         return hasOnlyAllowedKeys(value, PROVIDER_REASONING_DONE_KEYS);
-      case "structured_delta":
+      }
+      case "structured_delta": {
         return (
           hasOnlyAllowedKeys(value, PROVIDER_STRUCTURED_DELTA_KEYS) &&
           typeof value.delta === "string"
         );
-      case "structured_done":
+      }
+      case "structured_done": {
         return (
           hasOnlyAllowedKeys(value, PROVIDER_STRUCTURED_DONE_KEYS) &&
           "data" in value &&
           isSerializableContractValue(value.data) &&
           isOptionalStringProperty(value, "name")
         );
-      case "tool_call_start":
+      }
+      case "tool_call_start": {
         return (
           hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_START_KEYS) &&
           isNonEmptyStringProperty(value, "providerCallId") &&
           isNonEmptyStringProperty(value, "name")
         );
-      case "tool_call_args_delta":
+      }
+      case "tool_call_args_delta": {
         return (
           hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_ARGS_DELTA_KEYS) &&
           isNonEmptyStringProperty(value, "providerCallId") &&
           typeof value.delta === "string"
         );
-      case "tool_call_done":
+      }
+      case "tool_call_done": {
         return (
           hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_DONE_KEYS) &&
           isNonEmptyStringProperty(value, "providerCallId") &&
@@ -540,7 +552,8 @@ export function isProviderStreamChunk(
           isSerializableContractValue(value.input) &&
           isOptionalSerializableRecordProperty(value, "providerMetadata")
         );
-      case "provider_tool_result":
+      }
+      case "provider_tool_result": {
         return (
           hasOnlyAllowedKeys(value, PROVIDER_TOOL_RESULT_KEYS) &&
           isNonEmptyStringProperty(value, "providerCallId") &&
@@ -550,7 +563,8 @@ export function isProviderStreamChunk(
           (value.isError === undefined || typeof value.isError === "boolean") &&
           isOptionalSerializableRecordProperty(value, "providerMetadata")
         );
-      case "finish":
+      }
+      case "finish": {
         return (
           hasOnlyAllowedKeys(value, PROVIDER_FINISH_KEYS) &&
           isStringProperty(value, "finishReason") &&
@@ -558,12 +572,15 @@ export function isProviderStreamChunk(
           isOptionalProviderUsage(value, "usage") &&
           isOptionalSerializableRecordProperty(value, "providerMetadata")
         );
-      case "error":
+      }
+      case "error": {
         return (
           hasOnlyAllowedKeys(value, PROVIDER_ERROR_KEYS) && "error" in value
         );
-      default:
+      }
+      default: {
         return false;
+      }
     }
   });
 }
@@ -641,7 +658,7 @@ function hasValidStreamEventPayload(
   value: Record<string, unknown> & { timestamp: EpochMs; type: string }
 ): boolean {
   switch (value.type) {
-    case "turn.start":
+    case "turn.start": {
       return matchesStreamEventVariant(
         value,
         ["turnId", "threadId", "resumedFrom"],
@@ -650,7 +667,8 @@ function hasValidStreamEventPayload(
           isNonEmptyStringProperty(value, "threadId") &&
           isOptionalHashStringProperty(value, "resumedFrom")
       );
-    case "turn.end":
+    }
+    case "turn.end": {
       return matchesStreamEventVariant(
         value,
         ["turnId", "status"],
@@ -659,12 +677,14 @@ function hasValidStreamEventPayload(
           isStringProperty(value, "status") &&
           TURN_END_STATUSES.has(value.status)
       );
+    }
     case "iteration.start":
-    case "iteration.end":
+    case "iteration.end": {
       return matchesStreamEventVariant(value, ["iterationCount"], () =>
         isNonNegativeSafeIntegerProperty(value, "iterationCount")
       );
-    case "message.start":
+    }
+    case "message.start": {
       return matchesStreamEventVariant(
         value,
         ["messageId", "role"],
@@ -672,7 +692,8 @@ function hasValidStreamEventPayload(
           isNonEmptyStringProperty(value, "messageId") &&
           value.role === "assistant"
       );
-    case "text.delta":
+    }
+    case "text.delta": {
       return matchesStreamEventVariant(
         value,
         ["messageId", "delta"],
@@ -680,7 +701,8 @@ function hasValidStreamEventPayload(
           isNonEmptyStringProperty(value, "messageId") &&
           typeof value.delta === "string"
       );
-    case "text.done":
+    }
+    case "text.done": {
       return matchesStreamEventVariant(
         value,
         ["messageId", "text"],
@@ -688,7 +710,8 @@ function hasValidStreamEventPayload(
           isNonEmptyStringProperty(value, "messageId") &&
           typeof value.text === "string"
       );
-    case "reasoning.delta":
+    }
+    case "reasoning.delta": {
       return matchesStreamEventVariant(
         value,
         ["messageId", "delta"],
@@ -696,11 +719,13 @@ function hasValidStreamEventPayload(
           isNonEmptyStringProperty(value, "messageId") &&
           typeof value.delta === "string"
       );
-    case "reasoning.done":
+    }
+    case "reasoning.done": {
       return matchesStreamEventVariant(value, ["messageId"], () =>
         isNonEmptyStringProperty(value, "messageId")
       );
-    case "file.done":
+    }
+    case "file.done": {
       return matchesStreamEventVariant(
         value,
         ["messageId", "data", "filename", "mediaType"],
@@ -712,7 +737,8 @@ function hasValidStreamEventPayload(
           isOptionalStringProperty(value, "filename") &&
           isNonEmptyStringProperty(value, "mediaType")
       );
-    case "structured.delta":
+    }
+    case "structured.delta": {
       return matchesStreamEventVariant(
         value,
         ["messageId", "delta"],
@@ -720,7 +746,8 @@ function hasValidStreamEventPayload(
           isNonEmptyStringProperty(value, "messageId") &&
           typeof value.delta === "string"
       );
-    case "structured.done":
+    }
+    case "structured.done": {
       return matchesStreamEventVariant(
         value,
         ["messageId", "data", "name"],
@@ -730,7 +757,8 @@ function hasValidStreamEventPayload(
           isSerializableContractValue(value.data) &&
           isOptionalStringProperty(value, "name")
       );
-    case "tool_call.start":
+    }
+    case "tool_call.start": {
       return matchesStreamEventVariant(
         value,
         ["messageId", "callId", "name"],
@@ -739,7 +767,8 @@ function hasValidStreamEventPayload(
           isNonEmptyStringProperty(value, "callId") &&
           isNonEmptyStringProperty(value, "name")
       );
-    case "tool_call.args_delta":
+    }
+    case "tool_call.args_delta": {
       return matchesStreamEventVariant(
         value,
         ["callId", "delta"],
@@ -747,7 +776,8 @@ function hasValidStreamEventPayload(
           isNonEmptyStringProperty(value, "callId") &&
           typeof value.delta === "string"
       );
-    case "tool_call.done":
+    }
+    case "tool_call.done": {
       return matchesStreamEventVariant(
         value,
         ["callId", "name", "input", "providerMetadata"],
@@ -758,7 +788,8 @@ function hasValidStreamEventPayload(
           isSerializableContractValue(value.input) &&
           isOptionalSerializableRecordProperty(value, "providerMetadata")
       );
-    case "message.done":
+    }
+    case "message.done": {
       return matchesStreamEventVariant(
         value,
         ["messageId", "finishReason", "usage"],
@@ -768,7 +799,8 @@ function hasValidStreamEventPayload(
           FINISH_REASONS.has(value.finishReason) &&
           isOptionalProviderUsage(value, "usage")
       );
-    case "tool.start":
+    }
+    case "tool.start": {
       return matchesStreamEventVariant(
         value,
         // "attribution" is an additive optional field per ADR-0046 AW006
@@ -780,7 +812,8 @@ function hasValidStreamEventPayload(
           isSerializableContractValue(value.input) &&
           isOptionalCapabilityAttribution(value)
       );
-    case "tool.result":
+    }
+    case "tool.result": {
       return matchesStreamEventVariant(
         value,
         // "attribution" is an additive optional field per ADR-0046 AW006
@@ -793,7 +826,8 @@ function hasValidStreamEventPayload(
           isOptionalBooleanProperty(value, "isError") &&
           isOptionalCapabilityAttribution(value)
       );
-    case "tool.audit":
+    }
+    case "tool.audit": {
       return matchesStreamEventVariant(
         value,
         [
@@ -818,23 +852,28 @@ function hasValidStreamEventPayload(
           (value.validationPassed === undefined ||
             typeof value.validationPassed === "boolean")
       );
-    case "approval.requested":
+    }
+    case "approval.requested": {
       return matchesStreamEventVariant(value, ["request"], () =>
         isApprovalRequest(value.request)
       );
-    case "approval.resolved":
+    }
+    case "approval.resolved": {
       return matchesStreamEventVariant(value, ["response"], () =>
         isApprovalResponse(value.response)
       );
-    case "steering.incorporated":
+    }
+    case "steering.incorporated": {
       return matchesStreamEventVariant(value, ["messageId"], () =>
         isNonEmptyStringProperty(value, "messageId")
       );
-    case "state.snapshot":
+    }
+    case "state.snapshot": {
       return matchesStreamEventVariant(value, ["manifest"], () =>
         isContextManifest(value.manifest)
       );
-    case "state.checkpoint":
+    }
+    case "state.checkpoint": {
       return matchesStreamEventVariant(
         value,
         ["iterationCount", "turnNodeHash"],
@@ -842,7 +881,8 @@ function hasValidStreamEventPayload(
           isNonNegativeSafeIntegerProperty(value, "iterationCount") &&
           isHashString(value.turnNodeHash)
       );
-    case "error":
+    }
+    case "error": {
       return matchesStreamEventVariant(
         value,
         ["error", "fatal"],
@@ -850,7 +890,8 @@ function hasValidStreamEventPayload(
           isTuvrenErrorProjection(value.error) &&
           typeof value.fatal === "boolean"
       );
-    case "custom":
+    }
+    case "custom": {
       return matchesStreamEventVariant(
         value,
         ["name", "data"],
@@ -859,8 +900,10 @@ function hasValidStreamEventPayload(
           "data" in value &&
           isSerializableContractValue(value.data)
       );
-    default:
+    }
+    default: {
       return false;
+    }
   }
 }
 

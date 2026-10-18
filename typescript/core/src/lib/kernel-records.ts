@@ -160,11 +160,13 @@ function isKernelRecordValueInternal(
 
   switch (typeof value) {
     case "boolean":
-    case "string":
+    case "string": {
       return true;
-    case "number":
+    }
+    case "number": {
       return isCanonicalKernelInteger(value);
-    case "object":
+    }
+    case "object": {
       if (value instanceof Uint8Array) {
         return isCanonicalKernelBytes(value);
       }
@@ -195,8 +197,10 @@ function isKernelRecordValueInternal(
 
       activeParents.delete(value);
       return true;
-    default:
+    }
+    default: {
       return false;
+    }
   }
 }
 
