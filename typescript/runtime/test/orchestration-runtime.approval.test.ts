@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
 import {
@@ -41,6 +40,7 @@ describe("orchestration-runtime approval", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -84,7 +84,6 @@ describe("orchestration-runtime approval", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -149,8 +148,9 @@ describe("orchestration-runtime approval", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
-        createStaticRunner(async (context) => {
+        createStaticRunner((context) => {
           const toolMessages = context.messages.filter(
             (message) => message.role === "tool"
           );
@@ -181,7 +181,6 @@ describe("orchestration-runtime approval", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -232,6 +231,7 @@ describe("orchestration-runtime approval", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           const toolMessages = context.messages.filter(
@@ -275,7 +275,6 @@ describe("orchestration-runtime approval", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -324,7 +323,7 @@ describe("orchestration-runtime approval", () => {
     const resumedChildHandle = childHandle.resolveApproval({
       decisions: [{ callId: "call-approve-worker", type: "approve" }],
     });
-    await expect(childHandle.awaitResult()).rejects.toThrow(
+    expect(childHandle.awaitResult()).rejects.toThrow(
       "awaitResult() requires the current orchestration handle"
     );
     expect(childHandle.status().phase).toBe("paused");
