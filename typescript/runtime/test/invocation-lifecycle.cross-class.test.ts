@@ -97,7 +97,7 @@ function extractInvocationEvents(events: unknown[]): {
       audits.push(e as unknown as ToolAuditEvent);
     }
   }
-  return { starts, results, audits };
+  return { audits, results, starts };
 }
 
 /** Pre-staged provider tool message for provider-native / provider-mediated. */
@@ -108,7 +108,6 @@ function buildProviderToolMessage(
   output: unknown
 ): TuvrenMessage {
   return {
-    role: "tool",
     parts: [
       {
         callId,
@@ -122,6 +121,7 @@ function buildProviderToolMessage(
         type: "tool_result",
       },
     ],
+    role: "tool",
   };
 }
 
@@ -130,7 +130,6 @@ function makeProviderRunner(
   executionClass: "provider-native" | "provider-mediated"
 ): RuntimeRunner {
   return {
-    id: `runner-${executionClass}`,
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -150,6 +149,7 @@ function makeProviderRunner(
         resolution: { reason: "done", type: "end_turn" },
       };
     },
+    id: `runner-${executionClass}`,
     async resume() {
       throw new Error("resume not expected");
     },
@@ -159,7 +159,6 @@ function makeProviderRunner(
 /** Simple tuvren-server runner that calls one defineTool tool. */
 function makeTuvrenServerRunner(toolName: string): RuntimeRunner {
   return {
-    id: "runner-tuvren-server",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -177,6 +176,7 @@ function makeTuvrenServerRunner(toolName: string): RuntimeRunner {
         resolution: { reason: "done", type: "end_turn" },
       };
     },
+    id: "runner-tuvren-server",
     async resume() {
       throw new Error("resume not expected");
     },
@@ -186,7 +186,6 @@ function makeTuvrenServerRunner(toolName: string): RuntimeRunner {
 /** Simple tuvren-client runner that calls one client endpoint capability. */
 function makeTuvrenClientRunner(capabilityId: string): RuntimeRunner {
   return {
-    id: "runner-tuvren-client",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -204,6 +203,7 @@ function makeTuvrenClientRunner(capabilityId: string): RuntimeRunner {
         resolution: { reason: "done", type: "end_turn" },
       };
     },
+    id: "runner-tuvren-client",
     async resume() {
       throw new Error("resume not expected");
     },
@@ -216,7 +216,6 @@ function makeOkEndpoint(
   capabilityId: string
 ): AttachedClientEndpoint {
   return {
-    endpointId,
     advertisedCapabilities: [
       {
         capabilityId,
@@ -233,6 +232,7 @@ function makeOkEndpoint(
         leaseToken: envelope.leaseToken,
       };
     },
+    endpointId,
   };
 }
 
@@ -246,8 +246,8 @@ describe("BA001 invocation lifecycle — tuvren-server", () => {
     const toolName = "ba001_server_tool";
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "runner-tuvren-server",
-      runnerRegistry: createRunnerRegistry([makeTuvrenServerRunner(toolName)]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([makeTuvrenServerRunner(toolName)]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -256,15 +256,15 @@ describe("BA001 invocation lifecycle — tuvren-server", () => {
         name: "agent",
         tools: [
           {
-            name: toolName,
             description: "tuvren-server test tool",
-            inputSchema: {
-              type: "object",
-              properties: { x: { type: "number" } },
-            },
             execute: async (input) => ({
               doubled: (input as Record<string, number>).x * 2,
             }),
+            inputSchema: {
+              properties: { x: { type: "number" } },
+              type: "object",
+            },
+            name: toolName,
           },
         ],
       },
@@ -319,15 +319,15 @@ describe("BA001 invocation lifecycle — tuvren-server", () => {
     });
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "runner-tuvren-server",
-      runnerRegistry: createRunnerRegistry([makeTuvrenServerRunner(toolName)]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([makeTuvrenServerRunner(toolName)]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        name: "agent",
         capabilityPolicyEngine: denyEngine,
+        name: "agent",
         tools: [
           {
             name: toolName,
@@ -363,8 +363,8 @@ describe("BA001 invocation lifecycle — provider-native", () => {
     const runner = makeProviderRunner("provider-native");
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "runner-provider-native",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -419,8 +419,8 @@ describe("BA001 invocation lifecycle — provider-mediated", () => {
     const runner = makeProviderRunner("provider-mediated");
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "runner-provider-mediated",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -467,18 +467,18 @@ describe("BA001 invocation lifecycle — tuvren-client", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "runner-tuvren-client",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         makeTuvrenClientRunner(capabilityId),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        name: "agent",
-        clientEndpoints: [endpoint],
         clientEndpointBoundary: boundary,
+        clientEndpoints: [endpoint],
+        name: "agent",
       },
       signal: textSignal("go"),
       threadId: thread.threadId,
@@ -532,18 +532,24 @@ describe("BA001 invocation lifecycle — tuvren-client", () => {
  */
 function assertLifecycleExhaustive(state: InvocationLifecycleState): string {
   switch (state) {
-    case "resolved":
+    case "resolved": {
       return "resolved";
-    case "policy-admitted":
+    }
+    case "policy-admitted": {
       return "policy-admitted";
-    case "dispatched":
+    }
+    case "dispatched": {
       return "dispatched";
-    case "completed":
+    }
+    case "completed": {
       return "completed";
-    case "failed":
+    }
+    case "failed": {
       return "failed";
-    case "ignored":
+    }
+    case "ignored": {
       return "ignored";
+    }
     default: {
       const _exhaustive: never = state;
       return _exhaustive;

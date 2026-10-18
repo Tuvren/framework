@@ -47,7 +47,6 @@ function makeEndpoint(
   ) => Promise<ClientReportedResult>
 ): AttachedClientEndpoint {
   return {
-    endpointId,
     advertisedCapabilities: capabilities.map((id) => ({
       capabilityId: id,
       description: `${id} description`,
@@ -68,6 +67,7 @@ function makeEndpoint(
         leaseToken: envelope.leaseToken,
       });
     },
+    endpointId,
   };
 }
 
@@ -77,7 +77,6 @@ function makeClientMcpEndpoint(
   mcpServerName: string
 ): AttachedClientEndpoint {
   return {
-    endpointId,
     advertisedCapabilities: [
       {
         capabilityId,
@@ -95,6 +94,7 @@ function makeClientMcpEndpoint(
         leaseToken: envelope.leaseToken,
       });
     },
+    endpointId,
   };
 }
 
@@ -287,8 +287,8 @@ describe("ClientEndpointBoundary — dispatch and result capture (KRT-AZ002)", (
     let thrown: unknown;
     try {
       await boundary.dispatch("b", "call-1", {});
-    } catch (e) {
-      thrown = e;
+    } catch (error) {
+      thrown = error;
     }
     expect(thrown).toBeInstanceOf(TuvrenRuntimeError);
     expect((thrown as TuvrenRuntimeError).code).toBe(
@@ -421,7 +421,7 @@ describe("ClientEndpointBoundary — idempotency envelope (KRT-BG003)", () => {
   });
 
   test("the synthetic client tool forwards context.idempotencyKey to the boundary", async () => {
-    const dispatchedKeys: Array<string | undefined> = [];
+    const dispatchedKeys: (string | undefined)[] = [];
     const recordingBoundary: ClientEndpointBoundary = {
       detach: () => undefined,
       dispatch: (
@@ -478,7 +478,6 @@ describe("ClientEndpointBoundary — client-side MCP binding (KRT-AZ004)", () =>
   test("client-side MCP dispatch goes through the client endpoint dispatch path", async () => {
     const dispatchedEnvelopes: ClientInvocationEnvelope[] = [];
     const endpoint: AttachedClientEndpoint = {
-      endpointId: "ext1",
       advertisedCapabilities: [
         {
           capabilityId: "remote.tool",
@@ -495,6 +494,7 @@ describe("ClientEndpointBoundary — client-side MCP binding (KRT-AZ004)", () =>
           leaseToken: envelope.leaseToken,
         });
       },
+      endpointId: "ext1",
     };
     const boundary = createClientEndpointBoundary([endpoint]);
     const result = await boundary.dispatch("remote.tool", "call-mcp", {});
@@ -512,11 +512,11 @@ describe("isClientEndpointTool via binding resolver (KRT-AZ001, KRT-AZ004)", () 
     const { createBindingResolver } = require("../src/lib/binding-resolver.ts");
     const resolver = createBindingResolver();
     const binding = resolver.resolveFromToolDefinition({
-      name: "my.cap",
       description: "client cap",
-      inputSchema: { type: "object" },
       execute: () => Promise.resolve(undefined),
+      inputSchema: { type: "object" },
       metadata: { clientEndpointId: "ep1" },
+      name: "my.cap",
     });
     expect(binding.executionClass).toBe("tuvren-client");
     expect(binding.endpoint.kind).toBe("client-endpoint");
@@ -526,11 +526,11 @@ describe("isClientEndpointTool via binding resolver (KRT-AZ001, KRT-AZ004)", () 
     const { createBindingResolver } = require("../src/lib/binding-resolver.ts");
     const resolver = createBindingResolver();
     const binding = resolver.resolveFromToolDefinition({
-      name: "mcp.tool",
       description: "client mcp tool",
-      inputSchema: { type: "object" },
       execute: () => Promise.resolve(undefined),
+      inputSchema: { type: "object" },
       metadata: { clientEndpointId: "ep1", mcpServerName: "my-server" },
+      name: "mcp.tool",
     });
     expect(binding.executionClass).toBe("tuvren-client");
     expect(binding.endpoint.kind).toBe("mcp-server");

@@ -45,10 +45,10 @@ import {
 
 function makeSurface(name: string, capabilityId: string): ToolSurface {
   return {
-    name,
+    capabilityId,
     description: `surface for ${capabilityId}`,
     inputSchema: { type: "object" },
-    capabilityId,
+    name,
   };
 }
 
@@ -58,15 +58,15 @@ function makeBinding(
 ): Binding {
   return {
     capabilityId,
+    endpoint: { id: "local", kind: endpointKind },
     executionClass: "tuvren-server",
-    endpoint: { kind: endpointKind, id: "local" },
   };
 }
 
 const defaultContext: CapabilityPolicyContext = {
-  providerId: "test-provider",
   modelId: "test-model",
   permissions: [],
+  providerId: "test-provider",
 };
 
 // ---------------------------------------------------------------------------
@@ -268,7 +268,6 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
 
   function makeDenialRunner(): RuntimeRunner {
     return {
-      id: "denial-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -286,6 +285,7 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
           resolution: { reason: "done", type: "end_turn" },
         };
       },
+      id: "denial-runner",
       async resume() {
         throw new Error("resume not expected");
       },
@@ -299,8 +299,8 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
     });
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "denial-runner",
-      runnerRegistry: createBaseRunnerRegistry([makeDenialRunner()]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([makeDenialRunner()]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -353,7 +353,6 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
     const permittedExecuted = { value: false };
 
     const runner: RuntimeRunner = {
-      id: "mixed-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -371,6 +370,7 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
           resolution: { reason: "done", type: "end_turn" },
         };
       },
+      id: "mixed-runner",
       async resume() {
         throw new Error("resume not expected");
       },
@@ -378,8 +378,8 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "mixed-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -539,7 +539,6 @@ describe("CapabilityPolicyEngine — BB001 exposure-time wiring", () => {
     const engine = createCapabilityPolicyEngine();
 
     const runner: RuntimeRunner = {
-      id: "exposure-wiring-runner",
       async execute(context) {
         // Record what tools the runner sees
         seenToolNames.push(...context.toolRegistry.list().map((t) => t.name));
@@ -548,6 +547,7 @@ describe("CapabilityPolicyEngine — BB001 exposure-time wiring", () => {
           resolution: { reason: "done", type: "end_turn" },
         };
       },
+      id: "exposure-wiring-runner",
       async resume() {
         throw new Error("resume not expected");
       },
@@ -555,8 +555,8 @@ describe("CapabilityPolicyEngine — BB001 exposure-time wiring", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "exposure-wiring-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
 
     const thread = await runtime.createThread({});
@@ -750,7 +750,6 @@ describe("CapabilityPolicyEngine — BB002 wired risk-approval gate", () => {
     });
 
     const runner = {
-      id: "risk-approval-runner",
       async execute(context: Parameters<RuntimeRunner["execute"]>[0]) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -768,6 +767,7 @@ describe("CapabilityPolicyEngine — BB002 wired risk-approval gate", () => {
           resolution: { reason: "done", type: "end_turn" as const },
         };
       },
+      id: "risk-approval-runner",
       async resume() {
         throw new Error("resume not expected in this test");
       },
@@ -775,8 +775,8 @@ describe("CapabilityPolicyEngine — BB002 wired risk-approval gate", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "risk-approval-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
 
     const thread = await runtime.createThread({});
@@ -824,7 +824,6 @@ describe("CapabilityPolicyEngine — BB002 wired risk-approval gate", () => {
     });
 
     const runner = {
-      id: "risk-approval-resume-runner",
       async execute(context: Parameters<RuntimeRunner["execute"]>[0]) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -846,6 +845,7 @@ describe("CapabilityPolicyEngine — BB002 wired risk-approval gate", () => {
           resolution: { reason: "done", type: "end_turn" as const },
         };
       },
+      id: "risk-approval-resume-runner",
       async resume() {
         throw new Error("resume not expected in this test");
       },
@@ -853,8 +853,8 @@ describe("CapabilityPolicyEngine — BB002 wired risk-approval gate", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "risk-approval-resume-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
 
     const thread = await runtime.createThread({});
@@ -1024,8 +1024,8 @@ describe("CapabilityPolicyEngine — BB003 user-presence and active-endpoint", (
     const decision = engine.evaluateInvocation(binding, {
       ...defaultContext,
       capabilityMetadata,
-      userPresent: false,
       unavailableCapabilityIds: new Set([endpointCapabilityId]),
+      userPresent: false,
     });
     expect(decision.admitted).toBe(true);
   });
@@ -1110,7 +1110,6 @@ describe("CapabilityPolicyEngine — BB004 credential-boundary dimension", () =>
     const engine = createCapabilityPolicyEngine();
 
     const runner: RuntimeRunner = {
-      id: "credential-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -1128,6 +1127,7 @@ describe("CapabilityPolicyEngine — BB004 credential-boundary dimension", () =>
           resolution: { reason: "done", type: "end_turn" as const },
         };
       },
+      id: "credential-runner",
       async resume() {
         throw new Error("not expected");
       },
@@ -1135,8 +1135,8 @@ describe("CapabilityPolicyEngine — BB004 credential-boundary dimension", () =>
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "credential-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
 
     const thread = await runtime.createThread({});
@@ -1184,7 +1184,6 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
     const harness = createFakeKernelHarness();
 
     const runner: RuntimeRunner = {
-      id: "retry-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -1202,6 +1201,7 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
           resolution: { reason: "done", type: "end_turn" as const },
         };
       },
+      id: "retry-runner",
       async resume() {
         throw new Error("not expected");
       },
@@ -1209,8 +1209,8 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "retry-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
 
     const thread = await runtime.createThread({});
@@ -1250,7 +1250,6 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
     const harness = createFakeKernelHarness();
 
     const runner: RuntimeRunner = {
-      id: "normal-retry-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -1268,6 +1267,7 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
           resolution: { reason: "done", type: "end_turn" as const },
         };
       },
+      id: "normal-retry-runner",
       async resume() {
         throw new Error("not expected");
       },
@@ -1275,8 +1275,8 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "normal-retry-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
 
     const thread = await runtime.createThread({});
@@ -1537,7 +1537,6 @@ describe("CapabilityPolicyEngine — BB005 resume-path policy check", () => {
       };
 
     const runner: RuntimeRunner = {
-      id: "resume-deny-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -1555,6 +1554,7 @@ describe("CapabilityPolicyEngine — BB005 resume-path policy check", () => {
           resolution: { reason: "done", type: "end_turn" as const },
         };
       },
+      id: "resume-deny-runner",
       async resume() {
         throw new Error("not expected");
       },
@@ -1562,8 +1562,8 @@ describe("CapabilityPolicyEngine — BB005 resume-path policy check", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "resume-deny-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
 
     const thread = await runtime.createThread({});
@@ -1833,12 +1833,11 @@ describe("CapabilityPolicyEngine — BB+ extension dimension resume-path", () =>
     };
 
     const engine = createCapabilityPolicyEngine({
-      requireApprovalForRiskClass: "high",
       dimensions: [extensionDimension],
+      requireApprovalForRiskClass: "high",
     });
 
     const runner = {
-      id: "resume-ext-runner",
       async execute(context: Parameters<RuntimeRunner["execute"]>[0]) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -1856,6 +1855,7 @@ describe("CapabilityPolicyEngine — BB+ extension dimension resume-path", () =>
           resolution: { reason: "done", type: "end_turn" as const },
         };
       },
+      id: "resume-ext-runner",
       async resume() {
         throw new Error("not expected");
       },
@@ -1863,8 +1863,8 @@ describe("CapabilityPolicyEngine — BB+ extension dimension resume-path", () =>
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "resume-ext-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
 
     const thread = await runtime.createThread({});

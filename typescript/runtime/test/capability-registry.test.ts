@@ -30,10 +30,10 @@ function makeCapability(id: string): Capability {
 
 function makeSurface(name: string, capabilityId: string): ToolSurface {
   return {
-    name,
+    capabilityId,
     description: `surface for ${capabilityId}`,
     inputSchema: { type: "object" },
-    capabilityId,
+    name,
   };
 }
 

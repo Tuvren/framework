@@ -103,7 +103,6 @@ function buildProviderToolMessage(
   output: unknown
 ): TuvrenMessage {
   return {
-    role: "tool",
     parts: [
       {
         callId,
@@ -117,6 +116,7 @@ function buildProviderToolMessage(
         type: "tool_result",
       },
     ],
+    role: "tool",
   };
 }
 
@@ -131,11 +131,10 @@ describe("BA003 recovery semantics — provider-native / provider-mediated", () 
   ] as const) {
     test(`${executionClass}: result resolves from observed runner output — not fabricated by framework`, async () => {
       const harness = createFakeKernelHarness();
-      const expectedOutput = { value: 42, executionClass };
+      const expectedOutput = { executionClass, value: 42 };
       const toolName = `ba003_${executionClass.replace("-", "_")}`;
 
       const runner: RuntimeRunner = {
-        id: `ba003-runner-${executionClass}`,
         async execute(context) {
           if (!context.messages.some((m) => m.role === "tool")) {
             return {
@@ -155,14 +154,15 @@ describe("BA003 recovery semantics — provider-native / provider-mediated", () 
             resolution: { reason: "done", type: "end_turn" },
           };
         },
+        id: `ba003-runner-${executionClass}`,
         async resume() {
           throw new Error("no");
         },
       };
       const runtime = createTuvrenRuntime({
         defaultRunnerId: `ba003-runner-${executionClass}`,
-        runnerRegistry: createRunnerRegistry([runner]),
         kernel: harness.kernel,
+        runnerRegistry: createRunnerRegistry([runner]),
       });
       const thread = await runtime.createThread({});
       const handle = runtime.executeTurn({
@@ -204,7 +204,6 @@ describe("BA003 recovery semantics — provider-native / provider-mediated", () 
     const harness = createFakeKernelHarness();
 
     const runner: RuntimeRunner = {
-      id: "ba003-pair-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -224,14 +223,15 @@ describe("BA003 recovery semantics — provider-native / provider-mediated", () 
           resolution: { reason: "done", type: "end_turn" },
         };
       },
+      id: "ba003-pair-runner",
       async resume() {
         throw new Error("no");
       },
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba003-pair-runner",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -263,7 +263,6 @@ describe("BA003 recovery semantics — tuvren-client", () => {
     const capabilityId = "ba003.stale.cap";
 
     const staleEndpoint: AttachedClientEndpoint = {
-      endpointId: "ep-stale-ba003",
       advertisedCapabilities: [
         {
           capabilityId,
@@ -281,11 +280,11 @@ describe("BA003 recovery semantics — tuvren-client", () => {
           leaseToken: "wrong-token",
         };
       },
+      endpointId: "ep-stale-ba003",
     };
     const boundary = createClientEndpointBoundary([staleEndpoint]);
 
     const runner: RuntimeRunner = {
-      id: "ba003-stale-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -303,22 +302,23 @@ describe("BA003 recovery semantics — tuvren-client", () => {
           resolution: { reason: "done", type: "end_turn" },
         };
       },
+      id: "ba003-stale-runner",
       async resume() {
         throw new Error("no");
       },
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba003-stale-runner",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        name: "agent",
-        clientEndpoints: [staleEndpoint],
         clientEndpointBoundary: boundary,
+        clientEndpoints: [staleEndpoint],
+        name: "agent",
       },
       signal: textSignal("go"),
       threadId: thread.threadId,
@@ -343,7 +343,6 @@ describe("BA003 recovery semantics — tuvren-client", () => {
     const harness = createFakeKernelHarness();
     const capabilityId = "ba003.unavail.cap";
     const endpoint: AttachedClientEndpoint = {
-      endpointId: "ep-unavail-ba003",
       advertisedCapabilities: [
         {
           capabilityId,
@@ -360,11 +359,11 @@ describe("BA003 recovery semantics — tuvren-client", () => {
           leaseToken: envelope.leaseToken,
         };
       },
+      endpointId: "ep-unavail-ba003",
     };
     const boundary = createClientEndpointBoundary([endpoint]);
 
     const runner: RuntimeRunner = {
-      id: "ba003-unavail-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -382,14 +381,15 @@ describe("BA003 recovery semantics — tuvren-client", () => {
           resolution: { reason: "done", type: "end_turn" },
         };
       },
+      id: "ba003-unavail-runner",
       async resume() {
         throw new Error("no");
       },
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba003-unavail-runner",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
 
     // Detach before the turn runs to trigger unavailability mid-invocation
@@ -399,9 +399,9 @@ describe("BA003 recovery semantics — tuvren-client", () => {
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        name: "agent",
-        clientEndpoints: [endpoint],
         clientEndpointBoundary: boundary,
+        clientEndpoints: [endpoint],
+        name: "agent",
       },
       signal: textSignal("go"),
       threadId: thread.threadId,
@@ -427,7 +427,6 @@ describe("BA003 recovery semantics — tuvren-client", () => {
     let dispatchStarted = false;
 
     const slowEndpoint: AttachedClientEndpoint = {
-      endpointId: "ep-slow-ba003",
       advertisedCapabilities: [
         {
           capabilityId,
@@ -447,12 +446,12 @@ describe("BA003 recovery semantics — tuvren-client", () => {
           leaseToken: envelope.leaseToken,
         };
       },
+      endpointId: "ep-slow-ba003",
     };
     const boundary = createClientEndpointBoundary([slowEndpoint]);
 
     let runnerSeenToolResult = false;
     const runner: RuntimeRunner = {
-      id: "ba003-slow-runner",
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
@@ -471,22 +470,23 @@ describe("BA003 recovery semantics — tuvren-client", () => {
           resolution: { reason: "done", type: "end_turn" },
         };
       },
+      id: "ba003-slow-runner",
       async resume() {
         throw new Error("no");
       },
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba003-slow-runner",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        name: "agent",
-        clientEndpoints: [slowEndpoint],
         clientEndpointBoundary: boundary,
+        clientEndpoints: [slowEndpoint],
+        name: "agent",
       },
       signal: textSignal("go"),
       threadId: thread.threadId,
@@ -499,17 +499,17 @@ describe("BA003 recovery semantics — tuvren-client", () => {
     handle.cancel();
 
     // awaitResult() rejects when the turn is cancelled; catch the rejection
-    let error: unknown;
+    let caughtError: unknown;
     try {
       await handle.awaitResult();
-    } catch (err) {
-      error = err;
+    } catch (error) {
+      caughtError = error;
     }
     await eventsConsumed; // drain the event stream after turn ends
 
     // Turn must fail cleanly via execution_cancelled, not with a fabricated success
-    expect(error).toBeDefined();
-    const tuvrenError = error as { code?: string };
+    expect(caughtError).toBeDefined();
+    const tuvrenError = caughtError as { code?: string };
     expect(tuvrenError.code).toBe("execution_cancelled");
 
     // The turn phase must be "failed" (not "completed")
@@ -530,19 +530,18 @@ describe("BA003 no torn invocation record — all classes", () => {
     // Cross-class invariant: no invocation enters the "dispatched" state
     // without eventually reaching a terminal state. We verify this for all
     // four classes in isolation.
-    const scenarios: Array<{
+    const scenarios: {
       label: string;
       run: () => Promise<{
         starts: ToolStartEvent[];
         results: ToolResultEvent[];
       }>;
-    }> = [
+    }[] = [
       {
         label: "tuvren-server",
         async run() {
           const harness = createFakeKernelHarness();
           const runner: RuntimeRunner = {
-            id: "torn-server",
             async execute(ctx) {
               if (!ctx.messages.some((m) => m.role === "tool")) {
                 return {
@@ -560,14 +559,15 @@ describe("BA003 no torn invocation record — all classes", () => {
                 resolution: { reason: "done", type: "end_turn" },
               };
             },
+            id: "torn-server",
             async resume() {
               throw new Error("no");
             },
           };
           const rt = createTuvrenRuntime({
             defaultRunnerId: "torn-server",
-            runnerRegistry: createRunnerRegistry([runner]),
             kernel: harness.kernel,
+            runnerRegistry: createRunnerRegistry([runner]),
           });
           const th = await rt.createThread({});
           const h = rt.executeTurn({
@@ -576,10 +576,10 @@ describe("BA003 no torn invocation record — all classes", () => {
               name: "a",
               tools: [
                 {
-                  name: "t1",
                   description: "t",
-                  inputSchema: { type: "object" },
                   execute: async () => ({ ok: true }),
+                  inputSchema: { type: "object" },
+                  name: "t1",
                 },
               ],
             },
@@ -594,7 +594,6 @@ describe("BA003 no torn invocation record — all classes", () => {
         async run() {
           const harness = createFakeKernelHarness();
           const runner: RuntimeRunner = {
-            id: "torn-pn",
             async execute(ctx) {
               if (!ctx.messages.some((m) => m.role === "tool")) {
                 return {
@@ -611,14 +610,15 @@ describe("BA003 no torn invocation record — all classes", () => {
                 resolution: { reason: "done", type: "end_turn" },
               };
             },
+            id: "torn-pn",
             async resume() {
               throw new Error("no");
             },
           };
           const rt = createTuvrenRuntime({
             defaultRunnerId: "torn-pn",
-            runnerRegistry: createRunnerRegistry([runner]),
             kernel: harness.kernel,
+            runnerRegistry: createRunnerRegistry([runner]),
           });
           const th = await rt.createThread({});
           const h = rt.executeTurn({
@@ -636,7 +636,6 @@ describe("BA003 no torn invocation record — all classes", () => {
           const harness = createFakeKernelHarness();
           const capabilityId = "torn.client.cap";
           const endpoint: AttachedClientEndpoint = {
-            endpointId: "ep-torn",
             advertisedCapabilities: [
               {
                 capabilityId,
@@ -653,10 +652,10 @@ describe("BA003 no torn invocation record — all classes", () => {
                 leaseToken: env.leaseToken,
               };
             },
+            endpointId: "ep-torn",
           };
           const boundary = createClientEndpointBoundary([endpoint]);
           const runner: RuntimeRunner = {
-            id: "torn-client",
             async execute(ctx) {
               if (!ctx.messages.some((m) => m.role === "tool")) {
                 return {
@@ -674,22 +673,23 @@ describe("BA003 no torn invocation record — all classes", () => {
                 resolution: { reason: "done", type: "end_turn" },
               };
             },
+            id: "torn-client",
             async resume() {
               throw new Error("no");
             },
           };
           const rt = createTuvrenRuntime({
             defaultRunnerId: "torn-client",
-            runnerRegistry: createRunnerRegistry([runner]),
             kernel: harness.kernel,
+            runnerRegistry: createRunnerRegistry([runner]),
           });
           const th = await rt.createThread({});
           const h = rt.executeTurn({
             branchId: th.branchId,
             config: {
-              name: "a",
-              clientEndpoints: [endpoint],
               clientEndpointBoundary: boundary,
+              clientEndpoints: [endpoint],
+              name: "a",
             },
             signal: textSignal("go"),
             threadId: th.threadId,

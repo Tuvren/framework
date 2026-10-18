@@ -52,7 +52,6 @@ import {
 
 function makeRunner(toolName: string): RuntimeRunner {
   return {
-    id: "ax004-runner",
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
         return {
@@ -70,6 +69,7 @@ function makeRunner(toolName: string): RuntimeRunner {
         resolution: { reason: "done", type: "end_turn" },
       };
     },
+    id: "ax004-runner",
     async resume() {
       throw new Error("no");
     },
@@ -93,13 +93,13 @@ function findToolResult(events: unknown[]) {
 describe("KRT-AX004 — MCP binding classification", () => {
   test("MCP tool resolves as tuvren-server execution class with mcp-server endpoint kind", () => {
     const mcpTool: TuvrenToolDefinition = {
-      name: "mcp.my-server.search",
       description: "MCP search tool",
-      inputSchema: { type: "object" },
       execute() {
         return {};
       },
+      inputSchema: { type: "object" },
       metadata: { mcp: { serverName: "my-server" } },
+      name: "mcp.my-server.search",
     };
 
     const resolver = createBindingResolver();
@@ -125,21 +125,21 @@ describe("KRT-AX004 — MCP binding classification", () => {
   test("MCP tool emits tool.result event attributed to tuvren-server class", async () => {
     const toolName = "ax004-mcp-tool";
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "mcp tool",
-      inputSchema: { type: "object" },
       execute() {
         return { found: true };
       },
+      inputSchema: { type: "object" },
       metadata: { mcp: { serverName: "test-server" } },
+      name: toolName,
     };
 
     const harness = createFakeKernelHarness();
     const runner = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ax004-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -167,13 +167,13 @@ describe("KRT-AX004 — MCP binding classification", () => {
 describe("KRT-AX004 — sandbox endpoint", () => {
   test("tool with sandbox metadata resolves as tuvren-server / tuvren-sandbox", () => {
     const sandboxTool: TuvrenToolDefinition = {
-      name: "code.execute",
       description: "sandbox code execution",
-      inputSchema: { type: "object" },
       execute() {
         return {};
       },
+      inputSchema: { type: "object" },
       metadata: { sandbox: { endpointId: "code-sandbox" } },
+      name: "code.execute",
     };
 
     const resolver = createBindingResolver();
@@ -186,19 +186,19 @@ describe("KRT-AX004 — sandbox endpoint", () => {
 
   test("sandbox tool uses the registered executor, not tool.execute", async () => {
     const toolName = "ax004-sandbox-tool";
-    const SANDBOX_OUTPUT = { sandboxed: true, result: 42 };
+    const SANDBOX_OUTPUT = { result: 42, sandboxed: true };
     let toolExecuteCalled = false;
     let sandboxExecuteCalled = false;
 
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "sandbox tool",
-      inputSchema: { type: "object" },
       execute() {
         toolExecuteCalled = true;
         return { wrong: true };
       },
+      inputSchema: { type: "object" },
       metadata: { sandbox: { endpointId: "my-sandbox" } },
+      name: toolName,
     };
 
     const sandboxExecutor = {
@@ -212,16 +212,16 @@ describe("KRT-AX004 — sandbox endpoint", () => {
     const runner = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ax004-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
         name: "primary",
-        tools: [tool],
         sandboxExecutors: new Map([["my-sandbox", sandboxExecutor]]),
+        tools: [tool],
       },
       signal: textSignal("sandbox test"),
       threadId: thread.threadId,
@@ -242,22 +242,22 @@ describe("KRT-AX004 — sandbox endpoint", () => {
     let toolExecuteCalled = false;
 
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "sandbox tool with no registered executor",
-      inputSchema: { type: "object" },
       execute() {
         toolExecuteCalled = true;
         return { fallback: true };
       },
+      inputSchema: { type: "object" },
       metadata: { sandbox: { endpointId: "missing-sandbox" } },
+      name: toolName,
     };
 
     const harness = createFakeKernelHarness();
     const runner = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ax004-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -280,19 +280,19 @@ describe("KRT-AX004 — sandbox endpoint", () => {
 
   test("sandbox executor survives an aroundTool handler calling next(context)", async () => {
     const toolName = "ax004-sandbox-around-tool";
-    const SANDBOX_OUTPUT = { sandboxed: true, fromSandbox: 99 };
+    const SANDBOX_OUTPUT = { fromSandbox: 99, sandboxed: true };
     let sandboxExecuteCalled = false;
     let toolExecuteCalled = false;
 
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "sandbox tool with aroundTool wrapper",
-      inputSchema: { type: "object" },
       execute() {
         toolExecuteCalled = true;
         return { wrong: true };
       },
+      inputSchema: { type: "object" },
       metadata: { sandbox: { endpointId: "around-sandbox" } },
+      name: toolName,
     };
 
     const sandboxExecutor = {
@@ -306,16 +306,13 @@ describe("KRT-AX004 — sandbox endpoint", () => {
     const runner = makeRunner(toolName);
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ax004-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        name: "primary",
-        tools: [tool],
-        sandboxExecutors: new Map([["around-sandbox", sandboxExecutor]]),
         extensions: [
           {
             name: "passthrough-wrapper",
@@ -323,6 +320,9 @@ describe("KRT-AX004 — sandbox endpoint", () => {
             aroundTool: async (context, next) => next(context),
           },
         ],
+        name: "primary",
+        sandboxExecutors: new Map([["around-sandbox", sandboxExecutor]]),
+        tools: [tool],
       },
       signal: textSignal("around-tool sandbox test"),
       threadId: thread.threadId,
