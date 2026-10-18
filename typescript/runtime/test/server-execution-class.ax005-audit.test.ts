@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 /**
  * KRT-AX005: Trace and audit signals for Tuvren-server invocations.
  *
@@ -42,49 +40,47 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   textSignal,
+  toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeRunner(toolName: string, input: unknown = {}): RuntimeRunner {
-  return {
-    id: "ax005-runner",
-    async execute(context) {
-      if (!context.messages.some((m) => m.role === "tool")) {
-        return {
-          messages: [
-            assistantToolCalls([
-              { callId: "call-ax005", input, name: toolName },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" },
-          toolExecutionMode: "parallel",
-        };
-      }
+const makeRunner = (toolName: string, input: unknown = {}): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    if (!context.messages.some((m) => m.role === "tool")) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
+        messages: [
+          assistantToolCalls([{ callId: "call-ax005", input, name: toolName }]),
+        ],
+        resolution: { type: "continue_iteration" },
+        toolExecutionMode: "parallel",
       };
-    },
-    async resume() {
-      throw new Error("no");
-    },
-  };
-}
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    };
+  }),
+  id: "ax005-runner",
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("no");
+  }),
+});
 
-async function runWithTool(
+const runWithTool = async (
   tool: TuvrenToolDefinition,
   config: Record<string, unknown> = {}
-) {
+) => {
   const harness = createFakeKernelHarness();
   const runner = makeRunner(tool.name);
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "ax005-runner",
-    runnerRegistry: createBaseRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createBaseRunnerRegistry([runner]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
@@ -93,18 +89,20 @@ async function runWithTool(
     signal: textSignal("ax005 test"),
     threadId: thread.threadId,
   });
-  return collectEvents(handle.events());
-}
+  return await collectEvents(handle.events());
+};
 
-function findAuditEvents(events: unknown[]) {
-  return events.filter(
-    (e) =>
-      typeof e === "object" &&
-      e !== null &&
-      "type" in e &&
-      (e as Record<string, unknown>).type === "tool.audit"
-  ) as Record<string, unknown>[];
-}
+const findAuditEvents = (events: unknown[]) =>
+  events
+    .filter(
+      (e) =>
+        typeof e === "object" &&
+        e !== null &&
+        "type" in e &&
+        e.type === "tool.audit"
+    )
+    .map(toOptionalRecord)
+    .filter((event) => event !== undefined);
 
 // ---------------------------------------------------------------------------
 // Lifecycle audit signals
@@ -114,12 +112,12 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
   test("input_validated audit event is emitted for every tuvren-server invocation", async () => {
     const toolName = "ax005-basic";
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "basic tool",
-      inputSchema: { type: "object" },
       execute() {
         return { ok: true };
       },
+      inputSchema: { type: "object" },
+      name: toolName,
     };
 
     const events = await runWithTool(tool);
@@ -136,12 +134,12 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
 
   test("input_validated audit carries validationPassed: true on success", async () => {
     const tool: TuvrenToolDefinition = {
-      name: "ax005-input-pass",
       description: "valid input",
-      inputSchema: { type: "object" },
       execute() {
         return {};
       },
+      inputSchema: { type: "object" },
+      name: "ax005-input-pass",
     };
 
     const events = await runWithTool(tool);
@@ -153,52 +151,26 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
 
   test("input_validated audit carries validationPassed: false on input failure", async () => {
     const tool: TuvrenToolDefinition = {
-      name: "ax005-input-fail",
       description: "strict schema",
-      inputSchema: {
-        type: "object",
-        properties: { value: { type: "number" } },
-        required: ["value"],
-        additionalProperties: false,
-      },
       execute() {
         return {};
       },
+      inputSchema: {
+        additionalProperties: false,
+        properties: { value: { type: "number" } },
+        required: ["value"],
+        type: "object",
+      },
+      name: "ax005-input-fail",
     };
 
-    const runner: RuntimeRunner = {
-      id: "ax005-runner",
-      async execute(context) {
-        if (!context.messages.some((m) => m.role === "tool")) {
-          return {
-            messages: [
-              assistantToolCalls([
-                {
-                  callId: "call-ax005",
-                  input: { bad: "field" },
-                  name: tool.name,
-                },
-              ]),
-            ],
-            resolution: { type: "continue_iteration" },
-            toolExecutionMode: "parallel",
-          };
-        }
-        return {
-          messages: [assistantText("done")],
-          resolution: { reason: "done", type: "end_turn" },
-        };
-      },
-      async resume() {
-        throw new Error("no");
-      },
-    };
+    const runner = makeRunner(tool.name, { bad: "field" });
 
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ax005-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -216,17 +188,17 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
 
   test("output_validated audit event is emitted when outputSchema is declared", async () => {
     const tool: TuvrenToolDefinition = {
-      name: "ax005-output-validated",
       description: "tool with output schema",
-      inputSchema: { type: "object" },
-      outputSchema: {
-        type: "object",
-        properties: { count: { type: "number" } },
-        required: ["count"],
-        additionalProperties: false,
-      },
       execute() {
         return { count: 3 };
+      },
+      inputSchema: { type: "object" },
+      name: "ax005-output-validated",
+      outputSchema: {
+        additionalProperties: false,
+        properties: { count: { type: "number" } },
+        required: ["count"],
+        type: "object",
       },
     };
 
@@ -241,11 +213,7 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
   test("retry_attempt audit event is emitted on each retry", async () => {
     let callCount = 0;
     const tool: TuvrenToolDefinition = {
-      name: "ax005-retry",
       description: "idempotent tool",
-      idempotent: true,
-      maxRetries: 1,
-      inputSchema: { type: "object" },
       execute() {
         callCount += 1;
         if (callCount === 1) {
@@ -253,6 +221,10 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
         }
         return { ok: true };
       },
+      idempotent: true,
+      inputSchema: { type: "object" },
+      maxRetries: 1,
+      name: "ax005-retry",
     };
 
     const events = await runWithTool(tool);
@@ -267,17 +239,16 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
     const harness = createFakeKernelHarness();
     const toolName = "ax005-rate-limit";
     const tool: TuvrenToolDefinition = {
-      name: toolName,
       description: "rate limited tool",
-      inputSchema: { type: "object" },
       execute() {
         return { ok: true };
       },
+      inputSchema: { type: "object" },
+      name: toolName,
     };
 
     const runner: RuntimeRunner = {
-      id: "ax005-runner",
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const toolMessages = context.messages.filter((m) => m.role === "tool");
         if (toolMessages.length < 2) {
           return {
@@ -298,24 +269,25 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
           messages: [assistantText("done")],
           resolution: { reason: "done", type: "end_turn" },
         };
-      },
-      async resume() {
+      }),
+      id: "ax005-runner",
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("no");
-      },
+      }),
     };
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ax005-runner",
-      runnerRegistry: createBaseRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
         name: "primary",
-        tools: [tool],
         serverExecution: { rateLimit: { maxCalls: 1, windowMs: 60_000 } },
+        tools: [tool],
       },
       signal: textSignal("ax005 rate limit"),
       threadId: thread.threadId,
@@ -335,16 +307,16 @@ describe("KRT-AX005 — lifecycle audit signals", () => {
 describe("KRT-AX005 — no secrets in audit signals", () => {
   test("tool.audit event has no input, output, or metadata fields", async () => {
     const tool: TuvrenToolDefinition = {
-      name: "ax005-no-secrets",
       description: "tool with sensitive metadata",
+      execute() {
+        return { password: "should-not-appear" };
+      },
       inputSchema: { type: "object" },
       metadata: {
         apiKey: "secret-key-12345",
         endpoint: "https://internal.api",
       },
-      execute() {
-        return { password: "should-not-appear" };
-      },
+      name: "ax005-no-secrets",
     };
 
     const events = await runWithTool(tool);

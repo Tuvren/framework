@@ -8,7 +8,6 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { expect, test } from "bun:test";
 
 import { TuvrenRuntimeError } from "@tuvren/core";
@@ -22,46 +21,41 @@ import {
   createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
 } from "../src/index.ts";
-import {
-  createFakeKernelHarness,
-  createFakeRunLivenessKernelHarness,
-} from "./fake-kernel.ts";
+import { createFakeKernelHarness } from "./fake-kernel.ts";
+import { createFakeRunLivenessKernelHarness } from "./fake-run-liveness-kernel.ts";
 import { prepareExpiredToolBatch } from "./runtime-core-cold-recovery-test-helpers.ts";
 import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   textSignal,
   toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
 
-function requireAssistantMessage(
+const requireAssistantMessage = (
   message: TuvrenMessage
-): Extract<TuvrenMessage, { role: "assistant" }> {
+): Extract<TuvrenMessage, { role: "assistant" }> => {
   if (message.role !== "assistant") {
     throw new Error("expected assistant message");
   }
   return message;
-}
+};
 
-function toolResultMessage(callId: string, value: number): TuvrenMessage {
-  return {
-    parts: [
-      {
-        callId,
-        name: "lookup",
-        output: { value },
-        type: "tool_result",
-      },
-    ],
-    role: "tool",
-  };
-}
+const toolResultMessage = (callId: string, value: number): TuvrenMessage => ({
+  parts: [
+    {
+      callId,
+      name: "lookup",
+      output: { value },
+      type: "tool_result",
+    },
+  ],
+  role: "tool",
+});
 
-function createRunnerRegistry(runners: RuntimeRunner[] = []) {
-  return createBaseRunnerRegistry(runners);
-}
-
+const createRunnerRegistry = (runners: RuntimeRunner[] = []) =>
+  createBaseRunnerRegistry(runners);
 test("retains the original batch and missing calls after a second recovery crash", async () => {
   const assistant = requireAssistantMessage(
     assistantToolCalls([
@@ -75,61 +69,55 @@ test("retains the original batch and missing calls after a second recovery crash
     "Recover twice",
     [assistant, toolResultMessage("done-original", 1)]
   );
-  let releaseHeld: (() => void) | undefined;
-  let enteredHeld: (() => void) | undefined;
-  const held = new Promise<void>((resolve) => {
-    releaseHeld = resolve;
-  });
-  const entered = new Promise<void>((resolve) => {
-    enteredHeld = resolve;
-  });
+  const { promise: held, resolve: releaseHeld } = Promise.withResolvers<true>();
+  const { promise: entered, resolve: enteredHeld } =
+    Promise.withResolvers<true>();
+  const { promise: fastCompleted, resolve: markFastCompleted } =
+    Promise.withResolvers<true>();
   const runner = {
+    execute: fromSynchronousVariadicAwaited(() => ({
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    })),
     id: "fake",
-    async execute() {
-      return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
-      };
-    },
   } satisfies RuntimeRunner;
   const first = createTuvrenRuntime({
     defaultRunnerId: "fake",
     kernel: fixture.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([runner]),
     runLiveness: {
       executionOwnerId: "first-recovery",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const firstHandle = first.executeTurn({
     branchId: fixture.thread.branchId,
-    threadId: fixture.thread.threadId,
-    signal: textSignal("Recover twice"),
     config: {
       name: "primary",
       tools: [
         {
-          name: "lookup",
           description: "lookup",
-          inputSchema: { type: "object" },
           async execute(_input, context) {
             if (context.callId === "held-recovery") {
-              enteredHeld?.();
+              enteredHeld(true);
               await held;
+            } else if (context.callId === "fast-recovery") {
+              markFastCompleted(true);
             }
             return { callId: context.callId };
           },
+          inputSchema: { type: "object" },
+          name: "lookup",
         },
       ],
     },
+    signal: textSignal("Recover twice"),
+    threadId: fixture.thread.threadId,
   });
   const firstEvents = collectEvents(firstHandle.events());
-  await entered;
-  for (let index = 0; index < 20; index += 1) {
-    await Promise.resolve();
-  }
+  await Promise.all([entered, fastCompleted]);
 
   const secondDispatches: string[] = [];
   const runnerDispatchCounts: number[] = [];
@@ -138,44 +126,44 @@ test("retains the original batch and missing calls after a second recovery crash
     kernel: fixture.kernel,
     now: () => 60_000,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
+    runLiveness: {
+      executionOwnerId: "second-recovery",
+      leaseDurationMs: 50_000,
+    },
     runnerRegistry: createRunnerRegistry([
       {
-        id: "fake",
-        async execute() {
+        execute: fromSynchronousVariadicAwaited(() => {
           runnerDispatchCounts.push(secondDispatches.length);
           return {
             messages: [assistantText("done")],
             resolution: { reason: "done", type: "end_turn" },
           };
-        },
+        }),
+        id: "fake",
       },
     ]),
-    runLiveness: {
-      executionOwnerId: "second-recovery",
-      leaseDurationMs: 50_000,
-    },
   });
   const secondHandle = second.executeTurn({
     branchId: fixture.thread.branchId,
-    threadId: fixture.thread.threadId,
-    signal: textSignal("Recover twice"),
     config: {
       name: "primary",
       tools: [
         {
-          name: "lookup",
           description: "lookup",
-          inputSchema: { type: "object" },
           execute(_input, context) {
             secondDispatches.push(context.callId);
             return {};
           },
+          inputSchema: { type: "object" },
+          name: "lookup",
         },
       ],
     },
+    signal: textSignal("Recover twice"),
+    threadId: fixture.thread.threadId,
   });
   await collectEvents(secondHandle.events());
-  releaseHeld?.();
+  releaseHeld(true);
   await firstEvents;
 
   expect(secondHandle.status().phase).toBe("completed");
@@ -194,8 +182,8 @@ test("keeps earlier iteration count when an interrupted assistant is uncommitted
     "Recover count",
     [assistant]
   );
-  const inputHead = (await fixture.kernel.branch.get(fixture.thread.branchId))
-    ?.headTurnNodeHash;
+  const inputBranch = await fixture.kernel.branch.get(fixture.thread.branchId);
+  const inputHead = inputBranch?.headTurnNodeHash;
   const preemptExpired = fixture.kernel.runLiveness.preemptExpired.bind(
     fixture.kernel.runLiveness
   );
@@ -208,8 +196,8 @@ test("keeps earlier iteration count when an interrupted assistant is uncommitted
     await fixture.kernel.branch.setHead(fixture.thread.branchId, inputHead);
     return {
       ...recoveryState,
-      lastTurnNodeHash: inputHead,
       consumedStagedResults: [],
+      lastTurnNodeHash: inputHead,
       uncommittedStagedResults: recoveredRun.uncommittedStagedResults,
     };
   };
@@ -219,41 +207,41 @@ test("keeps earlier iteration count when an interrupted assistant is uncommitted
     kernel: fixture.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
+    runLiveness: {
+      executionOwnerId: "count-recovery",
+      leaseDurationMs: 50_000,
+    },
     runnerRegistry: createRunnerRegistry([
       {
-        id: "fake",
-        async execute() {
+        execute: fromSynchronousVariadicAwaited(() => {
           runnerCalls += 1;
           return {
             messages: [assistantText("unexpected extra iteration")],
             resolution: { reason: "done", type: "end_turn" },
           };
-        },
+        }),
+        id: "fake",
       },
     ]),
-    runLiveness: {
-      executionOwnerId: "count-recovery",
-      leaseDurationMs: 50_000,
-    },
   });
   const handle = runtime.executeTurn({
     branchId: fixture.thread.branchId,
-    threadId: fixture.thread.threadId,
-    signal: textSignal("Recover count"),
     config: {
-      name: "primary",
       maxIterations: 1,
+      name: "primary",
       tools: [
         {
-          name: "lookup",
           description: "lookup",
-          inputSchema: { type: "object" },
           execute() {
             return {};
           },
+          inputSchema: { type: "object" },
+          name: "lookup",
         },
       ],
     },
+    signal: textSignal("Recover count"),
+    threadId: fixture.thread.threadId,
   });
   await collectEvents(handle.events());
 
@@ -272,8 +260,8 @@ test("context plans persist the same uncommitted recovered message history they 
     "Recover context history",
     [assistant, toolResultMessage("uncommitted-completed", 1)]
   );
-  const inputHead = (await fixture.kernel.branch.get(fixture.thread.branchId))
-    ?.headTurnNodeHash;
+  const inputBranch = await fixture.kernel.branch.get(fixture.thread.branchId);
+  const inputHead = inputBranch?.headTurnNodeHash;
   const preemptExpired = fixture.kernel.runLiveness.preemptExpired.bind(
     fixture.kernel.runLiveness
   );
@@ -286,8 +274,8 @@ test("context plans persist the same uncommitted recovered message history they 
     await fixture.kernel.branch.setHead(fixture.thread.branchId, inputHead);
     return {
       ...recoveryState,
-      lastTurnNodeHash: inputHead,
       consumedStagedResults: [],
+      lastTurnNodeHash: inputHead,
       uncommittedStagedResults: recoveredRun.uncommittedStagedResults,
     };
   };
@@ -298,35 +286,35 @@ test("context plans persist the same uncommitted recovered message history they 
     kernel: fixture.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([
-      {
-        id: "fake",
-        async execute(context) {
-          runnerSawRecoveredHistory ||= context.messages.some(
-            (message) =>
-              message.role === "assistant" &&
-              message.parts.some(
-                (part) =>
-                  part.type === "tool_call" &&
-                  part.callId === "uncommitted-completed"
-              )
-          );
-          return {
-            messages: [assistantText("context history persisted")],
-            resolution: { reason: "done", type: "end_turn" },
-          };
-        },
-      },
-    ]),
     runLiveness: {
       executionOwnerId: "context-recovery",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([
+      {
+        execute: fromSynchronousVariadicAwaited(
+          (context: Parameters<RuntimeRunner["execute"]>[0]) => {
+            runnerSawRecoveredHistory ||= context.messages.some(
+              (message) =>
+                message.role === "assistant" &&
+                message.parts.some(
+                  (part) =>
+                    part.type === "tool_call" &&
+                    part.callId === "uncommitted-completed"
+                )
+            );
+            return {
+              messages: [assistantText("context history persisted")],
+              resolution: { reason: "done", type: "end_turn" },
+            };
+          }
+        ),
+        id: "fake",
+      },
+    ]),
   });
   const handle = runtime.executeTurn({
     branchId: fixture.thread.branchId,
-    threadId: fixture.thread.threadId,
-    signal: textSignal("Recover context history"),
     config: {
       contextPolicy: {
         evaluate() {
@@ -343,6 +331,8 @@ test("context plans persist the same uncommitted recovered message history they 
       },
       name: "primary",
     },
+    signal: textSignal("Recover context history"),
+    threadId: fixture.thread.threadId,
   });
   await collectEvents(handle.events());
 
@@ -374,21 +364,17 @@ test("context plans persist the same uncommitted recovered message history they 
 test("keeps failed partial tool calls context-only through a crash", async () => {
   const harness = createFakeKernelHarness();
   const liveness = createFakeRunLivenessKernelHarness(harness);
-  let stagedReady: (() => void) | undefined;
-  let releaseStage: (() => void) | undefined;
-  const ready = new Promise<void>((resolve) => {
-    stagedReady = resolve;
-  });
-  const held = new Promise<void>((resolve) => {
-    releaseStage = resolve;
-  });
+  const { promise: ready, resolve: stagedReady } =
+    Promise.withResolvers<true>();
+  const { promise: held, resolve: releaseStage } =
+    Promise.withResolvers<true>();
   const stage = liveness.kernel.staging.stage.bind(liveness.kernel.staging);
   let intercept = true;
   liveness.kernel.staging.stage = async (...args) => {
     const result = await stage(...args);
     if (intercept && args[2] === "message_1_0") {
       intercept = false;
-      stagedReady?.();
+      stagedReady(true);
       await held;
     }
     return result;
@@ -398,48 +384,46 @@ test("keeps failed partial tool calls context-only through a crash", async () =>
     kernel: liveness.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([
-      {
-        id: "fake",
-        async execute() {
-          return {
-            messages: [
-              assistantToolCalls([
-                { callId: "must-not-execute", input: {}, name: "charge" },
-              ]),
-            ],
-            partial: true,
-            resolution: {
-              error: new TuvrenRuntimeError("partial failed", {
-                code: "probe_partial_failure",
-              }),
-              fatality: "hard",
-              type: "fail",
-            },
-            toolExecutionMode: "sequential",
-          };
-        },
-      },
-    ]),
     runLiveness: {
       executionOwnerId: "partial-original",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([
+      {
+        execute: fromSynchronousVariadicAwaited(() => ({
+          messages: [
+            assistantToolCalls([
+              { callId: "must-not-execute", input: {}, name: "charge" },
+            ]),
+          ],
+          partial: true,
+          resolution: {
+            error: new TuvrenRuntimeError("partial failed", {
+              code: "probe_partial_failure",
+            }),
+            fatality: "hard",
+            type: "fail",
+          },
+          toolExecutionMode: "sequential",
+        })),
+        id: "fake",
+      },
+    ]),
   });
   const thread = await original.createThread({});
   const baseTool = {
-    name: "charge",
     description: "charge",
-    inputSchema: { type: "object" },
     execute() {
       return {};
     },
+    inputSchema: { type: "object" },
+    name: "charge",
   };
   const first = original.executeTurn({
     branchId: thread.branchId,
-    threadId: thread.threadId,
-    signal: textSignal("Recover failed partial"),
     config: { name: "primary", tools: [baseTool] },
+    signal: textSignal("Recover failed partial"),
+    threadId: thread.threadId,
   });
   const firstEvents = collectEvents(first.events());
   await ready;
@@ -449,26 +433,22 @@ test("keeps failed partial tool calls context-only through a crash", async () =>
     kernel: liveness.kernel,
     now: () => 60_000,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([
-      {
-        id: "fake",
-        async execute() {
-          return {
-            messages: [assistantText("recovered")],
-            resolution: { reason: "done", type: "end_turn" },
-          };
-        },
-      },
-    ]),
     runLiveness: {
       executionOwnerId: "partial-replacement",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([
+      {
+        execute: fromSynchronousVariadicAwaited(() => ({
+          messages: [assistantText("recovered")],
+          resolution: { reason: "done", type: "end_turn" },
+        })),
+        id: "fake",
+      },
+    ]),
   });
   const second = replacement.executeTurn({
     branchId: thread.branchId,
-    threadId: thread.threadId,
-    signal: textSignal("Recover failed partial"),
     config: {
       name: "primary",
       tools: [
@@ -481,9 +461,11 @@ test("keeps failed partial tool calls context-only through a crash", async () =>
         },
       ],
     },
+    signal: textSignal("Recover failed partial"),
+    threadId: thread.threadId,
   });
   await collectEvents(second.events());
-  releaseStage?.();
+  releaseStage(true);
   await firstEvents;
 
   expect(second.status().phase).toBe("completed");
@@ -493,21 +475,17 @@ test("keeps failed partial tool calls context-only through a crash", async () =>
 test("preserves sequential recovery mode and the first approval gate", async () => {
   const harness = createFakeKernelHarness();
   const liveness = createFakeRunLivenessKernelHarness(harness);
-  let stagedReady: (() => void) | undefined;
-  let releaseStage: (() => void) | undefined;
-  const ready = new Promise<void>((resolve) => {
-    stagedReady = resolve;
-  });
-  const heldStage = new Promise<void>((resolve) => {
-    releaseStage = resolve;
-  });
+  const { promise: ready, resolve: stagedReady } =
+    Promise.withResolvers<true>();
+  const { promise: heldStage, resolve: releaseStage } =
+    Promise.withResolvers<true>();
   const stage = liveness.kernel.staging.stage.bind(liveness.kernel.staging);
   let intercept = true;
   liveness.kernel.staging.stage = async (...args) => {
     const result = await stage(...args);
     if (intercept && args[2] === "message_1_0") {
       intercept = false;
-      stagedReady?.();
+      stagedReady(true);
       await heldStage;
     }
     return result;
@@ -517,85 +495,75 @@ test("preserves sequential recovery mode and the first approval gate", async () 
     kernel: liveness.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([
-      {
-        id: "fake",
-        async execute() {
-          return {
-            messages: [
-              assistantToolCalls([
-                { callId: "first-sequential", input: {}, name: "lookup" },
-                { callId: "second-sequential", input: {}, name: "lookup" },
-              ]),
-            ],
-            resolution: { type: "continue_iteration" },
-            toolExecutionMode: "sequential",
-          };
-        },
-      },
-    ]),
     runLiveness: {
       executionOwnerId: "sequential-original",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([
+      {
+        execute: fromSynchronousVariadicAwaited(() => ({
+          messages: [
+            assistantToolCalls([
+              { callId: "first-sequential", input: {}, name: "lookup" },
+              { callId: "second-sequential", input: {}, name: "lookup" },
+            ]),
+          ],
+          resolution: { type: "continue_iteration" },
+          toolExecutionMode: "sequential",
+        })),
+        id: "fake",
+      },
+    ]),
   });
   const thread = await original.createThread({});
   const config = {
-    name: "primary",
     maxIterations: 1,
+    name: "primary",
     tools: [
       {
-        name: "lookup",
         description: "lookup",
-        inputSchema: { type: "object" },
         execute() {
           return {};
         },
+        inputSchema: { type: "object" },
+        name: "lookup",
       },
     ],
   };
   const first = original.executeTurn({
     branchId: thread.branchId,
-    threadId: thread.threadId,
-    signal: textSignal("Recover sequential"),
     config,
+    signal: textSignal("Recover sequential"),
+    threadId: thread.threadId,
   });
   const firstEvents = collectEvents(first.events());
   await ready;
-  let releaseFirst: (() => void) | undefined;
-  let enteredFirst: (() => void) | undefined;
-  const heldFirst = new Promise<void>((resolve) => {
-    releaseFirst = resolve;
-  });
-  const entered = new Promise<void>((resolve) => {
-    enteredFirst = resolve;
-  });
+  const { promise: heldFirst, resolve: releaseFirst } =
+    Promise.withResolvers<true>();
+  const { promise: entered, resolve: enteredFirst } =
+    Promise.withResolvers<true>();
   let secondStarted = false;
   const replacement = createTuvrenRuntime({
     defaultRunnerId: "fake",
     kernel: liveness.kernel,
     now: () => 60_000,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([
-      {
-        id: "fake",
-        async execute() {
-          return {
-            messages: [assistantText("done")],
-            resolution: { reason: "done", type: "end_turn" },
-          };
-        },
-      },
-    ]),
     runLiveness: {
       executionOwnerId: "sequential-replacement",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([
+      {
+        execute: fromSynchronousVariadicAwaited(() => ({
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" },
+        })),
+        id: "fake",
+      },
+    ]),
   });
   const second = replacement.executeTurn({
     branchId: thread.branchId,
-    threadId: thread.threadId,
-    signal: textSignal("Recover sequential"),
     config: {
       ...config,
       tools: [
@@ -603,7 +571,7 @@ test("preserves sequential recovery mode and the first approval gate", async () 
           ...config.tools[0],
           async execute(_input, context) {
             if (context.callId === "first-sequential") {
-              enteredFirst?.();
+              enteredFirst(true);
               await heldFirst;
             } else {
               secondStarted = true;
@@ -613,16 +581,15 @@ test("preserves sequential recovery mode and the first approval gate", async () 
         },
       ],
     },
+    signal: textSignal("Recover sequential"),
+    threadId: thread.threadId,
   });
   const secondEvents = collectEvents(second.events());
   await entered;
-  for (let index = 0; index < 20; index += 1) {
-    await Promise.resolve();
-  }
   const secondStartedWhileFirstBlocked = secondStarted;
-  releaseFirst?.();
+  releaseFirst(true);
   await secondEvents;
-  releaseStage?.();
+  releaseStage(true);
   await firstEvents;
 
   expect(secondStartedWhileFirstBlocked).toBe(false);
@@ -647,38 +614,36 @@ test("restores original call order after parallel results stage out of order", a
     kernel: fixture.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([
-      {
-        id: "fake",
-        async execute(context) {
-          observedCallIds = context.messages
-            .filter((message) => message.role === "tool")
-            .flatMap((message) =>
-              message.parts.flatMap((part) =>
-                part.type === "tool_result" ? [part.callId] : []
-              )
-            );
-          return {
-            messages: [assistantText("recovered in original order")],
-            resolution: { reason: "done", type: "end_turn" },
-          };
-        },
-      },
-    ]),
     runLiveness: {
       executionOwnerId: "order-recovery",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([
+      {
+        execute: fromSynchronousVariadicAwaited(
+          (context: Parameters<RuntimeRunner["execute"]>[0]) => {
+            observedCallIds = context.messages
+              .filter((message) => message.role === "tool")
+              .flatMap((message) =>
+                message.parts.flatMap((part) =>
+                  part.type === "tool_result" ? [part.callId] : []
+                )
+              );
+            return {
+              messages: [assistantText("recovered in original order")],
+              resolution: { reason: "done", type: "end_turn" },
+            };
+          }
+        ),
+        id: "fake",
+      },
+    ]),
   });
   const handle = runtime.executeTurn({
     branchId: fixture.thread.branchId,
-    threadId: fixture.thread.threadId,
-    signal: textSignal("Recover order"),
     config: {
-      name: "primary",
       extensions: [
         {
-          name: "capture-finalized-tool-batch",
           afterIteration(context) {
             const toolResults = context.toolResults ?? [];
             if (toolResults.length > 0) {
@@ -686,21 +651,24 @@ test("restores original call order after parallel results stage out of order", a
                 (result) => result.callId
               );
             }
-            return undefined;
           },
+          name: "capture-finalized-tool-batch",
         },
       ],
+      name: "primary",
       tools: [
         {
-          name: "lookup",
           description: "lookup",
-          inputSchema: { type: "object" },
           execute() {
             return { value: 1 };
           },
+          inputSchema: { type: "object" },
+          name: "lookup",
         },
       ],
     },
+    signal: textSignal("Recover order"),
+    threadId: fixture.thread.threadId,
   });
   await collectEvents(handle.events());
 
@@ -734,39 +702,37 @@ test("rebuilds the recovered manifest when one missing call is completed", async
     kernel: fixture.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([
-      {
-        id: "fake",
-        async execute() {
-          return {
-            messages: [assistantText("single recovered result")],
-            resolution: { reason: "done", type: "end_turn" },
-          };
-        },
-      },
-    ]),
     runLiveness: {
       executionOwnerId: "single-recovery-manifest",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([
+      {
+        execute: fromSynchronousVariadicAwaited(() => ({
+          messages: [assistantText("single recovered result")],
+          resolution: { reason: "done", type: "end_turn" },
+        })),
+        id: "fake",
+      },
+    ]),
   });
   const handle = runtime.executeTurn({
     branchId: fixture.thread.branchId,
-    threadId: fixture.thread.threadId,
-    signal: textSignal("Recover one result"),
     config: {
       name: "primary",
       tools: [
         {
-          name: "lookup",
           description: "lookup",
-          inputSchema: { type: "object" },
           execute() {
             return { value: 1 };
           },
+          inputSchema: { type: "object" },
+          name: "lookup",
         },
       ],
     },
+    signal: textSignal("Recover one result"),
+    threadId: fixture.thread.threadId,
   });
   await collectEvents(handle.events());
 
@@ -791,40 +757,38 @@ test("approval resume keeps missing and durable results in original call order",
     kernel: fixture.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([
-      {
-        id: "fake",
-        async execute() {
-          return {
-            messages: [assistantText("approved recovered result")],
-            resolution: { reason: "done", type: "end_turn" },
-          };
-        },
-      },
-    ]),
     runLiveness: {
       executionOwnerId: "approval-recovery-order",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([
+      {
+        execute: fromSynchronousVariadicAwaited(() => ({
+          messages: [assistantText("approved recovered result")],
+          resolution: { reason: "done", type: "end_turn" },
+        })),
+        id: "fake",
+      },
+    ]),
   });
   const paused = runtime.executeTurn({
     branchId: fixture.thread.branchId,
-    threadId: fixture.thread.threadId,
-    signal: textSignal("Resume in original order"),
     config: {
       name: "primary",
       tools: [
         {
           approval: true,
-          name: "lookup",
           description: "lookup",
-          inputSchema: { type: "object" },
           execute() {
             return { value: 1 };
           },
+          inputSchema: { type: "object" },
+          name: "lookup",
         },
       ],
     },
+    signal: textSignal("Resume in original order"),
+    threadId: fixture.thread.threadId,
   });
   await collectEvents(paused.events());
   expect(paused.status().phase).toBe("paused");
@@ -835,9 +799,10 @@ test("approval resume keeps missing and durable results in original call order",
   await collectEvents(resumed.events());
 
   expect(resumed.status().phase).toBe("completed");
-  const resultCallIds = (
-    await fixture.harness.readBranchMessages(fixture.thread.branchId)
-  ).flatMap((message) => {
+  const branchMessages = await fixture.harness.readBranchMessages(
+    fixture.thread.branchId
+  );
+  const resultCallIds = branchMessages.flatMap((message) => {
     const messageRecord = toOptionalRecord(message);
     if (messageRecord?.role !== "tool" || !Array.isArray(messageRecord.parts)) {
       return [];
@@ -853,87 +818,85 @@ test("approval resume keeps missing and durable results in original call order",
 test("recovers aroundTool state before accepting its durable tool result", async () => {
   const harness = createFakeKernelHarness();
   const liveness = createFakeRunLivenessKernelHarness(harness);
-  let resultStaged: (() => void) | undefined;
-  let releaseStage: (() => void) | undefined;
-  const ready = new Promise<void>((resolve) => {
-    resultStaged = resolve;
-  });
-  const held = new Promise<void>((resolve) => {
-    releaseStage = resolve;
-  });
+  const { promise: ready, resolve: resultStaged } =
+    Promise.withResolvers<true>();
+  const { promise: held, resolve: releaseStage } =
+    Promise.withResolvers<true>();
   const stage = liveness.kernel.staging.stage.bind(liveness.kernel.staging);
   let intercept = true;
   liveness.kernel.staging.stage = async (...args) => {
     const result = await stage(...args);
     if (intercept && args[2] === "tool_result_0_stateful-call") {
       intercept = false;
-      resultStaged?.();
+      resultStaged(true);
       await held;
     }
     return result;
   };
   const runner = {
-    id: "fake",
-    async execute(context) {
-      if (context.messages.some((message) => message.role === "tool")) {
+    execute: fromSynchronousVariadicAwaited(
+      (context: Parameters<RuntimeRunner["execute"]>[0]) => {
+        if (context.messages.some((message) => message.role === "tool")) {
+          return {
+            messages: [assistantText("state recovered")],
+            resolution: { reason: "done", type: "end_turn" },
+          };
+        }
         return {
-          messages: [assistantText("state recovered")],
-          resolution: { reason: "done", type: "end_turn" },
+          messages: [
+            assistantToolCalls([
+              { callId: "stateful-call", input: {}, name: "lookup" },
+            ]),
+          ],
+          resolution: { type: "continue_iteration" },
+          toolExecutionMode: "parallel",
         };
       }
-      return {
-        messages: [
-          assistantToolCalls([
-            { callId: "stateful-call", input: {}, name: "lookup" },
-          ]),
-        ],
-        resolution: { type: "continue_iteration" },
-        toolExecutionMode: "parallel",
-      };
-    },
+    ),
+    id: "fake",
   } satisfies RuntimeRunner;
   let sideEffectCalls = 0;
   const extension = {
-    name: "__tuvren_interrupted_tool_batch",
-    aroundTool(_context, next) {
-      return next().then((result) => ({
+    async aroundTool(_context, next) {
+      return await next().then((result) => ({
         result,
         state: { completedCall: "stateful-call" },
       }));
     },
+    name: "__tuvren_interrupted_tool_batch",
   } satisfies TuvrenExtension;
   const firstRuntime = createTuvrenRuntime({
     defaultRunnerId: "fake",
     kernel: liveness.kernel,
     now: () => 21,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([runner]),
     runLiveness: {
       executionOwnerId: "state-original",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const thread = await firstRuntime.createThread({});
   const config = {
-    name: "primary",
     extensions: [extension],
+    name: "primary",
     tools: [
       {
-        name: "lookup",
         description: "lookup",
-        inputSchema: { type: "object" },
         execute() {
           sideEffectCalls += 1;
           return {};
         },
+        inputSchema: { type: "object" },
+        name: "lookup",
       },
     ],
   };
   const first = firstRuntime.executeTurn({
     branchId: thread.branchId,
-    threadId: thread.threadId,
-    signal: textSignal("Recover state"),
     config,
+    signal: textSignal("Recover state"),
+    threadId: thread.threadId,
   });
   const firstEvents = collectEvents(first.events());
   await ready;
@@ -943,27 +906,27 @@ test("recovers aroundTool state before accepting its durable tool result", async
     kernel: liveness.kernel,
     now: () => 60_000,
     payloadCodec: IDENTITY_PAYLOAD_CODEC,
-    runnerRegistry: createRunnerRegistry([runner]),
     runLiveness: {
       executionOwnerId: "state-replacement",
       leaseDurationMs: 50_000,
     },
+    runnerRegistry: createRunnerRegistry([runner]),
   });
   const second = replacement.executeTurn({
     branchId: thread.branchId,
-    threadId: thread.threadId,
-    signal: textSignal("Recover state"),
     config,
+    signal: textSignal("Recover state"),
+    threadId: thread.threadId,
   });
   await collectEvents(second.events());
   const stateAtRecovery = second.status().manifest?.extensions ?? {};
-  releaseStage?.();
+  releaseStage(true);
   await firstEvents;
 
   const treeManifest = await harness.readBranchManifest(thread.branchId);
   const contextManifestHash = treeManifest["context.manifest"];
   if (typeof contextManifestHash !== "string") {
-    throw new Error("expected recovered context manifest");
+    throw new TypeError("expected recovered context manifest");
   }
   const contextManifestPayload =
     await liveness.kernel.store.get(contextManifestHash);
