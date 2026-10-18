@@ -90,15 +90,12 @@ export interface ErasedPayload {
  * True when `value` is an {@link ErasedPayload} marker: `kind` is exactly
  * `"erased"` and `keyRef`/`reason` are strings.
  */
-export function isErasedPayload(value: unknown): value is ErasedPayload {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { kind?: unknown }).kind === "erased" &&
-    typeof (value as ErasedPayload).keyRef === "string" &&
-    typeof (value as ErasedPayload).reason === "string"
-  );
-}
+export const isErasedPayload = (value: unknown): value is ErasedPayload =>
+  typeof value === "object" &&
+  value !== null &&
+  (value as { kind?: unknown }).kind === "erased" &&
+  typeof (value as ErasedPayload).keyRef === "string" &&
+  typeof (value as ErasedPayload).reason === "string";
 
 // ── Codec contract ───────────────────────────────────────────────────────────
 
@@ -148,9 +145,8 @@ export const IDENTITY_PAYLOAD_CODEC: PayloadCodec = {
  * Returns the shared {@link IDENTITY_PAYLOAD_CODEC} instance — a factory
  * spelling for call sites that expect to construct their codec.
  */
-export function createIdentityPayloadCodec(): PayloadCodec {
-  return IDENTITY_PAYLOAD_CODEC;
-}
+export const createIdentityPayloadCodec = (): PayloadCodec =>
+  IDENTITY_PAYLOAD_CODEC;
 
 // ── Envelope discriminant ─────────────────────────────────────────────────────
 //
@@ -174,12 +170,9 @@ export const ENVELOPE_MAGIC = Uint8Array.of(0x54, 0x56, 0x45, 0x31); // "TVE1"
  * Lets the runtime read seam pass identity-codec/plaintext data through
  * unchanged so plaintext and ciphertext can coexist during migration.
  */
-export function isPayloadEnvelope(bytes: Uint8Array): boolean {
-  return (
-    bytes.length >= ENVELOPE_MAGIC.length &&
-    bytes[0] === ENVELOPE_MAGIC[0] &&
-    bytes[1] === ENVELOPE_MAGIC[1] &&
-    bytes[2] === ENVELOPE_MAGIC[2] &&
-    bytes[3] === ENVELOPE_MAGIC[3]
-  );
-}
+export const isPayloadEnvelope = (bytes: Uint8Array): boolean =>
+  bytes.length >= ENVELOPE_MAGIC.length &&
+  bytes[0] === ENVELOPE_MAGIC[0] &&
+  bytes[1] === ENVELOPE_MAGIC[1] &&
+  bytes[2] === ENVELOPE_MAGIC[2] &&
+  bytes[3] === ENVELOPE_MAGIC[3];

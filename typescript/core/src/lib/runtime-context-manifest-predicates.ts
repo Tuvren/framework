@@ -49,6 +49,131 @@ const CONTEXT_MANIFEST_COUNTER_KEYS = new Set([
 ]);
 const CONTEXT_MANIFEST_NAME_COUNTER_KEYS = new Set(["byName", "total"]);
 
+const isContextManifestCounters = (
+  value: unknown
+): value is ContextManifestCounters =>
+  isPlainObject(value) &&
+  hasOnlyAllowedKeys(value, CONTEXT_MANIFEST_COUNTER_KEYS) &&
+  isNonNegativeSafeIntegerProperty(value, "assistant") &&
+  isNonNegativeSafeIntegerProperty(value, "system") &&
+  isNonNegativeSafeIntegerProperty(value, "tool") &&
+  isNonNegativeSafeIntegerProperty(value, "user");
+
+const isContextManifestNameCounters = (
+  value: unknown
+): value is ContextManifestNameCounters =>
+  isPlainObject(value) &&
+  hasOnlyAllowedKeys(value, CONTEXT_MANIFEST_NAME_COUNTER_KEYS) &&
+  isPlainObject(value.byName) &&
+  Object.keys(value.byName).every(isNonEmptyStringValue) &&
+  Object.values(value.byName).every(
+    (count) =>
+      typeof count === "number" && Number.isSafeInteger(count) && count >= 0
+  ) &&
+  isNonNegativeSafeIntegerProperty(value, "total");
+
+const hasValidLastRoleIndex = (
+  roleCount: number,
+  lastIndex: number,
+  messageCount: number
+): boolean => {
+  if (roleCount === 0) {
+    return lastIndex === -1;
+  }
+
+  return (
+    lastIndex >= roleCount - 1 && lastIndex >= 0 && lastIndex < messageCount
+  );
+};
+
+const hasMatchingNamedCounterTotal = (
+  counters: ContextManifestNameCounters
+): boolean => {
+  const namedTotal = Object.values(counters.byName).reduce(
+    (sum, count) => sum + count,
+    0
+  );
+  return namedTotal === counters.total;
+};
+
+const hasOrderedTurnBoundaries = (
+  turnBoundaries: number[],
+  messageCount: number
+): boolean => {
+  let previousBoundary = -1;
+
+  for (const boundary of turnBoundaries) {
+    if (boundary >= messageCount || boundary <= previousBoundary) {
+      return false;
+    }
+
+    previousBoundary = boundary;
+  }
+
+  return true;
+};
+
+const hasValidTurnBoundaries = (
+  turnBoundaries: number[],
+  messageCount: number,
+  userCount: number,
+  lastUserMessageIndex: number,
+  assistantCount: number,
+  lastAssistantMessageIndex: number
+): boolean => {
+  if (!hasOrderedTurnBoundaries(turnBoundaries, messageCount)) {
+    return false;
+  }
+
+  if (userCount === 0) {
+    return turnBoundaries.length === 0;
+  }
+
+  if (!(turnBoundaries.length > 0 && turnBoundaries.length <= userCount)) {
+    return false;
+  }
+
+  if (userCount === 1) {
+    return (
+      turnBoundaries.length === 1 && turnBoundaries[0] === lastUserMessageIndex
+    );
+  }
+
+  // The manifest cannot reconstruct every message role index, but it does know
+  // the last assistant position exactly. Any declared user-turn boundary that
+  // collides with that known assistant index is structurally impossible.
+  if (
+    assistantCount > 0 &&
+    turnBoundaries.includes(lastAssistantMessageIndex)
+  ) {
+    return false;
+  }
+
+  // There must still be enough index space before the last user message to
+  // fit the declared number of user-role messages, even when the first user
+  // turn starts after leading system or assistant messages.
+  const earliestPossibleFirstUserIndex = lastUserMessageIndex - userCount + 1;
+
+  if (turnBoundaries[0] > earliestPossibleFirstUserIndex) {
+    return false;
+  }
+
+  if (
+    turnBoundaries.length === userCount &&
+    turnBoundaries.at(-1) !== lastUserMessageIndex
+  ) {
+    return false;
+  }
+
+  const lastBoundary = turnBoundaries.at(-1);
+
+  return (
+    turnBoundaries[0] <= lastUserMessageIndex &&
+    lastBoundary !== undefined &&
+    lastBoundary <= lastUserMessageIndex
+  );
+};
+
 /**
  * Returns `true` when `value` is a structurally and arithmetically valid
  * {@link ContextManifest} (KrakenFrameworkSpecification §1.6).
@@ -73,7 +198,7 @@ const CONTEXT_MANIFEST_NAME_COUNTER_KEYS = new Set(["byName", "total"]);
  *   boundary count equals the user count the final boundary must be the
  *   last user index.
  */
-export function isContextManifest(value: unknown): value is ContextManifest {
+export const isContextManifest = (value: unknown): value is ContextManifest => {
   const byRole = isPlainObject(value) ? value.byRole : undefined;
   const messageCount = isPlainObject(value) ? value.messageCount : undefined;
   const lastAssistantMessageIndex = isPlainObject(value)
@@ -156,143 +281,13 @@ export function isContextManifest(value: unknown): value is ContextManifest {
   }
 
   return true;
-}
+};
 
 /** True when `value[key]` is `undefined` or a valid {@link ContextManifest}. */
-export function isOptionalContextManifestProperty<
+export const isOptionalContextManifestProperty = <
   TKey extends string,
   TObject extends Record<string, unknown>,
->(value: TObject, key: TKey): boolean {
-  return value[key] === undefined || isContextManifest(value[key]);
-}
-
-function isContextManifestCounters(
-  value: unknown
-): value is ContextManifestCounters {
-  return (
-    isPlainObject(value) &&
-    hasOnlyAllowedKeys(value, CONTEXT_MANIFEST_COUNTER_KEYS) &&
-    isNonNegativeSafeIntegerProperty(value, "assistant") &&
-    isNonNegativeSafeIntegerProperty(value, "system") &&
-    isNonNegativeSafeIntegerProperty(value, "tool") &&
-    isNonNegativeSafeIntegerProperty(value, "user")
-  );
-}
-
-function isContextManifestNameCounters(
-  value: unknown
-): value is ContextManifestNameCounters {
-  return (
-    isPlainObject(value) &&
-    hasOnlyAllowedKeys(value, CONTEXT_MANIFEST_NAME_COUNTER_KEYS) &&
-    isPlainObject(value.byName) &&
-    Object.keys(value.byName).every(isNonEmptyStringValue) &&
-    Object.values(value.byName).every(
-      (count) =>
-        typeof count === "number" && Number.isSafeInteger(count) && count >= 0
-    ) &&
-    isNonNegativeSafeIntegerProperty(value, "total")
-  );
-}
-
-function hasValidLastRoleIndex(
-  roleCount: number,
-  lastIndex: number,
-  messageCount: number
-): boolean {
-  if (roleCount === 0) {
-    return lastIndex === -1;
-  }
-
-  return (
-    lastIndex >= roleCount - 1 && lastIndex >= 0 && lastIndex < messageCount
-  );
-}
-
-function hasMatchingNamedCounterTotal(
-  counters: ContextManifestNameCounters
-): boolean {
-  const namedTotal = Object.values(counters.byName).reduce(
-    (sum, count) => sum + count,
-    0
-  );
-  return namedTotal === counters.total;
-}
-
-function hasOrderedTurnBoundaries(
-  turnBoundaries: number[],
-  messageCount: number
-): boolean {
-  let previousBoundary = -1;
-
-  for (const boundary of turnBoundaries) {
-    if (boundary >= messageCount || boundary <= previousBoundary) {
-      return false;
-    }
-
-    previousBoundary = boundary;
-  }
-
-  return true;
-}
-
-function hasValidTurnBoundaries(
-  turnBoundaries: number[],
-  messageCount: number,
-  userCount: number,
-  lastUserMessageIndex: number,
-  assistantCount: number,
-  lastAssistantMessageIndex: number
-): boolean {
-  if (!hasOrderedTurnBoundaries(turnBoundaries, messageCount)) {
-    return false;
-  }
-
-  if (userCount === 0) {
-    return turnBoundaries.length === 0;
-  }
-
-  if (!(turnBoundaries.length > 0 && turnBoundaries.length <= userCount)) {
-    return false;
-  }
-
-  if (userCount === 1) {
-    return (
-      turnBoundaries.length === 1 && turnBoundaries[0] === lastUserMessageIndex
-    );
-  }
-
-  // The manifest cannot reconstruct every message role index, but it does know
-  // the last assistant position exactly. Any declared user-turn boundary that
-  // collides with that known assistant index is structurally impossible.
-  if (
-    assistantCount > 0 &&
-    turnBoundaries.includes(lastAssistantMessageIndex)
-  ) {
-    return false;
-  }
-
-  // There must still be enough index space before the last user message to
-  // fit the declared number of user-role messages, even when the first user
-  // turn starts after leading system or assistant messages.
-  const earliestPossibleFirstUserIndex = lastUserMessageIndex - userCount + 1;
-
-  if (turnBoundaries[0] > earliestPossibleFirstUserIndex) {
-    return false;
-  }
-
-  if (
-    turnBoundaries.length === userCount &&
-    turnBoundaries.at(-1) !== lastUserMessageIndex
-  ) {
-    return false;
-  }
-
-  const lastBoundary = turnBoundaries.at(-1);
-
-  return (
-    turnBoundaries[0] <= lastUserMessageIndex &&
-    lastBoundary !== undefined &&
-    lastBoundary <= lastUserMessageIndex
-  );
-}
+>(
+  value: TObject,
+  key: TKey
+): boolean => value[key] === undefined || isContextManifest(value[key]);
