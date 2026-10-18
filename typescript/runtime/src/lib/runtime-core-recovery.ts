@@ -24,10 +24,8 @@ import type {
 } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import { assertTuvrenMessage } from "@tuvren/core/messages";
-import {
-  decodeDeterministicKernelRecord,
-  type RecoveryState,
-} from "@tuvren/kernel-protocol";
+import { decodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type { RecoveryState } from "@tuvren/kernel-protocol";
 
 import type { InterruptedIterationRecoveryPlan } from "./runtime-core-recovery-plan.js";
 import {
@@ -319,18 +317,21 @@ export function classifyRecoveredExecutionMode(
   const recoveredStepId = recoveryState.stepSequence[0]?.id;
 
   switch (recoveredStepId) {
-    case "incorporate_input":
+    case "incorporate_input": {
       return "reuse_turn";
+    }
     case "iterate":
     case "commit_extension_state":
     case "context_engineering":
     case "incorporate_steering":
     case "handoff_context":
-    case "resume_running_status":
+    case "resume_running_status": {
       return "skip_fresh_prelude";
-    case "finalize_turn_status":
+    }
+    case "finalize_turn_status": {
       return "complete_terminal_status";
-    default:
+    }
+    default: {
       throw new TuvrenRuntimeError(
         "stale run recovery cannot safely resume the recovered phase",
         {
@@ -341,6 +342,7 @@ export function classifyRecoveredExecutionMode(
           },
         }
       );
+    }
   }
 }
 
@@ -362,13 +364,15 @@ export function classifyStaleRecoveryRace(
 
   switch (error.code) {
     case "kernel_runtime_run_not_running":
-    case "kernel_runtime_run_lease_not_expired":
+    case "kernel_runtime_run_lease_not_expired": {
       return {
         preempted: false,
         recoveryContended: true,
       };
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 
@@ -391,7 +395,7 @@ export function shouldSuppressBufferedRunnerEvents(
     return false;
   }
 
-  const code = resolution.error.code;
+  const { code } = resolution.error;
 
   return (
     typeof code === "string" &&

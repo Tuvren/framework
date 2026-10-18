@@ -8,7 +8,8 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-import { isHashString, type HashString } from "@tuvren/core";
+import { isHashString } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
 
 import { isRecord } from "./runtime-core-shared.js";
 

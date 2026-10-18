@@ -87,11 +87,11 @@ export interface RuntimeCoreLivenessHost {
     branchId: string,
     schemaId: string,
     startTurnNodeHash: HashString,
-    steps: Array<{
+    steps: {
       deterministic: boolean;
       id: string;
       sideEffects: boolean;
-    }>
+    }[]
   ): Promise<void>;
   getActiveLease(handle: RuntimeExecutionHandle): ActiveRunLease | undefined;
   getActiveRunId(handle: RuntimeExecutionHandle): string | undefined;
@@ -127,11 +127,11 @@ export async function createTrackedRun(
   branchId: string,
   schemaId: string,
   startTurnNodeHash: HashString,
-  steps: Array<{
+  steps: {
     deterministic: boolean;
     id: string;
     sideEffects: boolean;
-  }>
+  }[]
 ): Promise<void> {
   stopRunLeaseLoop(host, handle);
   const leasedRun = await createTrackedRunOnce(host, {
@@ -234,11 +234,11 @@ async function createTrackedRunOnce(
     runId: string;
     schemaId: string;
     startTurnNodeHash: HashString;
-    steps: Array<{
+    steps: {
       deterministic: boolean;
       id: string;
       sideEffects: boolean;
-    }>;
+    }[];
     turnId: string;
   }
 ): Promise<RunRecord | undefined> {
