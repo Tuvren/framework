@@ -18,13 +18,10 @@
  * True when the value is an enforceable timeout: defined, finite, and
  * strictly positive. Anything else means "no timeout".
  */
-function hasTimeout(timeoutMilliseconds: number | undefined): boolean {
-  return (
-    timeoutMilliseconds !== undefined &&
-    Number.isFinite(timeoutMilliseconds) &&
-    timeoutMilliseconds > 0
-  );
-}
+const hasTimeout = (timeoutMilliseconds: number | undefined): boolean =>
+  timeoutMilliseconds !== undefined &&
+  Number.isFinite(timeoutMilliseconds) &&
+  timeoutMilliseconds > 0;
 
 /**
  * Runs an action with an optional wall-clock timeout, used for tool
@@ -50,14 +47,14 @@ function hasTimeout(timeoutMilliseconds: number | undefined): boolean {
  * @throws The `createTimeoutError()` error on expiry, or whatever the action
  *   itself rejects with.
  */
-export async function runWithTimeout<T>(
+export const runWithTimeout = async <T>(
   action: () => Promise<T> | T,
   timeoutMilliseconds: number | undefined,
   createTimeoutError: () => Error,
   options?: {
     onTimeout?(error: Error): void;
   }
-): Promise<T> {
+): Promise<T> => {
   if (!hasTimeout(timeoutMilliseconds)) {
     return await action();
   }
@@ -78,4 +75,4 @@ export async function runWithTimeout<T>(
       clearTimeout(timeoutId);
     }
   }
-}
+};

@@ -101,29 +101,25 @@ const RISK_ORDER: Record<"low" | "medium" | "high", number> = {
   medium: 1,
 };
 
-function riskExceedsThreshold(
+const riskExceedsThreshold = (
   riskClass: "low" | "medium" | "high",
   threshold: "low" | "medium" | "high"
-): boolean {
-  return RISK_ORDER[riskClass] > RISK_ORDER[threshold];
-}
+): boolean => RISK_ORDER[riskClass] > RISK_ORDER[threshold];
 
-function riskMeetsOrExceedsThreshold(
+const riskMeetsOrExceedsThreshold = (
   riskClass: "low" | "medium" | "high",
   threshold: "low" | "medium" | "high"
-): boolean {
-  return RISK_ORDER[riskClass] >= RISK_ORDER[threshold];
-}
+): boolean => RISK_ORDER[riskClass] >= RISK_ORDER[threshold];
 
 // ---------------------------------------------------------------------------
 // Evaluation helpers: each returns null (pass) or a denial reason string
 // ---------------------------------------------------------------------------
 
-function checkResidencyExposure(
+const checkResidencyExposure = (
   capabilityId: string,
   metadata: PolicyCapabilityMetadata | undefined,
   context: CapabilityPolicyContext
-): string | null {
+): string | null => {
   if (
     metadata?.requiredResidency === undefined ||
     context.allowedResidencies === undefined
@@ -134,13 +130,13 @@ function checkResidencyExposure(
     return `capability "${capabilityId}" requires data residency "${metadata.requiredResidency}" which is not in the allowed residency list`;
   }
   return null;
-}
+};
 
-function checkActiveEndpointExposure(
+const checkActiveEndpointExposure = (
   capabilityId: string,
   metadata: PolicyCapabilityMetadata | undefined,
   context: CapabilityPolicyContext
-): string | null {
+): string | null => {
   if (!metadata?.requiresActiveEndpoint) {
     return null;
   }
@@ -148,13 +144,13 @@ function checkActiveEndpointExposure(
     return `capability "${capabilityId}" requires an active endpoint but none is currently attached`;
   }
   return null;
-}
+};
 
-function checkRiskClassExposure(
+const checkRiskClassExposure = (
   capabilityId: string,
   metadata: PolicyCapabilityMetadata | undefined,
   options: CapabilityPolicyEngineOptions
-): string | null {
+): string | null => {
   if (
     metadata?.riskClass === undefined ||
     options.maxExposedRiskClass === undefined
@@ -165,13 +161,13 @@ function checkRiskClassExposure(
     return `capability "${capabilityId}" has risk class "${metadata.riskClass}" which exceeds the maximum exposed risk class "${options.maxExposedRiskClass}"`;
   }
   return null;
-}
+};
 
-function checkResidencyInvocation(
+const checkResidencyInvocation = (
   capabilityId: string,
   metadata: PolicyCapabilityMetadata | undefined,
   context: CapabilityPolicyContext
-): string | null {
+): string | null => {
   if (
     metadata?.requiredResidency === undefined ||
     context.allowedResidencies === undefined
@@ -182,13 +178,13 @@ function checkResidencyInvocation(
     return `capability "${capabilityId}" requires data residency "${metadata.requiredResidency}" which is not in the allowed residency list`;
   }
   return null;
-}
+};
 
-function checkUserPresenceInvocation(
+const checkUserPresenceInvocation = (
   capabilityId: string,
   metadata: PolicyCapabilityMetadata | undefined,
   context: CapabilityPolicyContext
-): string | null {
+): string | null => {
   if (!metadata?.requiresUserPresence) {
     return null;
   }
@@ -196,13 +192,13 @@ function checkUserPresenceInvocation(
     return `capability "${capabilityId}" requires user presence but no user is present`;
   }
   return null;
-}
+};
 
-function checkCredentialBoundaryInvocation(
+const checkCredentialBoundaryInvocation = (
   capabilityId: string,
   metadata: PolicyCapabilityMetadata | undefined,
   context: CapabilityPolicyContext
-): string | null {
+): string | null => {
   if (
     !metadata?.requiredCredentialScopes ||
     metadata.requiredCredentialScopes.length === 0
@@ -217,13 +213,13 @@ function checkCredentialBoundaryInvocation(
     return `capability "${capabilityId}" requires credential scopes [${missing.join(", ")}] that are not available`;
   }
   return null;
-}
+};
 
-function checkRiskClassInvocation(
+const checkRiskClassInvocation = (
   capabilityId: string,
   metadata: PolicyCapabilityMetadata | undefined,
   options: CapabilityPolicyEngineOptions
-): { requiresApproval: true; reason: string } | null {
+): { requiresApproval: true; reason: string } | null => {
   if (
     metadata?.riskClass === undefined ||
     options.requireApprovalForRiskClass === undefined
@@ -242,7 +238,7 @@ function checkRiskClassInvocation(
     };
   }
   return null;
-}
+};
 
 // ---------------------------------------------------------------------------
 // Engine implementation
@@ -421,11 +417,9 @@ class BasicCapabilityPolicyEngine implements CapabilityPolicyEngine {
   }
 }
 
-export function createCapabilityPolicyEngine(
+export const createCapabilityPolicyEngine = (
   options: CapabilityPolicyEngineOptions = {}
-): CapabilityPolicyEngine {
-  return new BasicCapabilityPolicyEngine(options);
-}
+): CapabilityPolicyEngine => new BasicCapabilityPolicyEngine(options);
 
 // ---------------------------------------------------------------------------
 // Runtime helpers for the wired path
@@ -442,7 +436,7 @@ export function createCapabilityPolicyEngine(
  * fires correctly on the wired path when the client endpoint boundary reports
  * unavailability via unavailableCapabilityIds.
  */
-export function buildCapabilityMetadataFromTools(
+export const buildCapabilityMetadataFromTools = (
   tools: readonly {
     metadata?: Record<string, unknown>;
     name: string;
@@ -452,7 +446,7 @@ export function buildCapabilityMetadataFromTools(
     requiresUserPresence?: boolean;
     riskClass?: "low" | "medium" | "high";
   }[]
-): ReadonlyMap<string, PolicyCapabilityMetadata> {
+): ReadonlyMap<string, PolicyCapabilityMetadata> => {
   const map = new Map<string, PolicyCapabilityMetadata>();
   for (const tool of tools) {
     const entry: PolicyCapabilityMetadata = {};
@@ -485,4 +479,4 @@ export function buildCapabilityMetadataFromTools(
     }
   }
   return map;
-}
+};

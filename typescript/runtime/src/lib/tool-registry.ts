@@ -37,6 +37,35 @@ import type {
 import { cloneSnapshotPreservingFunctions } from "./runtime-core-shared.js";
 
 /**
+ * Deep-clones a tool definition while keeping its `execute`, `approval`, and
+ * schema `validate` functions callable.
+ */
+const cloneToolDefinition = (
+  tool: TuvrenToolDefinition
+): TuvrenToolDefinition => cloneSnapshotPreservingFunctions(tool);
+
+/**
+ * Type guard for the custom-schema flavor of framework spec §8.2: an object
+ * exposing `toJSONSchema()` for provider rendering, as opposed to a plain
+ * JSON Schema value.
+ */
+const isCustomSchema = (
+  value: TuvrenJsonSchema | CustomSchema
+): value is CustomSchema =>
+  value !== null &&
+  typeof value === "object" &&
+  "toJSONSchema" in value &&
+  typeof value.toJSONSchema === "function";
+
+/**
+ * Renders a tool schema to plain JSON Schema for `toDefinitions()`, invoking
+ * `toJSONSchema()` on custom schemas and passing JSON Schema through as-is.
+ */
+const toJsonSchema = (
+  value: TuvrenJsonSchema | CustomSchema
+): TuvrenJsonSchema => (isCustomSchema(value) ? value.toJSONSchema() : value);
+
+/**
  * Map-backed `ToolRegistry` implementation (framework spec §8.5).
  *
  * Definitions are defensively cloned (preserving functions) on `register`,
@@ -98,74 +127,11 @@ class BasicToolRegistry implements ToolRegistry {
 }
 
 /**
- * Deep-clones a tool definition while keeping its `execute`, `approval`, and
- * schema `validate` functions callable.
- */
-function cloneToolDefinition(tool: TuvrenToolDefinition): TuvrenToolDefinition {
-  return cloneSnapshotPreservingFunctions(tool);
-}
-
-/**
- * Builds the active tool registry for an agent segment from explicit host
- * tools plus extension-contributed tools (framework spec §8.5/§9.2).
- *
- * Explicit tools register first, then each extension's `tools` in extension
- * order; any name collision — including a collision between a host tool and
- * an extension tool — raises `duplicate_tool_registration`. Every definition
- * is validated via `assertTuvrenToolDefinition` on registration.
- *
- * @param explicitTools - Tools declared directly on the agent config.
- * @param extensions - Extensions whose `tools` merge into the registry;
- *   duplicate extension names raise `duplicate_extension_registration`.
- * @throws TuvrenRuntimeError on duplicate tool or extension names, or on an
- *   invalid tool definition.
- */
-export function createToolRegistry(
-  explicitTools: TuvrenToolDefinition[] = [],
-  extensions: TuvrenExtension[] = []
-): ToolRegistry {
-  assertUniqueExtensionNames(extensions);
-  const registry = new BasicToolRegistry();
-
-  for (const tool of explicitTools) {
-    registry.register(tool);
-  }
-
-  for (const extension of extensions) {
-    for (const tool of extension.tools ?? []) {
-      registry.register(tool);
-    }
-  }
-
-  return registry;
-}
-
-/**
- * Resolves a tool by name for execution-path lookups.
- *
- * When the registry is the runtime's own {@link BasicToolRegistry}, the
- * stored definition is returned directly, skipping the defensive clone that
- * `get()` performs on every call; custom `ToolRegistry` implementations fall
- * back to their public `get()`. Callers must treat the returned definition
- * as read-only.
- */
-export function resolveToolDefinition(
-  registry: ToolRegistry,
-  name: string
-): TuvrenToolDefinition | undefined {
-  if (registry instanceof BasicToolRegistry) {
-    return registry.resolve(name);
-  }
-
-  return registry.get(name);
-}
-
-/**
  * Rejects duplicate extension names before their tools merge, so a
  * misconfigured host fails fast with `duplicate_extension_registration`
  * rather than with a confusing tool-name collision.
  */
-function assertUniqueExtensionNames(extensions: TuvrenExtension[]): void {
+const assertUniqueExtensionNames = (extensions: TuvrenExtension[]): void => {
   const names = new Set<string>();
 
   for (const extension of extensions) {
@@ -183,51 +149,78 @@ function assertUniqueExtensionNames(extensions: TuvrenExtension[]): void {
 
     names.add(extension.name);
   }
-}
+};
 
 /**
- * Type guard for the custom-schema flavor of framework spec §8.2: an object
- * exposing `toJSONSchema()` for provider rendering, as opposed to a plain
- * JSON Schema value.
+ * Builds the active tool registry for an agent segment from explicit host
+ * tools plus extension-contributed tools (framework spec §8.5/§9.2).
+ *
+ * Explicit tools register first, then each extension's `tools` in extension
+ * order; any name collision — including a collision between a host tool and
+ * an extension tool — raises `duplicate_tool_registration`. Every definition
+ * is validated via `assertTuvrenToolDefinition` on registration.
+ *
+ * @param explicitTools - Tools declared directly on the agent config.
+ * @param extensions - Extensions whose `tools` merge into the registry;
+ *   duplicate extension names raise `duplicate_extension_registration`.
+ * @throws TuvrenRuntimeError on duplicate tool or extension names, or on an
+ *   invalid tool definition.
  */
-function isCustomSchema(
-  value: TuvrenJsonSchema | CustomSchema
-): value is CustomSchema {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    "toJSONSchema" in value &&
-    typeof value.toJSONSchema === "function"
-  );
-}
+export const createToolRegistry = (
+  explicitTools: TuvrenToolDefinition[] = [],
+  extensions: TuvrenExtension[] = []
+): ToolRegistry => {
+  assertUniqueExtensionNames(extensions);
+  const registry = new BasicToolRegistry();
+
+  for (const tool of explicitTools) {
+    registry.register(tool);
+  }
+
+  for (const extension of extensions) {
+    for (const tool of extension.tools ?? []) {
+      registry.register(tool);
+    }
+  }
+
+  return registry;
+};
 
 /**
- * Renders a tool schema to plain JSON Schema for `toDefinitions()`, invoking
- * `toJSONSchema()` on custom schemas and passing JSON Schema through as-is.
+ * Resolves a tool by name for execution-path lookups.
+ *
+ * When the registry is the runtime's own {@link BasicToolRegistry}, the
+ * stored definition is returned directly, skipping the defensive clone that
+ * `get()` performs on every call; custom `ToolRegistry` implementations fall
+ * back to their public `get()`. Callers must treat the returned definition
+ * as read-only.
  */
-function toJsonSchema(
-  value: TuvrenJsonSchema | CustomSchema
-): TuvrenJsonSchema {
-  return isCustomSchema(value) ? value.toJSONSchema() : value;
-}
+export const resolveToolDefinition = (
+  registry: ToolRegistry,
+  name: string
+): TuvrenToolDefinition | undefined => {
+  if (registry instanceof BasicToolRegistry) {
+    return registry.resolve(name);
+  }
+
+  return registry.get(name);
+};
 
 // ---------------------------------------------------------------------------
 // Tuvren-client execution class: synthetic tool definitions (KRT-AZ001)
 // ---------------------------------------------------------------------------
 
 /** Produces the typed capability_binding_unavailable ToolResultPart for a callId/name pair. */
-function makeUnavailableResult(callId: string, capabilityId: string) {
-  return {
-    callId,
-    isError: true as const,
-    name: capabilityId,
-    output: {
-      code: CAPABILITY_BINDING_UNAVAILABLE,
-      error: `Tuvren-client capability "${capabilityId}" has no attached endpoint.`,
-    },
-    type: "tool_result" as const,
-  };
-}
+const makeUnavailableResult = (callId: string, capabilityId: string) => ({
+  callId,
+  isError: true as const,
+  name: capabilityId,
+  output: {
+    code: CAPABILITY_BINDING_UNAVAILABLE,
+    error: `Tuvren-client capability "${capabilityId}" has no attached endpoint.`,
+  },
+  type: "tool_result" as const,
+});
 
 /**
  * Wraps `boundary.dispatch` to catch the safety-net throw that fires when
@@ -236,13 +229,13 @@ function makeUnavailableResult(callId: string, capabilityId: string) {
  * callers can surface the typed `capability_binding_unavailable` ToolResultPart
  * rather than letting the throw become a generic execution failure.
  */
-async function dispatchToClientEndpoint(
+const dispatchToClientEndpoint = async (
   boundary: ClientEndpointBoundary,
   capabilityId: string,
   callId: string,
   input: unknown,
   idempotencyKey?: string
-): Promise<ClientDispatchResult | null | "unavailable"> {
+): Promise<ClientDispatchResult | null | "unavailable"> => {
   try {
     return await boundary.dispatch(capabilityId, callId, input, idempotencyKey);
   } catch (error) {
@@ -254,7 +247,7 @@ async function dispatchToClientEndpoint(
     }
     throw error;
   }
-}
+};
 
 /**
  * Build synthetic TuvrenToolDefinition entries from attached client endpoints.
@@ -269,10 +262,10 @@ async function dispatchToClientEndpoint(
  *   going through executeSingleTool's audit path) or the result is stale.
  * - Otherwise surfaces the ClientReportedResult as a successful tool output.
  */
-export function buildClientEndpointTools(
+export const buildClientEndpointTools = (
   endpoints: AttachedClientEndpoint[],
   boundary: ClientEndpointBoundary
-): TuvrenToolDefinition[] {
+): TuvrenToolDefinition[] => {
   const tools: TuvrenToolDefinition[] = [];
 
   for (const endpoint of endpoints) {
@@ -391,4 +384,4 @@ export function buildClientEndpointTools(
   }
 
   return tools;
-}
+};
