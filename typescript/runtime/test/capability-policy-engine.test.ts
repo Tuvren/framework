@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: test runners intentionally match async contracts
 import { describe, expect, test } from "bun:test";
 
 import type {
   Binding,
+  CapabilityPolicyEngine,
   CapabilityPolicyContext,
   PolicyCapabilityMetadata,
   ToolSurface,
 } from "@tuvren/core/capabilities";
+import type { ToolResultEvent } from "@tuvren/core/events";
 import type { RuntimeRunner } from "@tuvren/core/runner";
 
 import type { PolicyDimension } from "../src/index.ts";
@@ -36,6 +37,7 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   textSignal,
 } from "./runtime-core-test-helpers.ts";
 
@@ -43,31 +45,49 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const makeSurface = (name: string, capabilityId: string): ToolSurface => {
-  return {
-    capabilityId,
-    description: `surface for ${capabilityId}`,
-    inputSchema: { type: "object" },
-    name,
-  };
-};
+const makeSurface = (name: string, capabilityId: string): ToolSurface => ({
+  capabilityId,
+  description: `surface for ${capabilityId}`,
+  inputSchema: { type: "object" },
+  name,
+});
 
 const makeBinding = (
   capabilityId: string,
   endpointKind: Binding["endpoint"]["kind"] = "tuvren-in-process"
-): Binding => {
-  return {
-    capabilityId,
-    endpoint: { id: "local", kind: endpointKind },
-    executionClass: "tuvren-server",
-  };
-};
+): Binding => ({
+  capabilityId,
+  endpoint: { id: "local", kind: endpointKind },
+  executionClass: "tuvren-server",
+});
 
 const defaultContext: CapabilityPolicyContext = {
   modelId: "test-model",
   permissions: [],
   providerId: "test-provider",
 };
+
+const makeDenyExposureDimension = (reason: string): PolicyDimension => ({
+  checkExposure: () => reason,
+  checkInvocation: () => null,
+});
+
+const makeDenyInvocationDimension = (reason: string): PolicyDimension => ({
+  checkExposure: () => null,
+  checkInvocation: () => reason,
+});
+
+const makePassDimension = (): PolicyDimension => ({
+  checkExposure: () => null,
+  checkInvocation: () => null,
+});
+
+const findToolResult = (
+  events: readonly { type: string }[]
+): ToolResultEvent | undefined =>
+  events.find(
+    (event): event is ToolResultEvent => event.type === "tool.result"
+  );
 
 // ---------------------------------------------------------------------------
 // Exposure-time: denied surfaces not in model-visible set
@@ -266,31 +286,29 @@ describe("CapabilityPolicyEngine — framework ownership", () => {
 describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
   const deniedToolName = "denied-op";
 
-  const makeDenialRunner = (): RuntimeRunner => {
-    return {
-      async execute(context) {
-        if (!context.messages.some((m) => m.role === "tool")) {
-          return {
-            messages: [
-              assistantToolCalls([
-                { callId: "deny-call-1", input: {}, name: deniedToolName },
-              ]),
-            ],
-            resolution: { type: "continue_iteration" },
-            toolExecutionMode: "parallel",
-          };
-        }
+  const makeDenialRunner = (): RuntimeRunner => ({
+    execute: fromSynchronousVariadicAwaited((context) => {
+      if (!context.messages.some((m) => m.role === "tool")) {
         return {
-          messages: [assistantText("wired denial done")],
-          resolution: { reason: "done", type: "end_turn" },
+          messages: [
+            assistantToolCalls([
+              { callId: "deny-call-1", input: {}, name: deniedToolName },
+            ]),
+          ],
+          resolution: { type: "continue_iteration" },
+          toolExecutionMode: "parallel",
         };
-      },
-      id: "denial-runner",
-      async resume() {
-        throw new Error("resume not expected");
-      },
-    };
-  };
+      }
+      return {
+        messages: [assistantText("wired denial done")],
+        resolution: { reason: "done", type: "end_turn" },
+      };
+    }),
+    id: "denial-runner",
+    resume: fromSynchronousVariadicAwaited(() => {
+      throw new Error("resume not expected");
+    }),
+  });
 
   const runDeniedTurn = async (toolExecuted: { value: boolean }) => {
     const harness = createFakeKernelHarness();
@@ -323,18 +341,16 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
       signal: textSignal("wired denial test"),
       threadId: thread.threadId,
     });
-    return collectEvents(handle.events());
+    return await collectEvents(handle.events());
   };
 
   test("denied capability surfaces as tool.result with isError true", async () => {
     const toolExecuted = { value: false };
     const events = await runDeniedTurn(toolExecuted);
-    const toolResult = events.find((e) => e.type === "tool.result");
+    const toolResult = findToolResult(events);
 
     expect(toolResult).toBeDefined();
-    expect((toolResult as Record<string, unknown> | undefined)?.isError).toBe(
-      true
-    );
+    expect(toolResult?.isError).toBe(true);
   });
 
   test("denied capability tool body is never executed", async () => {
@@ -353,7 +369,7 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
     const permittedExecuted = { value: false };
 
     const runner: RuntimeRunner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
             messages: [
@@ -369,11 +385,11 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
           messages: [assistantText("permitted done")],
           resolution: { reason: "done", type: "end_turn" },
         };
-      },
+      }),
       id: "mixed-runner",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume not expected");
-      },
+      }),
     };
 
     const runtime = createTuvrenRuntime({
@@ -539,18 +555,18 @@ describe("CapabilityPolicyEngine — BB001 exposure-time wiring", () => {
     const engine = createCapabilityPolicyEngine();
 
     const runner: RuntimeRunner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         // Record what tools the runner sees
         seenToolNames.push(...context.toolRegistry.list().map((t) => t.name));
         return {
           messages: [assistantText("done")],
           resolution: { reason: "done", type: "end_turn" },
         };
-      },
+      }),
       id: "exposure-wiring-runner",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume not expected");
-      },
+      }),
     };
 
     const runtime = createTuvrenRuntime({
@@ -750,27 +766,29 @@ describe("CapabilityPolicyEngine — BB002 wired risk-approval gate", () => {
     });
 
     const runner = {
-      async execute(context: Parameters<RuntimeRunner["execute"]>[0]) {
-        if (!context.messages.some((m) => m.role === "tool")) {
+      execute: fromSynchronousVariadicAwaited(
+        (context: Parameters<RuntimeRunner["execute"]>[0]) => {
+          if (!context.messages.some((m) => m.role === "tool")) {
+            return {
+              messages: [
+                assistantToolCalls([
+                  { callId: "risk-call-1", input: {}, name: highRiskToolName },
+                ]),
+              ],
+              resolution: { type: "continue_iteration" as const },
+              toolExecutionMode: "parallel",
+            };
+          }
           return {
-            messages: [
-              assistantToolCalls([
-                { callId: "risk-call-1", input: {}, name: highRiskToolName },
-              ]),
-            ],
-            resolution: { type: "continue_iteration" as const },
-            toolExecutionMode: "parallel",
+            messages: [assistantText("done")],
+            resolution: { reason: "done", type: "end_turn" as const },
           };
         }
-        return {
-          messages: [assistantText("done")],
-          resolution: { reason: "done", type: "end_turn" as const },
-        };
-      },
+      ),
       id: "risk-approval-runner",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume not expected in this test");
-      },
+      }),
     } satisfies RuntimeRunner;
 
     const runtime = createTuvrenRuntime({
@@ -824,31 +842,33 @@ describe("CapabilityPolicyEngine — BB002 wired risk-approval gate", () => {
     });
 
     const runner = {
-      async execute(context: Parameters<RuntimeRunner["execute"]>[0]) {
-        if (!context.messages.some((m) => m.role === "tool")) {
+      execute: fromSynchronousVariadicAwaited(
+        (context: Parameters<RuntimeRunner["execute"]>[0]) => {
+          if (!context.messages.some((m) => m.role === "tool")) {
+            return {
+              messages: [
+                assistantToolCalls([
+                  {
+                    callId: "risk-resume-1",
+                    input: {},
+                    name: highRiskToolName,
+                  },
+                ]),
+              ],
+              resolution: { type: "continue_iteration" as const },
+              toolExecutionMode: "parallel",
+            };
+          }
           return {
-            messages: [
-              assistantToolCalls([
-                {
-                  callId: "risk-resume-1",
-                  input: {},
-                  name: highRiskToolName,
-                },
-              ]),
-            ],
-            resolution: { type: "continue_iteration" as const },
-            toolExecutionMode: "parallel",
+            messages: [assistantText("done")],
+            resolution: { reason: "done", type: "end_turn" as const },
           };
         }
-        return {
-          messages: [assistantText("done")],
-          resolution: { reason: "done", type: "end_turn" as const },
-        };
-      },
+      ),
       id: "risk-approval-resume-runner",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume not expected in this test");
-      },
+      }),
     } satisfies RuntimeRunner;
 
     const runtime = createTuvrenRuntime({
@@ -1110,7 +1130,7 @@ describe("CapabilityPolicyEngine — BB004 credential-boundary dimension", () =>
     const engine = createCapabilityPolicyEngine();
 
     const runner: RuntimeRunner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
             messages: [
@@ -1126,11 +1146,11 @@ describe("CapabilityPolicyEngine — BB004 credential-boundary dimension", () =>
           messages: [assistantText("done")],
           resolution: { reason: "done", type: "end_turn" as const },
         };
-      },
+      }),
       id: "credential-runner",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("not expected");
-      },
+      }),
     };
 
     const runtime = createTuvrenRuntime({
@@ -1146,7 +1166,8 @@ describe("CapabilityPolicyEngine — BB004 credential-boundary dimension", () =>
         capabilityPolicyEngine: engine,
         name: "primary",
         policyContextInputs: {
-          availableCredentialScopes: ["read"], // write scope absent
+          // The required write scope is deliberately absent.
+          availableCredentialScopes: ["read"],
         },
         tools: [
           {
@@ -1167,11 +1188,9 @@ describe("CapabilityPolicyEngine — BB004 credential-boundary dimension", () =>
 
     const events = await collectEvents(handle.events());
 
-    const toolResultEvent = events.find((e) => e.type === "tool.result");
+    const toolResultEvent = findToolResult(events);
     expect(toolResultEvent).toBeDefined();
-    expect(
-      (toolResultEvent as Record<string, unknown> | undefined)?.isError
-    ).toBe(true);
+    expect(toolResultEvent?.isError).toBe(true);
     expect(toolExecuted).toBe(false);
   });
 });
@@ -1184,7 +1203,7 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
     const harness = createFakeKernelHarness();
 
     const runner: RuntimeRunner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
             messages: [
@@ -1200,11 +1219,11 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
           messages: [assistantText("done")],
           resolution: { reason: "done", type: "end_turn" as const },
         };
-      },
+      }),
       id: "retry-runner",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("not expected");
-      },
+      }),
     };
 
     const runtime = createTuvrenRuntime({
@@ -1227,9 +1246,11 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
             },
             idempotent: true,
             inputSchema: { type: "object" },
-            maxRetries: 3, // would normally retry 3 times
+            // This would normally retry three times.
+            maxRetries: 3,
             name: toolName,
-            nonRetryable: true, // policy governs: no retry
+            // Policy governs this tool, so no retry is permitted.
+            nonRetryable: true,
           },
         ],
       },
@@ -1250,7 +1271,7 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
     const harness = createFakeKernelHarness();
 
     const runner: RuntimeRunner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
             messages: [
@@ -1266,11 +1287,11 @@ describe("CapabilityPolicyEngine — BB004 non-retryable policy", () => {
           messages: [assistantText("done")],
           resolution: { reason: "done", type: "end_turn" as const },
         };
-      },
+      }),
       id: "normal-retry-runner",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("not expected");
-      },
+      }),
     };
 
     const runtime = createTuvrenRuntime({
@@ -1358,9 +1379,9 @@ describe("CapabilityPolicyEngine — BB005 composition and precedence", () => {
     });
     const capabilityId = "stable.tool";
     const surface = makeSurface(capabilityId, capabilityId);
-    const ctx = {
+    const ctx: CapabilityPolicyContext = {
       ...defaultContext,
-      allowedResidencies: ["us"] as readonly string[],
+      allowedResidencies: ["us"],
       capabilityMetadata: new Map([
         [capabilityId, { riskClass: "high" as const }],
       ]),
@@ -1422,9 +1443,9 @@ describe("CapabilityPolicyEngine — BB005 composition and precedence", () => {
     const engine = createCapabilityPolicyEngine();
     const capabilityId = "stable-invoke";
     const binding = makeBinding(capabilityId);
-    const ctx = {
+    const ctx: CapabilityPolicyContext = {
       ...defaultContext,
-      allowedResidencies: ["us"] as readonly string[],
+      allowedResidencies: ["us"],
       capabilityMetadata: new Map([
         [capabilityId, { requiredResidency: "eu" }],
       ]),
@@ -1468,30 +1489,28 @@ describe("CapabilityPolicyEngine — BB005 composition and precedence", () => {
 
     // Extension-contributed deny (host wraps the engine) is honored for ext.denied
     const extDeniedCapabilityId = "ext.denied";
-    const extensionEngine: import("@tuvren/core/capabilities").CapabilityPolicyEngine =
-      {
-        evaluateExposure: (surfaces, ctx) =>
-          frameworkEngine.evaluateExposure(surfaces, ctx).map((d) => ({
-            ...d,
-            exposed:
-              d.surfaceName === extDeniedCapabilityId ? false : d.exposed,
-            reason:
-              d.surfaceName === extDeniedCapabilityId
-                ? "denied by extension policy"
-                : d.reason,
-          })),
-        evaluateInvocation: (binding, ctx) => {
-          if (binding.capabilityId === extDeniedCapabilityId) {
-            return {
-              admitted: false,
-              capabilityId: binding.capabilityId,
-              executionClass: binding.executionClass,
-              reason: "denied by extension policy",
-            };
-          }
-          return frameworkEngine.evaluateInvocation(binding, ctx);
-        },
-      };
+    const extensionEngine: CapabilityPolicyEngine = {
+      evaluateExposure: (surfaces, ctx) =>
+        frameworkEngine.evaluateExposure(surfaces, ctx).map((d) => ({
+          ...d,
+          exposed: d.surfaceName === extDeniedCapabilityId ? false : d.exposed,
+          reason:
+            d.surfaceName === extDeniedCapabilityId
+              ? "denied by extension policy"
+              : d.reason,
+        })),
+      evaluateInvocation: (binding, ctx) => {
+        if (binding.capabilityId === extDeniedCapabilityId) {
+          return {
+            admitted: false,
+            capabilityId: binding.capabilityId,
+            executionClass: binding.executionClass,
+            reason: "denied by extension policy",
+          };
+        }
+        return frameworkEngine.evaluateInvocation(binding, ctx);
+      },
+    };
 
     const extDenied = extensionEngine.evaluateInvocation(
       makeBinding(extDeniedCapabilityId),
@@ -1524,20 +1543,19 @@ describe("CapabilityPolicyEngine — BB005 resume-path policy check", () => {
     // Simulate lapsed context: after pause, policy changes to deny
     let denyOnResume = false;
 
-    const mockEngine: import("@tuvren/core/capabilities").CapabilityPolicyEngine =
-      {
-        evaluateExposure: (surfaces, _ctx) =>
-          surfaces.map((s) => ({ exposed: true, surfaceName: s.name })),
-        evaluateInvocation: (binding, _ctx) => ({
-          admitted: !denyOnResume,
-          capabilityId: binding.capabilityId,
-          executionClass: binding.executionClass,
-          reason: denyOnResume ? "context expired after pause" : undefined,
-        }),
-      };
+    const mockEngine: CapabilityPolicyEngine = {
+      evaluateExposure: (surfaces, _ctx) =>
+        surfaces.map((s) => ({ exposed: true, surfaceName: s.name })),
+      evaluateInvocation: (binding, _ctx) => ({
+        admitted: !denyOnResume,
+        capabilityId: binding.capabilityId,
+        executionClass: binding.executionClass,
+        reason: denyOnResume ? "context expired after pause" : undefined,
+      }),
+    };
 
     const runner: RuntimeRunner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         if (!context.messages.some((m) => m.role === "tool")) {
           return {
             messages: [
@@ -1553,11 +1571,11 @@ describe("CapabilityPolicyEngine — BB005 resume-path policy check", () => {
           messages: [assistantText("done")],
           resolution: { reason: "done", type: "end_turn" as const },
         };
-      },
+      }),
       id: "resume-deny-runner",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("not expected");
-      },
+      }),
     };
 
     const runtime = createTuvrenRuntime({
@@ -1575,7 +1593,8 @@ describe("CapabilityPolicyEngine — BB005 resume-path policy check", () => {
         name: "primary",
         tools: [
           {
-            approval: true, // always requires approval
+            // The test requires an unconditional approval pause.
+            approval: true,
             description: "Tool that requires approval",
             execute() {
               toolExecuted = true;
@@ -1605,11 +1624,9 @@ describe("CapabilityPolicyEngine — BB005 resume-path policy check", () => {
     // Tool should be denied (not executed) because policy denied on resume
     expect(toolExecuted).toBe(false);
     // The resumed turn should have produced an error tool result
-    const toolResultEvent = resumeEvents.find((e) => e.type === "tool.result");
+    const toolResultEvent = findToolResult(resumeEvents);
     expect(toolResultEvent).toBeDefined();
-    expect(
-      (toolResultEvent as Record<string, unknown> | undefined)?.isError
-    ).toBe(true);
+    expect(toolResultEvent?.isError).toBe(true);
     // And the turn must not be stuck in paused state
     expect(resumedHandle.status().phase).not.toBe("paused");
   });
@@ -1620,27 +1637,6 @@ describe("CapabilityPolicyEngine — BB005 resume-path policy check", () => {
 // ---------------------------------------------------------------------------
 
 describe("CapabilityPolicyEngine — BB+ extension dimension interface", () => {
-  const makeDenyExposureDimension = (reason: string): PolicyDimension => {
-    return {
-      checkExposure: () => reason,
-      checkInvocation: () => null,
-    };
-  };
-
-  const makeDenyInvocationDimension = (reason: string): PolicyDimension => {
-    return {
-      checkExposure: () => null,
-      checkInvocation: () => reason,
-    };
-  };
-
-  const makePassDimension = (): PolicyDimension => {
-    return {
-      checkExposure: () => null,
-      checkInvocation: () => null,
-    };
-  };
-
   const surface = makeSurface("ext-tool", "ext.cap");
   const binding = makeBinding("ext.cap");
 
@@ -1748,9 +1744,7 @@ describe("CapabilityPolicyEngine — BB+ extension dimension interface", () => {
     };
     engine.evaluateExposure([surface], contextWithMeta);
     expect(receivedMetadata).toBeDefined();
-    expect(
-      (receivedMetadata as PolicyCapabilityMetadata | undefined)?.riskClass
-    ).toBe("high");
+    expect(receivedMetadata?.riskClass).toBe("high");
   });
 });
 
@@ -1804,9 +1798,7 @@ describe("CapabilityPolicyEngine — BB+ extension dimension boundary robustness
     };
     engine.evaluateInvocation(binding, contextWithMeta);
     expect(receivedMetadata).toBeDefined();
-    expect(
-      (receivedMetadata as PolicyCapabilityMetadata | undefined)?.riskClass
-    ).toBe("medium");
+    expect(receivedMetadata?.riskClass).toBe("medium");
   });
 });
 
@@ -1838,27 +1830,29 @@ describe("CapabilityPolicyEngine — BB+ extension dimension resume-path", () =>
     });
 
     const runner = {
-      async execute(context: Parameters<RuntimeRunner["execute"]>[0]) {
-        if (!context.messages.some((m) => m.role === "tool")) {
+      execute: fromSynchronousVariadicAwaited(
+        (context: Parameters<RuntimeRunner["execute"]>[0]) => {
+          if (!context.messages.some((m) => m.role === "tool")) {
+            return {
+              messages: [
+                assistantToolCalls([
+                  { callId: "ext-resume-call", input: {}, name: toolName },
+                ]),
+              ],
+              resolution: { type: "continue_iteration" as const },
+              toolExecutionMode: "parallel",
+            };
+          }
           return {
-            messages: [
-              assistantToolCalls([
-                { callId: "ext-resume-call", input: {}, name: toolName },
-              ]),
-            ],
-            resolution: { type: "continue_iteration" as const },
-            toolExecutionMode: "parallel",
+            messages: [assistantText("done")],
+            resolution: { reason: "done", type: "end_turn" as const },
           };
         }
-        return {
-          messages: [assistantText("done")],
-          resolution: { reason: "done", type: "end_turn" as const },
-        };
-      },
+      ),
       id: "resume-ext-runner",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
 
     const runtime = createTuvrenRuntime({
@@ -1903,11 +1897,9 @@ describe("CapabilityPolicyEngine — BB+ extension dimension resume-path", () =>
     const resumeEvents = await collectEvents(resumedHandle.events());
 
     expect(toolExecuted).toBe(false);
-    const toolResultEvent = resumeEvents.find((e) => e.type === "tool.result");
+    const toolResultEvent = findToolResult(resumeEvents);
     expect(toolResultEvent).toBeDefined();
-    expect(
-      (toolResultEvent as Record<string, unknown> | undefined)?.isError
-    ).toBe(true);
+    expect(toolResultEvent?.isError).toBe(true);
     expect(resumedHandle.status().phase).not.toBe("paused");
   });
 });

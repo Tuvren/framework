@@ -17,6 +17,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { TuvrenRuntimeError } from "@tuvren/core";
+import type { Binding } from "@tuvren/core/capabilities";
 import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 
@@ -26,26 +27,22 @@ import { createBindingResolver } from "../src/lib/binding-resolver.ts";
 // Helpers
 // ---------------------------------------------------------------------------
 
-const makeDefineTool = (name: string): TuvrenToolDefinition => {
-  return {
-    description: `tool ${name}`,
-    execute: async () => ({ result: name }),
-    inputSchema: { type: "object" },
-    name,
-  };
-};
+const makeDefineTool = (name: string): TuvrenToolDefinition => ({
+  description: `tool ${name}`,
+  execute: () => ({ result: name }),
+  inputSchema: { type: "object" },
+  name,
+});
 
-const makeMcpToolDefinition = (name: string): TuvrenToolDefinition => {
-  return {
-    name,
-    description: `mcp tool ${name}`,
-    inputSchema: { type: "object" },
-    execute: async () => ({ result: name }),
-    // MCP tools carry metadata.mcp.serverName (added by @tuvren/mcp-client
-    // during tool registration — see mcp-tool-source.ts).
-    metadata: { mcp: { originalName: name, serverName: "mcp-server-id" } },
-  };
-};
+const makeMcpToolDefinition = (name: string): TuvrenToolDefinition => ({
+  description: `mcp tool ${name}`,
+  execute: () => ({ result: name }),
+  inputSchema: { type: "object" },
+  // MCP tools carry metadata.mcp.serverName (added by @tuvren/mcp-client
+  // during tool registration — see mcp-tool-source.ts).
+  metadata: { mcp: { originalName: name, serverName: "mcp-server-id" } },
+  name,
+});
 
 // ---------------------------------------------------------------------------
 // Back-compat: defineTool → tuvren-server
@@ -163,10 +160,10 @@ describe("BindingResolver — conceptual invariant", () => {
 describe("BindingResolver — registerBinding / resolveById round-trip", () => {
   test("a registered binding is returned by resolveById", () => {
     const resolver = createBindingResolver();
-    const binding = {
+    const binding: Binding = {
       capabilityId: "provider.search",
-      endpoint: { id: "openai", kind: "provider-runtime" as const },
-      executionClass: "provider-native" as const,
+      endpoint: { id: "openai", kind: "provider-runtime" },
+      executionClass: "provider-native",
     };
 
     resolver.registerBinding(binding);
@@ -180,17 +177,17 @@ describe("BindingResolver — registerBinding / resolveById round-trip", () => {
 
   test("resolveById returns a defensive copy, not the original binding object", () => {
     const resolver = createBindingResolver();
-    const binding = {
+    const binding: Binding = {
       capabilityId: "web.search",
-      endpoint: { id: "local", kind: "tuvren-in-process" as const },
-      executionClass: "tuvren-server" as const,
+      endpoint: { id: "local", kind: "tuvren-in-process" },
+      executionClass: "tuvren-server",
     };
 
     resolver.registerBinding(binding);
     const resolved = resolver.resolveById("web.search");
 
     // Mutating the returned binding should not affect subsequent reads
-    (resolved as { capabilityId: string }).capabilityId = "mutated";
+    resolved.capabilityId = "mutated";
     const resolved2 = resolver.resolveById("web.search");
     expect(resolved2.capabilityId).toBe("web.search");
   });
@@ -199,13 +196,13 @@ describe("BindingResolver — registerBinding / resolveById round-trip", () => {
     const resolver = createBindingResolver();
     resolver.registerBinding({
       capabilityId: "code.execute",
-      endpoint: { id: "local", kind: "tuvren-in-process" as const },
-      executionClass: "tuvren-server" as const,
+      endpoint: { id: "local", kind: "tuvren-in-process" },
+      executionClass: "tuvren-server",
     });
     resolver.registerBinding({
       capabilityId: "code.execute",
-      endpoint: { id: "browser-ext", kind: "client-endpoint" as const },
-      executionClass: "tuvren-client" as const,
+      endpoint: { id: "browser-ext", kind: "client-endpoint" },
+      executionClass: "tuvren-client",
     });
 
     const resolved = resolver.resolveById("code.execute");
@@ -237,9 +234,9 @@ describe("BindingResolver — unavailable binding", () => {
     }
 
     expect(caught).toBeInstanceOf(TuvrenRuntimeError);
-    expect((caught as TuvrenRuntimeError).code).toBe(
-      CAPABILITY_BINDING_UNAVAILABLE
-    );
+    if (caught instanceof TuvrenRuntimeError) {
+      expect(caught.code).toBe(CAPABILITY_BINDING_UNAVAILABLE);
+    }
   });
 
   test("CAPABILITY_BINDING_UNAVAILABLE constant is the string capability_binding_unavailable", () => {

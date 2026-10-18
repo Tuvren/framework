@@ -33,15 +33,15 @@ import { startEventCapture } from "./runtime-core-test-helpers.ts";
 
 interface RecordingProvider {
   capturedPrompts: TuvrenMessage[][];
-  firstRequestReceived: Promise<void>;
+  firstRequestReceived: Promise<null>;
   provider: TuvrenProvider;
-  releaseFirstRequest(): void;
+  releaseFirstRequest: () => void;
 }
 
 const createRecordingProvider = (): RecordingProvider => {
   const capturedPrompts: TuvrenMessage[][] = [];
-  const firstRequestReceived = Promise.withResolvers<void>();
-  const firstRequestRelease = Promise.withResolvers<void>();
+  const firstRequestReceived = Promise.withResolvers<null>();
+  const firstRequestRelease = Promise.withResolvers<null>();
   let requestCount = 0;
   const provider: TuvrenProvider = {
     async generate(prompt: TuvrenPrompt) {
@@ -49,7 +49,7 @@ const createRecordingProvider = (): RecordingProvider => {
       requestCount += 1;
 
       if (requestCount === 1) {
-        firstRequestReceived.resolve();
+        firstRequestReceived.resolve(null);
         await firstRequestRelease.promise;
       }
 
@@ -76,16 +76,16 @@ const createRecordingProvider = (): RecordingProvider => {
     capturedPrompts,
     firstRequestReceived: firstRequestReceived.promise,
     provider,
-    releaseFirstRequest: () => firstRequestRelease.resolve(),
+    releaseFirstRequest: () => {
+      firstRequestRelease.resolve(null);
+    },
   };
 };
 
-const keyedSignal = (text: string, admissionKey: string): InputSignal => {
-  return {
-    admissionKey,
-    parts: [{ text, type: "text" }],
-  };
-};
+const keyedSignal = (text: string, admissionKey: string): InputSignal => ({
+  admissionKey,
+  parts: [{ text, type: "text" }],
+});
 
 describe("KRT-CS008 provider request admission-key exclusion", () => {
   test("keeps keyed initial input and steering out of every ReAct provider request", async () => {
