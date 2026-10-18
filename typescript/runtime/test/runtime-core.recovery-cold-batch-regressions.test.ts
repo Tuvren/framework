@@ -35,16 +35,16 @@ import {
   toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
 
-function requireAssistantMessage(
+const requireAssistantMessage = (
   message: TuvrenMessage
-): Extract<TuvrenMessage, { role: "assistant" }> {
+): Extract<TuvrenMessage, { role: "assistant" }> => {
   if (message.role !== "assistant") {
     throw new Error("expected assistant message");
   }
   return message;
-}
+};
 
-function toolResultMessage(callId: string, value: number): TuvrenMessage {
+const toolResultMessage = (callId: string, value: number): TuvrenMessage => {
   return {
     parts: [
       {
@@ -56,12 +56,11 @@ function toolResultMessage(callId: string, value: number): TuvrenMessage {
     ],
     role: "tool",
   };
-}
+};
 
-function createRunnerRegistry(runners: RuntimeRunner[] = []) {
+const createRunnerRegistry = (runners: RuntimeRunner[] = []) => {
   return createBaseRunnerRegistry(runners);
-}
-
+};
 test("retains the original batch and missing calls after a second recovery crash", async () => {
   const assistant = requireAssistantMessage(
     assistantToolCalls([

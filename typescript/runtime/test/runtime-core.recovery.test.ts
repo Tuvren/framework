@@ -59,10 +59,10 @@ import {
   toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
 
-function hasAssistantTextMessage(
+const hasAssistantTextMessage = (
   messages: readonly unknown[],
   expectedText: string
-): boolean {
+): boolean => {
   return messages.some((message) => {
     const record = toOptionalRecord(message);
 
@@ -75,12 +75,12 @@ function hasAssistantTextMessage(
       return partRecord?.type === "text" && partRecord.text === expectedText;
     });
   });
-}
+};
 
-function countUserTextMessages(
+const countUserTextMessages = (
   messages: readonly unknown[],
   expectedText: string
-): number {
+): number => {
   return messages.filter((message) => {
     const record = toOptionalRecord(message);
 
@@ -93,9 +93,9 @@ function countUserTextMessages(
       return partRecord?.type === "text" && partRecord.text === expectedText;
     });
   }).length;
-}
+};
 
-function toolResultMessage(callId: string, value: number): TuvrenMessage {
+const toolResultMessage = (callId: string, value: number): TuvrenMessage => {
   return {
     parts: [
       {
@@ -107,18 +107,203 @@ function toolResultMessage(callId: string, value: number): TuvrenMessage {
     ],
     role: "tool",
   };
-}
+};
 
-function requireAssistantMessage(
+const requireAssistantMessage = (
   message: TuvrenMessage
-): Extract<TuvrenMessage, { role: "assistant" }> {
+): Extract<TuvrenMessage, { role: "assistant" }> => {
   if (message.role !== "assistant") {
     throw new Error("expected assistant message");
   }
 
   return message;
-}
+};
 
+const stageTestMessage = async (
+  kernel: RuntimeKernel,
+  runId: string,
+  taskId: string,
+  message: TuvrenMessage
+): Promise<void> => {
+  await kernel.staging.stage(
+    runId,
+    await encryptMessageRecord(
+      { codec: IDENTITY_PAYLOAD_CODEC, scope: DEFAULT_SCOPE },
+      encodeDeterministicKernelRecord(message as unknown as KernelRecord)
+    ),
+    taskId,
+    "message",
+    "completed"
+  );
+};
+
+const prepareExpiredToolBatch = async (
+  suffix: string,
+  signalText: string,
+  interruptedMessages: TuvrenMessage[]
+) => {
+  const harness = createFakeKernelHarness();
+  const livenessHarness = createFakeRunLivenessKernelHarness(harness);
+  const thread = await livenessHarness.kernel.thread.create(
+    `thread_${suffix}`,
+    DEFAULT_AGENT_SCHEMA.schemaId,
+    `branch_${suffix}`
+  );
+  const staleTurn = await livenessHarness.kernel.turn.create(
+    `turn_${suffix}`,
+    thread.threadId,
+    thread.branchId,
+    null,
+    thread.rootTurnNodeHash
+  );
+  const inputRunId = `run_${suffix}_input`;
+  await livenessHarness.kernel.run.create(
+    inputRunId,
+    staleTurn.turnId,
+    thread.branchId,
+    DEFAULT_AGENT_SCHEMA.schemaId,
+    thread.rootTurnNodeHash,
+    [{ deterministic: false, id: "incorporate_input", sideEffects: true }]
+  );
+  await livenessHarness.kernel.run.beginStep(inputRunId, "incorporate_input");
+  await stageTestMessage(livenessHarness.kernel, inputRunId, "durable_user", {
+    parts: [{ text: signalText, type: "text" }],
+    role: "user",
+  });
+  const inputCheckpoint = await livenessHarness.kernel.run.completeStep(
+    inputRunId,
+    "incorporate_input"
+  );
+  await livenessHarness.kernel.run.complete(inputRunId, "completed");
+
+  if (inputCheckpoint.turnNodeHash === undefined) {
+    throw new Error("expected durable input checkpoint");
+  }
+
+  await livenessHarness.kernel.turn.updateHead(
+    staleTurn.turnId,
+    inputCheckpoint.turnNodeHash
+  );
+  const staleRunId = `run_${suffix}_stale`;
+  await livenessHarness.kernel.runLiveness.createLeasedRun({
+    branchId: thread.branchId,
+    executionOwnerId: "worker-that-crashed",
+    leaseExpiresAtMs: 20,
+    runId: staleRunId,
+    schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
+    startTurnNodeHash: inputCheckpoint.turnNodeHash,
+    steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+    turnId: staleTurn.turnId,
+  });
+  await livenessHarness.kernel.run.beginStep(staleRunId, "iterate");
+
+  for (const [index, message] of interruptedMessages.entries()) {
+    await stageTestMessage(
+      livenessHarness.kernel,
+      staleRunId,
+      `interrupted_message_${index.toString()}`,
+      message
+    );
+  }
+
+  return {
+    harness,
+    kernel: livenessHarness.kernel,
+    staleTurn,
+    thread,
+  };
+};
+
+const isKrakenRunnerFactory = (
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): entry is RuntimeRunnerFactory => {
+  return "create" in entry && typeof entry.create === "function";
+};
+
+const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
+  return (result.messages ?? []).some(
+    (message) =>
+      message.role === "assistant" &&
+      message.parts.some((part) => part.type === "tool_call")
+  );
+};
+
+const normalizeRunnerResult = (
+  result: RunnerExecutionResult
+): RunnerExecutionResult => {
+  if (
+    result.toolExecutionMode !== undefined ||
+    !requestsToolExecution(result)
+  ) {
+    return result;
+  }
+
+  return {
+    ...result,
+    toolExecutionMode: "parallel",
+  };
+};
+
+const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
+  const { resume } = runner;
+
+  return {
+    async execute(context) {
+      return normalizeRunnerResult(await runner.execute(context));
+    },
+    id: runner.id,
+    ...(resume === undefined
+      ? {}
+      : {
+          async resume(context) {
+            return normalizeRunnerResult(await resume(context));
+          },
+        }),
+  };
+};
+
+const wrapRunnerEntry = (
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): RuntimeRunner | RuntimeRunnerFactory => {
+  if (isKrakenRunnerFactory(entry)) {
+    return {
+      create() {
+        return wrapRunner(entry.create());
+      },
+      id: entry.id,
+    };
+  }
+
+  return wrapRunner(entry);
+};
+
+const createRunnerRegistry = (
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
+) => {
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
+};
+
+const createTelemetryCapture = (): {
+  events: TelemetryEvent[];
+  sink: TuvrenTelemetrySink;
+  spans: TelemetrySpan[];
+} => {
+  const events: TelemetryEvent[] = [];
+  const spans: TelemetrySpan[] = [];
+
+  return {
+    events,
+    sink: {
+      event: (event) => {
+        events.push(event);
+      },
+      span: (span) => {
+        spans.push(span);
+      },
+    },
+    spans,
+  };
+};
 describe("framework-runtime-core", () => {
   test("rejects run-liveness configuration when the kernel does not implement the extension", () => {
     const harness = createFakeKernelHarness();
@@ -1404,189 +1589,3 @@ describe("framework-runtime-core", () => {
     ).toBe(0);
   });
 });
-
-async function prepareExpiredToolBatch(
-  suffix: string,
-  signalText: string,
-  interruptedMessages: TuvrenMessage[]
-) {
-  const harness = createFakeKernelHarness();
-  const livenessHarness = createFakeRunLivenessKernelHarness(harness);
-  const thread = await livenessHarness.kernel.thread.create(
-    `thread_${suffix}`,
-    DEFAULT_AGENT_SCHEMA.schemaId,
-    `branch_${suffix}`
-  );
-  const staleTurn = await livenessHarness.kernel.turn.create(
-    `turn_${suffix}`,
-    thread.threadId,
-    thread.branchId,
-    null,
-    thread.rootTurnNodeHash
-  );
-  const inputRunId = `run_${suffix}_input`;
-  await livenessHarness.kernel.run.create(
-    inputRunId,
-    staleTurn.turnId,
-    thread.branchId,
-    DEFAULT_AGENT_SCHEMA.schemaId,
-    thread.rootTurnNodeHash,
-    [{ deterministic: false, id: "incorporate_input", sideEffects: true }]
-  );
-  await livenessHarness.kernel.run.beginStep(inputRunId, "incorporate_input");
-  await stageTestMessage(livenessHarness.kernel, inputRunId, "durable_user", {
-    parts: [{ text: signalText, type: "text" }],
-    role: "user",
-  });
-  const inputCheckpoint = await livenessHarness.kernel.run.completeStep(
-    inputRunId,
-    "incorporate_input"
-  );
-  await livenessHarness.kernel.run.complete(inputRunId, "completed");
-
-  if (inputCheckpoint.turnNodeHash === undefined) {
-    throw new Error("expected durable input checkpoint");
-  }
-
-  await livenessHarness.kernel.turn.updateHead(
-    staleTurn.turnId,
-    inputCheckpoint.turnNodeHash
-  );
-  const staleRunId = `run_${suffix}_stale`;
-  await livenessHarness.kernel.runLiveness.createLeasedRun({
-    branchId: thread.branchId,
-    executionOwnerId: "worker-that-crashed",
-    leaseExpiresAtMs: 20,
-    runId: staleRunId,
-    schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
-    startTurnNodeHash: inputCheckpoint.turnNodeHash,
-    steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
-    turnId: staleTurn.turnId,
-  });
-  await livenessHarness.kernel.run.beginStep(staleRunId, "iterate");
-
-  for (const [index, message] of interruptedMessages.entries()) {
-    await stageTestMessage(
-      livenessHarness.kernel,
-      staleRunId,
-      `interrupted_message_${index.toString()}`,
-      message
-    );
-  }
-
-  return {
-    harness,
-    kernel: livenessHarness.kernel,
-    staleTurn,
-    thread,
-  };
-}
-
-async function stageTestMessage(
-  kernel: RuntimeKernel,
-  runId: string,
-  taskId: string,
-  message: TuvrenMessage
-): Promise<void> {
-  await kernel.staging.stage(
-    runId,
-    await encryptMessageRecord(
-      { codec: IDENTITY_PAYLOAD_CODEC, scope: DEFAULT_SCOPE },
-      encodeDeterministicKernelRecord(message as unknown as KernelRecord)
-    ),
-    taskId,
-    "message",
-    "completed"
-  );
-}
-
-function createRunnerRegistry(
-  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-}
-
-function createTelemetryCapture(): {
-  events: TelemetryEvent[];
-  sink: TuvrenTelemetrySink;
-  spans: TelemetrySpan[];
-} {
-  const events: TelemetryEvent[] = [];
-  const spans: TelemetrySpan[] = [];
-
-  return {
-    events,
-    sink: {
-      event: (event) => {
-        events.push(event);
-      },
-      span: (span) => {
-        spans.push(span);
-      },
-    },
-    spans,
-  };
-}
-
-function wrapRunnerEntry(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): RuntimeRunner | RuntimeRunnerFactory {
-  if (isKrakenRunnerFactory(entry)) {
-    return {
-      create() {
-        return wrapRunner(entry.create());
-      },
-      id: entry.id,
-    };
-  }
-
-  return wrapRunner(entry);
-}
-
-function isKrakenRunnerFactory(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory {
-  return "create" in entry && typeof entry.create === "function";
-}
-
-function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const { resume } = runner;
-
-  return {
-    async execute(context) {
-      return normalizeRunnerResult(await runner.execute(context));
-    },
-    id: runner.id,
-    ...(resume === undefined
-      ? {}
-      : {
-          async resume(context) {
-            return normalizeRunnerResult(await resume(context));
-          },
-        }),
-  };
-}
-
-function normalizeRunnerResult(
-  result: RunnerExecutionResult
-): RunnerExecutionResult {
-  if (
-    result.toolExecutionMode !== undefined ||
-    !requestsToolExecution(result)
-  ) {
-    return result;
-  }
-
-  return {
-    ...result,
-    toolExecutionMode: "parallel",
-  };
-}
-
-function requestsToolExecution(result: RunnerExecutionResult): boolean {
-  return (result.messages ?? []).some(
-    (message) =>
-      message.role === "assistant" &&
-      message.parts.some((part) => part.type === "tool_call")
-  );
-}

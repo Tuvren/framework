@@ -68,25 +68,25 @@ import {
 const RESUME_TEXT = "Resume with the same payload";
 const KEYED_RECOVERY_TEXT = "Recover this keyed request";
 
-function nestedResumeData() {
+const nestedResumeData = () => {
   return {
     filters: { limit: 10, tags: ["alpha", "beta"] },
     nested: { enabled: true, note: null },
     retry: 2,
   };
-}
+};
 
-function keyReorderedResumeData() {
+const keyReorderedResumeData = () => {
   return {
     filters: { limit: 10, tags: ["alpha", "beta"] },
     nested: { enabled: true, note: null },
     retry: 2,
   };
-}
+};
 
 /** Stage `data` through the deterministic kernel roundtrip the recovery path
  * reads, exactly as a durable user message was persisted. */
-function durableResumeUserMessage(data: KernelRecord): TuvrenMessage {
+const durableResumeUserMessage = (data: KernelRecord): TuvrenMessage => {
   return decodeKrakenMessageRecord(
     encodeDeterministicKernelRecord({
       parts: [
@@ -102,10 +102,10 @@ function durableResumeUserMessage(data: KernelRecord): TuvrenMessage {
     }),
     "recovered user message"
   );
-}
+};
 
 /** The live inbound signal carrying the same nested JSON data. */
-function resumeSignal(data: KernelRecord): InputSignal {
+const resumeSignal = (data: KernelRecord): InputSignal => {
   return {
     parts: [
       { text: RESUME_TEXT, type: "text" },
@@ -117,32 +117,32 @@ function resumeSignal(data: KernelRecord): InputSignal {
       },
     ],
   };
-}
+};
 
-function requireUserMessage(message: TuvrenMessage) {
+const requireUserMessage = (message: TuvrenMessage) => {
   if (message.role !== "user") {
     throw new Error("the durable record must decode to a user message");
   }
 
   return message;
-}
+};
 
-function keyedSignal(admissionKey: string): InputSignal {
+const keyedSignal = (admissionKey: string): InputSignal => {
   return {
     admissionKey,
     parts: [{ text: KEYED_RECOVERY_TEXT, type: "text" }],
   };
-}
+};
 
-function keyedUserMessage(admissionKey: string): TuvrenMessage {
+const keyedUserMessage = (admissionKey: string): TuvrenMessage => {
   return {
     admissionKey,
     parts: [{ text: KEYED_RECOVERY_TEXT, type: "text" }],
     role: "user",
   };
-}
+};
 
-async function checkpointUserMessage(
+const checkpointUserMessage = async (
   kernel: RuntimeKernel,
   input: {
     activeTurnId?: string;
@@ -154,7 +154,7 @@ async function checkpointUserMessage(
     taskId: string;
     turnId: string;
   }
-): Promise<string> {
+): Promise<string> => {
   await kernel.run.create(
     input.runId,
     input.turnId,
@@ -210,9 +210,9 @@ async function checkpointUserMessage(
   await kernel.turn.updateHead(input.turnId, checkpoint.turnNodeHash);
   await kernel.branch.setHead(input.branchId, checkpoint.turnNodeHash);
   return checkpoint.turnNodeHash;
-}
+};
 
-async function executeKeyedRecovery(retryKey: string) {
+const executeKeyedRecovery = async (retryKey: string) => {
   const suffix = retryKey.toLowerCase();
   const harness = createFakeKernelHarness();
   const livenessHarness = createFakeRunLivenessKernelHarness(harness);
@@ -289,9 +289,9 @@ async function executeKeyedRecovery(retryKey: string) {
     recoveredTurnId: staleTurn.turnId,
     resultTurnId: extractTurnId(events),
   };
-}
+};
 
-async function executeKeyedRecoveryAfterEmptyInputPreemption() {
+const executeKeyedRecoveryAfterEmptyInputPreemption = async () => {
   let nowMs = 1;
   const backend = createMemoryBackend({ now: () => nowMs });
   const kernel = createRuntimeKernel({
@@ -422,8 +422,7 @@ async function executeKeyedRecoveryAfterEmptyInputPreemption() {
     recoveredUsers,
     resultTurnId: extractTurnId(events),
   };
-}
-
+};
 describe("framework-runtime-core", () => {
   describe("durable recovery signal comparison", () => {
     test("matches equal nested JSON signal data after a durable roundtrip", () => {
