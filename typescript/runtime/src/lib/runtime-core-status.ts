@@ -111,10 +111,10 @@ export interface RuntimeCoreStatusHost {
  * run is active. Used to close out an in-flight kernel run when execution
  * terminates abnormally.
  */
-export async function failActiveRunIfNeeded(
+export const failActiveRunIfNeeded = async (
   host: RuntimeCoreStatusHost,
   handle: RuntimeExecutionHandle
-): Promise<void> {
+): Promise<void> => {
   const activeRunId = handle.takeActiveRunId();
 
   if (activeRunId === undefined) {
@@ -122,7 +122,29 @@ export async function failActiveRunIfNeeded(
   }
 
   await host.completeTrackedRun(handle, activeRunId, "failed");
-}
+};
+
+/**
+ * Store the step event, complete the run step, and synchronize the handle's
+ * run-lease state from the step result.
+ */
+const completeRunStep = async (
+  host: RuntimeCoreStatusHost,
+  handle: RuntimeExecutionHandle,
+  runId: string,
+  event: KernelRecord,
+  stepId: string,
+  treeHash?: HashString
+) => {
+  const stepResult = await host.completeRunStep(
+    runId,
+    stepId,
+    await host.storeEventRecord(event),
+    treeHash
+  );
+  host.syncRunLeaseStateFromStepResult(handle, runId, stepResult);
+  return stepResult;
+};
 
 /**
  * Durably record the turn's terminal runtime status.
@@ -137,13 +159,13 @@ export async function failActiveRunIfNeeded(
  * @param resolution - Terminal resolution whose phase is persisted.
  * @param partial - Whether the turn produced partial output before failing.
  */
-export async function finalizeTurnStatus(
+export const finalizeTurnStatus = async (
   host: RuntimeCoreStatusHost,
   handle: RuntimeExecutionHandle,
   resolution: RuntimeResolution,
   partial: boolean,
   loopState: LoopState
-): Promise<void> {
+): Promise<void> => {
   const phase = resolutionToPhase(resolution);
   const headState = await host.loadHeadState(handle.request.branchId);
   const runId = host.createId();
@@ -194,7 +216,7 @@ export async function finalizeTurnStatus(
       handle.status().iterationCount
     );
   }
-}
+};
 
 /**
  * Checkpoint a `running` runtime status when resuming an execution.
@@ -213,7 +235,7 @@ export async function finalizeTurnStatus(
  *   iteration, and the manifest only when carried updates changed it) when
  *   the checkpoint produced a new turn node, or `undefined` when it did not.
  */
-export async function checkpointResumeRunningStatus(
+export const checkpointResumeRunningStatus = async (
   host: RuntimeCoreStatusHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -227,7 +249,7 @@ export async function checkpointResumeRunningStatus(
       turnNodeHash: HashString;
     }
   | undefined
-> {
+> => {
   const headState = await host.loadHeadState(handle.request.branchId);
   const nextManifest =
     loopState.carriedStateUpdates.length === 0
@@ -334,26 +356,4 @@ export async function checkpointResumeRunningStatus(
   });
   loopState.carriedStateUpdates = [];
   return undefined;
-}
-
-/**
- * Store the step event, complete the run step, and synchronize the handle's
- * run-lease state from the step result.
- */
-async function completeRunStep(
-  host: RuntimeCoreStatusHost,
-  handle: RuntimeExecutionHandle,
-  runId: string,
-  event: KernelRecord,
-  stepId: string,
-  treeHash?: HashString
-) {
-  const stepResult = await host.completeRunStep(
-    runId,
-    stepId,
-    await host.storeEventRecord(event),
-    treeHash
-  );
-  host.syncRunLeaseStateFromStepResult(handle, runId, stepResult);
-  return stepResult;
-}
+};

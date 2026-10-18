@@ -150,7 +150,7 @@ interface RuntimeExecutionStartDependencies {
  * handle receives a newly generated turn id and the request's schema id (or
  * the default agent schema id when the request names none).
  */
-export function createRuntimeExecutionHandle(
+export const createRuntimeExecutionHandle = (
   owner: RuntimeExecutionHandleRuntime,
   request: ExecutionSessionRequest,
   createId: () => string,
@@ -160,7 +160,7 @@ export function createRuntimeExecutionHandle(
     signal: ExecutionSessionRequest["signal"],
     label: string
   ) => ExecutionSessionRequest["signal"]
-): RuntimeExecutionHandle {
+): RuntimeExecutionHandle => {
   const normalizedSignal = normalizeInputSignal(
     request.signal,
     "request.signal"
@@ -180,7 +180,7 @@ export function createRuntimeExecutionHandle(
     createId(),
     request.schemaId ?? defaultAgentSchemaId
   );
-}
+};
 
 /**
  * Create the {@link RuntimeExecutionHandle} that resumes a paused execution
@@ -193,12 +193,12 @@ export function createRuntimeExecutionHandle(
  * the steering queue are transferred from the previous handle, resumed
  * cancellation is primed, and the status is reset to the `running` phase.
  */
-export function createRuntimeResumedExecutionHandle(
+export const createRuntimeResumedExecutionHandle = (
   owner: RuntimeExecutionHandleRuntime,
   previousHandle: RuntimeExecutionHandle,
   pauseContext: PauseContext,
   response: ApprovalResponse
-): RuntimeExecutionHandle {
+): RuntimeExecutionHandle => {
   const handle = new RuntimeExecutionHandle(
     owner,
     {
@@ -225,7 +225,7 @@ export function createRuntimeResumedExecutionHandle(
     phase: "running",
   });
   return handle;
-}
+};
 
 /**
  * Drive a runtime execution session from start to terminal outcome.
@@ -246,11 +246,11 @@ export function createRuntimeResumedExecutionHandle(
  * and the handle finished unconditionally in the `finally` block, so the
  * returned promise never rejects.
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Session startup intentionally linearizes recovery, resume, publication, and prelude checkpoints in one place.
-export async function startRuntimeExecutionSession(
+export const startRuntimeExecutionSession = async (
   dependencies: RuntimeExecutionStartDependencies,
   handle: RuntimeExecutionHandle
-): Promise<void> {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Session startup intentionally linearizes recovery, resume, publication, and prelude checkpoints in one place.
+): Promise<void> => {
   try {
     const pendingPausedCancellation = handle.getPendingPausedCancellation();
 
@@ -414,4 +414,4 @@ export async function startRuntimeExecutionSession(
     dependencies.stopRunLeaseLoop(handle);
     handle.finish();
   }
-}
+};
