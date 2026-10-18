@@ -1,0 +1,13 @@
+owner: KRT-CY001
+mode: contract_test
+produced:
+  date: 2026-10-18
+  commit: 4f154ecb9aacbb7366691558ab606ac23723981a
+  command: "Frozen identity comparison plus accepted fake-await correction; retained Biome and Oxfmt checks; compiler-isolation inventory; cold runtime import; owned and complete runtime tests; Changeset coverage; runtime typecheck; affected workspace check; complete milestone and fix reviews."
+result: pass
+files:
+  - path: delivery-provenance.json
+    sha256: 9ab104280fc267cffffe4e6793c49cca536c0ffb902f9b9dbfdbe14f5feb1c75
+    bytes: 3613
+    role: summary
+pass_criteria: "The 33 unchanged owned TypeScript files match the durable frozen source, the one accepted recovery-test correction has reviewed provenance, exactly 29 still-needed directives remain, the declared checks pass on the assembled CU plus CT plus CY delivery, compiler resolution uses no live sibling source, and the direct runtime Changeset is present."
