@@ -30,7 +30,8 @@ describe("stream-agui package exports", () => {
       createFixtureStream(streamAdapterFixtures.completedTurn)
     );
     const iterator = events[Symbol.asyncIterator]();
-    const nextEvent = (await iterator.next()).value as AGUIEvent | undefined;
+    const nextResult: IteratorResult<AGUIEvent> = await iterator.next();
+    const nextEvent = nextResult.done === true ? undefined : nextResult.value;
 
     expect(nextEvent?.type).toBe(EventType.RUN_STARTED);
     await iterator.return?.();
