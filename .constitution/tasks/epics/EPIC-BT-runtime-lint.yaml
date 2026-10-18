@@ -9,6 +9,7 @@ scope:
     - tools/scripts/lib/native-lint-routing.ts
     - tools/scripts/lib/biome-oxc-discovery.test.ts
     - tools/scripts/lib/native-lint-routing-argv.test.ts
+    - tools/scripts/verify.ts
     - tools/biome-coverage/bt.json
     - ".changeset/toolchain-bt-runtime-lint.md"
   tech_spec_patchable: []
@@ -83,6 +84,7 @@ tickets:
         - tools/scripts/lib/native-lint-routing.ts
         - tools/scripts/lib/biome-oxc-discovery.test.ts
         - tools/scripts/lib/native-lint-routing-argv.test.ts
+        - tools/scripts/verify.ts
         - tools/biome-coverage/bt.json
         - ".changeset/toolchain-bt-runtime-lint.md"
     verification:
