@@ -46,13 +46,13 @@ import type {
 } from "./runtime-execution-types.js";
 
 export interface RuntimeExecutionHandleRuntime {
-  cancelPausedExecution(handle: RuntimeExecutionHandle): void;
-  createResumedExecutionHandle(
+  cancelPausedExecution: (handle: RuntimeExecutionHandle) => void;
+  createResumedExecutionHandle: (
     previousHandle: RuntimeExecutionHandle,
     pauseContext: PauseContext,
     response: ApprovalResponse
-  ): RuntimeExecutionHandle;
-  startExecution(handle: RuntimeExecutionHandle): Promise<void>;
+  ) => RuntimeExecutionHandle;
+  startExecution: (handle: RuntimeExecutionHandle) => Promise<void>;
 }
 
 export class RuntimeExecutionHandle implements ExecutionHandle {
@@ -72,9 +72,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   private started = false;
   private statusSnapshot: ExecutionStatus;
   private resultSettled = false;
-  private resultResolve!: (value: ExecutionResult) => void;
-  private resultReject!: (reason: unknown) => void;
-  private readonly resultPromise: Promise<ExecutionResult>;
+  private readonly resultState = Promise.withResolvers<ExecutionResult>();
   private pendingAssistantParts: ContentPart[] = [];
   private lastFinalAssistantMessage?: TuvrenMessage;
   readonly request: ExecutionSessionRequest;
@@ -106,11 +104,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
       phase: "running",
     };
 
-    this.resultPromise = new Promise<ExecutionResult>((resolve, reject) => {
-      this.resultResolve = resolve;
-      this.resultReject = reject;
-    });
-    this.resultPromise.catch(() => undefined);
+    detachPromise(this.resultState.promise);
   }
 
   cancel(): void {
@@ -234,66 +228,64 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   }
 
   private trackEventForResult(event: TuvrenStreamEvent): void {
-    switch (event.type) {
-      case "message.start": {
-        this.pendingAssistantParts = [];
-        return;
+    if (event.type === "message.start") {
+      this.pendingAssistantParts = [];
+      return;
+    }
+
+    if (event.type === "text.done") {
+      this.pendingAssistantParts.push({ text: event.text, type: "text" });
+      return;
+    }
+
+    if (event.type === "file.done") {
+      this.pendingAssistantParts.push({
+        data:
+          typeof event.data === "string"
+            ? event.data
+            : new Uint8Array(event.data),
+        filename: event.filename,
+        mediaType: event.mediaType,
+        type: "file",
+      });
+      return;
+    }
+
+    if (event.type === "structured.done") {
+      this.pendingAssistantParts.push({
+        data: structuredClone(event.data),
+        name: event.name,
+        type: "structured",
+      });
+      return;
+    }
+
+    if (event.type === "tool_call.done") {
+      this.pendingAssistantParts.push({
+        callId: event.callId,
+        input: event.input,
+        name: event.name,
+        providerMetadata: event.providerMetadata,
+        type: "tool_call",
+      });
+      return;
+    }
+
+    if (event.type === "message.done") {
+      const [firstPart, ...remainingParts] = this.pendingAssistantParts;
+      if (firstPart !== undefined) {
+        this.lastFinalAssistantMessage = {
+          parts: [firstPart, ...remainingParts],
+          providerMetadata: undefined,
+          role: "assistant",
+        };
       }
-      case "text.done": {
-        this.pendingAssistantParts.push({ text: event.text, type: "text" });
-        return;
-      }
-      case "file.done": {
-        this.pendingAssistantParts.push({
-          data:
-            typeof event.data === "string"
-              ? event.data
-              : new Uint8Array(event.data),
-          filename: event.filename,
-          mediaType: event.mediaType,
-          type: "file",
-        });
-        return;
-      }
-      case "structured.done": {
-        this.pendingAssistantParts.push({
-          data: structuredClone(event.data),
-          name: event.name,
-          type: "structured",
-        });
-        return;
-      }
-      case "tool_call.done": {
-        this.pendingAssistantParts.push({
-          callId: event.callId,
-          input: event.input,
-          name: event.name,
-          providerMetadata: event.providerMetadata,
-          type: "tool_call",
-        });
-        return;
-      }
-      case "message.done": {
-        if (this.pendingAssistantParts.length > 0) {
-          this.lastFinalAssistantMessage = {
-            parts: this.pendingAssistantParts as [
-              ContentPart,
-              ...ContentPart[],
-            ],
-            providerMetadata: undefined,
-            role: "assistant",
-          };
-        }
-        this.pendingAssistantParts = [];
-        return;
-      }
-      case "turn.end": {
-        this.settleResult(event.status);
-        return;
-      }
-      default: {
-        return;
-      }
+      this.pendingAssistantParts = [];
+      return;
+    }
+
+    if (event.type === "turn.end") {
+      this.settleResult(event.status);
     }
   }
 
@@ -308,7 +300,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
 
     this.resultSettled = true;
 
-    const { reason } = this.abortController.signal;
+    const reason: unknown = this.abortController.signal.reason;
     const cancelledByUser =
       reason instanceof TuvrenRuntimeError &&
       reason.code === "runtime_execution_cancelled";
@@ -319,12 +311,16 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
     // execution_bound_exceeded error and its details regardless of whatever was
     // thrown by the interrupted in-flight model/tool work. (ADR-0043, BD006)
     if (turnEndStatus === "failed" && isBoundExceededError(reason)) {
-      this.resultResolve({ error: reason, executionStatus, status: "failed" });
+      this.resultState.resolve({
+        error: reason,
+        executionStatus,
+        status: "failed",
+      });
       return;
     }
 
     if (turnEndStatus === "failed" && cancelledByUser) {
-      this.resultReject(
+      this.resultState.reject(
         new TuvrenRuntimeError("Execution was cancelled", {
           code: "execution_cancelled",
         })
@@ -333,7 +329,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
     }
 
     if (turnEndStatus === "completed") {
-      this.resultResolve({
+      this.resultState.resolve({
         executionStatus,
         finalAssistantMessage: this.lastFinalAssistantMessage,
         status: "completed",
@@ -349,17 +345,17 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
             : { details: projection.details }),
         }
       );
-      this.resultResolve({ error, executionStatus, status: "failed" });
+      this.resultState.resolve({ error, executionStatus, status: "failed" });
     }
   }
 
-  awaitResult(): Promise<ExecutionResult> {
+  async awaitResult(): Promise<ExecutionResult> {
     if (!this.started) {
       this.started = true;
       detachPromise(this.runtime.startExecution(this));
     }
 
-    return this.resultPromise;
+    return await this.resultState.promise;
   }
 
   rememberError(error: TuvrenErrorProjection): void {
