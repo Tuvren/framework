@@ -19,6 +19,184 @@ import type { ToolResultPart, TuvrenMessage } from "@tuvren/core/messages";
 
 type UserMessageParts = Extract<TuvrenMessage, { role: "user" }>["parts"];
 
+const formatTraceLine = (label: string, text: string): string =>
+  text.length === 0 ? `[${label}]` : `[${label}] ${text}`;
+
+const summarizeTraceText = (text: string, limit = 120): string => {
+  const normalized = text.replaceAll(/\s+/gu, " ").trim();
+
+  if (normalized.length <= limit) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, limit - 3)}...`;
+};
+
+const summarizeAssistantMessage = (
+  message: Extract<TuvrenMessage, { role: "assistant" }>
+): string => {
+  const summaryParts: string[] = [];
+  let structuredCount = 0;
+  let fileCount = 0;
+
+  for (const part of message.parts) {
+    switch (part.type) {
+      case "text": {
+        summaryParts.push(`Text output: ${summarizeTraceText(part.text)}`);
+        break;
+      }
+      case "structured": {
+        structuredCount += 1;
+        break;
+      }
+      case "file": {
+        fileCount += 1;
+        break;
+      }
+      case "reasoning":
+      case "tool_call":
+      case "tool_result": {
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  }
+
+  if (structuredCount > 0) {
+    summaryParts.push(
+      structuredCount === 1
+        ? "[Structured output produced]"
+        : `[${structuredCount} structured outputs produced]`
+    );
+  }
+
+  if (fileCount > 0) {
+    summaryParts.push(
+      fileCount === 1
+        ? "[File attachment produced]"
+        : `[${fileCount} file attachments produced]`
+    );
+  }
+
+  return summaryParts.length > 0
+    ? summaryParts.join("; ")
+    : "[Previous agent work omitted for compatibility]";
+};
+
+const summarizeTraceValue = (value: unknown): string => {
+  if (typeof value === "string") {
+    return `"${summarizeTraceText(value)}"`;
+  }
+
+  if (
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    value === null
+  ) {
+    return String(value);
+  }
+
+  try {
+    return summarizeTraceText(JSON.stringify(value));
+  } catch {
+    return "[Unserializable result]";
+  }
+};
+
+const summarizeToolResult = (part: ToolResultPart): string =>
+  part.isError === true
+    ? `Reported an error result: ${summarizeTraceValue(part.output)}`
+    : `Returned a result: ${summarizeTraceValue(part.output)}`;
+
+const summarizeUserMessage = (
+  message: Extract<TuvrenMessage, { role: "user" }>
+): string => {
+  const summaryParts: string[] = [];
+  let structuredCount = 0;
+  let fileCount = 0;
+
+  for (const part of message.parts) {
+    switch (part.type) {
+      case "text": {
+        summaryParts.push(`Text request: ${summarizeTraceText(part.text)}`);
+        break;
+      }
+      case "structured": {
+        structuredCount += 1;
+        break;
+      }
+      case "file": {
+        fileCount += 1;
+        break;
+      }
+      case "reasoning":
+      case "tool_call":
+      case "tool_result": {
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  }
+
+  if (structuredCount > 0) {
+    summaryParts.push(
+      structuredCount === 1
+        ? "Structured input provided"
+        : `${structuredCount} structured inputs provided`
+    );
+  }
+
+  if (fileCount > 0) {
+    summaryParts.push(
+      fileCount === 1
+        ? "File attachment provided"
+        : `${fileCount} file attachments provided`
+    );
+  }
+
+  return summaryParts.length > 0
+    ? summaryParts.join("; ")
+    : "Non-text user content provided";
+};
+
+const summarizeChronologicalMessage = (message: TuvrenMessage): string[] => {
+  switch (message.role) {
+    case "assistant": {
+      return [formatTraceLine("Assistant", summarizeAssistantMessage(message))];
+    }
+    case "system": {
+      return [];
+    }
+    case "tool": {
+      return message.parts.map((part) =>
+        formatTraceLine(`Tool:${part.name}`, summarizeToolResult(part))
+      );
+    }
+    case "user": {
+      return [formatTraceLine("User", summarizeUserMessage(message))];
+    }
+    default: {
+      return [];
+    }
+  }
+};
+
+const extractChronologicalTrace = (
+  messages: readonly TuvrenMessage[]
+): string[] => {
+  const excerpts: string[] = [];
+
+  for (const message of messages) {
+    excerpts.push(...summarizeChronologicalMessage(message));
+  }
+
+  return excerpts;
+};
+
 /**
  * Builds the default `preserve_trace` handoff context builder
  * (KrakenFrameworkSpecification §10): the receiving agent gets a single
@@ -26,8 +204,8 @@ type UserMessageParts = Extract<TuvrenMessage, { role: "user" }>["parts"];
  * chronological summarized trace of the prior conversation — never raw
  * reasoning, raw tool-call inputs, or the original message history.
  */
-export function createPreserveTraceHandoffContextBuilder(): HandoffContextBuilder {
-  return (context) => {
+export const createPreserveTraceHandoffContextBuilder =
+  (): HandoffContextBuilder => (context) => {
     // `preserve_trace` is a chronological summarized trace on purpose. The
     // framework must preserve causal order across user, assistant, and tool
     // outcomes without forwarding raw reasoning or raw tool-call inputs.
@@ -49,120 +227,10 @@ export function createPreserveTraceHandoffContextBuilder(): HandoffContextBuilde
 
     return [context.helpers.storeMessage(handoffMessage)];
   };
-}
 
-/**
- * Builds the `last_output_only` handoff context builder
- * (KrakenFrameworkSpecification §10): the receiving agent gets a clean-slate
- * user message containing only the previous agent's final visible output
- * parts (text/structured/file), forwarded as canonical content parts rather
- * than textified. Falls back to a single empty text part when no assistant
- * output exists.
- */
-export function createLastOutputOnlyHandoffContextBuilder(): HandoffContextBuilder {
-  return (context) => {
-    // `last_output_only` forwards the prior agent's final visible output parts
-    // directly rather than textifying them, so structured data and files survive
-    // the handoff as canonical content parts.
-    const handoffMessage = {
-      parts: extractLastVisibleAssistantOutputParts(context.messages),
-      role: "user",
-    } satisfies TuvrenMessage;
-
-    return [context.helpers.storeMessage(handoffMessage)];
-  };
-}
-
-function extractChronologicalTrace(
-  messages: readonly TuvrenMessage[]
-): string[] {
-  const excerpts: string[] = [];
-
-  for (const message of messages) {
-    excerpts.push(...summarizeChronologicalMessage(message));
-  }
-
-  return excerpts;
-}
-
-function summarizeChronologicalMessage(message: TuvrenMessage): string[] {
-  switch (message.role) {
-    case "assistant": {
-      return [formatTraceLine("Assistant", summarizeAssistantMessage(message))];
-    }
-    case "system": {
-      return [];
-    }
-    case "tool": {
-      return message.parts.map((part) =>
-        formatTraceLine(`Tool:${part.name}`, summarizeToolResult(part))
-      );
-    }
-    case "user": {
-      return [formatTraceLine("User", summarizeUserMessage(message))];
-    }
-    default: {
-      return [];
-    }
-  }
-}
-
-function formatTraceLine(label: string, text: string): string {
-  return text.length === 0 ? `[${label}]` : `[${label}] ${text}`;
-}
-
-function summarizeTraceText(text: string, limit = 120): string {
-  const normalized = text.replace(/\s+/g, " ").trim();
-
-  if (normalized.length <= limit) {
-    return normalized;
-  }
-
-  return `${normalized.slice(0, limit - 3)}...`;
-}
-
-function summarizeTraceValue(value: unknown): string {
-  if (typeof value === "string") {
-    return `"${summarizeTraceText(value)}"`;
-  }
-
-  if (
-    typeof value === "number" ||
-    typeof value === "boolean" ||
-    value === null
-  ) {
-    return String(value);
-  }
-
-  try {
-    return summarizeTraceText(JSON.stringify(value));
-  } catch {
-    return "[Unserializable result]";
-  }
-}
-
-function extractLastVisibleAssistantOutputParts(
-  messages: readonly TuvrenMessage[]
-): UserMessageParts {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index];
-
-    if (message === undefined || message.role !== "assistant") {
-      continue;
-    }
-
-    const visibleParts = cloneVisibleAssistantParts(message.parts);
-    const nonEmptyVisibleParts = toNonEmptyArray(visibleParts);
-
-    return nonEmptyVisibleParts ?? [{ text: "", type: "text" }];
-  }
-
-  return [{ text: "", type: "text" }];
-}
-
-function cloneVisibleAssistantParts(
+const cloneVisibleAssistantParts = (
   parts: Extract<TuvrenMessage, { role: "assistant" }>["parts"]
-): UserMessageParts[number][] {
+): UserMessageParts[number][] => {
   const visibleParts: UserMessageParts[number][] = [];
 
   for (const part of parts) {
@@ -194,6 +262,11 @@ function cloneVisibleAssistantParts(
         });
         break;
       }
+      case "reasoning":
+      case "tool_call":
+      case "tool_result": {
+        break;
+      }
       default: {
         break;
       }
@@ -201,9 +274,9 @@ function cloneVisibleAssistantParts(
   }
 
   return visibleParts;
-}
+};
 
-function toNonEmptyArray<T>(values: T[]): [T, ...T[]] | undefined {
+const toNonEmptyArray = <T>(values: T[]): [T, ...T[]] | undefined => {
   const [firstValue, ...remainingValues] = values;
 
   if (firstValue === undefined) {
@@ -211,99 +284,44 @@ function toNonEmptyArray<T>(values: T[]): [T, ...T[]] | undefined {
   }
 
   return [firstValue, ...remainingValues];
-}
+};
 
-function summarizeUserMessage(
-  message: Extract<TuvrenMessage, { role: "user" }>
-): string {
-  const summaryParts: string[] = [];
-  let structuredCount = 0;
-  let fileCount = 0;
+const extractLastVisibleAssistantOutputParts = (
+  messages: readonly TuvrenMessage[]
+): UserMessageParts => {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
 
-  for (const part of message.parts) {
-    switch (part.type) {
-      case "text": {
-        summaryParts.push(`Text request: ${summarizeTraceText(part.text)}`);
-        break;
-      }
-      case "structured":
-        structuredCount += 1;
-        break;
-      case "file":
-        fileCount += 1;
-        break;
-      default:
-        break;
+    if (message === undefined || message.role !== "assistant") {
+      continue;
     }
+
+    const visibleParts = cloneVisibleAssistantParts(message.parts);
+    const nonEmptyVisibleParts = toNonEmptyArray(visibleParts);
+
+    return nonEmptyVisibleParts ?? [{ text: "", type: "text" }];
   }
 
-  if (structuredCount > 0) {
-    summaryParts.push(
-      structuredCount === 1
-        ? "Structured input provided"
-        : `${structuredCount} structured inputs provided`
-    );
-  }
+  return [{ text: "", type: "text" }];
+};
 
-  if (fileCount > 0) {
-    summaryParts.push(
-      fileCount === 1
-        ? "File attachment provided"
-        : `${fileCount} file attachments provided`
-    );
-  }
+/**
+ * Builds the `last_output_only` handoff context builder
+ * (KrakenFrameworkSpecification §10): the receiving agent gets a clean-slate
+ * user message containing only the previous agent's final visible output
+ * parts (text/structured/file), forwarded as canonical content parts rather
+ * than textified. Falls back to a single empty text part when no assistant
+ * output exists.
+ */
+export const createLastOutputOnlyHandoffContextBuilder =
+  (): HandoffContextBuilder => (context) => {
+    // `last_output_only` forwards the prior agent's final visible output parts
+    // directly rather than textifying them, so structured data and files survive
+    // the handoff as canonical content parts.
+    const handoffMessage = {
+      parts: extractLastVisibleAssistantOutputParts(context.messages),
+      role: "user",
+    } satisfies TuvrenMessage;
 
-  return summaryParts.length > 0
-    ? summaryParts.join("; ")
-    : "Non-text user content provided";
-}
-
-function summarizeToolResult(part: ToolResultPart): string {
-  return part.isError === true
-    ? `Reported an error result: ${summarizeTraceValue(part.output)}`
-    : `Returned a result: ${summarizeTraceValue(part.output)}`;
-}
-
-function summarizeAssistantMessage(
-  message: Extract<TuvrenMessage, { role: "assistant" }>
-): string {
-  const summaryParts: string[] = [];
-  let structuredCount = 0;
-  let fileCount = 0;
-
-  for (const part of message.parts) {
-    switch (part.type) {
-      case "text":
-        summaryParts.push(`Text output: ${summarizeTraceText(part.text)}`);
-        break;
-      case "structured":
-        structuredCount += 1;
-        break;
-      case "file":
-        fileCount += 1;
-        break;
-      default:
-        break;
-    }
-  }
-
-  if (structuredCount > 0) {
-    summaryParts.push(
-      structuredCount === 1
-        ? "[Structured output produced]"
-        : `[${structuredCount} structured outputs produced]`
-    );
-  }
-
-  if (fileCount > 0) {
-    summaryParts.push(
-      fileCount === 1
-        ? "[File attachment produced]"
-        : `[${fileCount} file attachments produced]`
-    );
-  }
-
-  return summaryParts.length > 0
-    ? summaryParts.join("; ")
-    : "[Previous agent work omitted for compatibility]";
-}
+    return [context.helpers.storeMessage(handoffMessage)];
+  };

@@ -25,7 +25,7 @@
  * AX003.
  */
 export interface ServerRateLimiter {
-  tryAcquire(now?: number): boolean;
+  tryAcquire: (now?: number) => boolean;
 }
 
 export interface ServerRateLimitConfig {
@@ -59,8 +59,7 @@ class FixedWindowRateLimiter implements ServerRateLimiter {
   }
 }
 
-export function createServerRateLimiter(
+export const createServerRateLimiter = (
   config: ServerRateLimitConfig
-): ServerRateLimiter {
-  return new FixedWindowRateLimiter(config.maxCalls, config.windowMs);
-}
+): ServerRateLimiter =>
+  new FixedWindowRateLimiter(config.maxCalls, config.windowMs);

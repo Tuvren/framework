@@ -47,7 +47,7 @@ export interface CollectSystemPromptsOptions {
    * Called when a computed `systemPrompt` contribution throws; the failing
    * extension is skipped and collection continues with the remaining ones.
    */
-  onError?(input: { error: Error; extensionName: string }): void;
+  onError?: (input: { error: Error; extensionName: string }) => void;
 }
 
 interface HookRunResult {
@@ -57,7 +57,7 @@ interface HookRunResult {
 }
 
 interface HookExecutionOptions {
-  emit(event: { data: unknown; name: string }): void;
+  emit: (event: { data: unknown; name: string }) => void;
   extensions: TuvrenExtension[];
   iterationCount: number;
   manifest: ContextManifest;
@@ -72,6 +72,14 @@ interface AfterIterationOptions extends HookExecutionOptions {
   toolResults?: AfterIterationContext["toolResults"];
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+  isRecord(value) ? value : {};
+
+const cloneValue = <T>(value: T): T => globalThis.structuredClone(value);
+
 /**
  * Projects each extension's `exports`-listed keys out of its manifest state
  * slice into the cross-extension visibility map handed to hooks as
@@ -79,10 +87,10 @@ interface AfterIterationOptions extends HookExecutionOptions {
  * no exports are omitted; declared keys absent from state are skipped, and
  * exported values are cloned so consumers cannot mutate manifest state.
  */
-export function buildSharedExports(
+export const buildSharedExports = (
   extensions: TuvrenExtension[],
   manifest: ContextManifest
-): Record<string, Record<string, unknown>> {
+): Record<string, Record<string, unknown>> => {
   const sharedExports: Record<string, Record<string, unknown>> = {};
 
   for (const extension of extensions) {
@@ -105,7 +113,19 @@ export function buildSharedExports(
   }
 
   return sharedExports;
-}
+};
+
+const cloneRecord = (value: unknown): Record<string, unknown> =>
+  asRecord(cloneValue(asRecord(value)));
+
+const buildContextSharedExports = (
+  extensions: TuvrenExtension[],
+  manifest: ContextManifest
+): Record<string, Record<string, unknown>> =>
+  cloneValue(buildSharedExports(extensions, manifest));
+
+const normalizeError = (error: unknown): Error =>
+  error instanceof Error ? error : new Error(String(error));
 
 /**
  * Collects extension `systemPrompt` contributions in registration order,
@@ -115,12 +135,12 @@ export function buildSharedExports(
  * {@link CollectSystemPromptsOptions.onError}; one returning `undefined`
  * contributes nothing (KrakenFrameworkSpecification §9).
  */
-export function collectSystemPrompts(
+export const collectSystemPrompts = (
   extensions: TuvrenExtension[],
   manifest: ContextManifest,
   iterationCount: number,
   options?: CollectSystemPromptsOptions
-): string[] {
+): string[] => {
   const prompts: string[] = [];
 
   for (const extension of extensions) {
@@ -153,7 +173,222 @@ export function collectSystemPrompts(
   }
 
   return prompts;
-}
+};
+
+const createTimedEmit =
+  (
+    emit: (event: { data: unknown; name: string }) => void,
+    timeoutSignal: AbortSignal
+  ): ((event: { data: unknown; name: string }) => void) =>
+  (event) => {
+    if (timeoutSignal.aborted) {
+      return;
+    }
+
+    emit(event);
+  };
+
+const createInterceptContext = (
+  extension: TuvrenExtension,
+  options: HookExecutionOptions,
+  timeoutSignal: AbortSignal
+): InterceptContext => ({
+  emit: createTimedEmit(options.emit, timeoutSignal),
+  extensionState: cloneRecord(options.manifest.extensions[extension.name]),
+  iterationCount: options.iterationCount,
+  manifest: cloneValue(options.manifest),
+  messages: cloneValue(options.messages),
+  runId: options.runId,
+  sharedExports: buildContextSharedExports(
+    options.extensions,
+    options.manifest
+  ),
+  turnId: options.turnId,
+});
+
+const collectHookState = (
+  extensionName: string,
+  result: (InterceptResult & { cePlan?: ContextEngineeringPlan }) | undefined,
+  updates: ExtensionStateUpdate[]
+): void => {
+  if (result?.state !== undefined) {
+    updates.push({
+      extensionName,
+      state: result.state,
+    });
+  }
+};
+
+const hasContextEngineeringPlan = (
+  value: InterceptResult & { cePlan?: ContextEngineeringPlan }
+): value is InterceptResult & { cePlan: ContextEngineeringPlan } =>
+  value.cePlan !== undefined;
+
+const resolutionRank = (resolution: RuntimeResolution): number => {
+  switch (resolution.type) {
+    case "fail": {
+      return resolution.fatality === "hard" ? 6 : 2;
+    }
+    case "pause": {
+      return 5;
+    }
+    case "handoff": {
+      return 4;
+    }
+    case "end_turn": {
+      return 3;
+    }
+    case "continue_iteration": {
+      return 1;
+    }
+    default: {
+      return 0;
+    }
+  }
+};
+
+const composeResolution = (
+  left: RuntimeResolution | undefined,
+  right: RuntimeResolution | undefined
+): RuntimeResolution | undefined => {
+  if (left === undefined) {
+    return right;
+  }
+
+  if (right === undefined) {
+    return left;
+  }
+
+  return resolutionRank(left) >= resolutionRank(right) ? left : right;
+};
+
+const liftInterceptResult = (
+  result: InterceptResult | undefined
+): RuntimeResolution | undefined => {
+  switch (result?.verdict) {
+    case "endTurn": {
+      if (result.reason === undefined) {
+        throw new TuvrenRuntimeError("endTurn verdicts require a reason", {
+          code: "invalid_extension_verdict",
+        });
+      }
+      return {
+        reason: result.reason,
+        type: "end_turn",
+      };
+    }
+    case "hardFail": {
+      if (result.error === undefined) {
+        throw new TuvrenRuntimeError("hardFail verdicts require an error", {
+          code: "invalid_extension_verdict",
+        });
+      }
+      return {
+        error: result.error,
+        fatality: "hard",
+        type: "fail",
+      };
+    }
+    case "softFail": {
+      if (result.error === undefined) {
+        throw new TuvrenRuntimeError("softFail verdicts require an error", {
+          code: "invalid_extension_verdict",
+        });
+      }
+      return {
+        error: result.error,
+        fatality: "soft",
+        type: "fail",
+      };
+    }
+    case undefined: {
+      return undefined;
+    }
+    default: {
+      return undefined;
+    }
+  }
+};
+
+const runInterceptHooks = async (
+  options: HookExecutionOptions,
+  hookName: "afterTurn" | "beforeIteration" | "beforeTurn",
+  reverseOrder: boolean
+): Promise<HookRunResult> => {
+  const orderedExtensions = reverseOrder
+    ? options.extensions.toReversed()
+    : options.extensions;
+  const updates: ExtensionStateUpdate[] = [];
+  let cePlan: ContextEngineeringPlan | undefined;
+  let resolution: RuntimeResolution | undefined;
+
+  const runHookAt = async (index: number): Promise<void> => {
+    let nextIndex = index;
+    let extension = orderedExtensions[nextIndex];
+    let handler = extension?.[hookName];
+
+    while (extension !== undefined && handler === undefined) {
+      nextIndex += 1;
+      extension = orderedExtensions[nextIndex];
+      handler = extension?.[hookName];
+    }
+
+    if (extension === undefined || handler === undefined) {
+      return;
+    }
+
+    const timeoutController = new AbortController();
+
+    try {
+      const result = await runWithTimeout(
+        async () =>
+          await handler.call(
+            extension,
+            createInterceptContext(extension, options, timeoutController.signal)
+          ),
+        extension.timeout,
+        () =>
+          new Error(
+            `extension "${extension.name}" ${hookName} timed out after ${extension.timeout}ms`
+          ),
+        {
+          onTimeout: (error) => {
+            timeoutController.abort(error);
+          },
+        }
+      );
+      collectHookState(extension.name, result, updates);
+
+      if (
+        hookName === "beforeIteration" &&
+        result !== undefined &&
+        hasContextEngineeringPlan(result)
+      ) {
+        cePlan ??= result.cePlan;
+      }
+
+      resolution = composeResolution(resolution, liftInterceptResult(result));
+    } catch (error: unknown) {
+      resolution = composeResolution(
+        resolution,
+        liftInterceptResult({
+          error: normalizeError(error),
+          verdict: "softFail",
+        })
+      );
+    }
+
+    await runHookAt(nextIndex + 1);
+  };
+
+  await runHookAt(0);
+
+  return {
+    cePlan,
+    resolution,
+    updates,
+  };
+};
 
 /**
  * Runs `beforeTurn` hooks in registration order and composes their verdicts
@@ -161,33 +396,30 @@ export function collectSystemPrompts(
  * that throws or exceeds its extension `timeout` contributes a `softFail`
  * resolution instead of aborting the pass.
  */
-export async function runBeforeTurnHooks(
+export const runBeforeTurnHooks = async (
   options: HookExecutionOptions
-): Promise<HookRunResult> {
-  return await runInterceptHooks(options, "beforeTurn", false);
-}
+): Promise<HookRunResult> =>
+  await runInterceptHooks(options, "beforeTurn", false);
 
 /**
  * Runs `beforeIteration` hooks in registration order. Behaves like
  * {@link runBeforeTurnHooks}, and additionally surfaces the first
  * context-engineering plan (`cePlan`) a hook returns.
  */
-export async function runBeforeIterationHooks(
+export const runBeforeIterationHooks = async (
   options: HookExecutionOptions
-): Promise<HookRunResult> {
-  return await runInterceptHooks(options, "beforeIteration", false);
-}
+): Promise<HookRunResult> =>
+  await runInterceptHooks(options, "beforeIteration", false);
 
 /**
  * Runs `afterTurn` hooks in reverse registration order
  * (KrakenFrameworkSpecification §9); otherwise behaves like
  * {@link runBeforeTurnHooks}.
  */
-export async function runAfterTurnHooks(
+export const runAfterTurnHooks = async (
   options: HookExecutionOptions
-): Promise<HookRunResult> {
-  return await runInterceptHooks(options, "afterTurn", true);
-}
+): Promise<HookRunResult> =>
+  await runInterceptHooks(options, "afterTurn", true);
 
 /**
  * Runs `afterIteration` hooks in reverse registration order, giving each the
@@ -196,24 +428,34 @@ export async function runAfterTurnHooks(
  * (KrakenFrameworkSpecification §9). Verdicts compose by RuntimeResolution
  * precedence, and a hook that throws or times out contributes a `softFail`.
  */
-export async function runAfterIterationHooks(
+export const runAfterIterationHooks = async (
   options: AfterIterationOptions
-): Promise<HookRunResult> {
+): Promise<HookRunResult> => {
   const { extensions } = options;
   const updates: ExtensionStateUpdate[] = [];
   let resolution: RuntimeResolution | undefined;
 
-  for (const extension of [...extensions].reverse()) {
-    if (extension.afterIteration === undefined) {
-      continue;
+  const orderedExtensions = extensions.toReversed();
+  const runHookAt = async (index: number): Promise<void> => {
+    let nextIndex = index;
+    let extension = orderedExtensions[nextIndex];
+    let handler = extension?.afterIteration;
+
+    while (extension !== undefined && handler === undefined) {
+      nextIndex += 1;
+      extension = orderedExtensions[nextIndex];
+      handler = extension?.afterIteration;
     }
 
+    if (extension === undefined || handler === undefined) {
+      return;
+    }
     const timeoutController = new AbortController();
 
     try {
       const result = await runWithTimeout(
-        () =>
-          extension.afterIteration?.({
+        async () =>
+          await handler.call(extension, {
             emit: createTimedEmit(options.emit, timeoutController.signal),
             extensionState: cloneRecord(
               options.manifest.extensions[extension.name]
@@ -254,230 +496,14 @@ export async function runAfterIterationHooks(
         })
       );
     }
-  }
+
+    await runHookAt(nextIndex + 1);
+  };
+
+  await runHookAt(0);
 
   return {
     resolution,
     updates,
   };
-}
-
-function composeResolution(
-  left: RuntimeResolution | undefined,
-  right: RuntimeResolution | undefined
-): RuntimeResolution | undefined {
-  if (left === undefined) {
-    return right;
-  }
-
-  if (right === undefined) {
-    return left;
-  }
-
-  return resolutionRank(left) >= resolutionRank(right) ? left : right;
-}
-
-function resolutionRank(resolution: RuntimeResolution): number {
-  switch (resolution.type) {
-    case "fail":
-      return resolution.fatality === "hard" ? 6 : 2;
-    case "pause":
-      return 5;
-    case "handoff":
-      return 4;
-    case "end_turn":
-      return 3;
-    case "continue_iteration":
-      return 1;
-    default:
-      return 0;
-  }
-}
-
-async function runInterceptHooks(
-  options: HookExecutionOptions,
-  hookName: "afterTurn" | "beforeIteration" | "beforeTurn",
-  reverseOrder: boolean
-): Promise<HookRunResult> {
-  const orderedExtensions = reverseOrder
-    ? [...options.extensions].reverse()
-    : options.extensions;
-  const updates: ExtensionStateUpdate[] = [];
-  let cePlan: ContextEngineeringPlan | undefined;
-  let resolution: RuntimeResolution | undefined;
-
-  for (const extension of orderedExtensions) {
-    const handler = extension[hookName];
-
-    if (handler === undefined) {
-      continue;
-    }
-
-    const timeoutController = new AbortController();
-
-    try {
-      const result = await runWithTimeout(
-        () =>
-          handler.call(
-            extension,
-            createInterceptContext(extension, options, timeoutController.signal)
-          ),
-        extension.timeout,
-        () =>
-          new Error(
-            `extension "${extension.name}" ${hookName} timed out after ${extension.timeout}ms`
-          ),
-        {
-          onTimeout: (error) => {
-            timeoutController.abort(error);
-          },
-        }
-      );
-      collectHookState(extension.name, result, updates);
-
-      if (
-        hookName === "beforeIteration" &&
-        result !== undefined &&
-        hasContextEngineeringPlan(result)
-      ) {
-        cePlan ??= result.cePlan;
-      }
-
-      resolution = composeResolution(resolution, liftInterceptResult(result));
-    } catch (error: unknown) {
-      resolution = composeResolution(
-        resolution,
-        liftInterceptResult({
-          error: normalizeError(error),
-          verdict: "softFail",
-        })
-      );
-    }
-  }
-
-  return {
-    cePlan,
-    resolution,
-    updates,
-  };
-}
-
-function createInterceptContext(
-  extension: TuvrenExtension,
-  options: HookExecutionOptions,
-  timeoutSignal: AbortSignal
-): InterceptContext {
-  return {
-    emit: createTimedEmit(options.emit, timeoutSignal),
-    extensionState: cloneRecord(options.manifest.extensions[extension.name]),
-    iterationCount: options.iterationCount,
-    manifest: cloneValue(options.manifest),
-    messages: cloneValue(options.messages),
-    runId: options.runId,
-    sharedExports: buildContextSharedExports(
-      options.extensions,
-      options.manifest
-    ),
-    turnId: options.turnId,
-  };
-}
-
-function collectHookState(
-  extensionName: string,
-  result: (InterceptResult & { cePlan?: ContextEngineeringPlan }) | undefined,
-  updates: ExtensionStateUpdate[]
-): void {
-  if (result?.state !== undefined) {
-    updates.push({
-      extensionName,
-      state: result.state,
-    });
-  }
-}
-
-function liftInterceptResult(
-  result: InterceptResult | undefined
-): RuntimeResolution | undefined {
-  switch (result?.verdict) {
-    case "endTurn":
-      if (result.reason === undefined) {
-        throw new TuvrenRuntimeError("endTurn verdicts require a reason", {
-          code: "invalid_extension_verdict",
-        });
-      }
-      return {
-        reason: result.reason,
-        type: "end_turn",
-      };
-    case "hardFail":
-      if (result.error === undefined) {
-        throw new TuvrenRuntimeError("hardFail verdicts require an error", {
-          code: "invalid_extension_verdict",
-        });
-      }
-      return {
-        error: result.error,
-        fatality: "hard",
-        type: "fail",
-      };
-    case "softFail":
-      if (result.error === undefined) {
-        throw new TuvrenRuntimeError("softFail verdicts require an error", {
-          code: "invalid_extension_verdict",
-        });
-      }
-      return {
-        error: result.error,
-        fatality: "soft",
-        type: "fail",
-      };
-    default:
-      return undefined;
-  }
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-
-  return {};
-}
-
-function buildContextSharedExports(
-  extensions: TuvrenExtension[],
-  manifest: ContextManifest
-): Record<string, Record<string, unknown>> {
-  return cloneValue(buildSharedExports(extensions, manifest));
-}
-
-function cloneRecord(value: unknown): Record<string, unknown> {
-  return asRecord(cloneValue(asRecord(value)));
-}
-
-function cloneValue<T>(value: T): T {
-  return globalThis.structuredClone(value);
-}
-
-function createTimedEmit(
-  emit: (event: { data: unknown; name: string }) => void,
-  timeoutSignal: AbortSignal
-): (event: { data: unknown; name: string }) => void {
-  return (event) => {
-    if (timeoutSignal.aborted) {
-      return;
-    }
-
-    emit(event);
-  };
-}
-
-function normalizeError(error: unknown): Error {
-  return error instanceof Error ? error : new Error(String(error));
-}
-
-function hasContextEngineeringPlan(
-  value: InterceptResult & { cePlan?: ContextEngineeringPlan }
-): value is InterceptResult & { cePlan: ContextEngineeringPlan } {
-  return value.cePlan !== undefined;
-}
+};

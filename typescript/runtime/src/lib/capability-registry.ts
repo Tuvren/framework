@@ -34,17 +34,17 @@ import type { Capability, ToolSurface } from "@tuvren/core/capabilities";
  */
 export interface CapabilityRegistry {
   /** Return all registered capabilities. */
-  getCapabilities(): Capability[];
+  getCapabilities: () => Capability[];
   /** Look up a capability by id. */
-  getCapabilityById(id: string): Capability | undefined;
+  getCapabilityById: (id: string) => Capability | undefined;
   /** Return all registered tool surfaces (pre-policy eligible set). */
-  getEligibleSurfaces(): ToolSurface[];
+  getEligibleSurfaces: () => ToolSurface[];
   /** Return all registered surfaces for a given capability id. */
-  getSurfacesForCapability(capabilityId: string): ToolSurface[];
+  getSurfacesForCapability: (capabilityId: string) => ToolSurface[];
   /** Register a capability. Throws on duplicate id. */
-  registerCapability(capability: Capability): void;
+  registerCapability: (capability: Capability) => void;
   /** Register a tool surface. Throws on duplicate name. */
-  registerSurface(surface: ToolSurface): void;
+  registerSurface: (surface: ToolSurface) => void;
 }
 
 class BasicCapabilityRegistry implements CapabilityRegistry {
@@ -97,6 +97,5 @@ class BasicCapabilityRegistry implements CapabilityRegistry {
   }
 }
 
-export function createCapabilityRegistry(): CapabilityRegistry {
-  return new BasicCapabilityRegistry();
-}
+export const createCapabilityRegistry = (): CapabilityRegistry =>
+  new BasicCapabilityRegistry();

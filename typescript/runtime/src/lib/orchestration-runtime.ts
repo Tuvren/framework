@@ -16,7 +16,8 @@
 
 import { randomUUID } from "node:crypto";
 
-import { type EpochMs, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { EpochMs } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   AgentConfig,
@@ -30,11 +31,11 @@ import type {
 } from "@tuvren/core/execution";
 import type { ApprovalResponse } from "@tuvren/core/tools";
 
-import {
-  type ChildSpawnRequest,
-  type ExecutionBinding,
-  OrchestrationNode,
-  type OrchestrationRuntimeNodeHost,
+import { OrchestrationNode } from "./orchestration-runtime-node.js";
+import type {
+  ChildSpawnRequest,
+  ExecutionBinding,
+  OrchestrationRuntimeNodeHost,
 } from "./orchestration-runtime-node.js";
 import {
   cloneExecutionStatus,
@@ -56,7 +57,7 @@ export interface OrchestrationRuntimeOptions {
   /**
    * Clock used for orchestration timestamps.
    *
-   * @defaultValue `Date.now`
+   * @default `Date.now`
    */
   now?: () => EpochMs;
 }
@@ -76,17 +77,17 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
   private active = true;
   private inactiveStatus?: ExecutionStatus;
   private readonly node: OrchestrationNode;
-  private readonly spawnedChildNodes: Array<{
+  private readonly spawnedChildNodes: {
     node: OrchestrationNode;
     workerId: string;
-  }> = [];
+  }[] = [];
 
   constructor(
     node: OrchestrationNode,
-    existingChildren?: ReadonlyArray<{
+    existingChildren?: readonly {
       node: OrchestrationNode;
       workerId: string;
-    }>
+    }[]
   ) {
     this.node = node;
     if (existingChildren !== undefined) {
@@ -248,136 +249,35 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
   }
 }
 
+const snapshotAgentConfigs = (
+  agents: Record<string, AgentConfig>
+): Record<string, AgentConfig> => {
+  const snapshots: Record<string, AgentConfig> = {};
+
+  for (const [agentName, config] of Object.entries(agents)) {
+    // Snapshot orchestration-owned agent configs up front without freezing the
+    // receiver objects that live execution invokes as method-style hooks.
+    snapshots[agentName] = cloneSnapshotPreservingFunctions(config);
+  }
+
+  return snapshots;
+};
+
 /**
  * The orchestration surface over a framework runtime: resolves named agent
  * configs, starts turn executions as {@link OrchestrationNode}s, and serves
  * as the node host that provisions child bindings for `spawn` (each child
  * gets a fresh thread inheriting the parent's schema, runner, and tools).
  */
-class OrchestrationRuntimeImpl
-  implements OrchestrationRuntime, OrchestrationRuntimeNodeHost
-{
-  private readonly agents: Record<string, AgentConfig>;
-  private readonly framework: TuvrenRuntime;
-  private readonly now: () => EpochMs;
+const createOrchestrationRuntimeImpl = (
+  framework: TuvrenRuntime,
+  inputAgents: Record<string, AgentConfig>,
+  now: () => EpochMs
+): OrchestrationRuntime => {
+  const agents = snapshotAgentConfigs(inputAgents);
 
-  constructor(
-    framework: TuvrenRuntime,
-    agents: Record<string, AgentConfig>,
-    now: () => EpochMs
-  ) {
-    this.framework = framework;
-    this.agents = snapshotAgentConfigs(agents);
-    this.now = now;
-  }
-
-  /**
-   * Executes a turn for a named agent on an existing thread/branch, wrapping
-   * the framework execution handle in an orchestration node and handle.
-   *
-   * @throws TuvrenRuntimeError with code `unknown_orchestration_agent` when
-   *   the agent name is not configured.
-   */
-  executeTurn(input: {
-    agent: string;
-    branchId: string;
-    runnerId?: string;
-    parentTurnId?: string | null;
-    schemaId?: string;
-    signal: InputSignal;
-    threadId: string;
-    tools?: AgentConfig["tools"];
-  }): OrchestrationHandle {
-    const config = this.resolveAgent(input.agent);
-    const requestedTools =
-      input.tools === undefined ? undefined : createFrozenSnapshot(input.tools);
-    const handle = this.framework.executeTurn({
-      branchId: input.branchId,
-      config,
-      runnerId: input.runnerId,
-      parentTurnId: input.parentTurnId,
-      schemaId: input.schemaId,
-      signal: input.signal,
-      threadId: input.threadId,
-      tools: requestedTools,
-    });
-    const node = new OrchestrationNode(this, input.agent, this.now, {
-      binding: {
-        agent: input.agent,
-        branchId: input.branchId,
-        runnerId: input.runnerId,
-        handle,
-        schemaId: input.schemaId,
-        threadId: input.threadId,
-        tools: requestedTools,
-      },
-    });
-    return new OrchestrationHandleImpl(node);
-  }
-
-  /**
-   * Provisions the execution binding for a spawned child
-   * ({@link OrchestrationRuntimeNodeHost} contract): creates a fresh thread
-   * using the parent's schema (explicit binding schema first, then the parent
-   * thread's), and starts the child turn with the parent's runner and tools.
-   *
-   * @throws TuvrenRuntimeError with code `invalid_orchestration_parent` when
-   *   the parent thread no longer resolves.
-   */
-  async createChildBinding(
-    parentBinding: ExecutionBinding,
-    workerId: string,
-    input: ChildSpawnRequest
-  ): Promise<ExecutionBinding> {
-    const config = this.resolveAgent(input.agent);
-    const parentThread = await this.framework.getThread(parentBinding.threadId);
-
-    if (parentThread === null) {
-      throw new TuvrenRuntimeError(
-        "orchestration could not resolve the parent thread before spawning a child",
-        {
-          code: "invalid_orchestration_parent",
-          details: {
-            parentThreadId: parentBinding.threadId,
-          },
-        }
-      );
-    }
-
-    // Child spawning stays intentionally minimal, so the caller's explicit
-    // execution surface (including schemaId when provided) must carry forward.
-    const resolvedSchemaId = parentBinding.schemaId ?? parentThread.schemaId;
-    const childThread = await this.framework.createThread({
-      schemaId: resolvedSchemaId,
-    });
-    const childHandle = this.framework.executeTurn({
-      branchId: childThread.branchId,
-      config,
-      runnerId: parentBinding.runnerId,
-      schemaId: resolvedSchemaId,
-      signal: normalizeInputSignal(input.signal, "orchestration child signal"),
-      threadId: childThread.threadId,
-      tools: parentBinding.tools,
-    });
-
-    return {
-      agent: input.agent,
-      branchId: childThread.branchId,
-      runnerId: parentBinding.runnerId,
-      handle: childHandle,
-      schemaId: resolvedSchemaId,
-      threadId: childThread.threadId,
-      tools: parentBinding.tools,
-      workerId,
-    };
-  }
-
-  createId(): string {
-    return randomUUID();
-  }
-
-  private resolveAgent(agentName: string): AgentConfig {
-    const config = this.agents[agentName];
+  const resolveAgent = (agentName: string): AgentConfig => {
+    const config = agents[agentName];
 
     if (config === undefined) {
       throw new TuvrenRuntimeError(
@@ -392,8 +292,109 @@ class OrchestrationRuntimeImpl
     }
 
     return config;
-  }
-}
+  };
+
+  const runtime: OrchestrationRuntime & OrchestrationRuntimeNodeHost = {
+    /**
+     * Provisions the execution binding for a spawned child
+     * ({@link OrchestrationRuntimeNodeHost} contract): creates a fresh thread
+     * using the parent's schema (explicit binding schema first, then the parent
+     * thread's), and starts the child turn with the parent's runner and tools.
+     *
+     * @throws {TuvrenRuntimeError} With code `invalid_orchestration_parent` when
+     *   the parent thread no longer resolves.
+     */
+    async createChildBinding(
+      parentBinding: ExecutionBinding,
+      workerId: string,
+      input: ChildSpawnRequest
+    ): Promise<ExecutionBinding> {
+      const config = resolveAgent(input.agent);
+      const parentThread = await framework.getThread(parentBinding.threadId);
+
+      if (parentThread === null) {
+        throw new TuvrenRuntimeError(
+          "orchestration could not resolve the parent thread before spawning a child",
+          {
+            code: "invalid_orchestration_parent",
+            details: {
+              parentThreadId: parentBinding.threadId,
+            },
+          }
+        );
+      }
+
+      // Child spawning stays intentionally minimal, so the caller's explicit
+      // execution surface (including schemaId when provided) must carry forward.
+      const resolvedSchemaId = parentBinding.schemaId ?? parentThread.schemaId;
+      const childThread = await framework.createThread({
+        schemaId: resolvedSchemaId,
+      });
+      const childHandle = framework.executeTurn({
+        branchId: childThread.branchId,
+        config,
+        runnerId: parentBinding.runnerId,
+        schemaId: resolvedSchemaId,
+        signal: normalizeInputSignal(
+          input.signal,
+          "orchestration child signal"
+        ),
+        threadId: childThread.threadId,
+        tools: parentBinding.tools,
+      });
+
+      return {
+        agent: input.agent,
+        branchId: childThread.branchId,
+        handle: childHandle,
+        runnerId: parentBinding.runnerId,
+        schemaId: resolvedSchemaId,
+        threadId: childThread.threadId,
+        tools: parentBinding.tools,
+        workerId,
+      };
+    },
+    createId: randomUUID,
+    /**
+     * Executes a turn for a named agent on an existing thread/branch, wrapping
+     * the framework execution handle in an orchestration node and handle.
+     *
+     * @throws {TuvrenRuntimeError} With code `unknown_orchestration_agent` when
+     *   the agent name is not configured.
+     */
+    executeTurn(input): OrchestrationHandle {
+      const config = resolveAgent(input.agent);
+      const requestedTools =
+        input.tools === undefined
+          ? undefined
+          : createFrozenSnapshot(input.tools);
+      const handle = framework.executeTurn({
+        branchId: input.branchId,
+        config,
+        parentTurnId: input.parentTurnId,
+        runnerId: input.runnerId,
+        schemaId: input.schemaId,
+        signal: input.signal,
+        threadId: input.threadId,
+        tools: requestedTools,
+      });
+      const node = new OrchestrationNode(runtime, input.agent, now, {
+        binding: {
+          agent: input.agent,
+          branchId: input.branchId,
+          handle,
+          runnerId: input.runnerId,
+          schemaId: input.schemaId,
+          threadId: input.threadId,
+          tools: requestedTools,
+        },
+      });
+      return new OrchestrationHandleImpl(node);
+    },
+  };
+
+  return runtime;
+};
 
 /**
  * Creates the multi-agent orchestration surface over a framework runtime.
@@ -406,26 +407,11 @@ class OrchestrationRuntimeImpl
  *   an optional clock override.
  * @returns An `OrchestrationRuntime` bound to the supplied framework.
  */
-export function createOrchestrationRuntime(
+export const createOrchestrationRuntime = (
   options: OrchestrationRuntimeOptions
-): OrchestrationRuntime {
-  return new OrchestrationRuntimeImpl(
+): OrchestrationRuntime =>
+  createOrchestrationRuntimeImpl(
     options.framework,
     options.agents,
     options.now ?? Date.now
   );
-}
-
-function snapshotAgentConfigs(
-  agents: Record<string, AgentConfig>
-): Record<string, AgentConfig> {
-  const snapshots: Record<string, AgentConfig> = {};
-
-  for (const [agentName, config] of Object.entries(agents)) {
-    // Snapshot orchestration-owned agent configs up front without freezing the
-    // receiver objects that live execution invokes as method-style hooks.
-    snapshots[agentName] = cloneSnapshotPreservingFunctions(config);
-  }
-
-  return snapshots;
-}

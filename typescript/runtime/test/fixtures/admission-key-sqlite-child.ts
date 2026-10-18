@@ -20,20 +20,33 @@ import type { RuntimeRunner } from "@tuvren/core/runner";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
 import { createRunnerRegistry, createTuvrenRuntime } from "../../src/index.ts";
+import { delay } from "../runtime-core-test-helpers.ts";
 
-const databasePath = process.argv[2];
-const mode = process.argv[3];
+const [databasePath, mode] = process.argv.slice(2);
 if (databasePath === undefined || databasePath.length === 0) {
   throw new Error("SQLite child scenario requires a database path");
 }
 
 const backend = createSqliteBackend({ databasePath });
 
+const keyedSignal = (text: string, admissionKey: string): InputSignal => ({
+  admissionKey,
+  parts: [{ text, type: "text" }],
+});
+
+const drain = async <T>(iterator: AsyncIterator<T>): Promise<void> => {
+  const next = await iterator.next();
+  if (next.done === true) {
+    return;
+  }
+  await drain(iterator);
+};
+
 try {
   process.stdout.write("READY\n");
   if (mode === "hang-after-ready") {
     // Keep the child alive until the parent enforces its process deadline.
-    await new Promise<void>((resolve) => setTimeout(resolve, 60_000));
+    await delay(60_000);
   }
 
   const runner = {
@@ -54,7 +67,7 @@ try {
       }
 
       if (repeatedSteeringCount === 0) {
-        await new Promise((resolve) => setTimeout(resolve, 20));
+        await delay(20);
       }
 
       return {
@@ -79,7 +92,7 @@ try {
   const events = handle.events()[Symbol.asyncIterator]();
   const draining = drain(events);
 
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await delay(0);
   handle.steer(keyedSignal("Repeated steering", "steering-key-a"));
   handle.steer(keyedSignal("Repeated steering", "steering-key-b"));
   await draining;
@@ -99,17 +112,4 @@ try {
   );
 } finally {
   await backend.close();
-}
-
-function keyedSignal(text: string, admissionKey: string): InputSignal {
-  return {
-    admissionKey,
-    parts: [{ text, type: "text" }],
-  };
-}
-
-async function drain<T>(iterator: AsyncIterator<T>): Promise<void> {
-  while (!(await iterator.next()).done) {
-    // Pulling the stream drives execution.
-  }
 }

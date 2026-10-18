@@ -32,11 +32,11 @@ import { createBindingResolver } from "./binding-resolver.js";
  * - tuvren-client: Tuvren owns orchestration, client owns execution; partial
  *   observability through the dispatch/result envelope.
  */
-export function observationForClass(
+export const observationForClass = (
   executionClass: ExecutionClass
-): CapabilityObservation {
+): CapabilityObservation => {
   switch (executionClass) {
-    case "tuvren-server":
+    case "tuvren-server": {
       return {
         canAudit: true,
         canCancel: true,
@@ -46,8 +46,9 @@ export function observationForClass(
         canRetry: true,
         executionClass: "tuvren-server",
       };
+    }
     case "provider-native":
-    case "provider-mediated":
+    case "provider-mediated": {
       return {
         canAudit: false,
         canCancel: false,
@@ -57,11 +58,12 @@ export function observationForClass(
         canRetry: false,
         executionClass,
       };
+    }
     // Tuvren owns orchestration and policy; the client endpoint owns
     // environmental execution. Results are recorded from the dispatch/result
     // envelope plus client-reported details only — no intermediate steps,
     // no cancel/retry/audit/resume from the runtime side. (KRT-AZ005)
-    case "tuvren-client":
+    case "tuvren-client": {
       return {
         canAudit: false,
         canCancel: false,
@@ -71,7 +73,8 @@ export function observationForClass(
         canRetry: false,
         executionClass: "tuvren-client",
       };
-    default:
+    }
+    default: {
       return {
         canAudit: false,
         canCancel: false,
@@ -81,8 +84,9 @@ export function observationForClass(
         canRetry: false,
         executionClass,
       };
+    }
   }
-}
+};
 
 /**
  * Build a CapabilityInvocationAttribution for a tool definition, using the
@@ -92,9 +96,9 @@ export function observationForClass(
  * tools resolve to the tuvren-server class. Provider-native and Tuvren-client
  * attribution is additive in Epics AY and AZ respectively.
  */
-export function buildToolAttribution(
+export const buildToolAttribution = (
   tool: TuvrenToolDefinition
-): CapabilityInvocationAttribution {
+): CapabilityInvocationAttribution => {
   const resolver = createBindingResolver();
   const binding = resolver.resolveFromToolDefinition(tool);
 
@@ -110,4 +114,4 @@ export function buildToolAttribution(
     observation: observationForClass(binding.executionClass),
     owner,
   };
-}
+};

@@ -34,10 +34,12 @@ import type { RuntimeRunner } from "@tuvren/core/runner";
 import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
-  type RuntimeKernel,
 } from "@tuvren/kernel-protocol";
+import type { RuntimeKernel } from "@tuvren/kernel-protocol";
 
-export async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
+export const collectEvents = async <T>(
+  events: AsyncIterable<T>
+): Promise<T[]> => {
   const collected: T[] = [];
 
   for await (const event of events) {
@@ -45,12 +47,25 @@ export async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
   }
 
   return collected;
-}
+};
 
-export async function readBranchCheckpointEventTypes(
+export const fromSynchronousVariadicAwaited = <
+  Arguments extends unknown[],
+  Value,
+>(
+  operation: (this: undefined, ...arguments_: Arguments) => Value
+): ((...arguments_: Arguments) => Promise<Awaited<Value>>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(this: undefined, ...arguments_: Arguments) => Value],
+    Arguments,
+    Promise<Awaited<Value>>
+  >(Promise, operation);
+
+export const readBranchCheckpointEventTypes = async (
   kernel: RuntimeKernel,
   branchId: string
-): Promise<string[]> {
+): Promise<string[]> => {
   const branch = await kernel.branch.get(branchId);
 
   if (branch === null) {
@@ -84,65 +99,106 @@ export async function readBranchCheckpointEventTypes(
   }
 
   return eventTypes;
-}
+};
 
-export function toKrakenMessages(
+export const toKrakenMessages = (
   messages: readonly unknown[]
-): TuvrenMessage[] {
-  return messages.map((message, index) => {
+): TuvrenMessage[] =>
+  messages.map((message, index) => {
     assertTuvrenMessage(message, `messages[${index}]`);
     return message;
   });
-}
 
-export function toOptionalRecord(
+export const toOptionalRecord = (
   value: unknown
-): Record<string, unknown> | undefined {
+): Record<string, unknown> | undefined => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
 
   return Object.fromEntries(Object.entries(value));
-}
+};
 
-export function detachTestPromise(promise: Promise<unknown>): void {
-  promise.catch(() => undefined);
-}
+const ignoreTestPromiseRejection = async (
+  promise: Promise<unknown>
+): Promise<void> => {
+  try {
+    await promise;
+  } catch {
+    // Detached test work intentionally discards its terminal rejection.
+  }
+};
+
+const detachedTestPromises = new WeakSet<Promise<void>>();
+
+export const detachTestPromise = (promise: Promise<unknown>): void => {
+  detachedTestPromises.add(ignoreTestPromiseRejection(promise));
+};
 
 export const TIMEOUT_TOKEN = Symbol("timeout");
 
-export async function collectEventsForDuration<T>(
+export const delay = async (milliseconds: number): Promise<void> => {
+  const { promise, resolve } = Promise.withResolvers<null>();
+  setTimeout(() => {
+    resolve(null);
+  }, milliseconds);
+  await promise;
+};
+
+export const settleWithin = async <T>(
+  promise: Promise<T>,
+  timeoutMilliseconds: number
+): Promise<T | typeof TIMEOUT_TOKEN> => {
+  const timeout = (async (): Promise<typeof TIMEOUT_TOKEN> => {
+    await delay(timeoutMilliseconds);
+    return TIMEOUT_TOKEN;
+  })();
+
+  return await Promise.race<T | typeof TIMEOUT_TOKEN>([promise, timeout]);
+};
+
+const collectNextForDuration = async <T>(
+  iterator: AsyncIterator<T>,
+  deadline: number,
+  collected: T[]
+): Promise<void> => {
+  if (Date.now() >= deadline) {
+    return;
+  }
+
+  const nextValue = await settleWithin(iterator.next(), deadline - Date.now());
+
+  if (nextValue === TIMEOUT_TOKEN || nextValue.done === true) {
+    return;
+  }
+
+  collected.push(nextValue.value);
+  await collectNextForDuration(iterator, deadline, collected);
+};
+
+export const collectEventsForDuration = async <T>(
   events: AsyncIterable<T>,
   durationMilliseconds: number
-): Promise<T[]> {
+): Promise<T[]> => {
   const collected: T[] = [];
   const iterator = events[Symbol.asyncIterator]();
   const deadline = Date.now() + durationMilliseconds;
 
   try {
-    while (Date.now() < deadline) {
-      const nextValue = await settleWithin(
-        iterator.next(),
-        deadline - Date.now()
-      );
-
-      if (nextValue === TIMEOUT_TOKEN || nextValue.done) {
-        break;
-      }
-
-      collected.push(nextValue.value);
-    }
+    await collectNextForDuration(iterator, deadline, collected);
   } finally {
     await iterator.return?.();
   }
 
   return collected;
-}
+};
 
-export function startEventCapture<T>(events: AsyncIterable<T>): {
+export const startEventCapture = <T>(
+  events: AsyncIterable<T>
+): {
   done: Promise<void>;
   events: T[];
-} {
+} => {
   const collected: T[] = [];
 
   return {
@@ -153,72 +209,83 @@ export function startEventCapture<T>(events: AsyncIterable<T>): {
     })(),
     events: collected,
   };
-}
+};
 
-export async function collectToolResultTimeline(
+export const collectToolResultTimeline = async (
   events: AsyncIterable<{ callId?: string; type: string }>,
   timeline: string[]
-): Promise<void> {
+): Promise<void> => {
   for await (const event of events) {
     if (event.type === "tool.result" && typeof event.callId === "string") {
       timeline.push(`event:${event.callId}`);
     }
   }
-}
+};
 
-export async function settleWithin<T>(
-  promise: Promise<T>,
-  timeoutMilliseconds: number
-): Promise<T | typeof TIMEOUT_TOKEN> {
-  return await Promise.race<T | typeof TIMEOUT_TOKEN>([
-    promise,
-    delay(timeoutMilliseconds).then((): typeof TIMEOUT_TOKEN => TIMEOUT_TOKEN),
-  ]);
-}
-
-export async function waitFor(
-  condition: () => boolean,
-  timeoutMilliseconds = 1000
-): Promise<void> {
-  const startedAt = Date.now();
-
-  while (!condition()) {
-    if (Date.now() - startedAt >= timeoutMilliseconds) {
-      throw new Error("timed out waiting for condition");
-    }
-
-    await delay(5);
-  }
-}
-
-export async function waitForAsync(
+export const waitForAsync = async (
   condition: () => Promise<boolean>,
   timeoutMilliseconds = 1000
-): Promise<void> {
+): Promise<void> => {
   const startedAt = Date.now();
+  const poll = async (): Promise<void> => {
+    if (await condition()) {
+      return;
+    }
 
-  while (!(await condition())) {
     if (Date.now() - startedAt >= timeoutMilliseconds) {
       throw new Error("timed out waiting for condition");
     }
 
     await delay(5);
-  }
-}
+    await poll();
+  };
 
-export function createStubExecutionHandle(
+  await poll();
+};
+
+export const waitFor = async (
+  condition: () => boolean,
+  timeoutMilliseconds = 1000
+): Promise<void> => {
+  await waitForAsync(
+    fromSynchronousVariadicAwaited(condition),
+    timeoutMilliseconds
+  );
+};
+
+const awaitClosedEvents = <T>(
+  closedPromise: Promise<null>
+): AsyncIterable<T> => ({
+  [Symbol.asyncIterator]() {
+    return {
+      async next(): Promise<IteratorResult<T>> {
+        await closedPromise;
+        return { done: true, value: undefined };
+      },
+    };
+  },
+});
+
+const staticEventStream = <T>(events: readonly T[]): AsyncIterable<T> => ({
+  [Symbol.asyncIterator]() {
+    const iterator = events.values();
+    return {
+      next: fromSynchronousVariadicAwaited(() => iterator.next()),
+    };
+  },
+});
+
+export const createStubExecutionHandle = (
   initialPhase: ExecutionStatus["phase"]
-): ExecutionHandle {
+): ExecutionHandle => {
   let phase = initialPhase;
   let closed = initialPhase !== "running";
-  let resolveClosed: (() => void) | undefined;
-  const closedPromise = new Promise<void>((resolve) => {
-    resolveClosed = resolve;
+  const { promise: closedPromise, resolve: resolveClosed } =
+    Promise.withResolvers<null>();
 
-    if (closed) {
-      resolve();
-    }
-  });
+  if (closed) {
+    resolveClosed(null);
+  }
 
   const handle: ExecutionHandle = {
     async awaitResult(): Promise<ExecutionResult> {
@@ -240,14 +307,11 @@ export function createStubExecutionHandle(
 
       if (!closed) {
         closed = true;
-        resolveClosed?.();
+        resolveClosed(null);
       }
     },
     events() {
-      return (async function* () {
-        await closedPromise;
-        yield* [];
-      })();
+      return awaitClosedEvents(closedPromise);
     },
     resolveApproval() {
       return handle;
@@ -259,44 +323,50 @@ export function createStubExecutionHandle(
       };
     },
     steer() {
-      return;
+      // The stub deliberately ignores steering input.
     },
   };
 
   return handle;
-}
+};
 
-export function assistantText(text: string): TuvrenMessage {
-  return {
-    parts: [{ text, type: "text" }],
-    role: "assistant",
-  };
-}
+export const assistantText = (text: string): TuvrenMessage => ({
+  parts: [{ text, type: "text" }],
+  role: "assistant",
+});
 
-export function assistantStructured(
+export const assistantStructured = (
   name: string,
   data: unknown
-): TuvrenMessage {
-  return {
-    parts: [{ data, name, type: "structured" }],
-    role: "assistant",
-  };
-}
+): TuvrenMessage => ({
+  parts: [{ data, name, type: "structured" }],
+  role: "assistant",
+});
 
-export function assistantToolCalls(
+const toNonEmptyArray = <T>(values: T[]): [T, ...T[]] | undefined => {
+  const [firstValue, ...remainingValues] = values;
+
+  if (firstValue === undefined) {
+    return undefined;
+  }
+
+  return [firstValue, ...remainingValues];
+};
+
+export const assistantToolCalls = (
   calls: [
     {
       callId: string;
       input: unknown;
       name: string;
     },
-    ...Array<{
+    ...{
       callId: string;
       input: unknown;
       name: string;
-    }>,
+    }[],
   ]
-): TuvrenMessage {
+): TuvrenMessage => {
   const parts = toNonEmptyArray(
     calls.map((call) => ({
       callId: call.callId,
@@ -314,103 +384,85 @@ export function assistantToolCalls(
     parts,
     role: "assistant",
   };
-}
+};
 
-function toNonEmptyArray<T>(values: T[]): [T, ...T[]] | undefined {
-  const [firstValue, ...remainingValues] = values;
-
-  if (firstValue === undefined) {
-    return undefined;
-  }
-
-  return [firstValue, ...remainingValues];
-}
-
-export function buildHandoffPlan(
+export const buildHandoffPlan = (
   context: Parameters<RuntimeRunner["execute"]>[0],
   sourceAgent: AgentConfig,
   targetAgent: AgentConfig,
   builder: HandoffContextPlan["builder"]
-): HandoffContextPlan {
-  return {
-    builder,
-    mode: "preserve_trace",
-    reason: "delegate",
-    sourceContext: {
-      handoffIntent: {
-        reason: "delegate",
-        targetAgent: targetAgent.name,
+): HandoffContextPlan => ({
+  builder,
+  mode: "preserve_trace",
+  reason: "delegate",
+  sourceContext: {
+    handoffIntent: {
+      reason: "delegate",
+      targetAgent: targetAgent.name,
+    },
+    helpers: {
+      loadMessage() {
+        return null;
       },
-      helpers: {
-        loadMessage() {
-          return null;
-        },
-        storeMessage() {
-          return "0".repeat(64);
-        },
-        storeMessages() {
-          return [];
-        },
+      storeMessage() {
+        return "0".repeat(64);
       },
-      manifest: structuredClone(context.manifest),
-      messages: [...context.messages],
-      sourceAgent,
-      targetAgent,
-    } satisfies HandoffSourceContext,
-    targetAgent: targetAgent.name,
-  };
-}
+      storeMessages() {
+        return [];
+      },
+    },
+    manifest: structuredClone(context.manifest),
+    messages: [...context.messages],
+    sourceAgent,
+    targetAgent,
+  } satisfies HandoffSourceContext,
+  targetAgent: targetAgent.name,
+});
 
-export function createStaticExecutionHandle(
+export const createStaticExecutionHandle = (
   events: TuvrenStreamEvent[],
   status: ExecutionStatus
-): ExecutionHandle {
-  return {
-    awaitResult(): Promise<ExecutionResult> {
-      if (status.phase === "completed") {
-        return Promise.resolve({
-          executionStatus: status,
-          status: "completed",
-        });
-      }
-
-      return Promise.resolve({
-        error: new TuvrenRuntimeError("Execution failed", {
-          code: "execution_failed",
-        }),
+): ExecutionHandle => ({
+  awaitResult: fromSynchronousVariadicAwaited((): ExecutionResult => {
+    if (status.phase === "completed") {
+      return {
         executionStatus: status,
-        status: "failed",
-      });
-    },
-    cancel() {
-      return undefined;
-    },
-    async *events() {
-      await Promise.resolve();
+        status: "completed",
+      };
+    }
 
-      for (const event of events) {
-        yield event;
-      }
-    },
-    resolveApproval() {
-      throw new Error("resolveApproval was not expected");
-    },
-    status() {
-      return status;
-    },
-    steer() {
-      return undefined;
-    },
-  };
-}
+    return {
+      error: new TuvrenRuntimeError("Execution failed", {
+        code: "execution_failed",
+      }),
+      executionStatus: status,
+      status: "failed",
+    };
+  }),
+  cancel() {
+    // Static handles have no in-flight work to cancel.
+  },
+  events() {
+    return staticEventStream(events);
+  },
+  resolveApproval() {
+    throw new Error("resolveApproval was not expected");
+  },
+  status() {
+    return status;
+  },
+  steer() {
+    // Static handles deliberately ignore steering input.
+  },
+});
 
-export async function overwriteBranchSinglePath(
+export const overwriteBranchSinglePath = async (
   kernel: RuntimeKernel,
   branchId: string,
   turnId: string,
   path: "context.manifest" | "runtime.status",
   value: KernelRecord
-): Promise<void> {
+): Promise<void> => {
   const branch = await kernel.branch.get(branchId);
 
   if (branch === null) {
@@ -475,18 +527,12 @@ export async function overwriteBranchSinglePath(
   }
 
   await kernel.turn.updateHead(turnId, stepResult.turnNodeHash);
-}
+};
 
-export function delay(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
-  });
-}
-
-export function extractToolMessages(
+export const extractToolMessages = (
   messages: readonly unknown[]
-): Extract<TuvrenMessage, { role: "tool" }>[] {
-  return messages.filter(
+): Extract<TuvrenMessage, { role: "tool" }>[] =>
+  messages.filter(
     (message): message is Extract<TuvrenMessage, { role: "tool" }> =>
       message !== null &&
       typeof message === "object" &&
@@ -495,13 +541,12 @@ export function extractToolMessages(
       "parts" in message &&
       Array.isArray(message.parts)
   );
-}
 
-export function hasAssistantText(
+export const hasAssistantText = (
   messages: readonly unknown[],
   text: string
-): boolean {
-  return messages.some((message) => {
+): boolean =>
+  messages.some((message) => {
     if (
       message === null ||
       typeof message !== "object" ||
@@ -513,7 +558,8 @@ export function hasAssistantText(
       return false;
     }
 
-    return message.parts.some(
+    const parts: unknown[] = message.parts;
+    return parts.some(
       (part) =>
         part !== null &&
         typeof part === "object" &&
@@ -523,64 +569,58 @@ export function hasAssistantText(
         part.text === text
     );
   });
-}
 
-export function hasCountData(value: unknown): value is { count: number } {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    "count" in value &&
-    typeof value.count === "number"
-  );
-}
+export const hasCountData = (value: unknown): value is { count: number } =>
+  value !== null &&
+  typeof value === "object" &&
+  "count" in value &&
+  typeof value.count === "number";
 
-export function hasOkData(value: unknown): value is { ok: boolean } {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    "ok" in value &&
-    typeof value.ok === "boolean"
-  );
-}
+export const hasOkData = (value: unknown): value is { ok: boolean } =>
+  value !== null &&
+  typeof value === "object" &&
+  "ok" in value &&
+  typeof value.ok === "boolean";
 
-export function extractSingleUserText(message: TuvrenMessage | null): string {
+export const extractSingleUserText = (
+  message: TuvrenMessage | null
+): string => {
   if (message === null || message.role !== "user") {
     throw new Error("expected a captured user handoff message");
   }
 
-  const firstPart = message.parts[0];
+  const [firstPart] = message.parts;
 
   if (firstPart?.type !== "text") {
     throw new Error("expected the captured handoff message to start with text");
   }
 
   return firstPart.text;
-}
+};
 
-export function requireStoredHandoffMessage(
+export const requireStoredHandoffMessage = (
   message: TuvrenMessage | null
-): TuvrenMessage {
+): TuvrenMessage => {
   if (message === null) {
     throw new Error("expected the handoff builder to store a user message");
   }
 
   return message;
-}
+};
 
-export function extractLastMessageHash(manifest: {
+export const extractLastMessageHash = (manifest: {
   messages?: unknown;
-}): string | undefined {
-  return Array.isArray(manifest.messages)
+}): string | undefined =>
+  Array.isArray(manifest.messages)
     ? manifest.messages.findLast(
         (hash): hash is string => typeof hash === "string"
       )
     : undefined;
-}
 
-export async function readBranchContextManifest(
+export const readBranchContextManifest = async (
   kernel: RuntimeKernel,
   branchId: string
-): Promise<ContextManifest> {
+): Promise<ContextManifest> => {
   const branch = await kernel.branch.get(branchId);
 
   if (branch === null) {
@@ -615,11 +655,11 @@ export async function readBranchContextManifest(
   const manifest = decodeDeterministicKernelRecord(manifestRecord);
   assertContextManifest(manifest, `manifest "${manifestHash}"`);
   return manifest;
-}
+};
 
-export function extractTurnId(
-  events: Array<{ type: string; turnId?: string }>
-): string {
+export const extractTurnId = (
+  events: { type: string; turnId?: string }[]
+): string => {
   for (const event of events) {
     if (event.type === "turn.start" && typeof event.turnId === "string") {
       return event.turnId;
@@ -627,9 +667,9 @@ export function extractTurnId(
   }
 
   throw new Error("turn.start event was not observed");
-}
+};
 
-export function readQueryInput(input: unknown): string {
+export const readQueryInput = (input: unknown): string => {
   if (
     input !== null &&
     typeof input === "object" &&
@@ -640,24 +680,30 @@ export function readQueryInput(input: unknown): string {
   }
 
   throw new Error("tool input did not contain a query string");
-}
+};
 
-export function waitForAbort(signal: AbortSignal | undefined): Promise<void> {
+export const waitForAbort = async (
+  signal: AbortSignal | undefined
+): Promise<void> => {
   if (signal === undefined) {
     throw new Error("expected an abort signal");
   }
 
   if (signal.aborted) {
-    return Promise.resolve();
+    return;
   }
 
-  return new Promise((resolve) => {
-    signal.addEventListener("abort", () => resolve(), { once: true });
-  });
-}
+  const { promise, resolve } = Promise.withResolvers<null>();
+  signal.addEventListener(
+    "abort",
+    () => {
+      resolve(null);
+    },
+    { once: true }
+  );
+  await promise;
+};
 
-export function textSignal(text: string): InputSignal {
-  return {
-    parts: [{ text, type: "text" }],
-  };
-}
+export const textSignal = (text: string): InputSignal => ({
+  parts: [{ text, type: "text" }],
+});

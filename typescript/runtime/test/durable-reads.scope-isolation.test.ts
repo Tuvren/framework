@@ -44,13 +44,13 @@ import {
 } from "@tuvren/core";
 import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
-import {
-  encodeDeterministicKernelRecord,
-  type RuntimeBackend,
-  type RuntimeKernel,
-  type StoredBranch,
-  type StoredThread,
-  type TurnTreeManifest,
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type {
+  RuntimeBackend,
+  RuntimeKernel,
+  StoredBranch,
+  StoredThread,
+  TurnTreeManifest,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import {
@@ -76,6 +76,16 @@ const PLAINTEXT_BINDING: PayloadCodecBinding = {
   scope: DEFAULT_SCOPE,
 };
 
+const captureError = async (promise: Promise<unknown>): Promise<unknown> => {
+  try {
+    await promise;
+  } catch (error: unknown) {
+    return error;
+  }
+
+  throw new Error("expected promise to reject");
+};
+
 // ── Seeding ──────────────────────────────────────────────────────────────────
 
 interface SeededScopeState {
@@ -96,10 +106,10 @@ interface SeedOptions {
 // Seeds a complete message-bearing branch (schema, message object, turn tree
 // with a populated `messages` path, genesis turn node, thread, and branch) so
 // every Durable-Read Surface operation has real state to either reveal or hide.
-async function seedThreadWithMessage(
+const seedThreadWithMessage = async (
   backend: RuntimeBackend,
   options: SeedOptions
-): Promise<SeededScopeState> {
+): Promise<SeededScopeState> => {
   const schema = createCanonicalKernelTestSchema();
   const schemaRecord = createStoredSchemaRecord(schema, options.base);
 
@@ -162,15 +172,15 @@ async function seedThreadWithMessage(
     messageHash: messageObject.hash,
     threadId: options.threadId,
   };
-}
+};
 
 // ── Shared assertions ────────────────────────────────────────────────────────
 
 // Proves the constructing scope observes its own complete durable-read surface.
-async function assertSurfaceRevealed(
+const assertSurfaceRevealed = async (
   kernel: RuntimeKernel,
   seeded: SeededScopeState
-): Promise<void> {
+): Promise<void> => {
   const threads = await listThreads(kernel);
   expect(threads.threads.map((thread) => thread.threadId)).toEqual([
     seeded.threadId,
@@ -203,45 +213,51 @@ async function assertSurfaceRevealed(
 
   expect(await kernel.store.has(seeded.messageHash)).toBe(true);
   expect(await kernel.store.get(seeded.messageHash)).not.toBeNull();
-}
+};
 
 // Proves a co-tenant scope observes none of another scope's durable-read
 // surface: enumerations are empty, lineage reads reject the unknown branch, and
 // the message content is not even existence-checkable.
-async function assertSurfaceHidden(
+const assertSurfaceHidden = async (
   kernel: RuntimeKernel,
   seeded: SeededScopeState
-): Promise<void> {
+): Promise<void> => {
   const threads = await listThreads(kernel);
   expect(threads.threads).toEqual([]);
 
   // The thread itself is invisible, so enumerating its branches surfaces the
   // same "unknown thread" error a caller would get for any id that never
   // existed — it never leaks that another scope owns this thread.
-  await expect(
-    listBranches(kernel, { threadId: seeded.threadId })
-  ).rejects.toBeInstanceOf(TuvrenRuntimeError);
+  expect(
+    await captureError(listBranches(kernel, { threadId: seeded.threadId }))
+  ).toBeInstanceOf(TuvrenRuntimeError);
 
-  await expect(
-    getTurnState(kernel, {
-      branchId: seeded.branchId,
-      threadId: seeded.threadId,
-    })
-  ).rejects.toBeInstanceOf(TuvrenLineageError);
+  expect(
+    await captureError(
+      getTurnState(kernel, {
+        branchId: seeded.branchId,
+        threadId: seeded.threadId,
+      })
+    )
+  ).toBeInstanceOf(TuvrenLineageError);
 
   const history = getTurnHistory(kernel, {
     branchId: seeded.branchId,
     threadId: seeded.threadId,
   });
-  await expect(history.next()).rejects.toBeInstanceOf(TuvrenLineageError);
+  expect(await captureError(history.next())).toBeInstanceOf(TuvrenLineageError);
 
-  await expect(
-    readBranchMessages(kernel, PLAINTEXT_BINDING, { branchId: seeded.branchId })
-  ).rejects.toBeInstanceOf(TuvrenLineageError);
+  expect(
+    await captureError(
+      readBranchMessages(kernel, PLAINTEXT_BINDING, {
+        branchId: seeded.branchId,
+      })
+    )
+  ).toBeInstanceOf(TuvrenLineageError);
 
   expect(await kernel.store.has(seeded.messageHash)).toBe(false);
   expect(await kernel.store.get(seeded.messageHash)).toBeNull();
-}
+};
 
 // ── Scoped kernel pair (shared substrate, distinct scopes) ───────────────────
 
@@ -255,7 +271,7 @@ interface ScopedPair {
   kernelB: RuntimeKernel;
 }
 
-function createScopedMemoryPair(): ScopedPair {
+const createScopedMemoryPair = (): ScopedPair => {
   const store = createMemoryScopeStore();
   const backendA = createMemoryBackend({ scope: SCOPE_A, store });
   const backendB = createMemoryBackend({ scope: SCOPE_B, store });
@@ -265,7 +281,7 @@ function createScopedMemoryPair(): ScopedPair {
     kernelA: createRuntimeKernel({ backend: backendA }),
     kernelB: createRuntimeKernel({ backend: backendB }),
   };
-}
+};
 
 // ── Suite ────────────────────────────────────────────────────────────────────
 

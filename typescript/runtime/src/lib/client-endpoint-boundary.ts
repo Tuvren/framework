@@ -20,6 +20,7 @@ import type {
   Binding,
   ClientDispatchResult,
   ClientEndpointBoundary,
+  ClientReportedResult,
 } from "@tuvren/core/capabilities";
 import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
 
@@ -135,7 +136,7 @@ class BasicClientEndpointBoundary implements ClientEndpointBoundary {
     // do not add a parser without re-escaping the interpolated fields.
     const leaseToken = `${capabilityId}:${callId}:${this.leaseCounter}`;
 
-    let reported: import("@tuvren/core/capabilities").ClientReportedResult;
+    let reported: ClientReportedResult;
     try {
       reported = await entry.endpoint.dispatch({
         callId,
@@ -147,7 +148,7 @@ class BasicClientEndpointBoundary implements ClientEndpointBoundary {
         input,
         leaseToken,
       });
-    } catch (err) {
+    } catch (error) {
       // Convert a thrown endpoint rejection into an isError result. Client
       // endpoints should surface failures via ClientReportedResult{isError:true}
       // but throwing is a realistic failure mode (network error, client crash).
@@ -160,7 +161,7 @@ class BasicClientEndpointBoundary implements ClientEndpointBoundary {
       reported = {
         callId,
         content: {
-          error: err instanceof Error ? err.message : String(err),
+          error: error instanceof Error ? error.message : String(error),
         },
         isError: true,
         leaseToken,
@@ -190,8 +191,6 @@ class BasicClientEndpointBoundary implements ClientEndpointBoundary {
   }
 }
 
-export function createClientEndpointBoundary(
+export const createClientEndpointBoundary = (
   endpoints: AttachedClientEndpoint[]
-): ClientEndpointBoundary {
-  return new BasicClientEndpointBoundary(endpoints);
-}
+): ClientEndpointBoundary => new BasicClientEndpointBoundary(endpoints);

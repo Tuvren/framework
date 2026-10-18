@@ -32,71 +32,80 @@ import type {
 import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
 import type { ToolExecutionContext } from "@tuvren/core/tools";
 
+import { createBindingResolver } from "../src/lib/binding-resolver.ts";
 import { createClientEndpointBoundary } from "../src/lib/client-endpoint-boundary.ts";
 import { buildClientEndpointTools } from "../src/lib/tool-registry.ts";
+import { fromSynchronousVariadicAwaited } from "./runtime-core-test-helpers.ts";
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function makeEndpoint(
+const makeEndpoint = (
   endpointId: string,
   capabilities: string[],
   handler?: (
     envelope: ClientInvocationEnvelope
-  ) => Promise<ClientReportedResult>
-): AttachedClientEndpoint {
-  return {
-    endpointId,
-    advertisedCapabilities: capabilities.map((id) => ({
-      capabilityId: id,
-      description: `${id} description`,
-      inputSchema: { type: "object" },
-    })),
-    dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      if (handler !== undefined) {
-        return handler(envelope);
-      }
-      return Promise.resolve({
-        callId: envelope.callId,
-        content: {
-          result: `${envelope.capabilityId}-result`,
-          input: envelope.input,
-        },
-        leaseToken: envelope.leaseToken,
-      });
-    },
-  };
-}
+  ) => ClientReportedResult | Promise<ClientReportedResult>
+): AttachedClientEndpoint => ({
+  advertisedCapabilities: capabilities.map((id) => ({
+    capabilityId: id,
+    description: `${id} description`,
+    inputSchema: { type: "object" },
+  })),
+  async dispatch(
+    envelope: ClientInvocationEnvelope
+  ): Promise<ClientReportedResult> {
+    if (handler !== undefined) {
+      return await handler(envelope);
+    }
+    return {
+      callId: envelope.callId,
+      content: {
+        input: envelope.input,
+        result: `${envelope.capabilityId}-result`,
+      },
+      leaseToken: envelope.leaseToken,
+    };
+  },
+  endpointId,
+});
 
-function makeClientMcpEndpoint(
+const makeClientMcpEndpoint = (
   endpointId: string,
   capabilityId: string,
   mcpServerName: string
-): AttachedClientEndpoint {
-  return {
-    endpointId,
-    advertisedCapabilities: [
-      {
-        capabilityId,
-        description: "client-side MCP tool",
-        inputSchema: { type: "object" },
-        mcpServerName,
-      },
-    ],
-    dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      return Promise.resolve({
-        callId: envelope.callId,
-        content: { mcpResult: true },
-        leaseToken: envelope.leaseToken,
-      });
+): AttachedClientEndpoint => ({
+  advertisedCapabilities: [
+    {
+      capabilityId,
+      description: "client-side MCP tool",
+      inputSchema: { type: "object" },
+      mcpServerName,
     },
-  };
-}
+  ],
+  dispatch: fromSynchronousVariadicAwaited(
+    (envelope: ClientInvocationEnvelope): ClientReportedResult => ({
+      callId: envelope.callId,
+      content: { mcpResult: true },
+      leaseToken: envelope.leaseToken,
+    })
+  ),
+  endpointId,
+});
+
+const captureError = async (promise: Promise<unknown>): Promise<unknown> => {
+  try {
+    await promise;
+  } catch (error: unknown) {
+    return error;
+  }
+
+  throw new Error("expected promise to reject");
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
 
 // ---------------------------------------------------------------------------
 // KRT-AZ001: Attachment seam and lease model
@@ -173,9 +182,9 @@ describe("ClientEndpointBoundary — detach (KRT-AZ003)", () => {
       makeEndpoint("ep1", ["web.search"]),
     ]);
     boundary.detach("ep1");
-    await expect(
-      boundary.dispatch("web.search", "call-1", {})
-    ).rejects.toMatchObject({ code: CAPABILITY_BINDING_UNAVAILABLE });
+    expect(
+      await captureError(boundary.dispatch("web.search", "call-1", {}))
+    ).toMatchObject({ code: CAPABILITY_BINDING_UNAVAILABLE });
   });
 
   test("detach of unknown endpointId is a no-op", () => {
@@ -226,7 +235,7 @@ describe("ClientEndpointBoundary — binding resolution (KRT-AZ001)", () => {
 describe("ClientEndpointBoundary — dispatch and result capture (KRT-AZ002)", () => {
   test("dispatch returns the client-reported content on success", async () => {
     const boundary = createClientEndpointBoundary([
-      makeEndpoint("ep1", ["web.search"], async (envelope) => ({
+      makeEndpoint("ep1", ["web.search"], (envelope) => ({
         callId: envelope.callId,
         content: { hits: ["result1", "result2"] },
         leaseToken: envelope.leaseToken,
@@ -245,11 +254,11 @@ describe("ClientEndpointBoundary — dispatch and result capture (KRT-AZ002)", (
     const boundary = createClientEndpointBoundary([
       makeEndpoint("ep1", ["search"], (envelope) => {
         received.push(envelope);
-        return Promise.resolve({
+        return {
           callId: envelope.callId,
           content: "ok",
           leaseToken: envelope.leaseToken,
-        });
+        };
       }),
     ]);
     await boundary.dispatch("search", "call-xyz", { q: "hello" });
@@ -261,7 +270,7 @@ describe("ClientEndpointBoundary — dispatch and result capture (KRT-AZ002)", (
 
   test("dispatch surfaces isError:true when the client reports an error", async () => {
     const boundary = createClientEndpointBoundary([
-      makeEndpoint("ep1", ["risky.op"], async (envelope) => ({
+      makeEndpoint("ep1", ["risky.op"], (envelope) => ({
         callId: envelope.callId,
         content: { error: "client failed" },
         isError: true,
@@ -275,11 +284,9 @@ describe("ClientEndpointBoundary — dispatch and result capture (KRT-AZ002)", (
 
   test("dispatch throws capability_binding_unavailable when no endpoint is attached", async () => {
     const boundary = createClientEndpointBoundary([]);
-    await expect(
-      boundary.dispatch("web.search", "call-1", {})
-    ).rejects.toMatchObject({
-      code: CAPABILITY_BINDING_UNAVAILABLE,
-    });
+    expect(
+      await captureError(boundary.dispatch("web.search", "call-1", {}))
+    ).toMatchObject({ code: CAPABILITY_BINDING_UNAVAILABLE });
   });
 
   test("dispatch throws TuvrenRuntimeError with capability_binding_unavailable code", async () => {
@@ -287,13 +294,13 @@ describe("ClientEndpointBoundary — dispatch and result capture (KRT-AZ002)", (
     let thrown: unknown;
     try {
       await boundary.dispatch("b", "call-1", {});
-    } catch (e) {
-      thrown = e;
+    } catch (error) {
+      thrown = error;
     }
     expect(thrown).toBeInstanceOf(TuvrenRuntimeError);
-    expect((thrown as TuvrenRuntimeError).code).toBe(
-      CAPABILITY_BINDING_UNAVAILABLE
-    );
+    if (thrown instanceof TuvrenRuntimeError) {
+      expect(thrown.code).toBe(CAPABILITY_BINDING_UNAVAILABLE);
+    }
   });
 });
 
@@ -304,13 +311,12 @@ describe("ClientEndpointBoundary — dispatch and result capture (KRT-AZ002)", (
 describe("ClientEndpointBoundary — staleness handling (KRT-AZ003)", () => {
   test("dispatch returns null when the client echoes back a mismatched leaseToken", async () => {
     const boundary = createClientEndpointBoundary([
-      makeEndpoint("ep1", ["search"], (envelope) =>
-        Promise.resolve({
-          callId: envelope.callId,
-          content: { staleResult: true },
-          leaseToken: "wrong-token-from-previous-invocation", // stale
-        })
-      ),
+      makeEndpoint("ep1", ["search"], (envelope) => ({
+        callId: envelope.callId,
+        content: { staleResult: true },
+        // This deliberately echoes a stale lease token.
+        leaseToken: "wrong-token-from-previous-invocation",
+      })),
     ]);
     const result = await boundary.dispatch("search", "call-fresh", {});
     expect(result).toBeNull();
@@ -318,13 +324,13 @@ describe("ClientEndpointBoundary — staleness handling (KRT-AZ003)", () => {
 
   test("dispatch returns null when the client echoes back a mismatched callId", async () => {
     const boundary = createClientEndpointBoundary([
-      makeEndpoint("ep1", ["search"], (envelope) =>
-        Promise.resolve({
-          callId: "wrong-call-id", // mismatch
-          content: { staleResult: true },
-          leaseToken: envelope.leaseToken, // token matches, but callId doesn't
-        })
-      ),
+      makeEndpoint("ep1", ["search"], (envelope) => ({
+        // This deliberately echoes the wrong call identity.
+        callId: "wrong-call-id",
+        content: { staleResult: true },
+        // The token matches, isolating the call identity mismatch.
+        leaseToken: envelope.leaseToken,
+      })),
     ]);
     const result = await boundary.dispatch("search", "call-fresh", {});
     expect(result).toBeNull();
@@ -332,10 +338,11 @@ describe("ClientEndpointBoundary — staleness handling (KRT-AZ003)", () => {
 
   test("dispatch returns the result when the client echoes the correct leaseToken", async () => {
     const boundary = createClientEndpointBoundary([
-      makeEndpoint("ep1", ["search"], async (envelope) => ({
+      makeEndpoint("ep1", ["search"], (envelope) => ({
         callId: envelope.callId,
         content: { ok: true },
-        leaseToken: envelope.leaseToken, // correct echo
+        // This is the exact active lease token.
+        leaseToken: envelope.leaseToken,
       })),
     ]);
     const result = await boundary.dispatch("search", "call-normal", {});
@@ -345,15 +352,15 @@ describe("ClientEndpointBoundary — staleness handling (KRT-AZ003)", () => {
 
   test("a thrown endpoint rejection is caught and returned as an isError result", async () => {
     const boundary = createClientEndpointBoundary([
-      makeEndpoint("ep1", ["search"], () =>
-        Promise.reject(new Error("network failure"))
-      ),
+      makeEndpoint("ep1", ["search"], () => {
+        throw new Error("network failure");
+      }),
     ]);
     const result = await boundary.dispatch("search", "call-throw", {});
     expect(result).not.toBeNull();
     expect(result?.isError).toBe(true);
-    const content = result?.content as Record<string, unknown> | undefined;
-    expect(typeof content?.error).toBe("string");
+    const content = result?.content;
+    expect(isRecord(content) && typeof content.error === "string").toBe(true);
   });
 
   test("each dispatch generates a unique leaseToken so stale cross-call results are detected", async () => {
@@ -361,11 +368,11 @@ describe("ClientEndpointBoundary — staleness handling (KRT-AZ003)", () => {
     const boundary = createClientEndpointBoundary([
       makeEndpoint("ep1", ["search"], (envelope) => {
         tokens.push(envelope.leaseToken);
-        return Promise.resolve({
+        return {
           callId: envelope.callId,
           content: {},
           leaseToken: envelope.leaseToken,
-        });
+        };
       }),
     ]);
     await boundary.dispatch("search", "call-1", {});
@@ -384,11 +391,11 @@ describe("ClientEndpointBoundary — idempotency envelope (KRT-BG003)", () => {
     const boundary = createClientEndpointBoundary([
       makeEndpoint("ep1", ["charge.card"], (envelope) => {
         received.push(envelope);
-        return Promise.resolve({
+        return {
           callId: envelope.callId,
           content: { ok: true },
           leaseToken: envelope.leaseToken,
-        });
+        };
       }),
     ]);
 
@@ -406,11 +413,11 @@ describe("ClientEndpointBoundary — idempotency envelope (KRT-BG003)", () => {
     const boundary = createClientEndpointBoundary([
       makeEndpoint("ep1", ["search"], (envelope) => {
         received.push(envelope);
-        return Promise.resolve({
+        return {
           callId: envelope.callId,
           content: {},
           leaseToken: envelope.leaseToken,
-        });
+        };
       }),
     ]);
 
@@ -421,31 +428,37 @@ describe("ClientEndpointBoundary — idempotency envelope (KRT-BG003)", () => {
   });
 
   test("the synthetic client tool forwards context.idempotencyKey to the boundary", async () => {
-    const dispatchedKeys: Array<string | undefined> = [];
+    const dispatchedKeys: (string | undefined)[] = [];
     const recordingBoundary: ClientEndpointBoundary = {
-      detach: () => undefined,
-      dispatch: (
-        _capabilityId: string,
-        _callId: string,
-        _input: unknown,
-        idempotencyKey?: string
-      ): Promise<ClientDispatchResult | null> => {
-        dispatchedKeys.push(idempotencyKey);
-        return Promise.resolve({ content: { ok: true }, isError: false });
+      detach() {
+        // This focused boundary records dispatches and ignores detach requests.
       },
+      dispatch: fromSynchronousVariadicAwaited(
+        (
+          _capabilityId: string,
+          _callId: string,
+          _input: unknown,
+          idempotencyKey?: string
+        ): ClientDispatchResult | null => {
+          dispatchedKeys.push(idempotencyKey);
+          return { content: { ok: true }, isError: false };
+        }
+      ),
       isAvailable: () => true,
-      resolveBinding: () => undefined,
+      resolveBinding() {
+        // Binding resolution is outside this forwarding assertion.
+      },
     };
 
     const [tool] = buildClientEndpointTools(
       [makeEndpoint("ep1", ["charge.card"])],
       recordingBoundary
     );
-    const context = {
+    const context: ToolExecutionContext = {
       callId: "call-1",
       idempotencyKey: "idem-from-context",
       name: "charge.card",
-    } as ToolExecutionContext;
+    };
 
     await tool.execute({ amount: 10 }, context);
 
@@ -478,7 +491,6 @@ describe("ClientEndpointBoundary — client-side MCP binding (KRT-AZ004)", () =>
   test("client-side MCP dispatch goes through the client endpoint dispatch path", async () => {
     const dispatchedEnvelopes: ClientInvocationEnvelope[] = [];
     const endpoint: AttachedClientEndpoint = {
-      endpointId: "ext1",
       advertisedCapabilities: [
         {
           capabilityId: "remote.tool",
@@ -487,14 +499,15 @@ describe("ClientEndpointBoundary — client-side MCP binding (KRT-AZ004)", () =>
           mcpServerName: "remote-mcp",
         },
       ],
-      dispatch(envelope) {
+      dispatch: fromSynchronousVariadicAwaited((envelope) => {
         dispatchedEnvelopes.push(envelope);
-        return Promise.resolve({
+        return {
           callId: envelope.callId,
           content: { mcpOk: true },
           leaseToken: envelope.leaseToken,
-        });
-      },
+        };
+      }),
+      endpointId: "ext1",
     };
     const boundary = createClientEndpointBoundary([endpoint]);
     const result = await boundary.dispatch("remote.tool", "call-mcp", {});
@@ -509,28 +522,30 @@ describe("ClientEndpointBoundary — client-side MCP binding (KRT-AZ004)", () =>
 
 describe("isClientEndpointTool via binding resolver (KRT-AZ001, KRT-AZ004)", () => {
   test("resolveFromToolDefinition returns tuvren-client for a tool with clientEndpointId metadata", () => {
-    const { createBindingResolver } = require("../src/lib/binding-resolver.ts");
     const resolver = createBindingResolver();
     const binding = resolver.resolveFromToolDefinition({
-      name: "my.cap",
       description: "client cap",
+      execute() {
+        // Binding resolution never executes this tool.
+      },
       inputSchema: { type: "object" },
-      execute: () => Promise.resolve(undefined),
       metadata: { clientEndpointId: "ep1" },
+      name: "my.cap",
     });
     expect(binding.executionClass).toBe("tuvren-client");
     expect(binding.endpoint.kind).toBe("client-endpoint");
   });
 
   test("resolveFromToolDefinition returns tuvren-client/mcp-server for a client-side MCP tool", () => {
-    const { createBindingResolver } = require("../src/lib/binding-resolver.ts");
     const resolver = createBindingResolver();
     const binding = resolver.resolveFromToolDefinition({
-      name: "mcp.tool",
       description: "client mcp tool",
+      execute() {
+        // Binding resolution never executes this tool.
+      },
       inputSchema: { type: "object" },
-      execute: () => Promise.resolve(undefined),
       metadata: { clientEndpointId: "ep1", mcpServerName: "my-server" },
+      name: "mcp.tool",
     });
     expect(binding.executionClass).toBe("tuvren-client");
     expect(binding.endpoint.kind).toBe("mcp-server");
