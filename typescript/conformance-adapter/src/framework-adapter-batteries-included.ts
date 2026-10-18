@@ -17,7 +17,7 @@
 import { randomUUID } from "node:crypto";
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import path from "node:path";
 
 import type { InputSignal } from "@tuvren/core/execution";
 import type {
@@ -52,37 +52,42 @@ const BATTERIES_INCLUDED_MOCK_RESPONSE = {
   usage: { inputTokens: 5, outputTokens: 3 },
 } satisfies TuvrenModelResponse;
 
+const fromSynchronous = <Argument, Value>(
+  operation: (argument: Argument) => Value
+): ((argument: Argument) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(argument: Argument) => Value],
+    [Argument],
+    Promise<Value>
+  >(Promise, operation);
+
 const createScenarioProvider = (
   responses: readonly TuvrenModelResponse[]
 ): TuvrenProvider => {
   let responseIndex = 0;
 
   return {
-    generate() {
+    generate: fromSynchronous((_prompt: unknown): TuvrenModelResponse => {
       const response = responses[responseIndex] ?? responses.at(-1);
 
       if (response === undefined) {
-        return Promise.reject(
-          new Error("runner scenario must provide at least one response")
-        );
+        throw new Error("runner scenario must provide at least one response");
       }
 
       responseIndex += 1;
-      return Promise.resolve(structuredClone(response));
-    },
+      return structuredClone(response);
+    }),
     id: "provider",
     async *stream() {
-      await Promise.resolve();
       yield* [];
     },
   };
 };
 
-const textSignal = (text: string): InputSignal => {
-  return {
-    parts: [{ text, type: "text" }],
-  };
-};
+const textSignal = (text: string): InputSignal => ({
+  parts: [{ text, type: "text" }],
+});
 
 const collectValues = async <T>(values: AsyncIterable<T>): Promise<T[]> => {
   const collected: T[] = [];
@@ -94,9 +99,8 @@ const collectValues = async <T>(values: AsyncIterable<T>): Promise<T[]> => {
   return collected;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null;
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
 
 const readBackendKind = (input: unknown): string => {
   if (!isRecord(input)) {
@@ -126,8 +130,8 @@ const buildBackendSpec = (
       };
     }
     case "sqlite": {
-      const dir = join(tmpdir(), `tuvren-bi-${randomUUID()}`);
-      const databasePath = join(dir, "kernel.sqlite");
+      const dir = path.join(tmpdir(), `tuvren-bi-${randomUUID()}`);
+      const databasePath = path.join(dir, "kernel.sqlite");
       return {
         backendSpec: createSqliteBackend({ databasePath }),
         cleanupBackend: undefined,
@@ -155,7 +159,7 @@ const buildBackendSpec = (
       };
       return {
         backendSpec: createPostgresBackend(pgOptions),
-        cleanupBackend: () => destroyPostgresBackend(pgOptions),
+        cleanupBackend: destroyPostgresBackend.bind(undefined, pgOptions),
         cleanupPath: undefined,
       };
     }
@@ -230,7 +234,5 @@ const runBatteriesIncludedLifecycle = async (
 };
 
 export const createFrameworkAdapterBatteriesIncluded = (): {
-  runBatteriesIncludedLifecycle(input: unknown): Promise<AdapterProjection>;
-} => {
-  return { runBatteriesIncludedLifecycle };
-};
+  runBatteriesIncludedLifecycle: (input: unknown) => Promise<AdapterProjection>;
+} => ({ runBatteriesIncludedLifecycle });

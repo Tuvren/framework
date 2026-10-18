@@ -154,6 +154,8 @@ decisions:
         - typescript/conformance-adapter/src/framework-adapter-session.ts
         - typescript/conformance-adapter/src/framework-adapter-trust-boundary.ts
         - typescript/conformance-adapter/src/framework-adapter.ts
+        - typescript/conformance-adapter/src/framework-adapter-batteries-included.ts
+        - typescript/conformance-adapter/src/batteries-included-node-host.ts
     status: proposed
     asked:
       date: 2026-10-18
