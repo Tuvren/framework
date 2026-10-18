@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
 import type { ToolResultEvent, ToolStartEvent } from "@tuvren/core/events";
@@ -35,6 +34,7 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   textSignal,
 } from "./runtime-core-test-helpers.ts";
 
@@ -42,48 +42,44 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeRunner(toolName: string): RuntimeRunner {
-  return {
-    id: "fake",
-    async execute(context) {
-      const toolMessages = context.messages.filter((m) => m.role === "tool");
-      if (toolMessages.length === 0) {
-        return {
-          messages: [
-            assistantToolCalls([
-              { callId: "call-1", input: { q: "test" }, name: toolName },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" },
-          toolExecutionMode: "parallel",
-        };
-      }
+const makeRunner = (toolName: string): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    const toolMessages = context.messages.filter((m) => m.role === "tool");
+    if (toolMessages.length === 0) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "complete", type: "end_turn" },
+        messages: [
+          assistantToolCalls([
+            { callId: "call-1", input: { q: "test" }, name: toolName },
+          ]),
+        ],
+        resolution: { type: "continue_iteration" },
+        toolExecutionMode: "parallel",
       };
-    },
-    async resume() {
-      throw new Error("resume not expected");
-    },
-  };
-}
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "complete", type: "end_turn" },
+    };
+  }),
+  id: "fake",
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("resume not expected");
+  }),
+});
 
-function makeTool(name: string): TuvrenToolDefinition {
-  return {
-    description: `test tool ${name}`,
-    execute: async (input) => ({ result: input }),
-    inputSchema: { properties: { q: { type: "string" } }, type: "object" },
-    name,
-  };
-}
+const makeTool = (name: string): TuvrenToolDefinition => ({
+  description: `test tool ${name}`,
+  execute: (input) => ({ result: input }),
+  inputSchema: { properties: { q: { type: "string" } }, type: "object" },
+  name,
+});
 
-async function runToolTurn(toolName: string) {
+const runToolTurn = async (toolName: string) => {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
-    runnerRegistry: createBaseRunnerRegistry([makeRunner(toolName)]),
     kernel: harness.kernel,
+    runnerRegistry: createBaseRunnerRegistry([makeRunner(toolName)]),
   });
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
@@ -92,8 +88,8 @@ async function runToolTurn(toolName: string) {
     signal: textSignal("run"),
     threadId: thread.threadId,
   });
-  return collectEvents(handle.events());
-}
+  return await collectEvents(handle.events());
+};
 
 // ---------------------------------------------------------------------------
 // Attribution on canonical events (AW006)
@@ -185,8 +181,8 @@ describe("Capability attribution — telemetry spans (AW006)", () => {
     const toolName = "attrib-tool";
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createBaseRunnerRegistry([makeRunner(toolName)]),
       kernel: harness.kernel,
+      runnerRegistry: createBaseRunnerRegistry([makeRunner(toolName)]),
       telemetry: sink,
     });
     const thread = await runtime.createThread({});
@@ -274,13 +270,13 @@ describe("Capability attribution — stream-event guard contract", () => {
   test("tool.result with valid attribution passes the guard", () => {
     expect(
       isTuvrenStreamEvent({
+        attribution: validAttribution,
         callId: "c1",
         isError: false,
         name: "tool-x",
         output: { ok: true },
         timestamp: 1000,
         type: "tool.result",
-        attribution: validAttribution,
       })
     ).toBe(true);
   });

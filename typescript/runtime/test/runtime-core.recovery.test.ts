@@ -14,46 +14,37 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
-import {
-  DEFAULT_SCOPE,
-  type KernelRecord,
-  TuvrenRuntimeError,
-} from "@tuvren/core";
+import { assertKernelRecord, DEFAULT_SCOPE } from "@tuvren/core";
 import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 import type {
-  RunnerExecutionResult,
-  RuntimeRunner,
-  RuntimeRunnerFactory,
-} from "@tuvren/core/runner";
-import type {
-  TelemetryEvent,
-  TelemetrySpan,
-  TuvrenTelemetrySink,
-} from "@tuvren/core/telemetry";
-import type {
+  RecoveryState,
   RuntimeKernel,
   RuntimeKernelRunLiveness,
 } from "@tuvren/kernel-protocol";
-import {
-  encodeDeterministicKernelRecord,
-  type RecoveryState,
-} from "@tuvren/kernel-protocol";
 
-import {
-  createRunnerRegistry as createBaseRunnerRegistry,
-  createTuvrenRuntime,
-  DEFAULT_AGENT_SCHEMA,
-} from "../src/index.ts";
+import { createTuvrenRuntime, DEFAULT_AGENT_SCHEMA } from "../src/index.ts";
 import { deriveIdempotencyKey } from "../src/lib/idempotency-identity.ts";
 import { encryptMessageRecord } from "../src/lib/payload-codec-seam.ts";
+import { createFakeKernelHarness } from "./fake-kernel.ts";
+import { createFakeRunLivenessKernelHarness } from "./fake-run-liveness-kernel.ts";
+import { prepareExpiredToolBatch } from "./runtime-core-cold-recovery-test-helpers.ts";
 import {
-  createFakeKernelHarness,
-  createFakeRunLivenessKernelHarness,
-} from "./fake-kernel.ts";
+  countUserTextMessages,
+  createRunnerRegistry,
+  createTelemetryCapture,
+  hasAssistantTextMessage,
+  requireAssistantMessage,
+  toolResultMessage,
+  wrapTestRunLiveness,
+} from "./runtime-core-recovery-test-helpers.ts";
+import type {
+  TestRunLiveness,
+  TestRuntimeRunner,
+} from "./runtime-core-recovery-test-helpers.ts";
 import {
   assistantText,
   assistantToolCalls,
@@ -61,68 +52,7 @@ import {
   delay,
   extractTurnId,
   textSignal,
-  toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
-
-function hasAssistantTextMessage(
-  messages: readonly unknown[],
-  expectedText: string
-): boolean {
-  return messages.some((message) => {
-    const record = toOptionalRecord(message);
-
-    if (record?.role !== "assistant" || !Array.isArray(record.parts)) {
-      return false;
-    }
-
-    return record.parts.some((part) => {
-      const partRecord = toOptionalRecord(part);
-      return partRecord?.type === "text" && partRecord.text === expectedText;
-    });
-  });
-}
-
-function countUserTextMessages(
-  messages: readonly unknown[],
-  expectedText: string
-): number {
-  return messages.filter((message) => {
-    const record = toOptionalRecord(message);
-
-    if (record?.role !== "user" || !Array.isArray(record.parts)) {
-      return false;
-    }
-
-    return record.parts.some((part) => {
-      const partRecord = toOptionalRecord(part);
-      return partRecord?.type === "text" && partRecord.text === expectedText;
-    });
-  }).length;
-}
-
-function toolResultMessage(callId: string, value: number): TuvrenMessage {
-  return {
-    parts: [
-      {
-        callId,
-        name: "lookup",
-        output: { value },
-        type: "tool_result",
-      },
-    ],
-    role: "tool",
-  };
-}
-
-function requireAssistantMessage(
-  message: TuvrenMessage
-): Extract<TuvrenMessage, { role: "assistant" }> {
-  if (message.role !== "assistant") {
-    throw new Error("expected assistant message");
-  }
-
-  return message;
-}
 
 describe("framework-runtime-core", () => {
   test("rejects run-liveness configuration when the kernel does not implement the extension", () => {
@@ -131,12 +61,12 @@ describe("framework-runtime-core", () => {
     expect(() =>
       createTuvrenRuntime({
         defaultRunnerId: "fake",
-        runnerRegistry: createRunnerRegistry([]),
         kernel: harness.kernel,
         runLiveness: {
           executionOwnerId: "worker-1",
           leaseDurationMs: 50,
         },
+        runnerRegistry: createRunnerRegistry([]),
       })
     ).toThrow("kernel.run-liveness extension");
   });
@@ -155,61 +85,62 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     let createLeasedRunCalls = 0;
     let renewLeaseCalls = 0;
+    const runLiveness = {
+      async createLeasedRun(input) {
+        createLeasedRunCalls += 1;
+        const run = await harness.kernel.run.create(
+          input.runId,
+          input.turnId,
+          input.branchId,
+          input.schemaId,
+          input.startTurnNodeHash,
+          input.steps
+        );
+        return {
+          ...run,
+          executionOwnerId: input.executionOwnerId,
+          fencingToken: `token-${createLeasedRunCalls}`,
+          leaseExpiresAtMs: input.leaseExpiresAtMs,
+        };
+      },
+      listExpired(_nowMs) {
+        return [];
+      },
+      preemptExpired(_runId, _preemptingOwnerId, _nowMs, _reason) {
+        throw new Error("preemptExpired was not expected");
+      },
+      renewLease(
+        _runId,
+        _executionOwnerId,
+        _fencingToken,
+        nextLeaseExpiresAtMs
+      ) {
+        renewLeaseCalls += 1;
+        return {
+          fencingToken: `token-renewed-${renewLeaseCalls}`,
+          leaseExpiresAtMs: nextLeaseExpiresAtMs,
+        };
+      },
+    } satisfies TestRunLiveness;
     const kernel: RuntimeKernel & RuntimeKernelRunLiveness = {
       ...harness.kernel,
-      runLiveness: {
-        async createLeasedRun(input) {
-          createLeasedRunCalls += 1;
-          const run = await harness.kernel.run.create(
-            input.runId,
-            input.turnId,
-            input.branchId,
-            input.schemaId,
-            input.startTurnNodeHash,
-            input.steps
-          );
-          return {
-            ...run,
-            executionOwnerId: input.executionOwnerId,
-            fencingToken: `token-${createLeasedRunCalls}`,
-            leaseExpiresAtMs: input.leaseExpiresAtMs,
-          };
-        },
-        async listExpired(_nowMs) {
-          return [];
-        },
-        async preemptExpired(_runId, _preemptingOwnerId, _nowMs, _reason) {
-          throw new Error("preemptExpired was not expected");
-        },
-        async renewLease(
-          _runId,
-          _executionOwnerId,
-          _fencingToken,
-          nextLeaseExpiresAtMs
-        ) {
-          renewLeaseCalls += 1;
-          return {
-            fencingToken: `token-renewed-${renewLeaseCalls}`,
-            leaseExpiresAtMs: nextLeaseExpiresAtMs,
-          };
-        },
-      },
+      runLiveness: wrapTestRunLiveness(runLiveness),
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 60,
         renewBeforeMs: 20,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -231,7 +162,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const livenessHarness = createFakeRunLivenessKernelHarness(harness);
     const runner = {
-      async execute(context) {
+      execute(context) {
         expect(
           countUserTextMessages(context.messages, "Replace the stale run")
         ).toBe(1);
@@ -244,18 +175,18 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: telemetry.sink,
     });
     const thread = await runtime.createThread({});
@@ -306,10 +237,10 @@ describe("framework-runtime-core", () => {
     expect(handle.status().phase).toBe("completed");
     expect(extractTurnId(events)).toBe(staleTurn.turnId);
     expect(livenessHarness.getPreemptCalls()).toBe(1);
+    const branchRuns = await harness.readBranchRuns(thread.branchId);
     expect(
-      (await harness.readBranchRuns(thread.branchId)).find(
-        (run) => run.runId === "run_stale_leased_execution"
-      )?.status
+      branchRuns.find((run) => run.runId === "run_stale_leased_execution")
+        ?.status
     ).toBe("failed");
     expect(telemetry.events.map((event) => event.kind)).toContain(
       "recovery.resumed"
@@ -321,7 +252,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const livenessHarness = createFakeRunLivenessKernelHarness(harness);
     const runner = {
-      async execute(context) {
+      execute(context) {
         expect(
           countUserTextMessages(
             context.messages,
@@ -337,18 +268,18 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const staleTurn = await livenessHarness.kernel.turn.create(
@@ -394,7 +325,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const livenessHarness = createFakeRunLivenessKernelHarness(harness);
     const runner = {
-      async execute(context) {
+      execute(context) {
         expect(
           countUserTextMessages(context.messages, "Retry the same request")
         ).toBe(1);
@@ -413,18 +344,18 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: livenessHarness.kernel,
       runLiveness: {
         executionOwnerId: "worker-1",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const staleTurn = await livenessHarness.kernel.turn.create(
@@ -496,7 +427,7 @@ describe("framework-runtime-core", () => {
       );
     let recoveredAtPreemption: RecoveryState | undefined;
     let branchHeadAtPreemption: string | undefined;
-    let inputCheckpointHash: string | undefined;
+    const inputCheckpointCapture: { hash?: string } = {};
     let messagesAtPreemption: unknown[] = [];
     let manifestAtPreemption:
       | Awaited<ReturnType<typeof harness.readBranchManifest>>
@@ -515,7 +446,7 @@ describe("framework-runtime-core", () => {
             reason
           );
           recoveredAtPreemption = recovery;
-          const inputCheckpoint = inputCheckpointHash;
+          const inputCheckpoint = inputCheckpointCapture.hash;
 
           if (inputCheckpoint === undefined) {
             throw new Error(
@@ -540,11 +471,10 @@ describe("framework-runtime-core", () => {
           manifestAtPreemption = await harness.readBranchManifest(
             "branch_partial_tool_batch_crash"
           );
-          branchHeadAtPreemption = (
-            await livenessHarness.kernel.branch.get(
-              "branch_partial_tool_batch_crash"
-            )
-          )?.headTurnNodeHash;
+          const branch = await livenessHarness.kernel.branch.get(
+            "branch_partial_tool_batch_crash"
+          );
+          branchHeadAtPreemption = branch?.headTurnNodeHash;
           return recoveredState;
         },
       },
@@ -569,17 +499,19 @@ describe("framework-runtime-core", () => {
       runId: string,
       taskId: string,
       message: TuvrenMessage
-    ) =>
-      await kernel.staging.stage(
+    ) => {
+      assertKernelRecord(message, "partial tool batch staged message");
+      return await kernel.staging.stage(
         runId,
         await encryptMessageRecord(
           payloadBinding,
-          encodeDeterministicKernelRecord(message as unknown as KernelRecord)
+          encodeDeterministicKernelRecord(message)
         ),
         taskId,
         "message",
         "completed"
       );
+    };
 
     await kernel.run.create(
       "run_partial_tool_batch_input",
@@ -612,7 +544,7 @@ describe("framework-runtime-core", () => {
     if (inputCheckpoint.turnNodeHash === undefined) {
       throw new Error("expected durable user checkpoint");
     }
-    inputCheckpointHash = inputCheckpoint.turnNodeHash;
+    inputCheckpointCapture.hash = inputCheckpoint.turnNodeHash;
 
     await kernel.turn.updateHead(
       staleTurn.turnId,
@@ -673,7 +605,7 @@ describe("framework-runtime-core", () => {
     let recoveredToolCallTotal: number | undefined;
     let recoveredToolResultTotal: number | undefined;
     const runner = {
-      async execute() {
+      execute() {
         runnerCalls += 1;
         return {
           messages: [assistantText("Recovered batch completed.")],
@@ -681,10 +613,10 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     let now = 19;
     now = 21;
     const runtime = createTuvrenRuntime({
@@ -692,11 +624,11 @@ describe("framework-runtime-core", () => {
       kernel,
       now: () => now,
       payloadCodec: IDENTITY_PAYLOAD_CODEC,
-      runnerRegistry: createRunnerRegistry([runner]),
       runLiveness: {
         executionOwnerId: "replacement-worker",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
@@ -750,7 +682,8 @@ describe("framework-runtime-core", () => {
       throw new Error("expected stale preemption capture");
     }
 
-    const staleRun = (await harness.readBranchRuns(thread.branchId)).find(
+    const branchRuns = await harness.readBranchRuns(thread.branchId);
+    const staleRun = branchRuns.find(
       (run) => run.runId === "run_partial_tool_batch_crash"
     );
     expect(staleRun).toMatchObject({
@@ -831,7 +764,7 @@ describe("framework-runtime-core", () => {
     );
     let runnerCalls = 0;
     const runner = {
-      async execute() {
+      execute() {
         runnerCalls += 1;
         return {
           messages: [assistantText("Continued after completed batch.")],
@@ -839,20 +772,20 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       kernel: fixture.kernel,
       now: () => 21,
       payloadCodec: IDENTITY_PAYLOAD_CODEC,
-      runnerRegistry: createRunnerRegistry([runner]),
       runLiveness: {
         executionOwnerId: "replacement-worker",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const handle = runtime.executeTurn({
       branchId: fixture.thread.branchId,
@@ -909,7 +842,7 @@ describe("framework-runtime-core", () => {
     let dispatchedIdempotencyKey: string | undefined;
     let runnerCalls = 0;
     const runner = {
-      async execute() {
+      execute() {
         runnerCalls += 1;
         return {
           messages: [assistantText("Approved recovered call completed.")],
@@ -917,20 +850,20 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       kernel: fixture.kernel,
       now: () => 21,
       payloadCodec: IDENTITY_PAYLOAD_CODEC,
-      runnerRegistry: createRunnerRegistry([runner]),
       runLiveness: {
         executionOwnerId: "replacement-worker",
         leaseDurationMs: 50,
       },
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const pausedHandle = runtime.executeTurn({
       branchId: fixture.thread.branchId,
@@ -972,626 +905,4 @@ describe("framework-runtime-core", () => {
       deriveIdempotencyKey(fixture.staleTurn.turnId, "call_recovered_approval")
     );
   });
-
-  test("stops before another runner pass when recovered iterations already reached maxIterations", async () => {
-    const harness = createFakeKernelHarness();
-    const livenessHarness = createFakeRunLivenessKernelHarness(harness);
-    let executeCalls = 0;
-    const runner = {
-      async execute() {
-        executeCalls += 1;
-        return {
-          messages: [
-            assistantText("This extra recovered iteration should not run."),
-          ],
-          resolution: {
-            type: "continue_iteration",
-          },
-        };
-      },
-      id: "fake",
-      async resume() {
-        throw new Error("resume was not expected");
-      },
-    } satisfies RuntimeRunner;
-    const runtime = createTuvrenRuntime({
-      defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
-      kernel: livenessHarness.kernel,
-      runLiveness: {
-        executionOwnerId: "worker-1",
-        leaseDurationMs: 50,
-      },
-    });
-    const thread = await runtime.createThread({});
-    const staleTurn = await livenessHarness.kernel.turn.create(
-      "turn_stale_iteration_limit_recovery",
-      thread.threadId,
-      thread.branchId,
-      null,
-      thread.rootTurnNodeHash
-    );
-    await livenessHarness.kernel.runLiveness.createLeasedRun({
-      branchId: thread.branchId,
-      executionOwnerId: "worker-stale",
-      leaseExpiresAtMs: 1,
-      runId: "run_stale_iteration_limit_recovery",
-      schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
-      startTurnNodeHash: thread.rootTurnNodeHash,
-      steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
-      turnId: staleTurn.turnId,
-    });
-    await livenessHarness.kernel.staging.stage(
-      "run_stale_iteration_limit_recovery",
-      encodeDeterministicKernelRecord({
-        parts: [
-          {
-            text: "Iteration-limited recovered request",
-            type: "text",
-          },
-        ],
-        role: "user",
-      }),
-      "stale_iteration_limit_user_message",
-      "message",
-      "completed"
-    );
-    await livenessHarness.kernel.staging.stage(
-      "run_stale_iteration_limit_recovery",
-      encodeDeterministicKernelRecord({
-        parts: [
-          {
-            text: "Recovered first iteration output.",
-            type: "text",
-          },
-        ],
-        role: "assistant",
-      }),
-      "stale_iteration_limit_assistant_message",
-      "message",
-      "completed"
-    );
-
-    const handle = runtime.executeTurn({
-      branchId: thread.branchId,
-      config: {
-        maxIterations: 1,
-        name: "primary",
-      },
-      signal: textSignal("Iteration-limited recovered request"),
-      threadId: thread.threadId,
-    });
-
-    await collectEvents(handle.events());
-
-    expect(executeCalls).toBe(0);
-    expect(handle.status().phase).toBe("completed");
-  });
-
-  test("starts a fresh turn when the incoming signal does not match the recovered stale turn", async () => {
-    const harness = createFakeKernelHarness();
-    const livenessHarness = createFakeRunLivenessKernelHarness(harness);
-    const runner = {
-      async execute(context) {
-        expect(
-          countUserTextMessages(context.messages, "Original request")
-        ).toBe(1);
-        expect(
-          countUserTextMessages(context.messages, "Different fresh request")
-        ).toBe(1);
-        return {
-          messages: [assistantText("Fresh turn executed.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
-      id: "fake",
-      async resume() {
-        throw new Error("resume was not expected");
-      },
-    } satisfies RuntimeRunner;
-    const runtime = createTuvrenRuntime({
-      defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
-      kernel: livenessHarness.kernel,
-      runLiveness: {
-        executionOwnerId: "worker-1",
-        leaseDurationMs: 50,
-      },
-    });
-    const thread = await runtime.createThread({});
-    const staleTurn = await livenessHarness.kernel.turn.create(
-      "turn_stale_signal_mismatch",
-      thread.threadId,
-      thread.branchId,
-      null,
-      thread.rootTurnNodeHash
-    );
-    await livenessHarness.kernel.runLiveness.createLeasedRun({
-      branchId: thread.branchId,
-      executionOwnerId: "worker-stale",
-      leaseExpiresAtMs: 1,
-      runId: "run_stale_signal_mismatch",
-      schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
-      startTurnNodeHash: thread.rootTurnNodeHash,
-      steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
-      turnId: staleTurn.turnId,
-    });
-    await livenessHarness.kernel.staging.stage(
-      "run_stale_signal_mismatch",
-      encodeDeterministicKernelRecord({
-        parts: [
-          {
-            text: "Original request",
-            type: "text",
-          },
-        ],
-        role: "user",
-      }),
-      "stale_user_message",
-      "message",
-      "completed"
-    );
-
-    const handle = runtime.executeTurn({
-      branchId: thread.branchId,
-      config: { name: "primary" },
-      signal: textSignal("Different fresh request"),
-      threadId: thread.threadId,
-    });
-    const events = await collectEvents(handle.events());
-    const branchMessages = await harness.readBranchMessages(thread.branchId);
-
-    expect(handle.status().phase).toBe("completed");
-    expect(extractTurnId(events)).not.toBe(staleTurn.turnId);
-    expect(countUserTextMessages(branchMessages, "Original request")).toBe(1);
-    expect(
-      countUserTextMessages(branchMessages, "Different fresh request")
-    ).toBe(1);
-  });
-
-  test("rejects branch and thread mismatches before stale-run recovery can preempt", async () => {
-    const harness = createFakeKernelHarness();
-    const livenessHarness = createFakeRunLivenessKernelHarness(harness);
-    const runner = {
-      async execute() {
-        return {
-          messages: [assistantText("This turn should not start.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
-      id: "fake",
-      async resume() {
-        throw new Error("resume was not expected");
-      },
-    } satisfies RuntimeRunner;
-    const runtime = createTuvrenRuntime({
-      defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
-      kernel: livenessHarness.kernel,
-      runLiveness: {
-        executionOwnerId: "worker-1",
-        leaseDurationMs: 50,
-      },
-    });
-    const threadA = await runtime.createThread({});
-    const threadB = await runtime.createThread({});
-    const staleTurn = await livenessHarness.kernel.turn.create(
-      "turn_cross_thread_recovery_guard",
-      threadA.threadId,
-      threadA.branchId,
-      null,
-      threadA.rootTurnNodeHash
-    );
-    await livenessHarness.kernel.runLiveness.createLeasedRun({
-      branchId: threadA.branchId,
-      executionOwnerId: "worker-stale",
-      leaseExpiresAtMs: 1,
-      runId: "run_cross_thread_recovery_guard",
-      schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
-      startTurnNodeHash: threadA.rootTurnNodeHash,
-      steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
-      turnId: staleTurn.turnId,
-    });
-    const originalBranchHead = (
-      await livenessHarness.kernel.branch.get(threadA.branchId)
-    )?.headTurnNodeHash;
-    const handle = runtime.executeTurn({
-      branchId: threadA.branchId,
-      config: { name: "primary" },
-      signal: textSignal("Cross the streams"),
-      threadId: threadB.threadId,
-    });
-    const events = await collectEvents(handle.events());
-    const errorEvent = events.find(
-      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
-        event.type === "error"
-    );
-
-    expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("branch_thread_mismatch");
-    expect(livenessHarness.getPreemptCalls()).toBe(0);
-    expect(
-      (await livenessHarness.kernel.branch.get(threadA.branchId))
-        ?.headTurnNodeHash
-    ).toBe(originalBranchHead);
-  });
-
-  test("fails before creating a replacement turn when stale recovery loses a lease-renewal race", async () => {
-    const harness = createFakeKernelHarness();
-    const livenessHarness = createFakeRunLivenessKernelHarness(harness);
-    const originalTurnCreate = harness.kernel.turn.create;
-    let runnerExecuteCalls = 0;
-    let turnCreateCalls = 0;
-
-    harness.kernel.turn.create = async (...args) => {
-      turnCreateCalls += 1;
-      return await originalTurnCreate(...args);
-    };
-    livenessHarness.kernel.runLiveness.preemptExpired = async () => {
-      throw new TuvrenRuntimeError("lease is no longer expired", {
-        code: "kernel_runtime_run_lease_not_expired",
-      });
-    };
-
-    const runner = {
-      async execute() {
-        runnerExecuteCalls += 1;
-        return {
-          messages: [assistantText("This recovery should not execute.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
-      id: "fake",
-      async resume() {
-        throw new Error("resume was not expected");
-      },
-    } satisfies RuntimeRunner;
-    const runtime = createTuvrenRuntime({
-      defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
-      kernel: livenessHarness.kernel,
-      runLiveness: {
-        executionOwnerId: "worker-1",
-        leaseDurationMs: 50,
-      },
-    });
-    const thread = await runtime.createThread({});
-    const staleTurn = await livenessHarness.kernel.turn.create(
-      "turn_stale_recovery_lease_race",
-      thread.threadId,
-      thread.branchId,
-      null,
-      thread.rootTurnNodeHash
-    );
-    await livenessHarness.kernel.runLiveness.createLeasedRun({
-      branchId: thread.branchId,
-      executionOwnerId: "worker-stale",
-      leaseExpiresAtMs: 1,
-      runId: "run_stale_recovery_lease_race",
-      schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
-      startTurnNodeHash: thread.rootTurnNodeHash,
-      steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
-      turnId: staleTurn.turnId,
-    });
-    const originalBranchHead = (
-      await livenessHarness.kernel.branch.get(thread.branchId)
-    )?.headTurnNodeHash;
-    const handle = runtime.executeTurn({
-      branchId: thread.branchId,
-      config: { name: "primary" },
-      signal: textSignal("Do not duplicate this request"),
-      threadId: thread.threadId,
-    });
-    const events = await collectEvents(handle.events());
-    const errorEvent = events.find(
-      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
-        event.type === "error"
-    );
-
-    expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("runtime_execution_recovery_contended");
-    expect(turnCreateCalls).toBe(1);
-    expect(runnerExecuteCalls).toBe(0);
-    expect(
-      (await livenessHarness.kernel.branch.get(thread.branchId))
-        ?.headTurnNodeHash
-    ).toBe(originalBranchHead);
-    expect(
-      (await harness.readBranchRuns(thread.branchId)).find(
-        (run) => run.runId === "run_stale_recovery_lease_race"
-      )?.status
-    ).toBe("running");
-  });
-
-  test("fails before replacement execution when another owner already won stale recovery", async () => {
-    const harness = createFakeKernelHarness();
-    const livenessHarness = createFakeRunLivenessKernelHarness(harness);
-    const originalTurnCreate = harness.kernel.turn.create;
-    let runnerExecuteCalls = 0;
-    let turnCreateCalls = 0;
-
-    harness.kernel.turn.create = async (...args) => {
-      turnCreateCalls += 1;
-      return await originalTurnCreate(...args);
-    };
-    livenessHarness.kernel.runLiveness.preemptExpired = async (runId) => {
-      await harness.kernel.run.complete(runId, "failed");
-      throw new TuvrenRuntimeError("stale run already fenced elsewhere", {
-        code: "kernel_runtime_run_not_running",
-      });
-    };
-
-    const runner = {
-      async execute() {
-        runnerExecuteCalls += 1;
-        return {
-          messages: [assistantText("Competing recovery should not execute.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
-      id: "fake",
-      async resume() {
-        throw new Error("resume was not expected");
-      },
-    } satisfies RuntimeRunner;
-    const runtime = createTuvrenRuntime({
-      defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
-      kernel: livenessHarness.kernel,
-      runLiveness: {
-        executionOwnerId: "worker-1",
-        leaseDurationMs: 50,
-      },
-    });
-    const thread = await runtime.createThread({});
-    const staleTurn = await livenessHarness.kernel.turn.create(
-      "turn_stale_recovery_preempted_elsewhere",
-      thread.threadId,
-      thread.branchId,
-      null,
-      thread.rootTurnNodeHash
-    );
-    await livenessHarness.kernel.runLiveness.createLeasedRun({
-      branchId: thread.branchId,
-      executionOwnerId: "worker-stale",
-      leaseExpiresAtMs: 1,
-      runId: "run_stale_recovery_preempted_elsewhere",
-      schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
-      startTurnNodeHash: thread.rootTurnNodeHash,
-      steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
-      turnId: staleTurn.turnId,
-    });
-    const originalBranchHead = (
-      await livenessHarness.kernel.branch.get(thread.branchId)
-    )?.headTurnNodeHash;
-    const handle = runtime.executeTurn({
-      branchId: thread.branchId,
-      config: { name: "primary" },
-      signal: textSignal("Do not recover twice"),
-      threadId: thread.threadId,
-    });
-    const events = await collectEvents(handle.events());
-    const errorEvent = events.find(
-      (event): event is Extract<(typeof events)[number], { type: "error" }> =>
-        event.type === "error"
-    );
-
-    expect(handle.status().phase).toBe("failed");
-    expect(errorEvent?.error.code).toBe("runtime_execution_recovery_contended");
-    expect(turnCreateCalls).toBe(1);
-    expect(runnerExecuteCalls).toBe(0);
-    expect(
-      (await livenessHarness.kernel.branch.get(thread.branchId))
-        ?.headTurnNodeHash
-    ).toBe(originalBranchHead);
-    expect(
-      (await harness.readBranchRuns(thread.branchId)).find(
-        (run) => run.runId === "run_stale_recovery_preempted_elsewhere"
-      )?.status
-    ).toBe("failed");
-    expect(
-      countUserTextMessages(
-        await harness.readBranchMessages(thread.branchId),
-        "Do not recover twice"
-      )
-    ).toBe(0);
-  });
 });
-
-async function prepareExpiredToolBatch(
-  suffix: string,
-  signalText: string,
-  interruptedMessages: TuvrenMessage[]
-) {
-  const harness = createFakeKernelHarness();
-  const livenessHarness = createFakeRunLivenessKernelHarness(harness);
-  const thread = await livenessHarness.kernel.thread.create(
-    `thread_${suffix}`,
-    DEFAULT_AGENT_SCHEMA.schemaId,
-    `branch_${suffix}`
-  );
-  const staleTurn = await livenessHarness.kernel.turn.create(
-    `turn_${suffix}`,
-    thread.threadId,
-    thread.branchId,
-    null,
-    thread.rootTurnNodeHash
-  );
-  const inputRunId = `run_${suffix}_input`;
-  await livenessHarness.kernel.run.create(
-    inputRunId,
-    staleTurn.turnId,
-    thread.branchId,
-    DEFAULT_AGENT_SCHEMA.schemaId,
-    thread.rootTurnNodeHash,
-    [{ deterministic: false, id: "incorporate_input", sideEffects: true }]
-  );
-  await livenessHarness.kernel.run.beginStep(inputRunId, "incorporate_input");
-  await stageTestMessage(livenessHarness.kernel, inputRunId, "durable_user", {
-    parts: [{ text: signalText, type: "text" }],
-    role: "user",
-  });
-  const inputCheckpoint = await livenessHarness.kernel.run.completeStep(
-    inputRunId,
-    "incorporate_input"
-  );
-  await livenessHarness.kernel.run.complete(inputRunId, "completed");
-
-  if (inputCheckpoint.turnNodeHash === undefined) {
-    throw new Error("expected durable input checkpoint");
-  }
-
-  await livenessHarness.kernel.turn.updateHead(
-    staleTurn.turnId,
-    inputCheckpoint.turnNodeHash
-  );
-  const staleRunId = `run_${suffix}_stale`;
-  await livenessHarness.kernel.runLiveness.createLeasedRun({
-    branchId: thread.branchId,
-    executionOwnerId: "worker-that-crashed",
-    leaseExpiresAtMs: 20,
-    runId: staleRunId,
-    schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
-    startTurnNodeHash: inputCheckpoint.turnNodeHash,
-    steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
-    turnId: staleTurn.turnId,
-  });
-  await livenessHarness.kernel.run.beginStep(staleRunId, "iterate");
-
-  for (const [index, message] of interruptedMessages.entries()) {
-    await stageTestMessage(
-      livenessHarness.kernel,
-      staleRunId,
-      `interrupted_message_${index.toString()}`,
-      message
-    );
-  }
-
-  return {
-    harness,
-    kernel: livenessHarness.kernel,
-    staleTurn,
-    thread,
-  };
-}
-
-async function stageTestMessage(
-  kernel: RuntimeKernel,
-  runId: string,
-  taskId: string,
-  message: TuvrenMessage
-): Promise<void> {
-  await kernel.staging.stage(
-    runId,
-    await encryptMessageRecord(
-      { codec: IDENTITY_PAYLOAD_CODEC, scope: DEFAULT_SCOPE },
-      encodeDeterministicKernelRecord(message as unknown as KernelRecord)
-    ),
-    taskId,
-    "message",
-    "completed"
-  );
-}
-
-function createRunnerRegistry(
-  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
-) {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-}
-
-function createTelemetryCapture(): {
-  events: TelemetryEvent[];
-  sink: TuvrenTelemetrySink;
-  spans: TelemetrySpan[];
-} {
-  const events: TelemetryEvent[] = [];
-  const spans: TelemetrySpan[] = [];
-
-  return {
-    events,
-    sink: {
-      event: (event) => {
-        events.push(event);
-      },
-      span: (span) => {
-        spans.push(span);
-      },
-    },
-    spans,
-  };
-}
-
-function wrapRunnerEntry(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): RuntimeRunner | RuntimeRunnerFactory {
-  if (isKrakenRunnerFactory(entry)) {
-    return {
-      create() {
-        return wrapRunner(entry.create());
-      },
-      id: entry.id,
-    };
-  }
-
-  return wrapRunner(entry);
-}
-
-function isKrakenRunnerFactory(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory {
-  return "create" in entry && typeof entry.create === "function";
-}
-
-function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const resume = runner.resume;
-
-  return {
-    async execute(context) {
-      return normalizeRunnerResult(await runner.execute(context));
-    },
-    id: runner.id,
-    ...(resume === undefined
-      ? {}
-      : {
-          async resume(context) {
-            return normalizeRunnerResult(await resume(context));
-          },
-        }),
-  };
-}
-
-function normalizeRunnerResult(
-  result: RunnerExecutionResult
-): RunnerExecutionResult {
-  if (
-    result.toolExecutionMode !== undefined ||
-    !requestsToolExecution(result)
-  ) {
-    return result;
-  }
-
-  return {
-    ...result,
-    toolExecutionMode: "parallel",
-  };
-}
-
-function requestsToolExecution(result: RunnerExecutionResult): boolean {
-  return (result.messages ?? []).some(
-    (message) =>
-      message.role === "assistant" &&
-      message.parts.some((part) => part.type === "tool_call")
-  );
-}

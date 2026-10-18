@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
 import type { AgentConfig, TuvrenRuntime } from "@tuvren/core/execution";
@@ -35,6 +34,7 @@ import {
   createStubExecutionHandle,
   delay,
   detachTestPromise,
+  fromSynchronousVariadicAwaited,
   startEventCapture,
   textSignal,
   toKrakenMessages,
@@ -46,6 +46,7 @@ describe("orchestration-runtime", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -79,7 +80,6 @@ describe("orchestration-runtime", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -143,6 +143,7 @@ describe("orchestration-runtime", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -159,7 +160,6 @@ describe("orchestration-runtime", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -259,8 +259,8 @@ describe("orchestration-runtime", () => {
     }, "special");
     const framework = createTuvrenRuntime({
       defaultRunnerId: "default",
-      runnerRegistry: createRunnerRegistry([defaultRunner, specialRunner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([defaultRunner, specialRunner]),
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -321,27 +321,29 @@ describe("orchestration-runtime", () => {
       iterationCount: 0,
       phase: "completed",
     });
-    const createThreadInputs: Array<{ schemaId?: string }> = [];
-    const executeTurnInputs: Array<{
+    const createThreadInputs: { schemaId?: string }[] = [];
+    const executeTurnInputs: {
       agentName: string;
       schemaId?: string;
       threadId: string;
-    }> = [];
+    }[] = [];
     let executeCalls = 0;
-    const framework = {
-      async createBranch() {
+    const framework: TuvrenRuntime = {
+      createBranch: fromSynchronousVariadicAwaited(() => {
         throw new Error("createBranch was not expected");
-      },
-      async createThread(input) {
-        createThreadInputs.push(input);
+      }),
+      createThread: fromSynchronousVariadicAwaited(
+        (input: Parameters<TuvrenRuntime["createThread"]>[0]) => {
+          createThreadInputs.push(input);
 
-        return {
-          branchId: `branch-${createThreadInputs.length}`,
-          rootTurnNodeHash: "0".repeat(64),
-          rootTurnTreeHash: "1".repeat(64),
-          threadId: `thread-${createThreadInputs.length}`,
-        };
-      },
+          return {
+            branchId: `branch-${createThreadInputs.length}`,
+            rootTurnNodeHash: "0".repeat(64),
+            rootTurnTreeHash: "1".repeat(64),
+            threadId: `thread-${createThreadInputs.length}`,
+          };
+        }
+      ),
       executeTurn(input) {
         executeCalls += 1;
         executeTurnInputs.push({
@@ -356,7 +358,7 @@ describe("orchestration-runtime", () => {
 
         return childHandle;
       },
-      async getThread(threadId) {
+      getThread: fromSynchronousVariadicAwaited((threadId: string) => {
         if (threadId === "thread-root") {
           return {
             rootTurnNodeHash: "2".repeat(64),
@@ -366,34 +368,30 @@ describe("orchestration-runtime", () => {
         }
 
         return null;
-      },
-      async setBranchHead() {
-        throw new Error("setBranchHead was not expected");
-      },
-      async listThreads() {
-        return { threads: [] };
-      },
-      async listBranches() {
-        return [];
-      },
-      async getTurnState() {
-        throw new Error("getTurnState was not expected");
-      },
+      }),
       getTurnHistory() {
         throw new Error("getTurnHistory was not expected");
       },
-      async readBranchMessages() {
-        return { messages: [] };
-      },
+      getTurnState: fromSynchronousVariadicAwaited(() => {
+        throw new Error("getTurnState was not expected");
+      }),
+      listBranches: fromSynchronousVariadicAwaited(() => []),
+      listThreads: fromSynchronousVariadicAwaited(() => ({ threads: [] })),
       maintenance: {
-        reclaim() {
-          throw new Error("reclaim was not expected");
-        },
-        purgeScope() {
+        purgeScope: fromSynchronousVariadicAwaited(() => {
           throw new Error("purgeScope was not expected");
-        },
+        }),
+        reclaim: fromSynchronousVariadicAwaited(() => {
+          throw new Error("reclaim was not expected");
+        }),
       },
-    } satisfies TuvrenRuntime;
+      readBranchMessages: fromSynchronousVariadicAwaited(() => ({
+        messages: [],
+      })),
+      setBranchHead: fromSynchronousVariadicAwaited(() => {
+        throw new Error("setBranchHead was not expected");
+      }),
+    };
     const orchestration = createOrchestrationRuntime({
       agents: {
         primary: { name: "primary" },
@@ -432,15 +430,15 @@ describe("orchestration-runtime", () => {
     ]);
 
     rootHandle.cancel();
-    await expect(handle.awaitResult()).rejects.toMatchObject({
+    expect(handle.awaitResult()).rejects.toMatchObject({
       code: "execution_cancelled",
     });
   });
 
   test("keeps live extension receiver state mutable during orchestrated execution", async () => {
     interface ReceiverExtension {
-      beforeIteration(): undefined;
-      beforeTurn(): undefined;
+      beforeIteration: () => undefined;
+      beforeTurn: () => undefined;
       beforeTurnCalls: number;
       name: string;
     }
@@ -453,20 +451,18 @@ describe("orchestration-runtime", () => {
             `expected beforeTurnCalls to be 1, received ${this.beforeTurnCalls}`
           );
         }
-
-        return undefined;
       },
       beforeTurn() {
         this.beforeTurnCalls += 1;
-        return undefined;
       },
       beforeTurnCalls: 0,
       name: "orchestration-mutable-receiver",
     };
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
-        createStaticRunner(async () => ({
+        createStaticRunner(() => ({
           messages: [assistantText("Hook receiver stayed mutable.")],
           resolution: {
             reason: "done",
@@ -474,7 +470,6 @@ describe("orchestration-runtime", () => {
           },
         })),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -520,6 +515,10 @@ describe("orchestration-runtime", () => {
     };
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
+      resolveAgentConfig(agentName) {
+        return agents[agentName];
+      },
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -557,10 +556,6 @@ describe("orchestration-runtime", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
-      resolveAgentConfig(agentName) {
-        return agents[agentName];
-      },
     });
     const orchestration = createOrchestrationRuntime({
       agents,
@@ -611,11 +606,11 @@ describe("orchestration-runtime", () => {
     const rootHandle = createStubExecutionHandle("running");
     let executeCalls = 0;
     let nextThreadNumber = 0;
-    const framework = {
-      async createBranch() {
+    const framework: TuvrenRuntime = {
+      createBranch: fromSynchronousVariadicAwaited(() => {
         throw new Error("createBranch was not expected");
-      },
-      async createThread() {
+      }),
+      createThread: fromSynchronousVariadicAwaited(() => {
         nextThreadNumber += 1;
         return {
           branchId: `branch-${nextThreadNumber}`,
@@ -623,7 +618,7 @@ describe("orchestration-runtime", () => {
           rootTurnTreeHash: "1".repeat(64),
           threadId: `thread-${nextThreadNumber}`,
         };
-      },
+      }),
       executeTurn() {
         executeCalls += 1;
 
@@ -674,7 +669,7 @@ describe("orchestration-runtime", () => {
           }
         );
       },
-      async getThread(threadId) {
+      getThread: fromSynchronousVariadicAwaited((threadId: string) => {
         if (threadId === "thread-root") {
           return {
             rootTurnNodeHash: "2".repeat(64),
@@ -684,34 +679,30 @@ describe("orchestration-runtime", () => {
         }
 
         return null;
-      },
-      async setBranchHead() {
-        throw new Error("setBranchHead was not expected");
-      },
-      async listThreads() {
-        return { threads: [] };
-      },
-      async listBranches() {
-        return [];
-      },
-      async getTurnState() {
-        throw new Error("getTurnState was not expected");
-      },
+      }),
       getTurnHistory() {
         throw new Error("getTurnHistory was not expected");
       },
-      async readBranchMessages() {
-        return { messages: [] };
-      },
+      getTurnState: fromSynchronousVariadicAwaited(() => {
+        throw new Error("getTurnState was not expected");
+      }),
+      listBranches: fromSynchronousVariadicAwaited(() => []),
+      listThreads: fromSynchronousVariadicAwaited(() => ({ threads: [] })),
       maintenance: {
-        reclaim() {
-          throw new Error("reclaim was not expected");
-        },
-        purgeScope() {
+        purgeScope: fromSynchronousVariadicAwaited(() => {
           throw new Error("purgeScope was not expected");
-        },
+        }),
+        reclaim: fromSynchronousVariadicAwaited(() => {
+          throw new Error("reclaim was not expected");
+        }),
       },
-    } satisfies TuvrenRuntime;
+      readBranchMessages: fromSynchronousVariadicAwaited(() => ({
+        messages: [],
+      })),
+      setBranchHead: fromSynchronousVariadicAwaited(() => {
+        throw new Error("setBranchHead was not expected");
+      }),
+    };
     const orchestration = createOrchestrationRuntime({
       agents: {
         primary: { name: "primary" },
@@ -761,7 +752,7 @@ describe("orchestration-runtime", () => {
     });
 
     rootHandle.cancel();
-    await expect(handle.awaitResult()).rejects.toMatchObject({
+    expect(handle.awaitResult()).rejects.toMatchObject({
       code: "execution_cancelled",
     });
     await subtreeCapture.done;
@@ -771,6 +762,7 @@ describe("orchestration-runtime", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -818,7 +810,6 @@ describe("orchestration-runtime", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const agents = {
       primary: { name: "primary" },
@@ -898,6 +889,7 @@ describe("orchestration-runtime", () => {
     const harness = createFakeKernelHarness();
     const framework = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker-alpha") {
@@ -923,7 +915,6 @@ describe("orchestration-runtime", () => {
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -966,19 +957,18 @@ describe("orchestration-runtime", () => {
     expect(Object.keys(parentResult.childResults)).toHaveLength(2);
 
     const childTexts = Object.values(parentResult.childResults)
-      .map((r) => {
-        if (r.status !== "completed") {
-          return undefined;
+      .flatMap((result) => {
+        if (result.status !== "completed") {
+          return [];
         }
-        const msg = r.finalAssistantMessage;
-        if (msg?.role !== "assistant") {
-          return undefined;
+        const message = result.finalAssistantMessage;
+        if (message?.role !== "assistant") {
+          return [];
         }
-        const part = msg.parts[0];
-        return part.type === "text" ? part.text : undefined;
+        const [part] = message.parts;
+        return part?.type === "text" ? [part.text] : [];
       })
-      .filter((t): t is string => t !== undefined)
-      .sort();
+      .toSorted();
 
     expect(childTexts).toEqual(["Alpha complete.", "Beta complete."]);
 

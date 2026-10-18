@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 /**
  * KRT-BA001: Cross-Class Invocation Lifecycle State Machine
  *
@@ -48,6 +46,7 @@ import type {
   InvocationLifecycleState,
 } from "@tuvren/core/capabilities";
 import type {
+  TuvrenStreamEvent,
   ToolAuditEvent,
   ToolResultEvent,
   ToolStartEvent,
@@ -66,6 +65,7 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   textSignal,
 } from "./runtime-core-test-helpers.ts";
 
@@ -74,167 +74,200 @@ import {
 // ---------------------------------------------------------------------------
 
 /** Pick tool.start, tool.result, and tool.audit events from a stream. */
-function extractInvocationEvents(events: unknown[]): {
+const extractInvocationEvents = (
+  events: TuvrenStreamEvent[]
+): {
   starts: ToolStartEvent[];
   results: ToolResultEvent[];
   audits: ToolAuditEvent[];
-} {
-  const starts: ToolStartEvent[] = [];
-  const results: ToolResultEvent[] = [];
-  const audits: ToolAuditEvent[] = [];
-  for (const ev of events) {
-    if (typeof ev !== "object" || ev === null) {
-      continue;
-    }
-    const e = ev as Record<string, unknown>;
-    if (e.type === "tool.start") {
-      starts.push(e as unknown as ToolStartEvent);
-    }
-    if (e.type === "tool.result") {
-      results.push(e as unknown as ToolResultEvent);
-    }
-    if (e.type === "tool.audit") {
-      audits.push(e as unknown as ToolAuditEvent);
-    }
-  }
-  return { starts, results, audits };
-}
+} => {
+  const starts = events.filter(
+    (event): event is ToolStartEvent => event.type === "tool.start"
+  );
+  const results = events.filter(
+    (event): event is ToolResultEvent => event.type === "tool.result"
+  );
+  const audits = events.filter(
+    (event): event is ToolAuditEvent => event.type === "tool.audit"
+  );
+  return { audits, results, starts };
+};
+
+const expectStartBeforeResult = (
+  events: TuvrenStreamEvent[],
+  callId: string
+): void => {
+  const startIndex = events.findIndex(
+    (event) => event.type === "tool.start" && event.callId === callId
+  );
+  const resultIndex = events.findIndex(
+    (event) => event.type === "tool.result" && event.callId === callId
+  );
+
+  expect(startIndex).toBeGreaterThanOrEqual(0);
+  expect(resultIndex).toBeGreaterThan(startIndex);
+};
 
 /** Pre-staged provider tool message for provider-native / provider-mediated. */
-function buildProviderToolMessage(
+const buildProviderToolMessage = (
   callId: string,
   name: string,
   executionClass: "provider-native" | "provider-mediated",
   output: unknown
-): TuvrenMessage {
-  return {
-    role: "tool",
-    parts: [
-      {
-        callId,
-        name,
-        output,
-        providerMetadata: {
-          executionClass,
-          owner: "provider",
-          providerCallId: callId,
-        },
-        type: "tool_result",
+): TuvrenMessage => ({
+  parts: [
+    {
+      callId,
+      name,
+      output,
+      providerMetadata: {
+        executionClass,
+        owner: "provider",
+        providerCallId: callId,
       },
-    ],
-  };
-}
+      type: "tool_result",
+    },
+  ],
+  role: "tool",
+});
 
 /** Simple two-turn runner: first turn returns provider tool result, second ends. */
-function makeProviderRunner(
+const makeProviderRunner = (
   executionClass: "provider-native" | "provider-mediated"
-): RuntimeRunner {
-  return {
-    id: `runner-${executionClass}`,
-    async execute(context) {
-      if (!context.messages.some((m) => m.role === "tool")) {
-        return {
-          messages: [
-            buildProviderToolMessage(
-              `call-${executionClass}`,
-              `provider_tool_${executionClass.replace("-", "_")}`,
-              executionClass,
-              { value: 42 }
-            ),
-          ],
-          resolution: { type: "continue_iteration" },
-        };
-      }
+): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    if (!context.messages.some((m) => m.role === "tool")) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
+        messages: [
+          buildProviderToolMessage(
+            `call-${executionClass}`,
+            `provider_tool_${executionClass.replace("-", "_")}`,
+            executionClass,
+            { value: 42 }
+          ),
+        ],
+        resolution: { type: "continue_iteration" },
       };
-    },
-    async resume() {
-      throw new Error("resume not expected");
-    },
-  };
-}
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    };
+  }),
+  id: `runner-${executionClass}`,
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("resume not expected");
+  }),
+});
 
 /** Simple tuvren-server runner that calls one defineTool tool. */
-function makeTuvrenServerRunner(toolName: string): RuntimeRunner {
-  return {
-    id: "runner-tuvren-server",
-    async execute(context) {
-      if (!context.messages.some((m) => m.role === "tool")) {
-        return {
-          messages: [
-            assistantToolCalls([
-              { callId: "call-server", input: { x: 1 }, name: toolName },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" },
-          toolExecutionMode: "parallel",
-        };
-      }
+const makeTuvrenServerRunner = (toolName: string): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    if (!context.messages.some((m) => m.role === "tool")) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
+        messages: [
+          assistantToolCalls([
+            { callId: "call-server", input: { x: 1 }, name: toolName },
+          ]),
+        ],
+        resolution: { type: "continue_iteration" },
+        toolExecutionMode: "parallel",
       };
-    },
-    async resume() {
-      throw new Error("resume not expected");
-    },
-  };
-}
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    };
+  }),
+  id: "runner-tuvren-server",
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("resume not expected");
+  }),
+});
 
 /** Simple tuvren-client runner that calls one client endpoint capability. */
-function makeTuvrenClientRunner(capabilityId: string): RuntimeRunner {
-  return {
-    id: "runner-tuvren-client",
-    async execute(context) {
-      if (!context.messages.some((m) => m.role === "tool")) {
-        return {
-          messages: [
-            assistantToolCalls([
-              { callId: "call-client", input: { q: "hi" }, name: capabilityId },
-            ]),
-          ],
-          resolution: { type: "continue_iteration" },
-          toolExecutionMode: "parallel",
-        };
-      }
+const makeTuvrenClientRunner = (capabilityId: string): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    if (!context.messages.some((m) => m.role === "tool")) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
+        messages: [
+          assistantToolCalls([
+            { callId: "call-client", input: { q: "hi" }, name: capabilityId },
+          ]),
+        ],
+        resolution: { type: "continue_iteration" },
+        toolExecutionMode: "parallel",
       };
-    },
-    async resume() {
-      throw new Error("resume not expected");
-    },
-  };
-}
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    };
+  }),
+  id: "runner-tuvren-client",
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("resume not expected");
+  }),
+});
 
 /** A mock client endpoint that immediately returns a fixed result. */
-function makeOkEndpoint(
+const makeOkEndpoint = (
   endpointId: string,
   capabilityId: string
-): AttachedClientEndpoint {
-  return {
-    endpointId,
-    advertisedCapabilities: [
-      {
-        capabilityId,
-        description: "test client capability",
-        inputSchema: { type: "object" },
-      },
-    ],
-    async dispatch(
-      envelope: ClientInvocationEnvelope
-    ): Promise<ClientReportedResult> {
-      return {
-        callId: envelope.callId,
-        content: { result: "client-ok" },
-        leaseToken: envelope.leaseToken,
-      };
+): AttachedClientEndpoint => ({
+  advertisedCapabilities: [
+    {
+      capabilityId,
+      description: "test client capability",
+      inputSchema: { type: "object" },
     },
-  };
-}
+  ],
+  dispatch: fromSynchronousVariadicAwaited(
+    (envelope: ClientInvocationEnvelope): ClientReportedResult => ({
+      callId: envelope.callId,
+      content: { result: "client-ok" },
+      leaseToken: envelope.leaseToken,
+    })
+  ),
+  endpointId,
+});
+
+// ---------------------------------------------------------------------------
+// BA001: InvocationLifecycleState type is exported from @tuvren/core/capabilities
+// ---------------------------------------------------------------------------
+
+/**
+ * Exhaustiveness helper: the compiler enforces that every InvocationLifecycleState
+ * member is handled. If a member is added or removed from the union this switch
+ * will fail to compile (missing case or unreachable `never`), making the test
+ * below a genuine contract regression check rather than a tautology.
+ */
+const assertLifecycleExhaustive = (state: InvocationLifecycleState): string => {
+  switch (state) {
+    case "resolved": {
+      return "resolved";
+    }
+    case "policy-admitted": {
+      return "policy-admitted";
+    }
+    case "dispatched": {
+      return "dispatched";
+    }
+    case "completed": {
+      return "completed";
+    }
+    case "failed": {
+      return "failed";
+    }
+    case "ignored": {
+      return "ignored";
+    }
+    default: {
+      const _exhaustive: never = state;
+      return _exhaustive;
+    }
+  }
+};
 
 // ---------------------------------------------------------------------------
 // BA001: Lifecycle invariant proof — tuvren-server
@@ -246,8 +279,8 @@ describe("BA001 invocation lifecycle — tuvren-server", () => {
     const toolName = "ba001_server_tool";
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "runner-tuvren-server",
-      runnerRegistry: createRunnerRegistry([makeTuvrenServerRunner(toolName)]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([makeTuvrenServerRunner(toolName)]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -256,15 +289,23 @@ describe("BA001 invocation lifecycle — tuvren-server", () => {
         name: "agent",
         tools: [
           {
-            name: toolName,
             description: "tuvren-server test tool",
-            inputSchema: {
-              type: "object",
-              properties: { x: { type: "number" } },
+            execute(input) {
+              if (
+                input === null ||
+                typeof input !== "object" ||
+                !("x" in input) ||
+                typeof input.x !== "number"
+              ) {
+                throw new Error("expected validated numeric x input");
+              }
+              return { doubled: input.x * 2 };
             },
-            execute: async (input) => ({
-              doubled: (input as Record<string, number>).x * 2,
-            }),
+            inputSchema: {
+              properties: { x: { type: "number" } },
+              type: "object",
+            },
+            name: toolName,
           },
         ],
       },
@@ -272,14 +313,14 @@ describe("BA001 invocation lifecycle — tuvren-server", () => {
       threadId: thread.threadId,
     });
     const events = await collectEvents(handle.events());
-    const { starts, results, audits } = extractInvocationEvents(events);
+    const { audits, results, starts } = extractInvocationEvents(events);
 
     // Uniform lifecycle: exactly one dispatched + one terminal event pair
     expect(starts).toHaveLength(1);
     expect(results).toHaveLength(1);
 
-    const start = starts[0];
-    const result = results[0];
+    const [start] = starts;
+    const [result] = results;
 
     // Attribution present — invariant: executionClass is always known
     expect(start.attribution).toBeDefined();
@@ -303,6 +344,7 @@ describe("BA001 invocation lifecycle — tuvren-server", () => {
 
     // callId is consistent across start and result (same invocation)
     expect(start.callId).toBe(result.callId);
+    expectStartBeforeResult(events, start.callId);
 
     // tuvren-server emits audit events (canAudit: true)
     expect(audits.length).toBeGreaterThan(0);
@@ -319,21 +361,21 @@ describe("BA001 invocation lifecycle — tuvren-server", () => {
     });
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "runner-tuvren-server",
-      runnerRegistry: createRunnerRegistry([makeTuvrenServerRunner(toolName)]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([makeTuvrenServerRunner(toolName)]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        name: "agent",
         capabilityPolicyEngine: denyEngine,
+        name: "agent",
         tools: [
           {
-            name: toolName,
             description: "to-be-denied tool",
+            execute: () => ({ result: "should not reach" }),
             inputSchema: { type: "object" },
-            execute: async () => ({ result: "should not reach" }),
+            name: toolName,
           },
         ],
       },
@@ -363,8 +405,8 @@ describe("BA001 invocation lifecycle — provider-native", () => {
     const runner = makeProviderRunner("provider-native");
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "runner-provider-native",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -374,14 +416,14 @@ describe("BA001 invocation lifecycle — provider-native", () => {
       threadId: thread.threadId,
     });
     const events = await collectEvents(handle.events());
-    const { starts, results, audits } = extractInvocationEvents(events);
+    const { audits, results, starts } = extractInvocationEvents(events);
 
     // Uniform lifecycle: exactly one dispatched + one terminal event pair
     expect(starts).toHaveLength(1);
     expect(results).toHaveLength(1);
 
-    const start = starts[0];
-    const result = results[0];
+    const [start] = starts;
+    const [result] = results;
 
     // Attribution present — invariant holds for provider class too
     expect(start.attribution).toBeDefined();
@@ -403,6 +445,7 @@ describe("BA001 invocation lifecycle — provider-native", () => {
 
     // callId consistent across start and result
     expect(start.callId).toBe(result.callId);
+    expectStartBeforeResult(events, start.callId);
 
     // No tool.audit for provider-native (canAudit: false)
     expect(audits).toHaveLength(0);
@@ -419,8 +462,8 @@ describe("BA001 invocation lifecycle — provider-mediated", () => {
     const runner = makeProviderRunner("provider-mediated");
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "runner-provider-mediated",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -435,19 +478,22 @@ describe("BA001 invocation lifecycle — provider-mediated", () => {
     expect(starts).toHaveLength(1);
     expect(results).toHaveLength(1);
 
-    expect(starts[0].attribution?.executionClass).toBe("provider-mediated");
-    expect(starts[0].attribution?.owner).toBe("provider");
-    expect(results[0].attribution?.executionClass).toBe("provider-mediated");
-    expect(results[0].attribution?.owner).toBe("provider");
+    const [start] = starts;
+    const [result] = results;
+    expect(start.attribution?.executionClass).toBe("provider-mediated");
+    expect(start.attribution?.owner).toBe("provider");
+    expect(result.attribution?.executionClass).toBe("provider-mediated");
+    expect(result.attribution?.owner).toBe("provider");
 
-    const obs = starts[0].attribution?.observation;
+    const obs = start.attribution?.observation;
     expect(obs?.canAudit).toBe(false);
     expect(obs?.canCancel).toBe(false);
     expect(obs?.canResume).toBe(false);
     expect(obs?.canRetry).toBe(false);
     expect(obs?.canPersistResult).toBe(true);
 
-    expect(starts[0].callId).toBe(results[0].callId);
+    expect(start.callId).toBe(result.callId);
+    expectStartBeforeResult(events, start.callId);
 
     // No tool.audit for provider-mediated (canAudit: false)
     expect(audits).toHaveLength(0);
@@ -467,31 +513,31 @@ describe("BA001 invocation lifecycle — tuvren-client", () => {
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "runner-tuvren-client",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         makeTuvrenClientRunner(capabilityId),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        name: "agent",
-        clientEndpoints: [endpoint],
         clientEndpointBoundary: boundary,
+        clientEndpoints: [endpoint],
+        name: "agent",
       },
       signal: textSignal("go"),
       threadId: thread.threadId,
     });
     const events = await collectEvents(handle.events());
-    const { starts, results, audits } = extractInvocationEvents(events);
+    const { audits, results, starts } = extractInvocationEvents(events);
 
     // Uniform lifecycle: exactly one dispatched + one terminal event pair
     expect(starts).toHaveLength(1);
     expect(results).toHaveLength(1);
 
-    const start = starts[0];
-    const result = results[0];
+    const [start] = starts;
+    const [result] = results;
 
     // Attribution present — invariant: executionClass is known
     expect(start.attribution).toBeDefined();
@@ -514,42 +560,12 @@ describe("BA001 invocation lifecycle — tuvren-client", () => {
     expect(obs?.canPersistResult).toBe(true);
 
     expect(start.callId).toBe(result.callId);
+    expectStartBeforeResult(events, start.callId);
 
     // No tool.audit for tuvren-client (canAudit: false)
     expect(audits).toHaveLength(0);
   });
 });
-
-// ---------------------------------------------------------------------------
-// BA001: InvocationLifecycleState type is exported from @tuvren/core/capabilities
-// ---------------------------------------------------------------------------
-
-/**
- * Exhaustiveness helper: the compiler enforces that every InvocationLifecycleState
- * member is handled. If a member is added or removed from the union this switch
- * will fail to compile (missing case or unreachable `never`), making the test
- * below a genuine contract regression check rather than a tautology.
- */
-function assertLifecycleExhaustive(state: InvocationLifecycleState): string {
-  switch (state) {
-    case "resolved":
-      return "resolved";
-    case "policy-admitted":
-      return "policy-admitted";
-    case "dispatched":
-      return "dispatched";
-    case "completed":
-      return "completed";
-    case "failed":
-      return "failed";
-    case "ignored":
-      return "ignored";
-    default: {
-      const _exhaustive: never = state;
-      return _exhaustive;
-    }
-  }
-}
 
 describe("BA001 InvocationLifecycleState type contract", () => {
   test("all six lifecycle phases are exported and exhaustively enumerable", () => {

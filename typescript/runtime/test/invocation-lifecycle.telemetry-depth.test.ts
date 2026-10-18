@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 /**
  * KRT-BA004: Lifecycle Telemetry Depth
  *
@@ -51,6 +49,7 @@ import {
   assistantText,
   assistantToolCalls,
   collectEvents,
+  fromSynchronousVariadicAwaited,
   textSignal,
 } from "./runtime-core-test-helpers.ts";
 
@@ -58,13 +57,12 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function createTelemetryCapture(): {
+const createTelemetryCapture = (): {
   spans: TelemetrySpan[];
   sink: TuvrenTelemetrySink;
-} {
+} => {
   const spans: TelemetrySpan[] = [];
   return {
-    spans,
     sink: {
       event: (_e) => {
         /* noop */
@@ -73,31 +71,30 @@ function createTelemetryCapture(): {
         spans.push(s);
       },
     },
+    spans,
   };
-}
+};
 
-function buildProviderToolMessage(
+const buildProviderToolMessage = (
   callId: string,
   name: string,
   executionClass: "provider-native" | "provider-mediated"
-): TuvrenMessage {
-  return {
-    role: "tool",
-    parts: [
-      {
-        callId,
-        name,
-        output: { value: 1 },
-        providerMetadata: {
-          executionClass,
-          owner: "provider",
-          providerCallId: callId,
-        },
-        type: "tool_result",
+): TuvrenMessage => ({
+  parts: [
+    {
+      callId,
+      name,
+      output: { value: 1 },
+      providerMetadata: {
+        executionClass,
+        owner: "provider",
+        providerCallId: callId,
       },
-    ],
-  };
-}
+      type: "tool_result",
+    },
+  ],
+  role: "tool",
+});
 
 // ---------------------------------------------------------------------------
 // BA004 criterion 2: spans keyed to runtime lineage
@@ -109,8 +106,7 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
     const harness = createFakeKernelHarness();
     const toolName = "ba004_server_tool";
     const runner: RuntimeRunner = {
-      id: "ba004-server",
-      async execute(ctx) {
+      execute: fromSynchronousVariadicAwaited((ctx) => {
         if (!ctx.messages.some((m) => m.role === "tool")) {
           return {
             messages: [
@@ -124,15 +120,16 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
           messages: [assistantText("done")],
           resolution: { reason: "done", type: "end_turn" },
         };
-      },
-      async resume() {
+      }),
+      id: "ba004-server",
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("no");
-      },
+      }),
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba004-server",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -142,10 +139,10 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
         name: "agent",
         tools: [
           {
-            name: toolName,
             description: "t",
+            execute: () => ({ ok: true }),
             inputSchema: { type: "object" },
-            execute: async () => ({ ok: true }),
+            name: toolName,
           },
         ],
       },
@@ -175,8 +172,7 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
     const capture = createTelemetryCapture();
     const harness = createFakeKernelHarness();
     const runner: RuntimeRunner = {
-      id: "ba004-pn",
-      async execute(ctx) {
+      execute: fromSynchronousVariadicAwaited((ctx) => {
         if (!ctx.messages.some((m) => m.role === "tool")) {
           return {
             messages: [
@@ -189,15 +185,16 @@ describe("BA004 lifecycle telemetry — keyed to runtime lineage", () => {
           messages: [assistantText("done")],
           resolution: { reason: "done", type: "end_turn" },
         };
-      },
-      async resume() {
+      }),
+      id: "ba004-pn",
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("no");
-      },
+      }),
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba004-pn",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -241,8 +238,7 @@ describe("BA004 lifecycle telemetry — no secret material", () => {
     const harness = createFakeKernelHarness();
     const toolName = "ba004_secret_check_tool";
     const runner: RuntimeRunner = {
-      id: "ba004-secret",
-      async execute(ctx) {
+      execute: fromSynchronousVariadicAwaited((ctx) => {
         if (!ctx.messages.some((m) => m.role === "tool")) {
           return {
             messages: [
@@ -262,15 +258,16 @@ describe("BA004 lifecycle telemetry — no secret material", () => {
           messages: [assistantText("done")],
           resolution: { reason: "done", type: "end_turn" },
         };
-      },
-      async resume() {
+      }),
+      id: "ba004-secret",
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("no");
-      },
+      }),
     };
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "ba004-secret",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
       telemetry: capture.sink,
     });
     const thread = await runtime.createThread({});
@@ -280,10 +277,10 @@ describe("BA004 lifecycle telemetry — no secret material", () => {
         name: "agent",
         tools: [
           {
-            name: toolName,
             description: "secret check",
+            execute: () => ({ ok: true }),
             inputSchema: { type: "object" },
-            execute: async () => ({ ok: true }),
+            name: toolName,
           },
         ],
       },

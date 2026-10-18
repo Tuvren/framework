@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
 import type {
@@ -41,12 +40,96 @@ import {
   waitForAsync,
 } from "./runtime-core-test-helpers.ts";
 
+interface TestRuntimeRunner {
+  execute: (
+    context: Parameters<RuntimeRunner["execute"]>[0]
+  ) => RunnerExecutionResult | Promise<RunnerExecutionResult>;
+  id: string;
+  resume?: (
+    context: Parameters<NonNullable<RuntimeRunner["resume"]>>[0]
+  ) => RunnerExecutionResult | Promise<RunnerExecutionResult>;
+}
+
+const isMessagePartsSnapshot = (
+  value: unknown
+): value is MessagePartsSnapshot =>
+  value !== null &&
+  typeof value === "object" &&
+  "role" in value &&
+  typeof value.role === "string" &&
+  "parts" in value &&
+  Array.isArray(value.parts);
+
+const isKrakenRunnerFactory = (
+  entry: TestRuntimeRunner | RuntimeRunnerFactory
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
+
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
+    (message) =>
+      message.role === "assistant" &&
+      message.parts.some((part) => part.type === "tool_call")
+  );
+
+const normalizeRunnerResult = (
+  result: RunnerExecutionResult
+): RunnerExecutionResult => {
+  if (
+    result.toolExecutionMode !== undefined ||
+    !requestsToolExecution(result)
+  ) {
+    return result;
+  }
+
+  return {
+    ...result,
+    toolExecutionMode: "parallel",
+  };
+};
+
+const wrapRunner = (runner: TestRuntimeRunner): RuntimeRunner => {
+  const { resume } = runner;
+
+  return {
+    async execute(context) {
+      return normalizeRunnerResult(await runner.execute(context));
+    },
+    id: runner.id,
+    ...(resume === undefined
+      ? {}
+      : {
+          async resume(context) {
+            return normalizeRunnerResult(await resume(context));
+          },
+        }),
+  };
+};
+
+const wrapRunnerEntry = (
+  entry: TestRuntimeRunner | RuntimeRunnerFactory
+): RuntimeRunner | RuntimeRunnerFactory => {
+  if (isKrakenRunnerFactory(entry)) {
+    return {
+      create() {
+        return wrapRunner(entry.create());
+      },
+      id: entry.id,
+    };
+  }
+
+  return wrapRunner(entry);
+};
+
+const createRunnerRegistry = (
+  runners: (TestRuntimeRunner | RuntimeRunnerFactory)[] = []
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("fails the resumed turn instead of rewriting approval into rejection when the fresh resumed handle is canceled before start", async () => {
     const harness = createFakeKernelHarness();
     let emailCalls = 0;
     const runner = {
-      async execute(context) {
+      execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
         );
@@ -77,14 +160,14 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const pausedHandle = runtime.executeTurn({
@@ -166,7 +249,7 @@ describe("framework-runtime-core", () => {
   test("preserves carried afterIteration state updates when a paused approval is canceled", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(context) {
+      execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
         );
@@ -197,14 +280,14 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const pausedHandle = runtime.executeTurn({
@@ -214,7 +297,7 @@ describe("framework-runtime-core", () => {
           {
             afterIteration(context) {
               if (context.resolution.type !== "pause") {
-                return undefined;
+                return {};
               }
 
               return {
@@ -287,7 +370,7 @@ describe("framework-runtime-core", () => {
   test("keeps the old paused handle inert after resolveApproval returns a fresh handle", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(context) {
+      execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
         );
@@ -318,14 +401,14 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const pausedHandle = runtime.executeTurn({
@@ -333,13 +416,13 @@ describe("framework-runtime-core", () => {
       config: {
         extensions: [
           {
-            name: "approval-around-state",
-            aroundTool(_context, next) {
-              return next().then((result) => ({
+            async aroundTool(_context, next) {
+              return await next().then((result) => ({
                 result,
                 state: { resumed: true },
               }));
             },
+            name: "approval-around-state",
           },
         ],
         name: "primary",
@@ -372,18 +455,21 @@ describe("framework-runtime-core", () => {
     const resumedHandle = pausedHandle.resolveApproval({
       decisions: [{ callId: "call-email", type: "approve" }],
     });
-    expect(() => pausedHandle.cancel()).toThrow(
-      "cancel() is not valid once approval has been resolved"
-    );
+    expect(() => {
+      pausedHandle.cancel();
+    }).toThrow("cancel() is not valid once approval has been resolved");
     const resumedEvents = await collectEvents(resumedHandle.events());
 
     expect(pausedHandle.status().phase).toBe("paused");
     expect(resumedHandle.status().phase).toBe("completed");
     expect(resumedEvents.some((event) => event.type === "turn.end")).toBe(true);
-    expect(
-      (await readBranchContextManifest(harness.kernel, thread.branchId))
-        .extensions["approval-around-state"]
-    ).toEqual({ resumed: true });
+    const resumedManifest = await readBranchContextManifest(
+      harness.kernel,
+      thread.branchId
+    );
+    expect(resumedManifest.extensions["approval-around-state"]).toEqual({
+      resumed: true,
+    });
     expect(await harness.readBranchRuntimeStatus(thread.branchId)).toEqual({
       activeAgent: "primary",
       state: "completed",
@@ -400,7 +486,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let emailCalls = 0;
     const runner = {
-      async execute(context) {
+      execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
         );
@@ -431,14 +517,14 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const pausedHandle = runtime.executeTurn({
@@ -532,7 +618,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let emailCalls = 0;
     const runner = {
-      async execute(context) {
+      execute(context) {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
         );
@@ -563,14 +649,14 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const pausedHandle = runtime.executeTurn({
@@ -693,14 +779,14 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -747,31 +833,29 @@ describe("framework-runtime-core", () => {
 
     await pausedEventsPromise;
 
-    expect(await harness.readBranchMessages(thread.branchId)).toEqual(
-      expect.arrayContaining([
-        {
-          admissionKey: "approval-resume-key",
-          parts: [{ text: "Late steering", type: "text" }],
-          role: "user",
-        },
-      ])
-    );
+    const messages = await harness.readBranchMessages(thread.branchId);
+    expect(messages).toContainEqual({
+      admissionKey: "approval-resume-key",
+      parts: [{ text: "Late steering", type: "text" }],
+      role: "user",
+    });
     expect(
       hasAssistantText(
         await harness.readBranchMessages(thread.branchId),
         "Saw transferred steering."
       )
     ).toBe(true);
-    expect(
-      (await readBranchContextManifest(harness.kernel, thread.branchId))
-        .turnBoundaries
-    ).toEqual([0]);
+    const resumedManifest = await readBranchContextManifest(
+      harness.kernel,
+      thread.branchId
+    );
+    expect(resumedManifest.turnBoundaries).toEqual([0]);
   });
 
   test("keeps approval results with the correct Turn when a runner reuses call ids", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(context) {
+      execute(context) {
         const currentTurn = context.messages
           .filter((message) => message.role === "user")
           .findLast((message) => message.role === "user");
@@ -813,14 +897,14 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies RuntimeRunner;
+    } satisfies TestRuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const config = {
@@ -850,7 +934,7 @@ describe("framework-runtime-core", () => {
       ],
     };
 
-    for (const turnLabel of ["first turn", "second turn"]) {
+    const executeApprovedTurn = async (turnLabel: string): Promise<void> => {
       const pausedHandle = runtime.executeTurn({
         branchId: thread.branchId,
         config,
@@ -865,11 +949,12 @@ describe("framework-runtime-core", () => {
       });
       await collectEvents(resumedHandle.events());
       expect(resumedHandle.status().phase).toBe("completed");
-    }
+    };
+    await executeApprovedTurn("first turn");
+    await executeApprovedTurn("second turn");
 
-    const messages = (await harness.readBranchMessages(thread.branchId)).filter(
-      isMessagePartsSnapshot
-    );
+    const branchMessages = await harness.readBranchMessages(thread.branchId);
+    const messages = branchMessages.filter(isMessagePartsSnapshot);
     for (const turnLabel of ["first turn", "second turn"]) {
       const assistantIndex = messages.findIndex(
         (message) =>
@@ -892,7 +977,7 @@ describe("framework-runtime-core", () => {
       const resultMessage = messages[assistantIndex + 1];
       expect(resultMessage?.role).toBe("tool");
       if (resultMessage?.role === "tool") {
-        const result = resultMessage.parts[0];
+        const [result] = resultMessage.parts;
         if (
           result !== null &&
           typeof result === "object" &&
@@ -912,84 +997,4 @@ describe("framework-runtime-core", () => {
 interface MessagePartsSnapshot {
   parts: unknown[];
   role: string;
-}
-
-function isMessagePartsSnapshot(value: unknown): value is MessagePartsSnapshot {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    "role" in value &&
-    typeof value.role === "string" &&
-    "parts" in value &&
-    Array.isArray(value.parts)
-  );
-}
-
-function createRunnerRegistry(
-  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
-) {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-}
-
-function wrapRunnerEntry(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): RuntimeRunner | RuntimeRunnerFactory {
-  if (isKrakenRunnerFactory(entry)) {
-    return {
-      create() {
-        return wrapRunner(entry.create());
-      },
-      id: entry.id,
-    };
-  }
-
-  return wrapRunner(entry);
-}
-
-function isKrakenRunnerFactory(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory {
-  return "create" in entry && typeof entry.create === "function";
-}
-
-function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const resume = runner.resume;
-
-  return {
-    async execute(context) {
-      return normalizeRunnerResult(await runner.execute(context));
-    },
-    id: runner.id,
-    ...(resume === undefined
-      ? {}
-      : {
-          async resume(context) {
-            return normalizeRunnerResult(await resume(context));
-          },
-        }),
-  };
-}
-
-function normalizeRunnerResult(
-  result: RunnerExecutionResult
-): RunnerExecutionResult {
-  if (
-    result.toolExecutionMode !== undefined ||
-    !requestsToolExecution(result)
-  ) {
-    return result;
-  }
-
-  return {
-    ...result,
-    toolExecutionMode: "parallel",
-  };
-}
-
-function requestsToolExecution(result: RunnerExecutionResult): boolean {
-  return (result.messages ?? []).some(
-    (message) =>
-      message.role === "assistant" &&
-      message.parts.some((part) => part.type === "tool_call")
-  );
 }
