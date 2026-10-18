@@ -142,6 +142,7 @@ decisions:
         - typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts
         - typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts
         - typescript/conformance-adapter/src/framework-adapter-orchestration-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-provider-scenarios.ts
         - typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts
         - typescript/conformance-adapter/src/framework-adapter-runner.ts
         - typescript/conformance-adapter/src/framework-adapter-session.ts

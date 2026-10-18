@@ -50,45 +50,45 @@ import {
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterProviderScenarioDependencies {
-  readAssistantText(
+  readAssistantText: (
     messages: readonly unknown[],
     expectedText: string
-  ): string | undefined;
-  readFirstErrorEnvelope(
+  ) => string | undefined;
+  readFirstErrorEnvelope: (
     events: readonly unknown[]
-  ): Record<string, unknown> | undefined;
-  readModelResponseProperty(
+  ) => Record<string, unknown> | undefined;
+  readModelResponseProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): TuvrenModelResponse;
-  readOperationScenario(
+  ) => TuvrenModelResponse;
+  readOperationScenario: (
     input: unknown,
     operation: string
-  ): Record<string, unknown>;
-  readPromptProperty(
+  ) => Record<string, unknown>;
+  readPromptProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): TuvrenPrompt;
-  readProperty(
+  ) => TuvrenPrompt;
+  readProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): unknown;
-  readProviderStreamChunks(
+  ) => unknown;
+  readProviderStreamChunks: (
     record: Record<string, unknown>,
     path: string
-  ): ProviderStreamChunk[];
-  readResponseFormatProperty(
+  ) => ProviderStreamChunk[];
+  readResponseFormatProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): StructuredOutputRequest;
-  readScenarioToolCall(
+  ) => StructuredOutputRequest;
+  readScenarioToolCall: (
     record: Record<string, unknown>,
     path: string
-  ): {
+  ) => {
     readonly callId: string;
     readonly input: unknown;
     readonly name: string;
@@ -96,10 +96,10 @@ export interface FrameworkAdapterProviderScenarioDependencies {
     readonly requiresApproval?: boolean;
     readonly throwMessage?: string;
   };
-  readScenarioToolCalls(
+  readScenarioToolCalls: (
     record: Record<string, unknown>,
     path: string
-  ): {
+  ) => {
     readonly callId: string;
     readonly input: unknown;
     readonly name: string;
@@ -107,36 +107,67 @@ export interface FrameworkAdapterProviderScenarioDependencies {
     readonly requiresApproval?: boolean;
     readonly throwMessage?: string;
   }[];
-  readStringProperty(
+  readStringProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): string;
+  ) => string;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
+const fromSynchronousWithoutArguments = <Value>(
+  operation: () => Value
+): (() => Promise<Value>) =>
+  Promise.try.bind<typeof Promise, [() => Value], [], Promise<Value>>(
+    Promise,
+    operation
+  );
 
-const readEventType = (event: unknown): string | undefined => {
-  return isRecord(event) && typeof event.type === "string"
-    ? event.type
-    : undefined;
-};
+const fromSynchronous = <Argument, Value>(
+  operation: (argument: Argument) => Value
+): ((argument: Argument) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(argument: Argument) => Value],
+    [Argument],
+    Promise<Value>
+  >(Promise, operation);
+
+const createClonedAsyncIterable = <Value>(
+  values: readonly Value[],
+  onStart?: () => void
+): AsyncIterable<Value> => ({
+  [Symbol.asyncIterator]: (): AsyncIterator<Value> => {
+    onStart?.();
+    const iterator = values[Symbol.iterator]();
+    return {
+      next: fromSynchronousWithoutArguments(() => {
+        const step = iterator.next();
+        return step.done === true
+          ? step
+          : { done: false, value: structuredClone(step.value) };
+      }),
+    };
+  },
+});
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readEventType = (event: unknown): string | undefined =>
+  isRecord(event) && typeof event.type === "string" ? event.type : undefined;
 
 const findEventIndex = (
   events: readonly unknown[],
   type: string,
   callId?: string
-): number => {
-  return events.findIndex((event) => {
+): number =>
+  events.findIndex((event) => {
     if (readEventType(event) !== type) {
       return false;
     }
 
     return callId === undefined || (isRecord(event) && event.callId === callId);
   });
-};
 
 const isFirstToolCallIdOwnedByFramework = (
   response: TuvrenModelResponse
@@ -239,20 +270,79 @@ const resolveSchemaDialect = (schema: unknown): string => {
   return "unsupported";
 };
 
-const readErrorCode = (error: Error): string | undefined => {
-  return isRecord(error) && typeof error.code === "string"
-    ? error.code
-    : undefined;
+const readErrorCode = (error: Error): string | undefined =>
+  isRecord(error) && typeof error.code === "string" ? error.code : undefined;
+
+const readCheckpointHashes = (events: readonly unknown[]): string[] => {
+  const hashes: string[] = [];
+
+  for (const event of events) {
+    if (!isRecord(event) || event.type !== "state.checkpoint") {
+      continue;
+    }
+
+    const { turnNodeHash } = event;
+
+    if (typeof turnNodeHash !== "string") {
+      continue;
+    }
+
+    assertHashString(turnNodeHash, "state.checkpoint.turnNodeHash");
+    hashes.push(turnNodeHash);
+  }
+
+  return hashes;
+};
+
+const readRunnerObservedMessageCount = (
+  events: readonly unknown[]
+): number | undefined => {
+  for (const event of events) {
+    if (!isRecord(event) || event.type !== "custom") {
+      continue;
+    }
+
+    if (event.name !== "runner.executed" || !isRecord(event.data)) {
+      continue;
+    }
+
+    const { messageCount } = event.data;
+
+    if (typeof messageCount === "number") {
+      return messageCount;
+    }
+  }
+
+  return undefined;
+};
+
+const readSnapshotMessageCounts = (events: readonly unknown[]): number[] => {
+  const counts: number[] = [];
+
+  for (const event of events) {
+    if (
+      isRecord(event) &&
+      event.type === "state.snapshot" &&
+      isRecord(event.manifest) &&
+      typeof event.manifest.messageCount === "number"
+    ) {
+      counts.push(event.manifest.messageCount);
+    }
+  }
+
+  return counts;
 };
 
 export const createFrameworkAdapterProviderScenarios = (
   dependencies: FrameworkAdapterProviderScenarioDependencies
 ): {
-  runContextTransform(input: unknown): Promise<AdapterProjection>;
-  runProviderGenerate(input: unknown): Promise<AdapterProjection>;
-  runProviderStream(input: unknown): Promise<AdapterProjection>;
-  runStructuredValidationFailure(input: unknown): Promise<AdapterProjection>;
-  runToolExecution(input: unknown): Promise<AdapterProjection>;
+  runContextTransform: (input: unknown) => Promise<AdapterProjection>;
+  runProviderGenerate: (input: unknown) => Promise<AdapterProjection>;
+  runProviderStream: (input: unknown) => Promise<AdapterProjection>;
+  runStructuredValidationFailure: (
+    input: unknown
+  ) => Promise<AdapterProjection>;
+  runToolExecution: (input: unknown) => Promise<AdapterProjection>;
 } => {
   const runProviderGenerate = async (
     input: unknown
@@ -273,15 +363,12 @@ export const createFrameworkAdapterProviderScenarios = (
     );
     let generateCalls = 0;
     const provider: TuvrenProvider = {
-      generate() {
+      generate: fromSynchronousWithoutArguments(() => {
         generateCalls += 1;
-        return Promise.resolve(structuredClone(response));
-      },
+        return structuredClone(response);
+      }),
       id: "provider",
-      async *stream() {
-        await Promise.resolve();
-        yield* [];
-      },
+      stream: () => createClonedAsyncIterable([]),
     };
     const sequence = await executeGenerateCall({
       now: createClock(),
@@ -332,19 +419,14 @@ export const createFrameworkAdapterProviderScenarios = (
     let streamCalls = 0;
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider: TuvrenProvider = {
-      generate() {
-        return Promise.reject(
-          new Error("generate must not run during stream conformance")
-        );
-      },
+      generate: fromSynchronousWithoutArguments((): never => {
+        throw new Error("generate must not run during stream conformance");
+      }),
       id: "provider",
-      async *stream() {
-        await Promise.resolve();
-        streamCalls += 1;
-        for (const chunk of chunks) {
-          yield structuredClone(chunk);
-        }
-      },
+      stream: () =>
+        createClonedAsyncIterable(chunks, () => {
+          streamCalls += 1;
+        }),
     };
     const sequence = await executeStreamCall({
       now: createClock(),
@@ -457,9 +539,7 @@ export const createFrameworkAdapterProviderScenarios = (
     const toolOutputs: unknown[] = [];
     const toolFailures: string[] = [];
     const runner = createStaticRunner(
-      async (context: RunnerExecutionContext) => {
-        await Promise.resolve();
-
+      fromSynchronous((context: RunnerExecutionContext) => {
         if (!context.messages.some((message) => message.role === "tool")) {
           return {
             messages: [assistantToolCalls(calls)],
@@ -475,7 +555,7 @@ export const createFrameworkAdapterProviderScenarios = (
             type: "end_turn" as const,
           },
         };
-      }
+      })
     );
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
@@ -582,14 +662,11 @@ export const createFrameworkAdapterProviderScenarios = (
       "runtime.validate-structured-output.responseFormat"
     );
     const provider: TuvrenProvider = {
-      generate() {
-        return Promise.resolve(structuredClone(response));
-      },
+      generate: fromSynchronousWithoutArguments(() =>
+        structuredClone(response)
+      ),
       id: "provider",
-      async *stream() {
-        await Promise.resolve();
-        yield* [];
-      },
+      stream: () => createClonedAsyncIterable([]),
     };
     const runner = createReActRunner({ providerCallMode: "generate" }).create();
     const result = await runner.execute(
@@ -634,66 +711,6 @@ export const createFrameworkAdapterProviderScenarios = (
     };
   };
 
-  const readCheckpointHashes = (events: readonly unknown[]): string[] => {
-    const hashes: string[] = [];
-
-    for (const event of events) {
-      if (!isRecord(event) || event.type !== "state.checkpoint") {
-        continue;
-      }
-
-      const { turnNodeHash } = event;
-
-      if (typeof turnNodeHash !== "string") {
-        continue;
-      }
-
-      assertHashString(turnNodeHash, "state.checkpoint.turnNodeHash");
-      hashes.push(turnNodeHash);
-    }
-
-    return hashes;
-  };
-
-  const readRunnerObservedMessageCount = (
-    events: readonly unknown[]
-  ): number | undefined => {
-    for (const event of events) {
-      if (!isRecord(event) || event.type !== "custom") {
-        continue;
-      }
-
-      if (event.name !== "runner.executed" || !isRecord(event.data)) {
-        continue;
-      }
-
-      const { messageCount } = event.data;
-
-      if (typeof messageCount === "number") {
-        return messageCount;
-      }
-    }
-
-    return undefined;
-  };
-
-  const readSnapshotMessageCounts = (events: readonly unknown[]): number[] => {
-    const counts: number[] = [];
-
-    for (const event of events) {
-      if (
-        isRecord(event) &&
-        event.type === "state.snapshot" &&
-        isRecord(event.manifest) &&
-        typeof event.manifest.messageCount === "number"
-      ) {
-        counts.push(event.manifest.messageCount);
-      }
-    }
-
-    return counts;
-  };
-
   const runContextTransform = async (
     input: unknown
   ): Promise<AdapterProjection> => {
@@ -722,8 +739,8 @@ export const createFrameworkAdapterProviderScenarios = (
       defaultRunnerId: RUNNER_ID,
       kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
-        createStaticRunner((context) => {
-          context.runtime.emit({
+        createStaticRunner(async (context) => {
+          await context.runtime.emit({
             data: {
               messageCount: context.messages.length,
             },
@@ -773,8 +790,7 @@ export const createFrameworkAdapterProviderScenarios = (
     const manifest = await harness.readBranchManifest(thread.branchId);
     const messages = await harness.readBranchMessages(thread.branchId);
     const checkpointHashes = readCheckpointHashes(events);
-    const sourceTurnNodeHash = checkpointHashes[0];
-    const rewrittenTurnNodeHash = checkpointHashes[1];
+    const [sourceTurnNodeHash, rewrittenTurnNodeHash] = checkpointHashes;
     const finalTurnNodeHash = checkpointHashes.at(-1);
     const sourceMessages =
       sourceTurnNodeHash === undefined
