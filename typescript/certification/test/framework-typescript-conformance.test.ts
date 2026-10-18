@@ -38,6 +38,58 @@ interface AuthorityPacketPlanReference {
   planId: string;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readPlanReference = (
+  value: unknown,
+  label: string
+): AuthorityPacketPlanReference => {
+  if (
+    !isRecord(value) ||
+    typeof value.path !== "string" ||
+    typeof value.planId !== "string"
+  ) {
+    throw new Error(`${label} must contain planId and path strings`);
+  }
+
+  return {
+    path: value.path,
+    planId: value.planId,
+  };
+};
+
+const readPlanReferences = (
+  value: unknown,
+  label: string
+): readonly AuthorityPacketPlanReference[] => {
+  if (value === undefined) {
+    return [];
+  }
+
+  if (!Array.isArray(value)) {
+    throw new TypeError(
+      `${label}.conformancePlans must be an array when present`
+    );
+  }
+
+  return value.map((entry, index) =>
+    readPlanReference(entry, `${label}.conformancePlans[${index}]`)
+  );
+};
+
+const readAuthorityPacket = (path: string): AuthorityPacketManifest => {
+  const value = JSON.parse(readFileSync(resolve(REPO_ROOT, path), "utf-8"));
+
+  if (!isRecord(value)) {
+    throw new Error(`${path} must contain an authority packet object`);
+  }
+
+  return {
+    conformancePlans: readPlanReferences(value.conformancePlans, path),
+  };
+};
+
 describe("framework TypeScript certification", () => {
   test("loads every framework authority-packet conformance plan", async () => {
     const planPaths = new Set<string>();
@@ -64,56 +116,3 @@ describe("framework TypeScript certification", () => {
     );
   });
 });
-
-function readAuthorityPacket(path: string): AuthorityPacketManifest {
-  const value = JSON.parse(readFileSync(resolve(REPO_ROOT, path), "utf-8"));
-
-  if (!isRecord(value)) {
-    throw new Error(`${path} must contain an authority packet object`);
-  }
-
-  return {
-    conformancePlans: readPlanReferences(value.conformancePlans, path),
-  };
-}
-
-function readPlanReferences(
-  value: unknown,
-  label: string
-): readonly AuthorityPacketPlanReference[] {
-  if (value === undefined) {
-    return [];
-  }
-
-  if (!Array.isArray(value)) {
-    throw new TypeError(
-      `${label}.conformancePlans must be an array when present`
-    );
-  }
-
-  return value.map((entry, index) =>
-    readPlanReference(entry, `${label}.conformancePlans[${index}]`)
-  );
-}
-
-function readPlanReference(
-  value: unknown,
-  label: string
-): AuthorityPacketPlanReference {
-  if (
-    !isRecord(value) ||
-    typeof value.path !== "string" ||
-    typeof value.planId !== "string"
-  ) {
-    throw new Error(`${label} must contain planId and path strings`);
-  }
-
-  return {
-    path: value.path,
-    planId: value.planId,
-  };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
