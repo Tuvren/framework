@@ -78,6 +78,34 @@ interface TextFixtureSet {
 }
 
 /**
+ * Deep-clones a warning for delivery to `onWarning`; falls back to a
+ * code/message-only copy (dropping `details`) if `details` is not
+ * structured-cloneable, so a non-cloneable detail payload never breaks
+ * warning delivery entirely.
+ */
+const cloneWarning = (warning: StreamAdapterWarning): StreamAdapterWarning => {
+  try {
+    return structuredClone(warning);
+  } catch {
+    return {
+      code: warning.code,
+      message: warning.message,
+    };
+  }
+};
+
+/** Fires `promise` without awaiting it, swallowing any rejection (background pump loops are not awaited by callers). */
+const detachPromise = (promise: Promise<unknown>): void => {
+  promise.catch(() => {
+    // Background pump failures are surfaced through the queue itself.
+  });
+};
+
+/** Normalizes a thrown value from the source iterator to an `Error` before delivering it to branch queues. */
+const normalizeQueueError = (error: unknown): Error =>
+  error instanceof Error ? error : new Error(String(error));
+
+/**
  * Single-consumer async queue with exactly one buffered slot, used as the
  * per-branch buffer in {@link teeTuvrenStreamEvents}.
  *
@@ -252,29 +280,28 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
  * @throws If the cloned value somehow fails `assertTuvrenStreamEvent`
  *   (defensive; a valid input event always produces a valid clone).
  */
-export function cloneTuvrenStreamEvent(
+export const cloneTuvrenStreamEvent = (
   event: TuvrenStreamEvent
-): TuvrenStreamEvent {
+): TuvrenStreamEvent => {
   const clonedEvent = structuredClone(event);
   assertTuvrenStreamEvent(clonedEvent, "cloned stream event");
   return clonedEvent;
-}
+};
 
 /**
  * Wraps a fixed event list as a fresh, one-pass `AsyncIterable`, cloning each
  * event on yield so repeated iterations (or fixtures shared across tests)
  * never alias mutable state.
  */
-export function createFixtureStream(
+export const createFixtureStream = (
   events: readonly TuvrenStreamEvent[]
-): AsyncIterable<TuvrenStreamEvent> {
+): AsyncIterable<TuvrenStreamEvent> =>
   // biome-ignore lint/suspicious/useAwait: Async generators must remain async even when fixture production is synchronous.
-  return (async function* () {
+  (async function* () {
     for (const event of events) {
       yield cloneTuvrenStreamEvent(event);
     }
   })();
-}
 
 /**
  * Builds a warning callback that de-duplicates by `code`: each distinct
@@ -287,9 +314,9 @@ export function createFixtureStream(
  *   {@link cloneWarning}) the first time each code is reported; omit to
  *   silently discard warnings while still deduplicating.
  */
-export function createStreamAdapterWarningReporter(
+export const createStreamAdapterWarningReporter = (
   options?: StreamAdapterOptions
-): (warning: StreamAdapterWarning) => void {
+): ((warning: StreamAdapterWarning) => void) => {
   const emittedCodes = new Set<string>();
 
   return (warning) => {
@@ -310,15 +337,15 @@ export function createStreamAdapterWarningReporter(
       // even if a host-side logger or test hook throws.
     }
   };
-}
+};
 
 /**
  * Serializes a `TuvrenStreamEvent` to JSON, encoding any `Uint8Array` field
  * (e.g. binary `file.done` payloads) as `{ type: "Uint8Array", data: number[] }`
  * so binary content survives a JSON round-trip.
  */
-export function serializeTuvrenStreamEvent(event: TuvrenStreamEvent): string {
-  return JSON.stringify(event, (_key, value: unknown) => {
+export const serializeTuvrenStreamEvent = (event: TuvrenStreamEvent): string =>
+  JSON.stringify(event, (_key, value: unknown) => {
     if (value instanceof Uint8Array) {
       return {
         data: [...value],
@@ -328,7 +355,6 @@ export function serializeTuvrenStreamEvent(event: TuvrenStreamEvent): string {
 
     return value;
   });
-}
 
 /**
  * Fans a single-consumer `TuvrenStreamEvent` stream out to `branchCount`
@@ -366,10 +392,10 @@ export function serializeTuvrenStreamEvent(event: TuvrenStreamEvent): string {
  * @throws TuvrenRuntimeError with code `invalid_stream_branch_count` when
  *   `branchCount` is not a positive integer.
  */
-export function teeTuvrenStreamEvents(
+export const teeTuvrenStreamEvents = (
   events: AsyncIterable<TuvrenStreamEvent>,
   branchCount: number
-): readonly AsyncIterable<TuvrenStreamEvent>[] {
+): readonly AsyncIterable<TuvrenStreamEvent>[] => {
   if (!Number.isInteger(branchCount) || branchCount < 1) {
     throw new TuvrenRuntimeError(
       "teeTuvrenStreamEvents() requires at least one branch",
@@ -591,7 +617,7 @@ export function teeTuvrenStreamEvents(
       };
     },
   }));
-}
+};
 
 /**
  * Canonical `TuvrenStreamEvent` sequences for adapter and conformance tests:
@@ -783,32 +809,3 @@ export const streamAdapterFixtures: TextFixtureSet = {
     },
   ],
 };
-
-/**
- * Deep-clones a warning for delivery to `onWarning`; falls back to a
- * code/message-only copy (dropping `details`) if `details` is not
- * structured-cloneable, so a non-cloneable detail payload never breaks
- * warning delivery entirely.
- */
-function cloneWarning(warning: StreamAdapterWarning): StreamAdapterWarning {
-  try {
-    return structuredClone(warning);
-  } catch {
-    return {
-      code: warning.code,
-      message: warning.message,
-    };
-  }
-}
-
-/** Fires `promise` without awaiting it, swallowing any rejection (background pump loops are not awaited by callers). */
-function detachPromise(promise: Promise<unknown>): void {
-  promise.catch(() => {
-    // Background pump failures are surfaced through the queue itself.
-  });
-}
-
-/** Normalizes a thrown value from the source iterator to an `Error` before delivering it to branch queues. */
-function normalizeQueueError(error: unknown): Error {
-  return error instanceof Error ? error : new Error(String(error));
-}

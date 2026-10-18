@@ -30,6 +30,8 @@ const UNATTRIBUTED_TURN_ID = "unattributed";
 /** Cursor payload version this implementation mints and accepts. */
 const RESUME_CURSOR_VERSION = 1;
 
+const BASE64_URL_PATTERN = /^[A-Za-z0-9_-]+$/;
+
 /**
  * A canonical stream event wrapped with its wire-level sequencing envelope
  * (authority: `spec/streaming/resume/`, packet
@@ -72,6 +74,35 @@ export interface ResumeCursorPayload {
   v: 1;
 }
 
+/** Base64url encoder (no padding), matching the kernel thread-list cursor convention. */
+const base64UrlEncode = (text: string): string =>
+  Buffer.from(text, "utf-8").toString("base64url");
+
+/**
+ * Base64url decoder matching {@link base64UrlEncode}. `Buffer.from` silently
+ * skips characters it cannot map, so the alphabet is validated up front —
+ * callers treat any throw as a malformed token.
+ *
+ * @throws SyntaxError on an empty token or characters outside the base64url
+ *   alphabet.
+ */
+const base64UrlDecode = (token: string): string => {
+  if (!BASE64_URL_PATTERN.test(token)) {
+    throw new SyntaxError("invalid base64url token");
+  }
+
+  return Buffer.from(token, "base64url").toString("utf-8");
+};
+
+/** Wraps an already-claimed iterator as a single-use `AsyncIterable`, so `for await` drives (and cleans up) that exact iterator. */
+const createIteratorIterable = <T>(
+  iterator: AsyncIterator<T>
+): AsyncIterable<T> => ({
+  [Symbol.asyncIterator](): AsyncIterator<T> {
+    return iterator;
+  },
+});
+
 /**
  * Encodes a resume-cursor payload as an opaque base64url token.
  *
@@ -81,9 +112,8 @@ export interface ResumeCursorPayload {
  *
  * @experimental
  */
-export function encodeResumeCursor(payload: ResumeCursorPayload): string {
-  return base64UrlEncode(JSON.stringify(payload));
-}
+export const encodeResumeCursor = (payload: ResumeCursorPayload): string =>
+  base64UrlEncode(JSON.stringify(payload));
 
 /**
  * Decodes a resume-cursor token minted by {@link encodeResumeCursor}.
@@ -94,9 +124,9 @@ export function encodeResumeCursor(payload: ResumeCursorPayload): string {
  *
  * @experimental
  */
-export function decodeResumeCursor(
+export const decodeResumeCursor = (
   token: string
-): ResumeCursorPayload | undefined {
+): ResumeCursorPayload | undefined => {
   let parsed: unknown;
 
   try {
@@ -146,7 +176,7 @@ export function decodeResumeCursor(
   }
 
   return payload;
-}
+};
 
 /**
  * Wraps a canonical `TuvrenStreamEvent` stream in the wire-level sequencing
@@ -167,10 +197,10 @@ export function decodeResumeCursor(
  *
  * @experimental
  */
-export function createSequencedTuvrenStreamEvents(
+export const createSequencedTuvrenStreamEvents = (
   events: AsyncIterable<TuvrenStreamEvent>,
   options?: StreamAdapterOptions
-): AsyncIterable<SequencedTuvrenStreamEvent> {
+): AsyncIterable<SequencedTuvrenStreamEvent> => {
   const reportWarning = createStreamAdapterWarningReporter(options);
   // Claim synchronously so the source's claim-before-first-pull rules (e.g. a
   // tee branch) observe the subscription before any awaiting begins.
@@ -225,18 +255,7 @@ export function createSequencedTuvrenStreamEvents(
       sequence += 1;
     }
   })();
-}
-
-/** Wraps an already-claimed iterator as a single-use `AsyncIterable`, so `for await` drives (and cleans up) that exact iterator. */
-function createIteratorIterable<T>(
-  iterator: AsyncIterator<T>
-): AsyncIterable<T> {
-  return {
-    [Symbol.asyncIterator](): AsyncIterator<T> {
-      return iterator;
-    },
-  };
-}
+};
 
 /**
  * Outcome of a {@link ReplayBuffer.replayFrom} attempt (authority model
@@ -286,9 +305,9 @@ export interface ReplayBuffer {
  *
  * @experimental
  */
-export function createReplayBuffer(options: {
+export const createReplayBuffer = (options: {
   capacity: number;
-}): ReplayBuffer {
+}): ReplayBuffer => {
   const { capacity } = options;
 
   if (!Number.isInteger(capacity) || capacity < 1) {
@@ -389,27 +408,4 @@ export function createReplayBuffer(options: {
       };
     },
   };
-}
-
-const BASE64_URL_PATTERN = /^[A-Za-z0-9_-]+$/;
-
-/** Base64url encoder (no padding), matching the kernel thread-list cursor convention. */
-function base64UrlEncode(text: string): string {
-  return Buffer.from(text, "utf-8").toString("base64url");
-}
-
-/**
- * Base64url decoder matching {@link base64UrlEncode}. `Buffer.from` silently
- * skips characters it cannot map, so the alphabet is validated up front —
- * callers treat any throw as a malformed token.
- *
- * @throws SyntaxError on an empty token or characters outside the base64url
- *   alphabet.
- */
-function base64UrlDecode(token: string): string {
-  if (!BASE64_URL_PATTERN.test(token)) {
-    throw new SyntaxError("invalid base64url token");
-  }
-
-  return Buffer.from(token, "base64url").toString("utf-8");
-}
+};
