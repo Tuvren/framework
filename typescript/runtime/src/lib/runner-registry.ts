@@ -15,11 +15,11 @@
  */
 
 import { TuvrenRuntimeError } from "@tuvren/core";
-import {
-  assertRuntimeRunner,
-  type RunnerRegistry,
-  type RuntimeRunner,
-  type RuntimeRunnerFactory,
+import { assertRuntimeRunner } from "@tuvren/core/runner";
+import type {
+  RunnerRegistry,
+  RuntimeRunner,
+  RuntimeRunnerFactory,
 } from "@tuvren/core/runner";
 
 /**

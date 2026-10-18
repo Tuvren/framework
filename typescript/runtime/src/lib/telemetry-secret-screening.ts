@@ -74,7 +74,7 @@ export function isTelemetryAttributeAllowed(key: string): boolean {
 }
 
 export function sanitizeTelemetryErrorSummary(message: string): string {
-  const compact = message.replace(/\s+/gu, " ").trim();
+  const compact = message.replaceAll(/\s+/gu, " ").trim();
 
   if (compact.length === 0) {
     return "runtime error";
