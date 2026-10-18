@@ -17,6 +17,7 @@
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
+import type { HashString } from "@tuvren/core";
 import type {
   AgentConfig,
   HandoffContextPlan,
@@ -53,6 +54,9 @@ describe("framework-runtime-core", () => {
     let directMessages: readonly TuvrenMessage[] | undefined;
     let handoffPlan: HandoffContextPlan | undefined;
     let helperMessage: TuvrenMessage | null | undefined;
+    let handoffBuilderMessages: readonly TuvrenMessage[] | undefined;
+    let handoffBuilderHelperMessage: TuvrenMessage | null | undefined;
+    let initialMessageHash: HashString | undefined;
     const runner = {
       async execute(context) {
         if (context.config.name === "primary") {
@@ -68,11 +72,20 @@ describe("framework-runtime-core", () => {
             threadId,
           });
           const messageHashes = snapshot.paths.messages;
-          const initialMessageHash = messageHashes?.[0];
+          initialMessageHash = messageHashes?.[0];
           if (initialMessageHash === undefined) {
             throw new Error("expected the initial input message hash");
           }
           handoffPlan = context.handoff.createContextPlan({
+            builder(sourceContext) {
+              if (initialMessageHash === undefined) {
+                throw new Error("expected the initial input message hash");
+              }
+              handoffBuilderMessages = sourceContext.messages;
+              handoffBuilderHelperMessage =
+                sourceContext.helpers.loadMessage(initialMessageHash);
+              return [initialMessageHash];
+            },
             reason: "admission-key-projection",
             targetAgent: "reviewer",
           });
@@ -81,8 +94,9 @@ describe("framework-runtime-core", () => {
           return {
             messages: [assistantText("Processed the keyed input.")],
             resolution: {
-              reason: "done",
-              type: "end_turn",
+              contextPlan: handoffPlan,
+              targetAgent: "reviewer",
+              type: "handoff",
             },
           };
         }
@@ -135,6 +149,25 @@ describe("framework-runtime-core", () => {
       parts: [{ text: "Keep this keyed through handoff", type: "text" }],
       role: "user",
     });
+    expect(handoffBuilderMessages).toEqual([
+      {
+        parts: [{ text: "Keep this keyed through handoff", type: "text" }],
+        role: "user",
+      },
+      assistantText("Processed the keyed input."),
+    ]);
+    expect(handoffBuilderHelperMessage).toEqual({
+      parts: [{ text: "Keep this keyed through handoff", type: "text" }],
+      role: "user",
+    });
+    if (runtime === undefined || initialMessageHash === undefined) {
+      throw new Error("expected the runtime and initial message hash");
+    }
+    const finalTurnState = await runtime.getTurnState({
+      branchId: thread.branchId,
+      threadId: thread.threadId,
+    });
+    expect(finalTurnState.paths.messages).toContain(initialMessageHash);
     expect(
       (await runtime.readBranchMessages({ branchId: thread.branchId })).messages
     ).toContainEqual({
