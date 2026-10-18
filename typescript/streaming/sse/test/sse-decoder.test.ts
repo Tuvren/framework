@@ -44,6 +44,30 @@ const fixture = JSON.parse(
   await readFile(new URL(FIXTURE_PATH, import.meta.url), "utf-8")
 ) as SseTraceFixture;
 
+const observeEncoderForTest = async (): Promise<{
+  body: Uint8Array;
+  contentType: string;
+}> => {
+  // biome-ignore lint/suspicious/useAwait: encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously
+  const events = (async function* events() {
+    yield {
+      data: { value: "probe" },
+      messageId: "probe-msg",
+      threadId: "probe-thread",
+      timestamp: 0,
+      turnId: "probe-turn",
+      type: "turn.start",
+    };
+  })();
+  const response = toSseResponse(
+    events as unknown as AsyncIterable<never> & AsyncIterator<never>
+  );
+  return {
+    body: new Uint8Array(await response.arrayBuffer()),
+    contentType: response.headers.get("content-type") ?? "",
+  };
+};
+
 describe("sse-decoder", () => {
   for (const [traceName, trace] of Object.entries(fixture.traces)) {
     test(`decodes ${traceName} per WHATWG`, () => {
@@ -79,27 +103,3 @@ describe("sse-decoder", () => {
     );
   });
 });
-
-async function observeEncoderForTest(): Promise<{
-  body: Uint8Array;
-  contentType: string;
-}> {
-  // biome-ignore lint/suspicious/useAwait: encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously
-  const events = (async function* events() {
-    yield {
-      data: { value: "probe" },
-      messageId: "probe-msg",
-      threadId: "probe-thread",
-      timestamp: 0,
-      turnId: "probe-turn",
-      type: "turn.start",
-    };
-  })();
-  const response = toSseResponse(
-    events as unknown as AsyncIterable<never> & AsyncIterator<never>
-  );
-  return {
-    body: new Uint8Array(await response.arrayBuffer()),
-    contentType: response.headers.get("content-type") ?? "",
-  };
-}

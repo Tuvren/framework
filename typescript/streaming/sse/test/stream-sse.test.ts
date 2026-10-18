@@ -35,6 +35,22 @@ import {
 } from "../src/index.ts";
 import type { TuvrenSseFrame } from "../src/index.ts";
 
+const collectStreamValues = async <T>(
+  values: AsyncIterable<T>
+): Promise<T[]> => {
+  const collected: T[] = [];
+
+  for await (const value of values) {
+    collected.push(value);
+  }
+
+  return collected;
+};
+
+const waitForAsyncTurn = async (): Promise<void> => {
+  await Promise.resolve();
+};
+
 const frameworkStreamFixtures = await readFrameworkStreamFixtures();
 
 describe("stream-sse", () => {
@@ -134,20 +150,6 @@ describe("stream-sse", () => {
     });
   });
 });
-
-async function collectStreamValues<T>(values: AsyncIterable<T>): Promise<T[]> {
-  const collected: T[] = [];
-
-  for await (const value of values) {
-    collected.push(value);
-  }
-
-  return collected;
-}
-
-async function waitForAsyncTurn(): Promise<void> {
-  await Promise.resolve();
-}
 
 describe("toResumableSseFrames", () => {
   test("populates every frame id with the envelope's resume cursor", async () => {
