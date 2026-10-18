@@ -50,41 +50,41 @@ import type { ToolBatchEnvironment } from "./tool-execution.js";
  * layer.
  */
 export interface RuntimeCoreRunnerSupportHost {
-  cloneAgentConfigForRequest(
+  cloneAgentConfigForRequest: (
     config: LoopState["activeConfig"]
-  ): LoopState["activeConfig"];
-  createContextEngineeringHelpers(
+  ) => LoopState["activeConfig"];
+  createContextEngineeringHelpers: (
     messageHashes: HeadState["messageHashes"],
     messages: HeadState["messages"]
-  ): {
+  ) => {
     helpers: HandoffContextPlan["sourceContext"]["helpers"];
   };
-  createFrozenSnapshot<T>(value: T): T;
-  defaultMaxParallelToolCalls(): number;
-  now(): number;
-  publishCustomEvent(
+  createFrozenSnapshot: <T>(value: T) => T;
+  defaultMaxParallelToolCalls: () => number;
+  now: () => number;
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  publishEvent(
+  ) => void;
+  publishEvent: (
     handle: RuntimeExecutionHandle,
     event: Parameters<RuntimeExecutionHandle["publish"]>[0],
     loopState: LoopState
-  ): void;
-  publishProjectedError(
+  ) => void;
+  publishProjectedError: (
     handle: RuntimeExecutionHandle,
     error: Error,
     fatal: boolean,
     loopState: LoopState
-  ): void;
-  resolveActiveMaxParallelToolCalls(
+  ) => void;
+  resolveActiveMaxParallelToolCalls: (
     loopState: LoopState,
     defaultMaxParallelToolCalls: number
-  ): number;
-  resolveDefaultHandoffContextBuilder(mode: string): HandoffContextBuilder;
-  resolveTargetAgent(targetAgent: string): LoopState["activeConfig"];
-  stageToolResultMessage(
+  ) => number;
+  resolveDefaultHandoffContextBuilder: (mode: string) => HandoffContextBuilder;
+  resolveTargetAgent: (targetAgent: string) => LoopState["activeConfig"];
+  stageToolResultMessage: (
     runId: string,
     result: ToolBatchEnvironment["stageResult"] extends (
       result: infer TResult,
@@ -93,12 +93,12 @@ export interface RuntimeCoreRunnerSupportHost {
       ? TResult
       : never,
     orderIndex: number
-  ): Promise<string>;
-  stageToolResultManifest(
+  ) => Promise<string>;
+  stageToolResultManifest: (
     runId: string,
     manifest: ContextManifest,
     taskId: string
-  ): Promise<void>;
+  ) => Promise<void>;
 }
 
 /**
@@ -147,7 +147,35 @@ export const createToolBatchEnvironment = (
     loopState.activeConfig.policyContextInputs ?? undefined;
   const baseDurableManifest = manifest;
   const stateUpdatesByOrder = new Map<number, ExtensionStateUpdate[]>();
-  let resultStagingQueue: Promise<unknown> = Promise.resolve();
+  let resultStagingQueue: Promise<unknown> | undefined;
+  const stageResultAfterBarrier = async (
+    previousStage: Promise<unknown> | undefined,
+    result: Parameters<ToolBatchEnvironment["stageResult"]>[0],
+    orderIndex: number,
+    updates: ExtensionStateUpdate[]
+  ) => {
+    if (previousStage !== undefined) {
+      await previousStage;
+    }
+    if (updates.length > 0) {
+      stateUpdatesByOrder.set(orderIndex, updates);
+      const orderedUpdates = [...stateUpdatesByOrder.entries()]
+        .toSorted(([left], [right]) => left - right)
+        .flatMap(([, callUpdates]) => callUpdates);
+      const durableManifest = updateContextManifest(
+        baseDurableManifest,
+        [],
+        orderedUpdates,
+        []
+      );
+      await host.stageToolResultManifest(
+        runId,
+        durableManifest,
+        `around_tool_state_${orderIndex.toString()}`
+      );
+    }
+    return await host.stageToolResultMessage(runId, result, orderIndex);
+  };
 
   return {
     activeAgent: loopState.activeConfig.name,
@@ -191,26 +219,12 @@ export const createToolBatchEnvironment = (
     serverExecutionRateLimiter: loopState.serverExecutionRateLimiter,
     signal: handle.abortSignal,
     stageResult: async (result, orderIndex, updates = []) => {
-      const stage = resultStagingQueue.then(async () => {
-        if (updates.length > 0) {
-          stateUpdatesByOrder.set(orderIndex, updates);
-          const orderedUpdates = [...stateUpdatesByOrder.entries()]
-            .sort(([left], [right]) => left - right)
-            .flatMap(([, callUpdates]) => callUpdates);
-          const durableManifest = updateContextManifest(
-            baseDurableManifest,
-            [],
-            orderedUpdates,
-            []
-          );
-          await host.stageToolResultManifest(
-            runId,
-            durableManifest,
-            `around_tool_state_${orderIndex.toString()}`
-          );
-        }
-        return await host.stageToolResultMessage(runId, result, orderIndex);
-      });
+      const stage = stageResultAfterBarrier(
+        resultStagingQueue,
+        result,
+        orderIndex,
+        updates
+      );
       resultStagingQueue = stage;
       try {
         return await stage;
@@ -314,6 +328,4 @@ export const executeRunner = async (
 export const formatToolResultTask = (
   orderIndex: number,
   callId: string
-): string => {
-  return formatToolResultTaskId(orderIndex, callId);
-};
+): string => formatToolResultTaskId(orderIndex, callId);

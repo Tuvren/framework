@@ -16,6 +16,7 @@
 
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type { HashString } from "@tuvren/core";
+import type { ClientEndpointBoundary } from "@tuvren/core/capabilities";
 import type {
   AgentConfig,
   ContextEngineeringContext,
@@ -46,41 +47,41 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
  * kernel or facade dependencies.
  */
 export interface RuntimeCoreContextOpsHost {
-  advanceTurnAndBranchHead(
+  advanceTurnAndBranchHead: (
     handle: RuntimeExecutionHandle,
     turnNodeHash: HashString
-  ): Promise<void>;
-  beginRunStep(runId: string, stepId: string): Promise<void>;
-  completeRunStep(
+  ) => Promise<void>;
+  beginRunStep: (runId: string, stepId: string) => Promise<void>;
+  completeRunStep: (
     runId: string,
     stepId: string,
     eventHash: HashString,
     treeHash?: HashString
-  ): Promise<{
+  ) => Promise<{
     lease?: { fencingToken: string; leaseExpiresAtMs: number };
     turnNodeHash?: HashString;
   }>;
-  completeTrackedRun(
+  completeTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     status: "completed" | "failed" | "paused"
-  ): Promise<{ turnNodeHash?: HashString }>;
-  createActiveToolRegistry(
+  ) => Promise<{ turnNodeHash?: HashString }>;
+  createActiveToolRegistry: (
     runtimeTools: RuntimeExecutionHandle["request"]["tools"] | undefined,
     config: AgentConfig,
-    clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary
-  ): ToolRegistry;
-  createClientEndpointBoundaryFromConfig(
+    clientEndpointBoundary?: ClientEndpointBoundary
+  ) => ToolRegistry;
+  createClientEndpointBoundaryFromConfig: (
     config: AgentConfig
-  ): import("@tuvren/core/capabilities").ClientEndpointBoundary | undefined;
-  createContextEngineeringHelpers(
+  ) => ClientEndpointBoundary | undefined;
+  createContextEngineeringHelpers: (
     messageHashes: HashString[],
     messages: RuntimeExecutionHandle["request"]["signal"]["parts"] extends never
       ? never
       : HeadState["messages"]
-  ): HelperBundle;
-  createId(): string;
-  createTrackedRun(
+  ) => HelperBundle;
+  createId: () => string;
+  createTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     turnId: string,
@@ -92,52 +93,52 @@ export interface RuntimeCoreContextOpsHost {
       id: string;
       sideEffects: boolean;
     }[]
-  ): Promise<void>;
-  emitStateObservability(
+  ) => Promise<void>;
+  emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
     iterationCount: number,
     manifest?: HeadState["manifest"]
-  ): Promise<void>;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  materializeContextMessages(
+  ) => void;
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  materializeContextMessages: (
     hashes: HashString[],
     helpers: ContextEngineeringContext["helpers"]
-  ): HeadState["messages"];
-  publishCustomEvent(
+  ) => HeadState["messages"];
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  resolveAgentConfig(name: string): AgentConfig | undefined;
-  resolveHandoffSourceContext(
+  ) => void;
+  resolveAgentConfig: (name: string) => AgentConfig | undefined;
+  resolveHandoffSourceContext: (
     plan: HandoffContextPlan,
     headState: HeadState,
     loopState: LoopState,
     targetConfig: AgentConfig,
     helpers: ContextEngineeringContext["helpers"]
-  ): HandoffContextPlan["sourceContext"];
-  stageRuntimeStatus(
+  ) => HandoffContextPlan["sourceContext"];
+  stageRuntimeStatus: (
     runId: string,
     status: {
       activeAgent?: string;
       state: "running";
     },
     taskId: string
-  ): Promise<HashString>;
-  storeEventRecord(event: Record<string, unknown>): Promise<HashString>;
-  storeKernelRecord(value: unknown, label: string): Promise<HashString>;
-  syncRunLeaseStateFromStepResult(
+  ) => Promise<HashString>;
+  storeEventRecord: (event: Record<string, unknown>) => Promise<HashString>;
+  storeKernelRecord: (value: unknown, label: string) => Promise<HashString>;
+  syncRunLeaseStateFromStepResult: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stepResult: { lease?: { fencingToken: string; leaseExpiresAtMs: number } }
-  ): void;
-  treeCreate(
+  ) => void;
+  treeCreate: (
     schemaId: string,
     changes: Record<string, PathValue>,
     baseTurnTreeHash: HashString
-  ): Promise<HashString>;
+  ) => Promise<HashString>;
 }
 
 /**
@@ -267,7 +268,7 @@ export const applyContextEngineeringPlan = async (
   await host.completeTrackedRun(handle, runId, "completed");
   if (stepResult.turnNodeHash !== undefined) {
     await host.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
-    await host.emitStateObservability(
+    host.emitStateObservability(
       handle,
       loopState,
       stepResult.turnNodeHash,
@@ -327,7 +328,7 @@ const collectInitialExtensionStateUpdates = (
  * @returns The target agent's config plus the tool registry and client
  *   endpoint boundary rebuilt for it, for the caller to install as the new
  *   active loop state.
- * @throws TuvrenRuntimeError with code `unknown_handoff_target` when
+ * @throws {TuvrenRuntimeError} With code `unknown_handoff_target` when
  *   `plan.targetAgent` cannot be resolved to a configured agent.
  */
 export const applyHandoff = async (
@@ -340,9 +341,7 @@ export const applyHandoff = async (
 ): Promise<{
   activeConfig: AgentConfig;
   activeToolRegistry: ToolRegistry;
-  clientEndpointBoundary:
-    | import("@tuvren/core/capabilities").ClientEndpointBoundary
-    | undefined;
+  clientEndpointBoundary: ClientEndpointBoundary | undefined;
 }> => {
   const targetConfig = host.resolveAgentConfig(plan.targetAgent);
 
@@ -464,7 +463,7 @@ export const applyHandoff = async (
 
   if (stepResult.turnNodeHash !== undefined) {
     await host.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
-    await host.emitStateObservability(
+    host.emitStateObservability(
       handle,
       {
         ...loopState,

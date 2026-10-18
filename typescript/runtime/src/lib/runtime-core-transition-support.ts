@@ -16,6 +16,7 @@
 
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type { HashString } from "@tuvren/core";
+import type { ClientEndpointBoundary } from "@tuvren/core/capabilities";
 import type {
   AgentConfig,
   HandoffContextBuilder,
@@ -52,7 +53,7 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
  * explicit builder is ignored); `preserve_trace` prefers the explicit
  * builder and falls back to the built-in preserve-trace builder.
  *
- * @throws TuvrenRuntimeError with code `invalid_handoff_mode` for any other
+ * @throws {TuvrenRuntimeError} With code `invalid_handoff_mode` for any other
  *   mode, which requires an explicit builder resolved elsewhere.
  */
 export const resolveRuntimeCoreDefaultHandoffContextBuilder = (
@@ -99,8 +100,8 @@ export const createRuntimeCoreContextHelperBundle = (
   payloadCodecBinding: PayloadCodecBinding,
   messageHashes: HashString[],
   messages: TuvrenMessage[]
-): HelperBundle => {
-  return createRuntimeContextEngineeringHelpers(
+): HelperBundle =>
+  createRuntimeContextEngineeringHelpers(
     {
       cloneAgentConfigForRequest: (config) =>
         cloneAgentConfigForRequest(config),
@@ -119,7 +120,6 @@ export const createRuntimeCoreContextHelperBundle = (
     messageHashes,
     messages
   );
-};
 
 /**
  * Apply a terminal `handoff` resolution by switching the active agent.
@@ -159,9 +159,7 @@ export const applyRuntimeCoreTerminalAgentTransitionIfNeeded = async (
     | {
         activeConfig: AgentConfig;
         activeToolRegistry: ToolRegistry;
-        clientEndpointBoundary:
-          | import("@tuvren/core/capabilities").ClientEndpointBoundary
-          | undefined;
+        clientEndpointBoundary: ClientEndpointBoundary | undefined;
       }
     | undefined;
 

@@ -16,6 +16,7 @@
 
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type { HashString } from "@tuvren/core";
+import type { ClientEndpointBoundary } from "@tuvren/core/capabilities";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   ContextManifest,
@@ -57,7 +58,7 @@ import type { ToolBatchOutcome, ToolExecutionMode } from "./tool-execution.js";
  * runtime-core orchestration layer.
  */
 export interface RuntimeCoreRunnerHost {
-  completeIterationRun(
+  completeIterationRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     resolution: RuntimeResolution,
@@ -65,8 +66,8 @@ export interface RuntimeCoreRunnerHost {
     iterationCount: number,
     loopState: LoopState,
     nextTreeHash: HashString | undefined
-  ): Promise<HashString | undefined>;
-  createIterationTree(
+  ) => Promise<HashString | undefined>;
+  createIterationTree: (
     schemaId: string,
     baseTurnTreeHash: HashString,
     baseMessageHashes: HashString[],
@@ -74,12 +75,12 @@ export interface RuntimeCoreRunnerHost {
     manifestHash: HashString,
     runtimeStatusHash?: HashString,
     turnLineageHash?: HashString
-  ): Promise<HashString>;
-  createReadonlyRunnerToolRegistry(registry: ToolRegistry): ToolRegistry;
-  createRunnerAgentConfigSnapshot(
+  ) => Promise<HashString>;
+  createReadonlyRunnerToolRegistry: (registry: ToolRegistry) => ToolRegistry;
+  createRunnerAgentConfigSnapshot: (
     config: LoopState["activeConfig"]
-  ): LoopState["activeConfig"];
-  createRunnerHandoffContextPlan(
+  ) => LoopState["activeConfig"];
+  createRunnerHandoffContextPlan: (
     input: {
       builder?: HandoffContextBuilder;
       mode?: string;
@@ -89,37 +90,37 @@ export interface RuntimeCoreRunnerHost {
     },
     headState: HeadState,
     loopState: LoopState
-  ): HandoffContextPlan;
-  createRunnerPublishedEvent(
+  ) => HandoffContextPlan;
+  createRunnerPublishedEvent: (
     handle: RuntimeExecutionHandle,
     event: TuvrenStreamEvent,
     loopState: LoopState
-  ): TuvrenStreamEvent;
-  createToolBatchEnvironment(
+  ) => TuvrenStreamEvent;
+  createToolBatchEnvironment: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     manifest: ContextManifest,
     iterationCount: number,
     runId: string
-  ): Parameters<typeof executeToolBatch>[1];
-  failTrackedRunWithoutBranchAdvance(
+  ) => Parameters<typeof executeToolBatch>[1];
+  failTrackedRunWithoutBranchAdvance: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stableHeadTurnNodeHash: HashString
-  ): Promise<void>;
-  now(): number;
-  publishCustomEvent(
+  ) => Promise<void>;
+  now: () => number;
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  publishProjectedError(
+  ) => void;
+  publishProjectedError: (
     handle: RuntimeExecutionHandle,
     error: Error,
     fatal: boolean,
     loopState: LoopState
-  ): void;
-  stageManifest(
+  ) => void;
+  stageManifest: (
     runId: string,
     manifest: ContextManifest,
     warningContext?: {
@@ -127,13 +128,13 @@ export interface RuntimeCoreRunnerHost {
       loopState: LoopState;
     },
     taskId?: string
-  ): Promise<HashString>;
-  stageMessage(
+  ) => Promise<HashString>;
+  stageMessage: (
     runId: string,
     message: TuvrenMessage,
     taskId: string
-  ): Promise<HashString>;
-  stageRuntimeStatus(
+  ) => Promise<HashString>;
+  stageRuntimeStatus: (
     runId: string,
     status: {
       activeAgent?: string;
@@ -141,13 +142,13 @@ export interface RuntimeCoreRunnerHost {
       state: "completed" | "failed" | "paused" | "running";
     },
     taskId: string
-  ): Promise<HashString>;
-  stageTurnLineage(
+  ) => Promise<HashString>;
+  stageTurnLineage: (
     runId: string,
     turnId: string,
     taskId: string,
     interruptedToolBatch?: InterruptedToolBatchDescriptor
-  ): Promise<HashString>;
+  ) => Promise<HashString>;
 }
 
 // ---------------------------------------------------------------------------
@@ -163,9 +164,7 @@ export interface RuntimeCoreRunnerHost {
  */
 const buildUnavailableCapabilityIds = (
   tools: ReturnType<ToolRegistry["list"]>,
-  boundary:
-    | import("@tuvren/core/capabilities").ClientEndpointBoundary
-    | undefined
+  boundary: ClientEndpointBoundary | undefined
 ): ReadonlySet<string> | undefined => {
   if (boundary === undefined) {
     return undefined;
@@ -342,9 +341,15 @@ export const stageRunnerMessages = async (
   messages: TuvrenMessage[],
   iterationCount: number
 ): Promise<HashString[]> => {
+  const messageEntries = messages.entries();
   const stagedMessageHashes: HashString[] = [];
 
-  for (const [index, runnerMessage] of messages.entries()) {
+  const stageNextMessage = async (): Promise<HashString[]> => {
+    const entry = messageEntries.next();
+    if (entry.done === true) {
+      return stagedMessageHashes;
+    }
+    const [index, runnerMessage] = entry.value;
     stagedMessageHashes.push(
       await host.stageMessage(
         runId,
@@ -352,9 +357,10 @@ export const stageRunnerMessages = async (
         `message_${iterationCount}_${index}`
       )
     );
-  }
+    return await stageNextMessage();
+  };
 
-  return stagedMessageHashes;
+  return await stageNextMessage();
 };
 
 /**
