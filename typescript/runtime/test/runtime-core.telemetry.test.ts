@@ -40,6 +40,102 @@ import {
   textSignal,
 } from "./runtime-core-test-helpers.ts";
 
+const createTelemetryCapture = (): {
+  events: TelemetryEvent[];
+  sink: TuvrenTelemetrySink;
+  spans: TelemetrySpan[];
+} => {
+  const events: TelemetryEvent[] = [];
+  const spans: TelemetrySpan[] = [];
+
+  return {
+    events,
+    sink: {
+      event: (event) => {
+        events.push(event);
+      },
+      span: (span) => {
+        spans.push(span);
+      },
+    },
+    spans,
+  };
+};
+
+const createDestinationCapture = (options?: {
+  failDelivery?: boolean;
+}): {
+  batches: (readonly (TelemetryEvent | TelemetrySpan)[])[];
+  destination: TelemetryDestination;
+  records: (TelemetryEvent | TelemetrySpan)[];
+  signals: TelemetryOperationalSignal[];
+} => {
+  const batches: (readonly (TelemetryEvent | TelemetrySpan)[])[] = [];
+  const records: (TelemetryEvent | TelemetrySpan)[] = [];
+  const signals: TelemetryOperationalSignal[] = [];
+
+  return {
+    batches,
+    destination: {
+      deliver(batch) {
+        if (options?.failDelivery === true) {
+          throw new Error("destination unavailable");
+        }
+
+        batches.push(batch);
+        records.push(...batch);
+      },
+      onOperationalSignal(signal) {
+        signals.push(signal);
+      },
+    },
+    records,
+    signals,
+  };
+};
+
+const runTelemetryTurn = async (
+  telemetry: TelemetryRouting
+): Promise<{ events: TuvrenStreamEvent[]; phase: string }> => {
+  const harness = createFakeKernelHarness();
+  const runner = {
+    execute() {
+      return Promise.resolve({
+        messages: [assistantText("done")],
+        resolution: { reason: "done", type: "end_turn" },
+      });
+    },
+    id: "fake",
+    resume() {
+      return Promise.reject(new Error("resume was not expected"));
+    },
+  } satisfies RuntimeRunner;
+  const runtime = createTuvrenRuntime({
+    defaultRunnerId: "fake",
+    kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
+    telemetry,
+  });
+  const thread = await runtime.createThread({});
+  const handle = runtime.executeTurn({
+    branchId: thread.branchId,
+    config: { name: "primary" },
+    signal: textSignal("hello"),
+    threadId: thread.threadId,
+  });
+  const events = await collectEvents(handle.events());
+
+  return { events, phase: handle.status().phase };
+};
+
+const createDeterministicClock = (): (() => number) => {
+  let now = 1000;
+
+  return () => {
+    now += 10;
+    return now;
+  };
+};
 describe("runtime operational telemetry", () => {
   test("emits lineage-keyed events and spans for a completed turn", async () => {
     const capture = createTelemetryCapture();
@@ -439,98 +535,3 @@ describe("runtime operational telemetry", () => {
     );
   });
 });
-
-function createTelemetryCapture(): {
-  events: TelemetryEvent[];
-  sink: TuvrenTelemetrySink;
-  spans: TelemetrySpan[];
-} {
-  const events: TelemetryEvent[] = [];
-  const spans: TelemetrySpan[] = [];
-
-  return {
-    events,
-    sink: {
-      event: (event) => {
-        events.push(event);
-      },
-      span: (span) => {
-        spans.push(span);
-      },
-    },
-    spans,
-  };
-}
-
-function createDestinationCapture(options?: { failDelivery?: boolean }): {
-  batches: (readonly (TelemetryEvent | TelemetrySpan)[])[];
-  destination: TelemetryDestination;
-  records: (TelemetryEvent | TelemetrySpan)[];
-  signals: TelemetryOperationalSignal[];
-} {
-  const batches: (readonly (TelemetryEvent | TelemetrySpan)[])[] = [];
-  const records: (TelemetryEvent | TelemetrySpan)[] = [];
-  const signals: TelemetryOperationalSignal[] = [];
-
-  return {
-    batches,
-    destination: {
-      deliver(batch) {
-        if (options?.failDelivery === true) {
-          throw new Error("destination unavailable");
-        }
-
-        batches.push(batch);
-        records.push(...batch);
-      },
-      onOperationalSignal(signal) {
-        signals.push(signal);
-      },
-    },
-    records,
-    signals,
-  };
-}
-
-async function runTelemetryTurn(
-  telemetry: TelemetryRouting
-): Promise<{ events: TuvrenStreamEvent[]; phase: string }> {
-  const harness = createFakeKernelHarness();
-  const runner = {
-    execute() {
-      return Promise.resolve({
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
-      });
-    },
-    id: "fake",
-    resume() {
-      return Promise.reject(new Error("resume was not expected"));
-    },
-  } satisfies RuntimeRunner;
-  const runtime = createTuvrenRuntime({
-    defaultRunnerId: "fake",
-    kernel: harness.kernel,
-    runnerRegistry: createRunnerRegistry([runner]),
-    telemetry,
-  });
-  const thread = await runtime.createThread({});
-  const handle = runtime.executeTurn({
-    branchId: thread.branchId,
-    config: { name: "primary" },
-    signal: textSignal("hello"),
-    threadId: thread.threadId,
-  });
-  const events = await collectEvents(handle.events());
-
-  return { events, phase: handle.status().phase };
-}
-
-function createDeterministicClock(): () => number {
-  let now = 1000;
-
-  return () => {
-    now += 10;
-    return now;
-  };
-}
