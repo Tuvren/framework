@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  type EpochMs,
-  type HashString,
-  TuvrenRuntimeError,
-} from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { EpochMs, HashString } from "@tuvren/core";
 import type { InputSignal } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type {
@@ -37,9 +34,11 @@ import {
   classifyRecoveredExecutionMode,
   classifyRecoveredTurnSignalState,
   classifyStaleRecoveryRace,
-  type DurableRuntimeStatus,
   doesSignalMatchRecoveredTurn,
-  type ExpiredExecutionRecovery,
+} from "./runtime-core-recovery.js";
+import type {
+  DurableRuntimeStatus,
+  ExpiredExecutionRecovery,
 } from "./runtime-core-recovery.js";
 import { toOrderedHashArray } from "./runtime-core-response.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
@@ -194,7 +193,7 @@ export async function recoverExpiredExecutionBranchIfNeeded(
         initialInputMessage
       )
     ) {
-      case "match":
+      case "match": {
         return {
           iterationCount: 0,
           mode: recoveredMode,
@@ -202,7 +201,8 @@ export async function recoverExpiredExecutionBranchIfNeeded(
           preempted: true,
           turnId: expiredRun.turnId,
         };
-      case "missing":
+      }
+      case "missing": {
         return {
           iterationCount: 0,
           mode: recoveredMode,
@@ -210,14 +210,17 @@ export async function recoverExpiredExecutionBranchIfNeeded(
           preempted: true,
           turnId: expiredRun.turnId,
         };
-      case "mismatch":
+      }
+      case "mismatch": {
         return {
           preempted: true,
         };
-      default:
+      }
+      default: {
         return {
           preempted: true,
         };
+      }
     }
   }
 

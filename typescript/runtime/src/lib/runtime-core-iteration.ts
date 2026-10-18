@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
 import type { CapabilityInvocationAttribution } from "@tuvren/core/capabilities";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
@@ -48,9 +49,9 @@ import type { InterruptedIterationRecoveryPlan } from "./runtime-core-recovery-p
 import {
   createCancelledResolution,
   hasAssistantOutputMessages,
-  type LoopOutcome,
   shouldDiscardRunnerProgressAfterLeaseLoss,
 } from "./runtime-core-recovery.js";
+import type { LoopOutcome } from "./runtime-core-recovery.js";
 import { synthesizeResponse } from "./runtime-core-response.js";
 import { cloneValue } from "./runtime-core-shared.js";
 import { finalizeToolBatchProjection } from "./runtime-core-tool-batch-finalization.js";
@@ -236,11 +237,11 @@ export interface RuntimeCoreIterationHost {
     branchId: string,
     schemaId: string,
     startTurnNodeHash: HashString,
-    steps: Array<{
+    steps: {
       deterministic: boolean;
       id: string;
       sideEffects: boolean;
-    }>
+    }[]
   ): Promise<void>;
   ensureRunnerAssistantEvents(
     handle: RuntimeExecutionHandle,
@@ -671,7 +672,7 @@ export async function executeIterationPhase(
     schemaId: string;
   }
 ): Promise<IterationPhaseResult> {
-  const interruptedIterationPlan = input.loopState.interruptedIterationPlan;
+  const { interruptedIterationPlan } = input.loopState;
 
   if (interruptedIterationPlan !== undefined) {
     input.loopState.interruptedIterationPlan = undefined;
@@ -743,7 +744,7 @@ export async function executeIterationPhase(
     };
   }
 
-  const resolution = runnerResult.resolution;
+  const { resolution } = runnerResult;
   const runnerMessages = [...(runnerResult.messages ?? [])];
   const cancellationResolution = createCancelledResolution(input.handle);
   const assistantEventValidationError = validateRunnerAssistantEvents(
@@ -848,7 +849,8 @@ export async function executeIterationPhase(
   );
 
   return await completePreparedIteration(host, input, iterationRunId, {
-    ...(assistantIndex < 0 || stagedMessageHashes[assistantIndex] === undefined
+    ...(assistantIndex === -1 ||
+    stagedMessageHashes[assistantIndex] === undefined
       ? {}
       : { assistantMessageHash: stagedMessageHashes[assistantIndex] }),
     partial,
@@ -883,7 +885,7 @@ async function executeRecoveredIterationPhase(
   input: Parameters<typeof executeIterationPhase>[1],
   recoveryPlan: InterruptedIterationRecoveryPlan
 ): Promise<IterationPhaseResult> {
-  const assistantMessage = recoveryPlan.assistantMessage;
+  const { assistantMessage } = recoveryPlan;
 
   if (assistantMessage === undefined) {
     throw new TuvrenRuntimeError(
@@ -910,11 +912,9 @@ async function executeRecoveredIterationPhase(
       ? {}
       : { assistantMessageHash: recoveryPlan.assistantMessageHash }),
     partial: false,
+    rebuildManifestFromHistory: true,
+    recoveryPlan,
     requestedToolCalls: recoveryPlan.originalToolCalls,
-    toolCallsToExecute:
-      recoveryPlan.disposition === "resume_tool_batch"
-        ? recoveryPlan.missingToolCalls
-        : [],
     resolution,
     runnerResponse: synthesizeResponse(
       [assistantMessage],
@@ -922,10 +922,12 @@ async function executeRecoveredIterationPhase(
       [],
       undefined
     ),
-    rebuildManifestFromHistory: true,
-    recoveryPlan,
     stagedMessageHashes: [...recoveryPlan.stagedMessageHashes],
     stagedMessages: [...recoveryPlan.stagedMessages],
+    toolCallsToExecute:
+      recoveryPlan.disposition === "resume_tool_batch"
+        ? recoveryPlan.missingToolCalls
+        : [],
     toolExecutionMode: recoveryPlan.descriptor?.toolExecutionMode ?? "parallel",
     toolResults: [...recoveryPlan.completedToolResults],
   });
@@ -937,7 +939,7 @@ async function completePreparedIteration(
   iterationRunId: string,
   prepared: PreparedIteration
 ): Promise<IterationPhaseResult> {
-  let resolution = prepared.resolution;
+  let { resolution } = prepared;
   let durableBatchManifest = input.headState.manifest;
   if (
     prepared.assistantMessageHash !== undefined &&
@@ -1094,11 +1096,11 @@ async function completePreparedIteration(
   return {
     kind: "executed",
     result: {
-      runnerResponse: prepared.runnerResponse,
       iterationRunId,
       partial: prepared.partial,
       requestedToolCalls: prepared.requestedToolCalls,
       resolution,
+      runnerResponse: prepared.runnerResponse,
       stableHeadTurnNodeHash: input.headState.branchHeadHash,
       toolExecutionMode: prepared.toolExecutionMode,
       toolResults: finalizedToolResults,

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   AgentConfig,
@@ -28,14 +29,10 @@ import type { ToolRegistry } from "@tuvren/core/tools";
 import type { TurnNode } from "@tuvren/kernel-protocol";
 
 import { createContextManifest } from "./context-manifest.js";
-import {
-  type ExtensionStateUpdate,
-  runBeforeIterationHooks,
-} from "./extension-runtime.js";
-import {
-  createBoundExceededError,
-  type ResolvedExecutionBounds,
-} from "./runtime-core-bounds.js";
+import { runBeforeIterationHooks } from "./extension-runtime.js";
+import type { ExtensionStateUpdate } from "./extension-runtime.js";
+import { createBoundExceededError } from "./runtime-core-bounds.js";
+import type { ResolvedExecutionBounds } from "./runtime-core-bounds.js";
 import type {
   ExecutedIterationResult,
   IterationPhaseResult,
@@ -44,8 +41,8 @@ import type { InterruptedIterationRecoveryPlan } from "./runtime-core-recovery-p
 import {
   createCancelledLoopOutcome,
   isContextEngineeringPlan,
-  type LoopOutcome,
 } from "./runtime-core-recovery.js";
+import type { LoopOutcome } from "./runtime-core-recovery.js";
 import type { TurnLineageRecord } from "./runtime-core-response.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 
