@@ -26,16 +26,16 @@ import { createBindingResolver } from "../src/lib/binding-resolver.ts";
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeDefineTool(name: string): TuvrenToolDefinition {
+const makeDefineTool = (name: string): TuvrenToolDefinition => {
   return {
     description: `tool ${name}`,
     execute: async () => ({ result: name }),
     inputSchema: { type: "object" },
     name,
   };
-}
+};
 
-function makeMcpToolDefinition(name: string): TuvrenToolDefinition {
+const makeMcpToolDefinition = (name: string): TuvrenToolDefinition => {
   return {
     name,
     description: `mcp tool ${name}`,
@@ -45,7 +45,7 @@ function makeMcpToolDefinition(name: string): TuvrenToolDefinition {
     // during tool registration — see mcp-tool-source.ts).
     metadata: { mcp: { originalName: name, serverName: "mcp-server-id" } },
   };
-}
+};
 
 // ---------------------------------------------------------------------------
 // Back-compat: defineTool → tuvren-server

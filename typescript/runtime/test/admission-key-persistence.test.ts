@@ -55,6 +55,369 @@ import {
 const BACKEND_NAMES = ["memory", "sqlite"] as const;
 const SQLITE_READY_PREFIX = "READY\n";
 
+const keyedSignal = (text: string, admissionKey: string): InputSignal => {
+  return {
+    admissionKey,
+    parts: [{ text, type: "text" }],
+  };
+};
+
+const createOrchestrationFixture = (options?: {
+  delayChildBinding?: boolean;
+}) => {
+  const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
+  const runner = createStaticRunner(async (context) => {
+    const steeringSeen = context.messages.some(
+      (message) =>
+        message.role === "user" &&
+        message.parts.some(
+          (part) =>
+            part.type === "text" &&
+            (part.text === "Orchestration steering" ||
+              part.text === "Pre-bind steering")
+        )
+    );
+
+    if (steeringSeen) {
+      return {
+        messages: [assistantText("Steering incorporated.")],
+        resolution: { reason: "done", type: "end_turn" },
+      };
+    }
+
+    const startsRootBeforeChild = context.messages.some(
+      (message) =>
+        message.role === "user" &&
+        message.parts.some(
+          (part) =>
+            part.type === "text" && part.text === "Start root before child"
+        )
+    );
+
+    if (startsRootBeforeChild) {
+      await delay(30);
+      return {
+        messages: [assistantText("Root completed after child launch.")],
+        resolution: { reason: "done", type: "end_turn" },
+      };
+    }
+
+    await delay(context.config.name === "primary" ? 30 : 10);
+    return {
+      messages: [assistantText("Waiting for orchestration steering.")],
+      resolution: { type: "continue_iteration" },
+    };
+  });
+  const runtime = createTuvrenRuntime({
+    defaultRunnerId: "fake",
+    kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
+  });
+  const childBindingGate = Promise.withResolvers<void>();
+  if (!options?.delayChildBinding) {
+    childBindingGate.resolve();
+  }
+  const framework: TuvrenRuntime = {
+    createBranch: async (input) => await runtime.createBranch(input),
+    createThread: async (input) => await runtime.createThread(input),
+    executeTurn: (input) => runtime.executeTurn(input),
+    getThread: async (threadId) => {
+      await childBindingGate.promise;
+      return await runtime.getThread(threadId);
+    },
+    getTurnHistory: (input, historyOptions) =>
+      runtime.getTurnHistory(input, historyOptions),
+    getTurnState: async (input) => await runtime.getTurnState(input),
+    listBranches: async (input) => await runtime.listBranches(input),
+    listThreads: async (listOptions) => await runtime.listThreads(listOptions),
+    maintenance: runtime.maintenance,
+    readBranchMessages: async (input) =>
+      await runtime.readBranchMessages(input),
+    setBranchHead: async (input) => await runtime.setBranchHead(input),
+  };
+  const orchestration = createOrchestrationRuntime({
+    agents: {
+      primary: { name: "primary" },
+      worker: { name: "worker" },
+    },
+    framework,
+  });
+
+  return {
+    orchestration,
+    releaseChildBinding: () => childBindingGate.resolve(),
+    runtime,
+  };
+};
+
+const expectedKeyedUserMessages = (): UserMessage[] => {
+  return [
+    {
+      admissionKey: "initial-key",
+      parts: [{ text: "Initial keyed input", type: "text" }],
+      role: "user",
+    },
+    {
+      admissionKey: "steering-key-a",
+      parts: [{ text: "Repeated steering", type: "text" }],
+      role: "user",
+    },
+    {
+      admissionKey: "steering-key-b",
+      parts: [{ text: "Repeated steering", type: "text" }],
+      role: "user",
+    },
+  ];
+};
+
+const readTextStream = async (
+  stream: ReadableStream<Uint8Array>,
+  onText: (accumulatedText: string) => void
+): Promise<string> => {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let accumulatedText = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        accumulatedText += decoder.decode();
+        return accumulatedText;
+      }
+
+      const chunk = decoder.decode(value, { stream: true });
+      accumulatedText += chunk;
+      onText(accumulatedText);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+};
+
+const withTimeout = async <T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  message: string
+): Promise<T> => {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_resolve, reject) => {
+        timeout = setTimeout(() => reject(new Error(message)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout !== undefined) {
+      clearTimeout(timeout);
+    }
+  }
+};
+
+interface SqlitePersistenceScenarioOptions {
+  childMode?: "hang-after-ready";
+  onChildReaped?: () => void;
+  processTimeoutMs?: number;
+  readinessTimeoutMs?: number;
+  temporaryDirectoryParent?: string;
+}
+
+const SQLITE_READINESS_TIMEOUT_MS = 1000;
+const SQLITE_PROCESS_TIMEOUT_MS = 1500;
+
+const runSqlitePersistenceScenario = async (
+  options: SqlitePersistenceScenarioOptions = {}
+): Promise<TuvrenMessage[]> => {
+  const temporaryDirectory = await mkdtemp(
+    join(options.temporaryDirectoryParent ?? tmpdir(), "tuvren-cs002-sqlite-")
+  );
+  let child: ReturnType<typeof spawn> | undefined;
+  let childExit: Promise<number> | undefined;
+  let stdoutTask: Promise<string> | undefined;
+  let stderrTask: Promise<string> | undefined;
+
+  try {
+    const buildResult = await build({
+      entrypoints: [
+        new URL("fixtures/admission-key-sqlite-child.ts", import.meta.url)
+          .pathname,
+      ],
+      external: ["better-sqlite3"],
+      format: "esm",
+      naming: "sqlite-scenario.mjs",
+      outdir: temporaryDirectory,
+      target: "node",
+    });
+
+    if (!buildResult.success) {
+      throw new Error(
+        `failed to build SQLite child scenario: ${buildResult.logs.join("\n")}`
+      );
+    }
+
+    await symlink(
+      new URL("../../kernel/backends/sqlite/node_modules", import.meta.url)
+        .pathname,
+      join(temporaryDirectory, "node_modules"),
+      "dir"
+    );
+    await symlink(
+      new URL("../../kernel/backends/sqlite/migrations", import.meta.url)
+        .pathname,
+      join(temporaryDirectory, "migrations"),
+      "dir"
+    );
+
+    child = spawn(
+      [
+        "node",
+        join(temporaryDirectory, "sqlite-scenario.mjs"),
+        join(temporaryDirectory, "runtime.sqlite"),
+        options.childMode ?? "",
+      ],
+      {
+        stderr: "pipe",
+        stdout: "pipe",
+      }
+    );
+    childExit = child.exited;
+    const { stdout } = child;
+    const { stderr } = child;
+    if (
+      !(stdout instanceof ReadableStream && stderr instanceof ReadableStream)
+    ) {
+      throw new Error("SQLite child scenario did not create output pipes");
+    }
+
+    let ready = false;
+    const readiness = Promise.withResolvers<void>();
+    stdoutTask = readTextStream(stdout, (accumulatedText) => {
+      if (!ready && accumulatedText.includes(SQLITE_READY_PREFIX)) {
+        ready = true;
+        readiness.resolve();
+      }
+    });
+    stderrTask = new Response(stderr).text();
+    const exit = childExit;
+
+    await withTimeout(
+      Promise.race([
+        readiness.promise,
+        exit.then(() => {
+          throw new Error("SQLite child exited before becoming ready");
+        }),
+      ]),
+      options.readinessTimeoutMs ?? SQLITE_READINESS_TIMEOUT_MS,
+      `SQLite child scenario exceeded its ${options.readinessTimeoutMs ?? SQLITE_READINESS_TIMEOUT_MS}ms readiness deadline`
+    );
+    const exitCode = await withTimeout(
+      exit,
+      options.processTimeoutMs ?? SQLITE_PROCESS_TIMEOUT_MS,
+      `SQLite child scenario exceeded its ${options.processTimeoutMs ?? SQLITE_PROCESS_TIMEOUT_MS}ms process deadline`
+    );
+    const [standardOutput, standardError] = await Promise.all([
+      stdoutTask,
+      stderrTask,
+    ]);
+
+    if (exitCode !== 0) {
+      throw new Error(
+        `SQLite child scenario exited with ${exitCode.toString()}: ${standardError}`
+      );
+    }
+
+    const messages: unknown = JSON.parse(
+      standardOutput.startsWith(SQLITE_READY_PREFIX)
+        ? standardOutput.slice(SQLITE_READY_PREFIX.length)
+        : standardOutput
+    );
+    if (!Array.isArray(messages)) {
+      throw new TypeError("SQLite child scenario returned malformed messages");
+    }
+
+    const validatedMessages: TuvrenMessage[] = [];
+    for (const [index, message] of messages.entries()) {
+      assertTuvrenMessage(message, `SQLite child message ${index.toString()}`);
+      validatedMessages.push(message);
+    }
+
+    return validatedMessages;
+  } finally {
+    try {
+      if (child !== undefined && childExit !== undefined) {
+        if (child.exitCode === null) {
+          child.kill();
+        }
+        await childExit;
+        options.onChildReaped?.();
+        await Promise.allSettled(
+          [stdoutTask, stderrTask].filter(
+            (task): task is Promise<string> => task !== undefined
+          )
+        );
+      }
+    } finally {
+      await rm(temporaryDirectory, { force: true, recursive: true });
+    }
+  }
+};
+
+const readAdmissionKeylessFixture =
+  async (): Promise<AdmissionKeylessFixture> => {
+    const fixture: unknown = JSON.parse(
+      await readFile(
+        new URL(
+          "../../../spec/conformance/engine/fixtures/admission-keyless-user-message.json",
+          import.meta.url
+        ),
+        "utf-8"
+      )
+    );
+
+    if (
+      fixture === null ||
+      typeof fixture !== "object" ||
+      !("message" in fixture) ||
+      fixture.message === null ||
+      typeof fixture.message !== "object" ||
+      !("role" in fixture.message) ||
+      fixture.message.role !== "user" ||
+      !("parts" in fixture.message) ||
+      !Array.isArray(fixture.message.parts) ||
+      fixture.message.parts.length !== 1 ||
+      fixture.message.parts[0] === null ||
+      typeof fixture.message.parts[0] !== "object" ||
+      !("type" in fixture.message.parts[0]) ||
+      fixture.message.parts[0].type !== "text" ||
+      !("text" in fixture.message.parts[0]) ||
+      typeof fixture.message.parts[0].text !== "string" ||
+      !("identityPayloadCodec" in fixture) ||
+      fixture.identityPayloadCodec === null ||
+      typeof fixture.identityPayloadCodec !== "object" ||
+      !("messageHash" in fixture.identityPayloadCodec) ||
+      typeof fixture.identityPayloadCodec.messageHash !== "string"
+    ) {
+      throw new Error("admission-keyless user-message fixture is malformed");
+    }
+
+    return {
+      identityPayloadCodec: {
+        messageHash: fixture.identityPayloadCodec.messageHash,
+      },
+      message: {
+        parts: [
+          {
+            text: fixture.message.parts[0].text,
+            type: "text",
+          },
+        ],
+        role: "user",
+      },
+    };
+  };
+
 describe("KRT-CS002 admission-key persistence", () => {
   for (const backendName of BACKEND_NAMES) {
     test(`returns keyed initial and equal-text steering messages from the ${backendName} durable read`, async () => {
@@ -392,371 +755,11 @@ describe("KRT-CS002 admission-key persistence", () => {
   });
 });
 
-function keyedSignal(text: string, admissionKey: string): InputSignal {
-  return {
-    admissionKey,
-    parts: [{ text, type: "text" }],
-  };
-}
-
-function createOrchestrationFixture(options?: { delayChildBinding?: boolean }) {
-  const kernel = createRuntimeKernel({ backend: createMemoryBackend() });
-  const runner = createStaticRunner(async (context) => {
-    const steeringSeen = context.messages.some(
-      (message) =>
-        message.role === "user" &&
-        message.parts.some(
-          (part) =>
-            part.type === "text" &&
-            (part.text === "Orchestration steering" ||
-              part.text === "Pre-bind steering")
-        )
-    );
-
-    if (steeringSeen) {
-      return {
-        messages: [assistantText("Steering incorporated.")],
-        resolution: { reason: "done", type: "end_turn" },
-      };
-    }
-
-    const startsRootBeforeChild = context.messages.some(
-      (message) =>
-        message.role === "user" &&
-        message.parts.some(
-          (part) =>
-            part.type === "text" && part.text === "Start root before child"
-        )
-    );
-
-    if (startsRootBeforeChild) {
-      await delay(30);
-      return {
-        messages: [assistantText("Root completed after child launch.")],
-        resolution: { reason: "done", type: "end_turn" },
-      };
-    }
-
-    await delay(context.config.name === "primary" ? 30 : 10);
-    return {
-      messages: [assistantText("Waiting for orchestration steering.")],
-      resolution: { type: "continue_iteration" },
-    };
-  });
-  const runtime = createTuvrenRuntime({
-    defaultRunnerId: "fake",
-    kernel,
-    runnerRegistry: createRunnerRegistry([runner]),
-  });
-  const childBindingGate = Promise.withResolvers<void>();
-  if (!options?.delayChildBinding) {
-    childBindingGate.resolve();
-  }
-  const framework: TuvrenRuntime = {
-    createBranch: async (input) => await runtime.createBranch(input),
-    createThread: async (input) => await runtime.createThread(input),
-    executeTurn: (input) => runtime.executeTurn(input),
-    getThread: async (threadId) => {
-      await childBindingGate.promise;
-      return await runtime.getThread(threadId);
-    },
-    getTurnHistory: (input, historyOptions) =>
-      runtime.getTurnHistory(input, historyOptions),
-    getTurnState: async (input) => await runtime.getTurnState(input),
-    listBranches: async (input) => await runtime.listBranches(input),
-    listThreads: async (listOptions) => await runtime.listThreads(listOptions),
-    maintenance: runtime.maintenance,
-    readBranchMessages: async (input) =>
-      await runtime.readBranchMessages(input),
-    setBranchHead: async (input) => await runtime.setBranchHead(input),
-  };
-  const orchestration = createOrchestrationRuntime({
-    agents: {
-      primary: { name: "primary" },
-      worker: { name: "worker" },
-    },
-    framework,
-  });
-
-  return {
-    orchestration,
-    releaseChildBinding: () => childBindingGate.resolve(),
-    runtime,
-  };
-}
-
 type UserMessage = Extract<TuvrenMessage, { role: "user" }>;
-
-function expectedKeyedUserMessages(): UserMessage[] {
-  return [
-    {
-      admissionKey: "initial-key",
-      parts: [{ text: "Initial keyed input", type: "text" }],
-      role: "user",
-    },
-    {
-      admissionKey: "steering-key-a",
-      parts: [{ text: "Repeated steering", type: "text" }],
-      role: "user",
-    },
-    {
-      admissionKey: "steering-key-b",
-      parts: [{ text: "Repeated steering", type: "text" }],
-      role: "user",
-    },
-  ];
-}
-
-interface SqlitePersistenceScenarioOptions {
-  childMode?: "hang-after-ready";
-  onChildReaped?: () => void;
-  processTimeoutMs?: number;
-  readinessTimeoutMs?: number;
-  temporaryDirectoryParent?: string;
-}
-
-const SQLITE_READINESS_TIMEOUT_MS = 1000;
-const SQLITE_PROCESS_TIMEOUT_MS = 1500;
-
-async function runSqlitePersistenceScenario(
-  options: SqlitePersistenceScenarioOptions = {}
-): Promise<TuvrenMessage[]> {
-  const temporaryDirectory = await mkdtemp(
-    join(options.temporaryDirectoryParent ?? tmpdir(), "tuvren-cs002-sqlite-")
-  );
-  let child: ReturnType<typeof spawn> | undefined;
-  let childExit: Promise<number> | undefined;
-  let stdoutTask: Promise<string> | undefined;
-  let stderrTask: Promise<string> | undefined;
-
-  try {
-    const buildResult = await build({
-      entrypoints: [
-        new URL("fixtures/admission-key-sqlite-child.ts", import.meta.url)
-          .pathname,
-      ],
-      external: ["better-sqlite3"],
-      format: "esm",
-      naming: "sqlite-scenario.mjs",
-      outdir: temporaryDirectory,
-      target: "node",
-    });
-
-    if (!buildResult.success) {
-      throw new Error(
-        `failed to build SQLite child scenario: ${buildResult.logs.join("\n")}`
-      );
-    }
-
-    await symlink(
-      new URL("../../kernel/backends/sqlite/node_modules", import.meta.url)
-        .pathname,
-      join(temporaryDirectory, "node_modules"),
-      "dir"
-    );
-    await symlink(
-      new URL("../../kernel/backends/sqlite/migrations", import.meta.url)
-        .pathname,
-      join(temporaryDirectory, "migrations"),
-      "dir"
-    );
-
-    child = spawn(
-      [
-        "node",
-        join(temporaryDirectory, "sqlite-scenario.mjs"),
-        join(temporaryDirectory, "runtime.sqlite"),
-        options.childMode ?? "",
-      ],
-      {
-        stderr: "pipe",
-        stdout: "pipe",
-      }
-    );
-    childExit = child.exited;
-    const { stdout } = child;
-    const { stderr } = child;
-    if (
-      !(stdout instanceof ReadableStream && stderr instanceof ReadableStream)
-    ) {
-      throw new Error("SQLite child scenario did not create output pipes");
-    }
-
-    let ready = false;
-    const readiness = Promise.withResolvers<void>();
-    stdoutTask = readTextStream(stdout, (accumulatedText) => {
-      if (!ready && accumulatedText.includes(SQLITE_READY_PREFIX)) {
-        ready = true;
-        readiness.resolve();
-      }
-    });
-    stderrTask = new Response(stderr).text();
-    const exit = childExit;
-
-    await withTimeout(
-      Promise.race([
-        readiness.promise,
-        exit.then(() => {
-          throw new Error("SQLite child exited before becoming ready");
-        }),
-      ]),
-      options.readinessTimeoutMs ?? SQLITE_READINESS_TIMEOUT_MS,
-      `SQLite child scenario exceeded its ${options.readinessTimeoutMs ?? SQLITE_READINESS_TIMEOUT_MS}ms readiness deadline`
-    );
-    const exitCode = await withTimeout(
-      exit,
-      options.processTimeoutMs ?? SQLITE_PROCESS_TIMEOUT_MS,
-      `SQLite child scenario exceeded its ${options.processTimeoutMs ?? SQLITE_PROCESS_TIMEOUT_MS}ms process deadline`
-    );
-    const [standardOutput, standardError] = await Promise.all([
-      stdoutTask,
-      stderrTask,
-    ]);
-
-    if (exitCode !== 0) {
-      throw new Error(
-        `SQLite child scenario exited with ${exitCode.toString()}: ${standardError}`
-      );
-    }
-
-    const messages: unknown = JSON.parse(
-      standardOutput.startsWith(SQLITE_READY_PREFIX)
-        ? standardOutput.slice(SQLITE_READY_PREFIX.length)
-        : standardOutput
-    );
-    if (!Array.isArray(messages)) {
-      throw new TypeError("SQLite child scenario returned malformed messages");
-    }
-
-    const validatedMessages: TuvrenMessage[] = [];
-    for (const [index, message] of messages.entries()) {
-      assertTuvrenMessage(message, `SQLite child message ${index.toString()}`);
-      validatedMessages.push(message);
-    }
-
-    return validatedMessages;
-  } finally {
-    try {
-      if (child !== undefined && childExit !== undefined) {
-        if (child.exitCode === null) {
-          child.kill();
-        }
-        await childExit;
-        options.onChildReaped?.();
-        await Promise.allSettled(
-          [stdoutTask, stderrTask].filter(
-            (task): task is Promise<string> => task !== undefined
-          )
-        );
-      }
-    } finally {
-      await rm(temporaryDirectory, { force: true, recursive: true });
-    }
-  }
-}
-
-async function readTextStream(
-  stream: ReadableStream<Uint8Array>,
-  onText: (accumulatedText: string) => void
-): Promise<string> {
-  const reader = stream.getReader();
-  const decoder = new TextDecoder();
-  let accumulatedText = "";
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        accumulatedText += decoder.decode();
-        return accumulatedText;
-      }
-
-      const chunk = decoder.decode(value, { stream: true });
-      accumulatedText += chunk;
-      onText(accumulatedText);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-}
-
-async function withTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  message: string
-): Promise<T> {
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_resolve, reject) => {
-        timeout = setTimeout(() => reject(new Error(message)), timeoutMs);
-      }),
-    ]);
-  } finally {
-    if (timeout !== undefined) {
-      clearTimeout(timeout);
-    }
-  }
-}
 
 interface AdmissionKeylessFixture {
   identityPayloadCodec: {
     messageHash: string;
   };
   message: Extract<TuvrenMessage, { role: "user" }>;
-}
-
-async function readAdmissionKeylessFixture(): Promise<AdmissionKeylessFixture> {
-  const fixture: unknown = JSON.parse(
-    await readFile(
-      new URL(
-        "../../../spec/conformance/engine/fixtures/admission-keyless-user-message.json",
-        import.meta.url
-      ),
-      "utf-8"
-    )
-  );
-
-  if (
-    fixture === null ||
-    typeof fixture !== "object" ||
-    !("message" in fixture) ||
-    fixture.message === null ||
-    typeof fixture.message !== "object" ||
-    !("role" in fixture.message) ||
-    fixture.message.role !== "user" ||
-    !("parts" in fixture.message) ||
-    !Array.isArray(fixture.message.parts) ||
-    fixture.message.parts.length !== 1 ||
-    fixture.message.parts[0] === null ||
-    typeof fixture.message.parts[0] !== "object" ||
-    !("type" in fixture.message.parts[0]) ||
-    fixture.message.parts[0].type !== "text" ||
-    !("text" in fixture.message.parts[0]) ||
-    typeof fixture.message.parts[0].text !== "string" ||
-    !("identityPayloadCodec" in fixture) ||
-    fixture.identityPayloadCodec === null ||
-    typeof fixture.identityPayloadCodec !== "object" ||
-    !("messageHash" in fixture.identityPayloadCodec) ||
-    typeof fixture.identityPayloadCodec.messageHash !== "string"
-  ) {
-    throw new Error("admission-keyless user-message fixture is malformed");
-  }
-
-  return {
-    identityPayloadCodec: {
-      messageHash: fixture.identityPayloadCodec.messageHash,
-    },
-    message: {
-      parts: [
-        {
-          text: fixture.message.parts[0].text,
-          type: "text",
-        },
-      ],
-      role: "user",
-    },
-  };
 }

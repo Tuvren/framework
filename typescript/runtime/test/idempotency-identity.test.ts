@@ -46,15 +46,8 @@ import { deriveIdempotencyKey } from "../src/lib/idempotency-identity.ts";
 import { createToolExecutionContext } from "../src/lib/tool-execution-helpers.ts";
 import type { ToolBatchEnvironment } from "../src/lib/tool-execution.ts";
 
-function makeToolCall(callId: string): ToolCallPart {
+const makeToolCall = (callId: string): ToolCallPart => {
   return { callId, input: {}, name: "side.effect", type: "tool_call" };
-}
-
-const TOOL: TuvrenToolDefinition = {
-  description: "a side-effecting capability",
-  execute: () => Promise.resolve(),
-  inputSchema: { type: "object" },
-  name: "side.effect",
 };
 
 /**
@@ -63,7 +56,10 @@ const TOOL: TuvrenToolDefinition = {
  * resume, and per recovery — which is exactly why the identity must not depend
  * on it; `turnId` is the identifier that survives.
  */
-function makeEnvironment(turnId: string, runId: string): ToolBatchEnvironment {
+const makeEnvironment = (
+  turnId: string,
+  runId: string
+): ToolBatchEnvironment => {
   return {
     publishCustom: () => undefined,
     publishEvent: () => undefined,
@@ -71,7 +67,14 @@ function makeEnvironment(turnId: string, runId: string): ToolBatchEnvironment {
     signal: undefined,
     turnId,
   } as unknown as ToolBatchEnvironment;
-}
+};
+
+const TOOL: TuvrenToolDefinition = {
+  description: "a side-effecting capability",
+  execute: () => Promise.resolve(),
+  inputSchema: { type: "object" },
+  name: "side.effect",
+};
 
 describe("deriveIdempotencyKey (ADR-0052/ADR-0065 / KRT-BG003)", () => {
   test("is a deterministic function of the logical call identity", () => {

@@ -24,18 +24,18 @@ import { createCapabilityRegistry } from "../src/lib/capability-registry.ts";
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeCapability(id: string): Capability {
+const makeCapability = (id: string): Capability => {
   return { id };
-}
+};
 
-function makeSurface(name: string, capabilityId: string): ToolSurface {
+const makeSurface = (name: string, capabilityId: string): ToolSurface => {
   return {
     capabilityId,
     description: `surface for ${capabilityId}`,
     inputSchema: { type: "object" },
     name,
   };
-}
+};
 
 // ---------------------------------------------------------------------------
 // Surface-vs-capability separation

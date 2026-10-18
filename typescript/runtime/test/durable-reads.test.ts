@@ -47,18 +47,18 @@ const PLAINTEXT_BINDING: PayloadCodecBinding = {
   scope: DEFAULT_SCOPE,
 };
 
-function makeKernel() {
+const makeKernel = () => {
   return createRuntimeKernel({ backend: createMemoryBackend() });
-}
+};
 
-function makeCoreOptions(
+const makeCoreOptions = (
   kernel: ReturnType<typeof makeKernel>
-): RuntimeCoreOptions {
+): RuntimeCoreOptions => {
   return {
     defaultRunnerId: "test-runner",
     kernel,
   };
-}
+};
 
 // ── Cursor encode/decode round-trips (KRT-AO002) ──────────────────────────────
 
