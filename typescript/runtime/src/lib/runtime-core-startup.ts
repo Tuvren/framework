@@ -172,11 +172,11 @@ export interface RuntimeCoreStartupHost {
  *   by the host when resolving the active config.
  * @returns A fresh loop state with `enteredIterationLoop` set to `false`.
  */
-export function createExecutionLoopState(
+export const createExecutionLoopState = (
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
   recoveredExecution?: ExpiredExecutionRecovery
-): LoopState {
+): LoopState => {
   const resumedPauseContext = handle.resumedFrom?.pauseContext;
   const initialActiveConfig = host.resolveActiveConfig(
     handle,
@@ -213,7 +213,7 @@ export function createExecutionLoopState(
           interruptedIterationPlan: recoveredExecution.interruptedIterationPlan,
         }),
   };
-}
+};
 
 /**
  * Create the kernel turn record for a fresh execution, if one is needed.
@@ -228,12 +228,12 @@ export function createExecutionLoopState(
  * @param reuseRecoveredTurn - `true` when recovery already assigned an
  *   existing turn id to the handle.
  */
-export async function createExecutionTurnIfNeeded(
+export const createExecutionTurnIfNeeded = async (
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
   branchHeadHash: HashString,
   reuseRecoveredTurn: boolean
-): Promise<void> {
+): Promise<void> => {
   if (handle.resumedFrom !== undefined || reuseRecoveredTurn) {
     return;
   }
@@ -251,7 +251,7 @@ export async function createExecutionTurnIfNeeded(
     parentTurnId,
     branchHeadHash
   );
-}
+};
 
 /**
  * Publish the `turn.start` stream event for this execution.
@@ -260,11 +260,11 @@ export async function createExecutionTurnIfNeeded(
  * node hash as `resumedFrom` so consumers can correlate the resumption with
  * the original pause point.
  */
-export function publishTurnStart(
+export const publishTurnStart = (
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState
-): void {
+): void => {
   host.publishEvent(
     handle,
     {
@@ -276,7 +276,7 @@ export function publishTurnStart(
     },
     loopState
   );
-}
+};
 
 /**
  * Run the fresh-start prelude before the iteration loop is entered.
@@ -303,7 +303,7 @@ export function publishTurnStart(
  * @returns `true` when the execution was completed by a before-turn hook
  *   resolution and the caller must not enter the iteration loop.
  */
-export async function prepareFreshExecutionStart(
+export const prepareFreshExecutionStart = async (
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -316,7 +316,7 @@ export async function prepareFreshExecutionStart(
     schemaId: string,
     loopState: LoopState
   ) => Promise<void>
-): Promise<boolean> {
+): Promise<boolean> => {
   if (
     (recoveredExecutionMode === undefined || needsInputReincorporation) &&
     incorporateInput !== undefined
@@ -383,7 +383,7 @@ export async function prepareFreshExecutionStart(
     false
   );
   return true;
-}
+};
 
 /**
  * Run the resume-side prelude for an execution resumed from a pause.
@@ -398,7 +398,7 @@ export async function prepareFreshExecutionStart(
  *   otherwise `{ completed: false, pendingStateObservability }` where the
  *   pending observability payload, if present, must be emitted by the caller.
  */
-export async function prepareResumedExecutionStartPrelude(
+export const prepareResumedExecutionStartPrelude = async (
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -419,7 +419,7 @@ export async function prepareResumedExecutionStartPrelude(
       };
     }
   | undefined
-> {
+> => {
   const resumeContext = handle.resumedFrom;
 
   if (resumeContext === undefined) {
@@ -445,7 +445,7 @@ export async function prepareResumedExecutionStartPrelude(
     completed: false,
     pendingStateObservability,
   };
-}
+};
 
 /**
  * Complete the resume-side startup by replaying the paused tool execution.
@@ -462,12 +462,12 @@ export async function prepareResumedExecutionStartPrelude(
  *   loop; `false` when the loop should run, including for a fresh
  *   (non-resumed) handle.
  */
-export async function finishResumedExecutionStart(
+export const finishResumedExecutionStart = async (
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState
-): Promise<boolean> {
+): Promise<boolean> => {
   const resumeContext = handle.resumedFrom;
 
   if (resumeContext === undefined) {
@@ -534,16 +534,16 @@ export async function finishResumedExecutionStart(
   }
 
   return false;
-}
+};
 
 /**
  * Resolve the current head turn-node hash of the execution's branch via the
  * host.
  */
-export async function resolveExecutionBranchHead(
+export const resolveExecutionBranchHead = async (
   host: RuntimeCoreStartupHost,
   branchId: string,
   threadId: string
-): Promise<HashString> {
+): Promise<HashString> => {
   return await host.resolveBranchHeadHash(branchId, threadId);
-}
+};

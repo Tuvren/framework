@@ -48,23 +48,23 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
  * Invoke an optional warning callback, swallowing any error it throws so a
  * faulty host warning handler can never disturb execution.
  */
-export function emitRuntimeWarning<TWarning>(
+export const emitRuntimeWarning = <TWarning>(
   onWarning: ((warning: TWarning) => void) | undefined,
   warning: TWarning
-): void {
+): void => {
   try {
     onWarning?.(warning);
   } catch {
     return;
   }
-}
+};
 
 /**
  * Facade over the persistence module's `stageManifest`: stage a context
  * manifest for the run, emitting extension-state budget warnings when a
  * warning context is provided.
  */
-export async function stageRuntimeManifestRecord(
+export const stageRuntimeManifestRecord = async (
   host: RuntimeCorePersistenceHost,
   runId: string,
   manifest: ContextManifest,
@@ -73,7 +73,7 @@ export async function stageRuntimeManifestRecord(
     loopState: LoopState;
   },
   taskId?: string
-): Promise<HashString> {
+): Promise<HashString> => {
   return await stageRuntimeManifest(
     host,
     runId,
@@ -81,32 +81,32 @@ export async function stageRuntimeManifestRecord(
     warningContext,
     taskId
   );
-}
+};
 
 /**
  * Facade over the persistence module's `stageMessage`: stage an encoded
  * (and codec-encrypted) message record for the run.
  */
-export async function stageRuntimeMessageRecord(
+export const stageRuntimeMessageRecord = async (
   host: RuntimeCorePersistenceHost,
   runId: string,
   message: TuvrenMessage,
   taskId: string
-): Promise<HashString> {
+): Promise<HashString> => {
   return await stageRuntimeMessage(host, runId, message, taskId);
-}
+};
 
 /**
  * Facade over the persistence module's `stageTurnLineage`: stage the
  * active-turn lineage record for the run.
  */
-export async function stageRuntimeTurnLineageRecord(
+export const stageRuntimeTurnLineageRecord = async (
   host: RuntimeCorePersistenceHost,
   runId: string,
   turnId: string,
   taskId: string,
   interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
-): Promise<HashString> {
+): Promise<HashString> => {
   return await stageRuntimeTurnLineage(
     host,
     runId,
@@ -114,121 +114,121 @@ export async function stageRuntimeTurnLineageRecord(
     taskId,
     interruptedToolBatch
   );
-}
+};
 
 /**
  * Facade over the persistence module's `stageRuntimeStatus`: stage a
  * durable runtime-status record for the run.
  */
-export async function stageRuntimeStatusRecordValue(
+export const stageRuntimeStatusRecordValue = async (
   host: RuntimeCorePersistenceHost,
   runId: string,
   status: DurableRuntimeStatus,
   taskId: string
-): Promise<HashString> {
+): Promise<HashString> => {
   return await stageRuntimeStatusRecord(host, runId, status, taskId);
-}
+};
 
 /**
  * Facade over the persistence module's `storeKernelRecord`: encode and
  * store a value as a content-addressed kernel record.
  */
-export async function storeRuntimeKernelRecordValue(
+export const storeRuntimeKernelRecordValue = async (
   host: RuntimeCorePersistenceHost,
   value: unknown,
   label: string
-): Promise<HashString> {
+): Promise<HashString> => {
   return await storeRuntimeKernelRecord(host, value, label);
-}
+};
 
 /**
  * Facade over the persistence module's `storeEventRecord`: store an event
  * record content-addressed and return its hash.
  */
-export async function storeRuntimeEventKernelRecord(
+export const storeRuntimeEventKernelRecord = async (
   host: RuntimeCorePersistenceHost,
   event: KernelRecord
-): Promise<HashString> {
+): Promise<HashString> => {
   return await storeRuntimeEventRecord(host, event);
-}
+};
 
 /**
  * Facade over the events module's `publishCustomEvent`: wrap a named payload
  * as a timestamped `custom` stream event and publish it.
  */
-export function publishRuntimeCustomNamedEvent(
+export const publishRuntimeCustomNamedEvent = (
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
   event: { data: unknown; name: string },
   loopState: LoopState
-): void {
+): void => {
   publishRuntimeCustomEvent(host, handle, event, loopState);
-}
+};
 
 /**
  * Facade over the events module's `publishEvent`: publish a stream event
  * through the full runtime event and telemetry path.
  */
-export function publishRuntimeStreamEvent(
+export const publishRuntimeStreamEvent = (
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
   event: TuvrenStreamEvent,
   loopState: LoopState
-): void {
+): void => {
   publishRuntimeEvent(host, handle, event, loopState);
-}
+};
 
 /**
  * Facade over the events module's `createPublishedEvent`: stamp a stream
  * event with its source attribution (agent, runner, thread) and validate it,
  * returning the publishable event without publishing it.
  */
-export function createRuntimePublishedStreamEvent(
+export const createRuntimePublishedStreamEvent = (
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
   event: TuvrenStreamEvent,
   loopState: LoopState
-): TuvrenStreamEvent {
+): TuvrenStreamEvent => {
   return createRuntimePublishedEvent(host, handle, event, loopState);
-}
+};
 
 /**
  * Facade over the events module's `createRunnerPublishedEvent`: validate a
  * runner-emitted event and stamp it with the active agent/runner/thread
  * source, returning the publishable event without publishing it.
  */
-export function createRuntimeRunnerStreamEvent(
+export const createRuntimeRunnerStreamEvent = (
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
   event: TuvrenStreamEvent,
   loopState: LoopState
-): TuvrenStreamEvent {
+): TuvrenStreamEvent => {
   return createRuntimeRunnerPublishedEvent(host, handle, event, loopState);
-}
+};
 
 /**
  * Facade over the events module's `flushBufferedRunnerEvents`: flush
  * buffered runner events to the handle's stream unconditionally.
  */
-export function flushRuntimeBufferedEvents(
+export const flushRuntimeBufferedEvents = (
   handle: RuntimeExecutionHandle,
   events: TuvrenStreamEvent[]
-): void {
+): void => {
   flushRuntimeBufferedRunnerEvents(handle, events);
-}
+};
 
 /**
  * Facade over the events module's `flushBufferedRunnerEventsIfNeeded`:
  * flush buffered runner events unless the resolution requires suppressing
  * them, returning the events that remain visible.
  */
-export function flushRuntimeBufferedEventsIfResolutionAllows(
+export const flushRuntimeBufferedEventsIfResolutionAllows = (
   handle: RuntimeExecutionHandle,
   resolution: import("@tuvren/core/execution").RuntimeResolution,
   events: TuvrenStreamEvent[]
-): TuvrenStreamEvent[] {
+): TuvrenStreamEvent[] => {
   return flushRuntimeBufferedRunnerEventsIfNeeded(handle, resolution, events);
-}
+};
 
 /**
  * Facade over the events module's `ensureRunnerAssistantEvents`: when the
@@ -236,13 +236,13 @@ export function flushRuntimeBufferedEventsIfResolutionAllows(
  * events, synthesize the corresponding message events (source-stamped,
  * unpublished); returns an empty array otherwise.
  */
-export function ensureRuntimeAssistantEvents(
+export const ensureRuntimeAssistantEvents = (
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
   messages: TuvrenMessage[],
   emittedEvents: TuvrenStreamEvent[],
   loopState: LoopState
-): TuvrenStreamEvent[] {
+): TuvrenStreamEvent[] => {
   return ensureRuntimeRunnerAssistantEvents(
     host,
     handle,
@@ -250,36 +250,36 @@ export function ensureRuntimeAssistantEvents(
     emittedEvents,
     loopState
   );
-}
+};
 
 /**
  * Facade over the events module's `publishProjectedError`: project an error,
  * remember it on the handle, and publish it as an `error` stream event
  * marked with its fatality.
  */
-export function publishRuntimeProjectedErrorEvent(
+export const publishRuntimeProjectedErrorEvent = (
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
   error: Error,
   fatal: boolean,
   loopState: LoopState
-): void {
+): void => {
   publishRuntimeProjectedError(host, handle, error, fatal, loopState);
-}
+};
 
 /**
  * Facade over the events module's `emitStateObservability`: when state
  * observability is enabled, publish a `state.checkpoint` event for the new
  * turn node and, if a manifest is provided, a `state.snapshot` event.
  */
-export function emitRuntimeCheckpointEvents(
+export const emitRuntimeCheckpointEvents = (
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
   turnNodeHash: HashString,
   iterationCount: number,
   manifest?: ContextManifest
-): void {
+): void => {
   emitRuntimeStateObservability(
     host,
     handle,
@@ -288,4 +288,4 @@ export function emitRuntimeCheckpointEvents(
     iterationCount,
     manifest
   );
-}
+};
