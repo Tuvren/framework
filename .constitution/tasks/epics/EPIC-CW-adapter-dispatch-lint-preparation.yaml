@@ -50,4 +50,55 @@ tickets:
       evidence: Assert every file matches frozen BY provenance and the standalone tree passes framework adapter typecheck, retained-Biome lint with all six historical directives, and a fresh framework-adapter import. Prove no shared grader, target configuration, coverage file, public package, or live sibling source is changed.
     flows: []
     certainty: settled
-    status: planned
+    status: done
+decisions:
+  - id: OD-09
+    question: "Should native readiness preserve supported and authority-backed contracts while allowing the selected preset's internal async and error normalizations, or additionally freeze unpromised reflection and scheduling observations?"
+    blocks: [KRT-CW001]
+    options:
+      - name: "Preserve supported contracts and apply the selected preset's internal normalizations"
+        pros:
+          - "Preserves public signatures, domain errors, validation order, durable outcomes and promoted conformance while implementing ADR-0070 without exceptions."
+          - "Permits consistent Promise rejection, internal TypeError and cause preservation selected by the shipped rules."
+        cons:
+          - Changes unpromised internal observations such as synchronous invalid-input throws or generic error constructors.
+      - name: Freeze additional reflection and scheduling observations before migration
+        pros:
+          - Preserves those implementation observations even where no public or promoted contract promises them.
+        cons:
+          - Requires a separate policy ruling before native readiness and may conflict with the selected unchanged preset.
+    recommendation: "Preserve supported contracts and apply the selected preset's internal normalizations"
+    closure: ruling
+    ruler: Repository owner through Stage 3 alignment after this wave
+    waiting_on: "Review the native-readiness evidence, master tests and promoted conformance after the lint migration wave merges."
+    interim:
+      assumption: "ADR-0070 authorizes honest preset-required internal async, TypeError and cause normalization. Preserve supported contracts, documented domain errors and messages, first-validation-failure order, fail-closed behavior, emitted event ordering, commit phases, rollback and durable outcomes. The 2026-10-18 user ruling permits separately authorized intentional breaking API or shape changes with the affected authority, tests and release metadata. Unpromised Promise identity, arbitrary microtask counts, generic internal error constructors and absent cause fields are not additional contracts. No suppressions, overrides, fake awaits or signature workarounds are authorized."
+      applied_by:
+        - KRT-CW001
+        - typescript/conformance-adapter/src/framework-adapter-capability-orchestration-integration.ts
+        - typescript/conformance-adapter/src/framework-adapter-capability-orchestration.ts
+        - typescript/conformance-adapter/src/framework-adapter-orchestration-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-runtime.ts
+        - typescript/conformance-adapter/src/framework-adapter-tuvren-client-execution-class.ts
+        - typescript/conformance-adapter/src/framework-adapter-tuvren-server-execution-class.ts
+        - typescript/conformance-adapter/src/framework-adapter-execution-bounds.ts
+        - typescript/conformance-adapter/src/framework-adapter-runner.ts
+    status: proposed
+    asked:
+      date: 2026-10-18
+      in: EPIC-BY
+closeout:
+  tickets_completed: [KRT-CW001]
+  tickets_deferred: []
+  points_completed: 3
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-CW: the reviewed framework adapter dispatch and orchestration slice is assembled from frozen BY provenance, preserves the six retained Biome directives, and passes typecheck, fresh import, compiler isolation, and focused conformance checks."
+  candidate_terms: []
+  routed_upstream: []
+  follow_ups:
+    - "Stage 3 alignment should rule on OD-09 after the complete lint migration wave and promoted conformance evidence are available."
+  code_decisions: []
+  settled: []
