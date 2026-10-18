@@ -186,7 +186,11 @@ const cloneObjectPreservingFunctions = (
   const clone: Record<PropertyKey, unknown> = {};
   const prototype: unknown = Object.getPrototypeOf(value);
 
-  if (prototype !== null && typeof prototype !== "object") {
+  if (
+    prototype !== null &&
+    typeof prototype !== "object" &&
+    typeof prototype !== "function"
+  ) {
     throw new TypeError("object prototype must be an object or null");
   }
 
