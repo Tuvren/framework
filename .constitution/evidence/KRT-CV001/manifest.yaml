@@ -2,11 +2,11 @@ owner: KRT-CV001
 mode: contract_test
 produced:
   date: 2026-10-18
-  commit: d7d749d775cf519f3e1ac31cb81934927830c76b
+  commit: fbbf3a18764e5373f5c8f58d72812f587e149fa7
   command: direnv exec . bun run typecheck
   host: local devenv; Bun 1.4.2, TypeScript 6.0.2, Biome 2.5.14, Nx 22.7.12, Oxfmt 0.71.0
 result: pass
 files:
   - path: summary.json
     role: summary
-pass_criteria: The 23 owned files match immutable BY provenance, the cumulative CW+CV tree passes adapter and workspace checks, only the two reviewed early directives are absent, all four pending final-BY directives retain their original reasons, and compiler resolution reaches no live sibling source.
+pass_criteria: Twenty-two owned files match immutable BY provenance and the owned routing file differs only by the reviewed guard-compatible representation that preserves all 92 mappings; the cumulative CW+CV tree passes adapter and workspace checks, only the two reviewed early directives are absent, all four pending final-BY directives retain their original reasons, and compiler resolution reaches no live sibling source.
