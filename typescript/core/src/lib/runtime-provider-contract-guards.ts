@@ -29,7 +29,7 @@ import {
 import type {
   ProviderStreamChunk,
   TuvrenModelResponse,
-} from "./runtime-contract-shapes.js";
+} from "./runtime-data-contract-shapes.js";
 import { TuvrenValidationError } from "./tuvren-error.js";
 
 const PROVIDER_STREAM_CHUNK_TYPES = new Set([

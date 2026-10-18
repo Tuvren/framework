@@ -45,12 +45,16 @@ export type {
   BranchMessagesCursor,
   BranchSummary,
   CapabilityPolicyContextInputs,
+} from "../lib/runtime-contract-shapes.js";
+export type {
   ContextEngineeringContext,
   ContextEngineeringHelpers,
   ContextEngineeringPlan,
   ContextManifest,
   ContextManifestCounters,
   ContextManifestNameCounters,
+} from "../lib/runtime-data-contract-shapes.js";
+export type {
   ContextPolicy,
   ContextPolicyResult,
   ExecutionBoundExceededDetails,
@@ -64,7 +68,9 @@ export type {
   HandoffContextMode,
   HandoffContextPlan,
   HandoffSourceContext,
-  InputSignal,
+} from "../lib/runtime-contract-shapes.js";
+export type { InputSignal } from "../lib/runtime-data-contract-shapes.js";
+export type {
   InterceptContext,
   InterceptHandler,
   InterceptResult,
@@ -87,6 +93,6 @@ export type {
   TurnHistoryCursor,
   TurnSnapshot,
   TuvrenExtension,
-  TuvrenMessage,
-  TuvrenRuntime,
 } from "../lib/runtime-contract-shapes.js";
+export type { TuvrenMessage } from "../lib/runtime-data-contract-shapes.js";
+export type { TuvrenRuntime } from "../lib/runtime-contract-shapes.js";

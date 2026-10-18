@@ -48,4 +48,4 @@ export type {
   TuvrenModelConfig,
   TuvrenModelResponse,
   TuvrenPrompt,
-} from "../lib/runtime-contract-shapes.js";
+} from "../lib/runtime-data-contract-shapes.js";

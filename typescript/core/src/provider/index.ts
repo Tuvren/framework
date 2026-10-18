@@ -43,4 +43,4 @@ export type {
   TuvrenModelResponse,
   TuvrenPrompt,
   TuvrenProvider,
-} from "../lib/runtime-contract-shapes.js";
+} from "../lib/runtime-data-contract-shapes.js";

@@ -52,14 +52,16 @@ import {
   safePredicate,
 } from "./runtime-contract-predicates.js";
 import type {
-  ApprovalRequest,
-  ApprovalResponse,
-  ContextManifest,
   ExecutionStatus,
-  TuvrenMessage,
   TuvrenStreamEvent,
   TuvrenToolDefinition,
 } from "./runtime-contract-shapes.js";
+import type {
+  ApprovalRequest,
+  ApprovalResponse,
+  ContextManifest,
+  TuvrenMessage,
+} from "./runtime-data-contract-shapes.js";
 import { FINISH_REASONS } from "./runtime-provider-contract-guards.js";
 import { TuvrenValidationError } from "./tuvren-error.js";
 

@@ -28,7 +28,7 @@ import type {
   ContextManifest,
   ContextManifestCounters,
   ContextManifestNameCounters,
-} from "./runtime-contract-shapes.js";
+} from "./runtime-data-contract-shapes.js";
 
 const CONTEXT_MANIFEST_KEYS = new Set([
   "byRole",

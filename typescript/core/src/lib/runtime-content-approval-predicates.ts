@@ -32,7 +32,7 @@ import type {
   ContentPart,
   PendingToolCall,
   ToolResultPart,
-} from "./runtime-contract-shapes.js";
+} from "./runtime-data-contract-shapes.js";
 
 const CONTENT_PART_TYPES = new Set([
   "text",

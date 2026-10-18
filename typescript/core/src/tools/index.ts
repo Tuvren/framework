@@ -38,24 +38,34 @@ export {
 } from "../lib/runtime-contract-guards.js";
 export type {
   ApprovalDecision,
-  ApprovalPolicy,
   ApprovalRequest,
   ApprovalResponse,
+} from "../lib/runtime-data-contract-shapes.js";
+export type {
+  ApprovalPolicy,
   AroundToolContext,
   AroundToolHandler,
   AroundToolResult,
   AroundToolSpec,
   CustomSchema,
   ExecuteFunction,
+} from "../lib/runtime-contract-shapes.js";
+export type {
   PendingToolCall,
   RenderedToolDefinition,
   ToolCallPart,
+} from "../lib/runtime-data-contract-shapes.js";
+export type {
   ToolDispatchContext,
   ToolExecutionContext,
   ToolExecutionResult,
   ToolRegistry,
+} from "../lib/runtime-contract-shapes.js";
+export type {
   ToolResultPart,
   TuvrenJsonSchema,
+} from "../lib/runtime-data-contract-shapes.js";
+export type {
   TuvrenToolDefinition,
   TuvrenToolResultBatch,
   ValidationErrorPayload,

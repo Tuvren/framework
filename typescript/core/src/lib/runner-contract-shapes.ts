@@ -17,16 +17,18 @@
 import type { EpochMs, HashString } from "./kernel-records.js";
 import type {
   AgentConfig,
-  ApprovalResponse,
-  ContextManifest,
   HandoffContextBuilder,
   HandoffContextMode,
   HandoffContextPlan,
   RuntimeResolution,
   ToolRegistry,
-  TuvrenMessage,
   TuvrenStreamEvent,
 } from "./runtime-contract-shapes.js";
+import type {
+  ApprovalResponse,
+  ContextManifest,
+  TuvrenMessage,
+} from "./runtime-data-contract-shapes.js";
 
 /* oxlint-disable typescript/method-signature-style -- Preserve the published runner method signatures and their method bivariance under strictFunctionTypes. */
 

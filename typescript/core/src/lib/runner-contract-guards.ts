@@ -34,8 +34,8 @@ import type {
   HandoffContextPlan,
   HandoffSourceContext,
   RuntimeResolution,
-  TuvrenMessage,
 } from "./runtime-contract-shapes.js";
+import type { TuvrenMessage } from "./runtime-data-contract-shapes.js";
 import { TuvrenValidationError } from "./tuvren-error.js";
 
 const RUNNER_RESULT_KEYS = new Set([

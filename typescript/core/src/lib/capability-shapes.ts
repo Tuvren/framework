@@ -22,7 +22,7 @@
  * Capability invocation against exactly one ExecutionClass.
  */
 
-import type { TuvrenJsonSchema } from "./runtime-contract-shapes.js";
+import type { TuvrenJsonSchema } from "./runtime-data-contract-shapes.js";
 
 /* oxlint-disable typescript/method-signature-style -- Preserve the published public method signatures and their method bivariance under strictFunctionTypes. */
 
