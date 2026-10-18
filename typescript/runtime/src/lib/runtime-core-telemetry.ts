@@ -26,7 +26,6 @@ import type {
   TelemetryLineage,
   TelemetryOperationalSignal,
   TelemetryOperationalSignalKind,
-  TelemetryRoute,
   TelemetryRouting,
   TelemetrySpan,
   TelemetrySpanError,
@@ -67,11 +66,11 @@ export interface RuntimeTelemetryEmitter {
    * values also live on the failed `ExecutionResult` and the canonical `error`
    * event details; the telemetry attributes carry decimal-string encodings.
    */
-  bounded(input: {
+  bounded: (input: {
     details: ExecutionBoundExceededDetails;
     handle: RuntimeExecutionHandle;
     loopState: LoopState;
-  }): void;
+  }) => void;
   /**
    * Derive telemetry from a runtime stream event. Turn, iteration, and tool
    * start events open timed spans keyed by the execution handle (and call id
@@ -80,29 +79,29 @@ export interface RuntimeTelemetryEmitter {
    * checkpoints and errors, zero-duration spans). Unrecognized event types
    * are ignored.
    */
-  eventFromStream(
+  eventFromStream: (
     handle: RuntimeExecutionHandle,
     event: TuvrenStreamEvent,
     loopState: LoopState
-  ): void;
+  ) => void;
   /**
    * Emit the recovery outcome for an expired execution: a
    * `recovery.resumed` or `recovery.failed` event plus a zero-duration
    * `recovery` span whose status mirrors `input.status`.
    */
-  recovery(input: {
+  recovery: (input: {
     error?: unknown;
     handle: RuntimeExecutionHandle;
     loopState: LoopState;
     status: "error" | "ok";
-  }): void;
+  }) => void;
   /**
    * Emit an explicit span with a caller-supplied start time; the end time is
    * taken from the emitter's clock at call time. When `attributes` is
    * omitted, the standard branch/runner/run/turn attribute set is used, and
    * the span error (if any) is secret-screened before emission.
    */
-  span(input: {
+  span: (input: {
     attributes?: Record<string, TelemetryAttributeValue>;
     error?: unknown;
     handle: RuntimeExecutionHandle;
@@ -113,7 +112,7 @@ export interface RuntimeTelemetryEmitter {
     startMs: EpochMs;
     status: "error" | "ok";
     turnNodeHash?: HashString;
-  }): void;
+  }) => void;
 }
 
 // ADR-0058 §2: resolve the construction-time `telemetry` routing union into its
@@ -122,6 +121,19 @@ export interface RuntimeTelemetryEmitter {
 // subsume the bare-sink/bare-destination forms: a value exposing `event`+`span`
 // is a sink, a value exposing `deliver` is a destination, and anything else is
 // treated as a route.
+const isTelemetrySink = (
+  telemetry: TelemetryRouting
+): telemetry is TuvrenTelemetrySink =>
+  "event" in telemetry &&
+  typeof telemetry.event === "function" &&
+  "span" in telemetry &&
+  typeof telemetry.span === "function";
+
+const isTelemetryDestination = (
+  telemetry: TelemetryRouting
+): telemetry is TelemetryDestination =>
+  "deliver" in telemetry && typeof telemetry.deliver === "function";
+
 const normalizeTelemetryRouting = (
   telemetry: TelemetryRouting | undefined
 ): {
@@ -132,26 +144,19 @@ const normalizeTelemetryRouting = (
     return {};
   }
 
-  const shape = telemetry as {
-    deliver?: unknown;
-    event?: unknown;
-    span?: unknown;
-  };
-
-  if (typeof shape.event === "function" && typeof shape.span === "function") {
-    return { sink: telemetry as TuvrenTelemetrySink };
+  if (isTelemetrySink(telemetry)) {
+    return { sink: telemetry };
   }
 
-  if (typeof shape.deliver === "function") {
-    return { destination: telemetry as TelemetryDestination };
+  if (isTelemetryDestination(telemetry)) {
+    return { destination: telemetry };
   }
 
-  const route = telemetry as TelemetryRoute;
   return {
-    ...(route.destination === undefined
+    ...(telemetry.destination === undefined
       ? {}
-      : { destination: route.destination }),
-    ...(route.sink === undefined ? {} : { sink: route.sink }),
+      : { destination: telemetry.destination }),
+    ...(telemetry.sink === undefined ? {} : { sink: telemetry.sink }),
   };
 };
 
@@ -211,16 +216,14 @@ const createLineage = (
   handle: RuntimeExecutionHandle,
   turnNodeHash?: HashString,
   runId = handle.getActiveRunId()
-): TelemetryLineage => {
-  return {
-    branchId: handle.request.branchId,
-    ...(runId === undefined ? {} : { runId }),
-    scope,
-    threadId: handle.request.threadId,
-    turnId: handle.turnId,
-    ...(turnNodeHash === undefined ? {} : { turnNodeHash }),
-  };
-};
+): TelemetryLineage => ({
+  branchId: handle.request.branchId,
+  ...(runId === undefined ? {} : { runId }),
+  scope,
+  threadId: handle.request.threadId,
+  turnId: handle.turnId,
+  ...(turnNodeHash === undefined ? {} : { turnNodeHash }),
+});
 
 /**
  * Standard attribute set stamped on runtime telemetry records: branch id,
@@ -230,12 +233,12 @@ const baseAttributes = (
   handle: RuntimeExecutionHandle,
   loopState: LoopState
 ): Record<string, TelemetryAttributeValue> => {
+  const runId = handle.getActiveRunId();
+
   return {
     "tuvren.runtime.branch.id": handle.request.branchId,
     "tuvren.runtime.runner.id": loopState.activeRunnerId,
-    ...(handle.getActiveRunId() === undefined
-      ? {}
-      : { "tuvren.runtime.run.id": handle.getActiveRunId() as string }),
+    ...(runId === undefined ? {} : { "tuvren.runtime.run.id": runId }),
     "tuvren.runtime.turn.id": handle.turnId,
   };
 };
@@ -257,7 +260,7 @@ const baseAttributes = (
  * @param input.scope - Scope identifier stamped into every record's lineage.
  */
 export const createRuntimeTelemetryEmitter = (input: {
-  now(): EpochMs;
+  now: () => EpochMs;
   scope: string;
   telemetry?: TelemetryRouting;
 }): RuntimeTelemetryEmitter => {
@@ -373,6 +376,20 @@ export const createRuntimeTelemetryEmitter = (input: {
       attributes: filterTelemetryAttributes(attributes),
       kind,
       lineage: createLineage(input.scope, handle, turnNodeHash),
+    });
+  };
+
+  const emitSpan = (span: TelemetrySpan) => {
+    safeSpan({
+      ...span,
+      attributes: filterTelemetryAttributes(span.attributes),
+      error:
+        span.error === undefined
+          ? undefined
+          : {
+              code: span.error.code,
+              message: sanitizeTelemetryErrorSummary(span.error.message),
+            },
     });
   };
 
@@ -549,18 +566,84 @@ export const createRuntimeTelemetryEmitter = (input: {
     });
   };
 
-  const emitSpan = (span: TelemetrySpan) => {
-    safeSpan({
-      ...span,
-      attributes: filterTelemetryAttributes(span.attributes),
-      error:
-        span.error === undefined
-          ? undefined
-          : {
-              code: span.error.code,
-              message: sanitizeTelemetryErrorSummary(span.error.message),
-            },
-    });
+  const handleTimedStreamEvent = (
+    handle: RuntimeExecutionHandle,
+    event: TuvrenStreamEvent,
+    loopState: LoopState
+  ): boolean => {
+    const atMs = event.timestamp;
+
+    if (event.type === "turn.start") {
+      handleTurnStart(handle, atMs, loopState, event.resumedFrom);
+      return true;
+    }
+
+    if (event.type === "turn.end") {
+      handleTurnEnd(handle, atMs, loopState, event.status);
+      return true;
+    }
+
+    if (event.type === "iteration.start") {
+      iterationStarts.set(handle, {
+        atMs,
+        lineage: createLineage(input.scope, handle),
+      });
+      return true;
+    }
+
+    if (event.type === "iteration.end") {
+      handleIterationEnd(handle, atMs, loopState);
+      return true;
+    }
+
+    if (event.type === "tool.start") {
+      handleToolStart(handle, atMs, event.callId);
+      return true;
+    }
+
+    if (event.type === "tool.result") {
+      handleToolResult(handle, atMs, loopState, event);
+      return true;
+    }
+
+    return false;
+  };
+
+  const handlePointStreamEvent = (
+    handle: RuntimeExecutionHandle,
+    event: TuvrenStreamEvent,
+    loopState: LoopState
+  ): void => {
+    const atMs = event.timestamp;
+
+    if (event.type === "approval.requested") {
+      emitEvent(
+        "approval.requested",
+        handle,
+        atMs,
+        baseAttributes(handle, loopState)
+      );
+      return;
+    }
+
+    if (event.type === "approval.resolved") {
+      emitEvent(
+        "approval.resolved",
+        handle,
+        atMs,
+        baseAttributes(handle, loopState)
+      );
+      return;
+    }
+
+    if (event.type === "state.checkpoint") {
+      handleCheckpoint(handle, atMs, loopState, event.turnNodeHash);
+      return;
+    }
+
+    if (event.type === "error") {
+      handleRuntimeError(handle, atMs, loopState, event.error);
+    }
   };
 
   return {
@@ -574,66 +657,11 @@ export const createRuntimeTelemetryEmitter = (input: {
       });
     },
     eventFromStream: (handle, event, loopState) => {
-      const atMs = event.timestamp;
-
-      switch (event.type) {
-        case "turn.start": {
-          handleTurnStart(handle, atMs, loopState, event.resumedFrom);
-          return;
-        }
-        case "turn.end": {
-          handleTurnEnd(handle, atMs, loopState, event.status);
-          return;
-        }
-        case "iteration.start": {
-          iterationStarts.set(handle, {
-            atMs,
-            lineage: createLineage(input.scope, handle),
-          });
-          return;
-        }
-        case "iteration.end": {
-          handleIterationEnd(handle, atMs, loopState);
-          return;
-        }
-        case "tool.start": {
-          handleToolStart(handle, atMs, event.callId);
-          return;
-        }
-        case "tool.result": {
-          handleToolResult(handle, atMs, loopState, event);
-          return;
-        }
-        case "approval.requested": {
-          emitEvent(
-            "approval.requested",
-            handle,
-            atMs,
-            baseAttributes(handle, loopState)
-          );
-          return;
-        }
-        case "approval.resolved": {
-          emitEvent(
-            "approval.resolved",
-            handle,
-            atMs,
-            baseAttributes(handle, loopState)
-          );
-          return;
-        }
-        case "state.checkpoint": {
-          handleCheckpoint(handle, atMs, loopState, event.turnNodeHash);
-          return;
-        }
-        case "error": {
-          handleRuntimeError(handle, atMs, loopState, event.error);
-          return;
-        }
-        default: {
-          return;
-        }
+      if (handleTimedStreamEvent(handle, event, loopState)) {
+        return;
       }
+
+      handlePointStreamEvent(handle, event, loopState);
     },
     recovery: (recoveryInput) => {
       const atMs = input.now();

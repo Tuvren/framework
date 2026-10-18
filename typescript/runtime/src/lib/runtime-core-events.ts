@@ -42,14 +42,14 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
  */
 export interface RuntimeCoreEventsHost {
   /** Generate a unique id (used for synthesized message ids). */
-  createId(): string;
+  createId: () => string;
   /**
    * Whether `state.checkpoint`/`state.snapshot` observability events should
    * be emitted at all.
    */
-  enableStateObservability(): boolean;
+  enableStateObservability: () => boolean;
   /** Current time used to stamp event timestamps. */
-  now(): EpochMs;
+  now: () => EpochMs;
 }
 
 /**
@@ -57,7 +57,7 @@ export interface RuntimeCoreEventsHost {
  * runner, and thread) when it carries none, then shape-validates it.
  *
  * @returns The publishable event.
- * @throws When the decorated event fails `assertTuvrenStreamEvent`.
+ * @throws {Error} When the decorated event fails `assertTuvrenStreamEvent`.
  */
 export const createPublishedEvent = (
   _host: RuntimeCoreEventsHost,
@@ -226,58 +226,67 @@ const synthesizeAssistantMessageEvents = (
         break;
       }
       case "structured": {
-        events.push({
-          delta: serializeAssistantDeltaValue(part.data),
-          messageId,
-          timestamp: host.now(),
-          type: "structured.delta",
-        });
-        events.push({
-          data: cloneValue(part.data),
-          messageId,
-          name: part.name,
-          timestamp: host.now(),
-          type: "structured.done",
-        });
+        events.push(
+          {
+            delta: serializeAssistantDeltaValue(part.data),
+            messageId,
+            timestamp: host.now(),
+            type: "structured.delta",
+          },
+          {
+            data: cloneValue(part.data),
+            messageId,
+            name: part.name,
+            timestamp: host.now(),
+            type: "structured.done",
+          }
+        );
         break;
       }
       case "text": {
-        events.push({
-          delta: part.text,
-          messageId,
-          timestamp: host.now(),
-          type: "text.delta",
-        });
-        events.push({
-          messageId,
-          text: part.text,
-          timestamp: host.now(),
-          type: "text.done",
-        });
+        events.push(
+          {
+            delta: part.text,
+            messageId,
+            timestamp: host.now(),
+            type: "text.delta",
+          },
+          {
+            messageId,
+            text: part.text,
+            timestamp: host.now(),
+            type: "text.done",
+          }
+        );
         break;
       }
       case "tool_call": {
-        events.push({
-          callId: part.callId,
-          messageId,
-          name: part.name,
-          timestamp: host.now(),
-          type: "tool_call.start",
-        });
-        events.push({
-          callId: part.callId,
-          delta: serializeAssistantDeltaValue(part.input),
-          timestamp: host.now(),
-          type: "tool_call.args_delta",
-        });
-        events.push({
-          callId: part.callId,
-          input: cloneValue(part.input),
-          name: part.name,
-          providerMetadata: cloneValue(part.providerMetadata),
-          timestamp: host.now(),
-          type: "tool_call.done",
-        });
+        events.push(
+          {
+            callId: part.callId,
+            messageId,
+            name: part.name,
+            timestamp: host.now(),
+            type: "tool_call.start",
+          },
+          {
+            callId: part.callId,
+            delta: serializeAssistantDeltaValue(part.input),
+            timestamp: host.now(),
+            type: "tool_call.args_delta",
+          },
+          {
+            callId: part.callId,
+            input: cloneValue(part.input),
+            name: part.name,
+            providerMetadata: cloneValue(part.providerMetadata),
+            timestamp: host.now(),
+            type: "tool_call.done",
+          }
+        );
+        break;
+      }
+      case "tool_result": {
         break;
       }
       default: {

@@ -36,28 +36,28 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
  * {@link checkpointResumeRunningStatus}.
  */
 export interface RuntimeCoreStatusHost {
-  advanceTurnAndBranchHead(
+  advanceTurnAndBranchHead: (
     handle: RuntimeExecutionHandle,
     turnNodeHash: HashString
-  ): Promise<void>;
-  beginRunStep(runId: string, stepId: string): Promise<void>;
-  completeRunStep(
+  ) => Promise<void>;
+  beginRunStep: (runId: string, stepId: string) => Promise<void>;
+  completeRunStep: (
     runId: string,
     stepId: string,
     eventHash: HashString,
     treeHash?: HashString
-  ): Promise<{
+  ) => Promise<{
     lease?: { fencingToken: string; leaseExpiresAtMs: number };
     turnNodeHash?: HashString;
   }>;
-  completeTrackedRun(
+  completeTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     status: RunCompletionStatus,
     event?: KernelRecord
-  ): Promise<{ turnNodeHash?: HashString }>;
-  createId(): string;
-  createTrackedRun(
+  ) => Promise<{ turnNodeHash?: HashString }>;
+  createId: () => string;
+  createTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     turnId: string,
@@ -69,7 +69,7 @@ export interface RuntimeCoreStatusHost {
       id: string;
       sideEffects: boolean;
     }[]
-  ): Promise<void>;
+  ) => Promise<void>;
   emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
@@ -77,31 +77,31 @@ export interface RuntimeCoreStatusHost {
     iterationCount: number,
     manifest?: ContextManifest
   ) => void;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  stageManifest(
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  stageManifest: (
     runId: string,
     manifest: ContextManifest,
     warningContext?: {
       handle: RuntimeExecutionHandle;
       loopState: LoopState;
     }
-  ): Promise<HashString>;
-  stageRuntimeStatus(
+  ) => Promise<HashString>;
+  stageRuntimeStatus: (
     runId: string,
     status: DurableRuntimeStatus,
     taskId: string
-  ): Promise<HashString>;
-  storeEventRecord(event: KernelRecord): Promise<HashString>;
-  syncRunLeaseStateFromStepResult(
+  ) => Promise<HashString>;
+  storeEventRecord: (event: KernelRecord) => Promise<HashString>;
+  syncRunLeaseStateFromStepResult: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stepResult: { lease?: { fencingToken: string; leaseExpiresAtMs: number } }
-  ): void;
-  treeCreate(
+  ) => void;
+  treeCreate: (
     schemaId: string,
     changes: Record<string, PathValue>,
     baseTurnTreeHash: HashString
-  ): Promise<HashString>;
+  ) => Promise<HashString>;
 }
 
 /**
@@ -230,7 +230,7 @@ export const finalizeTurnStatus = async (
  *
  * @param emitObservability - When false, the durable checkpoint is written
  *   but state observability emission is deferred to the caller.
- * @defaultValue `emitObservability` defaults to `true`.
+ * @default `true`
  * @returns The pending state-observability payload (`turnNodeHash`,
  *   iteration, and the manifest only when carried updates changed it) when
  *   the checkpoint produced a new turn node, or `undefined` when it did not.
