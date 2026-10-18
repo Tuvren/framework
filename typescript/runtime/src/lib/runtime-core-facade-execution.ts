@@ -61,6 +61,7 @@ import {
   publishApprovalResolved as publishRuntimeApprovalResolved,
   publishPauseOutcome as publishRuntimePauseOutcome,
 } from "./runtime-core-finalization.js";
+import type { InterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type {
   ExpiredExecutionRecovery,
@@ -93,13 +94,12 @@ import type {
 export const resolveRuntimeCoreExecutionBranchHead = async (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle
-): Promise<HashString> => {
-  return await resolveRuntimeExecutionBranchHead(
+): Promise<HashString> =>
+  await resolveRuntimeExecutionBranchHead(
     hosts.startup,
     handle.request.branchId,
     handle.request.threadId
   );
-};
 
 /**
  * Creates the kernel turn for this execution when one is needed.
@@ -134,13 +134,8 @@ export const createRuntimeCoreExecutionLoopState = (
   hosts: RuntimeCoreFacadeHosts,
   handle: RuntimeExecutionHandle,
   recoveredExecution?: ExpiredExecutionRecovery
-): LoopState => {
-  return createRuntimeExecutionLoopState(
-    hosts.startup,
-    handle,
-    recoveredExecution
-  );
-};
+): LoopState =>
+  createRuntimeExecutionLoopState(hosts.startup, handle, recoveredExecution);
 
 /**
  * Publishes the `turn.start` stream event for the execution, carrying the
@@ -182,8 +177,8 @@ export const prepareRuntimeCoreFreshExecutionStart = async (
     schemaId: string,
     loopState: LoopState
   ) => Promise<void>
-): Promise<boolean> => {
-  return await prepareRuntimeFreshExecutionStart(
+): Promise<boolean> =>
+  await prepareRuntimeFreshExecutionStart(
     hosts.startup,
     handle,
     schemaId,
@@ -193,7 +188,6 @@ export const prepareRuntimeCoreFreshExecutionStart = async (
     needsInputReincorporation ?? false,
     incorporateInput
   );
-};
 
 /**
  * Finishes the startup path for an execution that resumes a paused turn:
@@ -209,14 +203,13 @@ export const finishRuntimeCoreResumedExecutionStart = async (
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState
-): Promise<boolean> => {
-  return await finishRuntimeResumedExecutionStart(
+): Promise<boolean> =>
+  await finishRuntimeResumedExecutionStart(
     hosts.startup,
     handle,
     schemaId,
     loopState
   );
-};
 
 /**
  * Publishes the pause outcome for an approval pause: remembers the pause
@@ -231,14 +224,13 @@ export const publishRuntimeCorePauseOutcome = (
   handle: RuntimeExecutionHandle,
   pauseContext: PauseContext | undefined,
   loopState: LoopState
-): boolean => {
-  return publishRuntimePauseOutcome(
+): boolean =>
+  publishRuntimePauseOutcome(
     hosts.finalization,
     handle,
     pauseContext,
     loopState
   );
-};
 
 /**
  * Publishes the `approval.resolved` stream event for a resolved approval
@@ -272,8 +264,9 @@ export const handleRuntimeCoreExecutionFailure = async (
     hosts.finalization,
     handle,
     error,
-    async (failedHandle) =>
-      await failRuntimeActiveRunIfNeeded(hosts.status, failedHandle)
+    async (failedHandle) => {
+      await failRuntimeActiveRunIfNeeded(hosts.status, failedHandle);
+    }
   );
 };
 
@@ -378,8 +371,8 @@ export const createRuntimeCoreRunnerExecutionContext = (
   headState: HeadState,
   iterationCount: number,
   emittedRunnerEvents: TuvrenStreamEvent[]
-): RunnerExecutionContext => {
-  return createRuntimeRunnerExecutionContextFacade(
+): RunnerExecutionContext =>
+  createRuntimeRunnerExecutionContextFacade(
     hosts.runner,
     handle,
     schemaId,
@@ -388,7 +381,6 @@ export const createRuntimeCoreRunnerExecutionContext = (
     iterationCount,
     emittedRunnerEvents
   );
-};
 
 /**
  * Stages the messages produced by a runner iteration into the kernel store.
@@ -400,14 +392,13 @@ export const stageRuntimeCoreRunnerMessages = async (
   runId: string,
   messages: TuvrenMessage[],
   iterationCount: number
-): Promise<HashString[]> => {
-  return await stageRuntimeRunnerMessagesFacade(
+): Promise<HashString[]> =>
+  await stageRuntimeRunnerMessagesFacade(
     hosts.runner,
     runId,
     messages,
     iterationCount
   );
-};
 
 /**
  * Applies the tool batch a runner requested for the current iteration, if
@@ -433,12 +424,8 @@ export const applyRuntimeCoreRequestedToolBatchIfNeeded = async (
     toolExecutionMode: ToolExecutionMode;
     toolResults: ToolResultPart[];
   }
-): Promise<LoopOutcome | RuntimeResolution> => {
-  return await applyRuntimeRequestedToolBatchIfNeededFacade(
-    hosts.runner,
-    input
-  );
-};
+): Promise<LoopOutcome | RuntimeResolution> =>
+  await applyRuntimeRequestedToolBatchIfNeededFacade(hosts.runner, input);
 
 /**
  * Persists the durable artifacts of a finished iteration (staged manifest,
@@ -458,9 +445,9 @@ export const completeRuntimeCoreIterationArtifacts = async (
   resolution: RuntimeResolution,
   manifest: ContextManifest,
   appendedMessageHashes: HashString[],
-  interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
-): Promise<HashString | undefined> => {
-  return await completeRuntimeIterationArtifactsFacade(
+  interruptedToolBatch?: InterruptedToolBatchDescriptor
+): Promise<HashString | undefined> =>
+  await completeRuntimeIterationArtifactsFacade(
     hosts.runner,
     handle,
     schemaId,
@@ -473,7 +460,6 @@ export const completeRuntimeCoreIterationArtifacts = async (
     appendedMessageHashes,
     interruptedToolBatch
   );
-};
 
 /**
  * Runs the after-iteration processing for a runner resolution (extension
@@ -495,8 +481,8 @@ export const applyRuntimeCoreAfterIterationResolution = async (
   headMessages: TuvrenMessage[],
   stagedMessages: TuvrenMessage[],
   manifest: ContextManifest
-): Promise<RuntimeResolution> => {
-  return await applyRuntimeAfterIterationResolutionFacade(
+): Promise<RuntimeResolution> =>
+  await applyRuntimeAfterIterationResolutionFacade(
     hosts.runner,
     handle,
     loopState,
@@ -509,7 +495,6 @@ export const applyRuntimeCoreAfterIterationResolution = async (
     stagedMessages,
     manifest
   );
-};
 
 /**
  * Resumes a tool execution that paused for approval, replaying the paused
@@ -523,15 +508,14 @@ export const resumeRuntimeCorePausedToolExecution = async (
   schemaId: string,
   loopState: LoopState,
   resumeContext: ResumeContext
-): Promise<LoopOutcome> => {
-  return await resumeRuntimePausedToolExecutionFacade(
+): Promise<LoopOutcome> =>
+  await resumeRuntimePausedToolExecutionFacade(
     hosts.toolResume,
     handle,
     schemaId,
     loopState,
     resumeContext
   );
-};
 
 /**
  * Builds the {@link ToolBatchEnvironment} used to execute a batch of tool
@@ -544,8 +528,8 @@ export const createRuntimeCoreToolBatchEnvironment = (
   manifest: ContextManifest,
   iterationCount: number,
   runId: string
-): ToolBatchEnvironment => {
-  return createRuntimeToolBatchEnvironmentFacade(
+): ToolBatchEnvironment =>
+  createRuntimeToolBatchEnvironmentFacade(
     hosts.runnerSupport,
     handle,
     loopState,
@@ -553,7 +537,6 @@ export const createRuntimeCoreToolBatchEnvironment = (
     iterationCount,
     runId
   );
-};
 
 /**
  * Builds the {@link HandoffContextPlan} for a runner-initiated agent handoff,
@@ -574,14 +557,13 @@ export const createRuntimeCoreRunnerHandoffContextPlan = (
   },
   headState: HeadState,
   loopState: LoopState
-): HandoffContextPlan => {
-  return createRuntimeRunnerHandoffContextPlanFacade(
+): HandoffContextPlan =>
+  createRuntimeRunnerHandoffContextPlanFacade(
     hosts.runnerSupport,
     input,
     headState,
     loopState
   );
-};
 
 /**
  * Executes a single runner call against the prepared execution context,
@@ -590,9 +572,7 @@ export const createRuntimeCoreRunnerHandoffContextPlan = (
 export const executeRuntimeCoreRunnerCall = async (
   runner: RuntimeRunner,
   context: RunnerExecutionContext
-) => {
-  return await executeRuntimeRunner(runner, context);
-};
+) => await executeRuntimeRunner(runner, context);
 
 /**
  * Completes the tracked kernel run for an iteration and advances turn
@@ -610,8 +590,8 @@ export const completeRuntimeCoreIterationRun = async (
   iterationCount: number,
   loopState: LoopState,
   treeHash?: HashString
-): Promise<HashString | undefined> => {
-  return await completeRuntimeIterationRunFacade(
+): Promise<HashString | undefined> =>
+  await completeRuntimeIterationRunFacade(
     hosts.turnProgress,
     handle,
     runId,
@@ -621,7 +601,6 @@ export const completeRuntimeCoreIterationRun = async (
     loopState,
     treeHash
   );
-};
 
 /**
  * Creates the kernel tree node for an iteration from the base turn tree, the
@@ -639,8 +618,8 @@ export const createRuntimeCoreIterationTree = async (
   manifestHash: HashString,
   runtimeStatusHash?: HashString,
   turnLineageHash?: HashString
-): Promise<HashString> => {
-  return await createRuntimeIterationTreeFacade(
+): Promise<HashString> =>
+  await createRuntimeIterationTreeFacade(
     hosts.turnProgress,
     schemaId,
     baseTurnTreeHash,
@@ -650,7 +629,6 @@ export const createRuntimeCoreIterationTree = async (
     runtimeStatusHash,
     turnLineageHash
   );
-};
 
 /**
  * Commits the execution request's input into the turn as durable state via

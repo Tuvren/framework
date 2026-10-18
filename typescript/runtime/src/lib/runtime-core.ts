@@ -16,8 +16,13 @@
 
 import { randomUUID } from "node:crypto";
 
-import { assertScope, DEFAULT_SCOPE, TuvrenRuntimeError } from "@tuvren/core";
-import type { EpochMs, HashString, KernelRecord, Scope } from "@tuvren/core";
+import {
+  assertKernelRecord,
+  assertScope,
+  DEFAULT_SCOPE,
+  TuvrenRuntimeError,
+} from "@tuvren/core";
+import type { EpochMs, HashString, Scope } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   AgentConfig,
@@ -254,7 +259,7 @@ export interface RuntimeCoreOptions {
   /**
    * Identifier factory for thread/branch/run/step ids.
    *
-   * @defaultValue `node:crypto` `randomUUID`
+   * @default `node:crypto` `randomUUID`
    */
   createId?: () => string;
   /**
@@ -262,7 +267,7 @@ export interface RuntimeCoreOptions {
    * active agent config does not narrow it further; always clamped to the
    * `maxConcurrentToolCalls` execution bound.
    *
-   * @defaultValue {@link DEFAULT_MAX_PARALLEL_TOOL_CALLS}
+   * @default {@link DEFAULT_MAX_PARALLEL_TOOL_CALLS}
    */
   defaultMaxParallelToolCalls?: number;
   /** Id of the runner used when a request does not name one; must resolve in
@@ -272,7 +277,7 @@ export interface RuntimeCoreOptions {
    * Whether the runtime emits `state.checkpoint` observability events as turn
    * state advances.
    *
-   * @defaultValue `true`
+   * @default `true`
    */
   enableStateObservability?: boolean;
   /** Overrides the built-in default handoff context builders used when an
@@ -285,13 +290,13 @@ export interface RuntimeCoreOptions {
    * Per-extension manifest state budget in bytes, or `false` to disable the
    * check. Warnings are only produced when `onWarning` is also set.
    *
-   * @defaultValue {@link DEFAULT_MANIFEST_EXTENSION_STATE_WARNING_BUDGET_BYTES}
+   * @default {@link DEFAULT_MANIFEST_EXTENSION_STATE_WARNING_BUDGET_BYTES}
    */
   manifestExtensionStateWarningBudgetBytes?: false | number;
   /**
    * Clock used for timestamps, deadlines, and telemetry.
    *
-   * @defaultValue `Date.now`
+   * @default `Date.now`
    */
   now?: () => EpochMs;
   /** Receives non-fatal {@link RuntimeWarning} notifications (currently the
@@ -336,7 +341,7 @@ export interface RuntimeCoreOptions {
   /**
    * Registry the runtime resolves runner ids against.
    *
-   * @defaultValue an empty registry from `createRunnerRegistry()`
+   * @default An empty registry from `createRunnerRegistry()`.
    */
   runnerRegistry?: RunnerRegistry;
   /**
@@ -538,14 +543,15 @@ class RuntimeCore implements TuvrenRuntime {
 
     this.hosts = createRuntimeCoreFacadeHosts({
       activeRunLeaseControllers: this.activeRunLeaseControllers,
-      advanceTurnAndBranchHead: (handle, turnNodeHash) =>
-        advanceRuntimeCoreTurnAndBranchHead(
+      advanceTurnAndBranchHead: async (handle, turnNodeHash) => {
+        await advanceRuntimeCoreTurnAndBranchHead(
           this.options.kernel,
           handle,
           turnNodeHash
-        ),
-      applyTerminalAgentTransitionIfNeeded: (...args) =>
-        applyRuntimeCoreTerminalAgentTransitionIfNeeded(
+        );
+      },
+      applyTerminalAgentTransitionIfNeeded: async (...args) =>
+        await applyRuntimeCoreTerminalAgentTransitionIfNeeded(
           {
             contextOps: this.hosts.contextOps,
             kernel: this.options.kernel,
@@ -553,17 +559,25 @@ class RuntimeCore implements TuvrenRuntime {
           },
           ...args
         ),
-      checkpointResumeRunningStatus: (...args) =>
-        checkpointRuntimeCoreResumeRunningStatus(this.hosts.status, ...args),
+      checkpointResumeRunningStatus: async (...args) =>
+        await checkpointRuntimeCoreResumeRunningStatus(
+          this.hosts.status,
+          ...args
+        ),
       cloneAgentConfigForRequest,
-      commitPendingExtensionStateUpdates: (...args) =>
-        commitRuntimeCorePendingExtensionStateUpdates(this.hosts, ...args),
-      completeExecution: (...args) =>
-        completeRuntimeCoreExecution(this.hosts, ...args),
-      completeIterationRun: (...args) =>
-        completeRuntimeCoreIterationRun(this.hosts, ...args),
-      completeTrackedRun: (...args) =>
-        completeRuntimeCoreTrackedRun(this.hosts.liveness, ...args),
+      commitPendingExtensionStateUpdates: async (...args) => {
+        await commitRuntimeCorePendingExtensionStateUpdates(
+          this.hosts,
+          ...args
+        );
+      },
+      completeExecution: async (...args) => {
+        await completeRuntimeCoreExecution(this.hosts, ...args);
+      },
+      completeIterationRun: async (...args) =>
+        await completeRuntimeCoreIterationRun(this.hosts, ...args),
+      completeTrackedRun: async (...args) =>
+        await completeRuntimeCoreTrackedRun(this.hosts.liveness, ...args),
       createContextEngineeringHelpers: (messageHashes, messages) =>
         createRuntimeCoreContextHelperBundle(
           this.options.kernel,
@@ -572,8 +586,8 @@ class RuntimeCore implements TuvrenRuntime {
           messages
         ),
       createId: () => this.createId(),
-      createIterationTree: (...args) =>
-        createRuntimeCoreIterationTree(this.hosts, ...args),
+      createIterationTree: async (...args) =>
+        await createRuntimeCoreIterationTree(this.hosts, ...args),
       createReadonlyRunnerToolRegistry,
       createRunnerAgentConfigSnapshot,
       createRunnerHandoffContextPlan: (...args) =>
@@ -587,8 +601,9 @@ class RuntimeCore implements TuvrenRuntime {
         ),
       createToolBatchEnvironment: (...args) =>
         createRuntimeCoreToolBatchEnvironment(this.hosts, ...args),
-      createTrackedRun: (...args) =>
-        createRuntimeCoreTrackedRun(this.hosts.liveness, ...args),
+      createTrackedRun: async (...args) => {
+        await createRuntimeCoreTrackedRun(this.hosts.liveness, ...args);
+      },
       defaultMaxParallelToolCalls: this.options.defaultMaxParallelToolCalls,
       defaultRunnerId: this.options.defaultRunnerId,
       emitStateObservability: (
@@ -597,27 +612,30 @@ class RuntimeCore implements TuvrenRuntime {
         turnNodeHash,
         iterationCount,
         manifest
-      ) =>
+      ) => {
         this.emitRuntimeStateObservability(
           handle,
           loopState,
           turnNodeHash,
           iterationCount,
           manifest
-        ),
+        );
+      },
       enableStateObservability: () => this.options.enableStateObservability,
-      failTrackedRunWithoutBranchAdvance: (...args) =>
-        failRuntimeCoreTrackedRunWithoutBranchAdvance(
+      failTrackedRunWithoutBranchAdvance: async (...args) => {
+        await failRuntimeCoreTrackedRunWithoutBranchAdvance(
           this.hosts.turnProgress,
           ...args
-        ),
-      finalizeRejectedPausedToolCancellation: (...args) =>
-        finalizeRejectedRuntimePausedToolCancellation(
+        );
+      },
+      finalizeRejectedPausedToolCancellation: async (...args) =>
+        await finalizeRejectedRuntimePausedToolCancellation(
           this.hosts.toolResume,
           ...args
         ),
-      finalizeTurnStatus: (...args) =>
-        finalizeRuntimeTurnStatus(this.hosts.status, ...args),
+      finalizeTurnStatus: async (...args) => {
+        await finalizeRuntimeTurnStatus(this.hosts.status, ...args);
+      },
       getManifestExtensionStateWarningBudgetBytes: () =>
         this.options.onWarning === undefined
           ? false
@@ -631,35 +649,45 @@ class RuntimeCore implements TuvrenRuntime {
         return warningKeys;
       },
       kernel: this.options.kernel,
-      loadHeadState: (branchId) =>
-        loadHeadStateFacade(
+      loadHeadState: async (branchId) =>
+        await loadHeadStateFacade(
           this.options.kernel,
           this.payloadBinding(),
           branchId
         ),
-      manifestExtensionStateWarning: (warning) =>
-        emitRuntimeWarning(this.options.onWarning, warning),
+      manifestExtensionStateWarning: (warning) => {
+        emitRuntimeWarning(this.options.onWarning, warning);
+      },
       materializeContextMessages: (hashes, helpers) =>
         materializeRuntimeCoreContextMessages(hashes, helpers),
       now: () => this.now(),
       payloadCodecBinding: this.payloadBinding(),
-      publishCustomEvent: (handle, event, loopState) =>
+      publishCustomEvent: (handle, event, loopState) => {
         publishRuntimeCustomNamedEvent(
           this.hosts.events,
           handle,
           event,
           loopState
-        ),
-      publishEvent: (handle, event, loopState) =>
-        this.publishRuntimeEvent(handle, event, loopState),
+        );
+      },
+      publishEvent: (handle, event, loopState) => {
+        this.publishRuntimeEvent(handle, event, loopState);
+      },
       publishPauseOutcome: (...args) =>
         publishRuntimeCorePauseOutcome(this.hosts, ...args),
-      publishProjectedError: (handle, error, fatal, loopState) =>
-        this.publishRuntimeProjectedError(handle, error, fatal, loopState),
-      readRecoveredActiveAgentName: (turnTreeHash) =>
-        readRecoveredActiveAgentNameFacade(this.options.kernel, turnTreeHash),
-      readRecoveredRuntimeStatus: (turnTreeHash) =>
-        readRecoveredRuntimeStatusFacade(this.options.kernel, turnTreeHash),
+      publishProjectedError: (handle, error, fatal, loopState) => {
+        this.publishRuntimeProjectedError(handle, error, fatal, loopState);
+      },
+      readRecoveredActiveAgentName: async (turnTreeHash) =>
+        await readRecoveredActiveAgentNameFacade(
+          this.options.kernel,
+          turnTreeHash
+        ),
+      readRecoveredRuntimeStatus: async (turnTreeHash) =>
+        await readRecoveredRuntimeStatusFacade(
+          this.options.kernel,
+          turnTreeHash
+        ),
       resolveActiveMaxParallelToolCalls: (
         loopState,
         defaultMaxParallelToolCalls
@@ -674,11 +702,12 @@ class RuntimeCore implements TuvrenRuntime {
           this.options.bounds.maxConcurrentToolCalls
         ),
       resolveAgentConfig: this.options.resolveAgentConfig,
-      resolveCheckpointedPausedRun: (...args) =>
-        resolveRuntimeCoreCheckpointedPausedRun(
+      resolveCheckpointedPausedRun: async (...args) => {
+        await resolveRuntimeCoreCheckpointedPausedRun(
           this.hosts.turnProgress,
           ...args
-        ),
+        );
+      },
       resolveDefaultHandoffContextBuilder: (mode) =>
         resolveRuntimeCoreDefaultHandoffContextBuilder(
           this.options.handoffContextBuilder,
@@ -708,8 +737,8 @@ class RuntimeCore implements TuvrenRuntime {
           targetConfig,
           helpers
         ),
-      resolveParentTurnId: (threadId, branchId, explicitParentTurnId) =>
-        resolveParentTurnIdFacade(
+      resolveParentTurnId: async (threadId, branchId, explicitParentTurnId) =>
+        await resolveParentTurnIdFacade(
           this.options.kernel,
           this.options.resolveParentTurnId,
           threadId,
@@ -720,50 +749,64 @@ class RuntimeCore implements TuvrenRuntime {
         this.options.resolveAgentConfig?.(targetAgent) ?? {
           name: targetAgent,
         },
-      resumePausedToolExecution: (...args) =>
-        resumeRuntimeCorePausedToolExecution(this.hosts, ...args),
+      resumePausedToolExecution: async (...args) =>
+        await resumeRuntimeCorePausedToolExecution(this.hosts, ...args),
       runLivenessOptions: this.options.runLiveness,
-      stageManifest: (runId, manifest, warningContext, taskId) =>
-        stageRuntimeManifestRecord(
+      stageManifest: async (runId, manifest, warningContext, taskId) =>
+        await stageRuntimeManifestRecord(
           this.hosts.persistence,
           runId,
           manifest,
           warningContext,
           taskId
         ),
-      stageMessage: (runId, message, taskId) =>
-        stageRuntimeMessageRecord(
+      stageMessage: async (runId, message, taskId) => {
+        if (taskId === undefined) {
+          throw new TypeError("message staging requires a task id");
+        }
+
+        return await stageRuntimeMessageRecord(
           this.hosts.persistence,
           runId,
           message,
-          taskId as string
-        ),
-      stageRuntimeStatus: (runId, status, taskId) =>
-        stageRuntimeStatusRecordValue(
+          taskId
+        );
+      },
+      stageRuntimeStatus: async (runId, status, taskId) =>
+        await stageRuntimeStatusRecordValue(
           this.hosts.persistence,
           runId,
           status,
           taskId
         ),
-      stageTurnLineage: (runId, turnId, taskId, interruptedToolBatch) =>
-        stageRuntimeTurnLineageRecord(
+      stageTurnLineage: async (runId, turnId, taskId, interruptedToolBatch) =>
+        await stageRuntimeTurnLineageRecord(
           this.hosts.persistence,
           runId,
           turnId,
           taskId,
           interruptedToolBatch
         ),
-      storeEventRecord: (event) =>
-        storeRuntimeEventKernelRecord(this.hosts.persistence, event),
-      storeKernelRecord: (value, label) =>
-        storeRuntimeKernelRecordValue(this.hosts.persistence, value, label),
-      syncRunLeaseStateFromStepResult: (...args) =>
+      storeEventRecord: async (event) =>
+        await storeRuntimeEventKernelRecord(this.hosts.persistence, event),
+      storeKernelRecord: async (value, label) =>
+        await storeRuntimeKernelRecordValue(
+          this.hosts.persistence,
+          value,
+          label
+        ),
+      syncRunLeaseStateFromStepResult: (...args) => {
         syncRuntimeCoreRunLeaseStateFromStepResult(
           this.hosts.liveness,
           ...args
+        );
+      },
+      treeCreate: async (schemaId, changes, baseTurnTreeHash) =>
+        await this.options.kernel.tree.create(
+          schemaId,
+          changes,
+          baseTurnTreeHash
         ),
-      treeCreate: (schemaId, changes, baseTurnTreeHash) =>
-        this.options.kernel.tree.create(schemaId, changes, baseTurnTreeHash),
     });
   }
 
@@ -824,17 +867,17 @@ class RuntimeCore implements TuvrenRuntime {
 
   /** Lists thread summaries, optionally filtered by schema id, with cursor
    * pagination. Forwarded to the durable-read module over the kernel. */
-  listThreads(options?: {
+  async listThreads(options?: {
     limit?: number;
     cursor?: ListThreadsCursor;
     filter?: { schemaId?: string };
   }): Promise<{ threads: ThreadSummary[]; nextCursor?: ListThreadsCursor }> {
-    return listThreads(this.options.kernel, options);
+    return await listThreads(this.options.kernel, options);
   }
 
   /** Lists the branches of a thread. */
-  listBranches(input: { threadId: string }): Promise<BranchSummary[]> {
-    return listBranches(this.options.kernel, input);
+  async listBranches(input: { threadId: string }): Promise<BranchSummary[]> {
+    return await listBranches(this.options.kernel, input);
   }
 
   // ── Data-Lifecycle Maintenance Surface (ADR-0051, §4.17) ────────────────
@@ -847,12 +890,16 @@ class RuntimeCore implements TuvrenRuntime {
    */
   get maintenance(): RuntimeMaintenance {
     return {
-      purgeScope: (): Promise<void> => this.purgeBoundScope(),
-      reclaim: (options?: { nowMs?: EpochMs }): Promise<ReclamationSummary> =>
+      purgeScope: async (): Promise<void> => {
+        await this.purgeBoundScope();
+      },
+      reclaim: async (options?: {
+        nowMs?: EpochMs;
+      }): Promise<ReclamationSummary> =>
         // The kernel reclamation summary is structurally the host-facing
         // ReclamationSummary; capability gating + grace-windowing live in the
         // kernel/backend, so the runtime only forwards the mechanism call.
-        this.options.kernel.maintenance.reclaim(options),
+        await this.options.kernel.maintenance.reclaim(options),
     };
   }
 
@@ -868,12 +915,12 @@ class RuntimeCore implements TuvrenRuntime {
 
   /** Reads a turn snapshot at the branch head, or at an explicit turn node
    * when `turnNodeHash` is supplied. */
-  getTurnState(input: {
+  async getTurnState(input: {
     threadId: string;
     branchId: string;
     turnNodeHash?: HashString;
   }): Promise<TurnSnapshot> {
-    return getTurnState(this.options.kernel, input);
+    return await getTurnState(this.options.kernel, input);
   }
 
   /** Iterates turn snapshots backwards from the branch head (or from the
@@ -890,7 +937,7 @@ class RuntimeCore implements TuvrenRuntime {
    * durable payloads through the bound codec; a crypto-shredded message
    * surfaces as an `ErasedPayload` marker instead of its content.
    */
-  readBranchMessages(input: {
+  async readBranchMessages(input: {
     branchId: string;
     limit?: number;
     after?: BranchMessagesCursor;
@@ -898,7 +945,7 @@ class RuntimeCore implements TuvrenRuntime {
     messages: (ErasedPayload | TuvrenMessage)[];
     nextCursor?: BranchMessagesCursor;
   }> {
-    return readBranchMessages(
+    return await readBranchMessages(
       this.options.kernel,
       this.payloadBinding(),
       input
@@ -1014,7 +1061,7 @@ class RuntimeCore implements TuvrenRuntime {
         partial,
         loopState,
         enteredIterationLoop
-      ) =>
+      ) => {
         await completeRuntimeCoreExecution(
           this.hosts,
           activeHandle,
@@ -1022,7 +1069,8 @@ class RuntimeCore implements TuvrenRuntime {
           partial,
           loopState,
           enteredIterationLoop
-        )
+        );
+      }
     );
     handle.rememberPausedCancellation(cancellationTask);
     detachPromise(cancellationTask);
@@ -1039,95 +1087,113 @@ class RuntimeCore implements TuvrenRuntime {
   async startExecution(handle: RuntimeExecutionHandle): Promise<void> {
     await startRuntimeExecutionSession(
       {
-        completeExecution: (...args) =>
-          completeRuntimeCoreExecution(this.hosts, ...args),
-        completeRecoveredTerminalExecution: (...args) =>
-          completeRuntimeCoreRecoveredTerminalExecution(
+        completeExecution: async (...args) => {
+          await completeRuntimeCoreExecution(this.hosts, ...args);
+        },
+        completeRecoveredTerminalExecution: async (...args) => {
+          await completeRuntimeCoreRecoveredTerminalExecution(
             this.hosts.expiredRecovery,
             ...args
-          ),
+          );
+        },
         createExecutionLoopState: (...args) =>
           createRuntimeCoreExecutionLoopState(this.hosts, ...args),
-        createExecutionTurnIfNeeded: (...args) =>
-          createRuntimeCoreExecutionTurnIfNeeded(this.hosts, ...args),
-        emitRecoveryFailed: (activeHandle, activeLoopState, error) =>
+        createExecutionTurnIfNeeded: async (...args) => {
+          await createRuntimeCoreExecutionTurnIfNeeded(this.hosts, ...args);
+        },
+        emitRecoveryFailed: (activeHandle, activeLoopState, error) => {
           this.telemetry.recovery({
             error,
             handle: activeHandle,
             loopState: activeLoopState,
             status: "error",
-          }),
-        emitRecoveryResumed: (activeHandle, activeLoopState) =>
+          });
+        },
+        emitRecoveryResumed: (activeHandle, activeLoopState) => {
           this.telemetry.recovery({
             handle: activeHandle,
             loopState: activeLoopState,
             status: "ok",
-          }),
+          });
+        },
         emitStateObservability: (
-          handle,
-          loopState,
+          activeHandle,
+          activeLoopState,
           turnNodeHash,
           iterationCount,
           manifest
-        ) =>
+        ) => {
           this.emitRuntimeStateObservability(
-            handle,
-            loopState,
+            activeHandle,
+            activeLoopState,
             turnNodeHash,
             iterationCount,
             manifest
-          ),
-        finishResumedExecutionStart: (...args) =>
-          finishRuntimeCoreResumedExecutionStart(this.hosts, ...args),
-        handleExecutionFailure: (...args) =>
-          handleRuntimeCoreExecutionFailure(this.hosts, ...args),
-        prepareFreshExecutionStart: (...args) =>
-          prepareRuntimeCoreFreshExecutionStart(
+          );
+        },
+        finishResumedExecutionStart: async (...args) =>
+          await finishRuntimeCoreResumedExecutionStart(this.hosts, ...args),
+        handleExecutionFailure: async (...args) => {
+          await handleRuntimeCoreExecutionFailure(this.hosts, ...args);
+        },
+        prepareFreshExecutionStart: async (...args) =>
+          await prepareRuntimeCoreFreshExecutionStart(
             this.hosts,
             ...args,
-            async (activeHandle, activeSchemaId, activeLoopState) =>
+            async (activeHandle, activeSchemaId, activeLoopState) => {
               await incorporateRuntimeCoreInput(
                 this.hosts,
                 activeHandle,
                 activeSchemaId,
                 activeLoopState
-              )
+              );
+            }
           ),
-        prepareResumedExecutionStartPrelude: (...args) =>
-          prepareRuntimeResumedExecutionStartPrelude(
+        prepareResumedExecutionStartPrelude: async (...args) =>
+          await prepareRuntimeResumedExecutionStartPrelude(
             this.hosts.startup,
             ...args,
-            async (event) =>
-              await storeRuntimeEventKernelRecord(
+            async (event) => {
+              assertKernelRecord(event, "resumed execution event");
+              return await storeRuntimeEventKernelRecord(
                 this.hosts.persistence,
-                event as KernelRecord
-              ),
+                event
+              );
+            },
             async (runId, status, eventHash) =>
               await this.options.kernel.run.complete(runId, status, eventHash)
           ),
-        publishApprovalResolved: (...args) =>
-          publishRuntimeCoreApprovalResolved(this.hosts, ...args),
+        publishApprovalResolved: (...args) => {
+          publishRuntimeCoreApprovalResolved(this.hosts, ...args);
+        },
         publishPauseOutcome: (...args) =>
           publishRuntimeCorePauseOutcome(this.hosts, ...args),
-        publishTurnStart: (...args) =>
-          publishRuntimeCoreTurnStart(this.hosts, ...args),
-        recoverExpiredExecutionBranchIfNeeded: (...args) =>
-          recoverRuntimeCoreExpiredExecutionBranchIfNeeded(
+        publishTurnStart: (...args) => {
+          publishRuntimeCoreTurnStart(this.hosts, ...args);
+        },
+        recoverExpiredExecutionBranchIfNeeded: async (...args) =>
+          await recoverRuntimeCoreExpiredExecutionBranchIfNeeded(
             this.hosts.expiredRecovery,
             ...args
           ),
-        resolveExecutionBranchHead: (...args) =>
-          resolveRuntimeCoreExecutionBranchHead(this.hosts, ...args),
-        resolveExecutionSchemaId: (request) =>
-          resolveExecutionSchemaIdFacade(
+        resolveExecutionBranchHead: async (...args) =>
+          await resolveRuntimeCoreExecutionBranchHead(this.hosts, ...args),
+        resolveExecutionSchemaId: async (request) =>
+          await resolveExecutionSchemaIdFacade(
             this.options.kernel,
             async (schemaId) =>
-              await ensureSchemaIdFacade(this.options.kernel, schemaId),
+              await ensureSchemaIdFacade(
+                this.options.kernel,
+                DEFAULT_AGENT_SCHEMA,
+                schemaId
+              ),
             request
           ),
-        runExecutionLoop: (...args) => this.runExecutionLoop(...args),
-        stopRunLeaseLoop: (activeHandle) =>
-          stopRuntimeCoreRunLeaseLoop(this.hosts.liveness, activeHandle),
+        runExecutionLoop: async (...args) =>
+          await this.runExecutionLoop(...args),
+        stopRunLeaseLoop: (activeHandle) => {
+          stopRuntimeCoreRunLeaseLoop(this.hosts.liveness, activeHandle);
+        },
       },
       handle
     );
@@ -1160,10 +1226,11 @@ class RuntimeCore implements TuvrenRuntime {
   ): Promise<LoopOutcome> {
     return await runRuntimeExecutionLoopFacade(
       {
-        applyContextEngineeringPlan: (...args) =>
-          applyRuntimeCoreContextEngineeringPlan(this.hosts, ...args),
-        applyTerminalAgentTransitionIfNeeded: (...args) =>
-          applyRuntimeCoreTerminalAgentTransitionIfNeeded(
+        applyContextEngineeringPlan: async (...args) => {
+          await applyRuntimeCoreContextEngineeringPlan(this.hosts, ...args);
+        },
+        applyTerminalAgentTransitionIfNeeded: async (...args) =>
+          await applyRuntimeCoreTerminalAgentTransitionIfNeeded(
             {
               contextOps: this.hosts.contextOps,
               kernel: this.options.kernel,
@@ -1173,31 +1240,50 @@ class RuntimeCore implements TuvrenRuntime {
           ),
         boundsDeadlineMs: (boundsHandle) =>
           this.getBoundsTurnState(boundsHandle).deadlineMs,
-        commitPendingExtensionStateUpdates: (...args) =>
-          commitRuntimeCorePendingExtensionStateUpdates(this.hosts, ...args),
+        commitPendingExtensionStateUpdates: async (...args) => {
+          await commitRuntimeCorePendingExtensionStateUpdates(
+            this.hosts,
+            ...args
+          );
+        },
         createId: () => this.createId(),
-        executeIterationPhase: (...args) => this.executeIterationPhase(...args),
+        executeIterationPhase: async (...args) =>
+          await this.executeIterationPhase(...args),
         executionBounds: () => this.options.bounds,
-        incorporateQueuedSteeringIfNeeded: (...args) =>
-          this.incorporateQueuedSteeringIfNeeded(...args),
-        loadHeadState: (branchId) =>
-          loadHeadStateFacade(
+        incorporateQueuedSteeringIfNeeded: async (...args) => {
+          await this.incorporateQueuedSteeringIfNeeded(...args);
+        },
+        loadHeadState: async (branchId) =>
+          await loadHeadStateFacade(
             this.options.kernel,
             this.payloadBinding(),
             branchId
           ),
         now: () => this.now(),
-        publishCustomEvent: (handle, event, loopState) =>
+        publishCustomEvent: (activeHandle, event, activeLoopState) => {
           publishRuntimeCustomNamedEvent(
             this.hosts.events,
-            handle,
+            activeHandle,
             event,
-            loopState
-          ),
-        publishEvent: (handle, event, loopState) =>
-          this.publishRuntimeEvent(handle, event, loopState),
-        publishProjectedError: (handle, error, fatal, loopState) =>
-          this.publishRuntimeProjectedError(handle, error, fatal, loopState),
+            activeLoopState
+          );
+        },
+        publishEvent: (activeHandle, event, activeLoopState) => {
+          this.publishRuntimeEvent(activeHandle, event, activeLoopState);
+        },
+        publishProjectedError: (
+          activeHandle,
+          error,
+          fatal,
+          activeLoopState
+        ) => {
+          this.publishRuntimeProjectedError(
+            activeHandle,
+            error,
+            fatal,
+            activeLoopState
+          );
+        },
         recordBoundsToolCalls: (boundsHandle, count) =>
           this.recordBoundsToolCalls(boundsHandle, count),
       },
@@ -1243,32 +1329,33 @@ class RuntimeCore implements TuvrenRuntime {
   ): Promise<IterationPhaseResult> {
     return await executeRuntimeIterationPhaseFacade(
       {
-        applyAfterIterationResolution: (...args) =>
-          applyRuntimeCoreAfterIterationResolution(this.hosts, ...args),
-        applyRequestedToolBatchIfNeeded: (input) =>
-          applyRuntimeCoreRequestedToolBatchIfNeeded(this.hosts, input),
+        applyAfterIterationResolution: async (...args) =>
+          await applyRuntimeCoreAfterIterationResolution(this.hosts, ...args),
+        applyRequestedToolBatchIfNeeded: async (input) =>
+          await applyRuntimeCoreRequestedToolBatchIfNeeded(this.hosts, input),
         beginIterationStep: async (runId, stepId) => {
           await this.options.kernel.run.beginStep(runId, stepId);
         },
-        completeIterationArtifacts: (...args) =>
-          completeRuntimeCoreIterationArtifacts(this.hosts, ...args),
+        completeIterationArtifacts: async (...args) =>
+          await completeRuntimeCoreIterationArtifacts(this.hosts, ...args),
         createId: () => this.createId(),
         createRunnerExecutionContext: (...args) =>
           this.createRunnerExecutionContext(...args),
-        createTrackedRun: (...args) =>
-          createRuntimeCoreTrackedRun(this.hosts.liveness, ...args),
+        createTrackedRun: async (...args) => {
+          await createRuntimeCoreTrackedRun(this.hosts.liveness, ...args);
+        },
         ensureRunnerAssistantEvents: (
-          handle,
+          activeHandle,
           messages,
           emittedEvents,
-          loopState
+          activeLoopState
         ) =>
           ensureRuntimeAssistantEvents(
             this.hosts.events,
-            handle,
+            activeHandle,
             messages,
             emittedEvents,
-            loopState
+            activeLoopState
           ),
         executeRunner: async (...args) => {
           const startMs = this.now();
@@ -1297,36 +1384,47 @@ class RuntimeCore implements TuvrenRuntime {
             throw error;
           }
         },
-        failInvalidPauseResolutionIfNeeded: (...args) =>
-          failRuntimeCoreInvalidPauseResolutionIfNeeded(this.hosts, ...args),
-        failTrackedRunWithoutBranchAdvance: (...args) =>
-          failRuntimeCoreTrackedRunWithoutBranchAdvance(
-            this.hosts.turnProgress,
+        failInvalidPauseResolutionIfNeeded: async (...args) =>
+          await failRuntimeCoreInvalidPauseResolutionIfNeeded(
+            this.hosts,
             ...args
           ),
-        flushBufferedRunnerEventsIfNeeded: (handle, resolution, events) =>
+        failTrackedRunWithoutBranchAdvance: async (...args) => {
+          await failRuntimeCoreTrackedRunWithoutBranchAdvance(
+            this.hosts.turnProgress,
+            ...args
+          );
+        },
+        flushBufferedRunnerEventsIfNeeded: (activeHandle, resolution, events) =>
           flushRuntimeBufferedEventsIfResolutionAllows(
-            handle,
+            activeHandle,
             resolution,
             events
           ),
         materializeRunner: (runnerId) =>
           materializeRuntimeCoreRunner(this.options.runnerRegistry, runnerId),
         now: () => this.now(),
-        publishEvent: (h, event, ls) => this.publishRuntimeEvent(h, event, ls),
-        reconcileCheckpointedPauseResolution: (...args) =>
-          reconcileRuntimeCoreCheckpointedPauseResolution(
+        publishEvent: (h, event, ls) => {
+          this.publishRuntimeEvent(h, event, ls);
+        },
+        reconcileCheckpointedPauseResolution: async (...args) =>
+          await reconcileRuntimeCoreCheckpointedPauseResolution(
             this.hosts.turnProgress,
             ...args
           ),
-        stageManifest: (runId, manifest, taskId) =>
-          this.hosts.runner.stageManifest(runId, manifest, undefined, taskId),
-        stageRunnerMessages: (...args) =>
-          stageRuntimeCoreRunnerMessages(this.hosts, ...args),
-        stageRuntimeStatus: (...args) =>
-          this.hosts.runner.stageRuntimeStatus(...args),
-        stageTurnLineage: (...args) =>
-          this.hosts.runner.stageTurnLineage(...args),
+        stageManifest: async (runId, manifest, taskId) =>
+          await this.hosts.runner.stageManifest(
+            runId,
+            manifest,
+            undefined,
+            taskId
+          ),
+        stageRunnerMessages: async (...args) =>
+          await stageRuntimeCoreRunnerMessages(this.hosts, ...args),
+        stageRuntimeStatus: async (...args) =>
+          await this.hosts.runner.stageRuntimeStatus(...args),
+        stageTurnLineage: async (...args) =>
+          await this.hosts.runner.stageTurnLineage(...args),
       },
       handle,
       schemaId,
@@ -1356,7 +1454,11 @@ class RuntimeCore implements TuvrenRuntime {
   }
 
   private async ensureSchemaId(schemaId?: string): Promise<string> {
-    return await ensureSchemaIdFacade(this.options.kernel, schemaId);
+    return await ensureSchemaIdFacade(
+      this.options.kernel,
+      DEFAULT_AGENT_SCHEMA,
+      schemaId
+    );
   }
 
   private createId(): string {
@@ -1550,13 +1652,11 @@ class RuntimeCore implements TuvrenRuntime {
  *   `defaultRunnerId` are required.
  * @returns A `TuvrenRuntime` bound to the supplied kernel, registry, codec,
  *   bounds, and telemetry routing.
- * @throws TuvrenRuntimeError with code `missing_run_liveness_extension` when
+ * @throws {TuvrenRuntimeError} With code `missing_run_liveness_extension` when
  *   `runLiveness` is configured against a kernel lacking the
  *   `kernel.run-liveness` extension, or a validation error when a numeric
  *   option (bounds, parallelism, budgets) is out of range.
  */
 export const createTuvrenRuntime = (
   options: RuntimeCoreOptions
-): TuvrenRuntime => {
-  return new RuntimeCore(options);
-};
+): TuvrenRuntime => new RuntimeCore(options);
