@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenRecoveryError } from "@tuvren/core";
+import { TuvrenRecoveryError } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
 import type {
   ToolCallPart,
   ToolResultPart,
@@ -96,69 +97,208 @@ interface CompletedToolBatchResults {
   resultsOutOfOrder: boolean;
 }
 
-/**
- * Reconstruct an interrupted tool batch from durable committed and staged
- * message objects.
- *
- * The recovery state's consumed results identify messages reactively
- * checkpointed by stale preemption. Uncommitted results cover the wider
- * protocol-valid crash shape. Both are resolved by object hash and decoded
- * through the same payload-codec seam as ordinary branch-head reads.
- * Fulfillment is joined only by decoded `ToolResultPart.callId`; `taskId` is
- * intentionally ignored because different runtime paths spell it differently.
- */
-export async function deriveInterruptedIterationRecoveryPlan(
-  input: InterruptedIterationRecoveryPlanInput
-): Promise<InterruptedIterationRecoveryPlan> {
-  const recovered = await readInterruptedMessages(input);
-  const resolvedAssistant = await resolveInterruptedAssistant(input, recovered);
-  const { assistantMessage, descriptor, messages } = resolvedAssistant;
-
-  if (assistantMessage === undefined || descriptor?.executable === false) {
-    return createReInferencePlan(recovered, descriptor);
+const appendHeadMessagesFromAssistant = (
+  headState: HeadState,
+  assistantHash: HashString,
+  messages: TuvrenMessage[]
+): void => {
+  const assistantIndex = headState.messageHashes.indexOf(assistantHash);
+  if (assistantIndex === -1) {
+    return;
   }
 
-  const originalToolCalls = assistantMessage.parts.filter(
-    (part): part is ToolCallPart => part.type === "tool_call"
+  for (const message of headState.messages.slice(assistantIndex)) {
+    if (!messages.includes(message)) {
+      messages.push(message);
+    }
+  }
+};
+
+/**
+ * Wrap a durable-message read failure with the stable recovery error exposed
+ * to hosts. The original failure remains available as `cause`.
+ */
+export const createInterruptedIterationUnreadableError = (
+  turnId: string,
+  staleRunId: string,
+  cause: unknown,
+  stagedResult?: StagedResult
+): TuvrenRecoveryError =>
+  new TuvrenRecoveryError(
+    `interrupted iteration for turn "${turnId}" from stale run "${staleRunId}" could not be read`,
+    {
+      cause,
+      code: "runtime_recovery_interrupted_iteration_unreadable",
+      details: {
+        ...(stagedResult === undefined
+          ? {}
+          : {
+              objectHash: stagedResult.objectHash,
+              taskId: stagedResult.taskId,
+            }),
+        staleRunId,
+        turnId,
+      },
+    }
   );
-  const completed = collectCompletedToolBatchResults(
-    originalToolCalls,
-    messages,
-    recovered,
-    input.recoveredHeadState.messageHashes
-  );
-  const completedCallIdSet = new Set(completed.callIds);
-  const missingToolCalls = originalToolCalls.filter(
-    (toolCall) => !completedCallIdSet.has(toolCall.callId)
-  );
-  const assistantMessageHash = findMessageHash(
-    recovered.messagesByHash,
-    assistantMessage
-  );
+
+const readInterruptedMessages = async (
+  input: InterruptedIterationRecoveryPlanInput
+): Promise<{
+  interruptedMessageHashes: Set<string>;
+  messagesByHash: Map<string, TuvrenMessage>;
+  messages: TuvrenMessage[];
+  stagedMessages: TuvrenMessage[];
+  stagedMessageHashes: HashString[];
+}> => {
+  const committedMessagesByHash = new Map<string, TuvrenMessage>();
+
+  for (const [
+    index,
+    hash,
+  ] of input.recoveredHeadState.messageHashes.entries()) {
+    const message = input.recoveredHeadState.messages[index];
+
+    if (message !== undefined) {
+      committedMessagesByHash.set(hash, message);
+    }
+  }
+
+  const stagedResults = [
+    ...input.recoveryState.consumedStagedResults,
+    ...input.recoveryState.uncommittedStagedResults,
+  ];
+  const messages: TuvrenMessage[] = [];
+  const messagesByHash = new Map<string, TuvrenMessage>();
+  const interruptedMessageHashes = new Set<string>();
+  const stagedMessages: TuvrenMessage[] = [];
+  const stagedMessageHashes: HashString[] = [];
+  const seenHashes = new Set<string>();
+
+  const readStagedResult = async (index: number): Promise<void> => {
+    let nextIndex = index;
+    let stagedResult = stagedResults[nextIndex];
+    while (stagedResult !== undefined) {
+      nextIndex += 1;
+      if (stagedResult.objectType !== "message") {
+        stagedResult = stagedResults[nextIndex];
+        continue;
+      }
+      if (stagedResult.status === "interrupted") {
+        interruptedMessageHashes.add(stagedResult.objectHash);
+        stagedResult = stagedResults[nextIndex];
+        continue;
+      }
+      if (seenHashes.has(stagedResult.objectHash)) {
+        stagedResult = stagedResults[nextIndex];
+        continue;
+      }
+
+      seenHashes.add(stagedResult.objectHash);
+      const committedMessage = committedMessagesByHash.get(
+        stagedResult.objectHash
+      );
+      if (committedMessage === undefined) {
+        break;
+      }
+
+      messages.push(committedMessage);
+      messagesByHash.set(stagedResult.objectHash, committedMessage);
+      stagedResult = stagedResults[nextIndex];
+    }
+
+    if (stagedResult === undefined) {
+      return;
+    }
+
+    try {
+      const message = await readMessage(
+        input.kernel,
+        input.payloadCodecBinding,
+        stagedResult.objectHash
+      );
+      messages.push(message);
+      messagesByHash.set(stagedResult.objectHash, message);
+      stagedMessages.push(message);
+      stagedMessageHashes.push(stagedResult.objectHash);
+    } catch (error: unknown) {
+      throw createInterruptedIterationUnreadableError(
+        input.turnId,
+        input.staleRunId,
+        error,
+        stagedResult
+      );
+    }
+    await readStagedResult(nextIndex);
+  };
+
+  await readStagedResult(0);
+
+  for (const [
+    index,
+    hash,
+  ] of input.recoveredHeadState.messageHashes.entries()) {
+    const message = input.recoveredHeadState.messages[index];
+    if (message !== undefined) {
+      messagesByHash.set(hash, message);
+    }
+  }
 
   return {
-    assistantMessage,
-    ...(assistantMessageHash === undefined ? {} : { assistantMessageHash }),
-    completedCallIds: completed.callIds,
-    completedToolResultHashes: completed.resultHashes,
-    completedToolResultsOutOfOrder: completed.resultsOutOfOrder,
-    completedToolResults: completed.results,
-    disposition:
-      missingToolCalls.length === 0
-        ? "completed_tool_batch"
-        : "resume_tool_batch",
-    missingToolCalls,
-    originalToolCalls,
-    stagedMessages: recovered.stagedMessages,
-    stagedMessageHashes: recovered.stagedMessageHashes,
-    ...(descriptor === undefined ? {} : { descriptor }),
+    interruptedMessageHashes,
+    messages,
+    messagesByHash,
+    stagedMessageHashes,
+    stagedMessages,
   };
-}
+};
 
-async function resolveInterruptedAssistant(
+const readRecoveryDescriptor = async (
+  input: InterruptedIterationRecoveryPlanInput
+): Promise<InterruptedToolBatchDescriptor | undefined> => {
+  const stagedLineageRecords = [
+    ...input.recoveryState.consumedStagedResults,
+    ...input.recoveryState.uncommittedStagedResults,
+  ].filter(
+    (result) =>
+      result.objectType === "turn_lineage" && result.status !== "interrupted"
+  );
+
+  const reversedLineageRecords = stagedLineageRecords.toReversed();
+  const readLineageRecord = async (
+    index: number
+  ): Promise<InterruptedToolBatchDescriptor | undefined> => {
+    const stagedLineage = reversedLineageRecords[index];
+    if (stagedLineage === undefined) {
+      return input.recoveredHeadState.turnLineage?.interruptedToolBatch;
+    }
+    const payload = await input.kernel.store.get(stagedLineage.objectHash);
+    if (payload === null) {
+      return await readLineageRecord(index + 1);
+    }
+    const lineage: unknown = decodeDeterministicKernelRecord(payload);
+    if (
+      isTurnLineageRecord(lineage) &&
+      lineage.interruptedToolBatch !== undefined
+    ) {
+      return lineage.interruptedToolBatch;
+    }
+    return await readLineageRecord(index + 1);
+  };
+
+  return await readLineageRecord(0);
+};
+
+const isToolCallingAssistantMessage = (
+  message: TuvrenMessage
+): message is Extract<TuvrenMessage, { role: "assistant" }> =>
+  message.role === "assistant" &&
+  message.parts.some((part) => part.type === "tool_call");
+
+const resolveInterruptedAssistant = async (
   input: InterruptedIterationRecoveryPlanInput,
   recovered: Awaited<ReturnType<typeof readInterruptedMessages>>
-): Promise<ResolvedInterruptedAssistant> {
+): Promise<ResolvedInterruptedAssistant> => {
   const descriptor = await readRecoveryDescriptor(input);
   const messages = [...recovered.messages];
   const assistantHash = descriptor?.assistantMessageHash;
@@ -211,56 +351,86 @@ async function resolveInterruptedAssistant(
       isToolCallingAssistantMessage(descriptorAssistant)
         ? descriptorAssistant
         : undefined) ??
-      [...messages].reverse().find(isToolCallingAssistantMessage));
+      messages.toReversed().find(isToolCallingAssistantMessage));
 
   return {
     assistantMessage,
     ...(descriptor === undefined ? {} : { descriptor }),
     messages,
   };
-}
+};
 
-function appendHeadMessagesFromAssistant(
-  headState: HeadState,
-  assistantHash: HashString,
-  messages: TuvrenMessage[]
-): void {
-  const assistantIndex = headState.messageHashes.indexOf(assistantHash);
-  if (assistantIndex < 0) {
-    return;
-  }
-
-  for (const message of headState.messages.slice(assistantIndex)) {
-    if (!messages.includes(message)) {
-      messages.push(message);
-    }
-  }
-}
-
-function createReInferencePlan(
+const createReInferencePlan = (
   recovered: Awaited<ReturnType<typeof readInterruptedMessages>>,
   descriptor: InterruptedToolBatchDescriptor | undefined
-): InterruptedIterationRecoveryPlan {
-  return {
-    completedCallIds: [],
-    completedToolResultHashes: [],
-    completedToolResultsOutOfOrder: false,
-    completedToolResults: [],
-    disposition: "re_infer",
-    missingToolCalls: [],
-    originalToolCalls: [],
-    stagedMessages: recovered.stagedMessages,
-    stagedMessageHashes: recovered.stagedMessageHashes,
-    ...(descriptor === undefined ? {} : { descriptor }),
-  };
-}
+): InterruptedIterationRecoveryPlan => ({
+  completedCallIds: [],
+  completedToolResultHashes: [],
+  completedToolResults: [],
+  completedToolResultsOutOfOrder: false,
+  disposition: "re_infer",
+  missingToolCalls: [],
+  originalToolCalls: [],
+  stagedMessageHashes: recovered.stagedMessageHashes,
+  stagedMessages: recovered.stagedMessages,
+  ...(descriptor === undefined ? {} : { descriptor }),
+});
 
-function collectCompletedToolBatchResults(
+const collectResultsFromMessage = (
+  message: TuvrenMessage,
+  originalCallIds: Set<string>,
+  completedByCallId: Map<string, ToolResultPart>
+): void => {
+  if (message.role !== "tool") {
+    return;
+  }
+  for (const part of message.parts) {
+    if (
+      originalCallIds.has(part.callId) &&
+      !completedByCallId.has(part.callId)
+    ) {
+      completedByCallId.set(part.callId, part);
+    }
+  }
+};
+
+const findCompletedToolResultHashes = (
+  originalToolCalls: ToolCallPart[],
+  messagesByHash: Map<string, TuvrenMessage>
+): HashString[] =>
+  originalToolCalls.flatMap((toolCall) => {
+    const matching = [...messagesByHash.entries()].find(
+      ([, message]) =>
+        message.role === "tool" &&
+        message.parts.some(
+          (part) =>
+            part.type === "tool_result" && part.callId === toolCall.callId
+        )
+    );
+    return matching === undefined ? [] : [matching[0]];
+  });
+
+const areResultsOutOfOrder = (
+  resultHashes: HashString[],
+  durableMessageOrder: HashString[]
+): boolean => {
+  let previousResultPosition = -1;
+  for (const hash of resultHashes) {
+    const position = durableMessageOrder.indexOf(hash);
+    if (position < previousResultPosition) {
+      return true;
+    }
+    previousResultPosition = position;
+  }
+  return false;
+};
+
+const collectCompletedToolBatchResults = (
   originalToolCalls: ToolCallPart[],
   messages: TuvrenMessage[],
   recovered: Awaited<ReturnType<typeof readInterruptedMessages>>,
   headMessageHashes: HashString[]
-): CompletedToolBatchResults {
+): CompletedToolBatchResults => {
   const originalCallIds = new Set(
     originalToolCalls.map((toolCall) => toolCall.callId)
   );
@@ -288,224 +458,69 @@ function collectCompletedToolBatchResults(
       ...recovered.stagedMessageHashes,
     ]),
   };
-}
+};
 
-function collectResultsFromMessage(
-  message: TuvrenMessage,
-  originalCallIds: Set<string>,
-  completedByCallId: Map<string, ToolResultPart>
-): void {
-  if (message.role !== "tool") {
-    return;
-  }
-  for (const part of message.parts) {
-    if (
-      originalCallIds.has(part.callId) &&
-      !completedByCallId.has(part.callId)
-    ) {
-      completedByCallId.set(part.callId, part);
-    }
-  }
-}
-
-function findCompletedToolResultHashes(
-  originalToolCalls: ToolCallPart[],
-  messagesByHash: Map<string, TuvrenMessage>
-): HashString[] {
-  return originalToolCalls.flatMap((toolCall) => {
-    const matching = [...messagesByHash.entries()].find(
-      ([, message]) =>
-        message.role === "tool" &&
-        message.parts.some(
-          (part) =>
-            part.type === "tool_result" && part.callId === toolCall.callId
-        )
-    );
-    return matching === undefined ? [] : [matching[0] as HashString];
-  });
-}
-
-function areResultsOutOfOrder(
-  resultHashes: HashString[],
-  durableMessageOrder: HashString[]
-): boolean {
-  let previousResultPosition = -1;
-  for (const hash of resultHashes) {
-    const position = durableMessageOrder.indexOf(hash);
-    if (position < previousResultPosition) {
-      return true;
-    }
-    previousResultPosition = position;
-  }
-  return false;
-}
-
-function findMessageHash(
+const findMessageHash = (
   messagesByHash: Map<string, TuvrenMessage>,
   target: TuvrenMessage
-): HashString | undefined {
-  return [...messagesByHash.entries()].find(
-    ([, message]) => message === target
-  )?.[0] as HashString | undefined;
-}
+): HashString | undefined =>
+  [...messagesByHash.entries()].find(([, message]) => message === target)?.[0];
 
 /**
- * Wrap a durable-message read failure with the stable recovery error exposed
- * to hosts. The original failure remains available as `cause`.
+ * Reconstruct an interrupted tool batch from durable committed and staged
+ * message objects.
+ *
+ * The recovery state's consumed results identify messages reactively
+ * checkpointed by stale preemption. Uncommitted results cover the wider
+ * protocol-valid crash shape. Both are resolved by object hash and decoded
+ * through the same payload-codec seam as ordinary branch-head reads.
+ * Fulfillment is joined only by decoded `ToolResultPart.callId`; `taskId` is
+ * intentionally ignored because different runtime paths spell it differently.
  */
-export function createInterruptedIterationUnreadableError(
-  turnId: string,
-  staleRunId: string,
-  cause: unknown,
-  stagedResult?: StagedResult
-): TuvrenRecoveryError {
-  return new TuvrenRecoveryError(
-    `interrupted iteration for turn "${turnId}" from stale run "${staleRunId}" could not be read`,
-    {
-      cause,
-      code: "runtime_recovery_interrupted_iteration_unreadable",
-      details: {
-        ...(stagedResult === undefined
-          ? {}
-          : {
-              objectHash: stagedResult.objectHash,
-              taskId: stagedResult.taskId,
-            }),
-        staleRunId,
-        turnId,
-      },
-    }
-  );
-}
-
-async function readInterruptedMessages(
+export const deriveInterruptedIterationRecoveryPlan = async (
   input: InterruptedIterationRecoveryPlanInput
-): Promise<{
-  interruptedMessageHashes: Set<string>;
-  messagesByHash: Map<string, TuvrenMessage>;
-  messages: TuvrenMessage[];
-  stagedMessages: TuvrenMessage[];
-  stagedMessageHashes: HashString[];
-}> {
-  const committedMessagesByHash = new Map<string, TuvrenMessage>();
+): Promise<InterruptedIterationRecoveryPlan> => {
+  const recovered = await readInterruptedMessages(input);
+  const resolvedAssistant = await resolveInterruptedAssistant(input, recovered);
+  const { assistantMessage, descriptor, messages } = resolvedAssistant;
 
-  for (const [
-    index,
-    hash,
-  ] of input.recoveredHeadState.messageHashes.entries()) {
-    const message = input.recoveredHeadState.messages[index];
-
-    if (message !== undefined) {
-      committedMessagesByHash.set(hash, message);
-    }
+  if (assistantMessage === undefined || descriptor?.executable === false) {
+    return createReInferencePlan(recovered, descriptor);
   }
 
-  const stagedResults = [
-    ...input.recoveryState.consumedStagedResults,
-    ...input.recoveryState.uncommittedStagedResults,
-  ];
-  const messages: TuvrenMessage[] = [];
-  const messagesByHash = new Map<string, TuvrenMessage>();
-  const interruptedMessageHashes = new Set<string>();
-  const stagedMessages: TuvrenMessage[] = [];
-  const stagedMessageHashes: HashString[] = [];
-  const seenHashes = new Set<string>();
-
-  for (const stagedResult of stagedResults) {
-    if (stagedResult.objectType !== "message") {
-      continue;
-    }
-    if (stagedResult.status === "interrupted") {
-      interruptedMessageHashes.add(stagedResult.objectHash);
-      continue;
-    }
-    if (seenHashes.has(stagedResult.objectHash)) {
-      continue;
-    }
-
-    seenHashes.add(stagedResult.objectHash);
-    const committedMessage = committedMessagesByHash.get(
-      stagedResult.objectHash
-    );
-
-    if (committedMessage !== undefined) {
-      messages.push(committedMessage);
-      messagesByHash.set(stagedResult.objectHash, committedMessage);
-      continue;
-    }
-
-    try {
-      const message = await readMessage(
-        input.kernel,
-        input.payloadCodecBinding,
-        stagedResult.objectHash
-      );
-      messages.push(message);
-      messagesByHash.set(stagedResult.objectHash, message);
-      stagedMessages.push(message);
-      stagedMessageHashes.push(stagedResult.objectHash);
-    } catch (error: unknown) {
-      throw createInterruptedIterationUnreadableError(
-        input.turnId,
-        input.staleRunId,
-        error,
-        stagedResult
-      );
-    }
-  }
-
-  for (const [
-    index,
-    hash,
-  ] of input.recoveredHeadState.messageHashes.entries()) {
-    const message = input.recoveredHeadState.messages[index];
-    if (message !== undefined) {
-      messagesByHash.set(hash, message);
-    }
-  }
+  const originalToolCalls = assistantMessage.parts.filter(
+    (part): part is ToolCallPart => part.type === "tool_call"
+  );
+  const completed = collectCompletedToolBatchResults(
+    originalToolCalls,
+    messages,
+    recovered,
+    input.recoveredHeadState.messageHashes
+  );
+  const completedCallIdSet = new Set(completed.callIds);
+  const missingToolCalls = originalToolCalls.filter(
+    (toolCall) => !completedCallIdSet.has(toolCall.callId)
+  );
+  const assistantMessageHash = findMessageHash(
+    recovered.messagesByHash,
+    assistantMessage
+  );
 
   return {
-    interruptedMessageHashes,
-    messages,
-    messagesByHash,
-    stagedMessages,
-    stagedMessageHashes,
+    assistantMessage,
+    ...(assistantMessageHash === undefined ? {} : { assistantMessageHash }),
+    completedCallIds: completed.callIds,
+    completedToolResultHashes: completed.resultHashes,
+    completedToolResults: completed.results,
+    completedToolResultsOutOfOrder: completed.resultsOutOfOrder,
+    disposition:
+      missingToolCalls.length === 0
+        ? "completed_tool_batch"
+        : "resume_tool_batch",
+    missingToolCalls,
+    originalToolCalls,
+    stagedMessageHashes: recovered.stagedMessageHashes,
+    stagedMessages: recovered.stagedMessages,
+    ...(descriptor === undefined ? {} : { descriptor }),
   };
-}
-
-async function readRecoveryDescriptor(
-  input: InterruptedIterationRecoveryPlanInput
-): Promise<InterruptedToolBatchDescriptor | undefined> {
-  const stagedLineageRecords = [
-    ...input.recoveryState.consumedStagedResults,
-    ...input.recoveryState.uncommittedStagedResults,
-  ].filter(
-    (result) =>
-      result.objectType === "turn_lineage" && result.status !== "interrupted"
-  );
-
-  for (const stagedLineage of stagedLineageRecords.reverse()) {
-    const payload = await input.kernel.store.get(stagedLineage.objectHash);
-    if (payload === null) {
-      continue;
-    }
-    const lineage: unknown = decodeDeterministicKernelRecord(payload);
-    if (
-      isTurnLineageRecord(lineage) &&
-      lineage.interruptedToolBatch !== undefined
-    ) {
-      return lineage.interruptedToolBatch;
-    }
-  }
-
-  return input.recoveredHeadState.turnLineage?.interruptedToolBatch;
-}
-
-function isToolCallingAssistantMessage(
-  message: TuvrenMessage
-): message is Extract<TuvrenMessage, { role: "assistant" }> {
-  return (
-    message.role === "assistant" &&
-    message.parts.some((part) => part.type === "tool_call")
-  );
-}
+};

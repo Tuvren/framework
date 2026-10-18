@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
+import type { ClientEndpointBoundary } from "@tuvren/core/capabilities";
 import type {
   AgentConfig,
   ContextEngineeringContext,
@@ -45,99 +47,121 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
  * kernel or facade dependencies.
  */
 export interface RuntimeCoreContextOpsHost {
-  advanceTurnAndBranchHead(
+  advanceTurnAndBranchHead: (
     handle: RuntimeExecutionHandle,
     turnNodeHash: HashString
-  ): Promise<void>;
-  beginRunStep(runId: string, stepId: string): Promise<void>;
-  completeRunStep(
+  ) => Promise<void>;
+  beginRunStep: (runId: string, stepId: string) => Promise<void>;
+  completeRunStep: (
     runId: string,
     stepId: string,
     eventHash: HashString,
     treeHash?: HashString
-  ): Promise<{
+  ) => Promise<{
     lease?: { fencingToken: string; leaseExpiresAtMs: number };
     turnNodeHash?: HashString;
   }>;
-  completeTrackedRun(
+  completeTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     status: "completed" | "failed" | "paused"
-  ): Promise<{ turnNodeHash?: HashString }>;
-  createActiveToolRegistry(
+  ) => Promise<{ turnNodeHash?: HashString }>;
+  createActiveToolRegistry: (
     runtimeTools: RuntimeExecutionHandle["request"]["tools"] | undefined,
     config: AgentConfig,
-    clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary
-  ): ToolRegistry;
-  createClientEndpointBoundaryFromConfig(
+    clientEndpointBoundary?: ClientEndpointBoundary
+  ) => ToolRegistry;
+  createClientEndpointBoundaryFromConfig: (
     config: AgentConfig
-  ): import("@tuvren/core/capabilities").ClientEndpointBoundary | undefined;
-  createContextEngineeringHelpers(
+  ) => ClientEndpointBoundary | undefined;
+  createContextEngineeringHelpers: (
     messageHashes: HashString[],
     messages: RuntimeExecutionHandle["request"]["signal"]["parts"] extends never
       ? never
       : HeadState["messages"]
-  ): HelperBundle;
-  createId(): string;
-  createTrackedRun(
+  ) => HelperBundle;
+  createId: () => string;
+  createTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     turnId: string,
     branchId: string,
     schemaId: string,
     startTurnNodeHash: HashString,
-    steps: Array<{
+    steps: {
       deterministic: boolean;
       id: string;
       sideEffects: boolean;
-    }>
-  ): Promise<void>;
-  emitStateObservability(
+    }[]
+  ) => Promise<void>;
+  emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
     iterationCount: number,
     manifest?: HeadState["manifest"]
-  ): Promise<void>;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  materializeContextMessages(
+  ) => void;
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  materializeContextMessages: (
     hashes: HashString[],
     helpers: ContextEngineeringContext["helpers"]
-  ): HeadState["messages"];
-  publishCustomEvent(
+  ) => HeadState["messages"];
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  resolveAgentConfig(name: string): AgentConfig | undefined;
-  resolveHandoffSourceContext(
+  ) => void;
+  resolveAgentConfig: (name: string) => AgentConfig | undefined;
+  resolveHandoffSourceContext: (
     plan: HandoffContextPlan,
     headState: HeadState,
     loopState: LoopState,
     targetConfig: AgentConfig,
     helpers: ContextEngineeringContext["helpers"]
-  ): HandoffContextPlan["sourceContext"];
-  stageRuntimeStatus(
+  ) => HandoffContextPlan["sourceContext"];
+  stageRuntimeStatus: (
     runId: string,
     status: {
       activeAgent?: string;
       state: "running";
     },
     taskId: string
-  ): Promise<HashString>;
-  storeEventRecord(event: Record<string, unknown>): Promise<HashString>;
-  storeKernelRecord(value: unknown, label: string): Promise<HashString>;
-  syncRunLeaseStateFromStepResult(
+  ) => Promise<HashString>;
+  storeEventRecord: (event: Record<string, unknown>) => Promise<HashString>;
+  storeKernelRecord: (value: unknown, label: string) => Promise<HashString>;
+  syncRunLeaseStateFromStepResult: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stepResult: { lease?: { fencingToken: string; leaseExpiresAtMs: number } }
-  ): void;
-  treeCreate(
+  ) => void;
+  treeCreate: (
     schemaId: string,
     changes: Record<string, PathValue>,
     baseTurnTreeHash: HashString
-  ): Promise<HashString>;
+  ) => Promise<HashString>;
 }
+
+/**
+ * Complete a run step (storing its event record first) and sync any lease
+ * renewal carried on the step result back onto the handle's active lease.
+ */
+const completeRunStep = async (
+  host: RuntimeCoreContextOpsHost,
+  handle: RuntimeExecutionHandle,
+  runId: string,
+  stepId: string,
+  event: Record<string, unknown>,
+  treeHash?: HashString
+) => {
+  const stepResult = await host.completeRunStep(
+    runId,
+    stepId,
+    await host.storeEventRecord(event),
+    treeHash
+  );
+  host.syncRunLeaseStateFromStepResult(handle, runId, stepResult);
+  return stepResult;
+};
 
 /**
  * Apply a context-engineering plan to the branch head as a tracked kernel
@@ -156,7 +180,7 @@ export interface RuntimeCoreContextOpsHost {
  *   message hashes.
  * @param updates - Extension-state updates to fold into the rebuilt manifest.
  */
-export async function applyContextEngineeringPlan(
+export const applyContextEngineeringPlan = async (
   host: RuntimeCoreContextOpsHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -167,7 +191,7 @@ export async function applyContextEngineeringPlan(
     messageHashes: HashString[];
     messages: TuvrenMessage[];
   }
-): Promise<void> {
+): Promise<void> => {
   const runId = host.createId();
   const headState = await host.loadHeadState(handle.request.branchId);
   const messageHashes = [
@@ -244,7 +268,7 @@ export async function applyContextEngineeringPlan(
   await host.completeTrackedRun(handle, runId, "completed");
   if (stepResult.turnNodeHash !== undefined) {
     await host.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
-    await host.emitStateObservability(
+    host.emitStateObservability(
       handle,
       loopState,
       stepResult.turnNodeHash,
@@ -255,7 +279,34 @@ export async function applyContextEngineeringPlan(
   handle.updateStatus({
     manifest: nextManifest,
   });
-}
+};
+
+/**
+ * Produce initial-state updates for target-agent extensions that have no
+ * entry in the manifest yet, copying each extension's declared default state.
+ */
+const collectInitialExtensionStateUpdates = (
+  extensions: AgentConfig["extensions"],
+  manifest: HeadState["manifest"]
+): ExtensionStateUpdate[] => {
+  const extensionState = manifest.extensions;
+  const updates: ExtensionStateUpdate[] = [];
+
+  for (const extension of extensions ?? []) {
+    const state = extensionState[extension.name];
+
+    if (state !== undefined) {
+      continue;
+    }
+
+    updates.push({
+      extensionName: extension.name,
+      state: { ...extension.state },
+    });
+  }
+
+  return updates;
+};
 
 /**
  * Apply an agent handoff, rebuilding the context for the target agent as a
@@ -277,10 +328,10 @@ export async function applyContextEngineeringPlan(
  * @returns The target agent's config plus the tool registry and client
  *   endpoint boundary rebuilt for it, for the caller to install as the new
  *   active loop state.
- * @throws TuvrenRuntimeError with code `unknown_handoff_target` when
+ * @throws {TuvrenRuntimeError} With code `unknown_handoff_target` when
  *   `plan.targetAgent` cannot be resolved to a configured agent.
  */
-export async function applyHandoff(
+export const applyHandoff = async (
   host: RuntimeCoreContextOpsHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -290,10 +341,8 @@ export async function applyHandoff(
 ): Promise<{
   activeConfig: AgentConfig;
   activeToolRegistry: ToolRegistry;
-  clientEndpointBoundary:
-    | import("@tuvren/core/capabilities").ClientEndpointBoundary
-    | undefined;
-}> {
+  clientEndpointBoundary: ClientEndpointBoundary | undefined;
+}> => {
   const targetConfig = host.resolveAgentConfig(plan.targetAgent);
 
   if (targetConfig === undefined) {
@@ -376,8 +425,8 @@ export async function applyHandoff(
     schemaId,
     {
       "context.manifest": manifestHash,
-      "runtime.status": statusHash,
       messages: resolvedMessageHashes,
+      "runtime.status": statusHash,
     },
     headState.turnNode.turnTreeHash
   );
@@ -414,7 +463,7 @@ export async function applyHandoff(
 
   if (stepResult.turnNodeHash !== undefined) {
     await host.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
-    await host.emitStateObservability(
+    host.emitStateObservability(
       handle,
       {
         ...loopState,
@@ -455,53 +504,4 @@ export async function applyHandoff(
     ),
     clientEndpointBoundary,
   };
-}
-
-/**
- * Produce initial-state updates for target-agent extensions that have no
- * entry in the manifest yet, copying each extension's declared default state.
- */
-function collectInitialExtensionStateUpdates(
-  extensions: AgentConfig["extensions"],
-  manifest: HeadState["manifest"]
-): ExtensionStateUpdate[] {
-  const extensionState = manifest.extensions;
-  const updates: ExtensionStateUpdate[] = [];
-
-  for (const extension of extensions ?? []) {
-    const state = extensionState[extension.name];
-
-    if (state !== undefined) {
-      continue;
-    }
-
-    updates.push({
-      extensionName: extension.name,
-      state: { ...extension.state },
-    });
-  }
-
-  return updates;
-}
-
-/**
- * Complete a run step (storing its event record first) and sync any lease
- * renewal carried on the step result back onto the handle's active lease.
- */
-async function completeRunStep(
-  host: RuntimeCoreContextOpsHost,
-  handle: RuntimeExecutionHandle,
-  runId: string,
-  stepId: string,
-  event: Record<string, unknown>,
-  treeHash?: HashString
-) {
-  const stepResult = await host.completeRunStep(
-    runId,
-    stepId,
-    await host.storeEventRecord(event),
-    treeHash
-  );
-  host.syncRunLeaseStateFromStepResult(handle, runId, stepResult);
-  return stepResult;
-}
+};

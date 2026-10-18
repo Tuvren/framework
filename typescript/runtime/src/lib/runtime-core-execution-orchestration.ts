@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-import {
-  type EpochMs,
-  type HashString,
-  TuvrenRuntimeError,
-} from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { EpochMs, HashString } from "@tuvren/core";
+import type { ClientEndpointBoundary } from "@tuvren/core/capabilities";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   AgentConfig,
@@ -47,41 +45,45 @@ import type { ResolvedExecutionBounds } from "./runtime-core-bounds.js";
 import {
   applyContextEngineeringPlan as applyRuntimeContextEngineeringPlan,
   applyHandoff as applyRuntimeHandoff,
-  type RuntimeCoreContextOpsHost,
 } from "./runtime-core-context-ops.js";
-import type { IterationPhaseResult } from "./runtime-core-iteration.js";
+import type { RuntimeCoreContextOpsHost } from "./runtime-core-context-ops.js";
+import type { InterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
+import type {
+  IterationPhaseResult,
+  RuntimeCoreIterationHost,
+} from "./runtime-core-iteration.js";
 import { executeIterationPhase as executeRuntimeIterationPhase } from "./runtime-core-iteration.js";
-import {
-  type HeadState,
-  type LoopState,
-  runExecutionLoop as runRuntimeExecutionLoop,
-} from "./runtime-core-loop.js";
-import type { LoopOutcome } from "./runtime-core-recovery.js";
+import { runExecutionLoop as runRuntimeExecutionLoop } from "./runtime-core-loop.js";
+import type { HeadState, LoopState } from "./runtime-core-loop.js";
+import type {
+  DurableRuntimeStatus,
+  LoopOutcome,
+} from "./runtime-core-recovery.js";
 import {
   createRunnerHandoffContextPlan as createRuntimeRunnerHandoffContextPlan,
   createToolBatchEnvironment as createRuntimeToolBatchEnvironment,
-  type RuntimeCoreRunnerSupportHost,
 } from "./runtime-core-runner-support.js";
+import type { RuntimeCoreRunnerSupportHost } from "./runtime-core-runner-support.js";
 import {
   applyAfterIterationResolution as applyRuntimeAfterIterationResolution,
   applyRequestedToolBatchIfNeeded as applyRuntimeRequestedToolBatchIfNeeded,
   completeIterationArtifacts as completeRuntimeIterationArtifacts,
   createRunnerExecutionContext as createRuntimeRunnerExecutionContext,
-  type RuntimeCoreRunnerHost,
   stageRunnerMessages as stageRuntimeRunnerMessages,
 } from "./runtime-core-runner.js";
+import type { RuntimeCoreRunnerHost } from "./runtime-core-runner.js";
 import {
   commitPendingExtensionStateUpdates as commitRuntimePendingExtensionStateUpdates,
   incorporateInput as incorporateRuntimeInput,
   incorporateSteering as incorporateRuntimeSteering,
-  type RuntimeCoreStateCommitHost,
 } from "./runtime-core-state-commit.js";
+import type { RuntimeCoreStateCommitHost } from "./runtime-core-state-commit.js";
 import { resumePausedToolExecution as resumeRuntimePausedToolExecution } from "./runtime-core-tool-resume.js";
 import {
   completeIterationRun as completeRuntimeIterationRun,
   createIterationTree as createRuntimeIterationTree,
-  type RuntimeCoreTurnProgressHost,
 } from "./runtime-core-turn-progress.js";
+import type { RuntimeCoreTurnProgressHost } from "./runtime-core-turn-progress.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type { ResumeContext } from "./runtime-execution-types.js";
 import type { ToolExecutionMode } from "./tool-execution.js";
@@ -91,7 +93,7 @@ import type { ToolExecutionMode } from "./tool-execution.js";
  * {@link runRuntimeExecutionLoopFacade}.
  */
 interface RuntimeExecutionLoopDependencies {
-  applyContextEngineeringPlan(
+  applyContextEngineeringPlan: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     plan: ContextEngineeringPlan,
@@ -101,58 +103,61 @@ interface RuntimeExecutionLoopDependencies {
       messageHashes: HashString[];
       messages: TuvrenMessage[];
     }
-  ): Promise<void>;
-  applyTerminalAgentTransitionIfNeeded(
+  ) => Promise<void>;
+  applyTerminalAgentTransitionIfNeeded: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     resolution: RuntimeResolution,
     loopState: LoopState,
     stableHeadTurnNodeHash?: HashString
-  ): Promise<boolean>;
+  ) => Promise<boolean>;
   /** Absolute wall-clock deadline (epoch ms) for the active turn. (BD006) */
-  boundsDeadlineMs(handle: RuntimeExecutionHandle): number;
-  commitPendingExtensionStateUpdates(
+  boundsDeadlineMs: (handle: RuntimeExecutionHandle) => number;
+  commitPendingExtensionStateUpdates: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     updates: ExtensionStateUpdate[],
     iterationCount: number
-  ): Promise<void>;
-  createId(): string;
-  executeIterationPhase(
+  ) => Promise<void>;
+  createId: () => string;
+  executeIterationPhase: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     headState: HeadState | undefined,
     iterationCount: number
-  ): Promise<IterationPhaseResult>;
+  ) => Promise<IterationPhaseResult>;
   /** Framework-enforced execution bounds for this runtime instance. (BD006) */
-  executionBounds(): ResolvedExecutionBounds;
-  incorporateQueuedSteeringIfNeeded(
+  executionBounds: () => ResolvedExecutionBounds;
+  incorporateQueuedSteeringIfNeeded: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState
-  ): Promise<void>;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  now(): EpochMs;
-  publishCustomEvent(
+  ) => Promise<void>;
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  now: () => EpochMs;
+  publishCustomEvent: (
     handle: RuntimeExecutionHandle,
     event: { data: unknown; name: string },
     loopState: LoopState
-  ): void;
-  publishEvent(
+  ) => void;
+  publishEvent: (
     handle: RuntimeExecutionHandle,
     event: TuvrenStreamEvent,
     loopState: LoopState
-  ): void;
-  publishProjectedError(
+  ) => void;
+  publishProjectedError: (
     handle: RuntimeExecutionHandle,
     error: Error,
     fatal: boolean,
     loopState: LoopState
-  ): void;
+  ) => void;
   /** Record `count` more tool calls and return the new per-turn cumulative. (BD006) */
-  recordBoundsToolCalls(handle: RuntimeExecutionHandle, count: number): number;
+  recordBoundsToolCalls: (
+    handle: RuntimeExecutionHandle,
+    count: number
+  ) => number;
 }
 
 /**
@@ -160,7 +165,7 @@ interface RuntimeExecutionLoopDependencies {
  * {@link executeRuntimeIterationPhaseFacade}.
  */
 interface RuntimeIterationPhaseDependencies {
-  applyAfterIterationResolution(
+  applyAfterIterationResolution: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     iterationCount: number,
@@ -171,8 +176,8 @@ interface RuntimeIterationPhaseDependencies {
     headMessages: TuvrenMessage[],
     stagedMessages: TuvrenMessage[],
     manifest: ContextManifest
-  ): Promise<RuntimeResolution>;
-  applyRequestedToolBatchIfNeeded(input: {
+  ) => Promise<RuntimeResolution>;
+  applyRequestedToolBatchIfNeeded: (input: {
     handle: RuntimeExecutionHandle;
     headState: HeadState;
     iterationCount: number;
@@ -184,9 +189,9 @@ interface RuntimeIterationPhaseDependencies {
     stagedMessages: TuvrenMessage[];
     toolExecutionMode: ToolExecutionMode;
     toolResults: ToolResultPart[];
-  }): Promise<LoopOutcome | RuntimeResolution>;
-  beginIterationStep(runId: string, stepId: string): Promise<void>;
-  completeIterationArtifacts(
+  }) => Promise<LoopOutcome | RuntimeResolution>;
+  beginIterationStep: (runId: string, stepId: string) => Promise<void>;
+  completeIterationArtifacts: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
@@ -196,97 +201,97 @@ interface RuntimeIterationPhaseDependencies {
     resolution: RuntimeResolution,
     manifest: ContextManifest,
     appendedMessageHashes: HashString[],
-    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
-  ): Promise<HashString | undefined>;
-  createId(): string;
-  stageManifest(
+    interruptedToolBatch?: InterruptedToolBatchDescriptor
+  ) => Promise<HashString | undefined>;
+  createId: () => string;
+  stageManifest: (
     runId: string,
     manifest: ContextManifest,
     taskId?: string
-  ): Promise<HashString>;
-  createRunnerExecutionContext(
+  ) => Promise<HashString>;
+  createRunnerExecutionContext: (
     handle: RuntimeExecutionHandle,
     schemaId: string,
     loopState: LoopState,
     headState: HeadState,
     iterationCount: number,
     emittedRunnerEvents: TuvrenStreamEvent[]
-  ): RunnerExecutionContext;
-  createTrackedRun(
+  ) => RunnerExecutionContext;
+  createTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     turnId: string,
     branchId: string,
     schemaId: string,
     startTurnNodeHash: HashString,
-    steps: Array<{
+    steps: {
       deterministic: boolean;
       id: string;
       sideEffects: boolean;
-    }>
-  ): Promise<void>;
-  ensureRunnerAssistantEvents(
+    }[]
+  ) => Promise<void>;
+  ensureRunnerAssistantEvents: (
     handle: RuntimeExecutionHandle,
     messages: TuvrenMessage[],
     emittedEvents: TuvrenStreamEvent[],
     loopState: LoopState
-  ): TuvrenStreamEvent[];
-  executeRunner(
+  ) => TuvrenStreamEvent[];
+  executeRunner: (
     runner: RuntimeRunner,
     context: RunnerExecutionContext
-  ): Promise<RunnerExecutionResult>;
-  failInvalidPauseResolutionIfNeeded(
+  ) => Promise<RunnerExecutionResult>;
+  failInvalidPauseResolutionIfNeeded: (
     handle: RuntimeExecutionHandle,
     iterationRunId: string,
     stableHeadTurnNodeHash: HashString,
     requestedToolCallCount: number,
     resolution: RuntimeResolution
-  ): Promise<IterationPhaseResult | undefined>;
-  failTrackedRunWithoutBranchAdvance(
+  ) => Promise<IterationPhaseResult | undefined>;
+  failTrackedRunWithoutBranchAdvance: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stableHeadTurnNodeHash: HashString
-  ): Promise<void>;
-  flushBufferedRunnerEventsIfNeeded(
+  ) => Promise<void>;
+  flushBufferedRunnerEventsIfNeeded: (
     handle: RuntimeExecutionHandle,
     resolution: RuntimeResolution,
     events: TuvrenStreamEvent[]
-  ): TuvrenStreamEvent[];
-  materializeRunner(runnerId: string): RuntimeRunner;
-  now(): number;
+  ) => TuvrenStreamEvent[];
+  materializeRunner: (runnerId: string) => RuntimeRunner;
+  now: () => number;
   /**
    * Publish through the full runtime event + telemetry path (KRT-BA002).
    * The iteration phase uses this for provider-tool attribution events so the
    * telemetry emitter observes the same tool.start/tool.result events as the
    * canonical stream.
    */
-  publishEvent(
+  publishEvent: (
     handle: RuntimeExecutionHandle,
     event: TuvrenStreamEvent,
     loopState: LoopState
-  ): void;
-  reconcileCheckpointedPauseResolution(
+  ) => void;
+  reconcileCheckpointedPauseResolution: (
     checkpointedPause: boolean,
     runId: string,
     turnId: string,
     resolution: RuntimeResolution
-  ): Promise<RuntimeResolution>;
-  stageRunnerMessages(
+  ) => Promise<RuntimeResolution>;
+  stageRunnerMessages: (
     runId: string,
     messages: TuvrenMessage[],
     iterationCount: number
-  ): Promise<HashString[]>;
-  stageRuntimeStatus(
+  ) => Promise<HashString[]>;
+  stageRuntimeStatus: (
     runId: string,
-    status: import("./runtime-core-recovery.js").DurableRuntimeStatus,
+    status: DurableRuntimeStatus,
     taskId: string
-  ): Promise<HashString>;
-  stageTurnLineage(
+  ) => Promise<HashString>;
+  stageTurnLineage: (
     runId: string,
     turnId: string,
     taskId: string,
-    interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
-  ): Promise<HashString>;
+    interruptedToolBatch?: InterruptedToolBatchDescriptor
+  ) => Promise<HashString>;
 }
 
 /**
@@ -294,56 +299,64 @@ interface RuntimeIterationPhaseDependencies {
  * bag into the loop host seam and run the turn's iteration loop to a
  * terminal {@link LoopOutcome} using `dependencies.now()` as the clock.
  */
-export async function runRuntimeExecutionLoopFacade(
+export const runRuntimeExecutionLoopFacade = async (
   dependencies: RuntimeExecutionLoopDependencies,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState
-): Promise<LoopOutcome> {
-  return await runRuntimeExecutionLoop(
+): Promise<LoopOutcome> =>
+  await runRuntimeExecutionLoop(
     {
-      applyContextEngineeringPlan: (
+      applyContextEngineeringPlan: async (
         activeHandle,
         activeSchemaId,
         plan,
         activeLoopState,
         updates,
         recoveredHistory
-      ) =>
-        dependencies.applyContextEngineeringPlan(
+      ) => {
+        await dependencies.applyContextEngineeringPlan(
           activeHandle,
           activeSchemaId,
-          plan as ContextEngineeringPlan,
+          plan,
           activeLoopState,
           updates,
           recoveredHistory
-        ),
-      applyTerminalAgentTransitionIfNeeded: (...args) =>
-        dependencies.applyTerminalAgentTransitionIfNeeded(...args),
+        );
+      },
+      applyTerminalAgentTransitionIfNeeded: async (...args) =>
+        await dependencies.applyTerminalAgentTransitionIfNeeded(...args),
       boundsDeadlineMs: (boundsHandle) =>
         dependencies.boundsDeadlineMs(boundsHandle),
-      commitPendingExtensionStateUpdates: (...args) =>
-        dependencies.commitPendingExtensionStateUpdates(...args),
+      commitPendingExtensionStateUpdates: async (...args) => {
+        await dependencies.commitPendingExtensionStateUpdates(...args);
+      },
       createId: () => dependencies.createId(),
+      executeIterationPhase: async (...args) =>
+        await dependencies.executeIterationPhase(...args),
       executionBounds: () => dependencies.executionBounds(),
-      executeIterationPhase: (...args) =>
-        dependencies.executeIterationPhase(...args),
+      incorporateQueuedSteeringIfNeeded: async (...args) => {
+        await dependencies.incorporateQueuedSteeringIfNeeded(...args);
+      },
+      loadHeadState: async (branchId) =>
+        await dependencies.loadHeadState(branchId),
+      publishCustomEvent: (...args) => {
+        dependencies.publishCustomEvent(...args);
+      },
+      publishEvent: (...args) => {
+        dependencies.publishEvent(...args);
+      },
+      publishProjectedError: (...args) => {
+        dependencies.publishProjectedError(...args);
+      },
       recordBoundsToolCalls: (boundsHandle, count) =>
         dependencies.recordBoundsToolCalls(boundsHandle, count),
-      incorporateQueuedSteeringIfNeeded: (...args) =>
-        dependencies.incorporateQueuedSteeringIfNeeded(...args),
-      loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
-      publishCustomEvent: (...args) => dependencies.publishCustomEvent(...args),
-      publishEvent: (...args) => dependencies.publishEvent(...args),
-      publishProjectedError: (...args) =>
-        dependencies.publishProjectedError(...args),
     },
     handle,
     schemaId,
     loopState,
     () => dependencies.now()
   );
-}
 
 /**
  * Facade over the iteration module's `executeIterationPhase`: adapt the
@@ -351,26 +364,38 @@ export async function runRuntimeExecutionLoopFacade(
  * (runner invocation, tool batch, artifact completion) against the given
  * head state.
  *
- * @throws TuvrenRuntimeError with code `missing_head_state` when called
+ * @throws {TuvrenRuntimeError} With code `missing_head_state` when called
  *   without a head state — iteration execution always requires one.
  */
-export async function executeRuntimeIterationPhaseFacade(
+export const executeRuntimeIterationPhaseFacade = async (
   dependencies: RuntimeIterationPhaseDependencies,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
   headState: HeadState | undefined,
   iterationCount: number
-): Promise<IterationPhaseResult> {
+): Promise<IterationPhaseResult> => {
   if (headState === undefined) {
     throw new TuvrenRuntimeError("iteration execution requires head state", {
       code: "missing_head_state",
     });
   }
+  const restoreHeadState = (
+    activeHeadState: Parameters<
+      RuntimeCoreIterationHost["createRunnerExecutionContext"]
+    >[3]
+  ): HeadState => ({
+    ...headState,
+    ...activeHeadState,
+    turnNode: {
+      ...headState.turnNode,
+      ...activeHeadState.turnNode,
+    },
+  });
 
   return await executeRuntimeIterationPhase(
     {
-      applyAfterIterationResolution: (
+      applyAfterIterationResolution: async (
         activeHandle,
         activeLoopState,
         activeIterationCount,
@@ -382,9 +407,9 @@ export async function executeRuntimeIterationPhaseFacade(
         stagedMessages,
         manifest
       ) =>
-        dependencies.applyAfterIterationResolution(
+        await dependencies.applyAfterIterationResolution(
           activeHandle,
-          activeLoopState as LoopState,
+          activeLoopState,
           activeIterationCount,
           runId,
           resolution,
@@ -394,16 +419,16 @@ export async function executeRuntimeIterationPhaseFacade(
           stagedMessages,
           manifest
         ),
-      applyRequestedToolBatchIfNeeded: (input) =>
-        dependencies.applyRequestedToolBatchIfNeeded({
+      applyRequestedToolBatchIfNeeded: async (input) =>
+        await dependencies.applyRequestedToolBatchIfNeeded({
           ...input,
-          headState: input.headState as HeadState,
-          loopState: input.loopState as LoopState,
+          headState: restoreHeadState(input.headState),
+          loopState: input.loopState,
         }),
       beginIterationStep: async (runId, stepId) => {
         await dependencies.beginIterationStep(runId, stepId);
       },
-      completeIterationArtifacts: (
+      completeIterationArtifacts: async (
         activeHandle,
         activeSchemaId,
         activeLoopState,
@@ -415,11 +440,11 @@ export async function executeRuntimeIterationPhaseFacade(
         appendedMessageHashes,
         interruptedToolBatch
       ) =>
-        dependencies.completeIterationArtifacts(
+        await dependencies.completeIterationArtifacts(
           activeHandle,
           activeSchemaId,
-          activeLoopState as LoopState,
-          activeHeadState as HeadState,
+          activeLoopState,
+          restoreHeadState(activeHeadState),
           activeIterationCount,
           runId,
           resolution,
@@ -427,6 +452,7 @@ export async function executeRuntimeIterationPhaseFacade(
           appendedMessageHashes,
           interruptedToolBatch
         ),
+      createId: () => dependencies.createId(),
       createRunnerExecutionContext: (
         activeHandle,
         activeSchemaId,
@@ -438,31 +464,38 @@ export async function executeRuntimeIterationPhaseFacade(
         dependencies.createRunnerExecutionContext(
           activeHandle,
           activeSchemaId,
-          activeLoopState as LoopState,
-          activeHeadState as HeadState,
+          activeLoopState,
+          restoreHeadState(activeHeadState),
           activeIterationCount,
           emittedRunnerEvents
         ),
-      createId: () => dependencies.createId(),
-      stageManifest: (...args) => dependencies.stageManifest(...args),
-      stageTurnLineage: (...args) => dependencies.stageTurnLineage(...args),
-      createTrackedRun: (...args) => dependencies.createTrackedRun(...args),
-      executeRunner: (...args) => dependencies.executeRunner(...args),
-      failInvalidPauseResolutionIfNeeded: (...args) =>
-        dependencies.failInvalidPauseResolutionIfNeeded(...args),
-      failTrackedRunWithoutBranchAdvance: (...args) =>
-        dependencies.failTrackedRunWithoutBranchAdvance(...args),
-      flushBufferedRunnerEventsIfNeeded: (...args) =>
-        dependencies.flushBufferedRunnerEventsIfNeeded(...args),
+      createTrackedRun: async (...args) => {
+        await dependencies.createTrackedRun(...args);
+      },
       ensureRunnerAssistantEvents: (...args) =>
         dependencies.ensureRunnerAssistantEvents(...args),
+      executeRunner: async (...args) =>
+        await dependencies.executeRunner(...args),
+      failInvalidPauseResolutionIfNeeded: async (...args) =>
+        await dependencies.failInvalidPauseResolutionIfNeeded(...args),
+      failTrackedRunWithoutBranchAdvance: async (...args) => {
+        await dependencies.failTrackedRunWithoutBranchAdvance(...args);
+      },
+      flushBufferedRunnerEventsIfNeeded: (...args) =>
+        dependencies.flushBufferedRunnerEventsIfNeeded(...args),
       materializeRunner: (runnerId) => dependencies.materializeRunner(runnerId),
       now: () => dependencies.now(),
-      reconcileCheckpointedPauseResolution: (...args) =>
-        dependencies.reconcileCheckpointedPauseResolution(...args),
-      stageRunnerMessages: (...args) =>
-        dependencies.stageRunnerMessages(...args),
-      publishEvent: (...args) => dependencies.publishEvent(...args),
+      publishEvent: (...args) => {
+        dependencies.publishEvent(...args);
+      },
+      reconcileCheckpointedPauseResolution: async (...args) =>
+        await dependencies.reconcileCheckpointedPauseResolution(...args),
+      stageManifest: async (...args) =>
+        await dependencies.stageManifest(...args),
+      stageRunnerMessages: async (...args) =>
+        await dependencies.stageRunnerMessages(...args),
+      stageTurnLineage: async (...args) =>
+        await dependencies.stageTurnLineage(...args),
     },
     {
       handle,
@@ -472,14 +505,14 @@ export async function executeRuntimeIterationPhaseFacade(
       schemaId,
     }
   );
-}
+};
 
 /**
  * Pass-through facade over `createRunnerExecutionContext`
  * (`runtime-core-runner.ts`): builds the context object handed to a runner's
  * `execute` for one iteration.
  */
-export function createRuntimeRunnerExecutionContextFacade(
+export const createRuntimeRunnerExecutionContextFacade = (
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -487,8 +520,8 @@ export function createRuntimeRunnerExecutionContextFacade(
   headState: HeadState,
   iterationCount: number,
   emittedRunnerEvents: TuvrenStreamEvent[]
-): RunnerExecutionContext {
-  return createRuntimeRunnerExecutionContext(
+): RunnerExecutionContext =>
+  createRuntimeRunnerExecutionContext(
     host,
     handle,
     schemaId,
@@ -497,26 +530,19 @@ export function createRuntimeRunnerExecutionContextFacade(
     iterationCount,
     emittedRunnerEvents
   );
-}
 
 /**
  * Pass-through facade over `stageRunnerMessages`
  * (`runtime-core-runner.ts`): stages the runner-produced messages for a run
  * and returns their object hashes.
  */
-export async function stageRuntimeRunnerMessagesFacade(
+export const stageRuntimeRunnerMessagesFacade = async (
   host: RuntimeCoreRunnerHost,
   runId: string,
   messages: TuvrenMessage[],
   iterationCount: number
-): Promise<HashString[]> {
-  return await stageRuntimeRunnerMessages(
-    host,
-    runId,
-    messages,
-    iterationCount
-  );
-}
+): Promise<HashString[]> =>
+  await stageRuntimeRunnerMessages(host, runId, messages, iterationCount);
 
 /**
  * Pass-through facade over `applyRequestedToolBatchIfNeeded`
@@ -524,7 +550,7 @@ export async function stageRuntimeRunnerMessagesFacade(
  * when the resolution calls for it, yielding either an updated resolution or
  * a short-circuit loop outcome.
  */
-export async function applyRuntimeRequestedToolBatchIfNeededFacade(
+export const applyRuntimeRequestedToolBatchIfNeededFacade = async (
   host: RuntimeCoreRunnerHost,
   input: {
     handle: RuntimeExecutionHandle;
@@ -539,16 +565,15 @@ export async function applyRuntimeRequestedToolBatchIfNeededFacade(
     toolExecutionMode: ToolExecutionMode;
     toolResults: ToolResultPart[];
   }
-): Promise<LoopOutcome | RuntimeResolution> {
-  return await applyRuntimeRequestedToolBatchIfNeeded(host, input);
-}
+): Promise<LoopOutcome | RuntimeResolution> =>
+  await applyRuntimeRequestedToolBatchIfNeeded(host, input);
 
 /**
  * Pass-through facade over `completeIterationArtifacts`
  * (`runtime-core-runner.ts`): commits the iteration's durable artifacts and
  * returns the new turn-node hash, if the iteration advanced one.
  */
-export async function completeRuntimeIterationArtifactsFacade(
+export const completeRuntimeIterationArtifactsFacade = async (
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -559,9 +584,9 @@ export async function completeRuntimeIterationArtifactsFacade(
   resolution: RuntimeResolution,
   manifest: ContextManifest,
   appendedMessageHashes: HashString[],
-  interruptedToolBatch?: import("./runtime-core-interrupted-metadata.js").InterruptedToolBatchDescriptor
-): Promise<HashString | undefined> {
-  return await completeRuntimeIterationArtifacts(
+  interruptedToolBatch?: InterruptedToolBatchDescriptor
+): Promise<HashString | undefined> =>
+  await completeRuntimeIterationArtifacts(
     host,
     handle,
     schemaId,
@@ -574,14 +599,13 @@ export async function completeRuntimeIterationArtifactsFacade(
     appendedMessageHashes,
     interruptedToolBatch
   );
-}
 
 /**
  * Pass-through facade over `applyAfterIterationResolution`
  * (`runtime-core-runner.ts`): runs after-iteration extension hooks and
  * returns the (possibly overridden) resolution.
  */
-export async function applyRuntimeAfterIterationResolutionFacade(
+export const applyRuntimeAfterIterationResolutionFacade = async (
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
@@ -593,8 +617,8 @@ export async function applyRuntimeAfterIterationResolutionFacade(
   headMessages: TuvrenMessage[],
   stagedMessages: TuvrenMessage[],
   manifest: ContextManifest
-): Promise<RuntimeResolution> {
-  return await applyRuntimeAfterIterationResolution(
+): Promise<RuntimeResolution> =>
+  await applyRuntimeAfterIterationResolution(
     host,
     handle,
     loopState,
@@ -607,43 +631,41 @@ export async function applyRuntimeAfterIterationResolutionFacade(
     stagedMessages,
     manifest
   );
-}
 
 /**
  * Pass-through facade over `resumePausedToolExecution`
  * (`runtime-core-tool-resume.ts`): resumes a turn paused on tool approval and
  * drives it to a loop outcome.
  */
-export async function resumeRuntimePausedToolExecutionFacade(
+export const resumeRuntimePausedToolExecutionFacade = async (
   host: Parameters<typeof resumeRuntimePausedToolExecution>[0],
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
   resumeContext: ResumeContext
-): Promise<LoopOutcome> {
-  return await resumeRuntimePausedToolExecution(
+): Promise<LoopOutcome> =>
+  await resumeRuntimePausedToolExecution(
     host,
     handle,
     schemaId,
     loopState,
     resumeContext
   );
-}
 
 /**
  * Pass-through facade over `createToolBatchEnvironment`
  * (`runtime-core-runner-support.ts`): assembles the environment a requested
  * tool batch executes in.
  */
-export function createRuntimeToolBatchEnvironmentFacade(
+export const createRuntimeToolBatchEnvironmentFacade = (
   host: RuntimeCoreRunnerSupportHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
   manifest: ContextManifest,
   iterationCount: number,
   runId: string
-) {
-  return createRuntimeToolBatchEnvironment(
+) =>
+  createRuntimeToolBatchEnvironment(
     host,
     handle,
     loopState,
@@ -651,14 +673,13 @@ export function createRuntimeToolBatchEnvironmentFacade(
     iterationCount,
     runId
   );
-}
 
 /**
  * Pass-through facade over `createRunnerHandoffContextPlan`
  * (`runtime-core-runner-support.ts`): builds the context plan for a
  * runner-requested agent handoff.
  */
-export function createRuntimeRunnerHandoffContextPlanFacade(
+export const createRuntimeRunnerHandoffContextPlanFacade = (
   host: RuntimeCoreRunnerSupportHost,
   input: {
     builder?: HandoffContextBuilder;
@@ -669,21 +690,15 @@ export function createRuntimeRunnerHandoffContextPlanFacade(
   },
   headState: HeadState,
   loopState: LoopState
-): HandoffContextPlan {
-  return createRuntimeRunnerHandoffContextPlan(
-    host,
-    input,
-    headState,
-    loopState
-  );
-}
+): HandoffContextPlan =>
+  createRuntimeRunnerHandoffContextPlan(host, input, headState, loopState);
 
 /**
  * Pass-through facade over `completeIterationRun`
  * (`runtime-core-turn-progress.ts`): closes the iteration's kernel run and
  * returns the advanced turn-node hash, when one was produced.
  */
-export async function completeRuntimeIterationRunFacade(
+export const completeRuntimeIterationRunFacade = async (
   host: RuntimeCoreTurnProgressHost,
   handle: RuntimeExecutionHandle,
   runId: string,
@@ -692,8 +707,8 @@ export async function completeRuntimeIterationRunFacade(
   iterationCount: number,
   loopState: LoopState,
   treeHash?: HashString
-): Promise<HashString | undefined> {
-  return await completeRuntimeIterationRun(
+): Promise<HashString | undefined> =>
+  await completeRuntimeIterationRun(
     host,
     handle,
     runId,
@@ -703,14 +718,13 @@ export async function completeRuntimeIterationRunFacade(
     loopState,
     treeHash
   );
-}
 
 /**
  * Pass-through facade over `createIterationTree`
  * (`runtime-core-turn-progress.ts`): creates the turn tree that appends the
  * iteration's messages, manifest, and runtime status onto the base tree.
  */
-export async function createRuntimeIterationTreeFacade(
+export const createRuntimeIterationTreeFacade = async (
   host: RuntimeCoreTurnProgressHost,
   schemaId: string,
   baseTurnTreeHash: HashString,
@@ -719,8 +733,8 @@ export async function createRuntimeIterationTreeFacade(
   manifestHash: HashString,
   runtimeStatusHash?: HashString,
   turnLineageHash?: HashString
-): Promise<HashString> {
-  return await createRuntimeIterationTree(
+): Promise<HashString> =>
+  await createRuntimeIterationTree(
     host,
     schemaId,
     baseTurnTreeHash,
@@ -730,50 +744,49 @@ export async function createRuntimeIterationTreeFacade(
     runtimeStatusHash,
     turnLineageHash
   );
-}
 
 /**
  * Pass-through facade over `incorporateInput`
  * (`runtime-core-state-commit.ts`): durably incorporates the request's input
  * signal into the turn before the first iteration.
  */
-export async function incorporateRuntimeInputFacade(
+export const incorporateRuntimeInputFacade = async (
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState
-): Promise<void> {
+): Promise<void> => {
   await incorporateRuntimeInput(host, handle, schemaId, loopState);
-}
+};
 
 /**
  * Pass-through facade over `incorporateSteering`
  * (`runtime-core-state-commit.ts`): durably incorporates a queued steering
  * signal between iterations.
  */
-export async function incorporateRuntimeSteeringFacade(
+export const incorporateRuntimeSteeringFacade = async (
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   signal: InputSignal,
   loopState: LoopState
-): Promise<void> {
+): Promise<void> => {
   await incorporateRuntimeSteering(host, handle, schemaId, signal, loopState);
-}
+};
 
 /**
  * Pass-through facade over `commitPendingExtensionStateUpdates`
  * (`runtime-core-state-commit.ts`): persists extension manifest-state
  * updates gathered during an iteration.
  */
-export async function commitRuntimePendingExtensionStateUpdatesFacade(
+export const commitRuntimePendingExtensionStateUpdatesFacade = async (
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
   updates: ExtensionStateUpdate[],
   iterationCount: number
-): Promise<void> {
+): Promise<void> => {
   await commitRuntimePendingExtensionStateUpdates(
     host,
     handle,
@@ -782,14 +795,14 @@ export async function commitRuntimePendingExtensionStateUpdatesFacade(
     updates,
     iterationCount
   );
-}
+};
 
 /**
  * Pass-through facade over `applyContextEngineeringPlan`
  * (`runtime-core-context-ops.ts`): executes a context-engineering plan's
  * message-set rewrite and commits it as a durable turn-state change.
  */
-export async function applyRuntimeContextEngineeringPlanFacade(
+export const applyRuntimeContextEngineeringPlanFacade = async (
   host: RuntimeCoreContextOpsHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -800,7 +813,7 @@ export async function applyRuntimeContextEngineeringPlanFacade(
     messageHashes: HashString[];
     messages: TuvrenMessage[];
   }
-): Promise<void> {
+): Promise<void> => {
   await applyRuntimeContextEngineeringPlan(
     host,
     handle,
@@ -810,14 +823,14 @@ export async function applyRuntimeContextEngineeringPlanFacade(
     updates,
     recoveredHistory
   );
-}
+};
 
 /**
  * Pass-through facade over `applyHandoff`
  * (`runtime-core-context-ops.ts`): applies an agent handoff plan and returns
  * the new active config, tool registry, and client-endpoint boundary.
  */
-export async function applyRuntimeHandoffFacade(
+export const applyRuntimeHandoffFacade = async (
   host: RuntimeCoreContextOpsHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -827,16 +840,6 @@ export async function applyRuntimeHandoffFacade(
 ): Promise<{
   activeConfig: AgentConfig;
   activeToolRegistry: ToolRegistry;
-  clientEndpointBoundary:
-    | import("@tuvren/core/capabilities").ClientEndpointBoundary
-    | undefined;
-}> {
-  return await applyRuntimeHandoff(
-    host,
-    handle,
-    schemaId,
-    plan,
-    loopState,
-    updates
-  );
-}
+  clientEndpointBoundary: ClientEndpointBoundary | undefined;
+}> =>
+  await applyRuntimeHandoff(host, handle, schemaId, plan, loopState, updates);
