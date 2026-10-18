@@ -68,34 +68,6 @@ interface DisposablePostgresBackend {
 
 let canonicalSchemaPromise: Promise<TurnTreeSchema> | undefined;
 
-export async function withConformanceKernel<T>(
-  schema: TurnTreeSchema,
-  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" },
-  execute: (kernel: ReturnType<typeof createRuntimeKernel>) => Promise<T>
-): Promise<T> {
-  const configuredKernel = await createConformanceKernel(schema, config);
-
-  try {
-    return await execute(configuredKernel.kernel);
-  } finally {
-    await configuredKernel.cleanup();
-  }
-}
-
-export async function withConfiguredBackend<T>(
-  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" },
-  execute: (backend: RuntimeBackend) => Promise<T>,
-  options?: BackendClockOptions
-): Promise<T> {
-  const configuredBackend = await createConfiguredBackend(config, options);
-
-  try {
-    return await execute(configuredBackend.backend);
-  } finally {
-    await configuredBackend.cleanup();
-  }
-}
-
 /**
  * Optional deterministic clock injected into a configured backend so a probe can
  * order durable writes against an active execution lease without relying on
@@ -118,68 +90,7 @@ export interface ScopedBackendPair {
   backendB: RuntimeBackend;
 }
 
-export async function withScopedBackendPair<T>(
-  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" },
-  execute: (pair: ScopedBackendPair) => Promise<T>
-): Promise<T> {
-  const handle = await createScopedBackendPair(config);
-
-  try {
-    return await execute(handle.pair);
-  } finally {
-    await handle.cleanup();
-  }
-}
-
-export async function runRestartRecoveryPhase(
-  phase: "read" | "write",
-  databasePath: string,
-  metadataPath: string
-): Promise<Record<string, unknown>> {
-  const result = await new Promise<{
-    code: number | null;
-    signal: NodeJS.Signals | null;
-    stderr: string;
-    stdout: string;
-  }>((resolve, reject) => {
-    const child = spawn(
-      "node",
-      [
-        fileURLToPath(SQLITE_RESTART_SCENARIO_URL),
-        phase,
-        databasePath,
-        metadataPath,
-      ],
-      {
-        stdio: ["ignore", "pipe", "pipe"],
-      }
-    );
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString("utf-8");
-    });
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString("utf-8");
-    });
-    child.on("error", reject);
-    child.on("close", (code, signal) => {
-      resolve({ code, signal, stderr, stdout });
-    });
-  });
-
-  if (result.code !== 0) {
-    throw new Error(
-      `restart recovery ${phase} phase failed: code=${String(result.code)} signal=${String(result.signal)} stderr=${result.stderr || "<empty>"}`
-    );
-  }
-
-  const value = JSON.parse(result.stdout) as unknown;
-  return readRecord(value, `restart recovery ${phase} output`);
-}
-
-export async function loadCanonicalSchema(): Promise<TurnTreeSchema> {
+export const loadCanonicalSchema = async (): Promise<TurnTreeSchema> => {
   canonicalSchemaPromise ??= readFile(CANONICAL_SCHEMA_URL, "utf-8")
     .then((contents) => JSON.parse(contents) as unknown)
     .then((value) => {
@@ -188,14 +99,14 @@ export async function loadCanonicalSchema(): Promise<TurnTreeSchema> {
     });
 
   return await canonicalSchemaPromise;
-}
+};
 
-export async function stageFixtureResult(
+export const stageFixtureResult = async (
   kernel: ReturnType<typeof createRuntimeKernel>,
   runId: string,
   stagedResult: StagedResult,
   index: number
-): Promise<void> {
+): Promise<void> => {
   await kernel.staging.stage(
     runId,
     new TextEncoder().encode(`fixture staged result ${index}`),
@@ -206,9 +117,9 @@ export async function stageFixtureResult(
       ? stagedResult.interruptPayload
       : undefined
   );
-}
+};
 
-export function normalizeLogicalErrorCode(code: string): string {
+export const normalizeLogicalErrorCode = (code: string): string => {
   switch (code) {
     case "kernel_runtime_lineage_mismatch": {
       return "turn_node_thread_mismatch";
@@ -226,9 +137,9 @@ export function normalizeLogicalErrorCode(code: string): string {
       return code;
     }
   }
-}
+};
 
-export function readErrorCode(error: unknown): string {
+export const readErrorCode = (error: unknown): string => {
   if (typeof error === "object" && error !== null && "code" in error) {
     const code = Reflect.get(error, "code");
 
@@ -242,19 +153,60 @@ export function readErrorCode(error: unknown): string {
   }
 
   return "unknown_error";
-}
+};
 
-export function result(value: Record<string, unknown>): OperationOutcome {
+export const result = (value: Record<string, unknown>): OperationOutcome => {
   return {
     kind: "result",
     value,
   };
-}
+};
 
-export function readFixture(input: unknown): Record<string, unknown> {
+export const hexToBytes = (value: string): Uint8Array => {
+  if (value.length % 2 !== 0) {
+    throw new Error("fixture hex must have even length");
+  }
+
+  const bytes = new Uint8Array(value.length / 2);
+
+  for (let index = 0; index < value.length; index += 2) {
+    bytes[index / 2] = Number.parseInt(value.slice(index, index + 2), 16);
+  }
+
+  return bytes;
+};
+
+export const readRecord = (
+  value: unknown,
+  label: string
+): Record<string, unknown> => {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+
+  return value as Record<string, unknown>;
+};
+
+const readArray = (value: unknown, label: string): unknown[] => {
+  if (!Array.isArray(value)) {
+    throw new TypeError(`${label} must be an array`);
+  }
+
+  return value;
+};
+
+export const readString = (value: unknown, label: string): string => {
+  if (typeof value !== "string") {
+    throw new TypeError(`${label} must be a string`);
+  }
+
+  return value;
+};
+
+export const readFixture = (input: unknown): Record<string, unknown> => {
   const object = readRecord(input, "adapter input") as AdapterInput;
   return readRecord(object.fixture, "adapter input fixture");
-}
+};
 
 /**
  * Like {@link readFixture}, but returns `undefined` instead of throwing when
@@ -264,19 +216,19 @@ export function readFixture(input: unknown): Record<string, unknown> {
  * this to detect fixture-driven invocations without breaking the fixture-less
  * ones.
  */
-export function readFixtureOptional(
+export const readFixtureOptional = (
   input: unknown
-): Record<string, unknown> | undefined {
+): Record<string, unknown> | undefined => {
   const object = readRecord(input, "adapter input") as AdapterInput;
   return object.fixture === undefined
     ? undefined
     : readRecord(object.fixture, "adapter input fixture");
-}
+};
 
-export function readLogicalFixture(
+export const readLogicalFixture = (
   fixture: Record<string, unknown>,
   schema: TurnTreeSchema
-): LogicalFixture {
+): LogicalFixture => {
   const branchHeadListEntry = readArray(
     fixture.branchHeadListEntry,
     "branchHeadListEntry"
@@ -301,74 +253,15 @@ export function readLogicalFixture(
     recoveryState,
     turnTreeChangeSet,
   };
-}
+};
 
-export function hexToBytes(value: string): Uint8Array {
-  if (value.length % 2 !== 0) {
-    throw new Error("fixture hex must have even length");
-  }
-
-  const bytes = new Uint8Array(value.length / 2);
-
-  for (let index = 0; index < value.length; index += 2) {
-    bytes[index / 2] = Number.parseInt(value.slice(index, index + 2), 16);
-  }
-
-  return bytes;
-}
-
-export function readRecord(
-  value: unknown,
-  label: string
-): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-
-  return value as Record<string, unknown>;
-}
-
-function readArray(value: unknown, label: string): unknown[] {
-  if (!Array.isArray(value)) {
-    throw new TypeError(`${label} must be an array`);
-  }
-
-  return value;
-}
-
-export function readString(value: unknown, label: string): string {
-  if (typeof value !== "string") {
-    throw new TypeError(`${label} must be a string`);
-  }
-
-  return value;
-}
-
-async function createConformanceKernel(
-  schema: TurnTreeSchema,
-  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" }
-): Promise<{
-  cleanup(): Promise<void>;
-  kernel: ReturnType<typeof createRuntimeKernel>;
-}> {
-  const configuredBackend = await createConfiguredBackend(config);
-  const kernel = createRuntimeKernel({
-    backend: configuredBackend.backend,
-  });
-  await kernel.schema.register(schema);
-  return {
-    cleanup: configuredBackend.cleanup,
-    kernel,
-  };
-}
-
-async function createConfiguredBackend(
+const createConfiguredBackend = async (
   config: {
     adapterId: string;
     backend: "memory" | "postgres" | "sqlite";
   },
   options?: BackendClockOptions
-): Promise<ConfiguredBackendHandle> {
+): Promise<ConfiguredBackendHandle> => {
   const clock = options?.now === undefined ? {} : { now: options.now };
 
   if (config.backend === "postgres") {
@@ -423,16 +316,34 @@ async function createConfiguredBackend(
       // Memory backends have no external resources to release.
     },
   };
-}
+};
+
+const createConformanceKernel = async (
+  schema: TurnTreeSchema,
+  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" }
+): Promise<{
+  cleanup(): Promise<void>;
+  kernel: ReturnType<typeof createRuntimeKernel>;
+}> => {
+  const configuredBackend = await createConfiguredBackend(config);
+  const kernel = createRuntimeKernel({
+    backend: configuredBackend.backend,
+  });
+  await kernel.schema.register(schema);
+  return {
+    cleanup: configuredBackend.cleanup,
+    kernel,
+  };
+};
 
 interface ClosableBackend {
   close?(): Promise<void>;
 }
 
-async function createScopedBackendPair(config: {
+const createScopedBackendPair = async (config: {
   adapterId: string;
   backend: "memory" | "postgres" | "sqlite";
-}): Promise<{ cleanup(): Promise<void>; pair: ScopedBackendPair }> {
+}): Promise<{ cleanup(): Promise<void>; pair: ScopedBackendPair }> => {
   if (config.backend === "postgres") {
     const postgresBackendModuleUrl = new URL(
       "../../backends/postgres/dist/index.js",
@@ -513,4 +424,93 @@ async function createScopedBackendPair(config: {
       backendB: createMemoryBackend({ scope: CONFORMANCE_SCOPE_B, store }),
     },
   };
-}
+};
+
+export const withConformanceKernel = async <T>(
+  schema: TurnTreeSchema,
+  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" },
+  execute: (kernel: ReturnType<typeof createRuntimeKernel>) => Promise<T>
+): Promise<T> => {
+  const configuredKernel = await createConformanceKernel(schema, config);
+
+  try {
+    return await execute(configuredKernel.kernel);
+  } finally {
+    await configuredKernel.cleanup();
+  }
+};
+
+export const withConfiguredBackend = async <T>(
+  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" },
+  execute: (backend: RuntimeBackend) => Promise<T>,
+  options?: BackendClockOptions
+): Promise<T> => {
+  const configuredBackend = await createConfiguredBackend(config, options);
+
+  try {
+    return await execute(configuredBackend.backend);
+  } finally {
+    await configuredBackend.cleanup();
+  }
+};
+
+export const withScopedBackendPair = async <T>(
+  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" },
+  execute: (pair: ScopedBackendPair) => Promise<T>
+): Promise<T> => {
+  const handle = await createScopedBackendPair(config);
+
+  try {
+    return await execute(handle.pair);
+  } finally {
+    await handle.cleanup();
+  }
+};
+
+export const runRestartRecoveryPhase = async (
+  phase: "read" | "write",
+  databasePath: string,
+  metadataPath: string
+): Promise<Record<string, unknown>> => {
+  const result = await new Promise<{
+    code: number | null;
+    signal: NodeJS.Signals | null;
+    stderr: string;
+    stdout: string;
+  }>((resolve, reject) => {
+    const child = spawn(
+      "node",
+      [
+        fileURLToPath(SQLITE_RESTART_SCENARIO_URL),
+        phase,
+        databasePath,
+        metadataPath,
+      ],
+      {
+        stdio: ["ignore", "pipe", "pipe"],
+      }
+    );
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString("utf-8");
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString("utf-8");
+    });
+    child.on("error", reject);
+    child.on("close", (code, signal) => {
+      resolve({ code, signal, stderr, stdout });
+    });
+  });
+
+  if (result.code !== 0) {
+    throw new Error(
+      `restart recovery ${phase} phase failed: code=${String(result.code)} signal=${String(result.signal)} stderr=${result.stderr || "<empty>"}`
+    );
+  }
+
+  const value = JSON.parse(result.stdout) as unknown;
+  return readRecord(value, `restart recovery ${phase} output`);
+};
