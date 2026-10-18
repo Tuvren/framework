@@ -15,6 +15,7 @@
  */
 
 import type { HashString } from "@tuvren/core";
+import type { ClientEndpointBoundary } from "@tuvren/core/capabilities";
 import type { AgentConfig, InputSignal } from "@tuvren/core/execution";
 import type { ToolResultPart } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
@@ -74,7 +75,7 @@ export interface PauseContext {
   approval: ApprovalRequest;
   carriedStateUpdates: ExtensionStateUpdate[];
   /** Preserved client endpoint boundary from the paused turn (KRT-AZ001). */
-  clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary;
+  clientEndpointBoundary?: ClientEndpointBoundary;
   pausedIteration: PausedIterationState;
   pausedRunId: string;
   pausedTurnNodeHash: HashString;
