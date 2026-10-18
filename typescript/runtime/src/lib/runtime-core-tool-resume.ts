@@ -152,6 +152,132 @@ export interface RuntimeCoreToolResumeHost {
   ): Promise<HashString>;
 }
 
+/** Keeps durable Turn boundaries attached to their messages after projection. */
+const remapTurnBoundaries = (
+  sourceHashes: HashString[],
+  sourceBoundaries: number[],
+  targetHashes: HashString[]
+): number[] => {
+  const targetOffsets: number[] = [];
+
+  for (const boundary of sourceBoundaries) {
+    const boundaryHash = sourceHashes[boundary];
+    if (boundaryHash === undefined) {
+      continue;
+    }
+
+    let occurrence = 0;
+    for (let index = 0; index <= boundary; index += 1) {
+      if (sourceHashes[index] === boundaryHash) {
+        occurrence += 1;
+      }
+    }
+
+    let matchingOccurrence = 0;
+    for (const [index, hash] of targetHashes.entries()) {
+      if (hash !== boundaryHash) {
+        continue;
+      }
+      matchingOccurrence += 1;
+      if (matchingOccurrence === occurrence) {
+        targetOffsets.push(index);
+        break;
+      }
+    }
+  }
+
+  return targetOffsets;
+};
+
+/**
+ * Assembles the tool-batch environment for the resume path. Mirrors the
+ * iteration-time environment but stages each result as a tool-role message
+ * keyed by {@link formatToolResultTaskId}, and includes the capability
+ * policy engine and context so resume-path invocation checks can
+ * re-evaluate policy (BB005, see inline note).
+ */
+const createToolBatchEnvironment = (
+  host: RuntimeCoreToolResumeHost,
+  handle: RuntimeExecutionHandle,
+  loopState: LoopState,
+  manifest: ContextManifest,
+  iterationCount: number,
+  runId: string
+): ToolBatchEnvironment => {
+  // BB005: include capability policy engine and context so the resume-path
+  // invocation check in resolveResumeDecision can re-evaluate policy when
+  // context may have changed between the initial pause and the resumed approval.
+  const policyEngine = loopState.activeConfig.capabilityPolicyEngine;
+  const policyCapabilityMetadata =
+    policyEngine === undefined
+      ? undefined
+      : buildCapabilityMetadataFromTools(loopState.activeToolRegistry.list());
+  const policyContextInputs =
+    loopState.activeConfig.policyContextInputs ?? undefined;
+  const stateUpdatesByOrder = new Map<number, ExtensionStateUpdate[]>();
+  let resultStagingQueue: Promise<unknown> = Promise.resolve();
+
+  return {
+    activeAgent: loopState.activeConfig.name,
+    branchId: handle.request.branchId,
+    capabilityPolicyEngine: policyEngine ?? undefined,
+    extensions: loopState.activeConfig.extensions ?? [],
+    iterationCount,
+    manifest,
+    maxParallelToolCalls: host.resolveActiveMaxParallelToolCalls(loopState),
+    now: () => host.now(),
+    policyCapabilityMetadata,
+    policyContextInputs,
+    publishCustom: (event) => {
+      host.publishCustomEvent(handle, event, loopState);
+    },
+    publishEvent: (event) => {
+      host.publishEvent(handle, event, loopState);
+    },
+    reportSoftError: (error) => {
+      host.publishProjectedError(handle, error, false, loopState);
+    },
+    runId,
+    sanitizeToolResult: loopState.activeConfig.sanitizeToolResult,
+    signal: handle.abortSignal,
+    stageResult: async (result, orderIndex, updates = []) => {
+      const stage = resultStagingQueue.then(async () => {
+        if (updates.length > 0) {
+          stateUpdatesByOrder.set(orderIndex, updates);
+          const orderedUpdates = [...stateUpdatesByOrder.entries()]
+            .sort(([left], [right]) => left - right)
+            .flatMap(([, callUpdates]) => callUpdates);
+          const durableManifest = updateContextManifest(
+            manifest,
+            [],
+            orderedUpdates,
+            []
+          );
+          await host.stageManifest(
+            runId,
+            durableManifest,
+            { handle, loopState },
+            `around_tool_state_${orderIndex.toString()}`
+          );
+        }
+        return await host.stageMessage(
+          runId,
+          {
+            parts: [result],
+            role: "tool",
+          },
+          formatToolResultTaskId(orderIndex, result.callId)
+        );
+      });
+      resultStagingQueue = stage;
+      return await stage;
+    },
+    threadId: handle.request.threadId,
+    toolRegistry: loopState.activeToolRegistry,
+    turnId: handle.turnId,
+  };
+};
+
 /**
  * Resumes a paused tool batch with the caller-supplied approval response and
  * commits the resulting iteration artifacts.
@@ -171,13 +297,13 @@ export interface RuntimeCoreToolResumeHost {
  * projected errors. A batch resume that throws fails the tracked run without
  * advancing the branch and returns a hard-fail outcome.
  */
-export async function resumePausedToolExecution(
+export const resumePausedToolExecution = async (
   host: RuntimeCoreToolResumeHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
   loopState: LoopState,
   resumeContext: ResumeContext
-): Promise<LoopOutcome> {
+): Promise<LoopOutcome> => {
   const { pausedIteration } = resumeContext.pauseContext;
 
   loopState.enteredIterationLoop = true;
@@ -395,44 +521,7 @@ export async function resumePausedToolExecution(
   return {
     resolution,
   };
-}
-
-/** Keeps durable Turn boundaries attached to their messages after projection. */
-function remapTurnBoundaries(
-  sourceHashes: HashString[],
-  sourceBoundaries: number[],
-  targetHashes: HashString[]
-): number[] {
-  const targetOffsets: number[] = [];
-
-  for (const boundary of sourceBoundaries) {
-    const boundaryHash = sourceHashes[boundary];
-    if (boundaryHash === undefined) {
-      continue;
-    }
-
-    let occurrence = 0;
-    for (let index = 0; index <= boundary; index += 1) {
-      if (sourceHashes[index] === boundaryHash) {
-        occurrence += 1;
-      }
-    }
-
-    let matchingOccurrence = 0;
-    for (const [index, hash] of targetHashes.entries()) {
-      if (hash !== boundaryHash) {
-        continue;
-      }
-      matchingOccurrence += 1;
-      if (matchingOccurrence === occurrence) {
-        targetOffsets.push(index);
-        break;
-      }
-    }
-  }
-
-  return targetOffsets;
-}
+};
 
 /**
  * Finalizes a paused tool batch whose approval is being rejected wholesale
@@ -444,12 +533,12 @@ function remapTurnBoundaries(
  * fresh tracked run. The outcome always carries the shared
  * approval-rejection resolution (end_turn with reason "approval_rejected").
  */
-export async function finalizeRejectedPausedToolCancellation(
+export const finalizeRejectedPausedToolCancellation = async (
   host: RuntimeCoreToolResumeHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
   pauseContext: PauseContext
-): Promise<LoopOutcome> {
+): Promise<LoopOutcome> => {
   const { pausedIteration } = pauseContext;
 
   loopState.enteredIterationLoop = true;
@@ -555,93 +644,4 @@ export async function finalizeRejectedPausedToolCancellation(
   return {
     resolution: createApprovalRejectionResolution(),
   };
-}
-
-/**
- * Assembles the tool-batch environment for the resume path. Mirrors the
- * iteration-time environment but stages each result as a tool-role message
- * keyed by {@link formatToolResultTaskId}, and includes the capability
- * policy engine and context so resume-path invocation checks can
- * re-evaluate policy (BB005, see inline note).
- */
-function createToolBatchEnvironment(
-  host: RuntimeCoreToolResumeHost,
-  handle: RuntimeExecutionHandle,
-  loopState: LoopState,
-  manifest: ContextManifest,
-  iterationCount: number,
-  runId: string
-): ToolBatchEnvironment {
-  // BB005: include capability policy engine and context so the resume-path
-  // invocation check in resolveResumeDecision can re-evaluate policy when
-  // context may have changed between the initial pause and the resumed approval.
-  const policyEngine = loopState.activeConfig.capabilityPolicyEngine;
-  const policyCapabilityMetadata =
-    policyEngine === undefined
-      ? undefined
-      : buildCapabilityMetadataFromTools(loopState.activeToolRegistry.list());
-  const policyContextInputs =
-    loopState.activeConfig.policyContextInputs ?? undefined;
-  const stateUpdatesByOrder = new Map<number, ExtensionStateUpdate[]>();
-  let resultStagingQueue: Promise<unknown> = Promise.resolve();
-
-  return {
-    activeAgent: loopState.activeConfig.name,
-    branchId: handle.request.branchId,
-    capabilityPolicyEngine: policyEngine ?? undefined,
-    extensions: loopState.activeConfig.extensions ?? [],
-    iterationCount,
-    manifest,
-    maxParallelToolCalls: host.resolveActiveMaxParallelToolCalls(loopState),
-    now: () => host.now(),
-    policyCapabilityMetadata,
-    policyContextInputs,
-    publishCustom: (event) => {
-      host.publishCustomEvent(handle, event, loopState);
-    },
-    publishEvent: (event) => {
-      host.publishEvent(handle, event, loopState);
-    },
-    reportSoftError: (error) => {
-      host.publishProjectedError(handle, error, false, loopState);
-    },
-    runId,
-    sanitizeToolResult: loopState.activeConfig.sanitizeToolResult,
-    signal: handle.abortSignal,
-    stageResult: async (result, orderIndex, updates = []) => {
-      const stage = resultStagingQueue.then(async () => {
-        if (updates.length > 0) {
-          stateUpdatesByOrder.set(orderIndex, updates);
-          const orderedUpdates = [...stateUpdatesByOrder.entries()]
-            .sort(([left], [right]) => left - right)
-            .flatMap(([, callUpdates]) => callUpdates);
-          const durableManifest = updateContextManifest(
-            manifest,
-            [],
-            orderedUpdates,
-            []
-          );
-          await host.stageManifest(
-            runId,
-            durableManifest,
-            { handle, loopState },
-            `around_tool_state_${orderIndex.toString()}`
-          );
-        }
-        return await host.stageMessage(
-          runId,
-          {
-            parts: [result],
-            role: "tool",
-          },
-          formatToolResultTaskId(orderIndex, result.callId)
-        );
-      });
-      resultStagingQueue = stage;
-      return await stage;
-    },
-    threadId: handle.request.threadId,
-    toolRegistry: loopState.activeToolRegistry,
-    turnId: handle.turnId,
-  };
-}
+};
