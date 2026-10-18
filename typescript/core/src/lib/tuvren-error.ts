@@ -39,9 +39,8 @@ export interface TuvrenErrorOptions {
  * True when `value` is a well-formed {@link TuvrenErrorCode}: one or more
  * lowercase alphanumeric segments joined by single underscores.
  */
-export function isTuvrenErrorCode(value: unknown): value is TuvrenErrorCode {
-  return typeof value === "string" && KRAKEN_ERROR_CODE_PATTERN.test(value);
-}
+export const isTuvrenErrorCode = (value: unknown): value is TuvrenErrorCode =>
+  typeof value === "string" && KRAKEN_ERROR_CODE_PATTERN.test(value);
 
 /**
  * Asserts that `value` is a well-formed {@link TuvrenErrorCode}.
@@ -50,16 +49,19 @@ export function isTuvrenErrorCode(value: unknown): value is TuvrenErrorCode {
  * @param label - Name used in the error message (defaults to `"value"`).
  * @throws TypeError when {@link isTuvrenErrorCode} rejects the value.
  */
-export function assertTuvrenErrorCode(
+export const assertTuvrenErrorCode: (
+  value: unknown,
+  label?: string
+) => asserts value is TuvrenErrorCode = (
   value: unknown,
   label = "value"
-): asserts value is TuvrenErrorCode {
+): asserts value is TuvrenErrorCode => {
   if (!isTuvrenErrorCode(value)) {
     throw new TypeError(
       `${label} must be a lowercase snake_case Tuvren error code`
     );
   }
-}
+};
 
 /**
  * Abstract base of the Tuvren error family (re-exported at the package root

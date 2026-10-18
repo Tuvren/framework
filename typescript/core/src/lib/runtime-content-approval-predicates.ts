@@ -112,7 +112,7 @@ const APPROVAL_DECISION_KEYS = new Set([
  * Every variant additionally allows an optional serializable
  * `providerMetadata` record.
  */
-export function isContentPart(value: unknown): value is ContentPart {
+export const isContentPart = (value: unknown): value is ContentPart => {
   if (
     !(
       isPlainObject(value) &&
@@ -183,7 +183,7 @@ export function isContentPart(value: unknown): value is ContentPart {
       return false;
     }
   }
-}
+};
 
 /**
  * Returns `true` when `value` is specifically a valid {@link ToolResultPart}
@@ -191,19 +191,16 @@ export function isContentPart(value: unknown): value is ContentPart {
  * `callId`/`name`, a present JSON-serializable `output`, optional boolean
  * `isError`, and optional serializable `providerMetadata`.
  */
-export function isToolResultPart(value: unknown): value is ToolResultPart {
-  return (
-    isPlainObject(value) &&
-    hasOnlyAllowedKeys(value, TOOL_RESULT_PART_KEYS) &&
-    value.type === "tool_result" &&
-    isNonEmptyStringProperty(value, "callId") &&
-    isNonEmptyStringProperty(value, "name") &&
-    "output" in value &&
-    isSerializableContractValue(value.output) &&
-    isOptionalBooleanProperty(value, "isError") &&
-    isOptionalSerializableRecordProperty(value, "providerMetadata")
-  );
-}
+export const isToolResultPart = (value: unknown): value is ToolResultPart =>
+  isPlainObject(value) &&
+  hasOnlyAllowedKeys(value, TOOL_RESULT_PART_KEYS) &&
+  value.type === "tool_result" &&
+  isNonEmptyStringProperty(value, "callId") &&
+  isNonEmptyStringProperty(value, "name") &&
+  "output" in value &&
+  isSerializableContractValue(value.output) &&
+  isOptionalBooleanProperty(value, "isError") &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
 
 /**
  * Returns `true` when `value` is a valid {@link PendingToolCall} inside an
@@ -212,21 +209,18 @@ export function isToolResultPart(value: unknown): value is ToolResultPart {
  * JSON-serializable `input`, and a non-empty `decisions` array of unique,
  * non-empty decision-type strings the operator may choose from.
  */
-export function isPendingToolCall(value: unknown): value is PendingToolCall {
-  return (
-    isPlainObject(value) &&
-    hasOnlyAllowedKeys(value, PENDING_TOOL_CALL_KEYS) &&
-    isNonEmptyStringProperty(value, "callId") &&
-    isNonEmptyStringProperty(value, "name") &&
-    isNonEmptyStringProperty(value, "message") &&
-    "input" in value &&
-    isSerializableContractValue(value.input) &&
-    Array.isArray(value.decisions) &&
-    value.decisions.length > 0 &&
-    value.decisions.every(isNonEmptyStringValue) &&
-    hasUniqueStrings(value.decisions)
-  );
-}
+export const isPendingToolCall = (value: unknown): value is PendingToolCall =>
+  isPlainObject(value) &&
+  hasOnlyAllowedKeys(value, PENDING_TOOL_CALL_KEYS) &&
+  isNonEmptyStringProperty(value, "callId") &&
+  isNonEmptyStringProperty(value, "name") &&
+  isNonEmptyStringProperty(value, "message") &&
+  "input" in value &&
+  isSerializableContractValue(value.input) &&
+  Array.isArray(value.decisions) &&
+  value.decisions.length > 0 &&
+  value.decisions.every(isNonEmptyStringValue) &&
+  hasUniqueStrings(value.decisions);
 
 /**
  * Returns `true` when `value` is a valid {@link ApprovalDecision}
@@ -237,7 +231,9 @@ export function isPendingToolCall(value: unknown): value is PendingToolCall {
  * the decision type: an `edit` decision must carry a JSON-serializable
  * `editedInput`, and every other decision type must omit it.
  */
-export function isApprovalDecision(value: unknown): value is ApprovalDecision {
+export const isApprovalDecision = (
+  value: unknown
+): value is ApprovalDecision => {
   if (
     !(
       isPlainObject(value) &&
@@ -268,7 +264,7 @@ export function isApprovalDecision(value: unknown): value is ApprovalDecision {
   // Approval notes are optional for all decision types, but if present they
   // should carry real explanatory text instead of an empty placeholder.
   return true;
-}
+};
 
 /**
  * True when every `callId` is distinct across an approval request's pending
@@ -276,10 +272,10 @@ export function isApprovalDecision(value: unknown): value is ApprovalDecision {
  * each completed result maps to exactly one call
  * (KrakenFrameworkSpecification §1.7).
  */
-export function hasDistinctApprovalRequestCallIds(
+export const hasDistinctApprovalRequestCallIds = (
   toolCalls: PendingToolCall[],
   completedResults: ToolResultPart[]
-): boolean {
+): boolean => {
   const seenCallIds = new Set<string>();
 
   for (const toolCall of toolCalls) {
@@ -299,4 +295,4 @@ export function hasDistinctApprovalRequestCallIds(
   }
 
   return true;
-}
+};
