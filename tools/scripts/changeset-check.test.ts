@@ -328,12 +328,12 @@ const createOrderedDependencyRelease = async (
   await run("git", ["checkout", "master"], fixture.root);
 
   for (const filename of filenames) {
-    const summary =
-      filename === "alpha.md"
-        ? "Alpha note"
-        : filename === "middle.md"
-          ? "Middle note"
-          : "Zebra note";
+    let summary = "Zebra note";
+    if (filename === "alpha.md") {
+      summary = "Alpha note";
+    } else if (filename === "middle.md") {
+      summary = "Middle note";
+    }
     const packageName = filename === "middle.md" ? "public-b" : "public-a";
     await fixture.writeChangesetContents(
       filename,
