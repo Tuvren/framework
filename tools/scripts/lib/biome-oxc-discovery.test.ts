@@ -18,9 +18,10 @@
 // root only to the invocation `nx run <project>:lint` actually executes and
 // only when that invocation covers the complete project directory. A partial
 // path, an extra ignore/scope flag, a wrong working directory, an unselected
-// optional configuration, an option nx:run-commands would forward onto the
-// command (`args`, `__unparsed__`, an unrecognized scalar option) or a custom
-// executor must leave the project in the retained Biome gate.
+// optional configuration, a forwarding policy other than top-level literal
+// false, an option nx:run-commands would forward onto the command (`args`,
+// `__unparsed__`, an unrecognized scalar option) or a custom executor must
+// leave the project in the retained Biome gate.
 
 import { describe, expect, mock, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -36,6 +37,7 @@ import { loadNxProjectFiles, targetCommandStrings } from "./nx-projects.js";
 import type { NxProjectFile, NxProjectTarget } from "./nx-projects.js";
 
 const PROJECT_ROOT = "typescript/kernel/protocol";
+const OXLINT = `bunx --bun oxlint --type-aware ${PROJECT_ROOT}`;
 
 const projectFile = (
   name: string,
@@ -56,16 +58,37 @@ const discovered = (lint: NxProjectTarget): string[] =>
   ]).map((project) => project.name);
 
 describe("Oxlint project-wide discovery", () => {
-  test("credits a workspace-root cwd with the project path", () => {
-    expect(
-      discovered({
-        options: {
-          command: "bunx --bun oxlint --type-aware typescript/kernel/protocol",
-          cwd: ".",
-        },
-      })
-    ).toEqual(["kernel-contract-protocol"]);
-  });
+  const accepted: { name: string; options: Record<string, unknown> }[] = [
+    {
+      name: "workspace cwd and project operand",
+      options: { command: OXLINT, cwd: "." },
+    },
+    {
+      name: "project cwd and dot operand",
+      options: {
+        command: "bunx --bun oxlint --type-aware .",
+        cwd: PROJECT_ROOT,
+      },
+    },
+    {
+      name: "project cwd and omitted operand",
+      options: {
+        command: "bunx --bun oxlint --type-aware",
+        cwd: `./${PROJECT_ROOT}/`,
+      },
+    },
+    { name: "single-command array", options: { commands: [OXLINT], cwd: "." } },
+    {
+      name: "top-level literal false",
+      options: { command: OXLINT, cwd: ".", forwardAllArgs: false },
+    },
+  ];
+
+  for (const { name, options } of accepted) {
+    test(`credits ${name}`, () => {
+      expect(discovered({ options })).toEqual(["kernel-contract-protocol"]);
+    });
+  }
 
   test("canonicalizes a Windows project root before Oxlint selection checks", async () => {
     const windowsProject = projectFile(
@@ -73,7 +96,7 @@ describe("Oxlint project-wide discovery", () => {
       PROJECT_ROOT,
       {
         options: {
-          command: "bunx --bun oxlint --type-aware typescript/kernel/protocol",
+          command: OXLINT,
           cwd: ".",
         },
       }
@@ -100,177 +123,128 @@ describe("Oxlint project-wide discovery", () => {
     ).toEqual(["typescript/kernel/protocol/src/index.ts"]);
   });
 
-  test("credits a project-root cwd with a bare dot", () => {
-    expect(
-      discovered({
-        options: {
-          command: "bunx --bun oxlint --type-aware .",
-          cwd: "typescript/kernel/protocol",
-        },
-      })
-    ).toEqual(["kernel-contract-protocol"]);
+  test("rejects every non-false top-level forwarding policy", () => {
+    for (const forwardAllArgs of [true, "false", 0, null, [], {}]) {
+      expect(
+        discovered({ options: { command: OXLINT, cwd: ".", forwardAllArgs } })
+      ).toEqual([]);
+    }
   });
 
-  test("credits a project-root cwd with no operand", () => {
-    expect(
-      discovered({
-        options: {
-          command: "bunx --bun oxlint --type-aware",
-          cwd: "./typescript/kernel/protocol/",
-        },
-      })
-    ).toEqual(["kernel-contract-protocol"]);
-  });
-
-  test("rejects a partial src-only scope", () => {
-    expect(
-      discovered({
-        options: {
-          command:
-            "bunx --bun oxlint --type-aware typescript/kernel/protocol/src",
-          cwd: ".",
-        },
-      })
-    ).toEqual([]);
-  });
-
-  test("rejects an extra ignore or scope option", () => {
-    expect(
-      discovered({
-        options: {
-          command:
-            "bunx --bun oxlint --type-aware typescript/kernel/protocol --ignore-pattern src",
-          cwd: ".",
-        },
-      })
-    ).toEqual([]);
-  });
-
-  test("rejects explicit forwarded args", () => {
-    // nx:run-commands appends `options.args` to the executed command
-    // (normalizeOptions), so an extra `--ignore-pattern` narrows the real
-    // scope even though the command text looks canonical.
-    expect(
-      discovered({
+  const rejected: { name: string; target: NxProjectTarget }[] = [
+    {
+      name: "partial scope",
+      target: { options: { command: `${OXLINT}/src`, cwd: "." } },
+    },
+    {
+      name: "extra command flag",
+      target: {
+        options: { command: `${OXLINT} --ignore-pattern src`, cwd: "." },
+      },
+    },
+    {
+      name: "configured args",
+      target: {
         options: {
           args: ["--ignore-pattern", "test/**"],
-          command: "bunx --bun oxlint --type-aware typescript/kernel/protocol",
+          command: OXLINT,
           cwd: ".",
         },
-      })
-    ).toEqual([]);
-  });
-
-  test("rejects an unrecognized forwarded option", () => {
-    // An unknown scalar option is forwarded as `--ignore-pattern=test/**`.
-    expect(
-      discovered({
-        options: {
-          command: "bunx --bun oxlint --type-aware typescript/kernel/protocol",
-          cwd: ".",
-          "ignore-pattern": "test/**",
-        },
-      })
-    ).toEqual([]);
-  });
-
-  test("rejects unparsed forwarded args", () => {
-    // `__unparsed__` is re-emitted onto the executed command.
-    expect(
-      discovered({
+      },
+    },
+    {
+      name: "unknown option",
+      target: {
+        options: { command: OXLINT, cwd: ".", "ignore-pattern": "test/**" },
+      },
+    },
+    {
+      name: "unparsed args",
+      target: {
         options: {
           __unparsed__: ["--ignore-pattern", "test/**"],
-          command: "bunx --bun oxlint --type-aware typescript/kernel/protocol",
+          command: OXLINT,
           cwd: ".",
         },
-      })
-    ).toEqual([]);
-  });
-
-  test("rejects a custom executor with a canonical-looking command", () => {
-    expect(
-      discovered({
-        executor: "custom:executor",
+      },
+    },
+    {
+      name: "interpolation",
+      target: {
         options: {
-          command: "bunx --bun oxlint --type-aware typescript/kernel/protocol",
+          command: "bunx --bun oxlint --type-aware {args.scope}",
           cwd: ".",
+          forwardAllArgs: false,
         },
-      })
-    ).toEqual([]);
-  });
-
-  test("rejects a wrong working directory", () => {
-    expect(
-      discovered({
+      },
+    },
+    {
+      name: "custom executor",
+      target: {
+        executor: "custom:executor",
+        options: { command: OXLINT, cwd: "." },
+      },
+    },
+    {
+      name: "wrong cwd",
+      target: {
         options: {
           command: "bunx --bun oxlint --type-aware .",
           cwd: "typescript/kernel",
         },
-      })
-    ).toEqual([]);
-  });
-
-  test("rejects another project path and a parent-directory escape", () => {
-    expect(
-      discovered({
+      },
+    },
+    {
+      name: "another project",
+      target: {
         options: {
           command: "bunx --bun oxlint --type-aware typescript/kernel/runtime",
           cwd: ".",
         },
-      })
-    ).toEqual([]);
-    expect(
-      discovered({
+      },
+    },
+    {
+      name: "parent escape",
+      target: {
         options: {
           command: "bunx --bun oxlint --type-aware ..",
-          cwd: "typescript/kernel/protocol/src",
+          cwd: `${PROJECT_ROOT}/src`,
         },
-      })
-    ).toEqual([]);
-  });
-
-  test("credits a single-command array", () => {
-    expect(
-      discovered({
+      },
+    },
+    {
+      name: "conflicting command forms",
+      target: { options: { command: OXLINT, commands: [OXLINT], cwd: "." } },
+    },
+    {
+      name: "unrecognized multi-command",
+      target: {
         options: {
-          commands: [
-            "bunx --bun oxlint --type-aware typescript/kernel/protocol",
-          ],
-          cwd: ".",
-        },
-      })
-    ).toEqual(["kernel-contract-protocol"]);
-  });
-
-  test("rejects a command target that also supplies a commands array", () => {
-    expect(
-      discovered({
-        options: {
-          command: "bunx --bun oxlint --type-aware typescript/kernel/protocol",
-          commands: [
-            "bunx --bun oxlint --type-aware typescript/kernel/protocol",
-            "bun tools/scripts/json-check.ts typescript/kernel/protocol",
-          ],
-          cwd: ".",
-        },
-      })
-    ).toEqual([]);
-  });
-
-  test("rejects a multi-command target", () => {
-    expect(
-      discovered({
-        options: {
-          commands: [
-            "bunx --bun oxlint --type-aware typescript/kernel/protocol",
-            "bunx --bun tsc --noEmit",
-          ],
+          commands: [OXLINT, "bunx --bun tsc --noEmit"],
           cwd: ".",
           parallel: false,
         },
+      },
+    },
+    ...[false, true].map(
+      (forwardAllArgs): { name: string; target: NxProjectTarget } => ({
+        name: `nested forwarding ${forwardAllArgs}`,
+        target: {
+          options: {
+            commands: [{ command: OXLINT, forwardAllArgs }],
+            cwd: ".",
+            forwardAllArgs: false,
+          },
+        },
       })
-    ).toEqual([]);
-  });
+    ),
+  ];
+
+  for (const { name, target } of rejected) {
+    test(`rejects ${name}`, () => {
+      expect(discovered(target)).toEqual([]);
+    });
+  }
 
   test("credits only the recognized code-plus-JSON composite", () => {
     const discoveredProjects = discoverNativeLintProjects([
@@ -281,6 +255,7 @@ describe("Oxlint project-wide discovery", () => {
             "bun tools/scripts/json-check.ts typescript/kernel/protocol",
           ],
           cwd: ".",
+          forwardAllArgs: false,
           parallel: false,
         },
       }),
@@ -293,6 +268,20 @@ describe("Oxlint project-wide discovery", () => {
       },
     ]);
     expect(discoveredProjects.jsonOnlyProjects).toEqual([]);
+    expect(
+      discoverNativeLintProjects([
+        projectFile("kernel-contract-protocol", PROJECT_ROOT, {
+          options: {
+            commands: [
+              "bunx --bun oxlint --type-aware typescript/kernel/protocol",
+              "bun tools/scripts/json-check.ts typescript/kernel/protocol",
+            ],
+            cwd: ".",
+            parallel: false,
+          },
+        }),
+      ])
+    ).toEqual(discoveredProjects);
   });
 
   test("rejects mixed commands without explicit serial execution", () => {
@@ -316,6 +305,7 @@ describe("Oxlint project-wide discovery", () => {
           command:
             "bun tools/scripts/json-check.ts --json-only typescript/kernel/protocol",
           cwd: ".",
+          forwardAllArgs: false,
         },
       }),
     ]);
@@ -407,6 +397,47 @@ describe("Oxlint project-wide discovery", () => {
         },
       })
     ).toEqual([]);
+  });
+
+  test("requires effective false forwarding from the selected default configuration", () => {
+    const command = "bunx --bun oxlint --type-aware typescript/kernel/protocol";
+    expect(
+      discovered({
+        configurations: { native: { forwardAllArgs: false } },
+        defaultConfiguration: "native",
+        options: { command, cwd: ".", forwardAllArgs: true },
+      })
+    ).toEqual(["kernel-contract-protocol"]);
+    expect(
+      discovered({
+        configurations: { native: { forwardAllArgs: true } },
+        defaultConfiguration: "native",
+        options: { command, cwd: ".", forwardAllArgs: false },
+      })
+    ).toEqual([]);
+    expect(
+      discovered({
+        configurations: { native: { forwardAllArgs: false } },
+        options: { command, cwd: ".", forwardAllArgs: true },
+      })
+    ).toEqual([]);
+  });
+
+  test("rejects forwarding inputs from the selected default configuration", () => {
+    const command = "bunx --bun oxlint --type-aware typescript/kernel/protocol";
+    for (const configured of [
+      { args: "--ignore-pattern=test/**" },
+      { __unparsed__: ["--ignore-pattern=test/**"] },
+      { "ignore-pattern": "test/**" },
+    ]) {
+      expect(
+        discovered({
+          configurations: { native: configured },
+          defaultConfiguration: "native",
+          options: { command, cwd: ".", forwardAllArgs: false },
+        })
+      ).toEqual([]);
+    }
   });
 });
 
