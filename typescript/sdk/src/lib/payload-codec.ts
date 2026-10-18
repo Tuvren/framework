@@ -107,12 +107,12 @@ interface ParsedEnvelope {
   keyRef: string;
 }
 
-function serializeEnvelope(parts: {
+const serializeEnvelope = (parts: {
   algId: number;
   ciphertext: Uint8Array;
   iv: Uint8Array;
   keyRef: string;
-}): Uint8Array {
+}): Uint8Array => {
   const keyRefBytes = new TextEncoder().encode(parts.keyRef);
   const total =
     ENVELOPE_MAGIC.length +
@@ -138,12 +138,12 @@ function serializeEnvelope(parts: {
   offset += parts.iv.length;
   out.set(parts.ciphertext, offset);
   return out;
-}
+};
 
 // version(1) + algId(1) + keyRefLen(2) — the fixed header that follows the magic.
 const ENVELOPE_FIXED_HEADER_BYTES = 4;
 
-function parseEnvelope(bytes: Uint8Array): ParsedEnvelope {
+const parseEnvelope = (bytes: Uint8Array): ParsedEnvelope => {
   if (!isPayloadEnvelope(bytes)) {
     throw new TypeError("payload envelope magic mismatch");
   }
@@ -187,11 +187,11 @@ function parseEnvelope(bytes: Uint8Array): ParsedEnvelope {
   offset += ivLen;
   const ciphertext = bytes.subarray(offset);
   return { algId, ciphertext, iv, keyRef };
-}
+};
 
 const AAD_DOMAIN_PREFIX = new TextEncoder().encode("tuvren.payload.v1");
 
-function buildAad(context: PayloadCodecContext): Uint8Array {
+const buildAad = (context: PayloadCodecContext): Uint8Array => {
   // Bind the Scope and the payload-class (edge) tag into AAD, length-prefixed so
   // the encoding is an *injective* function of (scope, edge). A delimiter-joined
   // string is ambiguous: a host-supplied Scope is only validated as a non-empty
@@ -219,19 +219,19 @@ function buildAad(context: PayloadCodecContext): Uint8Array {
   offset += 4;
   out.set(edgeBytes, offset);
   return out;
-}
+};
 
 // Web Crypto's BufferSource parameters require a concrete ArrayBuffer-backed
 // view; the generic `Uint8Array<ArrayBufferLike>` (modern TS default, which may
 // be SharedArrayBuffer-backed) does not satisfy that. Copy into a fresh
 // ArrayBuffer so the crypto calls type-check and never alias caller memory.
-function toArrayBuffer(view: Uint8Array): ArrayBuffer {
+const toArrayBuffer = (view: Uint8Array): ArrayBuffer => {
   const copy = new ArrayBuffer(view.byteLength);
   new Uint8Array(copy).set(view);
   return copy;
-}
+};
 
-async function importAesKey(key: Uint8Array): Promise<CryptoKey> {
+const importAesKey = async (key: Uint8Array): Promise<CryptoKey> => {
   if (key.length !== AES_256_GCM_KEY_BYTES) {
     throw new TypeError(
       `AES-256-GCM key must be ${AES_256_GCM_KEY_BYTES} bytes, received ${key.length}`
@@ -244,7 +244,7 @@ async function importAesKey(key: Uint8Array): Promise<CryptoKey> {
     false,
     ["decrypt", "encrypt"]
   );
-}
+};
 
 // ── AES-256-GCM codec ────────────────────────────────────────────────────────
 
@@ -286,9 +286,9 @@ export interface AesGcmPayloadCodecOptions {
  * keys.delete(scope);
  * ```
  */
-export function createAesGcmPayloadCodec(
+export const createAesGcmPayloadCodec = (
   options: AesGcmPayloadCodecOptions
-): PayloadCodec {
+): PayloadCodec => {
   const { keyring } = options;
   const resolveKeyRef =
     options.resolveKeyRef ?? ((context: PayloadCodecContext) => context.scope);
@@ -367,4 +367,4 @@ export function createAesGcmPayloadCodec(
     },
     id: "aes-256-gcm",
   };
-}
+};

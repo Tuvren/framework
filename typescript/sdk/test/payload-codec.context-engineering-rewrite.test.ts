@@ -50,10 +50,12 @@ const USER_SECRET = "USER-PII-rewrite-path-7777";
 const PROVIDER_SECRET = "PROVIDER-RESULT-rewrite-path-8888";
 const CE_SUMMARY_SECRET = "CONTEXT-ENGINEERING-SUMMARY-DIGEST-9999";
 
-function buildEncryptedRuntime(keys: Map<string, Uint8Array>): {
+const buildEncryptedRuntime = (
+  keys: Map<string, Uint8Array>
+): {
   framework: ReturnType<typeof createTuvrenRuntime>;
   kernel: ReturnType<typeof createRuntimeKernel>;
-} {
+} => {
   const kernel = createRuntimeKernel({
     backend: createMemoryBackend({ scope: SCOPE }),
   });
@@ -72,12 +74,12 @@ function buildEncryptedRuntime(keys: Map<string, Uint8Array>): {
     scope: SCOPE,
   });
   return { framework, kernel };
-}
+};
 
-async function readHeadMessageHashes(
+const readHeadMessageHashes = async (
   kernel: ReturnType<typeof createRuntimeKernel>,
   branchId: string
-): Promise<string[]> {
+): Promise<string[]> => {
   const branch = await kernel.branch.get(branchId);
   if (branch === null) {
     throw new Error("branch missing");
@@ -90,11 +92,10 @@ async function readHeadMessageHashes(
   return Array.isArray(resolved)
     ? resolved.filter((hash): hash is string => typeof hash === "string")
     : [];
-}
+};
 
-function bytesContainText(bytes: Uint8Array, text: string): boolean {
-  return Buffer.from(bytes).includes(Buffer.from(text, "utf-8"));
-}
+const bytesContainText = (bytes: Uint8Array, text: string): boolean =>
+  Buffer.from(bytes).includes(Buffer.from(text, "utf-8"));
 
 describe("KRT-BF007 context-engineering rewrite crypto-shredding", () => {
   test("encrypts the rewrite-path summary and resolves its canonical ciphertext hash through the provisional remap", async () => {

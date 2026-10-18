@@ -186,6 +186,83 @@ export interface TuvrenInstance {
   [Symbol.asyncDispose](): Promise<void>;
 }
 
+// ── Internal helpers ─────────────────────────────────────────────────────────
+
+const isMcpToolSource = (
+  item: McpToolSource | TuvrenToolDefinition
+): item is McpToolSource => {
+  const obj = item as unknown as Record<string, unknown>;
+  return (
+    typeof obj.serverName === "string" &&
+    typeof obj.refresh === "function" &&
+    typeof obj.close === "function"
+  );
+};
+
+const tryCloseBackend = (backend: RuntimeBackend): (() => Promise<void>) => {
+  const b = backend as unknown as Record<string, unknown>;
+  if (typeof b.close === "function") {
+    return () => (b.close as () => Promise<void>)();
+  }
+  return () => Promise.resolve();
+};
+
+const resolveKernelAndDispose = (
+  options: CreateTuvrenOptions
+): {
+  kernel: RuntimeKernel;
+  disposeBackend: () => Promise<void>;
+  purgeScope?: () => Promise<void>;
+} => {
+  if (options.kernel !== undefined) {
+    // An externally-supplied kernel owns its substrate; `createTuvren` has no
+    // backend handle to drive a partition drop, so `maintenance.purgeScope`
+    // stays unavailable on the resulting runtime.
+    return { disposeBackend: () => Promise.resolve(), kernel: options.kernel };
+  }
+
+  const { backend } = options;
+  return {
+    kernel: createRuntimeKernel({ backend }),
+    disposeBackend: tryCloseBackend(backend),
+    // Surface the substrate partition-drop (ADR-0051, §4.17) only when the owned
+    // backend implements it; otherwise the runtime maintenance surface reports
+    // it as unsupported.
+    ...(typeof backend.purgeScope === "function"
+      ? {
+          purgeScope: (): Promise<void> =>
+            backend.purgeScope?.() ?? Promise.resolve(),
+        }
+      : {}),
+  };
+};
+
+const collectMcpSources = (
+  tools: CreateTuvrenOptions["tools"]
+): McpToolSource[] => {
+  if (tools === undefined) {
+    return [];
+  }
+  return tools.filter(isMcpToolSource);
+};
+
+const collectTools = (
+  tools: CreateTuvrenOptions["tools"]
+): TuvrenToolDefinition[] => {
+  if (tools === undefined) {
+    return [];
+  }
+  const result: TuvrenToolDefinition[] = [];
+  for (const item of tools) {
+    if (isMcpToolSource(item)) {
+      result.push(...item.tools);
+    } else {
+      result.push(item);
+    }
+  }
+  return result;
+};
+
 // ── Factory ─────────────────────────────────────────────────────────────────
 
 /**
@@ -222,9 +299,9 @@ export interface TuvrenInstance {
  * const { threadId } = await tuvren.runtime.createThread({});
  * ```
  */
-export function createTuvren(
+export const createTuvren = (
   options: CreateTuvrenOptions
-): Promise<TuvrenInstance> {
+): Promise<TuvrenInstance> => {
   if (
     options.telemetry !== undefined &&
     options.runtimeOptions?.telemetry !== undefined
@@ -324,79 +401,4 @@ export function createTuvren(
   };
 
   return Promise.resolve(instance);
-}
-
-// ── Internal helpers ─────────────────────────────────────────────────────────
-
-function resolveKernelAndDispose(options: CreateTuvrenOptions): {
-  kernel: RuntimeKernel;
-  disposeBackend: () => Promise<void>;
-  purgeScope?: () => Promise<void>;
-} {
-  if (options.kernel !== undefined) {
-    // An externally-supplied kernel owns its substrate; `createTuvren` has no
-    // backend handle to drive a partition drop, so `maintenance.purgeScope`
-    // stays unavailable on the resulting runtime.
-    return { disposeBackend: () => Promise.resolve(), kernel: options.kernel };
-  }
-
-  const { backend } = options;
-  return {
-    kernel: createRuntimeKernel({ backend }),
-    disposeBackend: tryCloseBackend(backend),
-    // Surface the substrate partition-drop (ADR-0051, §4.17) only when the owned
-    // backend implements it; otherwise the runtime maintenance surface reports
-    // it as unsupported.
-    ...(typeof backend.purgeScope === "function"
-      ? {
-          purgeScope: (): Promise<void> =>
-            backend.purgeScope?.() ?? Promise.resolve(),
-        }
-      : {}),
-  };
-}
-
-function collectMcpSources(
-  tools: CreateTuvrenOptions["tools"]
-): McpToolSource[] {
-  if (tools === undefined) {
-    return [];
-  }
-  return tools.filter(isMcpToolSource);
-}
-
-function collectTools(
-  tools: CreateTuvrenOptions["tools"]
-): TuvrenToolDefinition[] {
-  if (tools === undefined) {
-    return [];
-  }
-  const result: TuvrenToolDefinition[] = [];
-  for (const item of tools) {
-    if (isMcpToolSource(item)) {
-      result.push(...item.tools);
-    } else {
-      result.push(item);
-    }
-  }
-  return result;
-}
-
-function isMcpToolSource(
-  item: McpToolSource | TuvrenToolDefinition
-): item is McpToolSource {
-  const obj = item as unknown as Record<string, unknown>;
-  return (
-    typeof obj.serverName === "string" &&
-    typeof obj.refresh === "function" &&
-    typeof obj.close === "function"
-  );
-}
-
-function tryCloseBackend(backend: RuntimeBackend): () => Promise<void> {
-  const b = backend as unknown as Record<string, unknown>;
-  if (typeof b.close === "function") {
-    return () => (b.close as () => Promise<void>)();
-  }
-  return () => Promise.resolve();
-}
+};

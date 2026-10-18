@@ -129,29 +129,106 @@ interface StandardLike<T> {
   };
 }
 
+// ── Internal schema builders ───────────────────────────────────────────────
+
+/**
+ * Calls `toJSONSchema()` on any schema object that exposes it, bridging the
+ * external-library return type to `TuvrenJsonSchema`.  The single `as`
+ * assertion at the return site is the genuine external-library boundary
+ * crossing: we know `toJSONSchema()` produces a JSON-Schema-compatible
+ * object, but the external type (e.g. Zod's `ZodStandardJSONSchemaPayload`)
+ * uses a wider index signature than `TuvrenJsonValue` allows statically.
+ */
+const extractJsonSchema = (schema: object): TuvrenJsonSchema => {
+  if (!("toJSONSchema" in schema)) {
+    return {};
+  }
+  // `in` narrows schema to `object & { toJSONSchema: unknown }`.
+  // We still need to verify callability before invoking.
+  const fn = schema.toJSONSchema;
+  if (typeof fn !== "function") {
+    return {};
+  }
+  return fn.call(schema) as TuvrenJsonSchema;
+};
+
+const buildZodSchema = <T>(zod: ZodLike<T>): Schema<T> => ({
+  [schemaSymbol]: true as const,
+  _type: undefined as T,
+  jsonSchema: extractJsonSchema(zod),
+  validate(value) {
+    const result = zod.safeParse(value);
+    if (result.success) {
+      return { success: true, value: result.data };
+    }
+    return {
+      error: new TuvrenValidationError(
+        result.error.message ?? "Validation failed",
+        {
+          code: "tool_input_validation_failed",
+          details: result.error.issues,
+        }
+      ),
+      success: false,
+    };
+  },
+});
+
+const buildStandardSchema = <T>(std: StandardLike<T>): Schema<T> => ({
+  [schemaSymbol]: true as const,
+  _type: undefined as T,
+  jsonSchema: extractJsonSchema(std),
+  validate(value) {
+    const result = std["~standard"].validate(value);
+
+    // `instanceof Promise` narrows TypeScript's union; the `.then` guard
+    // additionally catches cross-realm Promises and custom thenables that
+    // slip past instanceof but are still async.
+    if (
+      result instanceof Promise ||
+      typeof (result as { then?: unknown }).then === "function"
+    ) {
+      throw new TuvrenValidationError(
+        "Async Standard Schema validation is not supported in synchronous tool contexts",
+        { code: "invalid_tool_schema_authoring" }
+      );
+    }
+
+    if (result.issues !== undefined) {
+      return {
+        error: new TuvrenValidationError("Validation failed", {
+          code: "tool_input_validation_failed",
+          details: result.issues,
+        }),
+        success: false,
+      };
+    }
+
+    return { success: true, value: result.value };
+  },
+});
+
 // ── Adapter helpers (public API) ───────────────────────────────────────────
 
 /**
  * Wraps a bare `TuvrenJsonSchema` with the Tuvren schema brand.
  * Optionally accepts a validate function for runtime input checking.
  */
-export function jsonSchema<T = unknown>(
+export const jsonSchema = <T = unknown>(
   schema: TuvrenJsonSchema,
   options?: { validate?: Schema<T>["validate"] }
-): Schema<T> {
-  return {
-    // `schemaSymbol` is Symbol.for("tuvren.schema"); `true as const` gives
-    // the branded literal type required by Schema<T>.
-    [schemaSymbol]: true as const,
-    // _type is a phantom brand never read at runtime.  TypeScript requires a
-    // value of type T here; `undefined` is the only safe choice that adds no
-    // runtime overhead.  This is the single, intentional phantom-brand
-    // assignment in the file.
-    _type: undefined as T,
-    jsonSchema: schema,
-    validate: options?.validate,
-  };
-}
+): Schema<T> => ({
+  // `schemaSymbol` is Symbol.for("tuvren.schema"); `true as const` gives
+  // the branded literal type required by Schema<T>.
+  [schemaSymbol]: true as const,
+  // _type is a phantom brand never read at runtime.  TypeScript requires a
+  // value of type T here; `undefined` is the only safe choice that adds no
+  // runtime overhead.  This is the single, intentional phantom-brand
+  // assignment in the file.
+  _type: undefined as T,
+  jsonSchema: schema,
+  validate: options?.validate,
+});
 
 /**
  * Wraps a Zod schema (v3 compat or v4 native) into a `Schema<T>`.
@@ -159,12 +236,11 @@ export function jsonSchema<T = unknown>(
  * Zod v3 compat schemas fall back to `{}` since they have no built-in
  * JSON Schema generator; validation still uses `safeParse`.
  */
-export function zodSchema<T>(schema: ZodSchema<T>): Schema<T> {
+export const zodSchema = <T>(schema: ZodSchema<T>): Schema<T> =>
   // ZodSchema<T> is structurally assignable to ZodLike<T>: both Zod v3 compat
   // and Zod v4 types have safeParse with compatible signatures and optionally
   // toJSONSchema.  No type assertion is needed here.
-  return buildZodSchema<T>(schema);
-}
+  buildZodSchema<T>(schema);
 
 /**
  * Wraps a Standard Schema-compliant object into a `Schema<T>`.
@@ -173,11 +249,10 @@ export function zodSchema<T>(schema: ZodSchema<T>): Schema<T> {
  * Async validate functions throw `TuvrenValidationError` immediately;
  * tool execute contexts are synchronous.
  */
-export function standardSchema<T>(schema: StandardSchema<T>): Schema<T> {
+export const standardSchema = <T>(schema: StandardSchema<T>): Schema<T> =>
   // StandardSchema<T> is structurally assignable to StandardLike<T>.  No type
   // assertion needed.
-  return buildStandardSchema<T>(schema);
-}
+  buildStandardSchema<T>(schema);
 
 // ── asSchema — centralized 6-branch normalizer (ADR-0038) ──────────────────
 
@@ -192,7 +267,7 @@ export function standardSchema<T>(schema: StandardSchema<T>): Schema<T> {
  *   5. Lazy function     — typeof schema === "function"
  *   6. Bare JSON Schema  — fallback; T = unknown
  */
-export function asSchema<T>(schema: FlexibleSchema<T>): Schema<T> {
+export const asSchema = <T>(schema: FlexibleSchema<T>): Schema<T> => {
   // Branches 1–4 and the object-shape branch 6 require an object value.
   if (typeof schema === "object" && schema !== null) {
     // Branch 1: already-wrapped (schemaSymbol in schema).
@@ -232,7 +307,7 @@ export function asSchema<T>(schema: FlexibleSchema<T>): Schema<T> {
 
   // Branch 6 (boolean form): bare TuvrenJsonSchema (true / false).
   return jsonSchema<T>(schema);
-}
+};
 
 // ── defineTool ─────────────────────────────────────────────────────────────
 
@@ -258,7 +333,7 @@ export function asSchema<T>(schema: FlexibleSchema<T>): Schema<T> {
  * });
  * ```
  */
-export function defineTool<INPUT, OUTPUT>(options: {
+export const defineTool = <INPUT, OUTPUT>(options: {
   name: string;
   description: string;
   inputSchema: FlexibleSchema<INPUT>;
@@ -277,7 +352,7 @@ export function defineTool<INPUT, OUTPUT>(options: {
    */
   outputSchema?: TuvrenJsonSchema | CustomSchema;
   timeout?: number;
-}): TuvrenToolDefinition {
+}): TuvrenToolDefinition => {
   const normalized = asSchema(options.inputSchema);
   const userExecute = options.execute;
 
@@ -322,87 +397,4 @@ export function defineTool<INPUT, OUTPUT>(options: {
     outputSchema: options.outputSchema,
     timeout: options.timeout,
   };
-}
-
-// ── Internal schema builders ───────────────────────────────────────────────
-
-/**
- * Calls `toJSONSchema()` on any schema object that exposes it, bridging the
- * external-library return type to `TuvrenJsonSchema`.  The single `as`
- * assertion at the return site is the genuine external-library boundary
- * crossing: we know `toJSONSchema()` produces a JSON-Schema-compatible
- * object, but the external type (e.g. Zod's `ZodStandardJSONSchemaPayload`)
- * uses a wider index signature than `TuvrenJsonValue` allows statically.
- */
-function extractJsonSchema(schema: object): TuvrenJsonSchema {
-  if (!("toJSONSchema" in schema)) {
-    return {};
-  }
-  // `in` narrows schema to `object & { toJSONSchema: unknown }`.
-  // We still need to verify callability before invoking.
-  const fn = schema.toJSONSchema;
-  if (typeof fn !== "function") {
-    return {};
-  }
-  return fn.call(schema) as TuvrenJsonSchema;
-}
-
-function buildZodSchema<T>(zod: ZodLike<T>): Schema<T> {
-  return {
-    [schemaSymbol]: true as const,
-    _type: undefined as T,
-    jsonSchema: extractJsonSchema(zod),
-    validate(value) {
-      const result = zod.safeParse(value);
-      if (result.success) {
-        return { success: true, value: result.data };
-      }
-      return {
-        error: new TuvrenValidationError(
-          result.error.message ?? "Validation failed",
-          {
-            code: "tool_input_validation_failed",
-            details: result.error.issues,
-          }
-        ),
-        success: false,
-      };
-    },
-  };
-}
-
-function buildStandardSchema<T>(std: StandardLike<T>): Schema<T> {
-  return {
-    [schemaSymbol]: true as const,
-    _type: undefined as T,
-    jsonSchema: extractJsonSchema(std),
-    validate(value) {
-      const result = std["~standard"].validate(value);
-
-      // `instanceof Promise` narrows TypeScript's union; the `.then` guard
-      // additionally catches cross-realm Promises and custom thenables that
-      // slip past instanceof but are still async.
-      if (
-        result instanceof Promise ||
-        typeof (result as { then?: unknown }).then === "function"
-      ) {
-        throw new TuvrenValidationError(
-          "Async Standard Schema validation is not supported in synchronous tool contexts",
-          { code: "invalid_tool_schema_authoring" }
-        );
-      }
-
-      if (result.issues !== undefined) {
-        return {
-          error: new TuvrenValidationError("Validation failed", {
-            code: "tool_input_validation_failed",
-            details: result.issues,
-          }),
-          success: false,
-        };
-      }
-
-      return { success: true, value: result.value };
-    },
-  };
-}
+};

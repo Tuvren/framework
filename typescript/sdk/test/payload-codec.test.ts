@@ -35,10 +35,12 @@ const KEYREF_LEN_OUT_OF_RANGE = /keyRef length out of range/;
 const IV_LEN_OUT_OF_RANGE = /iv length out of range/;
 
 /** In-memory keyring whose entries the host can destroy to simulate erasure. */
-function createDestroyableKeyring(initial?: Record<string, Uint8Array>): {
+const createDestroyableKeyring = (
+  initial?: Record<string, Uint8Array>
+): {
   destroy(keyRef: string): void;
   keyring: PayloadKeyring;
-} {
+} => {
   const keys = new Map<string, Uint8Array>(Object.entries(initial ?? {}));
   return {
     destroy(keyRef) {
@@ -50,7 +52,7 @@ function createDestroyableKeyring(initial?: Record<string, Uint8Array>): {
       },
     },
   };
-}
+};
 
 const PLAINTEXT = new TextEncoder().encode(
   JSON.stringify({ role: "tool", secret: "social-security-number" })

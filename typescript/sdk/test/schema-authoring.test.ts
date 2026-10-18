@@ -35,76 +35,70 @@ import {
 // These implement only the duck-typed surfaces that the detection branches test.
 
 /** Minimal Zod v4 mock: has _zod + safeParse. */
-function makeZodV4Mock<T>(
+const makeZodV4Mock = <T>(
   parseResult:
     | { success: true; data: T }
     | { success: false; message: string; issues?: unknown },
   jsonSchemaValue?: Record<string, unknown>
-) {
-  return {
-    _zod: {},
-    safeParse(_value: unknown) {
-      if (parseResult.success) {
-        return { data: parseResult.data, success: true as const };
-      }
-      return {
-        error: {
-          issues: "issues" in parseResult ? parseResult.issues : undefined,
-          message: parseResult.message,
-        },
-        success: false as const,
-      };
-    },
-    ...(jsonSchemaValue === undefined
-      ? {}
-      : { toJSONSchema: () => jsonSchemaValue }),
-  };
-}
+) => ({
+  _zod: {},
+  safeParse(_value: unknown) {
+    if (parseResult.success) {
+      return { data: parseResult.data, success: true as const };
+    }
+    return {
+      error: {
+        issues: "issues" in parseResult ? parseResult.issues : undefined,
+        message: parseResult.message,
+      },
+      success: false as const,
+    };
+  },
+  ...(jsonSchemaValue === undefined
+    ? {}
+    : { toJSONSchema: () => jsonSchemaValue }),
+});
 
 /** Minimal Standard Schema mock (non-zod). */
-function makeStandardMock<T>(
+const makeStandardMock = <T>(
   result:
     | { value: T }
     | { issues: readonly { message: string }[] }
     | Promise<{ value: T } | { issues: readonly { message: string }[] }>,
   jsonSchemaValue?: Record<string, unknown>
-) {
-  return {
-    "~standard": {
-      validate(_value: unknown) {
-        return result;
-      },
+) => ({
+  "~standard": {
+    validate(_value: unknown) {
+      return result;
     },
-    ...(jsonSchemaValue === undefined
-      ? {}
-      : { toJSONSchema: () => jsonSchemaValue }),
-  };
-}
+  },
+  ...(jsonSchemaValue === undefined
+    ? {}
+    : { toJSONSchema: () => jsonSchemaValue }),
+});
 
 /** Minimal Zod v3 compat mock: has ~standard.vendor === "zod" + safeParse. */
-function makeZodV3Mock<T>(
+const makeZodV3Mock = <T>(
   parseResult: { success: true; data: T } | { success: false; message: string }
-) {
-  return {
-    safeParse(_value: unknown) {
-      if (parseResult.success) {
-        return { success: true as const, data: parseResult.data };
-      }
-      return {
-        success: false as const,
-        error: { message: parseResult.message, issues: undefined },
-      };
+) => ({
+  safeParse(_value: unknown) {
+    if (parseResult.success) {
+      return { success: true as const, data: parseResult.data };
+    }
+    return {
+      success: false as const,
+      error: { message: parseResult.message, issues: undefined },
+    };
+  },
+  "~standard": {
+    validate(_value: unknown) {
+      return parseResult.success
+        ? { value: parseResult.data }
+        : { issues: [{ message: parseResult.message }] };
     },
-    "~standard": {
-      validate(_value: unknown) {
-        return parseResult.success
-          ? { value: parseResult.data }
-          : { issues: [{ message: parseResult.message }] };
-      },
-      vendor: "zod" as const,
-    },
-  };
-}
+    vendor: "zod" as const,
+  },
+});
 
 const STUB_CTX = {
   callId: "test-call-id",

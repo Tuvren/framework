@@ -31,20 +31,18 @@ import { createRunnerRegistry, createTuvrenRuntime } from "@tuvren/runtime";
 import { createStaticRunner } from "../../runtime/test/orchestration-runtime-runner-helpers.ts";
 import { createTuvren } from "../src/lib/create-tuvren.js";
 
-function moduleResolutionRunnerFactory() {
-  return {
-    create: () =>
-      createStaticRunner(() => ({
-        messages: [],
-        resolution: { reason: "done", type: "end_turn" },
-      })),
-    id: "module-resolution-runner",
-  };
-}
+const moduleResolutionRunnerFactory = () => ({
+  create: () =>
+    createStaticRunner(() => ({
+      messages: [],
+      resolution: { reason: "done", type: "end_turn" },
+    })),
+  id: "module-resolution-runner",
+});
 
-async function capturePurgeScopeRejection(
+const capturePurgeScopeRejection = async (
   purgeScope: () => Promise<void>
-): Promise<unknown> {
+): Promise<unknown> => {
   try {
     await purgeScope();
   } catch (error: unknown) {
@@ -52,7 +50,7 @@ async function capturePurgeScopeRejection(
   }
 
   return undefined;
-}
+};
 
 describe("sdk module resolution", () => {
   test("the composed SDK runtime throws the TuvrenRuntimeError constructor @tuvren/core exports", async () => {

@@ -53,32 +53,32 @@ const SCOPE = "tenant.conversation-state-continuity";
 // an OpenAI response continuation token) carried back from a prior turn.
 const CONTINUITY_SECRET = "CONTINUITY-thought-signature-9f3a";
 
-function createKeyring(keys: Map<string, Uint8Array>): PayloadKeyring {
-  return { resolve: (keyRef) => keys.get(keyRef) };
-}
+const createKeyring = (keys: Map<string, Uint8Array>): PayloadKeyring => ({
+  resolve: (keyRef) => keys.get(keyRef),
+});
 
-function assistantWithContinuity(text: string): TuvrenMessage {
-  return {
-    parts: [
-      {
-        providerMetadata: {
-          google: { thoughtSignature: CONTINUITY_SECRET },
-        },
-        text,
-        type: "text",
+const assistantWithContinuity = (text: string): TuvrenMessage => ({
+  parts: [
+    {
+      providerMetadata: {
+        google: { thoughtSignature: CONTINUITY_SECRET },
       },
-    ],
-    providerMetadata: {
-      google: { thoughtSignature: CONTINUITY_SECRET },
+      text,
+      type: "text",
     },
-    role: "assistant",
-  };
-}
+  ],
+  providerMetadata: {
+    google: { thoughtSignature: CONTINUITY_SECRET },
+  },
+  role: "assistant",
+});
 
-function buildRuntime(options: { keys?: Map<string, Uint8Array> }): {
+const buildRuntime = (options: {
+  keys?: Map<string, Uint8Array>;
+}): {
   framework: ReturnType<typeof createTuvrenRuntime>;
   kernel: ReturnType<typeof createRuntimeKernel>;
-} {
+} => {
   const kernel = createRuntimeKernel({
     backend: createMemoryBackend({ scope: SCOPE }),
   });
@@ -101,11 +101,11 @@ function buildRuntime(options: { keys?: Map<string, Uint8Array> }): {
         }),
   });
   return { framework, kernel };
-}
+};
 
-async function runOneTurn(runtime: {
+const runOneTurn = async (runtime: {
   framework: ReturnType<typeof createTuvrenRuntime>;
-}): Promise<{ branchId: string; threadId: string }> {
+}): Promise<{ branchId: string; threadId: string }> => {
   const thread = await runtime.framework.createThread({});
   const handle = runtime.framework.executeTurn({
     branchId: thread.branchId,
@@ -116,12 +116,12 @@ async function runOneTurn(runtime: {
   const result = await handle.awaitResult();
   expect(result.status).toBe("completed");
   return { branchId: thread.branchId, threadId: thread.threadId };
-}
+};
 
-async function readMessageHashes(
+const readMessageHashes = async (
   kernel: ReturnType<typeof createRuntimeKernel>,
   branchId: string
-): Promise<string[]> {
+): Promise<string[]> => {
   const branch = await kernel.branch.get(branchId);
   if (branch === null) {
     throw new Error("branch missing");
@@ -134,11 +134,10 @@ async function readMessageHashes(
   return Array.isArray(resolved)
     ? resolved.filter((h): h is string => typeof h === "string")
     : [];
-}
+};
 
-function bytesContainText(bytes: Uint8Array, text: string): boolean {
-  return Buffer.from(bytes).includes(Buffer.from(text, "utf-8"));
-}
+const bytesContainText = (bytes: Uint8Array, text: string): boolean =>
+  Buffer.from(bytes).includes(Buffer.from(text, "utf-8"));
 
 describe("KRT-BH002 shreddable continuity artifacts", () => {
   test("carried continuity providerMetadata is stored only as a host-key-encrypted reference", async () => {
