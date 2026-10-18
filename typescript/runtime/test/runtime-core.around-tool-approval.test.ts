@@ -47,6 +47,74 @@ import {
   toOptionalRecord,
 } from "./runtime-core-test-helpers.ts";
 
+const isKrakenRunnerFactory = (
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): entry is RuntimeRunnerFactory => {
+  return "create" in entry && typeof entry.create === "function";
+};
+
+const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
+  return (result.messages ?? []).some(
+    (message) =>
+      message.role === "assistant" &&
+      message.parts.some((part) => part.type === "tool_call")
+  );
+};
+
+const normalizeRunnerResult = (
+  result: RunnerExecutionResult
+): RunnerExecutionResult => {
+  if (
+    result.toolExecutionMode !== undefined ||
+    !requestsToolExecution(result)
+  ) {
+    return result;
+  }
+
+  return {
+    ...result,
+    toolExecutionMode: "parallel",
+  };
+};
+
+const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
+  const { resume } = runner;
+
+  return {
+    async execute(context) {
+      return normalizeRunnerResult(await runner.execute(context));
+    },
+    id: runner.id,
+    ...(resume === undefined
+      ? {}
+      : {
+          async resume(context) {
+            return normalizeRunnerResult(await resume(context));
+          },
+        }),
+  };
+};
+
+const wrapRunnerEntry = (
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): RuntimeRunner | RuntimeRunnerFactory => {
+  if (isKrakenRunnerFactory(entry)) {
+    return {
+      create() {
+        return wrapRunner(entry.create());
+      },
+      id: entry.id,
+    };
+  }
+
+  return wrapRunner(entry);
+};
+
+const createRunnerRegistry = (
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
+) => {
+  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
+};
 describe("framework-runtime-core", () => {
   test("preserves receiver context for function and object-form aroundTool handlers", async () => {
     interface MethodAroundToolExtension extends TuvrenExtension {
@@ -740,72 +808,3 @@ describe("framework-runtime-core", () => {
     });
   });
 });
-
-function createRunnerRegistry(
-  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-}
-
-function wrapRunnerEntry(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): RuntimeRunner | RuntimeRunnerFactory {
-  if (isKrakenRunnerFactory(entry)) {
-    return {
-      create() {
-        return wrapRunner(entry.create());
-      },
-      id: entry.id,
-    };
-  }
-
-  return wrapRunner(entry);
-}
-
-function isKrakenRunnerFactory(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory {
-  return "create" in entry && typeof entry.create === "function";
-}
-
-function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const { resume } = runner;
-
-  return {
-    async execute(context) {
-      return normalizeRunnerResult(await runner.execute(context));
-    },
-    id: runner.id,
-    ...(resume === undefined
-      ? {}
-      : {
-          async resume(context) {
-            return normalizeRunnerResult(await resume(context));
-          },
-        }),
-  };
-}
-
-function normalizeRunnerResult(
-  result: RunnerExecutionResult
-): RunnerExecutionResult {
-  if (
-    result.toolExecutionMode !== undefined ||
-    !requestsToolExecution(result)
-  ) {
-    return result;
-  }
-
-  return {
-    ...result,
-    toolExecutionMode: "parallel",
-  };
-}
-
-function requestsToolExecution(result: RunnerExecutionResult): boolean {
-  return (result.messages ?? []).some(
-    (message) =>
-      message.role === "assistant" &&
-      message.parts.some((part) => part.type === "tool_call")
-  );
-}
