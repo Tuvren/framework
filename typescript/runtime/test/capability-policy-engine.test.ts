@@ -43,25 +43,25 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeSurface(name: string, capabilityId: string): ToolSurface {
+const makeSurface = (name: string, capabilityId: string): ToolSurface => {
   return {
     capabilityId,
     description: `surface for ${capabilityId}`,
     inputSchema: { type: "object" },
     name,
   };
-}
+};
 
-function makeBinding(
+const makeBinding = (
   capabilityId: string,
   endpointKind: Binding["endpoint"]["kind"] = "tuvren-in-process"
-): Binding {
+): Binding => {
   return {
     capabilityId,
     endpoint: { id: "local", kind: endpointKind },
     executionClass: "tuvren-server",
   };
-}
+};
 
 const defaultContext: CapabilityPolicyContext = {
   modelId: "test-model",
@@ -266,7 +266,7 @@ describe("CapabilityPolicyEngine — framework ownership", () => {
 describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
   const deniedToolName = "denied-op";
 
-  function makeDenialRunner(): RuntimeRunner {
+  const makeDenialRunner = (): RuntimeRunner => {
     return {
       async execute(context) {
         if (!context.messages.some((m) => m.role === "tool")) {
@@ -290,9 +290,9 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
         throw new Error("resume not expected");
       },
     };
-  }
+  };
 
-  async function runDeniedTurn(toolExecuted: { value: boolean }) {
+  const runDeniedTurn = async (toolExecuted: { value: boolean }) => {
     const harness = createFakeKernelHarness();
     const engine = createCapabilityPolicyEngine({
       deniedCapabilityIds: new Set([deniedToolName]),
@@ -324,7 +324,7 @@ describe("CapabilityPolicyEngine — wired invocation-time denial", () => {
       threadId: thread.threadId,
     });
     return collectEvents(handle.events());
-  }
+  };
 
   test("denied capability surfaces as tool.result with isError true", async () => {
     const toolExecuted = { value: false };
@@ -1620,26 +1620,26 @@ describe("CapabilityPolicyEngine — BB005 resume-path policy check", () => {
 // ---------------------------------------------------------------------------
 
 describe("CapabilityPolicyEngine — BB+ extension dimension interface", () => {
-  function makeDenyExposureDimension(reason: string): PolicyDimension {
+  const makeDenyExposureDimension = (reason: string): PolicyDimension => {
     return {
       checkExposure: () => reason,
       checkInvocation: () => null,
     };
-  }
+  };
 
-  function makeDenyInvocationDimension(reason: string): PolicyDimension {
+  const makeDenyInvocationDimension = (reason: string): PolicyDimension => {
     return {
       checkExposure: () => null,
       checkInvocation: () => reason,
     };
-  }
+  };
 
-  function makePassDimension(): PolicyDimension {
+  const makePassDimension = (): PolicyDimension => {
     return {
       checkExposure: () => null,
       checkInvocation: () => null,
     };
-  }
+  };
 
   const surface = makeSurface("ext-tool", "ext.cap");
   const binding = makeBinding("ext.cap");

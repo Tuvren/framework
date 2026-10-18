@@ -38,7 +38,7 @@ interface RecordingProvider {
   releaseFirstRequest(): void;
 }
 
-function createRecordingProvider(): RecordingProvider {
+const createRecordingProvider = (): RecordingProvider => {
   const capturedPrompts: TuvrenMessage[][] = [];
   const firstRequestReceived = Promise.withResolvers<void>();
   const firstRequestRelease = Promise.withResolvers<void>();
@@ -78,14 +78,14 @@ function createRecordingProvider(): RecordingProvider {
     provider,
     releaseFirstRequest: () => firstRequestRelease.resolve(),
   };
-}
+};
 
-function keyedSignal(text: string, admissionKey: string): InputSignal {
+const keyedSignal = (text: string, admissionKey: string): InputSignal => {
   return {
     admissionKey,
     parts: [{ text, type: "text" }],
   };
-}
+};
 
 describe("KRT-CS008 provider request admission-key exclusion", () => {
   test("keeps keyed initial input and steering out of every ReAct provider request", async () => {
