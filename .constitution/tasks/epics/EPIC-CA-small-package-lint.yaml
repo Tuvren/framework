@@ -106,7 +106,7 @@ tickets:
       evidence: "Assert module initialization, cyclic imports and conformance outcomes match the pre-reorder baseline. Run scoped tests, repository typecheck and bun run conformance on the same implementation. Preserve error and event ordering, not just lint success. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: in_progress
+    status: done
   - id: KRT-CA004
     title: Clear remaining rules and switch clean project targets
     type: Chore
