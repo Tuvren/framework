@@ -23,7 +23,8 @@
 #         release plan, after registry propagation.
 #      c. Create and push tag `v<version>` at the verified publish commit.
 #      d. Create the GitHub Release from the Changesets-generated release
-#         section or sections with `gh release create ... --notes-file ...`.
+#         section or sections with
+#         `gh release create ... --verify-tag --notes-file ...`.
 
 name: release
 
