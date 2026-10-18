@@ -45,100 +45,64 @@ export interface FrameworkAdapterOrchestrationLifecycleDependencies {
   ): string;
 }
 
-export function createFrameworkAdapterOrchestrationLifecycle(
+export const createFrameworkAdapterOrchestrationLifecycle = (
   dependencies: FrameworkAdapterOrchestrationLifecycleDependencies
 ): {
   runOrchestrationLifecycleLocality(input: unknown): Promise<AdapterProjection>;
-} {
-  async function runOrchestrationLifecycleLocality(
-    input: unknown
-  ): Promise<AdapterProjection> {
-    const scenario = dependencies.readOperationScenario(
-      input,
-      "runtime.orchestration.lifecycle-locality"
-    );
-    const lifecycleCase = dependencies.readStringProperty(
-      scenario,
-      "case",
-      "runtime.orchestration.lifecycle-locality.case"
-    );
-
-    switch (lifecycleCase) {
-      case "parent_pause_child_continues": {
-        return await runOrchestrationParentPauseChildContinues(
-          dependencies.readStringProperty(
-            scenario,
-            "childText",
-            "runtime.orchestration.lifecycle-locality.childText"
-          ),
-          dependencies.readStringProperty(
-            scenario,
-            "parentText",
-            "runtime.orchestration.lifecycle-locality.parentText"
-          )
-        );
-      }
-      case "child_pause_parent_completes": {
-        return await runOrchestrationChildPauseParentCompletes(
-          dependencies.readStringProperty(
-            scenario,
-            "childText",
-            "runtime.orchestration.lifecycle-locality.childText"
-          ),
-          dependencies.readStringProperty(
-            scenario,
-            "parentText",
-            "runtime.orchestration.lifecycle-locality.parentText"
-          )
-        );
-      }
-      case "child_cancel_parent_completes": {
-        return await runOrchestrationChildCancelParentCompletes(
-          dependencies.readStringProperty(
-            scenario,
-            "childText",
-            "runtime.orchestration.lifecycle-locality.childText"
-          ),
-          dependencies.readStringProperty(
-            scenario,
-            "parentText",
-            "runtime.orchestration.lifecycle-locality.parentText"
-          )
-        );
-      }
-      case "parent_cancel_child_completes": {
-        return await runOrchestrationParentCancelChildCompletes(
-          dependencies.readStringProperty(
-            scenario,
-            "childText",
-            "runtime.orchestration.lifecycle-locality.childText"
-          ),
-          dependencies.readStringProperty(
-            scenario,
-            "parentText",
-            "runtime.orchestration.lifecycle-locality.parentText"
-          )
-        );
-      }
-      case "spawn_requires_running_handle": {
-        return await runOrchestrationSpawnRequiresRunningHandle();
-      }
-      default: {
-        throw new Error(
-          `runtime.orchestration.lifecycle-locality declared unsupported case ${lifecycleCase}`
-        );
-      }
-    }
-  }
-
-  return {
-    runOrchestrationLifecycleLocality,
+} => {
+  const sleep = (ms: number): Promise<void> => {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
   };
 
-  async function runOrchestrationParentPauseChildContinues(
+  const waitUntil = async (
+    predicate: () => boolean,
+    timeoutMs = 1000
+  ): Promise<void> => {
+    const start = Date.now();
+
+    while (!predicate()) {
+      if (Date.now() - start > timeoutMs) {
+        throw new Error(`timed out after ${timeoutMs}ms`);
+      }
+
+      await sleep(5);
+    }
+  };
+
+  const firstVisibleText = (result: unknown): string | undefined => {
+    if (
+      typeof result !== "object" ||
+      result === null ||
+      Array.isArray(result)
+    ) {
+      return undefined;
+    }
+    type KV = Record<string, unknown>;
+    const r = result as KV;
+    const msg = r.finalAssistantMessage;
+    if (typeof msg !== "object" || msg === null) {
+      return undefined;
+    }
+    const { parts } = msg as KV;
+    if (!Array.isArray(parts)) {
+      return undefined;
+    }
+    const textPart = parts.find(
+      (p) => typeof p === "object" && p !== null && (p as KV).type === "text"
+    );
+    if (textPart === undefined) {
+      return undefined;
+    }
+    const { text } = textPart as KV;
+    return typeof text === "string" ? text : undefined;
+  };
+
+  const runOrchestrationParentPauseChildContinues = async (
     childText: string,
     parentText: string
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
@@ -251,12 +215,12 @@ export function createFrameworkAdapterOrchestrationLifecycle(
       evidence: { orchestration: { lifecycle } },
       result: { orchestration: { lifecycle } },
     };
-  }
+  };
 
-  async function runOrchestrationChildPauseParentCompletes(
+  const runOrchestrationChildPauseParentCompletes = async (
     childText: string,
     parentText: string
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
@@ -375,12 +339,23 @@ export function createFrameworkAdapterOrchestrationLifecycle(
       evidence: { orchestration: { lifecycle } },
       result: { orchestration: { lifecycle } },
     };
-  }
+  };
 
-  async function runOrchestrationChildCancelParentCompletes(
+  const captureAsyncActionError = async (
+    action: () => Promise<unknown>
+  ): Promise<Record<string, unknown> | undefined> => {
+    try {
+      await action();
+      return undefined;
+    } catch (error: unknown) {
+      return dependencies.createObservedErrorEnvelope(error);
+    }
+  };
+
+  const runOrchestrationChildCancelParentCompletes = async (
     childText: string,
     parentText: string
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
@@ -452,12 +427,12 @@ export function createFrameworkAdapterOrchestrationLifecycle(
       evidence: { orchestration: { lifecycle } },
       result: { orchestration: { lifecycle } },
     };
-  }
+  };
 
-  async function runOrchestrationParentCancelChildCompletes(
+  const runOrchestrationParentCancelChildCompletes = async (
     childText: string,
     _parentText: string
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
@@ -530,26 +505,22 @@ export function createFrameworkAdapterOrchestrationLifecycle(
       evidence: { orchestration: { lifecycle } },
       result: { orchestration: { lifecycle } },
     };
-  }
+  };
 
-  async function runOrchestrationSpawnRequiresRunningHandle(): Promise<AdapterProjection> {
-    const pausedSpawnError = await runPausedParentSpawnRejection();
-    const completedSpawnError = await runCompletedParentSpawnRejection();
+  const captureActionError = (
+    action: () => unknown
+  ): Record<string, unknown> | undefined => {
+    try {
+      action();
+      return undefined;
+    } catch (error: unknown) {
+      return dependencies.createObservedErrorEnvelope(error);
+    }
+  };
 
-    const lifecycle = {
-      completedSpawnError,
-      pausedSpawnError,
-    };
-
-    return {
-      evidence: { orchestration: { lifecycle } },
-      result: { orchestration: { lifecycle } },
-    };
-  }
-
-  async function runPausedParentSpawnRejection(): Promise<
+  const runPausedParentSpawnRejection = async (): Promise<
     Record<string, unknown> | undefined
-  > {
+  > => {
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
@@ -635,11 +606,11 @@ export function createFrameworkAdapterOrchestrationLifecycle(
         signal: textSignal("background"),
       })
     );
-  }
+  };
 
-  async function runCompletedParentSpawnRejection(): Promise<
+  const runCompletedParentSpawnRejection = async (): Promise<
     Record<string, unknown> | undefined
-  > {
+  > => {
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
@@ -682,76 +653,105 @@ export function createFrameworkAdapterOrchestrationLifecycle(
         signal: textSignal("too-late"),
       })
     );
-  }
+  };
 
-  function firstVisibleText(result: unknown): string | undefined {
-    if (
-      typeof result !== "object" ||
-      result === null ||
-      Array.isArray(result)
-    ) {
-      return undefined;
-    }
-    type KV = Record<string, unknown>;
-    const r = result as KV;
-    const msg = r.finalAssistantMessage;
-    if (typeof msg !== "object" || msg === null) {
-      return undefined;
-    }
-    const { parts } = msg as KV;
-    if (!Array.isArray(parts)) {
-      return undefined;
-    }
-    const textPart = parts.find(
-      (p) => typeof p === "object" && p !== null && (p as KV).type === "text"
+  const runOrchestrationSpawnRequiresRunningHandle =
+    async (): Promise<AdapterProjection> => {
+      const pausedSpawnError = await runPausedParentSpawnRejection();
+      const completedSpawnError = await runCompletedParentSpawnRejection();
+
+      const lifecycle = {
+        completedSpawnError,
+        pausedSpawnError,
+      };
+
+      return {
+        evidence: { orchestration: { lifecycle } },
+        result: { orchestration: { lifecycle } },
+      };
+    };
+  const runOrchestrationLifecycleLocality = async (
+    input: unknown
+  ): Promise<AdapterProjection> => {
+    const scenario = dependencies.readOperationScenario(
+      input,
+      "runtime.orchestration.lifecycle-locality"
     );
-    if (textPart === undefined) {
-      return undefined;
-    }
-    const { text } = textPart as KV;
-    return typeof text === "string" ? text : undefined;
-  }
+    const lifecycleCase = dependencies.readStringProperty(
+      scenario,
+      "case",
+      "runtime.orchestration.lifecycle-locality.case"
+    );
 
-  function captureActionError(
-    action: () => unknown
-  ): Record<string, unknown> | undefined {
-    try {
-      action();
-      return undefined;
-    } catch (error: unknown) {
-      return dependencies.createObservedErrorEnvelope(error);
-    }
-  }
-
-  async function captureAsyncActionError(
-    action: () => Promise<unknown>
-  ): Promise<Record<string, unknown> | undefined> {
-    try {
-      await action();
-      return undefined;
-    } catch (error: unknown) {
-      return dependencies.createObservedErrorEnvelope(error);
-    }
-  }
-
-  async function waitUntil(
-    predicate: () => boolean,
-    timeoutMs = 1000
-  ): Promise<void> {
-    const start = Date.now();
-
-    while (!predicate()) {
-      if (Date.now() - start > timeoutMs) {
-        throw new Error(`timed out after ${timeoutMs}ms`);
+    switch (lifecycleCase) {
+      case "parent_pause_child_continues": {
+        return await runOrchestrationParentPauseChildContinues(
+          dependencies.readStringProperty(
+            scenario,
+            "childText",
+            "runtime.orchestration.lifecycle-locality.childText"
+          ),
+          dependencies.readStringProperty(
+            scenario,
+            "parentText",
+            "runtime.orchestration.lifecycle-locality.parentText"
+          )
+        );
       }
-
-      await sleep(5);
+      case "child_pause_parent_completes": {
+        return await runOrchestrationChildPauseParentCompletes(
+          dependencies.readStringProperty(
+            scenario,
+            "childText",
+            "runtime.orchestration.lifecycle-locality.childText"
+          ),
+          dependencies.readStringProperty(
+            scenario,
+            "parentText",
+            "runtime.orchestration.lifecycle-locality.parentText"
+          )
+        );
+      }
+      case "child_cancel_parent_completes": {
+        return await runOrchestrationChildCancelParentCompletes(
+          dependencies.readStringProperty(
+            scenario,
+            "childText",
+            "runtime.orchestration.lifecycle-locality.childText"
+          ),
+          dependencies.readStringProperty(
+            scenario,
+            "parentText",
+            "runtime.orchestration.lifecycle-locality.parentText"
+          )
+        );
+      }
+      case "parent_cancel_child_completes": {
+        return await runOrchestrationParentCancelChildCompletes(
+          dependencies.readStringProperty(
+            scenario,
+            "childText",
+            "runtime.orchestration.lifecycle-locality.childText"
+          ),
+          dependencies.readStringProperty(
+            scenario,
+            "parentText",
+            "runtime.orchestration.lifecycle-locality.parentText"
+          )
+        );
+      }
+      case "spawn_requires_running_handle": {
+        return await runOrchestrationSpawnRequiresRunningHandle();
+      }
+      default: {
+        throw new Error(
+          `runtime.orchestration.lifecycle-locality declared unsupported case ${lifecycleCase}`
+        );
+      }
     }
-  }
+  };
 
-  function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
-  }
-}
+  return {
+    runOrchestrationLifecycleLocality,
+  };
+};
