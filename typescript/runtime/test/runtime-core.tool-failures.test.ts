@@ -29,6 +29,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   assistantToolCalls,
   collectEvents,
@@ -43,17 +44,15 @@ import {
 
 const isKrakenRunnerFactory = (
   entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory => {
-  return "create" in entry && typeof entry.create === "function";
-};
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
 
-const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
-  return (result.messages ?? []).some(
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&
       message.parts.some((part) => part.type === "tool_call")
   );
-};
 
 const normalizeRunnerResult = (
   result: RunnerExecutionResult
@@ -72,7 +71,7 @@ const normalizeRunnerResult = (
 };
 
 const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
-  const { resume } = runner;
+  const resume = runner.resume?.bind(runner);
 
   return {
     async execute(context) {
@@ -106,18 +105,15 @@ const wrapRunnerEntry = (
 
 const createRunnerRegistry = (
   runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) => {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-};
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("stages and emits immediate invalid tool results before slower executable siblings finish", async () => {
     const harness = createFakeKernelHarness();
-    let releaseSlowTool: (() => void) | undefined;
-    const slowTool = new Promise<void>((resolve) => {
-      releaseSlowTool = resolve;
-    });
+    const slowToolGate = Promise.withResolvers<undefined>();
+    const releaseSlowTool = slowToolGate.resolve;
+    const slowTool = slowToolGate.promise;
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
         );
@@ -151,11 +147,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -210,7 +206,7 @@ describe("framework-runtime-core", () => {
       )
     ).toBe(true);
 
-    releaseSlowTool?.();
+    releaseSlowTool();
     await capture.done;
 
     expect(
@@ -233,7 +229,7 @@ describe("framework-runtime-core", () => {
   test("passes through direct tool result parts returned by a tool", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
         );
@@ -262,11 +258,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -333,7 +329,7 @@ describe("framework-runtime-core", () => {
   test("persists tool messages in call order even when parallel completion order differs", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
         );
@@ -367,11 +363,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -440,7 +436,7 @@ describe("framework-runtime-core", () => {
   test("times out long-running tools into tool_result errors", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
         );
@@ -469,11 +465,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -531,7 +527,7 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     let observedAbort = false;
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
         );
@@ -560,11 +556,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -621,7 +617,7 @@ describe("framework-runtime-core", () => {
   test("treats thrown CustomSchema validators as tool input validation errors", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
         );
@@ -650,11 +646,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",

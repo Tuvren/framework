@@ -29,6 +29,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   collectEvents,
   textSignal,
@@ -36,17 +37,15 @@ import {
 
 const isKrakenRunnerFactory = (
   entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory => {
-  return "create" in entry && typeof entry.create === "function";
-};
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
 
-const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
-  return (result.messages ?? []).some(
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&
       message.parts.some((part) => part.type === "tool_call")
   );
-};
 
 const normalizeRunnerResult = (
   result: RunnerExecutionResult
@@ -65,7 +64,7 @@ const normalizeRunnerResult = (
 };
 
 const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
-  const { resume } = runner;
+  const resume = runner.resume?.bind(runner);
 
   return {
     async execute(context) {
@@ -99,33 +98,31 @@ const wrapRunnerEntry = (
 
 const createRunnerRegistry = (
   runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) => {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-};
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("rejects reasoning deltas that do not reconcile to the durable assistant message", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-reasoning",
           role: "assistant",
           timestamp: context.runtime.now(),
           type: "message.start",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           delta: "secret reasoning leak",
           messageId: "assistant-reasoning",
           timestamp: context.runtime.now(),
           type: "reasoning.delta",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-reasoning",
           text: "safe output",
           timestamp: context.runtime.now(),
           type: "text.done",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           finishReason: "stop",
           messageId: "assistant-reasoning",
           timestamp: context.runtime.now(),
@@ -141,9 +138,9 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -185,18 +182,18 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const runner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-reasoning-missing",
           role: "assistant",
           timestamp: context.runtime.now(),
           type: "message.start",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-reasoning-missing",
           timestamp: context.runtime.now(),
           type: "reasoning.done",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           finishReason: "stop",
           messageId: "assistant-reasoning-missing",
           timestamp: context.runtime.now(),
@@ -223,9 +220,9 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",

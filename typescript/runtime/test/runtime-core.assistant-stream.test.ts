@@ -30,6 +30,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   collectEvents,
   textSignal,
@@ -37,17 +38,15 @@ import {
 
 const isKrakenRunnerFactory = (
   entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory => {
-  return "create" in entry && typeof entry.create === "function";
-};
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
 
-const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
-  return (result.messages ?? []).some(
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&
       message.parts.some((part) => part.type === "tool_call")
   );
-};
 
 const normalizeRunnerResult = (
   result: RunnerExecutionResult
@@ -66,7 +65,7 @@ const normalizeRunnerResult = (
 };
 
 const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
-  const { resume } = runner;
+  const resume = runner.resume?.bind(runner);
 
   return {
     async execute(context) {
@@ -100,27 +99,25 @@ const wrapRunnerEntry = (
 
 const createRunnerRegistry = (
   runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) => {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-};
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("rejects assistant stream events when the runner does not return a durable assistant message", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-ghost",
           role: "assistant",
           timestamp: context.runtime.now(),
           type: "message.start",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-ghost",
           text: "ghost output",
           timestamp: context.runtime.now(),
           type: "text.done",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           finishReason: "stop",
           messageId: "assistant-ghost",
           timestamp: context.runtime.now(),
@@ -135,9 +132,9 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -181,13 +178,13 @@ describe("framework-runtime-core", () => {
         runnerCalls += 1;
 
         if (runnerCalls === 1) {
-          context.runtime.emit({
+          await context.runtime.emit({
             messageId: "assistant-soft-fail",
             role: "assistant",
             timestamp: context.runtime.now(),
             type: "message.start",
           });
-          context.runtime.emit({
+          await context.runtime.emit({
             delta: "partial",
             messageId: "assistant-soft-fail",
             timestamp: context.runtime.now(),
@@ -212,9 +209,9 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -255,19 +252,19 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const runner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-streamed",
           role: "assistant",
           timestamp: context.runtime.now(),
           type: "message.start",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-streamed",
           text: "streamed-wrong",
           timestamp: context.runtime.now(),
           type: "text.done",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           finishReason: "stop",
           messageId: "assistant-streamed",
           timestamp: context.runtime.now(),
@@ -283,9 +280,9 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -321,25 +318,25 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const runner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-streamed",
           role: "assistant",
           timestamp: context.runtime.now(),
           type: "message.start",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           delta: "live",
           messageId: "assistant-streamed",
           timestamp: context.runtime.now(),
           type: "text.delta",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-streamed",
           text: "live",
           timestamp: context.runtime.now(),
           type: "text.done",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           finishReason: "stop",
           messageId: "assistant-streamed",
           timestamp: context.runtime.now(),
@@ -355,9 +352,9 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -404,25 +401,25 @@ describe("framework-runtime-core", () => {
     const harness = createFakeKernelHarness();
     const runner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-streamed",
           role: "assistant",
           timestamp: context.runtime.now(),
           type: "message.start",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           delta: "live",
           messageId: "assistant-streamed",
           timestamp: context.runtime.now(),
           type: "text.delta",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-streamed",
           text: "live",
           timestamp: context.runtime.now(),
           type: "text.done",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           finishReason: "stop",
           messageId: "assistant-streamed",
           timestamp: context.runtime.now(),
@@ -439,9 +436,9 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -477,20 +474,18 @@ describe("framework-runtime-core", () => {
   test("does not allow assistantEventReconciliation without emitted assistant events", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute() {
-        return {
-          assistantEventReconciliation: "allow_final_sequence_divergence",
-          messages: [assistantText("durable only")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited(() => ({
+        assistantEventReconciliation: "allow_final_sequence_divergence",
+        messages: [assistantText("durable only")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -542,25 +537,25 @@ describe("framework-runtime-core", () => {
       | undefined;
     const runner = {
       async execute(context) {
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-streamed",
           role: "assistant",
           timestamp: context.runtime.now(),
           type: "message.start",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           delta: "live",
           messageId: "assistant-streamed",
           timestamp: context.runtime.now(),
           type: "text.delta",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           messageId: "assistant-streamed",
           text: "live",
           timestamp: context.runtime.now(),
           type: "text.done",
         });
-        context.runtime.emit({
+        await context.runtime.emit({
           finishReason: "length",
           messageId: "assistant-streamed",
           timestamp: context.runtime.now(),
@@ -581,9 +576,9 @@ describe("framework-runtime-core", () => {
         };
       },
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -602,7 +597,6 @@ describe("framework-runtime-core", () => {
                 parts: context.response.parts,
                 usage: context.response.usage,
               };
-              return;
             },
             async aroundModel(_context, next) {
               return await next();
