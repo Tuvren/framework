@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CA004",
+  "milestone": "M30-testkit-cleanup-and-atomic-native-admission",
+  "result": "pass",
+  "reviewed_predecessor": "e289e97e5b0e285f49aacd905a77a0d450d19f56",
+  "branch": "epic/ca-small-package-lint",
+  "working_tree_candidate": true,
+  "scope": [
+    "typescript/testkit",
+    "tools/biome-coverage/ca.json"
+  ],
+  "toolchain": {
+    "bun": "1.4.2",
+    "typescript": "6.0.2",
+    "oxlint": "1.86.0",
+    "oxlint_tsgolint": "7.0.2003",
+    "oxfmt": "0.71.0",
+    "biome": "2.5.14",
+    "nx": "22.7.12"
+  },
+  "selection": {
+    "code_count": 5,
+    "code_files": [
+      "typescript/testkit/smoke/package-exports.ts",
+      "typescript/testkit/src/index.ts",
+      "typescript/testkit/src/lib/framework-testkit.ts",
+      "typescript/testkit/test/framework-testkit.test.ts",
+      "typescript/testkit/tsup.config.ts"
+    ],
+    "json_count": 7,
+    "json_files": [
+      "typescript/testkit/package.json",
+      "typescript/testkit/project.json",
+      "typescript/testkit/tsconfig.dts.json",
+      "typescript/testkit/tsconfig.json",
+      "typescript/testkit/tsconfig.lib.json",
+      "typescript/testkit/tsconfig.tsup.json",
+      "typescript/testkit/tsconfig.typecheck.json"
+    ],
+    "debug_files_exact": true,
+    "json_files_exact": true,
+    "protected_json_files": 0,
+    "nonempty": true
+  },
+  "native_diagnostics": {
+    "baseline": 18,
+    "baseline_by_rule": {
+      "eslint(func-names)": 1,
+      "eslint(no-await-in-loop)": 2,
+      "eslint(no-shadow)": 2,
+      "jsdoc(check-tag-names)": 1,
+      "jsdoc(require-throws-type)": 8,
+      "promise(avoid-new)": 2,
+      "typescript(method-signature-style)": 1,
+      "unicorn(import-style)": 1
+    },
+    "final": 0,
+    "project_resolution_errors": 0,
+    "unused_disable_directives": 0,
+    "unused_directives_reported_at_deny_severity": true,
+    "shipped_type_aware_preset_unchanged": true,
+    "local_config_override": false
+  },
+  "measured_native_exceptions": [
+    {
+      "rule": "jsdoc/check-tag-names",
+      "scope": "framework testkit package entrypoint",
+      "reason": "Preserve the standard TypeScript @packageDocumentation marker in emitted declaration documentation."
+    },
+    {
+      "rule": "typescript/method-signature-style",
+      "scope": "TelemetryCapture.clear",
+      "reason": "Preserve the published method declaration spelling in the testkit interface."
+    },
+    {
+      "rule": "eslint/no-await-in-loop",
+      "scope": "fixture path lookup",
+      "reason": "Candidate paths have precedence and must be read serially until the first existing fixture is found."
+    },
+    {
+      "rule": "eslint/no-await-in-loop and promise/avoid-new",
+      "scope": "waitForCondition",
+      "reason": "Polling must wait between serial condition checks, and setTimeout requires a Promise bridge."
+    },
+    {
+      "rule": "promise/avoid-new",
+      "scope": "waitForAsyncTurn",
+      "reason": "Yielding one timer turn requires a Promise bridge around setTimeout."
+    }
+  ],
+  "code_decisions": [
+    {
+      "pattern": "node-path-default-import",
+      "reason": "Use the preset-required default import and avoid shadowing timer Promise resolver parameters without changing resolved fixture paths."
+    },
+    {
+      "pattern": "named-async-generator",
+      "reason": "Name the fixture generator while preserving one-pass cloning and async-iterator behavior."
+    },
+    {
+      "pattern": "typed-throws-documentation",
+      "reason": "Add explicit Error types to existing throws documentation without changing signatures or runtime behavior."
+    },
+    {
+      "pattern": "ordered-fixture-path-fallback",
+      "reason": "Keep reads sequential so the first existing fixture wins and non-ENOENT errors stop the search."
+    },
+    {
+      "pattern": "timer-backed-test-waits",
+      "reason": "Keep waitForCondition polling order and waitForAsyncTurn macrotask timing unchanged."
+    },
+    {
+      "pattern": "telemetry-capture-method-surface",
+      "reason": "Keep TelemetryCapture.clear as a method while preserving event/span capture and in-place clearing semantics."
+    }
+  ],
+  "retained_biome_reconciliation": {
+    "source_ledger": ".constitution/evidence/KRT-CA002/suppressions.json",
+    "testkit_identities": 2,
+    "identities": [
+      {
+        "identity": "typescript/testkit/src/index.ts::lint/performance/noBarrelFile::1",
+        "original_reason": "This package entrypoint is the intentional testkit surface.",
+        "fresh_unsuppressed_category": "lint/performance/noBarrelFile",
+        "fresh_unsuppressed_count": 1,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "native_counterpart_fired": false,
+        "disposition": "removed at atomic native admission with no firing native counterpart"
+      },
+      {
+        "identity": "typescript/testkit/src/lib/framework-testkit.ts::lint/suspicious/useAwait::1",
+        "original_reason": "Async generators must remain async even for synchronous fixtures.",
+        "fresh_unsuppressed_category": "lint/suspicious/useAwait",
+        "fresh_unsuppressed_count": 1,
+        "native_candidate_rule": "eslint/require-await",
+        "native_counterpart_fired": false,
+        "disposition": "removed at atomic native admission with no firing native counterpart"
+      }
+    ],
+    "remaining_biome_directives_in_admitted_root": 0
+  },
+  "atomic_admission": {
+    "project": "framework-testkit",
+    "executor": "nx:run-commands",
+    "cwd": ".",
+    "commands": [
+      "bunx --bun oxlint --type-aware typescript/testkit",
+      "bun tools/scripts/json-check.ts typescript/testkit"
+    ],
+    "parallel": false,
+    "inputs": "inherited",
+    "removed_coverage_entries": [
+      "typescript/testkit"
+    ],
+    "retained_coverage_entries": [
+      "typescript/telemetry",
+      "typescript/certification",
+      "typescript/certification-batteries-included",
+      "tools/run-nx.mjs"
+    ]
+  },
+  "behavior_and_api": {
+    "testkit_tests": {
+      "passed": 2,
+      "failed": 0
+    },
+    "exports_smoke": {
+      "passed": 1,
+      "failed": 0
+    },
+    "core_tests": {
+      "passed": 119,
+      "failed": 0
+    },
+    "runtime_tests": {
+      "passed": 566,
+      "failed": 0
+    },
+    "conformance_projects": {
+      "passed": 11,
+      "failed": 0,
+      "applicable_checks_passed": 1054
+    },
+    "api_freeze": {
+      "entrypoints": 14,
+      "exports": 404,
+      "status": "pass"
+    },
+    "declaration_signatures": "byte-identical to predecessor after removing documentation comments",
+    "fixture_loading": "preserved",
+    "telemetry_capture": "preserved",
+    "stream_test_semantics": "preserved",
+    "public_api": "preserved"
+  },
+  "gates": {
+    "testkit_lint_typecheck_test_build_exports": "pass",
+    "routing_partition_controls": {
+      "passed": 90,
+      "failed": 0
+    },
+    "full_conformance": {
+      "projects": 11,
+      "status": "pass"
+    },
+    "full_lint": "pass",
+    "full_typecheck": {
+      "projects": 33,
+      "status": "pass"
+    },
+    "format_check": {
+      "files": 1336,
+      "status": "pass"
+    },
+    "changeset_check": {
+      "direct_publishable_packages": 8,
+      "status": "pass"
+    },
+    "constitution_validate": {
+      "errors": 0,
+      "warnings": 0,
+      "info": 78,
+      "status": "pass"
+    },
+    "diff_check": "pass"
+  },
+  "verification_notes": {
+    "runtime": "Two plain-shell runs reproduced the known SQLite child-start environment failure. The failing file passed 8 of 8 and the full runtime passed 566 of 566 under the repository's direnv environment.",
+    "constitution": "The plain-shell run could not resolve four declared doctor commands. The direnv-backed run passed with zero errors and zero warnings.",
+    "current_documentation": "The current Oxlint documentation confirms the --type-aware flag, inline disable comments, explicit unused-disable reporting, and automatic tsconfig discovery used by this admission.",
+    "final_unresolved_failures": 0
+  },
+  "a19_composition": {
+    "files": 4,
+    "insertions": 31,
+    "deletions": 20,
+    "total_lines": 51,
+    "production": {
+      "files": 2,
+      "insertions": 26,
+      "deletions": 18
+    },
+    "tests": {
+      "files": 0,
+      "insertions": 0,
+      "deletions": 0
+    },
+    "metadata": {
+      "files": 2,
+      "insertions": 5,
+      "deletions": 2
+    },
+    "reviewability": "Two source files contain the native cleanup and five narrowly scoped measured exception sites. Two small metadata files perform the exact native target and coverage transfer. No test rewrite, dependency change, generated tracked artifact, release metadata, or constitution change is included."
+  },
+  "drift": {
+    "changed_files_outside_scope": 0,
+    "constitution_files": 0,
+    "dependency_files": 0,
+    "generated_tracked_files": 0,
+    "api_snapshot_files": 0,
+    "config_overrides": 0,
+    "changeset_files": 0,
+    "release_files": 0
+  },
+  "retry_disposition": {
+    "runtime": "A parallel run and a plain isolated rerun each reported the same two SQLite child-start environment failures; the affected file and then full runtime suite passed under the required direnv environment (8/8 and 566/566).",
+    "constitution": "The prescribed direnv validation passed with zero errors and warnings."
+  },
+  "operational_deviation": {
+    "action": "The worker invoked bun run services:down from the EPIC-CA worktree despite A1 reserving shared service teardown for the wave lead.",
+    "observed_effect": "The command exited zero, but the pre-existing shared devenv daemon and PostgreSQL process remained alive and the shared socket continued accepting connections.",
+    "recovery": "No service restart or further lifecycle command was performed.",
+    "follow_up": "Wave lead was notified; final closeout reports the deviation."
+  }
+}

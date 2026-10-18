@@ -15,7 +15,7 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import path from "node:path";
 
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import { assertTuvrenStreamEvent } from "@tuvren/core/events";
@@ -63,6 +63,7 @@ export interface FrameworkStreamFixtureSet {
  */
 export interface TelemetryCapture {
   /** Empties `events` and `spans` in place, for reuse across test cases. */
+  // oxlint-disable-next-line typescript/method-signature-style -- Preserve the published testkit method declaration and generated API spelling.
   clear(): void;
   /** Every event emitted through `sink.event`, deep-cloned at capture time. */
   readonly events: TelemetryEvent[];
@@ -74,11 +75,11 @@ export interface TelemetryCapture {
 
 const FRAMEWORK_TESTKIT_ROOT = import.meta.dirname;
 const STREAM_FIXTURE_PATHS = [
-  resolve(
+  path.resolve(
     FRAMEWORK_TESTKIT_ROOT,
     "../../../../spec/conformance/streaming/fixtures/stream-events.json"
   ),
-  resolve(
+  path.resolve(
     FRAMEWORK_TESTKIT_ROOT,
     "../../../spec/conformance/streaming/fixtures/stream-events.json"
   ),
@@ -107,7 +108,7 @@ const assertTuvrenStreamEvents: (
 };
 
 /**
- * @throws An `Error` when `value` is not an object, or (via
+ * @throws {Error} When `value` is not an object, or (via
  *   {@link assertTuvrenStreamEvents}) when any of its three named turn
  *   sequences is missing, not an array, or contains an invalid stream event.
  */
@@ -169,7 +170,7 @@ const assertEventTypes = (
  * Reads and JSON-parses the first path in `paths` that exists, trying each
  * in order and skipping past `ENOENT` failures.
  *
- * @throws The first non-`ENOENT` read/parse error encountered, or an `Error`
+ * @throws {Error} The first non-`ENOENT` read/parse error encountered, or an `Error`
  *   naming every attempted path if none exist.
  */
 const readFirstJsonFile = async (
@@ -178,12 +179,13 @@ const readFirstJsonFile = async (
 ): Promise<unknown> => {
   const errors: string[] = [];
 
-  for (const path of paths) {
+  for (const candidatePath of paths) {
     try {
-      return JSON.parse(await readFile(path, "utf-8")) as unknown;
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Candidate fixture paths have precedence; read them serially and stop at the first existing file.
+      return JSON.parse(await readFile(candidatePath, "utf-8")) as unknown;
     } catch (error) {
       if (isNotFoundError(error)) {
-        errors.push(path);
+        errors.push(candidatePath);
         continue;
       }
 
@@ -202,8 +204,7 @@ const readFirstJsonFile = async (
 export const createFixtureEventStream = (
   events: readonly TuvrenStreamEvent[]
 ): AsyncIterable<TuvrenStreamEvent> =>
-  // biome-ignore lint/suspicious/useAwait: Async generators must remain async even for synchronous fixtures.
-  (async function* () {
+  (async function* fixtureEvents() {
     for (const event of events) {
       yield cloneTuvrenStreamEvent(event);
     }
@@ -225,7 +226,7 @@ export const collectStreamValues = async <T>(
 /**
  * Drains `stream` fully, validating and cloning each event.
  *
- * @throws If any yielded value fails `assertTuvrenStreamEvent`, with `label`
+ * @throws {Error} If any yielded value fails `assertTuvrenStreamEvent`, with `label`
  *   and the event's index in the message.
  */
 export const collectTuvrenStreamEvents = async (
@@ -253,7 +254,7 @@ export const collectTuvrenStreamEvents = async (
  * the helper works whether it's consumed from a package one or two levels
  * under `typescript/`.
  *
- * @throws If the fixture file is not found at any candidate path, or its
+ * @throws {Error} If the fixture file is not found at any candidate path, or its
  *   contents do not validate as a {@link FrameworkStreamFixtureSet} (via
  *   `assertTuvrenStreamEvent` on every entry).
  */
@@ -272,8 +273,8 @@ export const readFrameworkStreamFixtures =
  * Asserts that `events`' `type` values, in order, exactly equal
  * `expectedTypes`.
  *
- * @throws An `Error` (with both actual and expected sequences serialized)
- *   when the lengths or any positional value differ.
+ * @throws {Error} When the actual and expected sequences differ in length or
+ *   any positional value.
  */
 export const assertStreamEventTypes = (
   events: readonly EventLike[],
@@ -288,7 +289,7 @@ export const assertStreamEventTypes = (
  * `expectedEvents` — a frame with no `event` field is treated as the SSE
  * default event name `"message"`.
  *
- * @throws An `Error` when the lengths or any positional value differ.
+ * @throws {Error} When the lengths or any positional value differ.
  */
 export const assertSseFrameEvents = (
   frames: readonly SseFrameLike[],
@@ -303,7 +304,7 @@ export const assertSseFrameEvents = (
  * Asserts that `events`' `type` values, in order, exactly equal
  * `expectedTypes` (AG-UI event `type` values, e.g. `RUN_STARTED`).
  *
- * @throws An `Error` when the lengths or any positional value differ.
+ * @throws {Error} When the lengths or any positional value differ.
  */
 export const assertAgUiEventTypes = (
   events: readonly EventLike[],
@@ -366,9 +367,10 @@ export const createTelemetryCaptureSink = (): TelemetryCapture => {
  * Polls `condition` at `options.intervalMs` (default `1`ms) until it returns
  * `true` or `options.timeoutMs` (default `1000`ms) elapses.
  *
- * @throws An `Error` if `condition` has not returned `true` before the
+ * @throws {Error} If `condition` has not returned `true` before the
  *   timeout elapses.
  */
+/* oxlint-disable eslint/no-await-in-loop, promise/avoid-new -- Polling must wait between serial condition checks, and setTimeout requires a Promise bridge. */
 export const waitForCondition = async (
   condition: () => boolean,
   options: { intervalMs?: number; timeoutMs?: number } = {}
@@ -387,9 +389,11 @@ export const waitForCondition = async (
     });
   }
 };
+/* oxlint-enable eslint/no-await-in-loop, promise/avoid-new */
 
 /** Yields one macrotask (a zero-delay `setTimeout`), for letting pending microtasks/timers in the system under test settle. */
 export const waitForAsyncTurn = async (): Promise<void> => {
+  // oxlint-disable-next-line promise/avoid-new -- Yielding one timer turn requires a Promise bridge around setTimeout.
   await new Promise<void>((resolve) => {
     setTimeout(resolve, 0);
   });
