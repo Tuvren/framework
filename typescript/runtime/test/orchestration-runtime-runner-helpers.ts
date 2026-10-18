@@ -14,65 +14,33 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity lint/suspicious/useAwait: Shared runner test doubles intentionally centralize event emission and async contract stubs.
-
+import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   RunnerExecutionContext,
   RunnerExecutionResult,
+  RunnerResumeContext,
   RuntimeRunner,
   RuntimeRunnerFactory,
 } from "@tuvren/core/runner";
 
 import { createRunnerRegistry as createBaseRunnerRegistry } from "../src/index.ts";
+import { fromSynchronousVariadicAwaited } from "./runtime-core-test-helpers.ts";
 
-export function createRunnerRegistry(
-  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
-) {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-}
-
-function wrapRunnerEntry(
+const isKrakenRunnerFactory = (
   entry: RuntimeRunner | RuntimeRunnerFactory
-): RuntimeRunner | RuntimeRunnerFactory {
-  if (isKrakenRunnerFactory(entry)) {
-    return {
-      create() {
-        return wrapRunner(entry.create());
-      },
-      id: entry.id,
-    };
-  }
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
 
-  return wrapRunner(entry);
-}
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
+    (message) =>
+      message.role === "assistant" &&
+      message.parts.some((part) => part.type === "tool_call")
+  );
 
-function isKrakenRunnerFactory(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory {
-  return "create" in entry && typeof entry.create === "function";
-}
-
-function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const resume = runner.resume;
-
-  return {
-    async execute(context) {
-      return normalizeRunnerResult(await runner.execute(context));
-    },
-    id: runner.id,
-    ...(resume === undefined
-      ? {}
-      : {
-          async resume(context) {
-            return normalizeRunnerResult(await resume(context));
-          },
-        }),
-  };
-}
-
-function normalizeRunnerResult(
+const normalizeRunnerResult = (
   result: RunnerExecutionResult
-): RunnerExecutionResult {
+): RunnerExecutionResult => {
   if (
     result.toolExecutionMode !== undefined ||
     !requestsToolExecution(result)
@@ -84,27 +52,113 @@ function normalizeRunnerResult(
     ...result,
     toolExecutionMode: "parallel",
   };
-}
+};
 
-function requestsToolExecution(result: RunnerExecutionResult): boolean {
-  return (result.messages ?? []).some(
-    (message) =>
-      message.role === "assistant" &&
-      message.parts.some((part) => part.type === "tool_call")
-  );
-}
+const resumeRunner = async (
+  runner: RuntimeRunner,
+  context: RunnerResumeContext
+): Promise<RunnerExecutionResult> => {
+  if (runner.resume === undefined) {
+    throw new Error(`runner "${runner.id}" does not support resume`);
+  }
 
-export function createStaticRunner(
+  return normalizeRunnerResult(await runner.resume(context));
+};
+
+const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
+  if (runner.resume === undefined) {
+    return {
+      async execute(context) {
+        return normalizeRunnerResult(await runner.execute(context));
+      },
+      id: runner.id,
+    };
+  }
+
+  return {
+    async execute(context) {
+      return normalizeRunnerResult(await runner.execute(context));
+    },
+    id: runner.id,
+    async resume(context) {
+      return await resumeRunner(runner, context);
+    },
+  };
+};
+
+const wrapRunnerEntry = (
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): RuntimeRunner | RuntimeRunnerFactory => {
+  if (isKrakenRunnerFactory(entry)) {
+    return {
+      create() {
+        return wrapRunner(entry.create());
+      },
+      id: entry.id,
+    };
+  }
+
+  return wrapRunner(entry);
+};
+
+export const createRunnerRegistry = (
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
+
+const serializeRunnerDeltaValue = (value: unknown): string => {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return JSON.stringify(value) ?? "null";
+};
+
+const emitAfter = async (
+  runtime: RunnerExecutionContext["runtime"],
+  previous: Promise<void>,
+  event: TuvrenStreamEvent
+): Promise<void> => {
+  await previous;
+  await runtime.emit(event);
+};
+
+const createSequentialEventEmitter = (
+  runtime: RunnerExecutionContext["runtime"]
+) => {
+  let pending: Promise<void> | undefined;
+
+  return {
+    emit(event: TuvrenStreamEvent) {
+      if (pending === undefined) {
+        const result = runtime.emit(event);
+        if (result instanceof Promise) {
+          pending = result;
+        }
+        return;
+      }
+
+      pending = emitAfter(runtime, pending, event);
+    },
+    async finish() {
+      if (pending !== undefined) {
+        await pending;
+      }
+    },
+  };
+};
+
+export const createStaticRunner = (
   execute: (
     context: RunnerExecutionContext
   ) => RunnerExecutionResult | Promise<RunnerExecutionResult>,
   id = "fake"
-): RuntimeRunner {
+): RuntimeRunner => {
   let emittedMessageSequence = 0;
 
   return {
     async execute(context) {
       const result = await execute(context);
+      const emitter = createSequentialEventEmitter(context.runtime);
 
       for (const message of result.messages ?? []) {
         if (message.role !== "assistant") {
@@ -113,7 +167,7 @@ export function createStaticRunner(
 
         emittedMessageSequence += 1;
         const messageId = `assistant-${emittedMessageSequence}`;
-        context.runtime.emit({
+        emitter.emit({
           messageId,
           role: "assistant",
           timestamp: context.runtime.now(),
@@ -122,8 +176,8 @@ export function createStaticRunner(
 
         for (const part of message.parts) {
           switch (part.type) {
-            case "file":
-              context.runtime.emit({
+            case "file": {
+              emitter.emit({
                 data:
                   typeof part.data === "string"
                     ? part.data
@@ -135,14 +189,15 @@ export function createStaticRunner(
                 type: "file.done",
               });
               break;
-            case "structured":
-              context.runtime.emit({
+            }
+            case "structured": {
+              emitter.emit({
                 delta: serializeRunnerDeltaValue(part.data),
                 messageId,
                 timestamp: context.runtime.now(),
                 type: "structured.delta",
               });
-              context.runtime.emit({
+              emitter.emit({
                 data: part.data,
                 messageId,
                 name: part.name,
@@ -150,21 +205,22 @@ export function createStaticRunner(
                 type: "structured.done",
               });
               break;
-            case "tool_call":
-              context.runtime.emit({
+            }
+            case "tool_call": {
+              emitter.emit({
                 callId: part.callId,
                 messageId,
                 name: part.name,
                 timestamp: context.runtime.now(),
                 type: "tool_call.start",
               });
-              context.runtime.emit({
+              emitter.emit({
                 callId: part.callId,
                 delta: serializeRunnerDeltaValue(part.input),
                 timestamp: context.runtime.now(),
                 type: "tool_call.args_delta",
               });
-              context.runtime.emit({
+              emitter.emit({
                 callId: part.callId,
                 input: part.input,
                 name: part.name,
@@ -172,23 +228,25 @@ export function createStaticRunner(
                 type: "tool_call.done",
               });
               break;
-            case "text":
-              context.runtime.emit({
+            }
+            case "text": {
+              emitter.emit({
                 delta: part.text,
                 messageId,
                 timestamp: context.runtime.now(),
                 type: "text.delta",
               });
-              context.runtime.emit({
+              emitter.emit({
                 messageId,
                 text: part.text,
                 timestamp: context.runtime.now(),
                 type: "text.done",
               });
               break;
-            case "reasoning":
+            }
+            case "reasoning": {
               if (!part.redacted) {
-                context.runtime.emit({
+                emitter.emit({
                   delta: part.text,
                   messageId,
                   timestamp: context.runtime.now(),
@@ -196,18 +254,23 @@ export function createStaticRunner(
                 });
               }
 
-              context.runtime.emit({
+              emitter.emit({
                 messageId,
                 timestamp: context.runtime.now(),
                 type: "reasoning.done",
               });
               break;
-            default:
+            }
+            case "tool_result": {
               break;
+            }
+            default: {
+              break;
+            }
           }
         }
 
-        context.runtime.emit({
+        emitter.emit({
           finishReason: message.parts.some((part) => part.type === "tool_call")
             ? "tool_call"
             : "stop",
@@ -217,19 +280,12 @@ export function createStaticRunner(
         });
       }
 
+      await emitter.finish();
       return result;
     },
     id,
-    async resume() {
+    resume: fromSynchronousVariadicAwaited(() => {
       throw new Error("resume was not expected");
-    },
+    }),
   };
-}
-
-function serializeRunnerDeltaValue(value: unknown): string {
-  if (typeof value === "string") {
-    return value;
-  }
-
-  return JSON.stringify(value) ?? "null";
-}
+};

@@ -98,3 +98,7 @@ tickets:
     flows: []
     certainty: settled
     status: planned
+    deviations:
+      - files:
+          - typescript/runtime/test/runtime-core-expired-recovery.test.ts
+        justification: "Plan amendment A61 authorized a bounded integration correction to the two CY-delivered empty reader callbacks after atomic native admission exposed no-useless-undefined diagnostics. The correction preserves the existing Promise adapter and iterator-cleanup behavior without changing helpers, APIs, fixtures, deadlines, dependencies, or lint policy."

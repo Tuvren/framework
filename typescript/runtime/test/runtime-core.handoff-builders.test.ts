@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
 import type { AgentConfig, HandoffSourceContext } from "@tuvren/core/execution";
@@ -35,6 +34,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   collectEvents,
   extractSingleUserText,
@@ -43,6 +43,70 @@ import {
   textSignal,
 } from "./runtime-core-test-helpers.ts";
 
+const isKrakenRunnerFactory = (
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
+
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
+    (message) =>
+      message.role === "assistant" &&
+      message.parts.some((part) => part.type === "tool_call")
+  );
+
+const normalizeRunnerResult = (
+  result: RunnerExecutionResult
+): RunnerExecutionResult => {
+  if (
+    result.toolExecutionMode !== undefined ||
+    !requestsToolExecution(result)
+  ) {
+    return result;
+  }
+
+  return {
+    ...result,
+    toolExecutionMode: "parallel",
+  };
+};
+
+const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
+  const resume = runner.resume?.bind(runner);
+
+  return {
+    async execute(context) {
+      return normalizeRunnerResult(await runner.execute(context));
+    },
+    id: runner.id,
+    ...(resume === undefined
+      ? {}
+      : {
+          async resume(context) {
+            return normalizeRunnerResult(await resume(context));
+          },
+        }),
+  };
+};
+
+const wrapRunnerEntry = (
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): RuntimeRunner | RuntimeRunnerFactory => {
+  if (isKrakenRunnerFactory(entry)) {
+    return {
+      create() {
+        return wrapRunner(entry.create());
+      },
+      id: entry.id,
+    };
+  }
+
+  return wrapRunner(entry);
+};
+
+const createRunnerRegistry = (
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("preserve_trace handoff preserves chronological summarized trace without raw tool traces", () => {
     let storedMessage: TuvrenMessage | null = null;
@@ -175,7 +239,7 @@ describe("framework-runtime-core", () => {
     let storedMessage: TuvrenMessage | null = null;
     const builder = createPreserveTraceHandoffContextBuilder();
     const longAssistantText = `First line with spacing\n${"x".repeat(180)}`;
-    const normalizedText = longAssistantText.replace(/\s+/g, " ").trim();
+    const normalizedText = longAssistantText.replaceAll(/\s+/gu, " ").trim();
     const expectedSummary = `${normalizedText.slice(0, 117)}...`;
 
     builder({
@@ -217,10 +281,10 @@ describe("framework-runtime-core", () => {
 
   test("runner handoff plans expose full source and target agent configs", async () => {
     const harness = createFakeKernelHarness();
-    const capturedAgents: Array<{
+    const capturedAgents: {
       source: AgentConfig;
       target: AgentConfig;
-    }> = [];
+    }[] = [];
     const reviewerTool = {
       description: "Review a draft",
       execute() {
@@ -269,7 +333,7 @@ describe("framework-runtime-core", () => {
       },
     };
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         if (context.config.name === "reviewer") {
           return {
             messages: [assistantText("Reviewer picked up the handoff.")],
@@ -299,17 +363,17 @@ describe("framework-runtime-core", () => {
             type: "handoff",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       resolveAgentConfig: (agentName) => agents[agentName],
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -336,7 +400,7 @@ describe("framework-runtime-core", () => {
     };
     let capturedSourceContext: HandoffSourceContext | undefined;
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         if (context.config.name === "reviewer") {
           return {
             messages: [assistantText("Reviewer finished.")],
@@ -392,14 +456,14 @@ describe("framework-runtime-core", () => {
             type: "handoff",
           },
         };
-      },
+      }),
       id: "fake",
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       resolveAgentConfig: (agentName) => agents[agentName],
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -551,9 +615,16 @@ describe("framework-runtime-core", () => {
     let overrideUsed = false;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      handoffContextBuilder: (context) => {
+        overrideUsed = true;
+        return createPreserveTraceHandoffContextBuilder()(context);
+      },
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) =>
+        agentName === "reviewer" ? { name: "reviewer" } : undefined,
       runnerRegistry: createRunnerRegistry([
         {
-          async execute(context) {
+          execute: fromSynchronousVariadicAwaited((context) => {
             if (context.config.name === "primary") {
               return {
                 messages: [assistantText("Final visible output")],
@@ -576,20 +647,13 @@ describe("framework-runtime-core", () => {
                 type: "end_turn",
               },
             };
-          },
+          }),
           id: "fake",
-          async resume() {
+          resume: fromSynchronousVariadicAwaited(() => {
             throw new Error("resume was not expected");
-          },
+          }),
         } satisfies RuntimeRunner,
       ]),
-      handoffContextBuilder: (context) => {
-        overrideUsed = true;
-        return createPreserveTraceHandoffContextBuilder()(context);
-      },
-      kernel: harness.kernel,
-      resolveAgentConfig: (agentName) =>
-        agentName === "reviewer" ? { name: "reviewer" } : undefined,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -610,72 +674,3 @@ describe("framework-runtime-core", () => {
     ).toBe(true);
   });
 });
-
-function createRunnerRegistry(
-  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
-) {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-}
-
-function wrapRunnerEntry(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): RuntimeRunner | RuntimeRunnerFactory {
-  if (isKrakenRunnerFactory(entry)) {
-    return {
-      create() {
-        return wrapRunner(entry.create());
-      },
-      id: entry.id,
-    };
-  }
-
-  return wrapRunner(entry);
-}
-
-function isKrakenRunnerFactory(
-  entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory {
-  return "create" in entry && typeof entry.create === "function";
-}
-
-function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const resume = runner.resume;
-
-  return {
-    async execute(context) {
-      return normalizeRunnerResult(await runner.execute(context));
-    },
-    id: runner.id,
-    ...(resume === undefined
-      ? {}
-      : {
-          async resume(context) {
-            return normalizeRunnerResult(await resume(context));
-          },
-        }),
-  };
-}
-
-function normalizeRunnerResult(
-  result: RunnerExecutionResult
-): RunnerExecutionResult {
-  if (
-    result.toolExecutionMode !== undefined ||
-    !requestsToolExecution(result)
-  ) {
-    return result;
-  }
-
-  return {
-    ...result,
-    toolExecutionMode: "parallel",
-  };
-}
-
-function requestsToolExecution(result: RunnerExecutionResult): boolean {
-  return (result.messages ?? []).some(
-    (message) =>
-      message.role === "assistant" &&
-      message.parts.some((part) => part.type === "tool_call")
-  );
-}

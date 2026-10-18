@@ -113,9 +113,11 @@ const prepareRecovery = async (suffix: string) => {
       // Recovery classification does not publish terminal status.
     },
     readRecoveredActiveAgentName: fromSynchronousVariadicAwaited(
-      () => undefined
+      (): undefined => {}
     ),
-    readRecoveredRuntimeStatus: fromSynchronousVariadicAwaited(() => undefined),
+    readRecoveredRuntimeStatus: fromSynchronousVariadicAwaited(
+      (): undefined => {}
+    ),
   };
 
   const inputTurnNode = await kernel.node.get(inputCheckpoint.turnNodeHash);

@@ -42,10 +42,8 @@ import {
   cloneValue,
   createFrozenSnapshot,
 } from "../src/lib/runtime-core-shared.ts";
-import {
-  RuntimeExecutionHandle,
-  type RuntimeExecutionHandleRuntime,
-} from "../src/lib/runtime-execution-handle.ts";
+import { RuntimeExecutionHandle } from "../src/lib/runtime-execution-handle.ts";
+import type { RuntimeExecutionHandleRuntime } from "../src/lib/runtime-execution-handle.ts";
 import type { ExecutionSessionRequest } from "../src/lib/runtime-execution-types.ts";
 import {
   createAroundToolContext,
@@ -58,15 +56,17 @@ import type {
 
 const SAMPLE_COUNT = 5;
 const WARMUP_ITERATIONS = 25;
-const FIXTURE_HASH = "a".repeat(64) as HashString;
+const FIXTURE_HASH = "a".repeat(64);
+const FIXTURE_HASH_PROMISE = Promise.resolve(FIXTURE_HASH);
+const STARTED_PROMISE = Promise.resolve();
 const bunRuntime = globalThis as typeof globalThis & {
-  Bun: { nanoseconds(): number };
+  Bun: { nanoseconds: () => number };
 };
 
 interface BenchmarkCase {
   iterations: number;
   name: string;
-  run(iterations: number): Promise<void> | void;
+  run: (iterations: number) => Promise<void> | void;
 }
 
 interface BenchmarkResult {
@@ -77,17 +77,195 @@ interface BenchmarkResult {
   samples: number[];
 }
 
+const createStructuredStreamEvent = (
+  payloadSize: number
+): TuvrenStreamEvent => ({
+  data: {
+    items: Array.from({ length: payloadSize }, (_, index) => ({
+      index,
+      label: `payload-${index}`,
+      nested: {
+        even: index % 2 === 0,
+        values: [index, index + 1, index + 2],
+      },
+    })),
+  },
+  messageId: "message-bench",
+  name: "bench_payload",
+  timestamp: 1,
+  type: "structured.done",
+});
+
 const streamEventFixture = createStructuredStreamEvent(24);
+
+const createUserMessage = (text: string): TuvrenMessage => ({
+  parts: [
+    {
+      text,
+      type: "text",
+    },
+  ],
+  role: "user",
+});
+
+const createMessages = (count: number): TuvrenMessage[] => {
+  const messages: TuvrenMessage[] = [];
+
+  for (let index = 0; index < count; index += 1) {
+    messages.push(
+      index % 2 === 0
+        ? createUserMessage(`user request ${index}`)
+        : {
+            parts: [
+              {
+                text: `assistant answer ${index}`,
+                type: "text",
+              },
+            ],
+            role: "assistant",
+          }
+    );
+  }
+
+  return messages;
+};
 const messagesFixture = createMessages(80);
+
+const createExtensionState = (
+  extensionCount: number,
+  keysPerExtension: number
+): Record<string, unknown> => {
+  const state: Record<string, unknown> = {};
+
+  for (
+    let extensionIndex = 0;
+    extensionIndex < extensionCount;
+    extensionIndex += 1
+  ) {
+    const namespace: Record<string, unknown> = {};
+
+    for (let keyIndex = 0; keyIndex < keysPerExtension; keyIndex += 1) {
+      namespace[`key${keyIndex}`] = {
+        enabled: keyIndex % 2 === 0,
+        value: `ext-${extensionIndex}-value-${keyIndex}`,
+      };
+    }
+
+    state[`ext${extensionIndex}`] = namespace;
+  }
+
+  return state;
+};
 const extensionStateFixture = createExtensionState(6, 48);
 const manifestFixture = createContextManifest(
   messagesFixture,
   extensionStateFixture
 );
+
+const createExtensions = (count: number): TuvrenExtension[] => {
+  const extensions: TuvrenExtension[] = [];
+
+  for (let index = 0; index < count; index += 1) {
+    extensions.push({
+      afterIteration(context) {
+        Boolean(context.sharedExports.ext0?.key0);
+        return {
+          state: {
+            lastIteration: context.iterationCount,
+          },
+        };
+      },
+      beforeIteration(context) {
+        Boolean(context.sharedExports.ext0?.key0);
+        return {
+          state: {
+            lastIteration: context.iterationCount,
+          },
+        };
+      },
+      exports: ["key0", "key1", "key2", "key3"],
+      name: `ext${index}`,
+    });
+  }
+
+  return extensions;
+};
 const extensionFixture = createExtensions(6);
+
+const createToolDefinition = (): TuvrenToolDefinition => ({
+  description: "Benchmark tool",
+  execute(_input, _context) {
+    return {
+      ok: true,
+    };
+  },
+  inputSchema: {
+    properties: {
+      query: { type: "string" },
+    },
+    required: ["query"],
+    type: "object",
+  },
+  metadata: {
+    labels: Array.from({ length: 24 }, (_, index) => `label-${index}`),
+    nested: {
+      owner: "bench",
+      priority: 1,
+    },
+  },
+  name: "bench_tool",
+});
 const toolFixture = createToolDefinition();
+
+const createToolCall = (): ToolCallPart => ({
+  callId: "call-bench",
+  input: {
+    filters: Array.from({ length: 16 }, (_, index) => ({
+      field: `field-${index}`,
+      value: `value-${index}`,
+    })),
+    query: "benchmark",
+  },
+  name: "bench_tool",
+  type: "tool_call",
+});
 const toolCallFixture = createToolCall();
 const toolRegistryFixture = createToolRegistry([toolFixture], extensionFixture);
+
+const createToolEnvironment = (
+  manifest: ContextManifest,
+  extensions: TuvrenExtension[],
+  toolRegistry: ToolRegistry
+): ToolBatchEnvironment => ({
+  activeAgent: "agent",
+  branchId: "branch",
+  extensions,
+  iterationCount: 3,
+  manifest,
+  maxParallelToolCalls: 10,
+  now() {
+    return 1;
+  },
+  publishCustom() {
+    // Intentionally discard benchmark emissions.
+  },
+  publishEvent() {
+    // Intentionally discard benchmark emissions.
+  },
+  reportSoftError() {
+    // Intentionally discard benchmark soft errors.
+  },
+  runId: "run",
+  async stageResult(result: ToolResultPart): Promise<HashString> {
+    if (result.callId.length === 0) {
+      throw new Error("benchmark tool results require a call id");
+    }
+    return await FIXTURE_HASH_PROMISE;
+  },
+  threadId: "thread",
+  toolRegistry,
+  turnId: "turn",
+});
 const toolEnvironmentFixture = createToolEnvironment(
   manifestFixture,
   extensionFixture,
@@ -97,6 +275,100 @@ const sharedExportsFixture = buildSharedExports(
   extensionFixture,
   manifestFixture
 );
+
+const createBenchmarkExecutionRequest = (): ExecutionSessionRequest => ({
+  branchId: "branch-bench",
+  config: {
+    name: "agent",
+  },
+  signal: {
+    parts: [{ text: "benchmark", type: "text" }],
+  },
+  threadId: "thread-bench",
+});
+
+const benchmarkExecutionHandleRuntime: RuntimeExecutionHandleRuntime = {
+  cancelPausedExecution() {
+    // The event-queue benchmark never enters a paused execution.
+  },
+  createResumedExecutionHandle() {
+    throw new Error("resume is not used by the event queue benchmark");
+  },
+  async startExecution() {
+    await STARTED_PROMISE;
+  },
+};
+
+const runSequentially = async (
+  iterations: number,
+  action: (index: number) => Promise<void>,
+  index = 0
+): Promise<void> => {
+  if (index >= iterations) {
+    return;
+  }
+
+  await action(index);
+  await runSequentially(iterations, action, index + 1);
+};
+
+const runExecutionHandleEventQueueBench = async (
+  iterations: number
+): Promise<void> => {
+  const handle = new RuntimeExecutionHandle(
+    benchmarkExecutionHandleRuntime,
+    createBenchmarkExecutionRequest(),
+    "turn-bench",
+    "schema-bench"
+  );
+  const iterator = handle.events()[Symbol.asyncIterator]();
+
+  await runSequentially(iterations, async () => {
+    const nextEvent = iterator.next();
+    handle.publish(streamEventFixture);
+    await nextEvent;
+  });
+
+  handle.finish();
+  await iterator.return?.();
+};
+
+const runSubtreeForwardingBench = async (
+  iterations: number,
+  queueCount: number
+): Promise<void> => {
+  const queues = Array.from(
+    { length: queueCount },
+    () => new AsyncEventQueue<TuvrenStreamEvent>()
+  );
+  const iterators = queues.map((queue) => queue[Symbol.asyncIterator]());
+
+  await runSequentially(iterations, async () => {
+    const nextEvents: Promise<IteratorResult<TuvrenStreamEvent>>[] = [];
+    for (const iterator of iterators) {
+      nextEvents.push(iterator.next());
+    }
+
+    for (const queue of queues) {
+      queue.push(cloneValue(streamEventFixture));
+    }
+
+    await Promise.all(nextEvents);
+  });
+
+  for (const queue of queues) {
+    queue.close();
+  }
+};
+
+const createExecutableToolCall = (
+  tool: TuvrenToolDefinition,
+  toolCall: ToolCallPart
+): ExecutableToolCall => ({
+  input: toolCall.input,
+  tool,
+  toolCall,
+});
 
 const cases: BenchmarkCase[] = [
   {
@@ -112,25 +384,25 @@ const cases: BenchmarkCase[] = [
   {
     iterations: 3000,
     name: "execution handle single-consumer event queue",
-    run(iterations) {
-      return runExecutionHandleEventQueueBench(iterations);
+    async run(iterations) {
+      await runExecutionHandleEventQueueBench(iterations);
     },
   },
   {
     iterations: 3000,
     name: "subtree queue forwarding to four queues",
-    run(iterations) {
-      return runSubtreeForwardingBench(iterations, 4);
+    async run(iterations) {
+      await runSubtreeForwardingBench(iterations, 4);
     },
   },
   {
     iterations: 700,
     name: "extension beforeIteration context snapshots",
     async run(iterations) {
-      for (let index = 0; index < iterations; index += 1) {
+      await runSequentially(iterations, async (index) => {
         await runBeforeIterationHooks({
           emit() {
-            return undefined;
+            // Intentionally discard benchmark hook emissions.
           },
           extensions: extensionFixture,
           iterationCount: index,
@@ -139,7 +411,7 @@ const cases: BenchmarkCase[] = [
           runId: "run-bench",
           turnId: "turn-bench",
         });
-      }
+      });
     },
   },
   {
@@ -150,10 +422,10 @@ const cases: BenchmarkCase[] = [
         type: "continue_iteration",
       };
 
-      for (let index = 0; index < iterations; index += 1) {
+      await runSequentially(iterations, async (index) => {
         await runAfterIterationHooks({
           emit() {
-            return undefined;
+            // Intentionally discard benchmark hook emissions.
           },
           extensions: extensionFixture,
           iterationCount: index,
@@ -167,7 +439,7 @@ const cases: BenchmarkCase[] = [
           runId: "run-bench",
           turnId: "turn-bench",
         });
-      }
+      });
     },
   },
   {
@@ -181,14 +453,14 @@ const cases: BenchmarkCase[] = [
           toolCallFixture,
           toolFixture,
           toolEnvironmentFixture,
-          undefined
+          toolEnvironmentFixture.signal
         );
         createAroundToolContext(
           executable,
           "ext0",
           toolEnvironmentFixture,
           sharedExportsFixture,
-          undefined
+          toolEnvironmentFixture.signal
         );
       }
     },
@@ -253,41 +525,22 @@ const cases: BenchmarkCase[] = [
   },
 ];
 
-const benchmarkExecutionHandleRuntime: RuntimeExecutionHandleRuntime = {
-  cancelPausedExecution() {
-    return undefined;
-  },
-  createResumedExecutionHandle() {
-    throw new Error("resume is not used by the event queue benchmark");
-  },
-  startExecution() {
-    return Promise.resolve();
-  },
-};
+const nanoseconds = (): number => bunRuntime.Bun.nanoseconds();
 
-await main();
-
-async function main(): Promise<void> {
-  process.stdout.write("runtime-core boundary benchmark\n");
-
-  for (const benchmarkCase of cases) {
-    const result = await measure(benchmarkCase);
-    writeResult(result);
-  }
-}
-
-async function measure(benchmarkCase: BenchmarkCase): Promise<BenchmarkResult> {
+const measure = async (
+  benchmarkCase: BenchmarkCase
+): Promise<BenchmarkResult> => {
   await benchmarkCase.run(
     Math.min(WARMUP_ITERATIONS, benchmarkCase.iterations)
   );
 
   const samples: number[] = [];
 
-  for (let sampleIndex = 0; sampleIndex < SAMPLE_COUNT; sampleIndex += 1) {
+  await runSequentially(SAMPLE_COUNT, async () => {
     const startedAt = nanoseconds();
     await benchmarkCase.run(benchmarkCase.iterations);
     samples.push(nanoseconds() - startedAt);
-  }
+  });
 
   const bestNs = Math.min(...samples);
   const averageNs =
@@ -300,271 +553,9 @@ async function measure(benchmarkCase: BenchmarkCase): Promise<BenchmarkResult> {
     name: benchmarkCase.name,
     samples,
   };
-}
+};
 
-function writeResult(result: BenchmarkResult): void {
-  process.stdout.write(
-    `${result.name}: best ${formatNs(result.bestNs)} total, ${formatNs(
-      result.bestNs / result.iterations
-    )}/iter; avg ${formatNs(result.averageNs)} total\n`
-  );
-}
-
-async function runExecutionHandleEventQueueBench(
-  iterations: number
-): Promise<void> {
-  const handle = new RuntimeExecutionHandle(
-    benchmarkExecutionHandleRuntime,
-    createBenchmarkExecutionRequest(),
-    "turn-bench",
-    "schema-bench"
-  );
-  const iterator = handle.events()[Symbol.asyncIterator]();
-
-  for (let index = 0; index < iterations; index += 1) {
-    const nextEvent = iterator.next();
-    handle.publish(streamEventFixture);
-    await nextEvent;
-  }
-
-  handle.finish();
-  await iterator.return?.();
-}
-
-async function runSubtreeForwardingBench(
-  iterations: number,
-  queueCount: number
-): Promise<void> {
-  const queues = Array.from(
-    { length: queueCount },
-    () => new AsyncEventQueue<TuvrenStreamEvent>()
-  );
-  const iterators = queues.map((queue) => queue[Symbol.asyncIterator]());
-
-  for (let index = 0; index < iterations; index += 1) {
-    const nextEvents = iterators.map((iterator) => iterator.next());
-
-    for (const queue of queues) {
-      queue.push(cloneValue(streamEventFixture));
-    }
-
-    await Promise.all(nextEvents);
-  }
-
-  for (const queue of queues) {
-    queue.close();
-  }
-}
-
-function createBenchmarkExecutionRequest(): ExecutionSessionRequest {
-  return {
-    branchId: "branch-bench",
-    config: {
-      name: "agent",
-    },
-    signal: {
-      parts: [{ text: "benchmark", type: "text" }],
-    },
-    threadId: "thread-bench",
-  };
-}
-
-function createStructuredStreamEvent(payloadSize: number): TuvrenStreamEvent {
-  return {
-    data: {
-      items: Array.from({ length: payloadSize }, (_, index) => ({
-        index,
-        label: `payload-${index}`,
-        nested: {
-          even: index % 2 === 0,
-          values: [index, index + 1, index + 2],
-        },
-      })),
-    },
-    messageId: "message-bench",
-    name: "bench_payload",
-    timestamp: 1,
-    type: "structured.done",
-  };
-}
-
-function createMessages(count: number): TuvrenMessage[] {
-  const messages: TuvrenMessage[] = [];
-
-  for (let index = 0; index < count; index += 1) {
-    messages.push(
-      index % 2 === 0
-        ? createUserMessage(`user request ${index}`)
-        : {
-            parts: [
-              {
-                text: `assistant answer ${index}`,
-                type: "text",
-              },
-            ],
-            role: "assistant",
-          }
-    );
-  }
-
-  return messages;
-}
-
-function createUserMessage(text: string): TuvrenMessage {
-  return {
-    parts: [
-      {
-        text,
-        type: "text",
-      },
-    ],
-    role: "user",
-  };
-}
-
-function createExtensionState(
-  extensionCount: number,
-  keysPerExtension: number
-): Record<string, unknown> {
-  const state: Record<string, unknown> = {};
-
-  for (
-    let extensionIndex = 0;
-    extensionIndex < extensionCount;
-    extensionIndex += 1
-  ) {
-    const namespace: Record<string, unknown> = {};
-
-    for (let keyIndex = 0; keyIndex < keysPerExtension; keyIndex += 1) {
-      namespace[`key${keyIndex}`] = {
-        enabled: keyIndex % 2 === 0,
-        value: `ext-${extensionIndex}-value-${keyIndex}`,
-      };
-    }
-
-    state[`ext${extensionIndex}`] = namespace;
-  }
-
-  return state;
-}
-
-function createExtensions(count: number): TuvrenExtension[] {
-  const extensions: TuvrenExtension[] = [];
-
-  for (let index = 0; index < count; index += 1) {
-    extensions.push({
-      afterIteration(context) {
-        context.sharedExports.ext0?.key0;
-        return {
-          state: {
-            lastIteration: context.iterationCount,
-          },
-        };
-      },
-      beforeIteration(context) {
-        context.sharedExports.ext0?.key0;
-        return {
-          state: {
-            lastIteration: context.iterationCount,
-          },
-        };
-      },
-      exports: ["key0", "key1", "key2", "key3"],
-      name: `ext${index}`,
-    });
-  }
-
-  return extensions;
-}
-
-function createToolDefinition(): TuvrenToolDefinition {
-  return {
-    description: "Benchmark tool",
-    execute(_input, _context) {
-      return {
-        ok: true,
-      };
-    },
-    inputSchema: {
-      properties: {
-        query: { type: "string" },
-      },
-      required: ["query"],
-      type: "object",
-    },
-    metadata: {
-      labels: Array.from({ length: 24 }, (_, index) => `label-${index}`),
-      nested: {
-        owner: "bench",
-        priority: 1,
-      },
-    },
-    name: "bench_tool",
-  };
-}
-
-function createToolCall(): ToolCallPart {
-  return {
-    callId: "call-bench",
-    input: {
-      filters: Array.from({ length: 16 }, (_, index) => ({
-        field: `field-${index}`,
-        value: `value-${index}`,
-      })),
-      query: "benchmark",
-    },
-    name: "bench_tool",
-    type: "tool_call",
-  };
-}
-
-function createExecutableToolCall(
-  tool: TuvrenToolDefinition,
-  toolCall: ToolCallPart
-): ExecutableToolCall {
-  return {
-    input: toolCall.input,
-    tool,
-    toolCall,
-  };
-}
-
-function createToolEnvironment(
-  manifest: ContextManifest,
-  extensions: TuvrenExtension[],
-  toolRegistry: ToolRegistry
-): ToolBatchEnvironment {
-  return {
-    activeAgent: "agent",
-    branchId: "branch",
-    extensions,
-    iterationCount: 3,
-    manifest,
-    maxParallelToolCalls: 10,
-    now() {
-      return 1;
-    },
-    publishCustom() {
-      return undefined;
-    },
-    publishEvent() {
-      return undefined;
-    },
-    reportSoftError() {
-      return undefined;
-    },
-    runId: "run",
-    stageResult(result: ToolResultPart): Promise<HashString> {
-      result.callId;
-      return Promise.resolve(FIXTURE_HASH);
-    },
-    threadId: "thread",
-    toolRegistry,
-    turnId: "turn",
-  };
-}
-
-function formatNs(value: number): string {
+const formatNs = (value: number): string => {
   if (value >= 1_000_000) {
     return `${(value / 1_000_000).toFixed(2)}ms`;
   }
@@ -574,8 +565,27 @@ function formatNs(value: number): string {
   }
 
   return `${value.toFixed(0)}ns`;
-}
+};
 
-function nanoseconds(): number {
-  return bunRuntime.Bun.nanoseconds();
-}
+const writeResult = (result: BenchmarkResult): void => {
+  process.stdout.write(
+    `${result.name}: best ${formatNs(result.bestNs)} total, ${formatNs(
+      result.bestNs / result.iterations
+    )}/iter; avg ${formatNs(result.averageNs)} total\n`
+  );
+};
+
+const main = async (): Promise<void> => {
+  process.stdout.write("runtime-core boundary benchmark\n");
+
+  await runSequentially(cases.length, async (index) => {
+    const benchmarkCase = cases[index];
+    if (benchmarkCase === undefined) {
+      return;
+    }
+    const result = await measure(benchmarkCase);
+    writeResult(result);
+  });
+};
+
+await main();
