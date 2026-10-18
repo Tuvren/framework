@@ -163,7 +163,7 @@ class SdkMcpClient implements MCPClient {
  */
 function createTransport(config: McpTransportConfig): Transport {
   switch (config.transport) {
-    case "stdio":
+    case "stdio": {
       return new StdioClientTransport({
         args: config.args,
         command: config.command,
@@ -171,12 +171,14 @@ function createTransport(config: McpTransportConfig): Transport {
         env: config.env,
         stderr: "pipe",
       });
-    case "http-sse":
+    }
+    case "http-sse": {
       return new StreamableHTTPClientTransport(new URL(config.endpoint), {
         requestInit: {
           headers: createHttpHeaders(config),
         },
       });
+    }
     default: {
       const exhaustive: never = config;
       throw createProviderError(

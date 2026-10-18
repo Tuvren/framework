@@ -153,12 +153,12 @@ export type ParsedWsMessage =
   | { kind: "pong" }
   | { kind: "unparseable"; raw: unknown };
 
-const WS_RESUME_STATUSES: readonly WsResumeStatus[] = [
+const WS_RESUME_STATUSES: ReadonlySet<string> = new Set([
   "resumed",
   "out-of-window",
   "unknown-turn",
   "none",
-];
+]);
 
 const utf8Decoder = new TextDecoder();
 
@@ -247,13 +247,13 @@ function asHandshakeRequest(
   };
 
   if (candidate.sessionId !== undefined) {
-    message.sessionId = candidate.sessionId as string;
+    message.sessionId = candidate.sessionId;
   }
   if (candidate.cursor !== undefined) {
-    message.cursor = candidate.cursor as string;
+    message.cursor = candidate.cursor;
   }
   if (candidate.authToken !== undefined) {
-    message.authToken = candidate.authToken as string;
+    message.authToken = candidate.authToken;
   }
 
   return message;
@@ -272,7 +272,7 @@ function asHandshakeAck(
 
   if (
     typeof candidate.resumeStatus !== "string" ||
-    !WS_RESUME_STATUSES.includes(candidate.resumeStatus as WsResumeStatus)
+    !WS_RESUME_STATUSES.has(candidate.resumeStatus)
   ) {
     return undefined;
   }

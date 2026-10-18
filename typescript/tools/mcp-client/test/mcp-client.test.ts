@@ -462,11 +462,11 @@ function createInvalidStructuredOutputMcpClient(): MCPClient {
 
 function createInvalidToolSchemaMcpClient(): MCPClient & { closed: boolean } {
   return {
-    closed: false,
     close() {
       this.closed = true;
       return Promise.resolve();
     },
+    closed: false,
     initialize() {
       return Promise.resolve({ serverName: "invalid-schema" });
     },

@@ -28,12 +28,11 @@ import { defineTool, jsonSchema } from "@tuvren/sdk";
 import type { ErrorObject, ValidateFunction } from "ajv";
 import Ajv from "ajv";
 
-import {
-  createProviderError,
-  createSdkMcpClient,
-  type MCPClient,
-  type McpSdkTool,
-  type McpSdkToolResult,
+import { createProviderError, createSdkMcpClient } from "./mcp-sdk-client.js";
+import type {
+  MCPClient,
+  McpSdkTool,
+  McpSdkToolResult,
 } from "./mcp-sdk-client.js";
 
 /** The MCP transport kind: a spawned stdio child process, or an HTTP-based server (Streamable HTTP under the hood). */
@@ -276,7 +275,7 @@ class DefaultMcpToolSource implements McpToolSource {
             outputValidator,
             publicName,
           }),
-        inputSchema: jsonSchema<unknown>(inputSchema, {
+        inputSchema: jsonSchema(inputSchema, {
           validate: (value) => validateSchemaValue(inputValidator, value),
         }),
         metadata: {
@@ -582,7 +581,7 @@ function isJsonValue(value: unknown): value is JsonValue {
 }
 
 /** True for a non-array object whose own values are all JSON values. */
-function isJsonRecord(value: unknown): value is { [key: string]: JsonValue } {
+function isJsonRecord(value: unknown): value is Record<string, JsonValue> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return false;
   }
