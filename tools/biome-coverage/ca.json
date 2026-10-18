@@ -1,5 +1,4 @@
 [
-  "typescript/testkit",
   "typescript/telemetry",
   "typescript/certification",
   "typescript/certification-batteries-included",
