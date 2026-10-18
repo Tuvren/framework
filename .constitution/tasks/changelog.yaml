@@ -1,4 +1,16 @@
 entries:
+  - version: v0.48.7
+    date: 2026-10-18
+    by: patch-lane
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.8
+    changed:
+      - "Correct Wave-1 native-lint routing ownership: EPIC-BT and KRT-BT004 now own the shared native-lint classifier and its direct regression test. The classifier remains compatible with omitted forwarding configuration on legacy targets, accepts only literal false when the top-level forwarding option is present, and rejects all nested forwarding keys and existing forwarded-option hazards. KRT-BT004 proves ordinary caller-argument isolation against the pinned Nx executor without claiming protection from an explicit --forwardAllArgs=true executor override."
+      - "Require top-level options.forwardAllArgs: false on all 16 new native lint admissions: one BT target, three BY targets, and 12 CA targets. Preserve exact command strings, workspace cwd, shipped presets, source and JSON coverage rules, failure propagation, and the prohibition on lint policy or configuration overrides."
+      - "Make BY and CA depend on BT for final admission. Source cleanup may continue concurrently, but each final admission waits for review-clean BT to merge and rebases onto the shared fix; the rendered graph therefore schedules BT before the BY and CA layer while preserving merge order BT, BY, CA."
+      - "Route the current 20 already-native legacy targets to KRT-CB001 for top-level forwarding hardening and later removal of omission compatibility; no legacy project configuration changes in this patch. The PR #176 A19 oversized-epic assessment remains unresolved and is not waived or converted into measured forecast data here."
   - version: v0.48.6
     date: 2026-10-18
     changed:
