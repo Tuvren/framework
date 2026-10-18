@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
 import type { TurnEndEvent, TuvrenStreamEvent } from "@tuvren/core/events";
 import type { RuntimeResolution } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
@@ -28,10 +29,8 @@ import type {
   TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 
-import {
-  readInterruptedToolBatchDescriptor,
-  type InterruptedToolBatchDescriptor,
-} from "./runtime-core-interrupted-metadata.js";
+import { readInterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
+import type { InterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
 import { inferFinishReason } from "./runtime-core-recovery.js";
 import { isRecord, normalizeError } from "./runtime-core-shared.js";
 
@@ -67,18 +66,24 @@ export function formatToolResultTaskId(
  */
 export function resolutionPriority(resolution: RuntimeResolution): number {
   switch (resolution.type) {
-    case "fail":
+    case "fail": {
       return resolution.fatality === "hard" ? 6 : 2;
-    case "pause":
+    }
+    case "pause": {
       return 5;
-    case "handoff":
+    }
+    case "handoff": {
       return 4;
-    case "end_turn":
+    }
+    case "end_turn": {
       return 3;
-    case "continue_iteration":
+    }
+    case "continue_iteration": {
       return 1;
-    default:
+    }
+    default: {
       return 0;
+    }
   }
 }
 
@@ -110,16 +115,20 @@ export function resolutionToPhase(
   resolution: RuntimeResolution
 ): TurnEndEvent["status"] {
   switch (resolution.type) {
-    case "pause":
+    case "pause": {
       return "paused";
-    case "fail":
+    }
+    case "fail": {
       return "failed";
+    }
     case "continue_iteration":
     case "end_turn":
-    case "handoff":
+    case "handoff": {
       return "completed";
-    default:
+    }
+    default: {
       return "failed";
+    }
   }
 }
 

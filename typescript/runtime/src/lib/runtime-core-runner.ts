@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   ContextManifest,
@@ -45,11 +46,8 @@ import {
   normalizeError,
 } from "./runtime-core-shared.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
-import {
-  executeToolBatch,
-  type ToolBatchOutcome,
-  type ToolExecutionMode,
-} from "./tool-execution.js";
+import { executeToolBatch } from "./tool-execution.js";
+import type { ToolBatchOutcome, ToolExecutionMode } from "./tool-execution.js";
 
 // ---------------------------------------------------------------------------
 // Exposure-time filtering helpers (BB001)
@@ -93,7 +91,9 @@ function createFilteredToolRegistry(
     get: (name) => byName.get(name),
     has: (name) => byName.has(name),
     list: () => [...filteredTools],
-    register: (tool) => base.register(tool),
+    register: (tool) => {
+      base.register(tool);
+    },
     toDefinitions: () => base.toDefinitions().filter((d) => byName.has(d.name)),
   };
 }

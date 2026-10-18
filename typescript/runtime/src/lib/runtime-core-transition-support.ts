@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { HashString } from "@tuvren/core";
 import type {
   AgentConfig,
   HandoffContextBuilder,
@@ -28,16 +29,12 @@ import {
   createLastOutputOnlyHandoffContextBuilder,
   createPreserveTraceHandoffContextBuilder,
 } from "./handoff-builders.js";
-import {
-  encryptMessageRecord,
-  type PayloadCodecBinding,
-} from "./payload-codec-seam.js";
+import { encryptMessageRecord } from "./payload-codec-seam.js";
+import type { PayloadCodecBinding } from "./payload-codec-seam.js";
 import type { RuntimeCoreContextOpsHost } from "./runtime-core-context-ops.js";
 import { applyHandoff as applyRuntimeHandoffFacade } from "./runtime-core-context-ops.js";
-import {
-  createContextEngineeringHelpers as createRuntimeContextEngineeringHelpers,
-  type HelperBundle,
-} from "./runtime-core-context.js";
+import { createContextEngineeringHelpers as createRuntimeContextEngineeringHelpers } from "./runtime-core-context.js";
+import type { HelperBundle } from "./runtime-core-context.js";
 import { loadHeadStateFacade } from "./runtime-core-facade-ops.js";
 import {
   cloneAgentConfigForRequest,
@@ -63,13 +60,15 @@ export function resolveRuntimeCoreDefaultHandoffContextBuilder(
   mode: string
 ): HandoffContextBuilder {
   switch (mode) {
-    case "last_output_only":
+    case "last_output_only": {
       return createLastOutputOnlyHandoffContextBuilder();
-    case "preserve_trace":
+    }
+    case "preserve_trace": {
       return (
         handoffContextBuilder ?? createPreserveTraceHandoffContextBuilder()
       );
-    default:
+    }
+    default: {
       throw new TuvrenRuntimeError(
         `handoff mode "${mode}" requires an explicit builder`,
         {
@@ -79,6 +78,7 @@ export function resolveRuntimeCoreDefaultHandoffContextBuilder(
           },
         }
       );
+    }
   }
 }
 
