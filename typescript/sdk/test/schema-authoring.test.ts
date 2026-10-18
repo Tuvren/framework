@@ -118,7 +118,7 @@ const toFlexibleSchemaFixture = <T>(value: unknown): FlexibleSchema<T> =>
   value as FlexibleSchema<T>;
 
 const toZodSchemaFixture = <T>(value: unknown): ZodSchema<T> =>
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This partial Zod fixture intentionally models only the safeParse API consumed by the SDK adapter.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This deliberately partial fixture is cast to the adapter input type for branch tests.
   value as ZodSchema<T>;
 
 const toStandardSchemaFixture = <T>(value: unknown): StandardSchema<T> =>
@@ -415,7 +415,7 @@ describe("asSchema() — branch 6: bare TuvrenJsonSchema", () => {
 describe("zodSchema()", () => {
   test("wraps Zod v4 schema (has safeParse) into a branded Schema", () => {
     const mock = makeZodV4Mock({ data: 1, success: true });
-    // The fixture guard verifies the safeParse surface consumed by zodSchema.
+    // The partial mock is deliberately cast to the Zod input type for this branch test.
     const schema = zodSchema(toZodSchemaFixture<number>(mock));
     expect(schema[schemaSymbol]).toBe(true);
   });
