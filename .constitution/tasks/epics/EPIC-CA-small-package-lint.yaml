@@ -137,3 +137,41 @@ tickets:
     flows: []
     certainty: settled
     status: done
+closeout:
+  tickets_completed: [KRT-CA001, KRT-CA002, KRT-CA003, KRT-CA004]
+  tickets_deferred: []
+  points_completed: 24
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-CA: core, SDK, streaming, MCP client, testkit, telemetry and certification packages use canonical native lint targets; the batteries wrapper has exact JSON-only ownership; tools/run-nx.mjs remains under Biome for EPIC-CB."
+    - directory: tech-spec
+      type: changed
+      text: "Execution produced final KRT-CA002 and KRT-CA004 ledgers covering 36 legacy Biome identities, 160 measured native exception regions, 12 native targets, 107 code files and 76 JSON files under ADR-0070's unchanged shipped preset."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tasks
+      item: "A19 final aggregate including closeout: EPIC-CA changes 127 files and 20,915 raw lines (+14,872/-6,043), comprising 12,834 implementation lines across 110 files and 8,081 bookkeeping/evidence lines across 17 files. Future lint-ratchet planning should split comparable inherited work earlier or explicitly budget aggregate review cost; the wave lead must resolve this delivery assessment before merge."
+  follow_ups:
+    - "Stage 3 alignment should review the code_decisions routed by reconciliation, including the recursive-predicate initialization pattern and the permitted MCP internal Promise scheduling normalization."
+    - "EPIC-CB should consume .constitution/evidence/KRT-CA002/suppressions.json and .constitution/evidence/KRT-CA004/suppressions.json, retain tools/run-nx.mjs until whole-tools admission, then remove the final CA coverage entry when Biome retires."
+    - "Wave lead should perform the A19 premerge aggregate review using both whole-epic and implementation-only composition; bounded milestone reviews do not themselves establish aggregate-size compliance."
+    - "Operational deviation: the M30 worker invoked services:down despite A1; the command had no observed effect, the original shared daemon and PostgreSQL PIDs/socket remained healthy, no recovery was performed, and A27 now reserves all shared lifecycle commands to /root."
+  code_decisions:
+    - summary: "Break private recursive validator initialization cycles by passing the recursive predicate into a leaf object/schema helper, preserving public guards, traversal state, evaluation order and error behavior while allowing topologically initialized const callables."
+      kind: pattern
+      paths:
+        - typescript/core/src/lib/runtime-contract-predicates.ts
+      commit: 135a2c9
+    - summary: "Apply the same predicate-injection pattern to dense kernel-record validation so JSON/kernel recursion remains behaviorally identical without declaration hoisting or mutable forward bindings."
+      kind: pattern
+      paths:
+        - typescript/core/src/lib/kernel-records.ts
+      commit: a5e70ba
+    - summary: "The MCP tool execute wrapper uses return-await normalization; Bun 1.4.2 may settle an already-resolved inner Promise one microtask earlier. Step-0 permits this incidental internal scheduling change, while explicit connection and test Promise identities remain protected by measured exceptions."
+      kind: convention
+      paths:
+        - typescript/tools/mcp-client/src/lib/mcp-tool-source.ts
+      commit: 068062b
+  settled: []
