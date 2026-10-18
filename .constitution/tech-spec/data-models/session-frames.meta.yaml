@@ -7,8 +7,8 @@ boundaries: [BND-01, BND-15]
 companion: README.md
 certainty: settled
 evidence:
-  kind: measurement
+  kind: repository
   ref: reports/compatibility/evidence/certification-harness.framework-typescript-certification.json
-  version: 29204bd
+  version: fcfd380f0457b4aaa3c7d789f5c7d9c926d6514b
   date: 2026-10-17
-  note: "Generated session schema, binding validation, client carriage, and promoted conformance exercise the optional field while protocol version 1 remains unchanged."
+  note: "The checked-in framework certification report at this commit passes the promoted host-session admission-key check. Generated session schema, binding validation, and client carriage exercise the optional field while protocol version 1 remains unchanged."
