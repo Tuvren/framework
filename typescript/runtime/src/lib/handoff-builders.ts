@@ -112,7 +112,7 @@ function formatTraceLine(label: string, text: string): string {
 }
 
 function summarizeTraceText(text: string, limit = 120): string {
-  const normalized = text.replace(/\s+/g, " ").trim();
+  const normalized = text.replaceAll(/\s+/g, " ").trim();
 
   if (normalized.length <= limit) {
     return normalized;
@@ -226,14 +226,17 @@ function summarizeUserMessage(
         summaryParts.push(`Text request: ${summarizeTraceText(part.text)}`);
         break;
       }
-      case "structured":
+      case "structured": {
         structuredCount += 1;
         break;
-      case "file":
+      }
+      case "file": {
         fileCount += 1;
         break;
-      default:
+      }
+      default: {
         break;
+      }
     }
   }
 
@@ -273,17 +276,21 @@ function summarizeAssistantMessage(
 
   for (const part of message.parts) {
     switch (part.type) {
-      case "text":
+      case "text": {
         summaryParts.push(`Text output: ${summarizeTraceText(part.text)}`);
         break;
-      case "structured":
+      }
+      case "structured": {
         structuredCount += 1;
         break;
-      case "file":
+      }
+      case "file": {
         fileCount += 1;
         break;
-      default:
+      }
+      default: {
         break;
+      }
     }
   }
 

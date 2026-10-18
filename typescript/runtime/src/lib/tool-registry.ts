@@ -26,12 +26,12 @@ import {
 } from "@tuvren/core/errors";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { TuvrenJsonSchema } from "@tuvren/core/messages";
-import {
-  assertTuvrenToolDefinition,
-  type CustomSchema,
-  type RenderedToolDefinition,
-  type ToolRegistry,
-  type TuvrenToolDefinition,
+import { assertTuvrenToolDefinition } from "@tuvren/core/tools";
+import type {
+  CustomSchema,
+  RenderedToolDefinition,
+  ToolRegistry,
+  TuvrenToolDefinition,
 } from "@tuvren/core/tools";
 
 import { cloneSnapshotPreservingFunctions } from "./runtime-core-shared.js";
@@ -245,14 +245,14 @@ async function dispatchToClientEndpoint(
 ): Promise<ClientDispatchResult | null | "unavailable"> {
   try {
     return await boundary.dispatch(capabilityId, callId, input, idempotencyKey);
-  } catch (err) {
+  } catch (error) {
     if (
-      err instanceof TuvrenRuntimeError &&
-      err.code === CAPABILITY_BINDING_UNAVAILABLE
+      error instanceof TuvrenRuntimeError &&
+      error.code === CAPABILITY_BINDING_UNAVAILABLE
     ) {
       return "unavailable";
     }
-    throw err;
+    throw error;
   }
 }
 
@@ -277,8 +277,8 @@ export function buildClientEndpointTools(
 
   for (const endpoint of endpoints) {
     for (const cap of endpoint.advertisedCapabilities) {
-      const capabilityId = cap.capabilityId;
-      const endpointId = endpoint.endpointId;
+      const { capabilityId } = cap;
+      const { endpointId } = endpoint;
 
       const tool: TuvrenToolDefinition = {
         description: cap.description,

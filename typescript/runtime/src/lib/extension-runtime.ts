@@ -279,18 +279,24 @@ function composeResolution(
 
 function resolutionRank(resolution: RuntimeResolution): number {
   switch (resolution.type) {
-    case "fail":
+    case "fail": {
       return resolution.fatality === "hard" ? 6 : 2;
-    case "pause":
+    }
+    case "pause": {
       return 5;
-    case "handoff":
+    }
+    case "handoff": {
       return 4;
-    case "end_turn":
+    }
+    case "end_turn": {
       return 3;
-    case "continue_iteration":
+    }
+    case "continue_iteration": {
       return 1;
-    default:
+    }
+    default: {
       return 0;
+    }
   }
 }
 
@@ -399,7 +405,7 @@ function liftInterceptResult(
   result: InterceptResult | undefined
 ): RuntimeResolution | undefined {
   switch (result?.verdict) {
-    case "endTurn":
+    case "endTurn": {
       if (result.reason === undefined) {
         throw new TuvrenRuntimeError("endTurn verdicts require a reason", {
           code: "invalid_extension_verdict",
@@ -409,7 +415,8 @@ function liftInterceptResult(
         reason: result.reason,
         type: "end_turn",
       };
-    case "hardFail":
+    }
+    case "hardFail": {
       if (result.error === undefined) {
         throw new TuvrenRuntimeError("hardFail verdicts require an error", {
           code: "invalid_extension_verdict",
@@ -420,7 +427,8 @@ function liftInterceptResult(
         fatality: "hard",
         type: "fail",
       };
-    case "softFail":
+    }
+    case "softFail": {
       if (result.error === undefined) {
         throw new TuvrenRuntimeError("softFail verdicts require an error", {
           code: "invalid_extension_verdict",
@@ -431,8 +439,10 @@ function liftInterceptResult(
         fatality: "soft",
         type: "fail",
       };
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 

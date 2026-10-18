@@ -42,10 +42,8 @@ import {
   cloneValue,
   createFrozenSnapshot,
 } from "../src/lib/runtime-core-shared.ts";
-import {
-  RuntimeExecutionHandle,
-  type RuntimeExecutionHandleRuntime,
-} from "../src/lib/runtime-execution-handle.ts";
+import { RuntimeExecutionHandle } from "../src/lib/runtime-execution-handle.ts";
+import type { RuntimeExecutionHandleRuntime } from "../src/lib/runtime-execution-handle.ts";
 import type { ExecutionSessionRequest } from "../src/lib/runtime-execution-types.ts";
 import {
   createAroundToolContext,
@@ -130,7 +128,7 @@ const cases: BenchmarkCase[] = [
       for (let index = 0; index < iterations; index += 1) {
         await runBeforeIterationHooks({
           emit() {
-            return undefined;
+            return;
           },
           extensions: extensionFixture,
           iterationCount: index,
@@ -153,7 +151,7 @@ const cases: BenchmarkCase[] = [
       for (let index = 0; index < iterations; index += 1) {
         await runAfterIterationHooks({
           emit() {
-            return undefined;
+            return;
           },
           extensions: extensionFixture,
           iterationCount: index,
@@ -255,7 +253,7 @@ const cases: BenchmarkCase[] = [
 
 const benchmarkExecutionHandleRuntime: RuntimeExecutionHandleRuntime = {
   cancelPausedExecution() {
-    return undefined;
+    return;
   },
   createResumedExecutionHandle() {
     throw new Error("resume is not used by the event queue benchmark");
@@ -545,13 +543,13 @@ function createToolEnvironment(
       return 1;
     },
     publishCustom() {
-      return undefined;
+      return;
     },
     publishEvent() {
-      return undefined;
+      return;
     },
     reportSoftError() {
-      return undefined;
+      return;
     },
     runId: "run",
     stageResult(result: ToolResultPart): Promise<HashString> {

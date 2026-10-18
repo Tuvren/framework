@@ -33,10 +33,10 @@
  */
 
 import type { Scope } from "@tuvren/core";
-import {
-  isPayloadEnvelope,
-  type PayloadCodec,
-  type PayloadDecryptResult,
+import { isPayloadEnvelope } from "@tuvren/core/lifecycle";
+import type {
+  PayloadCodec,
+  PayloadDecryptResult,
 } from "@tuvren/core/lifecycle";
 
 /**

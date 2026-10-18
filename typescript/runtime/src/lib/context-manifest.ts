@@ -132,7 +132,7 @@ function appendMessage(
   manifest.tokenEstimate += estimateMessageTokens(message);
 
   switch (message.role) {
-    case "assistant":
+    case "assistant": {
       manifest.byRole.assistant += 1;
       manifest.lastAssistantMessageIndex = messageIndex;
       for (const part of message.parts) {
@@ -147,25 +147,30 @@ function appendMessage(
         }
       }
       return;
-    case "system":
+    }
+    case "system": {
       manifest.byRole.system += 1;
       return;
-    case "tool":
+    }
+    case "tool": {
       manifest.byRole.tool += 1;
       for (const part of message.parts) {
         incrementNameCounter(manifest.toolResults.byName, part.name);
         manifest.toolResults.total += 1;
       }
       return;
-    case "user":
+    }
+    case "user": {
       manifest.byRole.user += 1;
       manifest.lastUserMessageIndex = messageIndex;
       if (isTurnBoundary) {
         manifest.turnBoundaries.push(messageIndex);
       }
       return;
-    default:
+    }
+    default: {
       return;
+    }
   }
 }
 
@@ -175,34 +180,40 @@ function estimateMessageTokens(message: TuvrenMessage): number {
       ? message.content.length
       : message.parts.reduce((length, part) => {
           switch (part.type) {
-            case "file":
+            case "file": {
               return (
                 length +
                 estimateFilePayloadLength(part.data) +
                 (part.filename?.length ?? 0) +
                 part.mediaType.length
               );
+            }
             case "reasoning":
-            case "text":
+            case "text": {
               return length + part.text.length;
-            case "structured":
+            }
+            case "structured": {
               return length + JSON.stringify(part.data).length;
-            case "tool_call":
+            }
+            case "tool_call": {
               return (
                 length +
                 part.name.length +
                 JSON.stringify(part.input).length +
                 part.callId.length
               );
-            case "tool_result":
+            }
+            case "tool_result": {
               return (
                 length +
                 part.name.length +
                 JSON.stringify(part.output).length +
                 part.callId.length
               );
-            default:
+            }
+            default: {
               return length;
+            }
           }
         }, 0);
 
