@@ -142,4 +142,57 @@ tickets:
       evidence: Assert every delivered file matches the frozen BT source identity and the assembled tree passes source-only runtime typecheck, retained-Biome lint, a fresh runtime entrypoint import, the focused tool-execution tests, and the complete native-routing/argv regression matrix. Assert tools/scripts/verify.ts preserves the original nine BP follow-up suites, registers the BT argv suite exactly once, and contains neither future adapter registry name. Prove the compiler inventory resolves no live sibling source, preserve all public behavior, and require a direct @tuvren/runtime patch Changeset.
     flows: []
     certainty: settled
-    status: planned
+    status: done
+closeout:
+  tickets_completed: [KRT-CU001]
+  tickets_deferred: []
+  points_completed: 5
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-CU: delivered the frozen runtime execution, recovery, tool workflow and shared native-lint routing slice with exact source provenance, direct runtime Changeset coverage and complete correctness review."
+  candidate_terms: []
+  routed_upstream: []
+  follow_ups: []
+  code_decisions:
+    - summary: "Use internal function-valued properties where the shipped method-signature rule requires strict variance; the frozen source review found no supported runtime, core or SDK export exposure."
+      kind: convention
+      paths:
+        - typescript/runtime/src/lib/binding-resolver.ts
+        - typescript/runtime/src/lib/capability-policy-engine.ts
+      commit: b544e98ffdbb81ec5b7c5578ab164c18f4d2284e
+    - summary: "Lift synchronous test callbacks into required Promise ports with Promise.try.bind, an explicit undefined receiver and variadic arguments while preserving synchronous throws, thenables and receiver behavior."
+      kind: pattern
+      paths:
+        - typescript/runtime/test/runtime-core-test-helpers.ts
+      commit: b544e98ffdbb81ec5b7c5578ab164c18f4d2284e
+    - summary: "Own lazy orchestration streams and runner-result validation in dependency-safe focused modules while retaining their original ordering and supported package surface."
+      kind: pattern
+      paths:
+        - typescript/runtime/src/lib/orchestration-runtime-lazy-stream.ts
+        - typescript/runtime/src/lib/runtime-core-runner-result.ts
+      commit: b544e98ffdbb81ec5b7c5578ab164c18f4d2284e
+    - summary: "Split tool execution into validation, staging, single-call, batch and resolution owners with type-only reverse edges, one shared validator cache and a dependency-free staging-error class."
+      kind: pattern
+      paths:
+        - typescript/runtime/src/lib/tool-execution-validation.ts
+        - typescript/runtime/src/lib/tool-execution-staging.ts
+        - typescript/runtime/src/lib/tool-execution-single.ts
+        - typescript/runtime/src/lib/tool-execution-batch.ts
+        - typescript/runtime/src/lib/tool-execution-resolution.ts
+        - typescript/runtime/src/lib/tool-execution-errors.ts
+      commit: b544e98ffdbb81ec5b7c5578ab164c18f4d2284e
+    - summary: "Share run-liveness fixtures through the same base fake-kernel state and split recovery helpers without test-to-test imports or duplicated staging logic."
+      kind: pattern
+      paths:
+        - typescript/runtime/test/fake-run-liveness-kernel.ts
+        - typescript/runtime/test/runtime-core-recovery-test-helpers.ts
+      commit: b544e98ffdbb81ec5b7c5578ab164c18f4d2284e
+    - summary: "Accept explicit top-level forwardAllArgs:false for canonical native-lint targets while preserving legacy omission and rejecting malformed, nested or configured forwarding."
+      kind: convention
+      paths:
+        - tools/scripts/lib/native-lint-routing.ts
+        - tools/scripts/lib/native-lint-routing-argv.test.ts
+      commit: b544e98ffdbb81ec5b7c5578ab164c18f4d2284e
+  settled: []
