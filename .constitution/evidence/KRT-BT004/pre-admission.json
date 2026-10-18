@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BT004",
+  "reviewed_head": "ca5cf7208189994fc598fdc9fadc332b2dfd9dcf",
+  "reviewed_tree": "c769d15d5b4c8f625a3400769634700c28e897ab",
+  "source_directive_comments": 29,
+  "directive_paths": 29,
+  "historical_changelog_prose_matches": 1,
+  "directive_paths_sha256": "e64cd470cf53a65cd48e6b37ded4a7d5e51ff9eb156f3baa07fa35dd148a01cb",
+  "directive_path_blobs_sha256": "b1642802f0e53755fdbcc334e2906b2c568f5d583a2235eae42c5fb9a1b26b47",
+  "directive_path_contents_sha256": "380253c1d6c1a44dfd696545cda83818c14fa332a0b570e1d9fc851d76b058f8",
+  "source_directives_sha256": "0a14955457afcd277f6f5f5d43006721d49c57eda4701d44f76ae4a4f3b4c128",
+  "krt_bt002_evidence_pair_sha256": "ec94057669742e030d7406fee7fbc5ce28967b2d11473643565f916ca3ed1407"
+}

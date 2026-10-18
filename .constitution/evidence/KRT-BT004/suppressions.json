@@ -1,0 +1,1745 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BT004",
+  "baseline_reference": {
+    "path": ".constitution/evidence/KRT-BT002/suppressions.json",
+    "sha256": "ef14b948709c222bcf29d7b12510c3e7f1b41e7e818d9744fe316f87aeea11cd"
+  },
+  "pre_admission_receipt": ".constitution/evidence/KRT-BT004/pre-admission.json",
+  "counts": {
+    "baseline_identities": 59,
+    "prior_reviewed_behavior_proven_removals": 30,
+    "m49_atomic_admission_removals": 29,
+    "final_source_directive_comments": 0,
+    "unchanged_historical_changelog_prose_matches": 1,
+    "final_oxlint_selected_files": 154,
+    "final_oxlint_reported_files": 154,
+    "final_oxlint_enabled_rules": 474,
+    "final_oxlint_diagnostics": 0,
+    "entries_with_firing_native_counterpart": 0
+  },
+  "validations": {
+    "all_baseline_identities_accounted": true,
+    "expected_prior_removal_count": true,
+    "expected_atomic_removal_count": true,
+    "every_final_directive_absent": true,
+    "no_firing_native_counterpart": true,
+    "source_directive_final_zero": true,
+    "historical_prose_match_unchanged": true,
+    "historical_original_reasons_embedded_verbatim": true,
+    "historical_verified_at_preserved": true
+  },
+  "entries": [
+    {
+      "identity": "typescript/runtime/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/runtime/src/index.ts",
+      "original_reason": "This package entrypoint is the intentional internal-engine surface.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "d55e049f5fbcc1067a9690b482e723f5f25582b8",
+        "final_worktree_blob": "de536d568541107df8e2dba3d4756d3b9dd4fa64",
+        "final_sha256": "278ea8bccd6344a9a5b81770cec9c1c99431621b469fa6349b42bd9634ba0286"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/src/lib/runtime-core-execution-session.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
+      "path": "typescript/runtime/src/lib/runtime-core-execution-session.ts",
+      "original_reason": "Session startup intentionally linearizes recovery, resume, publication, and prelude checkpoints in one place.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 251,
+        "krt_bt002_final_line": 249,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "4957ec2d98a33e1d20fb37a4d755f079c31e5acc",
+        "reviewed_removal_commit_time": "2026-10-18T09:31:45-03:00",
+        "reviewed_removal_subject": "refactor(runtime): clear event and lifecycle lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "a60776e7a1ccc35659f2ee7199b328801466937c",
+        "final_worktree_blob": "a60776e7a1ccc35659f2ee7199b328801466937c",
+        "final_sha256": "ecd3b4839d50a46eb5ed0b32e0b1391ea23b60651b78f74a957cf4e93d8f0219"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/src/lib/runtime-core-loop.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
+      "path": "typescript/runtime/src/lib/runtime-core-loop.ts",
+      "original_reason": "The execution loop is intentionally kept as a single checkpointed control-flow path for cancellation and iteration semantics.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 229,
+        "krt_bt002_final_line": 226,
+        "m49_reviewed_parent_line": 542,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "86617ef8e52c489b5d9b9be0febe272c175395c5",
+        "final_worktree_blob": "18ea92b0e6677cb0ec59c21a854621499b68e470",
+        "final_sha256": "6f01b7037980386276e4eda4d852c5294e11e0a7fc1ce6fc2b958eb27c4ed75e"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/admission-key-persistence.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/admission-key-persistence.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "b390ecb757cdee513ea3108cddf35a1953d27eec",
+        "reviewed_removal_commit_time": "2026-10-18T11:26:30-03:00",
+        "reviewed_removal_subject": "test(runtime): clear admission and persistence lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "20bda5f64ed36a892ef18654ce5563101ca73e85",
+        "final_worktree_blob": "20bda5f64ed36a892ef18654ce5563101ca73e85",
+        "final_sha256": "947259da4f9083d594875df2248866523157069a1f7cb98af87d7717146210a3"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/capability-attribution.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/capability-attribution.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "b390ecb757cdee513ea3108cddf35a1953d27eec",
+        "reviewed_removal_commit_time": "2026-10-18T11:26:30-03:00",
+        "reviewed_removal_subject": "test(runtime): clear admission and persistence lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "c795e25234372536e81b9b324b8a657103b79e67",
+        "final_worktree_blob": "c795e25234372536e81b9b324b8a657103b79e67",
+        "final_sha256": "3d9161e85c05ddc7168803cfdc9c38c98da69ae552062209cdcc8f8f285f48b9"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/capability-policy-engine.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/capability-policy-engine.test.ts",
+      "original_reason": "test runners intentionally match async contracts",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "b390ecb757cdee513ea3108cddf35a1953d27eec",
+        "reviewed_removal_commit_time": "2026-10-18T11:26:30-03:00",
+        "reviewed_removal_subject": "test(runtime): clear admission and persistence lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "159eab2ac001c65d0e349ea2c789cac6f19edb16",
+        "final_worktree_blob": "159eab2ac001c65d0e349ea2c789cac6f19edb16",
+        "final_sha256": "0d62fc8a08d1fc79b48a5dda649f0046f2bc3c606fd83ca50f521ea70317bb1a"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/fake-kernel.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/fake-kernel.ts",
+      "original_reason": "The fake kernel mirrors the async production protocol surface.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "9e8bb47ecef61a55684912c7b114acb667dd3aec",
+        "final_worktree_blob": "a36d85ed67f2e2ce482edf16213030f977738009",
+        "final_sha256": "df80f9929b42e37d0effd77200e28cafab08f75f15138ce027d8d9fa2f78effc"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/invocation-lifecycle.cross-class.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/invocation-lifecycle.cross-class.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "a5489c02cb4423a41361465dc40a3084a21dc541",
+        "reviewed_removal_commit_time": "2026-10-18T11:44:18-03:00",
+        "reviewed_removal_subject": "test(runtime): clear invocation and server lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "6ccb208623a56204b860c986ead1d20b8fb24909",
+        "final_worktree_blob": "6ccb208623a56204b860c986ead1d20b8fb24909",
+        "final_sha256": "42cec716f289d7c1ceb7e646789c95a3fe4e637381a26707ed620a8265ec0731"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/invocation-lifecycle.observation-taxonomy.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/invocation-lifecycle.observation-taxonomy.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "a5489c02cb4423a41361465dc40a3084a21dc541",
+        "reviewed_removal_commit_time": "2026-10-18T11:44:18-03:00",
+        "reviewed_removal_subject": "test(runtime): clear invocation and server lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "ef3b213be0b2bdfa8d4565486edb6999251d0bd6",
+        "final_worktree_blob": "ef3b213be0b2bdfa8d4565486edb6999251d0bd6",
+        "final_sha256": "0690aad5c07eacdc3d3d6d8c6ded1c0e620736356c526fec10845b600e9d3d50"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/invocation-lifecycle.resume-recovery.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/invocation-lifecycle.resume-recovery.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "a5489c02cb4423a41361465dc40a3084a21dc541",
+        "reviewed_removal_commit_time": "2026-10-18T11:44:18-03:00",
+        "reviewed_removal_subject": "test(runtime): clear invocation and server lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "94fee962310e0c3acf2798dc467383b77459ff48",
+        "final_worktree_blob": "94fee962310e0c3acf2798dc467383b77459ff48",
+        "final_sha256": "1b84bd6d7a1147488cb10225d29a8ba961457c5802c76813fb5d1649debdca25"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/invocation-lifecycle.telemetry-depth.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/invocation-lifecycle.telemetry-depth.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "a5489c02cb4423a41361465dc40a3084a21dc541",
+        "reviewed_removal_commit_time": "2026-10-18T11:44:18-03:00",
+        "reviewed_removal_subject": "test(runtime): clear invocation and server lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "d0d5cbe4d27268ddf7d4c0802e2e7064b4a002e7",
+        "final_worktree_blob": "d0d5cbe4d27268ddf7d4c0802e2e7064b4a002e7",
+        "final_sha256": "4e44c84dab19d603c05cc4b18928e0e33d6ce13d63b5536df6ab1dcd18c65fc0"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/orchestration-runtime-runner-helpers.ts::lint/complexity/noExcessiveCognitiveComplexity+lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/orchestration-runtime-runner-helpers.ts",
+      "original_reason": "Shared runner test doubles intentionally centralize event emission and async contract stubs.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "a7bfdfc7a7e40de1f7d2ed4d42989e1495a967fa",
+        "final_worktree_blob": "8fd676cc1ae9a8b1fd0e98ed27fd30023d90dc91",
+        "final_sha256": "8d965f2d0007bb4312e4583b93fc96aeb06bb231f57dcbbdafcf3636fb515e88"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/orchestration-runtime.approval.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/orchestration-runtime.approval.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "7cb77d0cd78a0bd7950b15be100451788c96399c",
+        "reviewed_removal_commit_time": "2026-10-18T11:56:13-03:00",
+        "reviewed_removal_subject": "test(runtime): clear orchestration and approval lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "52be1e936195b7b9a0317203f710fb2061114745",
+        "final_worktree_blob": "52be1e936195b7b9a0317203f710fb2061114745",
+        "final_sha256": "25fba3bb9e291b314f212eb00aaa5caa3e18b8a8735a1fa8e51c4cf31ec28c6f"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/orchestration-runtime.child-lifecycle.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/orchestration-runtime.child-lifecycle.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "7cb77d0cd78a0bd7950b15be100451788c96399c",
+        "reviewed_removal_commit_time": "2026-10-18T11:56:13-03:00",
+        "reviewed_removal_subject": "test(runtime): clear orchestration and approval lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "db131936060777138dcc767f076c1b5c7801cabc",
+        "final_worktree_blob": "db131936060777138dcc767f076c1b5c7801cabc",
+        "final_sha256": "4a587a8b560df8322662ac2c7e59045d20a4792675ad95742e99efcef5d97350"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/orchestration-runtime.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/orchestration-runtime.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "7cb77d0cd78a0bd7950b15be100451788c96399c",
+        "reviewed_removal_commit_time": "2026-10-18T11:56:13-03:00",
+        "reviewed_removal_subject": "test(runtime): clear orchestration and approval lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "c170f0ccd866f2b7cd89664d8696635e63fceb81",
+        "final_worktree_blob": "c170f0ccd866f2b7cd89664d8696635e63fceb81",
+        "final_sha256": "ad5ae5b52b2c4127952ec3e9e0e00f91ae4b0f8368a560978151d5301159aed2"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.after-iteration.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.after-iteration.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "7b9b8eae26a1d7f73153cf502dff5fa62c804b79",
+        "final_worktree_blob": "635712628f3d1be9feb8469d689c8bf9b65e2f48",
+        "final_sha256": "5c80c048940198f66081b3c0426fd739ea4055b6fd4f5d5c2c0efb6d2740d8c9"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.approval-basics.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.approval-basics.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "7cb77d0cd78a0bd7950b15be100451788c96399c",
+        "reviewed_removal_commit_time": "2026-10-18T11:56:13-03:00",
+        "reviewed_removal_subject": "test(runtime): clear orchestration and approval lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "79a57e43c979844f1b23a7469a996c1e24405c15",
+        "final_worktree_blob": "79a57e43c979844f1b23a7469a996c1e24405c15",
+        "final_sha256": "3c54bc464d128d644e169fb2bf33f9c4acd2cbdbc464a7aee1a7bca0e78c0e02"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.approval-decisions.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.approval-decisions.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "7cb77d0cd78a0bd7950b15be100451788c96399c",
+        "reviewed_removal_commit_time": "2026-10-18T11:56:13-03:00",
+        "reviewed_removal_subject": "test(runtime): clear orchestration and approval lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "a2c647d937f74da4131e01de0cc210ad41d40772",
+        "final_worktree_blob": "a2c647d937f74da4131e01de0cc210ad41d40772",
+        "final_sha256": "8a8c517300a0af8c1c5aef78337f1c96d6b3c2a0b642e226fa3f73110566b893"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.approval-lifecycle.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.approval-lifecycle.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "7cb77d0cd78a0bd7950b15be100451788c96399c",
+        "reviewed_removal_commit_time": "2026-10-18T11:56:13-03:00",
+        "reviewed_removal_subject": "test(runtime): clear orchestration and approval lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "fb1536135c4673a32c803028c3bcdc2c510074b8",
+        "final_worktree_blob": "fb1536135c4673a32c803028c3bcdc2c510074b8",
+        "final_sha256": "dfd9eea65eaa2defa5841da12bff4ed978ea641df81b288bd6ac93400ed63c24"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.approval-resume.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.approval-resume.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "7cb77d0cd78a0bd7950b15be100451788c96399c",
+        "reviewed_removal_commit_time": "2026-10-18T11:56:13-03:00",
+        "reviewed_removal_subject": "test(runtime): clear orchestration and approval lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "f0a7e85942596a85c7acc1f82e4bac7df63f9eb9",
+        "final_worktree_blob": "f0a7e85942596a85c7acc1f82e4bac7df63f9eb9",
+        "final_sha256": "b3862ec7b7fa23afb0c03d69c462da15f3c5e3fbe50a2ba4ca11a80db2f89f2e"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.approval.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.approval.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "7cb77d0cd78a0bd7950b15be100451788c96399c",
+        "reviewed_removal_commit_time": "2026-10-18T11:56:13-03:00",
+        "reviewed_removal_subject": "test(runtime): clear orchestration and approval lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "3e2aab5296788a0dc41f9a7dc822085f995c9052",
+        "final_worktree_blob": "3e2aab5296788a0dc41f9a7dc822085f995c9052",
+        "final_sha256": "481c70c5def20b92b8d6d0f8e1029f6da9626d19dc239cb9571a2bc5cbb7a0f2"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.around-tool-approval.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.around-tool-approval.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "7cb77d0cd78a0bd7950b15be100451788c96399c",
+        "reviewed_removal_commit_time": "2026-10-18T11:56:13-03:00",
+        "reviewed_removal_subject": "test(runtime): clear orchestration and approval lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "c78146f01b6d00279269ec2a20038bf10e62f889",
+        "final_worktree_blob": "c78146f01b6d00279269ec2a20038bf10e62f889",
+        "final_sha256": "58a1b0f5f46c9a205097a6273b617f8685ffac9d9e2542c8ce0ec6feddc8e5cc"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.assistant-stream.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.assistant-stream.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "b37da0248116a33049bf8bf7aec38996b30e15f7",
+        "final_worktree_blob": "912315a7eb450efb2ca78aa971b491a9c2e27d0d",
+        "final_sha256": "968132ca3cd349d1d921966aea936eb1a8884827d124665824fe55da4ade5602"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.await-result.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.await-result.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "2d56b4ca298315ecaafb7b48f53e9dbaaa03ad04",
+        "final_worktree_blob": "264f87a805dde862b459604ef4793314ad74dfe0",
+        "final_sha256": "26d3689f12999f3450db4094374957d38eced246da00e119d0ed02b484b85f77"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.bootstrap.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.bootstrap.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "9dd4ca3c3375ffe7a265f1e3e5e9bacd74ca6821",
+        "final_worktree_blob": "ee854158ddac5f84236e77af3ff11dd9fc3791f7",
+        "final_sha256": "9d1c2b31b92c4305cd328621c852b5a373894a783fda27870d082288ed5bfd81"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.client-endpoint.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.client-endpoint.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "25628a8870a75dadb2aeb1db0f04e37a2e44e1e7",
+        "final_worktree_blob": "ca8243927cacea252e9694ef10424fcba98363c8",
+        "final_sha256": "afa07691f3ddf331b97412a80e663737621187d781c731d3a26903170596bf68"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.context-engineering.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.context-engineering.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "df7b7f2b2f72a4e79b6dde3d23e3f6448f146955",
+        "final_worktree_blob": "30a25f865b8410e0605ed8d61fc230f4d9f65823",
+        "final_sha256": "04276bf997c7d49264bc6d881be76417e036851d3a9a14475de55970f8a81e28"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.execution-bounds.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.execution-bounds.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "9279543285d4aa95267118989ae77c4579fb8320",
+        "final_worktree_blob": "339e15c99ef3b69fcb8fd0018cd3348a899c887c",
+        "final_sha256": "e2e4716d9cf3360f8f235a759f9f795564bef9b5116f3a094231506d1432ebe8"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.execution-lifecycle.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.execution-lifecycle.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "e5ad066b6fb1e5a3cbcfb738ae79c4c679e1b527",
+        "final_worktree_blob": "b30f740b338a6a1223f236fef681a62b87582858",
+        "final_sha256": "e220ae8aece332b8aaa93c10fdcbb92be987ab24775f6dca05e761063e2af425"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.handoff-builders.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.handoff-builders.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "9976a125186ff8cc9e2e62e6c0cf0ca959868944",
+        "final_worktree_blob": "89f2573405026620287c9220d030c2c24d315a6c",
+        "final_sha256": "45db65a0d07d25400753a5fec675b1a5aa86d4909fa9e750b0876485f2139f3a"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.handoff-runner.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.handoff-runner.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "10566fcc62de200589d0b268386ef96e3c7875ac",
+        "final_worktree_blob": "9d6cde62e5003e172f225e526256ffed91c1d528",
+        "final_sha256": "d7ff58097ca03ce05677be335dc80ce24c8270694b82de4f5dd52f8c058080e8"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.hooks.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.hooks.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "6d71986ccc600de27b18126a47232a67d172d3aa",
+        "final_worktree_blob": "59641120a00b707ac2e64f47c2ac505424f86b81",
+        "final_sha256": "b4e12b0479489a8b736f58fa20596ce445667e25251fbf6c11c107e7e417ce4c"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.lifecycle.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.lifecycle.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "40faf660eae8bf8f6fd4fd837990d02bcb9651d9",
+        "final_worktree_blob": "114b60597c6a315b56b2b72692634211d60833b9",
+        "final_sha256": "1a004500c208ecbfac1224280cdf9c2d593fe69ddc5b3ead57949ca1571f87cc"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.malformed-approval.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.malformed-approval.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "7cb77d0cd78a0bd7950b15be100451788c96399c",
+        "reviewed_removal_commit_time": "2026-10-18T11:56:13-03:00",
+        "reviewed_removal_subject": "test(runtime): clear orchestration and approval lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "1c797cb8b1ab8b99cd246bc5274806e54b578e90",
+        "final_worktree_blob": "1c797cb8b1ab8b99cd246bc5274806e54b578e90",
+        "final_sha256": "dba33dc045a44d4193e58c8c7f1c2dc0dea2410a791a2371bdcd8af4d5bf5517"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.orchestration.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.orchestration.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "3dde3ffe260cb16b620d9d1050bf90832e6b9e1a",
+        "final_worktree_blob": "15f0c16e55b584df6b108e19ada8090b731c3686",
+        "final_sha256": "775c418afb2949f445db1ecbbc19544d9783eeb77d3cbdd88717343d469342b7"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.parallel-batching.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.parallel-batching.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "23b62f524d437d5f94312908a5ead91d0fc32a7a",
+        "final_worktree_blob": "8035749f35e80f123c1a8e920517e851a3c20863",
+        "final_sha256": "44ed4078562e5fa36e52ea9a9792179a24ea3938a80ab11900c259178b5ddbde"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.provider-execution-class.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.provider-execution-class.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "aa086308ac4a42117961dffb6b4025239047cb6d",
+        "final_worktree_blob": "780c624eb95fe96f2fdac4cdcd278183a23a9cd5",
+        "final_sha256": "b652fcb35518355127cd5b944044814c4c6b7764312d599aad0cc99314b11447"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.reasoning-stream.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.reasoning-stream.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "869bbaa825120a7cc89b1e217cc7dd583031f816",
+        "final_worktree_blob": "da921b2ca8891536f9a43549ef456e8f6d2b482b",
+        "final_sha256": "194ccdf913dd4ba5e32c0cfe7411713b38346038e675ef4559c1ecf6fcea5d6a"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.recovery-cold-batch-regressions.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.recovery-cold-batch-regressions.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 11,
+        "krt_bt002_final_line": 11,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "21dea3db2062682f9c006318202ffd284d98fb13",
+        "reviewed_removal_commit_time": "2026-10-18T12:07:06-03:00",
+        "reviewed_removal_subject": "test(runtime): clear recovery test lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "964a780c5502fa744054a79550da7213f36d8e6d",
+        "final_worktree_blob": "964a780c5502fa744054a79550da7213f36d8e6d",
+        "final_sha256": "1ddc4124a8a669f0b620cae41dabd990db2b6f32ac4678f29f8d41a904b1deb1"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.recovery-order-repair-window.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.recovery-order-repair-window.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 8,
+        "krt_bt002_final_line": 8,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "21dea3db2062682f9c006318202ffd284d98fb13",
+        "reviewed_removal_commit_time": "2026-10-18T12:07:06-03:00",
+        "reviewed_removal_subject": "test(runtime): clear recovery test lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "8443a7335be0259d2e61d89d356099e3d9889689",
+        "final_worktree_blob": "8443a7335be0259d2e61d89d356099e3d9889689",
+        "final_sha256": "4f99f937e660a91398b2d10818e5263377945bf72c65124e059b57de2ca08a0d"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.recovery.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.recovery.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "21dea3db2062682f9c006318202ffd284d98fb13",
+        "reviewed_removal_commit_time": "2026-10-18T12:07:06-03:00",
+        "reviewed_removal_subject": "test(runtime): clear recovery test lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "86a400dd20982527f58a13809dbce99517e35cca",
+        "final_worktree_blob": "86a400dd20982527f58a13809dbce99517e35cca",
+        "final_sha256": "8fb5ff04feff907361c4b78e8721615d3b954b085cb9183089eb7f7b87d9bf72"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.runner-boundary.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.runner-boundary.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "1b0b1e7819cee0a9bc8ef2f38f2be5f54f2407ae",
+        "final_worktree_blob": "fcbe85b3f06f462d4d38af26122767bb1b89b165",
+        "final_sha256": "8456210dbd0a0d48c7599732ccb5a6bd71680e756606092a09697ccaa54823dd"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.sanitize-tool-result.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.sanitize-tool-result.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "5ba1854b0ff718747d093e7927ca9d26fa8eecf1",
+        "final_worktree_blob": "6cfc7584588f7641565904de778e4a3ae2bb1752",
+        "final_sha256": "60809cb961f52ccc4ee0c656691407a028a7fea9382079ab57a307f3d4673399"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.stale-step-recovery.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.stale-step-recovery.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "21dea3db2062682f9c006318202ffd284d98fb13",
+        "reviewed_removal_commit_time": "2026-10-18T12:07:06-03:00",
+        "reviewed_removal_subject": "test(runtime): clear recovery test lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "ae103e81cad42dca91b1162ecfd6647a9e962d21",
+        "final_worktree_blob": "ae103e81cad42dca91b1162ecfd6647a9e962d21",
+        "final_sha256": "8aa40d7aa3b9b6d736e6f11dcf73fa2f549ad7f3191ffdc90231604a3963a741"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.steering.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.steering.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "7ab711269a862b5b335c478d168bb8bb3f893b5f",
+        "final_worktree_blob": "8f790100fe97c2b29ba0e67d0481fe05ae05ef92",
+        "final_sha256": "5cc76120b51f7cb23fb29fc593ec91c64d4206b30f32b4733d78dd0c6a632e7f"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.stream-synthesis.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.stream-synthesis.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "5a6cc6ad985aa17a78b27a1fc83f0b2de563d0ec",
+        "final_worktree_blob": "f764f081969dcf9b0fe055d3a0d6ec5149515d4e",
+        "final_sha256": "f179e1d7a6e2a5788880bd26f699c3ebc85776fe75c7ee6ca8cd88a9dcef1794"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.stream-validation.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.stream-validation.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "259ad6d7d85a53bf53d38a886247e52db225a6aa",
+        "final_worktree_blob": "e57db4af14f29dae693ab75b2bc97fa6d7f92088",
+        "final_sha256": "3fdb20d95f2cf955da0a11664b8479e9e7f2e4f8f44f371fe811d12c041e117c"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.telemetry.test.ts::lint/style/useThrowOnlyError::1",
+      "path": "typescript/runtime/test/runtime-core.telemetry.test.ts",
+      "original_reason": "a non-Error throw whose string coercion itself throws is the regression under test (ADR-0058 §3 boundary hardening)",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 388,
+        "krt_bt002_final_line": 388,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "e3667c9f1949c1c86d530b4d3fc32267b313e8ae",
+        "reviewed_removal_commit_time": "2026-10-18T12:30:35-03:00",
+        "reviewed_removal_subject": "test(runtime): clear execution and lifecycle lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "c99224ff23b9f18b06a15fbf7d1c0073e6cdec49",
+        "final_worktree_blob": "c99224ff23b9f18b06a15fbf7d1c0073e6cdec49",
+        "final_sha256": "f7bf0ad8bd9e689f584fae015dea0b87f598ea5557c9652912a40cb204a7a206"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.tool-batching.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.tool-batching.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "dbcaaa3138d0609518c1e38343a6ec96ee66951e",
+        "final_worktree_blob": "d599ba6a6a9b8ea8796d5dc7954aa2063c58a1fa",
+        "final_sha256": "5b40aac4e2f7198a31a2c88775332e8f4f279a189b247cd85dbc00d4a4366f51"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.tool-failures.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.tool-failures.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "bb9b451741cd7574c629e4eb7fd38196117608be",
+        "final_worktree_blob": "333007864033c317c2e8637c711d0fd3e0b28132",
+        "final_sha256": "b89cf6e5856196cac854c305a039fde2faa5c8b862681cad331caea635076564"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.tooling.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.tooling.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "fcae05cc833da6500a418d7571ee412fbd65265c",
+        "final_worktree_blob": "72e8f6fd170039c7f515142c87a252537704d167",
+        "final_sha256": "c9b70206d944a5aa872b51c8a73998b00d21b6863882a50240eb111c73cfab74"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/runtime-core.turn-linking.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/runtime-core.turn-linking.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "m49-atomic-admission-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": 17,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": null,
+        "reviewed_removal_commit_time": null,
+        "reviewed_removal_subject": null
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "0cd23c0797a57af69185f8433a8e41728f1def36",
+        "final_worktree_blob": "29f6685015fb03c84bb2374cdbb92757b84f2314",
+        "final_sha256": "dd99b5e89df3b73045de683f6a4eb9c022d6efaff01a14793a24063faaebf664"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/server-execution-class.ax001-validation.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/server-execution-class.ax001-validation.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "a5489c02cb4423a41361465dc40a3084a21dc541",
+        "reviewed_removal_commit_time": "2026-10-18T11:44:18-03:00",
+        "reviewed_removal_subject": "test(runtime): clear invocation and server lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "bd4e5f7e5809b2249e4438927ed6cea818c84311",
+        "final_worktree_blob": "bd4e5f7e5809b2249e4438927ed6cea818c84311",
+        "final_sha256": "95badf189e9b604119095f947396cd31b1a15dba5182cc4971b0cf34b24281a0"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/server-execution-class.ax002-retry.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/server-execution-class.ax002-retry.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "a5489c02cb4423a41361465dc40a3084a21dc541",
+        "reviewed_removal_commit_time": "2026-10-18T11:44:18-03:00",
+        "reviewed_removal_subject": "test(runtime): clear invocation and server lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "00a10b23af4131d041acd0b243b70aa58f2c260a",
+        "final_worktree_blob": "00a10b23af4131d041acd0b243b70aa58f2c260a",
+        "final_sha256": "ef6aa1e3d285f5e7aa545b32b3d872bf3542383ed51115b663ae9f45b9e9b98a"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/server-execution-class.ax003-rate-limit.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/server-execution-class.ax003-rate-limit.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "a5489c02cb4423a41361465dc40a3084a21dc541",
+        "reviewed_removal_commit_time": "2026-10-18T11:44:18-03:00",
+        "reviewed_removal_subject": "test(runtime): clear invocation and server lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "c2c51036d1eae5bf342aa6be2d315d592164b06a",
+        "final_worktree_blob": "c2c51036d1eae5bf342aa6be2d315d592164b06a",
+        "final_sha256": "bef589675db2e98f6e100fdc53cce81a43096689038f2d8caa05c5805954c18c"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/server-execution-class.ax004-sandbox-mcp.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/server-execution-class.ax004-sandbox-mcp.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "a5489c02cb4423a41361465dc40a3084a21dc541",
+        "reviewed_removal_commit_time": "2026-10-18T11:44:18-03:00",
+        "reviewed_removal_subject": "test(runtime): clear invocation and server lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "122c4023c51c126154993f3ae881a621734165fc",
+        "final_worktree_blob": "122c4023c51c126154993f3ae881a621734165fc",
+        "final_sha256": "b76284945e3297b9f0e92c28b8ac83fce40936d65c40b96f8668f4357fe14533"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/server-execution-class.ax005-audit.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/server-execution-class.ax005-audit.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "a5489c02cb4423a41361465dc40a3084a21dc541",
+        "reviewed_removal_commit_time": "2026-10-18T11:44:18-03:00",
+        "reviewed_removal_subject": "test(runtime): clear invocation and server lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "7d31fbf23a92644227d49be168c8f7f8c3240624",
+        "final_worktree_blob": "7d31fbf23a92644227d49be168c8f7f8c3240624",
+        "final_sha256": "ee2de4f1b09df61f9074fe5b4915068d930478426f12ce03587182d3b51cc6b6"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/server-execution-class.bg004-authority-loss.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/server-execution-class.bg004-authority-loss.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "a5489c02cb4423a41361465dc40a3084a21dc541",
+        "reviewed_removal_commit_time": "2026-10-18T11:44:18-03:00",
+        "reviewed_removal_subject": "test(runtime): clear invocation and server lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "ed498a37790acdbada5210eb841006b7117e52c7",
+        "final_worktree_blob": "ed498a37790acdbada5210eb841006b7117e52c7",
+        "final_sha256": "3197711b6d46788a9c8b1d9f6cfa37d2ec1d7c1cf3bf04e1cbfc40cb8a55d372"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    },
+    {
+      "identity": "typescript/runtime/test/stream-adapters.test.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/runtime/test/stream-adapters.test.ts",
+      "original_reason": "Test runners intentionally match the async framework runner contract.",
+      "removal_class": "prior-reviewed-behavior-proven-removal",
+      "final_directive_present": false,
+      "line_movement": {
+        "planned_baseline_line": 17,
+        "krt_bt002_final_line": 17,
+        "m49_reviewed_parent_line": null,
+        "m49_final_line": null
+      },
+      "historical_verified_at": {
+        "baseline_ledger_produced_at": "2026-10-18T05:20:34.004Z",
+        "reviewed_removal_commit": "7cb77d0cd78a0bd7950b15be100451788c96399c",
+        "reviewed_removal_commit_time": "2026-10-18T11:56:13-03:00",
+        "reviewed_removal_subject": "test(runtime): clear orchestration and approval lint debt"
+      },
+      "source_identity": {
+        "reviewed_parent_blob": "13ee3e8389d1c72b3ae7f42eeec886eb9d15dcc8",
+        "final_worktree_blob": "13ee3e8389d1c72b3ae7f42eeec886eb9d15dcc8",
+        "final_sha256": "fe2adcae606a0505d7eb6af42630d1339cf4c7c39427bc31d3584290f0096c0e"
+      },
+      "native_admission_evidence": {
+        "measured_counterpart": false,
+        "disposition": "removed-with-no-firing-native-counterpart",
+        "diagnostics": []
+      }
+    }
+  ]
+}
