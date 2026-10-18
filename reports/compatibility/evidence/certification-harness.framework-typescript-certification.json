@@ -9620,27 +9620,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.4.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.5.resultField",
-          "status": "pass"
-        },
-        {
           "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.requiredEvidence.result.providerExclusion.capturedPrompts",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.requiredEvidence.result.providerExclusion.capturedPrompts.0.0",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.requiredEvidence.result.providerExclusion.capturedPrompts.1.0",
-          "status": "pass"
-        },
-        {
-          "assertionId": "runtime-lifecycle-ext.admission-key.provider-prompts-exclude-host-key.requiredEvidence.result.providerExclusion.capturedPrompts.1.2",
           "status": "pass"
         },
         {

@@ -270,6 +270,10 @@ export function classifyRecoveredTurnSignalState(
   messages: readonly TuvrenMessage[],
   initialInputMessage?: TuvrenMessage
 ): "match" | "mismatch" | "missing" {
+  if (signal.admissionKey !== undefined && initialInputMessage === undefined) {
+    return "missing";
+  }
+
   if (
     signal.admissionKey !== undefined &&
     initialInputMessage?.role === "user" &&

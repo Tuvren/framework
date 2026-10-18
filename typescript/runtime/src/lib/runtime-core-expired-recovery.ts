@@ -274,11 +274,11 @@ export async function recoverExpiredExecutionBranchIfNeeded(
 /**
  * Read the earliest user message incorporated into the recovered turn.
  *
- * A turn's `startTurnNodeHash` is its pre-input boundary. Recovery may add an
- * empty checkpoint before input is incorporated, so scan the full lineage
- * back to that boundary and retain the oldest user message found. This keeps
- * later steering messages from replacing the original input used for keyed
- * retry matching.
+ * A turn's `startTurnNodeHash` is its pre-input boundary. Scan the full lineage
+ * back to that boundary for the message staged by `incorporate_input`; a
+ * keyed steering message can be the first consumed user message when the
+ * initial input was never incorporated, so role and position alone do not
+ * establish input provenance.
  */
 async function readRecoveredTurnInitialInputMessage(
   kernel: RuntimeKernel,
@@ -302,7 +302,10 @@ async function readRecoveredTurnInitialInputMessage(
     }
 
     for (const stagedResult of turnNode.consumedStagedResults) {
-      if (stagedResult.objectType !== "message") {
+      if (
+        stagedResult.objectType !== "message" ||
+        stagedResult.taskId !== "input_message"
+      ) {
         continue;
       }
 

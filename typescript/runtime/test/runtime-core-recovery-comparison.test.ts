@@ -353,7 +353,7 @@ async function executeKeyedRecoveryAfterEmptyInputPreemption() {
     runId: "run_keyed_recovery_input_after_empty_checkpoint",
     startTurnNodeHash: emptyPreemption.lastTurnNodeHash,
     stepId: "incorporate_input",
-    taskId: "initial_input",
+    taskId: "input_message",
     turnId: staleTurn.turnId,
   });
   const steeringCheckpoint = await checkpointUserMessage(kernel, {
@@ -363,7 +363,7 @@ async function executeKeyedRecoveryAfterEmptyInputPreemption() {
     runId: "run_keyed_recovery_steering_after_empty_checkpoint",
     startTurnNodeHash: inputCheckpoint,
     stepId: "incorporate_steering",
-    taskId: "steering_input",
+    taskId: "steering_message",
     turnId: staleTurn.turnId,
   });
 
@@ -533,6 +533,14 @@ describe("framework-runtime-core", () => {
       );
     });
 
+    test("does not match a keyed retry to a branch user message without turn input provenance", () => {
+      const recoveredSteer = keyedUserMessage("A");
+
+      expect(
+        classifyRecoveredTurnSignalState(keyedSignal("A"), [recoveredSteer])
+      ).toBe("missing");
+    });
+
     test("matches keyed retries against the initial input instead of a later steer", () => {
       const initialInput: TuvrenMessage = {
         admissionKey: "A",
@@ -603,6 +611,179 @@ describe("framework-runtime-core", () => {
     const result = await executeKeyedRecovery("B");
 
     expect(result.resultTurnId).not.toBe(result.recoveredTurnId);
+  });
+
+  test("reincorporates a keyed retry when the recovered turn has no initial input", async () => {
+    let nowMs = 1;
+    const kernel = createRuntimeKernel({
+      backend: createMemoryBackend({ now: () => nowMs }),
+    });
+    const runner = {
+      execute: () =>
+        Promise.resolve({
+          messages: [assistantText("Completed the keyed request.")],
+          resolution: { reason: "done", type: "end_turn" as const },
+        }),
+      id: "fake",
+      resume: () => Promise.reject(new Error("resume was not expected")),
+    } satisfies RuntimeRunner;
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      kernel,
+      now: () => nowMs,
+      runLiveness: {
+        executionOwnerId: "recovery-owner-empty-current-turn",
+        leaseDurationMs: 60_000,
+      },
+      runnerRegistry: createRunnerRegistry([runner]),
+    });
+    const thread = await runtime.createThread({});
+    const completedTurn = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: keyedSignal("A"),
+      threadId: thread.threadId,
+    });
+
+    const completedEvents = await collectEvents(completedTurn.events());
+    const completedTurnId = extractTurnId(completedEvents);
+    expect(completedTurn.status().phase).toBe("completed");
+
+    const branch = await kernel.branch.get(thread.branchId);
+    if (branch === null) {
+      throw new Error("expected the branch after the completed turn");
+    }
+    const staleTurn = await kernel.turn.create(
+      "turn_keyed_recovery_empty_current_turn",
+      thread.threadId,
+      thread.branchId,
+      completedTurnId,
+      branch.headTurnNodeHash
+    );
+    const staleRunId = "run_keyed_recovery_empty_current_turn";
+    await kernel.runLiveness.createLeasedRun({
+      branchId: thread.branchId,
+      executionOwnerId: "worker-crashed-before-input",
+      leaseExpiresAtMs: 10,
+      runId: staleRunId,
+      schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
+      startTurnNodeHash: branch.headTurnNodeHash,
+      steps: [
+        { deterministic: false, id: "incorporate_input", sideEffects: true },
+      ],
+      turnId: staleTurn.turnId,
+    });
+    await kernel.run.beginStep(staleRunId, "incorporate_input");
+
+    nowMs = 11;
+    const retry = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: keyedSignal("B"),
+      threadId: thread.threadId,
+    });
+    await collectEvents(retry.events());
+
+    expect(retry.status().phase).toBe("completed");
+    expect(
+      (await runtime.readBranchMessages({ branchId: thread.branchId })).messages
+    ).toContainEqual({
+      admissionKey: "B",
+      parts: [{ text: KEYED_RECOVERY_TEXT, type: "text" }],
+      role: "user",
+    });
+  });
+
+  test("does not treat a first keyed steer as the recovered turn initial input", async () => {
+    let nowMs = 1;
+    const kernel = createRuntimeKernel({
+      backend: createMemoryBackend({ now: () => nowMs }),
+    });
+    const runner = {
+      execute: () =>
+        Promise.resolve({
+          messages: [assistantText("Completed the keyed request.")],
+          resolution: { reason: "done", type: "end_turn" as const },
+        }),
+      id: "fake",
+      resume: () => Promise.reject(new Error("resume was not expected")),
+    } satisfies RuntimeRunner;
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      kernel,
+      now: () => nowMs,
+      runLiveness: {
+        executionOwnerId: "recovery-owner-steer-first-current-turn",
+        leaseDurationMs: 60_000,
+      },
+      runnerRegistry: createRunnerRegistry([runner]),
+    });
+    const thread = await runtime.createThread({});
+    const completedTurn = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: { parts: keyedSignal("unused").parts },
+      threadId: thread.threadId,
+    });
+    const completedEvents = await collectEvents(completedTurn.events());
+    expect(completedTurn.status().phase).toBe("completed");
+
+    const branch = await kernel.branch.get(thread.branchId);
+    if (branch === null) {
+      throw new Error("expected the branch after the completed turn");
+    }
+    const staleTurn = await kernel.turn.create(
+      "turn_keyed_recovery_steer_first_current_turn",
+      thread.threadId,
+      thread.branchId,
+      extractTurnId(completedEvents),
+      branch.headTurnNodeHash
+    );
+    const steeringCheckpoint = await checkpointUserMessage(kernel, {
+      activeTurnId: staleTurn.turnId,
+      branchId: thread.branchId,
+      message: keyedUserMessage("A"),
+      runId: "run_keyed_recovery_steer_first_steering",
+      startTurnNodeHash: branch.headTurnNodeHash,
+      stepId: "incorporate_steering",
+      taskId: "steering_message",
+      turnId: staleTurn.turnId,
+    });
+    const staleRunId = "run_keyed_recovery_steer_first";
+    await kernel.runLiveness.createLeasedRun({
+      branchId: thread.branchId,
+      executionOwnerId: "worker-crashed-after-first-steer",
+      leaseExpiresAtMs: 10,
+      runId: staleRunId,
+      schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
+      startTurnNodeHash: steeringCheckpoint,
+      steps: [
+        { deterministic: false, id: "incorporate_input", sideEffects: true },
+      ],
+      turnId: staleTurn.turnId,
+    });
+    await kernel.run.beginStep(staleRunId, "incorporate_input");
+
+    nowMs = 11;
+    const retry = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: keyedSignal("A"),
+      threadId: thread.threadId,
+    });
+    await collectEvents(retry.events());
+
+    expect(retry.status().phase).toBe("completed");
+    const keyedUserMessages = (
+      await runtime.readBranchMessages({ branchId: thread.branchId })
+    ).messages.filter(
+      (message): message is Extract<TuvrenMessage, { role: "user" }> =>
+        "role" in message &&
+        message.role === "user" &&
+        "admissionKey" in message &&
+        message.admissionKey === "A"
+    );
+    expect(keyedUserMessages).toHaveLength(2);
   });
 
   test("finds the original keyed input across an empty preemption checkpoint and later steering", async () => {

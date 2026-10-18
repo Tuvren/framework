@@ -17,7 +17,12 @@
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
-import type { AgentConfig, HandoffSourceContext } from "@tuvren/core/execution";
+import type {
+  AgentConfig,
+  HandoffContextPlan,
+  HandoffSourceContext,
+} from "@tuvren/core/execution";
+import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
 import type {
   RunnerExecutionResult,
@@ -41,6 +46,104 @@ import {
 } from "./runtime-core-test-helpers.ts";
 
 describe("framework-runtime-core", () => {
+  test("projects admission keys from direct, handoff, and helper runner messages", async () => {
+    const harness = createFakeKernelHarness();
+    let runtime: ReturnType<typeof createTuvrenRuntime> | undefined;
+    let threadId: string | undefined;
+    let directMessages: readonly TuvrenMessage[] | undefined;
+    let handoffPlan: HandoffContextPlan | undefined;
+    let helperMessage: TuvrenMessage | null | undefined;
+    const runner = {
+      async execute(context) {
+        if (context.config.name === "primary") {
+          directMessages = context.messages;
+          if (runtime === undefined) {
+            throw new Error("runtime was not initialized");
+          }
+          if (threadId === undefined) {
+            throw new Error("thread was not initialized");
+          }
+          const snapshot = await runtime.getTurnState({
+            branchId: context.branchId,
+            threadId,
+          });
+          const messageHashes = snapshot.paths.messages;
+          const initialMessageHash = messageHashes?.[0];
+          if (initialMessageHash === undefined) {
+            throw new Error("expected the initial input message hash");
+          }
+          handoffPlan = context.handoff.createContextPlan({
+            reason: "admission-key-projection",
+            targetAgent: "reviewer",
+          });
+          helperMessage =
+            handoffPlan.sourceContext.helpers.loadMessage(initialMessageHash);
+          return {
+            messages: [assistantText("Processed the keyed input.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          };
+        }
+
+        return {
+          messages: [assistantText("Reviewer completed keyed input.")],
+          resolution: { reason: "done", type: "end_turn" },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies RuntimeRunner;
+    runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      runnerRegistry: createRunnerRegistry([runner]),
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) =>
+        agentName === "reviewer" ? { name: "reviewer" } : undefined,
+    });
+    const thread = await runtime.createThread({});
+    threadId = thread.threadId;
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: {
+        admissionKey: "runner-handoff-key",
+        parts: [{ text: "Keep this keyed through handoff", type: "text" }],
+      },
+      threadId: thread.threadId,
+    });
+
+    await collectEvents(handle.events());
+
+    expect(handle.status().phase).toBe("completed");
+    expect(directMessages).toEqual([
+      {
+        parts: [{ text: "Keep this keyed through handoff", type: "text" }],
+        role: "user",
+      },
+    ]);
+    expect(handoffPlan?.sourceContext.messages).toEqual([
+      {
+        parts: [{ text: "Keep this keyed through handoff", type: "text" }],
+        role: "user",
+      },
+    ]);
+    expect(helperMessage).toEqual({
+      parts: [{ text: "Keep this keyed through handoff", type: "text" }],
+      role: "user",
+    });
+    expect(
+      (await runtime.readBranchMessages({ branchId: thread.branchId })).messages
+    ).toContainEqual({
+      admissionKey: "runner-handoff-key",
+      parts: [{ text: "Keep this keyed through handoff", type: "text" }],
+      role: "user",
+    });
+  });
+
   test("lets runners build valid handoff plans through RunnerExecutionContext.handoff", async () => {
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({

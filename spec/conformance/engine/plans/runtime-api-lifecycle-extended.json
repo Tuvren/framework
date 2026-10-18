@@ -912,27 +912,31 @@
     {
       "assertions": [
         {
-          "equals": {
-            "parts": [{ "text": "Initial provider input", "type": "text" }],
-            "role": "user"
-          },
-          "field": "$.providerExclusion.capturedPrompts.0.0",
-          "kind": "resultField"
-        },
-        {
-          "equals": {
-            "parts": [{ "text": "Initial provider input", "type": "text" }],
-            "role": "user"
-          },
-          "field": "$.providerExclusion.capturedPrompts.1.0",
-          "kind": "resultField"
-        },
-        {
-          "equals": {
-            "parts": [{ "text": "Provider steering input", "type": "text" }],
-            "role": "user"
-          },
-          "field": "$.providerExclusion.capturedPrompts.1.2",
+          "equals": [
+            [
+              {
+                "parts": [{ "text": "Initial provider input", "type": "text" }],
+                "role": "user"
+              }
+            ],
+            [
+              {
+                "parts": [{ "text": "Initial provider input", "type": "text" }],
+                "role": "user"
+              },
+              {
+                "parts": [{ "text": "Continue.", "type": "text" }],
+                "role": "assistant"
+              },
+              {
+                "parts": [
+                  { "text": "Provider steering input", "type": "text" }
+                ],
+                "role": "user"
+              }
+            ]
+          ],
+          "field": "$.providerExclusion.capturedPrompts",
           "kind": "resultField"
         },
         {
