@@ -1,0 +1,17 @@
+owner: KRT-CA002
+mode: contract_test
+result: pass
+produced:
+  date: '2026-10-18'
+  commit: 1b8b1124c498be7c227cd0780f4ff6050664c84a
+  command: 'M7 and M8 external retained-Biome removal probes; parse-validated Oxlint syntactic and type-aware reports; project typecheck, test and retained lint; bun run lint; bun run changeset:check --base=master'
+files:
+  - path: M7-core-summary.json
+    sha256: 86def92349cd4cd2d1c9a62498e0abba4e0beca7d6658e9795af952a51e4404a
+    bytes: 1357
+    role: measurement
+  - path: M8-sdk-streaming-summary.json
+    sha256: 61a934ed1f7efa365e4753a364c44c7d0aeb1a369ad7913d70f8ab8d05c9aa66
+    bytes: 1628
+    role: measurement
+pass_criteria: M7 and M8 account for every baseline and live directive in core, SDK and streaming with reason-preserving retained-Biome and native dispositions; no needed directive is removed, no directive or native suppression is added, and focused plus full retained gates pass. KRT-CA002 remains in progress until M9 aggregates the remaining package cohorts and wrapper proof.
