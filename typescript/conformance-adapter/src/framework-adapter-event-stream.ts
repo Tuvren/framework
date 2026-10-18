@@ -18,7 +18,10 @@ import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
 import type { ApprovalDecision } from "@tuvren/core/tools";
 import { toAgUiEvents } from "@tuvren/stream-agui";
-import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
+import {
+  createFixtureStream,
+  teeTuvrenStreamEvents,
+} from "@tuvren/stream-core";
 import { toSseFrames } from "@tuvren/stream-sse";
 
 import {
@@ -31,41 +34,44 @@ import {
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterEventStreamDependencies {
-  isRecord(value: unknown): value is Record<string, unknown>;
-  parseJsonValue(value: string): unknown;
-  readApprovalDecisions(
+  isRecord: (value: unknown) => value is Record<string, unknown>;
+  parseJsonValue: (value: string) => unknown;
+  readApprovalDecisions: (
     record: Record<string, unknown>,
     path: string
-  ): ApprovalDecision[];
-  readFirstToolCallName(
+  ) => ApprovalDecision[];
+  readFirstToolCallName: (
     responses: readonly TuvrenModelResponse[],
     path: string
-  ): string;
-  readModelResponseArrayProperty(
+  ) => string;
+  readModelResponseArrayProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): TuvrenModelResponse[];
-  readProperty(
+  ) => TuvrenModelResponse[];
+  readProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): unknown;
-  readRecordString(record: unknown, key: string): string | undefined;
-  readScenarioInput(input: unknown, operation: string): Record<string, unknown>;
-  readStringProperty(
+  ) => unknown;
+  readRecordString: (record: unknown, key: string) => string | undefined;
+  readScenarioInput: (
+    input: unknown,
+    operation: string
+  ) => Record<string, unknown>;
+  readStringProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): string;
+  ) => string;
 }
 
 export const createFrameworkAdapterEventStream = (
   dependencies: FrameworkAdapterEventStreamDependencies
 ): {
-  runAgUiProjection(input: unknown): Promise<AdapterProjection>;
-  runSseEagerSubscription(input: unknown): Promise<AdapterProjection>;
-  runSseProjection(input: unknown): Promise<AdapterProjection>;
+  runAgUiProjection: (input: unknown) => Promise<AdapterProjection>;
+  runSseEagerSubscription: (input: unknown) => Promise<AdapterProjection>;
+  runSseProjection: (input: unknown) => Promise<AdapterProjection>;
 } => {
   const runCompletedToolEventStreamTurn = async (
     scenario: Record<string, unknown>,
@@ -286,7 +292,7 @@ export const createFrameworkAdapterEventStream = (
     return combinedEvents;
   };
 
-  const runEventStreamScenario = (
+  const runEventStreamScenario = async (
     input: unknown,
     label: string
   ): Promise<readonly TuvrenStreamEvent[]> => {
@@ -299,35 +305,21 @@ export const createFrameworkAdapterEventStream = (
 
     switch (operation) {
       case "event-stream.completed-tool-turn": {
-        return runCompletedToolEventStreamTurn(scenario, label);
+        return await runCompletedToolEventStreamTurn(scenario, label);
       }
       case "event-stream.failed-provider-turn": {
-        return runFailedProviderEventStreamTurn(scenario, label);
+        return await runFailedProviderEventStreamTurn(scenario, label);
       }
       case "event-stream.paused-approval-turn": {
-        return runPausedApprovalEventStreamTurn(scenario, label);
+        return await runPausedApprovalEventStreamTurn(scenario, label);
       }
       case "event-stream.resumed-approval-turn": {
-        return runResumedApprovalEventStreamTurn(scenario, label);
+        return await runResumedApprovalEventStreamTurn(scenario, label);
       }
       default: {
         throw new Error(`${label} scenario declared unsupported ${operation}`);
       }
     }
-  };
-
-  const createEventStream = (
-    events: readonly TuvrenStreamEvent[]
-  ): AsyncIterable<TuvrenStreamEvent> => {
-    return {
-      async *[Symbol.asyncIterator](): AsyncIterator<TuvrenStreamEvent> {
-        await Promise.resolve();
-
-        for (const event of events) {
-          yield structuredClone(event);
-        }
-      },
-    };
   };
 
   const runAgUiProjection = async (
@@ -336,7 +328,7 @@ export const createFrameworkAdapterEventStream = (
     const sourceEvents = await runEventStreamScenario(input, "event-stream");
     const warnings: { code: string }[] = [];
     const events = await collectValues(
-      toAgUiEvents(createEventStream(sourceEvents), {
+      toAgUiEvents(createFixtureStream(sourceEvents), {
         onWarning(warning) {
           warnings.push({ code: warning.code });
         },
@@ -358,7 +350,7 @@ export const createFrameworkAdapterEventStream = (
   ): Promise<AdapterProjection> => {
     const events = await runEventStreamScenario(input, "event-stream");
     const [sseBranch, directBranch] = teeTuvrenStreamEvents(
-      createEventStream(events),
+      createFixtureStream(events),
       2
     );
     const sseFrames = toSseFrames(sseBranch);
@@ -389,7 +381,7 @@ export const createFrameworkAdapterEventStream = (
   ): Promise<AdapterProjection> => {
     const sourceEvents = await runEventStreamScenario(input, "event-stream");
     const frames = await collectValues(
-      toSseFrames(createEventStream(sourceEvents))
+      toSseFrames(createFixtureStream(sourceEvents))
     );
     const projectedEvents = frames.map((frame) => ({
       event: frame.event,

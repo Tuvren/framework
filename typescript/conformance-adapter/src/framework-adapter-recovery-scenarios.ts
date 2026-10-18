@@ -43,27 +43,27 @@ import {
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterRecoveryScenarioDependencies {
-  isRecord(value: unknown): value is Record<string, unknown>;
-  readOperationScenario(
+  isRecord: (value: unknown) => value is Record<string, unknown>;
+  readOperationScenario: (
     input: unknown,
     operation: string
-  ): Record<string, unknown>;
-  readProperty(
+  ) => Record<string, unknown>;
+  readProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): unknown;
-  readRecordProperty(
+  ) => unknown;
+  readRecordProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): Record<string, unknown>;
-  readRecordString(value: unknown, key: string): string | undefined;
-  readStringProperty(
+  ) => Record<string, unknown>;
+  readRecordString: (value: unknown, key: string) => string | undefined;
+  readStringProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): string;
+  ) => string;
 }
 
 interface InterruptedToolCallScenario {
@@ -78,12 +78,148 @@ interface ObservedToolDispatch {
   idempotencyKey: string | null;
 }
 
+type RunnerContext = Parameters<RuntimeRunner["execute"]>[0];
+type RunnerExecutionResult = Awaited<ReturnType<RuntimeRunner["execute"]>>;
+type RunLivenessHarness = ReturnType<
+  typeof createConformanceRunLivenessKernelHarness
+>;
+
+const fromSynchronous = <Argument, Value>(
+  operation: (argument: Argument) => Value
+): ((argument: Argument) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(argument: Argument) => Value],
+    [Argument],
+    Promise<Value>
+  >(Promise, operation);
+
+const fromSynchronousWithoutArguments = <Value>(
+  operation: () => Value
+): (() => Promise<Value>) =>
+  Promise.try.bind<typeof Promise, [() => Value], [], Promise<Value>>(
+    Promise,
+    operation
+  );
+
+const createObservedToolDefinitions = (
+  calls: readonly InterruptedToolCallScenario[],
+  dispatches: ObservedToolDispatch[]
+): TuvrenToolDefinition[] =>
+  calls.map((call) => ({
+    description: `Observe dispatch for ${call.name}`,
+    execute(_input, context) {
+      dispatches.push({
+        callId: context.callId,
+        idempotencyKey: context.idempotencyKey ?? null,
+      });
+      return { callId: context.callId };
+    },
+    inputSchema: { type: "object" },
+    name: call.name,
+    ...(call.nonRetryable ? { nonRetryable: true } : {}),
+  }));
+
+const stageRecoveredRecord = async (
+  livenessHarness: RunLivenessHarness,
+  runId: string,
+  taskId: string,
+  record: KernelRecord
+): Promise<void> => {
+  await livenessHarness.kernel.staging.stage(
+    runId,
+    encodeDeterministicKernelRecord(record),
+    taskId,
+    "message",
+    "completed"
+  );
+};
+
+const stageRecoveredMessage = async (
+  livenessHarness: RunLivenessHarness,
+  runId: string,
+  taskId: string,
+  text: string,
+  role: "assistant" | "user" = "user"
+): Promise<void> => {
+  await stageRecoveredRecord(livenessHarness, runId, taskId, {
+    parts: [{ text, type: "text" }],
+    role,
+  });
+};
+
+const stageRecoveredToolResults = async (
+  livenessHarness: RunLivenessHarness,
+  runId: string,
+  calls: readonly InterruptedToolCallScenario[],
+  index = 0
+): Promise<void> => {
+  const call = calls[index];
+  if (call === undefined) {
+    return;
+  }
+  if (call.state === "completed") {
+    await stageRecoveredRecord(
+      livenessHarness,
+      runId,
+      `interrupted_batch_result_${call.callId}`,
+      {
+        parts: [
+          {
+            callId: call.callId,
+            name: call.name,
+            output: { recovered: true },
+            type: "tool_result",
+          },
+        ],
+        role: "tool",
+      }
+    );
+  }
+  await stageRecoveredToolResults(livenessHarness, runId, calls, index + 1);
+};
+
+const stageRecoveredTurnLineage = async (
+  livenessHarness: RunLivenessHarness,
+  runId: string,
+  taskId: string,
+  turnId: string
+): Promise<void> => {
+  await livenessHarness.kernel.staging.stage(
+    runId,
+    encodeDeterministicKernelRecord({ activeTurnId: turnId }),
+    taskId,
+    "turn_lineage",
+    "completed"
+  );
+};
+
+const stageRecoveredRuntimeStatus = async (
+  livenessHarness: RunLivenessHarness,
+  runId: string,
+  taskId: string,
+  status: { activeAgent: string; state: "completed" | "running" }
+): Promise<void> => {
+  await livenessHarness.kernel.staging.stage(
+    runId,
+    encodeDeterministicKernelRecord(status),
+    taskId,
+    "runtime_status",
+    "completed"
+  );
+};
+
+const sortDispatches = (
+  dispatches: readonly ObservedToolDispatch[]
+): ObservedToolDispatch[] =>
+  dispatches.toSorted((left, right) => left.callId.localeCompare(right.callId));
+
 export const createFrameworkAdapterRecoveryScenarios = (
   dependencies: FrameworkAdapterRecoveryScenarioDependencies
 ): {
-  runClientResultAsProposal(input: unknown): Promise<AdapterProjection>;
-  runRecoverResult(input: unknown): Promise<AdapterProjection>;
-  runRecoverStaleRun(input: unknown): Promise<AdapterProjection>;
+  runClientResultAsProposal: (input: unknown) => Promise<AdapterProjection>;
+  runRecoverResult: (input: unknown) => Promise<AdapterProjection>;
+  runRecoverStaleRun: (input: unknown) => Promise<AdapterProjection>;
 } => {
   const runRecoverResult = async (
     input: unknown
@@ -216,25 +352,6 @@ export const createFrameworkAdapterRecoveryScenarios = (
     });
   };
 
-  const createObservedToolDefinitions = (
-    calls: readonly InterruptedToolCallScenario[],
-    dispatches: ObservedToolDispatch[]
-  ): TuvrenToolDefinition[] => {
-    return calls.map((call) => ({
-      description: `Observe dispatch for ${call.name}`,
-      execute(_input, context) {
-        dispatches.push({
-          callId: context.callId,
-          idempotencyKey: context.idempotencyKey ?? null,
-        });
-        return { callId: context.callId };
-      },
-      inputSchema: { type: "object" },
-      name: call.name,
-      ...(call.nonRetryable ? { nonRetryable: true } : {}),
-    }));
-  };
-
   const readTurnId = (events: readonly unknown[]): string | undefined => {
     for (const event of events) {
       const turnId = dependencies.readRecordString(event, "turnId");
@@ -257,10 +374,10 @@ export const createFrameworkAdapterRecoveryScenarios = (
     const dispatches: ObservedToolDispatch[] = [];
     let runnerExecuteCalls = 0;
     const runner = {
-      execute() {
+      execute: fromSynchronousWithoutArguments((): RunnerExecutionResult => {
         runnerExecuteCalls += 1;
         if (runnerExecuteCalls === 1) {
-          return Promise.resolve({
+          return {
             messages: [
               assistantToolCalls(
                 calls.map((call) => ({
@@ -272,13 +389,13 @@ export const createFrameworkAdapterRecoveryScenarios = (
             ],
             resolution: { type: "continue_iteration" },
             toolExecutionMode: "parallel",
-          });
+          };
         }
-        return Promise.resolve({
+        return {
           messages: [assistantText(finalText)],
           resolution: { reason: "done", type: "end_turn" },
-        });
-      },
+        };
+      }),
       id: RUNNER_ID,
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntimeCore({
@@ -307,55 +424,6 @@ export const createFrameworkAdapterRecoveryScenarios = (
     return { dispatches, turnId };
   };
 
-  const stageRecoveredRecord = async (
-    livenessHarness: ReturnType<
-      typeof createConformanceRunLivenessKernelHarness
-    >,
-    runId: string,
-    taskId: string,
-    record: KernelRecord
-  ): Promise<void> => {
-    await livenessHarness.kernel.staging.stage(
-      runId,
-      encodeDeterministicKernelRecord(record),
-      taskId,
-      "message",
-      "completed"
-    );
-  };
-
-  const stageRecoveredMessage = async (
-    livenessHarness: ReturnType<
-      typeof createConformanceRunLivenessKernelHarness
-    >,
-    runId: string,
-    taskId: string,
-    text: string,
-    role: "assistant" | "user" = "user"
-  ): Promise<void> => {
-    await stageRecoveredRecord(livenessHarness, runId, taskId, {
-      parts: [{ text, type: "text" }],
-      role,
-    });
-  };
-
-  const stageRecoveredTurnLineage = async (
-    livenessHarness: ReturnType<
-      typeof createConformanceRunLivenessKernelHarness
-    >,
-    runId: string,
-    taskId: string,
-    turnId: string
-  ): Promise<void> => {
-    await livenessHarness.kernel.staging.stage(
-      runId,
-      encodeDeterministicKernelRecord({ activeTurnId: turnId }),
-      taskId,
-      "turn_lineage",
-      "completed"
-    );
-  };
-
   const readMessagePartCallIds = (
     messages: readonly unknown[],
     partType: "tool_call" | "tool_result"
@@ -376,14 +444,6 @@ export const createFrameworkAdapterRecoveryScenarios = (
       }
     }
     return callIds;
-  };
-
-  const sortDispatches = (
-    dispatches: readonly ObservedToolDispatch[]
-  ): ObservedToolDispatch[] => {
-    return dispatches.toSorted((left, right) =>
-      left.callId.localeCompare(right.callId)
-    );
   };
 
   const runInterruptedToolBatchRecovery = async (
@@ -410,16 +470,16 @@ export const createFrameworkAdapterRecoveryScenarios = (
     const resumedDispatches: ObservedToolDispatch[] = [];
     const runnerDispatchCountsAtExecute: number[] = [];
     const runner = {
-      execute() {
+      execute: fromSynchronousWithoutArguments((): RunnerExecutionResult => {
         runnerDispatchCountsAtExecute.push(resumedDispatches.length);
-        return Promise.resolve({
+        return {
           messages: [assistantText(finalText)],
           resolution: {
             reason: "done",
             type: "end_turn",
           },
-        });
-      },
+        };
+      }),
       id: RUNNER_ID,
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntimeCore({
@@ -489,27 +549,7 @@ export const createFrameworkAdapterRecoveryScenarios = (
       }
     );
 
-    for (const call of calls) {
-      if (call.state !== "completed") {
-        continue;
-      }
-      await stageRecoveredRecord(
-        livenessHarness,
-        staleRunId,
-        `interrupted_batch_result_${call.callId}`,
-        {
-          parts: [
-            {
-              callId: call.callId,
-              name: call.name,
-              output: { recovered: true },
-              type: "tool_result",
-            },
-          ],
-          role: "tool",
-        }
-      );
-    }
+    await stageRecoveredToolResults(livenessHarness, staleRunId, calls);
 
     const durableBeforeRecovery = await harness.readRunningStagedMessages(
       thread.branchId
@@ -561,23 +601,6 @@ export const createFrameworkAdapterRecoveryScenarios = (
         durableBeforeRecovery,
       },
     };
-  };
-
-  const stageRecoveredRuntimeStatus = async (
-    livenessHarness: ReturnType<
-      typeof createConformanceRunLivenessKernelHarness
-    >,
-    runId: string,
-    taskId: string,
-    status: { activeAgent: string; state: "completed" | "running" }
-  ): Promise<void> => {
-    await livenessHarness.kernel.staging.stage(
-      runId,
-      encodeDeterministicKernelRecord(status),
-      taskId,
-      "runtime_status",
-      "completed"
-    );
   };
 
   const hasTextMessage = (
@@ -649,9 +672,9 @@ export const createFrameworkAdapterRecoveryScenarios = (
     let executeCalls = 0;
 
     const runner = {
-      execute() {
+      execute: fromSynchronousWithoutArguments((): RunnerExecutionResult => {
         executeCalls += 1;
-        return Promise.resolve({
+        return {
           messages: [
             assistantText(
               dependencies.readStringProperty(
@@ -665,8 +688,8 @@ export const createFrameworkAdapterRecoveryScenarios = (
             reason: "done",
             type: "end_turn",
           },
-        });
-      },
+        };
+      }),
       id: RUNNER_ID,
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntimeCore({
@@ -674,10 +697,9 @@ export const createFrameworkAdapterRecoveryScenarios = (
       defaultRunnerId: RUNNER_ID,
       kernel: livenessHarness.kernel,
       resolveAgentConfig(agentName) {
-        if (agentName === "primary" || agentName === "reviewer") {
-          return { name: agentName };
-        }
-        return;
+        return agentName === "primary" || agentName === "reviewer"
+          ? { name: agentName }
+          : undefined;
       },
       runLiveness: {
         executionOwnerId: "worker-1",
@@ -880,12 +902,9 @@ export const createFrameworkAdapterRecoveryScenarios = (
     );
 
     const harness = createConformanceKernelHarness();
-    let releaseDispatch: (() => void) | undefined;
-    const dispatchHeld = new Promise<void>((resolve) => {
-      releaseDispatch = resolve;
-    });
+    const dispatchHeld = Promise.withResolvers<undefined>();
     const livenessHarness = createConformanceRunLivenessKernelHarness(harness, {
-      onRenewLease() {
+      onRenewLease: fromSynchronousWithoutArguments((): never => {
         // Release the held dispatch on a macrotask so the reported result returns
         // into an already-aborted (dead-owner) context and the
         // client-result-as-proposal gate fires. This is ordered, not raced: the
@@ -895,9 +914,11 @@ export const createFrameworkAdapterRecoveryScenarios = (
         // lands before this setTimeout. If that abort is ever deferred behind its
         // own macrotask/await boundary, replace this with an explicit
         // await-on-abort handshake.
-        setTimeout(() => releaseDispatch?.(), 0);
-        return Promise.reject(new Error("lease preempted by a peer worker"));
-      },
+        setTimeout(() => {
+          dispatchHeld.resolve();
+        }, 0);
+        throw new Error("lease preempted by a peer worker");
+      }),
     });
 
     let clientDispatchCount = 0;
@@ -914,7 +935,7 @@ export const createFrameworkAdapterRecoveryScenarios = (
       ): Promise<ClientReportedResult> {
         clientDispatchCount += 1;
         // Hold the dispatch open until the run loses its lease.
-        await dispatchHeld;
+        await dispatchHeld.promise;
         return {
           callId: envelope.callId,
           content: { committed: true },
@@ -925,23 +946,25 @@ export const createFrameworkAdapterRecoveryScenarios = (
     };
 
     const runner: RuntimeRunner = {
-      execute(context) {
-        if (!context.messages.some((message) => message.role === "tool")) {
-          return Promise.resolve({
-            messages: [
-              assistantToolCalls([
-                { callId: "call-proposal", input: {}, name: capabilityId },
-              ]),
-            ],
-            resolution: { type: "continue_iteration" },
-            toolExecutionMode: "parallel",
-          });
+      execute: fromSynchronous(
+        (context: RunnerContext): RunnerExecutionResult => {
+          if (!context.messages.some((message) => message.role === "tool")) {
+            return {
+              messages: [
+                assistantToolCalls([
+                  { callId: "call-proposal", input: {}, name: capabilityId },
+                ]),
+              ],
+              resolution: { type: "continue_iteration" },
+              toolExecutionMode: "parallel",
+            };
+          }
+          return {
+            messages: [assistantText("done")],
+            resolution: { reason: "done", type: "end_turn" },
+          };
         }
-        return Promise.resolve({
-          messages: [assistantText("done")],
-          resolution: { reason: "done", type: "end_turn" },
-        });
-      },
+      ),
       id: RUNNER_ID,
     };
 
