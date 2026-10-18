@@ -78,7 +78,7 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function extractToolEvents(events: unknown[]) {
+const extractToolEvents = (events: unknown[]) => {
   const starts: ToolStartEvent[] = [];
   const results: ToolResultEvent[] = [];
   for (const ev of events) {
@@ -94,14 +94,14 @@ function extractToolEvents(events: unknown[]) {
     }
   }
   return { results, starts };
-}
+};
 
-function buildProviderToolMessage(
+const buildProviderToolMessage = (
   callId: string,
   name: string,
   executionClass: "provider-native" | "provider-mediated",
   output: unknown
-): TuvrenMessage {
+): TuvrenMessage => {
   return {
     parts: [
       {
@@ -118,7 +118,7 @@ function buildProviderToolMessage(
     ],
     role: "tool",
   };
-}
+};
 
 // ---------------------------------------------------------------------------
 // BA003: provider-native / provider-mediated — resolved from observed state

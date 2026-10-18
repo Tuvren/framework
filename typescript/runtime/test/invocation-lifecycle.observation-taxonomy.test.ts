@@ -71,10 +71,10 @@ import {
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function createTelemetryCapture(): {
+const createTelemetryCapture = (): {
   spans: TelemetrySpan[];
   sink: TuvrenTelemetrySink;
-} {
+} => {
   const spans: TelemetrySpan[] = [];
   return {
     sink: {
@@ -87,9 +87,9 @@ function createTelemetryCapture(): {
     },
     spans,
   };
-}
+};
 
-function extractEventsByType(events: unknown[]) {
+const extractEventsByType = (events: unknown[]) => {
   const starts: ToolStartEvent[] = [];
   const results: ToolResultEvent[] = [];
   const audits: ToolAuditEvent[] = [];
@@ -109,13 +109,13 @@ function extractEventsByType(events: unknown[]) {
     }
   }
   return { audits, results, starts };
-}
+};
 
-function buildProviderToolMessage(
+const buildProviderToolMessage = (
   callId: string,
   name: string,
   executionClass: "provider-native" | "provider-mediated"
-): TuvrenMessage {
+): TuvrenMessage => {
   return {
     parts: [
       {
@@ -132,11 +132,11 @@ function buildProviderToolMessage(
     ],
     role: "tool",
   };
-}
+};
 
-function makeProviderRunner(
+const makeProviderRunner = (
   executionClass: "provider-native" | "provider-mediated"
-): RuntimeRunner {
+): RuntimeRunner => {
   return {
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
@@ -161,9 +161,9 @@ function makeProviderRunner(
       throw new Error("no");
     },
   };
-}
+};
 
-function makeServerRunner(toolName: string): RuntimeRunner {
+const makeServerRunner = (toolName: string): RuntimeRunner => {
   return {
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
@@ -187,9 +187,9 @@ function makeServerRunner(toolName: string): RuntimeRunner {
       throw new Error("no");
     },
   };
-}
+};
 
-function makeClientRunner(capabilityId: string): RuntimeRunner {
+const makeClientRunner = (capabilityId: string): RuntimeRunner => {
   return {
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
@@ -213,12 +213,12 @@ function makeClientRunner(capabilityId: string): RuntimeRunner {
       throw new Error("no");
     },
   };
-}
+};
 
-function makeOkEndpoint(
+const makeOkEndpoint = (
   endpointId: string,
   capabilityId: string
-): AttachedClientEndpoint {
+): AttachedClientEndpoint => {
   return {
     advertisedCapabilities: [
       {
@@ -238,7 +238,7 @@ function makeOkEndpoint(
     },
     endpointId,
   };
-}
+};
 
 // ---------------------------------------------------------------------------
 // BA002 criterion 3: telemetry consistency for tuvren-server

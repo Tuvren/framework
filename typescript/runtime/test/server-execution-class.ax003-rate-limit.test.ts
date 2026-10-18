@@ -49,10 +49,10 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeMultiCallRunner(
+const makeMultiCallRunner = (
   toolName: string,
   callCount: number
-): RuntimeRunner {
+): RuntimeRunner => {
   return {
     async execute(context) {
       const toolMessages = context.messages.filter((m) => m.role === "tool");
@@ -82,9 +82,9 @@ function makeMultiCallRunner(
       throw new Error("resume not expected");
     },
   };
-}
+};
 
-function findToolResults(events: unknown[]) {
+const findToolResults = (events: unknown[]) => {
   return events.filter(
     (e) =>
       typeof e === "object" &&
@@ -92,14 +92,14 @@ function findToolResults(events: unknown[]) {
       "type" in e &&
       (e as Record<string, unknown>).type === "tool.result"
   ) as Record<string, unknown>[];
-}
+};
 
-async function runTurnWithRateLimit(
+const runTurnWithRateLimit = async (
   toolName: string,
   tool: TuvrenToolDefinition,
   maxCalls: number,
   totalCallsToRequest: number
-) {
+) => {
   const harness = createFakeKernelHarness();
   const runner = makeMultiCallRunner(toolName, totalCallsToRequest);
   const runtime = createTuvrenRuntime({
@@ -121,7 +121,7 @@ async function runTurnWithRateLimit(
     threadId: thread.threadId,
   });
   return collectEvents(handle.events());
-}
+};
 
 // ---------------------------------------------------------------------------
 // Rate limiting
