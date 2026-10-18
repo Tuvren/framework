@@ -85,14 +85,369 @@ export interface FrameworkAdapterRunnerDependencies {
   ): string;
 }
 
-export function createFrameworkAdapterRunner(
+interface HookCounters {
+  afterIteration: number;
+  aroundModel: number;
+  aroundModelTrace: string[];
+  aroundTool: number;
+  aroundToolTrace: string[];
+  beforeIteration: number;
+  phaseTrace: string[];
+  terminalMutationAttempted: boolean;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+const readIterationDecision = (
+  record: Record<string, unknown>
+): IterationDecision => {
+  const continueDecision = record.continue;
+  const { executeTools } = record;
+  const { reason } = record;
+
+  if (typeof continueDecision !== "boolean") {
+    throw new TypeError("runner.execute.loopPolicy.continue must be a boolean");
+  }
+
+  if (typeof executeTools !== "boolean") {
+    throw new TypeError(
+      "runner.execute.loopPolicy.executeTools must be a boolean"
+    );
+  }
+
+  return {
+    continue: continueDecision,
+    executeTools,
+    ...(typeof reason === "string" ? { reason } : {}),
+  };
+};
+
+const readLoopPolicyOptional = (
+  scenario: Record<string, unknown>
+): LoopPolicy | undefined => {
+  const { loopPolicy } = scenario;
+
+  if (loopPolicy === undefined) {
+    return undefined;
+  }
+
+  if (!isRecord(loopPolicy)) {
+    throw new Error("runner.execute.loopPolicy must be an object");
+  }
+
+  const decision = readIterationDecision(loopPolicy);
+
+  return {
+    evaluate() {
+      return decision;
+    },
+  };
+};
+
+const readOptionalString = (
+  record: Record<string, unknown>,
+  key: string
+): string | undefined => {
+  return typeof record[key] === "string" ? record[key] : undefined;
+};
+
+const createHookCounters = (): HookCounters => {
+  return {
+    afterIteration: 0,
+    aroundModel: 0,
+    aroundModelTrace: [],
+    aroundTool: 0,
+    aroundToolTrace: [],
+    beforeIteration: 0,
+    phaseTrace: [],
+    terminalMutationAttempted: false,
+  };
+};
+
+const createMeasuredExtension = (hooks: HookCounters): TuvrenExtension => {
+  return {
+    afterIteration(context) {
+      const firstPart = context.response.parts[0];
+
+      if (
+        firstPart?.type === "text" &&
+        firstPart.text === "runner hook turn completed"
+      ) {
+        firstPart.text = "mutated by afterIteration";
+        hooks.terminalMutationAttempted = true;
+      }
+
+      hooks.phaseTrace.push("afterIteration");
+      hooks.afterIteration += 1;
+    },
+    async aroundModel(_context, next) {
+      hooks.phaseTrace.push("aroundModel.before");
+      hooks.aroundModelTrace.push("before");
+      hooks.aroundModel += 1;
+      const result = await next();
+      hooks.aroundModelTrace.push("after");
+      hooks.phaseTrace.push("aroundModel.after");
+      return result;
+    },
+    async aroundTool(_context, next) {
+      hooks.phaseTrace.push("aroundTool.before");
+      hooks.aroundToolTrace.push("aroundTool.before");
+      hooks.aroundTool += 1;
+      const result = await next();
+      hooks.aroundToolTrace.push("aroundTool.after");
+      hooks.phaseTrace.push("aroundTool.after");
+      return result;
+    },
+    beforeIteration() {
+      hooks.phaseTrace.push("beforeIteration");
+      hooks.beforeIteration += 1;
+    },
+    name: "measured-runner-hooks",
+  };
+};
+
+const readAssistantText = (
+  messages: readonly unknown[]
+): string | undefined => {
+  for (const message of messages) {
+    if (!isRecord(message) || message.role !== "assistant") {
+      continue;
+    }
+
+    const { parts } = message;
+
+    if (!Array.isArray(parts)) {
+      continue;
+    }
+
+    for (const part of parts) {
+      if (
+        isRecord(part) &&
+        part.type === "text" &&
+        typeof part.text === "string"
+      ) {
+        return part.text;
+      }
+    }
+  }
+
+  return undefined;
+};
+
+const readResultAssistantText = (result: {
+  messages?: readonly unknown[];
+}): string | undefined => {
+  return readAssistantText(result.messages ?? []);
+};
+
+const countEventsByType = (
+  events: readonly TuvrenStreamEvent[],
+  type: string
+): number => {
+  let count = 0;
+
+  for (const event of events) {
+    if (event.type === type) {
+      count += 1;
+    }
+  }
+
+  return count;
+};
+
+const readTextDoneValues = (events: readonly TuvrenStreamEvent[]): string[] => {
+  const values: string[] = [];
+
+  for (const event of events) {
+    if (event.type === "text.done") {
+      values.push(event.text);
+    }
+  }
+
+  return values;
+};
+
+export const createFrameworkAdapterRunner = (
   dependencies: FrameworkAdapterRunnerDependencies
 ): {
   runRunnerCheckpoint(input: unknown): Promise<AdapterProjection>;
   runRunnerExecute(input: unknown): Promise<AdapterProjection>;
   runRunnerResume(input: unknown): Promise<AdapterProjection>;
-} {
-  async function runRunnerExecute(input: unknown): Promise<AdapterProjection> {
+} => {
+  const runAroundModelPostStreamReplacement = async (
+    scenario: Record<string, unknown>
+  ): Promise<AdapterProjection> => {
+    const chunks = dependencies.readProviderStreamChunks(
+      scenario,
+      "runner.execute.streamChunks"
+    );
+    const emittedEvents: TuvrenStreamEvent[] = [];
+    const provider: TuvrenProvider = {
+      generate() {
+        return Promise.reject(
+          new Error("generate must not run during stream replacement")
+        );
+      },
+      id: "provider",
+      async *stream() {
+        await Promise.resolve();
+        for (const chunk of chunks) {
+          yield structuredClone(chunk);
+        }
+      },
+    };
+    const runner = createReActRunner({
+      providerCallMode: "stream",
+    }).create();
+    const result = await runner.execute(
+      createRunnerExecutionContext({
+        config: {
+          extensions: [
+            {
+              async aroundModel(_context, next) {
+                const response = await next();
+                return {
+                  ...response,
+                  parts: [{ text: "modified", type: "text" }],
+                };
+              },
+              name: "rewriter",
+            },
+          ],
+          model: provider,
+          name: AGENT_NAME,
+        },
+        emittedEvents,
+      })
+    );
+
+    assertRunnerExecutionResult(result, "runner aroundModel replacement");
+
+    const projection = {
+      aroundModel: {
+        finalAssistantText: readResultAssistantText(result),
+        messageStartCount: countEventsByType(emittedEvents, "message.start"),
+        streamedTextDone: readTextDoneValues(emittedEvents),
+      },
+      runner: {
+        resolutionType: result.resolution.type,
+      },
+    };
+
+    return {
+      evidence: projection,
+      result: projection,
+    };
+  };
+
+  const runAroundModelRetryFinalResponse = async (
+    providerResponses: readonly TuvrenModelResponse[]
+  ): Promise<AdapterProjection> => {
+    let generateCalls = 0;
+    const runner = createReActRunner({
+      providerCallMode: "generate",
+    }).create();
+    const result = await runner.execute(
+      createRunnerExecutionContext({
+        config: {
+          extensions: [
+            {
+              async aroundModel(context, next) {
+                await next(context);
+                return await next({
+                  ...context,
+                  prompt: {
+                    ...context.prompt,
+                    messages: [
+                      ...context.prompt.messages,
+                      {
+                        content: "Retry with shared fallback behavior",
+                        role: "system" as const,
+                      },
+                    ],
+                  },
+                });
+              },
+              name: "retry",
+            },
+          ],
+          model: createScenarioProvider(providerResponses, () => {
+            generateCalls += 1;
+          }),
+          name: AGENT_NAME,
+        },
+      })
+    );
+
+    assertRunnerExecutionResult(result, "runner aroundModel retry");
+
+    const projection = {
+      aroundModel: {
+        finalAssistantText: readResultAssistantText(result),
+      },
+      provider: {
+        generate: {
+          callCount: generateCalls,
+        },
+      },
+      runner: {
+        resolutionType: result.resolution.type,
+      },
+    };
+
+    return {
+      evidence: projection,
+      result: projection,
+    };
+  };
+
+  const runDirectRunnerExecute = async (
+    providerResponses: readonly TuvrenModelResponse[],
+    loopPolicy?: LoopPolicy
+  ): Promise<AdapterProjection> => {
+    const runner = createReActRunner({
+      providerCallMode: "generate",
+    }).create();
+    const result = await runner.execute(
+      createRunnerExecutionContext({
+        config: {
+          ...(loopPolicy === undefined ? {} : { loopPolicy }),
+          model: createScenarioProvider(providerResponses, () => {
+            // Direct runner scenarios intentionally discard provider observations.
+          }),
+          name: AGENT_NAME,
+        },
+      })
+    );
+
+    assertRunnerExecutionResult(result, "runner execute result");
+
+    const error =
+      result.resolution.type === "fail"
+        ? dependencies.errorToEnvelope(result.resolution.error)
+        : undefined;
+
+    return {
+      evidence: {
+        runner: {
+          errorCode: error?.code,
+          resolutionType: result.resolution.type,
+        },
+      },
+      result: {
+        error,
+        runner: {
+          errorCode: error?.code,
+          resolutionType: result.resolution.type,
+        },
+      },
+    };
+  };
+  const runRunnerExecute = async (
+    input: unknown
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runner.execute"
@@ -231,179 +586,11 @@ export function createFrameworkAdapterRunner(
         hookCounts: hooks,
       },
     };
-  }
+  };
 
-  async function runAroundModelPostStreamReplacement(
-    scenario: Record<string, unknown>
-  ): Promise<AdapterProjection> {
-    const chunks = dependencies.readProviderStreamChunks(
-      scenario,
-      "runner.execute.streamChunks"
-    );
-    const emittedEvents: TuvrenStreamEvent[] = [];
-    const provider: TuvrenProvider = {
-      generate() {
-        return Promise.reject(
-          new Error("generate must not run during stream replacement")
-        );
-      },
-      id: "provider",
-      async *stream() {
-        await Promise.resolve();
-        for (const chunk of chunks) {
-          yield structuredClone(chunk);
-        }
-      },
-    };
-    const runner = createReActRunner({
-      providerCallMode: "stream",
-    }).create();
-    const result = await runner.execute(
-      createRunnerExecutionContext({
-        config: {
-          extensions: [
-            {
-              async aroundModel(_context, next) {
-                const response = await next();
-                return {
-                  ...response,
-                  parts: [{ text: "modified", type: "text" }],
-                };
-              },
-              name: "rewriter",
-            },
-          ],
-          model: provider,
-          name: AGENT_NAME,
-        },
-        emittedEvents,
-      })
-    );
-
-    assertRunnerExecutionResult(result, "runner aroundModel replacement");
-
-    const projection = {
-      aroundModel: {
-        finalAssistantText: readResultAssistantText(result),
-        messageStartCount: countEventsByType(emittedEvents, "message.start"),
-        streamedTextDone: readTextDoneValues(emittedEvents),
-      },
-      runner: {
-        resolutionType: result.resolution.type,
-      },
-    };
-
-    return {
-      evidence: projection,
-      result: projection,
-    };
-  }
-
-  async function runAroundModelRetryFinalResponse(
-    providerResponses: readonly TuvrenModelResponse[]
-  ): Promise<AdapterProjection> {
-    let generateCalls = 0;
-    const runner = createReActRunner({
-      providerCallMode: "generate",
-    }).create();
-    const result = await runner.execute(
-      createRunnerExecutionContext({
-        config: {
-          extensions: [
-            {
-              async aroundModel(context, next) {
-                await next(context);
-                return await next({
-                  ...context,
-                  prompt: {
-                    ...context.prompt,
-                    messages: [
-                      ...context.prompt.messages,
-                      {
-                        content: "Retry with shared fallback behavior",
-                        role: "system" as const,
-                      },
-                    ],
-                  },
-                });
-              },
-              name: "retry",
-            },
-          ],
-          model: createScenarioProvider(providerResponses, () => {
-            generateCalls += 1;
-          }),
-          name: AGENT_NAME,
-        },
-      })
-    );
-
-    assertRunnerExecutionResult(result, "runner aroundModel retry");
-
-    const projection = {
-      aroundModel: {
-        finalAssistantText: readResultAssistantText(result),
-      },
-      provider: {
-        generate: {
-          callCount: generateCalls,
-        },
-      },
-      runner: {
-        resolutionType: result.resolution.type,
-      },
-    };
-
-    return {
-      evidence: projection,
-      result: projection,
-    };
-  }
-
-  async function runDirectRunnerExecute(
-    providerResponses: readonly TuvrenModelResponse[],
-    loopPolicy?: LoopPolicy
-  ): Promise<AdapterProjection> {
-    const runner = createReActRunner({
-      providerCallMode: "generate",
-    }).create();
-    const result = await runner.execute(
-      createRunnerExecutionContext({
-        config: {
-          ...(loopPolicy === undefined ? {} : { loopPolicy }),
-          model: createScenarioProvider(providerResponses, () => {
-            // Direct runner scenarios intentionally discard provider observations.
-          }),
-          name: AGENT_NAME,
-        },
-      })
-    );
-
-    assertRunnerExecutionResult(result, "runner execute result");
-
-    const error =
-      result.resolution.type === "fail"
-        ? dependencies.errorToEnvelope(result.resolution.error)
-        : undefined;
-
-    return {
-      evidence: {
-        runner: {
-          errorCode: error?.code,
-          resolutionType: result.resolution.type,
-        },
-      },
-      result: {
-        error,
-        runner: {
-          errorCode: error?.code,
-          resolutionType: result.resolution.type,
-        },
-      },
-    };
-  }
-
-  async function runRunnerResume(input: unknown): Promise<AdapterProjection> {
+  const runRunnerResume = async (
+    input: unknown
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(input, "runner.resume");
     const pendingToolCalls = dependencies.readPendingToolCalls(
       scenario,
@@ -472,11 +659,11 @@ export function createFrameworkAdapterRunner(
         },
       },
     };
-  }
+  };
 
-  async function runRunnerCheckpoint(
+  const runRunnerCheckpoint = async (
     input: unknown
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const scenario = dependencies.readOperationScenario(
       input,
       "runner.checkpoint"
@@ -523,193 +710,11 @@ export function createFrameworkAdapterRunner(
         },
       },
     };
-  }
+  };
 
   return {
     runRunnerCheckpoint,
     runRunnerExecute,
     runRunnerResume,
   };
-}
-
-interface HookCounters {
-  afterIteration: number;
-  aroundModel: number;
-  aroundModelTrace: string[];
-  aroundTool: number;
-  aroundToolTrace: string[];
-  beforeIteration: number;
-  phaseTrace: string[];
-  terminalMutationAttempted: boolean;
-}
-
-function createHookCounters(): HookCounters {
-  return {
-    afterIteration: 0,
-    aroundModel: 0,
-    aroundModelTrace: [],
-    aroundTool: 0,
-    aroundToolTrace: [],
-    beforeIteration: 0,
-    phaseTrace: [],
-    terminalMutationAttempted: false,
-  };
-}
-
-function readOptionalString(
-  record: Record<string, unknown>,
-  key: string
-): string | undefined {
-  return typeof record[key] === "string" ? record[key] : undefined;
-}
-
-function readLoopPolicyOptional(
-  scenario: Record<string, unknown>
-): LoopPolicy | undefined {
-  const { loopPolicy } = scenario;
-
-  if (loopPolicy === undefined) {
-    return undefined;
-  }
-
-  if (!isRecord(loopPolicy)) {
-    throw new Error("runner.execute.loopPolicy must be an object");
-  }
-
-  const decision = readIterationDecision(loopPolicy);
-
-  return {
-    evaluate() {
-      return decision;
-    },
-  };
-}
-
-function readIterationDecision(
-  record: Record<string, unknown>
-): IterationDecision {
-  const continueDecision = record.continue;
-  const { executeTools } = record;
-  const { reason } = record;
-
-  if (typeof continueDecision !== "boolean") {
-    throw new TypeError("runner.execute.loopPolicy.continue must be a boolean");
-  }
-
-  if (typeof executeTools !== "boolean") {
-    throw new TypeError(
-      "runner.execute.loopPolicy.executeTools must be a boolean"
-    );
-  }
-
-  return {
-    continue: continueDecision,
-    executeTools,
-    ...(typeof reason === "string" ? { reason } : {}),
-  };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function countEventsByType(
-  events: readonly TuvrenStreamEvent[],
-  type: string
-): number {
-  let count = 0;
-
-  for (const event of events) {
-    if (event.type === type) {
-      count += 1;
-    }
-  }
-
-  return count;
-}
-
-function readTextDoneValues(events: readonly TuvrenStreamEvent[]): string[] {
-  const values: string[] = [];
-
-  for (const event of events) {
-    if (event.type === "text.done") {
-      values.push(event.text);
-    }
-  }
-
-  return values;
-}
-
-function readResultAssistantText(result: {
-  messages?: readonly unknown[];
-}): string | undefined {
-  return readAssistantText(result.messages ?? []);
-}
-
-function readAssistantText(messages: readonly unknown[]): string | undefined {
-  for (const message of messages) {
-    if (!isRecord(message) || message.role !== "assistant") {
-      continue;
-    }
-
-    const { parts } = message;
-
-    if (!Array.isArray(parts)) {
-      continue;
-    }
-
-    for (const part of parts) {
-      if (
-        isRecord(part) &&
-        part.type === "text" &&
-        typeof part.text === "string"
-      ) {
-        return part.text;
-      }
-    }
-  }
-
-  return undefined;
-}
-
-function createMeasuredExtension(hooks: HookCounters): TuvrenExtension {
-  return {
-    afterIteration(context) {
-      const firstPart = context.response.parts[0];
-
-      if (
-        firstPart?.type === "text" &&
-        firstPart.text === "runner hook turn completed"
-      ) {
-        firstPart.text = "mutated by afterIteration";
-        hooks.terminalMutationAttempted = true;
-      }
-
-      hooks.phaseTrace.push("afterIteration");
-      hooks.afterIteration += 1;
-    },
-    async aroundModel(_context, next) {
-      hooks.phaseTrace.push("aroundModel.before");
-      hooks.aroundModelTrace.push("before");
-      hooks.aroundModel += 1;
-      const result = await next();
-      hooks.aroundModelTrace.push("after");
-      hooks.phaseTrace.push("aroundModel.after");
-      return result;
-    },
-    async aroundTool(_context, next) {
-      hooks.phaseTrace.push("aroundTool.before");
-      hooks.aroundToolTrace.push("aroundTool.before");
-      hooks.aroundTool += 1;
-      const result = await next();
-      hooks.aroundToolTrace.push("aroundTool.after");
-      hooks.phaseTrace.push("aroundTool.after");
-      return result;
-    },
-    beforeIteration() {
-      hooks.phaseTrace.push("beforeIteration");
-      hooks.beforeIteration += 1;
-    },
-    name: "measured-runner-hooks",
-  };
-}
+};

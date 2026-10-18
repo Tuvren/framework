@@ -81,9 +81,36 @@ export interface ScenarioToolCall {
 export const RUNNER_ID = "typescript-conformance-runner";
 export const AGENT_NAME = "typescript-conformance-agent";
 
-export function createConformanceKernelHarness(options?: {
+const readMessagesFromManifest = async (
+  kernel: RuntimeKernel,
+  manifest: TurnTreeManifest
+): Promise<unknown[]> => {
+  const hashes = manifest.messages;
+
+  if (!Array.isArray(hashes)) {
+    return [];
+  }
+
+  const messages: unknown[] = [];
+
+  for (const hash of hashes) {
+    if (!isHashString(hash)) {
+      continue;
+    }
+
+    const payload = await kernel.store.get(hash);
+
+    if (payload !== null) {
+      messages.push(decodeDeterministicKernelRecord(payload));
+    }
+  }
+
+  return messages;
+};
+
+export const createConformanceKernelHarness = (options?: {
   now?: () => number;
-}): ConformanceKernelHarness {
+}): ConformanceKernelHarness => {
   const backend = createMemoryBackend({ now: options?.now });
   const kernel = createRuntimeKernel({
     backend,
@@ -172,9 +199,9 @@ export function createConformanceKernelHarness(options?: {
       return readMessagesFromManifest(kernel, manifest);
     },
   };
-}
+};
 
-export function createConformanceRunLivenessKernelHarness(
+export const createConformanceRunLivenessKernelHarness = (
   harness: ConformanceKernelHarness,
   options?: {
     onRenewLease?: (
@@ -184,7 +211,7 @@ export function createConformanceRunLivenessKernelHarness(
       nextLeaseExpiresAtMs: number
     ) => Promise<{ fencingToken: string; leaseExpiresAtMs: number }>;
   }
-): ConformanceRunLivenessKernelHarness {
+): ConformanceRunLivenessKernelHarness => {
   const leasedRuns = new Map<string, RunRecord>();
   let preemptCalls = 0;
   let renewLeaseCalls = 0;
@@ -270,20 +297,20 @@ export function createConformanceRunLivenessKernelHarness(
     },
     leasedRuns,
   };
-}
+};
 
-export function createConformanceIdFactory(): () => string {
+export const createConformanceIdFactory = (): (() => string) => {
   let nextId = 1;
 
   // Compatibility evidence is checked in, so conformance-only runtime IDs stay
   // deterministic while the production runtime keeps its random default IDs.
   return () => `conformance-id-${nextId++}`;
-}
+};
 
-export function createScenarioProvider(
+export const createScenarioProvider = (
   responses: readonly TuvrenModelResponse[],
   onGenerate: () => void
-): TuvrenProvider {
+): TuvrenProvider => {
   let responseIndex = 0;
 
   return {
@@ -307,11 +334,11 @@ export function createScenarioProvider(
       yield* [];
     },
   };
-}
+};
 
-export function createRuntimeWithReactRunner(): ReturnType<
+export const createRuntimeWithReactRunner = (): ReturnType<
   typeof createTuvrenRuntimeCore
-> {
+> => {
   const reactRunner = createReActRunner({
     providerCallMode: "generate",
   }).create();
@@ -322,29 +349,87 @@ export function createRuntimeWithReactRunner(): ReturnType<
     kernel: createConformanceKernelHarness().kernel,
     runnerRegistry: createRunnerRegistry([reactRunner]),
   });
-}
+};
 
-export function createStaticRunner(
+export const createStaticRunner = (
   execute: (
     context: RunnerExecutionContext
   ) => RunnerExecutionResult | Promise<RunnerExecutionResult>
-): RuntimeRunner {
+): RuntimeRunner => {
   return {
     execute(context) {
       return Promise.resolve(execute(context));
     },
     id: RUNNER_ID,
   };
-}
+};
 
-export function createRunnerExecutionContext(input?: {
+const createContextManifest = (): ContextManifest => {
+  return {
+    byRole: {
+      assistant: 0,
+      system: 0,
+      tool: 0,
+      user: 1,
+    },
+    extensions: {},
+    lastAssistantMessageIndex: -1,
+    lastUserMessageIndex: 0,
+    messageCount: 1,
+    tokenEstimate: 0,
+    toolCalls: {
+      byName: {},
+      total: 0,
+    },
+    toolResults: {
+      byName: {},
+      total: 0,
+    },
+    turnBoundaries: [0],
+  };
+};
+
+export const createClock = (): (() => number) => {
+  let now = 1;
+  return () => now++;
+};
+
+const createToolRegistry = (
+  tools: readonly TuvrenToolDefinition[]
+): ToolRegistry => {
+  const toolsByName = new Map(tools.map((tool) => [tool.name, tool]));
+
+  return {
+    get(name: string) {
+      return toolsByName.get(name);
+    },
+    has(name: string) {
+      return toolsByName.has(name);
+    },
+    list() {
+      return [...toolsByName.values()];
+    },
+    register(tool: TuvrenToolDefinition) {
+      toolsByName.set(tool.name, tool);
+    },
+    toDefinitions() {
+      return [...toolsByName.values()].map((tool) => ({
+        description: tool.description,
+        inputSchema: { type: "object" },
+        name: tool.name,
+      }));
+    },
+  };
+};
+
+export const createRunnerExecutionContext = (input?: {
   config?: RunnerExecutionContext["config"];
   emittedEvents?: TuvrenStreamEvent[];
   manifest?: ContextManifest;
   messages?: readonly TuvrenMessage[];
   signal?: AbortSignal;
   toolDefinitions?: TuvrenToolDefinition[];
-}): RunnerExecutionContext {
+}): RunnerExecutionContext => {
   const emittedEvents = input?.emittedEvents ?? [];
   const toolDefinitions = input?.toolDefinitions ?? [];
 
@@ -401,71 +486,31 @@ export function createRunnerExecutionContext(input?: {
     toolRegistry: createToolRegistry(toolDefinitions),
     turnId: "turn-1",
   };
-}
+};
 
-function createToolRegistry(
-  tools: readonly TuvrenToolDefinition[]
-): ToolRegistry {
-  const toolsByName = new Map(tools.map((tool) => [tool.name, tool]));
-
-  return {
-    get(name: string) {
-      return toolsByName.get(name);
-    },
-    has(name: string) {
-      return toolsByName.has(name);
-    },
-    list() {
-      return [...toolsByName.values()];
-    },
-    register(tool: TuvrenToolDefinition) {
-      toolsByName.set(tool.name, tool);
-    },
-    toDefinitions() {
-      return [...toolsByName.values()].map((tool) => ({
-        description: tool.description,
-        inputSchema: { type: "object" },
-        name: tool.name,
-      }));
-    },
-  };
-}
-
-function createContextManifest(): ContextManifest {
-  return {
-    byRole: {
-      assistant: 0,
-      system: 0,
-      tool: 0,
-      user: 1,
-    },
-    extensions: {},
-    lastAssistantMessageIndex: -1,
-    lastUserMessageIndex: 0,
-    messageCount: 1,
-    tokenEstimate: 0,
-    toolCalls: {
-      byName: {},
-      total: 0,
-    },
-    toolResults: {
-      byName: {},
-      total: 0,
-    },
-    turnBoundaries: [0],
-  };
-}
-
-export function assistantText(text: string): TuvrenMessage {
+export const assistantText = (text: string): TuvrenMessage => {
   return {
     parts: [{ text, type: "text" }],
     role: "assistant",
   };
-}
+};
 
-export function assistantToolCalls(
+const toToolCallPart = (call: {
+  callId: string;
+  input: unknown;
+  name: string;
+}): ToolCallPart => {
+  return {
+    callId: call.callId,
+    input: call.input,
+    name: call.name,
+    type: "tool_call",
+  };
+};
+
+export const assistantToolCalls = (
   calls: readonly ScenarioToolCall[]
-): TuvrenMessage {
+): TuvrenMessage => {
   const firstCall = calls[0];
 
   if (firstCall === undefined) {
@@ -482,33 +527,17 @@ export function assistantToolCalls(
     parts,
     role: "assistant",
   };
-}
+};
 
-function toToolCallPart(call: {
-  callId: string;
-  input: unknown;
-  name: string;
-}): ToolCallPart {
-  return {
-    callId: call.callId,
-    input: call.input,
-    name: call.name,
-    type: "tool_call",
-  };
-}
-
-export function textSignal(text: string): InputSignal {
+export const textSignal = (text: string): InputSignal => {
   return {
     parts: [{ text, type: "text" }],
   };
-}
+};
 
-export function createClock(): () => number {
-  let now = 1;
-  return () => now++;
-}
-
-export async function collectValues<T>(values: AsyncIterable<T>): Promise<T[]> {
+export const collectValues = async <T>(
+  values: AsyncIterable<T>
+): Promise<T[]> => {
   const collected: T[] = [];
 
   for await (const value of values) {
@@ -516,31 +545,4 @@ export async function collectValues<T>(values: AsyncIterable<T>): Promise<T[]> {
   }
 
   return collected;
-}
-
-async function readMessagesFromManifest(
-  kernel: RuntimeKernel,
-  manifest: TurnTreeManifest
-): Promise<unknown[]> {
-  const hashes = manifest.messages;
-
-  if (!Array.isArray(hashes)) {
-    return [];
-  }
-
-  const messages: unknown[] = [];
-
-  for (const hash of hashes) {
-    if (!isHashString(hash)) {
-      continue;
-    }
-
-    const payload = await kernel.store.get(hash);
-
-    if (payload !== null) {
-      messages.push(decodeDeterministicKernelRecord(payload));
-    }
-  }
-
-  return messages;
-}
+};
