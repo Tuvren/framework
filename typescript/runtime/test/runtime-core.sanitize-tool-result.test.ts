@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
+
 /**
  * Integration tests for the ADR-0064 host sanitization seam
  * (`AgentConfig.sanitizeToolResult`).
