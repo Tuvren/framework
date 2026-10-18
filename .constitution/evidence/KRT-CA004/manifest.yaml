@@ -27,7 +27,7 @@ files:
     bytes: 6247
     role: measurement
   - path: M29-mcp-readiness.json
-    sha256: aef0e12d152831c7242e15b1c99335ea511f1b01f86c3b6122b553c6884bf4c1
-    bytes: 7603
+    sha256: 6287470001ba78ee6cf0352fdea0547b9842394d709c97d3c2518b553956e146
+    bytes: 8033
     role: measurement
-pass_criteria: The complete core, SDK, four streaming and MCP admission selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics and no unused directive; every contract-preserving native exception is measured and reasoned; each admitted root removes its legacy Biome directives in the same change as canonical target and coverage transfer; public API, Promise timing, queue and iterator behavior, MCP pagination and transport lifecycle, event and error ordering, schema boundaries and release metadata remain unchanged; focused and repository gates pass. KRT-CA004 remains in progress until all later package admissions complete.
+pass_criteria: The complete core, SDK, four streaming and MCP admission selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics and no unused directive; every contract-preserving native exception is measured and reasoned; each admitted root removes its legacy Biome directives in the same change as canonical target and coverage transfer; public API, explicitly protected Promise identities, queue and iterator behavior, MCP pagination and transport lifecycle, event and error ordering, schema boundaries and release metadata remain unchanged; permitted incidental internal Promise scheduling normalization is recorded; focused and repository gates pass. KRT-CA004 remains in progress until all later package admissions complete.
