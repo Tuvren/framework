@@ -20,19 +20,26 @@ import type { AdapterCapabilities } from "../../../tools/conformance/adapter-pro
 import { serveStdioAdapter } from "../../../tools/conformance/adapter-protocol/stdio-host.js";
 import { TypeScriptFrameworkAdapter } from "./framework-adapter.ts";
 
+const fromSynchronousWithTwoArguments = <First, Second, Value>(
+  operation: (first: First, second: Second) => Value
+): ((first: First, second: Second) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(first: First, second: Second) => Value],
+    [First, Second],
+    Promise<Value>
+  >(Promise, operation);
+
 class BatteriesIncludedAdapter extends TypeScriptFrameworkAdapter {
-  override async initialize(
-    packetId: string,
-    planVersion: string
-  ): Promise<AdapterCapabilities> {
-    await super.initialize(packetId, planVersion);
-    return {
-      adapterId: "typescript-framework-batteries-included",
-      capabilities: ["framework.batteries-included"],
-      packetId,
-      planVersion,
-    };
-  }
+  override initialize = fromSynchronousWithTwoArguments(
+    (packetId: string, planVersion: string): AdapterCapabilities =>
+      this.setCapabilities({
+        adapterId: "typescript-framework-batteries-included",
+        capabilities: ["framework.batteries-included"],
+        packetId,
+        planVersion,
+      })
+  );
 }
 
 await serveStdioAdapter(new BatteriesIncludedAdapter());
