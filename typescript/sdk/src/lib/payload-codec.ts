@@ -63,6 +63,7 @@ export interface PayloadKeyring {
    *   `undefined` when the key has been destroyed or rotated away —
    *   synchronously or as a promise.
    */
+  // oxlint-disable-next-line typescript/method-signature-style -- Preserve the published keyring method spelling and its method bivariance under strictFunctionTypes.
   resolve(
     keyRef: string
   ): Promise<Uint8Array | undefined> | Uint8Array | undefined;
@@ -116,10 +117,13 @@ const serializeEnvelope = (parts: {
   const keyRefBytes = new TextEncoder().encode(parts.keyRef);
   const total =
     ENVELOPE_MAGIC.length +
-    2 + // version + algId
-    2 + // keyRefLen
+    // version + algId
+    2 +
+    // keyRefLen
+    2 +
     keyRefBytes.length +
-    1 + // ivLen
+    // ivLen
+    1 +
     parts.iv.length +
     parts.ciphertext.length;
   const out = new Uint8Array(total);
@@ -127,13 +131,16 @@ const serializeEnvelope = (parts: {
   let offset = 0;
   out.set(ENVELOPE_MAGIC, offset);
   offset += ENVELOPE_MAGIC.length;
-  out[offset++] = ENVELOPE_VERSION;
-  out[offset++] = parts.algId;
+  out[offset] = ENVELOPE_VERSION;
+  offset += 1;
+  out[offset] = parts.algId;
+  offset += 1;
   view.setUint16(offset, keyRefBytes.length, true);
   offset += 2;
   out.set(keyRefBytes, offset);
   offset += keyRefBytes.length;
-  out[offset++] = parts.iv.length;
+  out[offset] = parts.iv.length;
+  offset += 1;
   out.set(parts.iv, offset);
   offset += parts.iv.length;
   out.set(parts.ciphertext, offset);
@@ -160,11 +167,13 @@ const parseEnvelope = (bytes: Uint8Array): ParsedEnvelope => {
   if (bytes.length < offset + ENVELOPE_FIXED_HEADER_BYTES) {
     throw new TypeError("malformed payload envelope: truncated header");
   }
-  const version = bytes[offset++];
+  const version = bytes[offset];
+  offset += 1;
   if (version !== ENVELOPE_VERSION) {
     throw new TypeError(`unsupported payload envelope version ${version}`);
   }
-  const algId = bytes[offset++];
+  const algId = bytes[offset];
+  offset += 1;
   const keyRefLen = view.getUint16(offset, true);
   offset += 2;
   if (offset + keyRefLen > bytes.length) {
@@ -179,7 +188,8 @@ const parseEnvelope = (bytes: Uint8Array): ParsedEnvelope => {
   if (offset + 1 > bytes.length) {
     throw new TypeError("malformed payload envelope: missing iv length");
   }
-  const ivLen = bytes[offset++];
+  const ivLen = bytes[offset];
+  offset += 1;
   if (offset + ivLen > bytes.length) {
     throw new TypeError("malformed payload envelope: iv length out of range");
   }

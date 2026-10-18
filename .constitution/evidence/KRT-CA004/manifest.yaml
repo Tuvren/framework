@@ -3,11 +3,15 @@ mode: contract_test
 result: pass
 produced:
   date: '2026-10-18'
-  commit: a2e8b7cda2373f3026f691107affe5be5c2de601
-  command: 'bunx --bun oxlint --type-aware typescript/core; bun tools/scripts/json-check.ts typescript/core; core build, source-only typecheck, tests, API freeze and export smoke; admission controls; focused framework conformance; bun run lint; bun run typecheck; bun run changeset:check --base=master'
+  commit: 392e01862ecac41fee284d9e6a8f1073510b2134
+  command: 'M24 core and M25 SDK native lint plus JSON checking; package build, source-only typecheck, tests, API freeze and export smoke; admission controls; focused framework conformance; bun run lint; bun run typecheck; bun run changeset:check --base=master'
 files:
   - path: M24-core-readiness.json
     sha256: 221d0f71aee93a43c5c5514db9ef20bc02dfe33386ff734efa749ee50ac58029
     bytes: 25772
     role: measurement
-pass_criteria: The complete core code and JSON selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics and no unused directive; every contract-preserving native exception is measured and reasoned; all 14 core Biome directives are removed in the same change as the canonical native target and coverage transfer; public API, Promise timing, error names, noop behavior and ADR-0056 tags remain unchanged; focused and repository gates pass. KRT-CA004 remains in progress until all later package admissions complete.
+  - path: M25-sdk-readiness.json
+    sha256: 196a9c07cffa50db4611fa349d28a73cf7e89131afcc8c05b31cc61f1d705e0b
+    bytes: 11168
+    role: measurement
+pass_criteria: The complete core and SDK code and JSON selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics and no unused directive; every contract-preserving native exception is measured and reasoned; legacy Biome directives are removed in the same changes as each canonical native target and coverage transfer; public API, Promise timing, error behavior, schema boundaries and release metadata remain unchanged; focused and repository gates pass. KRT-CA004 remains in progress until all later package admissions complete.

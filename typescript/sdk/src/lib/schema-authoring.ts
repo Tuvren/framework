@@ -40,7 +40,8 @@ export const schemaSymbol = Symbol.for("tuvren.schema");
 
 /** Normalized schema wrapper carrying JSON schema + optional validate. */
 export interface Schema<T = unknown> {
-  readonly _type: T; // brand only; never read at runtime
+  // Brand only; never read at runtime.
+  readonly _type: T;
   readonly jsonSchema: TuvrenJsonSchema;
   readonly validate?: (
     value: unknown
@@ -54,9 +55,11 @@ export interface Schema<T = unknown> {
  * Zod v3 compat (from zod@4.x/v3) and Zod v4 native schema types.
  * Both ship in zod@4.x; zod/v3 is the backward-compat surface.
  */
+/* oxlint-disable typescript/consistent-type-imports -- Preserve the frozen published import()-based ZodSchema alias spelling in the SDK API snapshot. */
 export type ZodSchema<T = unknown> =
   | import("zod/v3").Schema<T, import("zod/v3").ZodTypeDef, unknown>
   | import("zod/v4").ZodType<T>;
+/* oxlint-enable typescript/consistent-type-imports */
 
 /** Standard Schema (https://github.com/standard-schema/standard-schema) */
 export type StandardSchema<T = unknown> = StandardSchemaV1<unknown, T>;
@@ -75,7 +78,8 @@ export type FlexibleSchema<T = unknown> =
   | ZodSchema<T>
   | StandardSchema<T>
   | LazySchema<T>
-  | TuvrenJsonSchema; // legacy bare-JSON-Schema path; T = unknown
+  // Legacy bare-JSON-Schema path; T = unknown.
+  | TuvrenJsonSchema;
 
 // ── Structural duck-types for the two library-backed paths ─────────────────
 // These are proper structural supertypes: ZodSchema<T> and StandardSchema<T>
@@ -93,7 +97,7 @@ export type FlexibleSchema<T = unknown> =
  * `extractJsonSchema` which bridges the external-library boundary.
  */
 interface ZodLike<T> {
-  safeParse(value: unknown):
+  safeParse: (value: unknown) =>
     | { readonly success: true; readonly data: T }
     | {
         readonly success: false;
@@ -113,7 +117,7 @@ interface ZodLike<T> {
 interface StandardLike<T> {
   readonly "~standard": {
     readonly vendor?: string;
-    validate(value: unknown):
+    validate: (value: unknown) =>
       | { readonly value: T; readonly issues?: undefined }
       | {
           readonly value?: undefined;
@@ -149,11 +153,34 @@ const extractJsonSchema = (schema: object): TuvrenJsonSchema => {
   if (typeof fn !== "function") {
     return {};
   }
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Bridge the external schema API's wider JSON object type to Tuvren's frozen JSON Schema contract.
   return fn.call(schema) as TuvrenJsonSchema;
 };
 
+const isZodLike = <T>(schema: object): schema is ZodLike<T> =>
+  "safeParse" in schema && typeof schema.safeParse === "function";
+
+const isStandardLike = <T>(schema: object): schema is StandardLike<T> => {
+  if (!("~standard" in schema)) {
+    return false;
+  }
+  const standard = schema["~standard"];
+  return (
+    typeof standard === "object" &&
+    standard !== null &&
+    "validate" in standard &&
+    typeof standard.validate === "function"
+  );
+};
+
+const isThenable = (
+  value: object
+): value is { then: (...args: never[]) => unknown } =>
+  "then" in value && typeof value.then === "function";
+
 const buildZodSchema = <T>(zod: ZodLike<T>): Schema<T> => ({
   [schemaSymbol]: true as const,
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Preserve the public generic phantom brand without manufacturing a runtime value of T.
   _type: undefined as T,
   jsonSchema: extractJsonSchema(zod),
   validate(value) {
@@ -176,6 +203,7 @@ const buildZodSchema = <T>(zod: ZodLike<T>): Schema<T> => ({
 
 const buildStandardSchema = <T>(std: StandardLike<T>): Schema<T> => ({
   [schemaSymbol]: true as const,
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Preserve the public generic phantom brand without manufacturing a runtime value of T.
   _type: undefined as T,
   jsonSchema: extractJsonSchema(std),
   validate(value) {
@@ -184,10 +212,7 @@ const buildStandardSchema = <T>(std: StandardLike<T>): Schema<T> => ({
     // `instanceof Promise` narrows TypeScript's union; the `.then` guard
     // additionally catches cross-realm Promises and custom thenables that
     // slip past instanceof but are still async.
-    if (
-      result instanceof Promise ||
-      typeof (result as { then?: unknown }).then === "function"
-    ) {
+    if (result instanceof Promise || isThenable(result)) {
       throw new TuvrenValidationError(
         "Async Standard Schema validation is not supported in synchronous tool contexts",
         { code: "invalid_tool_schema_authoring" }
@@ -225,6 +250,7 @@ export const jsonSchema = <T = unknown>(
   // value of type T here; `undefined` is the only safe choice that adds no
   // runtime overhead.  This is the single, intentional phantom-brand
   // assignment in the file.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Preserve the public generic phantom brand without manufacturing a runtime value of T.
   _type: undefined as T,
   jsonSchema: schema,
   validate: options?.validate,
@@ -276,27 +302,27 @@ export const asSchema = <T>(schema: FlexibleSchema<T>): Schema<T> => {
     if (schemaSymbol in schema) {
       // Only Schema<T> declares [schemaSymbol]; the `as` is a sound identity
       // passthrough — no re-wrapping needed.
-      return schema as Schema<T>;
+      return schema;
     }
 
     // Branch 2: Zod v4 — all Zod v4 schemas carry an `_zod` internals bag.
-    if ("_zod" in schema) {
-      return buildZodSchema<T>(schema as ZodLike<T>);
+    if ("_zod" in schema && isZodLike<T>(schema)) {
+      return buildZodSchema(schema);
     }
 
     // Branches 3 & 4: the `~standard` property marks a Standard Schema.
-    if ("~standard" in schema) {
-      const std = schema as StandardLike<T>;
-      if (std["~standard"].vendor === "zod") {
+    if (isStandardLike<T>(schema)) {
+      if (schema["~standard"].vendor === "zod" && isZodLike<T>(schema)) {
         // Branch 4: Zod v3 compat implements Standard Schema with vendor
         // "zod" but has no `_zod` bag.  Use Zod path via safeParse.
-        return buildZodSchema<T>(schema as ZodLike<T>);
+        return buildZodSchema(schema);
       }
       // Branch 3: genuine non-zod Standard Schema.
-      return buildStandardSchema<T>(std);
+      return buildStandardSchema(schema);
     }
 
     // Branch 6 (object form): bare TuvrenJsonSchema.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The preceding public-union branches eliminate normalized, Zod, and Standard schema members; preserve the bare JSON Schema fallback.
     return jsonSchema<T>(schema as TuvrenJsonSchema);
   }
 
@@ -386,7 +412,9 @@ export const defineTool = <INPUT, OUTPUT>(options: {
     // through inputSchema.validate, so the runtime type is INPUT even though
     // the static type is unknown.  This is the boundary assignment that
     // bridges unknown ← INPUT at the TuvrenToolDefinition contract seam.
+    // oxlint-disable-next-line typescript/promise-function-async -- Preserve synchronous tool results and exact user Promise identity across the public execute seam.
     execute(input, context) {
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Input is the value accepted by this tool's paired validator; preserve the public generic execute contract at the unparameterized runtime seam.
       return userExecute(input as INPUT, context);
     },
     idempotent: options.idempotent,

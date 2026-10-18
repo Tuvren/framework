@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
-
 // KRT-BF005 — Host-Key-Encrypted Untrusted-Edge Payload Envelope (ADR-0051).
 //
 // End-to-end proof of crypto-shredding over a real memory backend: a provider
@@ -65,6 +63,7 @@ const buildRuntime = (options: {
     defaultRunnerId: "fake",
     kernel,
     runnerRegistry: createRunnerRegistry([
+      // oxlint-disable-next-line require-await -- This runner intentionally implements the async framework contract while returning its fixture synchronously.
       createStaticRunner(async () => ({
         messages: [assistantText(PROVIDER_SECRET)],
         resolution: { reason: "done", type: "end_turn" },
@@ -129,6 +128,7 @@ describe("KRT-BF005 crypto-shredding payload envelope", () => {
     expect(messageHashes.length).toBeGreaterThanOrEqual(2);
 
     for (const hash of messageHashes) {
+      // oxlint-disable-next-line no-await-in-loop -- Read each durable message in lineage order so a missing hash is attributed deterministically.
       const stored = await runtime.kernel.store.get(hash);
       if (stored === null) {
         throw new Error(`message ${hash} missing from store`);
@@ -153,6 +153,9 @@ describe("KRT-BF005 crypto-shredding payload envelope", () => {
 
     const branchBefore = await runtime.kernel.branch.get(branchId);
     const headBefore = branchBefore?.headTurnNodeHash;
+    if (headBefore === undefined) {
+      throw new Error("branch head missing before shredding");
+    }
     const hashesBefore = await readMessageHashes(runtime.kernel, branchId);
     expect(hashesBefore.length).toBeGreaterThanOrEqual(2);
 
@@ -173,12 +176,14 @@ describe("KRT-BF005 crypto-shredding payload envelope", () => {
     // The lineage hash structure that references the payload is byte-identical:
     // erasure rewrote no history. The head node and message objects still exist.
     const branchAfter = await runtime.kernel.branch.get(branchId);
-    expect(branchAfter?.headTurnNodeHash).toBe(headBefore as string);
+    expect(branchAfter?.headTurnNodeHash).toBe(headBefore);
     expect(await readMessageHashes(runtime.kernel, branchId)).toEqual(
       hashesBefore
     );
-    expect(await runtime.kernel.node.get(headBefore as string)).not.toBeNull();
+    const retainedHead = await runtime.kernel.node.get(headBefore);
+    expect(retainedHead).not.toBeNull();
     for (const hash of hashesBefore) {
+      // oxlint-disable-next-line no-await-in-loop -- Probe every retained hash sequentially for deterministic lineage diagnostics.
       expect(await runtime.kernel.store.has(hash)).toBe(true);
     }
   });
@@ -199,9 +204,7 @@ describe("KRT-BF005 crypto-shredding payload envelope", () => {
     const result = await handle.awaitResult();
     expect(result.status).toBe("failed");
     if (result.status === "failed") {
-      expect((result.error as { code?: string }).code).toBe(
-        "kernel_payload_erased"
-      );
+      expect(result.error).toMatchObject({ code: "kernel_payload_erased" });
     }
   });
 
@@ -214,6 +217,7 @@ describe("KRT-BF005 crypto-shredding payload envelope", () => {
 
     let sawProviderPlaintext = false;
     for (const hash of messageHashes) {
+      // oxlint-disable-next-line no-await-in-loop -- Read each durable message in lineage order so a missing hash is attributed deterministically.
       const stored = await runtime.kernel.store.get(hash);
       if (stored === null) {
         throw new Error(`message ${hash} missing from store`);
