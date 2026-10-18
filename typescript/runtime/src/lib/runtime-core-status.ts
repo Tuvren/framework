@@ -36,72 +36,72 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
  * {@link checkpointResumeRunningStatus}.
  */
 export interface RuntimeCoreStatusHost {
-  advanceTurnAndBranchHead(
+  advanceTurnAndBranchHead: (
     handle: RuntimeExecutionHandle,
     turnNodeHash: HashString
-  ): Promise<void>;
-  beginRunStep(runId: string, stepId: string): Promise<void>;
-  completeRunStep(
+  ) => Promise<void>;
+  beginRunStep: (runId: string, stepId: string) => Promise<void>;
+  completeRunStep: (
     runId: string,
     stepId: string,
     eventHash: HashString,
     treeHash?: HashString
-  ): Promise<{
+  ) => Promise<{
     lease?: { fencingToken: string; leaseExpiresAtMs: number };
     turnNodeHash?: HashString;
   }>;
-  completeTrackedRun(
+  completeTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     status: RunCompletionStatus,
     event?: KernelRecord
-  ): Promise<{ turnNodeHash?: HashString }>;
-  createId(): string;
-  createTrackedRun(
+  ) => Promise<{ turnNodeHash?: HashString }>;
+  createId: () => string;
+  createTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     turnId: string,
     branchId: string,
     schemaId: string,
     startTurnNodeHash: HashString,
-    steps: Array<{
+    steps: {
       deterministic: boolean;
       id: string;
       sideEffects: boolean;
-    }>
-  ): Promise<void>;
-  emitStateObservability(
+    }[]
+  ) => Promise<void>;
+  emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
     iterationCount: number,
     manifest?: ContextManifest
-  ): Promise<void>;
-  loadHeadState(branchId: string): Promise<HeadState>;
-  stageManifest(
+  ) => void;
+  loadHeadState: (branchId: string) => Promise<HeadState>;
+  stageManifest: (
     runId: string,
     manifest: ContextManifest,
     warningContext?: {
       handle: RuntimeExecutionHandle;
       loopState: LoopState;
     }
-  ): Promise<HashString>;
-  stageRuntimeStatus(
+  ) => Promise<HashString>;
+  stageRuntimeStatus: (
     runId: string,
     status: DurableRuntimeStatus,
     taskId: string
-  ): Promise<HashString>;
-  storeEventRecord(event: KernelRecord): Promise<HashString>;
-  syncRunLeaseStateFromStepResult(
+  ) => Promise<HashString>;
+  storeEventRecord: (event: KernelRecord) => Promise<HashString>;
+  syncRunLeaseStateFromStepResult: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stepResult: { lease?: { fencingToken: string; leaseExpiresAtMs: number } }
-  ): void;
-  treeCreate(
+  ) => void;
+  treeCreate: (
     schemaId: string,
     changes: Record<string, PathValue>,
     baseTurnTreeHash: HashString
-  ): Promise<HashString>;
+  ) => Promise<HashString>;
 }
 
 /**
@@ -111,10 +111,10 @@ export interface RuntimeCoreStatusHost {
  * run is active. Used to close out an in-flight kernel run when execution
  * terminates abnormally.
  */
-export async function failActiveRunIfNeeded(
+export const failActiveRunIfNeeded = async (
   host: RuntimeCoreStatusHost,
   handle: RuntimeExecutionHandle
-): Promise<void> {
+): Promise<void> => {
   const activeRunId = handle.takeActiveRunId();
 
   if (activeRunId === undefined) {
@@ -122,7 +122,29 @@ export async function failActiveRunIfNeeded(
   }
 
   await host.completeTrackedRun(handle, activeRunId, "failed");
-}
+};
+
+/**
+ * Store the step event, complete the run step, and synchronize the handle's
+ * run-lease state from the step result.
+ */
+const completeRunStep = async (
+  host: RuntimeCoreStatusHost,
+  handle: RuntimeExecutionHandle,
+  runId: string,
+  event: KernelRecord,
+  stepId: string,
+  treeHash?: HashString
+) => {
+  const stepResult = await host.completeRunStep(
+    runId,
+    stepId,
+    await host.storeEventRecord(event),
+    treeHash
+  );
+  host.syncRunLeaseStateFromStepResult(handle, runId, stepResult);
+  return stepResult;
+};
 
 /**
  * Durably record the turn's terminal runtime status.
@@ -137,13 +159,13 @@ export async function failActiveRunIfNeeded(
  * @param resolution - Terminal resolution whose phase is persisted.
  * @param partial - Whether the turn produced partial output before failing.
  */
-export async function finalizeTurnStatus(
+export const finalizeTurnStatus = async (
   host: RuntimeCoreStatusHost,
   handle: RuntimeExecutionHandle,
   resolution: RuntimeResolution,
   partial: boolean,
   loopState: LoopState
-): Promise<void> {
+): Promise<void> => {
   const phase = resolutionToPhase(resolution);
   const headState = await host.loadHeadState(handle.request.branchId);
   const runId = host.createId();
@@ -187,14 +209,14 @@ export async function finalizeTurnStatus(
 
   if (stepResult.turnNodeHash !== undefined) {
     await host.advanceTurnAndBranchHead(handle, stepResult.turnNodeHash);
-    await host.emitStateObservability(
+    host.emitStateObservability(
       handle,
       loopState,
       stepResult.turnNodeHash,
       handle.status().iterationCount
     );
   }
-}
+};
 
 /**
  * Checkpoint a `running` runtime status when resuming an execution.
@@ -208,12 +230,12 @@ export async function finalizeTurnStatus(
  *
  * @param emitObservability - When false, the durable checkpoint is written
  *   but state observability emission is deferred to the caller.
- * @defaultValue `emitObservability` defaults to `true`.
+ * @default `true`
  * @returns The pending state-observability payload (`turnNodeHash`,
  *   iteration, and the manifest only when carried updates changed it) when
  *   the checkpoint produced a new turn node, or `undefined` when it did not.
  */
-export async function checkpointResumeRunningStatus(
+export const checkpointResumeRunningStatus = async (
   host: RuntimeCoreStatusHost,
   handle: RuntimeExecutionHandle,
   schemaId: string,
@@ -227,7 +249,7 @@ export async function checkpointResumeRunningStatus(
       turnNodeHash: HashString;
     }
   | undefined
-> {
+> => {
   const headState = await host.loadHeadState(handle.request.branchId);
   const nextManifest =
     loopState.carriedStateUpdates.length === 0
@@ -307,7 +329,7 @@ export async function checkpointResumeRunningStatus(
     };
 
     if (emitObservability) {
-      await host.emitStateObservability(
+      host.emitStateObservability(
         handle,
         loopState,
         pendingStateObservability.turnNodeHash,
@@ -334,26 +356,4 @@ export async function checkpointResumeRunningStatus(
   });
   loopState.carriedStateUpdates = [];
   return undefined;
-}
-
-/**
- * Store the step event, complete the run step, and synchronize the handle's
- * run-lease state from the step result.
- */
-async function completeRunStep(
-  host: RuntimeCoreStatusHost,
-  handle: RuntimeExecutionHandle,
-  runId: string,
-  event: KernelRecord,
-  stepId: string,
-  treeHash?: HashString
-) {
-  const stepResult = await host.completeRunStep(
-    runId,
-    stepId,
-    await host.storeEventRecord(event),
-    treeHash
-  );
-  host.syncRunLeaseStateFromStepResult(handle, runId, stepResult);
-  return stepResult;
-}
+};

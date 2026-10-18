@@ -24,10 +24,8 @@ import type {
 } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import { assertTuvrenMessage } from "@tuvren/core/messages";
-import {
-  decodeDeterministicKernelRecord,
-  type RecoveryState,
-} from "@tuvren/kernel-protocol";
+import { decodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type { RecoveryState } from "@tuvren/kernel-protocol";
 
 import type { InterruptedIterationRecoveryPlan } from "./runtime-core-recovery-plan.js";
 import {
@@ -110,23 +108,20 @@ export interface LoopOutcome {
  * `"stop"` otherwise; the wider return type mirrors the finish-reason union
  * used by callers, but only those two values are produced here.
  */
-export function inferFinishReason(
+export const inferFinishReason = (
   message: Extract<TuvrenMessage, { role: "assistant" }>
-): "content_filter" | "error" | "length" | "stop" | "tool_call" {
-  return message.parts.some((part) => part.type === "tool_call")
+): "content_filter" | "error" | "length" | "stop" | "tool_call" =>
+  message.parts.some((part) => part.type === "tool_call")
     ? "tool_call"
     : "stop";
-}
 
 /**
  * Narrow a context-policy evaluation result to an actionable
  * {@link ContextEngineeringPlan}, excluding the `{ action: "none" }` no-op.
  */
-export function isContextEngineeringPlan(
+export const isContextEngineeringPlan = (
   value: ContextEngineeringPlan | { action: "none" }
-): value is ContextEngineeringPlan {
-  return value.action !== "none";
-}
+): value is ContextEngineeringPlan => value.action !== "none";
 
 /**
  * Decode a deterministic kernel record payload into a {@link TuvrenMessage}.
@@ -134,39 +129,17 @@ export function isContextEngineeringPlan(
  * @param payload - Encoded kernel record bytes.
  * @param label - Diagnostic label used in the assertion error on shape
  *   mismatch.
- * @throws When the decoded value is not a valid Tuvren message.
+ * @throws {TuvrenRuntimeError} When the decoded value is not a valid Tuvren
+ *   message.
  */
-export function decodeKrakenMessageRecord(
+export const decodeKrakenMessageRecord = (
   payload: Uint8Array,
   label: string
-): TuvrenMessage {
+): TuvrenMessage => {
   const decoded = decodeDeterministicKernelRecord(payload);
   assertTuvrenMessage(decoded, label);
   return decoded;
-}
-
-/**
- * Build a hard-fail {@link LoopOutcome} when the handle's abort signal has
- * fired, or `undefined` when execution has not been cancelled.
- *
- * @param partial - Whether partial assistant output was already produced.
- * @see createCancelledResolution
- */
-export function createCancelledLoopOutcome(
-  handle: RuntimeExecutionHandle,
-  partial = false
-): LoopOutcome | undefined {
-  const cancelledResolution = createCancelledResolution(handle);
-
-  if (cancelledResolution === undefined) {
-    return undefined;
-  }
-
-  return {
-    partial,
-    resolution: cancelledResolution,
-  };
-}
+};
 
 /**
  * Build a hard-fail resolution from the handle's abort state.
@@ -175,9 +148,9 @@ export function createCancelledLoopOutcome(
  * abort reason is used as the failure error if it is an `Error`; otherwise a
  * generic execution-cancelled error is created.
  */
-export function createCancelledResolution(
+export const createCancelledResolution = (
   handle: RuntimeExecutionHandle
-): RuntimeResolution | undefined {
+): RuntimeResolution | undefined => {
   if (!handle.abortSignal.aborted) {
     return undefined;
   }
@@ -190,7 +163,42 @@ export function createCancelledResolution(
     fatality: "hard",
     type: "fail",
   };
-}
+};
+
+/**
+ * Build a hard-fail {@link LoopOutcome} when the handle's abort signal has
+ * fired, or `undefined` when execution has not been cancelled.
+ *
+ * @param partial - Whether partial assistant output was already produced.
+ * @see createCancelledResolution
+ */
+export const createCancelledLoopOutcome = (
+  handle: RuntimeExecutionHandle,
+  partial = false
+): LoopOutcome | undefined => {
+  const cancelledResolution = createCancelledResolution(handle);
+
+  if (cancelledResolution === undefined) {
+    return undefined;
+  }
+
+  return {
+    partial,
+    resolution: cancelledResolution,
+  };
+};
+
+/**
+ * Report whether an error value carries the `runtime_execution_lease_lost`
+ * code, i.e. the run's kernel lease was fenced away from this execution.
+ */
+export const isRunLeaseLostError = (error: unknown): boolean => {
+  if (!isRecord(error)) {
+    return false;
+  }
+
+  return error.code === "runtime_execution_lease_lost";
+};
 
 /**
  * Report whether in-flight runner progress must be discarded because the
@@ -199,9 +207,9 @@ export function createCancelledResolution(
  * True only when the handle is aborted and the abort reason carries the
  * `runtime_execution_lease_lost` error code.
  */
-export function shouldDiscardRunnerProgressAfterLeaseLoss(
+export const shouldDiscardRunnerProgressAfterLeaseLoss = (
   handle: RuntimeExecutionHandle
-): boolean {
+): boolean => {
   const resolution = createCancelledResolution(handle);
 
   if (resolution === undefined) {
@@ -213,39 +221,7 @@ export function shouldDiscardRunnerProgressAfterLeaseLoss(
   }
 
   return isRunLeaseLostError(resolution.error);
-}
-
-/**
- * Report whether an error value carries the `runtime_execution_lease_lost`
- * code, i.e. the run's kernel lease was fenced away from this execution.
- */
-export function isRunLeaseLostError(error: unknown): boolean {
-  if (!isRecord(error)) {
-    return false;
-  }
-
-  return error.code === "runtime_execution_lease_lost";
-}
-
-/**
- * Report whether the incoming input signal matches a recovered turn.
- *
- * When both the signal and the recovered turn's initial input carry an
- * admission key, the keys define the match. Otherwise this preserves the
- * legacy last-user-parts comparison. This is a convenience wrapper over
- * {@link classifyRecoveredTurnSignalState} that treats only `"match"` as
- * true.
- */
-export function doesSignalMatchRecoveredTurn(
-  signal: InputSignal,
-  messages: readonly TuvrenMessage[],
-  initialInputMessage?: TuvrenMessage
-): boolean {
-  return (
-    classifyRecoveredTurnSignalState(signal, messages, initialInputMessage) ===
-    "match"
-  );
-}
+};
 
 /**
  * Compare the incoming input signal against a recovered turn's input.
@@ -265,11 +241,11 @@ export function doesSignalMatchRecoveredTurn(
  *   `"match"` when both present keys are equal or the legacy parts fallback
  *   matches, and `"mismatch"` otherwise.
  */
-export function classifyRecoveredTurnSignalState(
+export const classifyRecoveredTurnSignalState = (
   signal: InputSignal,
   messages: readonly TuvrenMessage[],
   initialInputMessage?: TuvrenMessage
-): "match" | "mismatch" | "missing" {
+): "match" | "mismatch" | "missing" => {
   if (signal.admissionKey !== undefined && initialInputMessage === undefined) {
     return "missing";
   }
@@ -285,7 +261,7 @@ export function classifyRecoveredTurnSignalState(
   }
 
   const recoveredUserMessage = [...messages]
-    .reverse()
+    .toReversed()
     .find((message) => message.role === "user");
 
   if (recoveredUserMessage === undefined) {
@@ -297,7 +273,24 @@ export function classifyRecoveredTurnSignalState(
   })
     ? "match"
     : "mismatch";
-}
+};
+
+/**
+ * Report whether the incoming input signal matches a recovered turn.
+ *
+ * When both the signal and the recovered turn's initial input carry an
+ * admission key, the keys define the match. Otherwise this preserves the
+ * legacy last-user-parts comparison. This is a convenience wrapper over
+ * {@link classifyRecoveredTurnSignalState} that treats only `"match"` as
+ * true.
+ */
+export const doesSignalMatchRecoveredTurn = (
+  signal: InputSignal,
+  messages: readonly TuvrenMessage[],
+  initialInputMessage?: TuvrenMessage
+): boolean =>
+  classifyRecoveredTurnSignalState(signal, messages, initialInputMessage) ===
+  "match";
 
 /**
  * Map a preempted run's recovered step sequence to a resumption mode.
@@ -309,28 +302,31 @@ export function classifyRecoveredTurnSignalState(
  * the fresh-turn prelude; `finalize_turn_status` only completes the terminal
  * status.
  *
- * @throws TuvrenRuntimeError with code
+ * @throws {TuvrenRuntimeError} With code
  *   `unsupported_stale_run_recovery_phase` when the recovered step is not a
  *   phase that can be safely resumed.
  */
-export function classifyRecoveredExecutionMode(
+export const classifyRecoveredExecutionMode = (
   recoveryState: RecoveryState
-): ExpiredExecutionRecovery["mode"] {
+): ExpiredExecutionRecovery["mode"] => {
   const recoveredStepId = recoveryState.stepSequence[0]?.id;
 
   switch (recoveredStepId) {
-    case "incorporate_input":
+    case "incorporate_input": {
       return "reuse_turn";
+    }
     case "iterate":
     case "commit_extension_state":
     case "context_engineering":
     case "incorporate_steering":
     case "handoff_context":
-    case "resume_running_status":
+    case "resume_running_status": {
       return "skip_fresh_prelude";
-    case "finalize_turn_status":
+    }
+    case "finalize_turn_status": {
       return "complete_terminal_status";
-    default:
+    }
+    default: {
       throw new TuvrenRuntimeError(
         "stale run recovery cannot safely resume the recovered phase",
         {
@@ -341,8 +337,9 @@ export function classifyRecoveredExecutionMode(
           },
         }
       );
+    }
   }
-}
+};
 
 /**
  * Interpret a preemption failure as a lost stale-recovery race.
@@ -353,24 +350,26 @@ export function classifyRecoveredExecutionMode(
  * owner recovered or still holds the run. Returns `undefined` for any other
  * error, which the caller should rethrow.
  */
-export function classifyStaleRecoveryRace(
+export const classifyStaleRecoveryRace = (
   error: unknown
-): ExpiredExecutionRecovery | undefined {
+): ExpiredExecutionRecovery | undefined => {
   if (!isRecord(error) || typeof error.code !== "string") {
     return undefined;
   }
 
   switch (error.code) {
     case "kernel_runtime_run_not_running":
-    case "kernel_runtime_run_lease_not_expired":
+    case "kernel_runtime_run_lease_not_expired": {
       return {
         preempted: false,
         recoveryContended: true,
       };
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
-}
+};
 
 /**
  * Report whether buffered runner events must be suppressed instead of
@@ -380,9 +379,9 @@ export function classifyStaleRecoveryRace(
  * (`invalid_runner_result`, `invalid_runner_resolution`,
  * `invalid_stream_event`), where the buffered events cannot be trusted.
  */
-export function shouldSuppressBufferedRunnerEvents(
+export const shouldSuppressBufferedRunnerEvents = (
   resolution: RuntimeResolution
-): boolean {
+): boolean => {
   if (resolution.type !== "fail" || resolution.fatality !== "hard") {
     return false;
   }
@@ -391,7 +390,7 @@ export function shouldSuppressBufferedRunnerEvents(
     return false;
   }
 
-  const code = resolution.error.code;
+  const { code } = resolution.error;
 
   return (
     typeof code === "string" &&
@@ -399,17 +398,16 @@ export function shouldSuppressBufferedRunnerEvents(
       code === "invalid_runner_resolution" ||
       code === "invalid_stream_event")
   );
-}
+};
 
 /** Report whether any message in the list is an assistant message. */
-export function hasAssistantOutputMessages(messages: TuvrenMessage[]): boolean {
-  return messages.some((message) => message.role === "assistant");
-}
+export const hasAssistantOutputMessages = (
+  messages: TuvrenMessage[]
+): boolean => messages.some((message) => message.role === "assistant");
 
 /**
  * Normalize an unknown recovery failure into an `Error` instance
  * (delegates to the shared runtime error normalizer).
  */
-export function normalizeRecoveryError(error: unknown): Error {
-  return normalizeError(error);
-}
+export const normalizeRecoveryError = (error: unknown): Error =>
+  normalizeError(error);

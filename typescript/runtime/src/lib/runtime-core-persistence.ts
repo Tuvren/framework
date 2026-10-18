@@ -49,189 +49,67 @@ interface ManifestExtensionStateWarning {
  */
 export interface RuntimeCorePersistenceHost {
   /** Emit a manifest extension-state budget warning to the host. */
-  emitWarning(warning: ManifestExtensionStateWarning): void;
+  emitWarning: (warning: ManifestExtensionStateWarning) => void;
   /**
    * Deterministically encode a value as a kernel record; `label` is used in
    * encoding diagnostics.
    */
-  encodeKernelRecord(value: unknown, label: string): Uint8Array;
+  encodeKernelRecord: (value: unknown, label: string) => Uint8Array;
   /**
    * Crypto-shredding seam (KRT-BF005): encrypt an encoded message record under
    * the host payload codec before it is staged. The default identity codec
    * returns the bytes unchanged, so no-codec hosts stage plaintext as before.
    */
-  encryptMessageRecord(record: Uint8Array): Promise<Uint8Array>;
+  encryptMessageRecord: (record: Uint8Array) => Promise<Uint8Array>;
   /**
    * Per-extension serialized-size budget in bytes for manifest extension
    * state, or `false` when the warning is disabled.
    */
-  getManifestExtensionStateWarningBudgetBytes(): false | number;
+  getManifestExtensionStateWarningBudgetBytes: () => false | number;
   /**
    * Set of extension names already warned for this execution handle, used to
    * emit each budget warning at most once per extension.
    */
-  getOrCreateManifestExtensionStateWarningKeys(
+  getOrCreateManifestExtensionStateWarningKeys: (
     handle: RuntimeExecutionHandle
-  ): Set<string>;
+  ) => Set<string>;
   /** Stage an encoded record into the given run and return its hash. */
-  stageRecord(
+  stageRecord: (
     runId: string,
     record: Uint8Array,
     taskId: string,
     objectType: string
-  ): Promise<HashString>;
+  ) => Promise<HashString>;
   /** Store an encoded record content-addressed and return its hash. */
-  storeRecord(record: Uint8Array): Promise<HashString>;
+  storeRecord: (record: Uint8Array) => Promise<HashString>;
 }
 
 /**
- * Stage a context manifest record for the run.
- *
- * When `warningContext` is provided, each extension's manifest state is
- * checked against the host's byte budget first and a
- * `manifest_extension_state_budget_exceeded` warning is emitted once per
- * extension per execution.
- *
- * @returns Hash of the staged manifest record.
+ * Approximate a value's serialized size as UTF-8 JSON bytes; returns
+ * `undefined` for values that cannot be JSON-serialized.
  */
-export async function stageManifest(
-  host: RuntimeCorePersistenceHost,
-  runId: string,
-  manifest: ContextManifest,
-  warningContext?: {
-    handle: RuntimeExecutionHandle;
-    loopState: LoopState;
-  },
-  taskId = "manifest"
-): Promise<HashString> {
-  if (warningContext !== undefined) {
-    warnManifestExtensionStateBudgetIfNeeded(
-      host,
-      warningContext.handle,
-      warningContext.loopState,
-      runId,
-      manifest
-    );
+const approximateSerializedByteLength = (
+  value: unknown
+): number | undefined => {
+  try {
+    return new TextEncoder().encode(JSON.stringify(value)).byteLength;
+  } catch {
+    return undefined;
   }
-
-  return await host.stageRecord(
-    runId,
-    host.encodeKernelRecord(manifest, "manifest"),
-    taskId,
-    "context_manifest"
-  );
-}
-
-/**
- * Stage a message record for the run, encrypting the encoded bytes through
- * the host payload codec first (crypto-shredding seam, KRT-BF005; the
- * default identity codec stages plaintext).
- *
- * @returns Hash of the staged message record.
- */
-export async function stageMessage(
-  host: RuntimeCorePersistenceHost,
-  runId: string,
-  message: TuvrenMessage,
-  taskId: string
-): Promise<HashString> {
-  return await host.stageRecord(
-    runId,
-    await host.encryptMessageRecord(
-      host.encodeKernelRecord(message, "message")
-    ),
-    taskId,
-    "message"
-  );
-}
-
-/**
- * Stage a turn-lineage record marking `turnId` as the active turn.
- *
- * @returns Hash of the staged turn-lineage record.
- */
-export async function stageTurnLineage(
-  host: RuntimeCorePersistenceHost,
-  runId: string,
-  turnId: string,
-  taskId: string,
-  interruptedToolBatch?: InterruptedToolBatchDescriptor
-): Promise<HashString> {
-  return await host.stageRecord(
-    runId,
-    host.encodeKernelRecord(
-      {
-        activeTurnId: turnId,
-        ...(interruptedToolBatch === undefined ? {} : { interruptedToolBatch }),
-      } satisfies TurnLineageRecord,
-      "turn lineage"
-    ),
-    taskId,
-    "turn_lineage"
-  );
-}
-
-/**
- * Stage a durable runtime-status record, dropping `undefined` fields so the
- * encoded record stays deterministic.
- *
- * @returns Hash of the staged runtime-status record.
- */
-export async function stageRuntimeStatus(
-  host: RuntimeCorePersistenceHost,
-  runId: string,
-  status: DurableRuntimeStatus,
-  taskId: string
-): Promise<HashString> {
-  const serializedStatus = Object.fromEntries(
-    Object.entries(status).filter(([, value]) => value !== undefined)
-  );
-  return await host.stageRecord(
-    runId,
-    host.encodeKernelRecord(serializedStatus, "runtime status"),
-    taskId,
-    "runtime_status"
-  );
-}
-
-/**
- * Encode and store an arbitrary value as a content-addressed kernel record
- * (unstaged, not tied to a run).
- *
- * @returns Hash of the stored record.
- */
-export async function storeKernelRecord(
-  host: RuntimeCorePersistenceHost,
-  value: unknown,
-  label: string
-): Promise<HashString> {
-  return await host.storeRecord(host.encodeKernelRecord(value, label));
-}
-
-/**
- * Store an event record content-addressed under the `"event"` label.
- *
- * @returns Hash of the stored event record.
- */
-export async function storeEventRecord(
-  host: RuntimeCorePersistenceHost,
-  event: KernelRecord
-): Promise<HashString> {
-  return await storeKernelRecord(host, event, "event");
-}
+};
 
 /**
  * Emit a budget warning for each manifest extension whose approximate
  * serialized size exceeds the host budget, at most once per extension per
  * execution handle.
  */
-function warnManifestExtensionStateBudgetIfNeeded(
+const warnManifestExtensionStateBudgetIfNeeded = (
   host: RuntimeCorePersistenceHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
   runId: string,
   manifest: ContextManifest
-): void {
+): void => {
   const budget = host.getManifestExtensionStateWarningBudgetBytes();
 
   if (budget === false) {
@@ -269,16 +147,135 @@ function warnManifestExtensionStateBudgetIfNeeded(
       turnId: handle.turnId,
     });
   }
-}
+};
 
 /**
- * Approximate a value's serialized size as UTF-8 JSON bytes; returns
- * `undefined` for values that cannot be JSON-serialized.
+ * Stage a context manifest record for the run.
+ *
+ * When `warningContext` is provided, each extension's manifest state is
+ * checked against the host's byte budget first and a
+ * `manifest_extension_state_budget_exceeded` warning is emitted once per
+ * extension per execution.
+ *
+ * @returns Hash of the staged manifest record.
  */
-function approximateSerializedByteLength(value: unknown): number | undefined {
-  try {
-    return new TextEncoder().encode(JSON.stringify(value)).byteLength;
-  } catch {
-    return undefined;
+export const stageManifest = async (
+  host: RuntimeCorePersistenceHost,
+  runId: string,
+  manifest: ContextManifest,
+  warningContext?: {
+    handle: RuntimeExecutionHandle;
+    loopState: LoopState;
+  },
+  taskId = "manifest"
+): Promise<HashString> => {
+  if (warningContext !== undefined) {
+    warnManifestExtensionStateBudgetIfNeeded(
+      host,
+      warningContext.handle,
+      warningContext.loopState,
+      runId,
+      manifest
+    );
   }
-}
+
+  return await host.stageRecord(
+    runId,
+    host.encodeKernelRecord(manifest, "manifest"),
+    taskId,
+    "context_manifest"
+  );
+};
+
+/**
+ * Stage a message record for the run, encrypting the encoded bytes through
+ * the host payload codec first (crypto-shredding seam, KRT-BF005; the
+ * default identity codec stages plaintext).
+ *
+ * @returns Hash of the staged message record.
+ */
+export const stageMessage = async (
+  host: RuntimeCorePersistenceHost,
+  runId: string,
+  message: TuvrenMessage,
+  taskId: string
+): Promise<HashString> =>
+  await host.stageRecord(
+    runId,
+    await host.encryptMessageRecord(
+      host.encodeKernelRecord(message, "message")
+    ),
+    taskId,
+    "message"
+  );
+
+/**
+ * Stage a turn-lineage record marking `turnId` as the active turn.
+ *
+ * @returns Hash of the staged turn-lineage record.
+ */
+export const stageTurnLineage = async (
+  host: RuntimeCorePersistenceHost,
+  runId: string,
+  turnId: string,
+  taskId: string,
+  interruptedToolBatch?: InterruptedToolBatchDescriptor
+): Promise<HashString> =>
+  await host.stageRecord(
+    runId,
+    host.encodeKernelRecord(
+      {
+        activeTurnId: turnId,
+        ...(interruptedToolBatch === undefined ? {} : { interruptedToolBatch }),
+      } satisfies TurnLineageRecord,
+      "turn lineage"
+    ),
+    taskId,
+    "turn_lineage"
+  );
+
+/**
+ * Stage a durable runtime-status record, dropping `undefined` fields so the
+ * encoded record stays deterministic.
+ *
+ * @returns Hash of the staged runtime-status record.
+ */
+export const stageRuntimeStatus = async (
+  host: RuntimeCorePersistenceHost,
+  runId: string,
+  status: DurableRuntimeStatus,
+  taskId: string
+): Promise<HashString> => {
+  const serializedStatus = Object.fromEntries(
+    Object.entries(status).filter(([, value]) => value !== undefined)
+  );
+  return await host.stageRecord(
+    runId,
+    host.encodeKernelRecord(serializedStatus, "runtime status"),
+    taskId,
+    "runtime_status"
+  );
+};
+
+/**
+ * Encode and store an arbitrary value as a content-addressed kernel record
+ * (unstaged, not tied to a run).
+ *
+ * @returns Hash of the stored record.
+ */
+export const storeKernelRecord = async (
+  host: RuntimeCorePersistenceHost,
+  value: unknown,
+  label: string
+): Promise<HashString> =>
+  await host.storeRecord(host.encodeKernelRecord(value, label));
+
+/**
+ * Store an event record content-addressed under the `"event"` label.
+ *
+ * @returns Hash of the stored event record.
+ */
+export const storeEventRecord = async (
+  host: RuntimeCorePersistenceHost,
+  event: KernelRecord
+): Promise<HashString> => await storeKernelRecord(host, event, "event");

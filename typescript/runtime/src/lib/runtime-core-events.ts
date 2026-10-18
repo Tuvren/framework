@@ -42,26 +42,64 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
  */
 export interface RuntimeCoreEventsHost {
   /** Generate a unique id (used for synthesized message ids). */
-  createId(): string;
+  createId: () => string;
   /**
    * Whether `state.checkpoint`/`state.snapshot` observability events should
    * be emitted at all.
    */
-  enableStateObservability(): boolean;
+  enableStateObservability: () => boolean;
   /** Current time used to stamp event timestamps. */
-  now(): EpochMs;
+  now: () => EpochMs;
 }
+
+/**
+ * Decorates a stream event with default `source` attribution (active agent,
+ * runner, and thread) when it carries none, then shape-validates it.
+ *
+ * @returns The publishable event.
+ * @throws {Error} When the decorated event fails `assertTuvrenStreamEvent`.
+ */
+export const createPublishedEvent = (
+  _host: RuntimeCoreEventsHost,
+  handle: RuntimeExecutionHandle,
+  event: TuvrenStreamEvent,
+  loopState: LoopState
+): TuvrenStreamEvent => {
+  const publishedEvent = {
+    ...event,
+    source: event.source ?? {
+      agent: loopState.activeConfig.name,
+      runner: loopState.activeRunnerId,
+      threadId: handle.request.threadId,
+    },
+  };
+  assertTuvrenStreamEvent(publishedEvent, "stream event");
+  return publishedEvent;
+};
+
+/**
+ * Publish a stream event on the handle after decorating and validating it via
+ * {@link createPublishedEvent}.
+ */
+export const publishEvent = (
+  host: RuntimeCoreEventsHost,
+  handle: RuntimeExecutionHandle,
+  event: TuvrenStreamEvent,
+  loopState: LoopState
+): void => {
+  handle.publish(createPublishedEvent(host, handle, event, loopState));
+};
 
 /**
  * Publish a named `custom` stream event (as emitted by extensions and
  * handoffs), stamped with the current time and the active source identity.
  */
-export function publishCustomEvent(
+export const publishCustomEvent = (
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
   event: { data: unknown; name: string },
   loopState: LoopState
-): void {
+): void => {
   publishEvent(
     host,
     handle,
@@ -73,45 +111,7 @@ export function publishCustomEvent(
     },
     loopState
   );
-}
-
-/**
- * Publish a stream event on the handle after decorating and validating it via
- * {@link createPublishedEvent}.
- */
-export function publishEvent(
-  host: RuntimeCoreEventsHost,
-  handle: RuntimeExecutionHandle,
-  event: TuvrenStreamEvent,
-  loopState: LoopState
-): void {
-  handle.publish(createPublishedEvent(host, handle, event, loopState));
-}
-
-/**
- * Decorates a stream event with default `source` attribution (active agent,
- * runner, and thread) when it carries none, then shape-validates it.
- *
- * @returns The publishable event.
- * @throws When the decorated event fails `assertTuvrenStreamEvent`.
- */
-export function createPublishedEvent(
-  _host: RuntimeCoreEventsHost,
-  handle: RuntimeExecutionHandle,
-  event: TuvrenStreamEvent,
-  loopState: LoopState
-): TuvrenStreamEvent {
-  const publishedEvent = {
-    ...event,
-    source: event.source ?? {
-      agent: loopState.activeConfig.name,
-      runner: loopState.activeRunnerId,
-      threadId: handle.request.threadId,
-    },
-  };
-  assertTuvrenStreamEvent(publishedEvent, "stream event");
-  return publishedEvent;
-}
+};
 
 /**
  * Prepares a runner-emitted event for publication: validates that the event
@@ -120,12 +120,12 @@ export function createPublishedEvent(
  * {@link createPublishedEvent}, a runner cannot supply its own source
  * identity.
  */
-export function createRunnerPublishedEvent(
+export const createRunnerPublishedEvent = (
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
   event: TuvrenStreamEvent,
   loopState: LoopState
-): TuvrenStreamEvent {
+): TuvrenStreamEvent => {
   assertRunnerRuntimeEvent(event);
   return createPublishedEvent(
     host,
@@ -140,18 +140,18 @@ export function createRunnerPublishedEvent(
     },
     loopState
   );
-}
+};
 
 /** Publishes already-validated buffered runner events on the handle, in
  * order. */
-export function flushBufferedRunnerEvents(
+export const flushBufferedRunnerEvents = (
   handle: RuntimeExecutionHandle,
   events: TuvrenStreamEvent[]
-): void {
+): void => {
   for (const event of events) {
     handle.publish(event);
   }
-}
+};
 
 /**
  * Flushes buffered runner events unless the iteration's resolution suppresses
@@ -159,18 +159,150 @@ export function flushBufferedRunnerEvents(
  *
  * @returns The events that were published, or `[]` when suppressed.
  */
-export function flushBufferedRunnerEventsIfNeeded(
+export const flushBufferedRunnerEventsIfNeeded = (
   handle: RuntimeExecutionHandle,
   resolution: RuntimeResolution,
   events: TuvrenStreamEvent[]
-): TuvrenStreamEvent[] {
+): TuvrenStreamEvent[] => {
   if (shouldSuppressBufferedRunnerEvents(resolution)) {
     return [];
   }
 
   flushBufferedRunnerEvents(handle, events);
   return events;
-}
+};
+
+/**
+ * Expands an assistant message into the canonical event sequence a streaming
+ * runner would have emitted: `message.start`, then per part its delta/done
+ * pair (text, reasoning — deltas skipped when redacted, structured, file,
+ * tool_call), and a closing `message.done` with an inferred finish reason.
+ */
+const synthesizeAssistantMessageEvents = (
+  host: RuntimeCoreEventsHost,
+  message: Extract<TuvrenMessage, { role: "assistant" }>
+): TuvrenStreamEvent[] => {
+  const messageId = host.createId();
+  const events: TuvrenStreamEvent[] = [
+    {
+      messageId,
+      role: "assistant",
+      timestamp: host.now(),
+      type: "message.start",
+    },
+  ];
+
+  for (const part of message.parts) {
+    switch (part.type) {
+      case "file": {
+        events.push({
+          data:
+            typeof part.data === "string"
+              ? part.data
+              : new Uint8Array(part.data),
+          filename: part.filename,
+          mediaType: part.mediaType,
+          messageId,
+          timestamp: host.now(),
+          type: "file.done",
+        });
+        break;
+      }
+      case "reasoning": {
+        if (!part.redacted) {
+          events.push({
+            delta: part.text,
+            messageId,
+            timestamp: host.now(),
+            type: "reasoning.delta",
+          });
+        }
+
+        events.push({
+          messageId,
+          timestamp: host.now(),
+          type: "reasoning.done",
+        });
+        break;
+      }
+      case "structured": {
+        events.push(
+          {
+            delta: serializeAssistantDeltaValue(part.data),
+            messageId,
+            timestamp: host.now(),
+            type: "structured.delta",
+          },
+          {
+            data: cloneValue(part.data),
+            messageId,
+            name: part.name,
+            timestamp: host.now(),
+            type: "structured.done",
+          }
+        );
+        break;
+      }
+      case "text": {
+        events.push(
+          {
+            delta: part.text,
+            messageId,
+            timestamp: host.now(),
+            type: "text.delta",
+          },
+          {
+            messageId,
+            text: part.text,
+            timestamp: host.now(),
+            type: "text.done",
+          }
+        );
+        break;
+      }
+      case "tool_call": {
+        events.push(
+          {
+            callId: part.callId,
+            messageId,
+            name: part.name,
+            timestamp: host.now(),
+            type: "tool_call.start",
+          },
+          {
+            callId: part.callId,
+            delta: serializeAssistantDeltaValue(part.input),
+            timestamp: host.now(),
+            type: "tool_call.args_delta",
+          },
+          {
+            callId: part.callId,
+            input: cloneValue(part.input),
+            name: part.name,
+            providerMetadata: cloneValue(part.providerMetadata),
+            timestamp: host.now(),
+            type: "tool_call.done",
+          }
+        );
+        break;
+      }
+      case "tool_result": {
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  }
+
+  events.push({
+    finishReason: inferFinishReason(message),
+    messageId,
+    timestamp: host.now(),
+    type: "message.done",
+  });
+  return events;
+};
 
 /**
  * Guarantees the event stream reflects the assistant message: when the runner
@@ -181,13 +313,13 @@ export function flushBufferedRunnerEventsIfNeeded(
  * @returns The synthesized publishable events, or `[]` when the runner
  *   already streamed assistant content (or produced no assistant message).
  */
-export function ensureRunnerAssistantEvents(
+export const ensureRunnerAssistantEvents = (
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
   messages: TuvrenMessage[],
   emittedEvents: TuvrenStreamEvent[],
   loopState: LoopState
-): TuvrenStreamEvent[] {
+): TuvrenStreamEvent[] => {
   const assistantMessage = messages.find(
     (message): message is Extract<TuvrenMessage, { role: "assistant" }> =>
       message.role === "assistant"
@@ -203,20 +335,20 @@ export function ensureRunnerAssistantEvents(
   return synthesizeAssistantMessageEvents(host, assistantMessage).map((event) =>
     createPublishedEvent(host, handle, event, loopState)
   );
-}
+};
 
 /**
  * Projects an error to its stream shape, remembers the projection on the
  * handle (for result reporting), and publishes it as an `error` event with
  * the given fatality.
  */
-export function publishProjectedError(
+export const publishProjectedError = (
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
   error: Error,
   fatal: boolean,
   loopState: LoopState
-): void {
+): void => {
   const projection = projectError(error);
   handle.rememberError(projection);
   publishEvent(
@@ -230,21 +362,21 @@ export function publishProjectedError(
     },
     loopState
   );
-}
+};
 
 /**
  * Publishes the `state.checkpoint` event for an advanced turn node (plus a
  * `state.snapshot` carrying the manifest when one is provided). A no-op when
  * the host disables state observability.
  */
-export function emitStateObservability(
+export const emitStateObservability = (
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
   loopState: LoopState,
   turnNodeHash: HashString,
   iterationCount: number,
   manifest?: ContextManifest
-): void {
+): void => {
   if (!host.enableStateObservability()) {
     return;
   }
@@ -273,121 +405,4 @@ export function emitStateObservability(
       loopState
     );
   }
-}
-
-/**
- * Expands an assistant message into the canonical event sequence a streaming
- * runner would have emitted: `message.start`, then per part its delta/done
- * pair (text, reasoning — deltas skipped when redacted, structured, file,
- * tool_call), and a closing `message.done` with an inferred finish reason.
- */
-function synthesizeAssistantMessageEvents(
-  host: RuntimeCoreEventsHost,
-  message: Extract<TuvrenMessage, { role: "assistant" }>
-): TuvrenStreamEvent[] {
-  const messageId = host.createId();
-  const events: TuvrenStreamEvent[] = [
-    {
-      messageId,
-      role: "assistant",
-      timestamp: host.now(),
-      type: "message.start",
-    },
-  ];
-
-  for (const part of message.parts) {
-    switch (part.type) {
-      case "file":
-        events.push({
-          data:
-            typeof part.data === "string"
-              ? part.data
-              : new Uint8Array(part.data),
-          filename: part.filename,
-          mediaType: part.mediaType,
-          messageId,
-          timestamp: host.now(),
-          type: "file.done",
-        });
-        break;
-      case "reasoning":
-        if (!part.redacted) {
-          events.push({
-            delta: part.text,
-            messageId,
-            timestamp: host.now(),
-            type: "reasoning.delta",
-          });
-        }
-
-        events.push({
-          messageId,
-          timestamp: host.now(),
-          type: "reasoning.done",
-        });
-        break;
-      case "structured":
-        events.push({
-          delta: serializeAssistantDeltaValue(part.data),
-          messageId,
-          timestamp: host.now(),
-          type: "structured.delta",
-        });
-        events.push({
-          data: cloneValue(part.data),
-          messageId,
-          name: part.name,
-          timestamp: host.now(),
-          type: "structured.done",
-        });
-        break;
-      case "text":
-        events.push({
-          delta: part.text,
-          messageId,
-          timestamp: host.now(),
-          type: "text.delta",
-        });
-        events.push({
-          messageId,
-          text: part.text,
-          timestamp: host.now(),
-          type: "text.done",
-        });
-        break;
-      case "tool_call":
-        events.push({
-          callId: part.callId,
-          messageId,
-          name: part.name,
-          timestamp: host.now(),
-          type: "tool_call.start",
-        });
-        events.push({
-          callId: part.callId,
-          delta: serializeAssistantDeltaValue(part.input),
-          timestamp: host.now(),
-          type: "tool_call.args_delta",
-        });
-        events.push({
-          callId: part.callId,
-          input: cloneValue(part.input),
-          name: part.name,
-          providerMetadata: cloneValue(part.providerMetadata),
-          timestamp: host.now(),
-          type: "tool_call.done",
-        });
-        break;
-      default:
-        break;
-    }
-  }
-
-  events.push({
-    finishReason: inferFinishReason(message),
-    messageId,
-    timestamp: host.now(),
-    type: "message.done",
-  });
-  return events;
-}
+};

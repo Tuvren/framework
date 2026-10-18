@@ -36,9 +36,9 @@ import { assertTuvrenMessage } from "@tuvren/core/messages";
  */
 export class AsyncEventQueue<T> implements AsyncIterable<T> {
   private closed = false;
-  private readonly items: Array<{ value: T }> = [];
+  private readonly items: { value: T }[] = [];
   private onClose?: () => void;
-  private readonly waiters: Array<(value: IteratorResult<T>) => void> = [];
+  private readonly waiters: ((value: IteratorResult<T>) => void)[] = [];
 
   /**
    * @param onClose - Invoked once when the queue is closed, whether by
@@ -115,57 +115,25 @@ export class AsyncEventQueue<T> implements AsyncIterable<T> {
           };
         }
 
-        return await new Promise<IteratorResult<T>>((resolve) => {
-          this.waiters.push(resolve);
-        });
+        const { promise, resolve } = Promise.withResolvers<IteratorResult<T>>();
+        this.waiters.push(resolve);
+        return await promise;
       },
-      return: (): Promise<IteratorResult<T>> => {
+      return: async (): Promise<IteratorResult<T>> => {
+        if (this.closed) {
+          return {
+            done: true,
+            value: undefined,
+          };
+        }
+
+        const { promise, resolve } = Promise.withResolvers<IteratorResult<T>>();
+        this.waiters.push(resolve);
         this.close();
-        return Promise.resolve({
-          done: true,
-          value: undefined,
-        });
+        return await promise;
       },
     };
   }
-}
-
-/**
- * Deep-copies an {@link ExecutionStatus} so callers can hold or mutate the
- * snapshot without observing later runtime updates; the `approval` and
- * `manifest` members are structured-cloned.
- */
-export function cloneExecutionStatus(status: ExecutionStatus): ExecutionStatus {
-  return {
-    activeAgent: status.activeAgent,
-    approval: cloneValue(status.approval),
-    iterationCount: status.iterationCount,
-    manifest: cloneValue(status.manifest),
-    pauseReason: status.pauseReason,
-    phase: status.phase,
-  };
-}
-
-/**
- * Creates a deferred: a promise together with its externally callable
- * `resolve`. Calls to `resolve` after the first are no-ops (standard promise
- * semantics); there is deliberately no reject channel.
- */
-export function createDeferred<T>(): {
-  promise: Promise<T>;
-  resolve(value: T): void;
-} {
-  let resolveValue: ((value: T) => void) | undefined;
-  const promise = new Promise<T>((resolve) => {
-    resolveValue = resolve;
-  });
-
-  return {
-    promise,
-    resolve(value: T) {
-      resolveValue?.(value);
-    },
-  };
 }
 
 /**
@@ -173,148 +141,79 @@ export function createDeferred<T>(): {
  * here — use {@link cloneSnapshotPreservingFunctions} for values that carry
  * function members.
  */
-export function cloneValue<T>(value: T): T {
-  return globalThis.structuredClone(value);
-}
+export const cloneValue = <T>(value: T): T => globalThis.structuredClone(value);
 
 /**
- * Deep-clones a value while keeping function values (and non-Uint8Array
- * ArrayBuffer views) by reference, preserving prototypes, property
- * descriptors, and cyclic references. `Uint8Array`, `Date`, `Map`, `Set`,
- * arrays, and plain/prototyped objects are copied.
+ * Deep-copies an {@link ExecutionStatus} so callers can hold or mutate the
+ * snapshot without observing later runtime updates; the `approval` and
+ * `manifest` members are structured-cloned.
  */
-export function cloneSnapshotPreservingFunctions<T>(value: T): T {
-  return cloneValuePreservingFunctions(value);
-}
+export const cloneExecutionStatus = (
+  status: ExecutionStatus
+): ExecutionStatus => ({
+  activeAgent: status.activeAgent,
+  approval: cloneValue(status.approval),
+  iterationCount: status.iterationCount,
+  manifest: cloneValue(status.manifest),
+  pauseReason: status.pauseReason,
+  phase: status.phase,
+});
 
 /**
- * Deep-clones a value (preserving functions by reference, as in
- * {@link cloneSnapshotPreservingFunctions}) and then deep-freezes the clone,
- * yielding an immutable snapshot safe to share with runners and extensions.
- * `Map`/`Set` containers and ArrayBuffer views are traversed but not frozen
- * themselves; see the non-exported `freezeSnapshot` for details.
+ * Creates a deferred: a promise together with its externally callable
+ * `resolve`. Calls to `resolve` after the first are no-ops (standard promise
+ * semantics); there is deliberately no reject channel.
  */
-export function createFrozenSnapshot<T>(value: T): T {
-  return freezeSnapshot(cloneValuePreservingFunctions(value));
-}
-
-/**
- * Detaches a promise from the caller's control flow, swallowing its
- * rejection solely to prevent an unhandled-rejection crash. This is NOT an
- * error-handling mechanism: the detached task must route its own errors
- * (log, telemetry signal, state transition) before this boundary, because
- * any rejection reaching here is silently discarded.
- */
-export function detachPromise(task: Promise<unknown>): void {
-  task.catch(() => undefined);
-}
-
-/**
- * Creates the canonical cancellation error with code
- * `runtime_execution_cancelled`, used when an execution is cancelled by the
- * caller rather than failing on its own.
- */
-export function createExecutionCancelledError(): TuvrenRuntimeError {
-  return new TuvrenRuntimeError("execution cancelled", {
-    code: "runtime_execution_cancelled",
-  });
-}
-
-/**
- * Coerces an arbitrary thrown value into an `Error`, wrapping non-Error
- * values in `new Error(String(value))`.
- */
-export function normalizeError(error: unknown): Error {
-  return error instanceof Error ? error : new Error(String(error));
-}
-
-/**
- * Type guard for a non-null, non-array object usable as a string-keyed
- * record.
- */
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-/**
- * Projects an `Error` into the stream-facing {@link TuvrenErrorProjection}:
- * `message` always, `code` when the error carries a string `code`, and
- * `details` only when the error's `details` validate as a kernel record
- * (otherwise they are dropped rather than leaking arbitrary values).
- */
-export function projectError(error: Error): TuvrenErrorProjection {
-  const errorRecord = isRecord(error) ? error : undefined;
+export const createDeferred = <T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+} => {
+  const { promise, resolve: resolvePromise } = Promise.withResolvers<T>();
 
   return {
-    code:
-      errorRecord !== undefined && typeof errorRecord.code === "string"
-        ? errorRecord.code
-        : undefined,
-    details:
-      errorRecord === undefined
-        ? undefined
-        : sanitizeErrorDetails(errorRecord.details),
-    message: error.message,
+    promise,
+    resolve(value: T) {
+      resolvePromise(value);
+    },
   };
-}
+};
 
-/**
- * Normalizes an {@link InputSignal} by deep-cloning its parts and validating
- * that they form a well-formed user message.
- *
- * @param label - Name used in the message-validation error.
- * @returns A new signal containing the cloned, validated parts.
- * @throws TuvrenRuntimeError with code `invalid_input_signal` when the parts
- *   do not normalize to a user-role message; the underlying message
- *   assertion throws for structurally invalid parts.
- */
-export function normalizeInputSignal(
-  signal: InputSignal,
-  label: string
-): InputSignal {
-  const candidateMessage: unknown = {
-    ...(signal.admissionKey === undefined
-      ? {}
-      : { admissionKey: signal.admissionKey }),
-    parts: cloneValue(signal.parts),
-    role: "user",
-  };
-  assertTuvrenMessage(candidateMessage, label);
+const cloneObjectPreservingFunctions = (
+  value: object,
+  seen: Map<object, unknown>,
+  cloneNestedValue: (value: unknown, seen: Map<object, unknown>) => unknown
+): object => {
+  const clone: Record<PropertyKey, unknown> = {};
+  const prototype: unknown = Object.getPrototypeOf(value);
 
-  if (candidateMessage.role !== "user") {
-    throw new TuvrenRuntimeError(
-      "input signals must normalize to user messages",
-      {
-        code: "invalid_input_signal",
-      }
-    );
+  if (
+    prototype !== null &&
+    typeof prototype !== "object" &&
+    typeof prototype !== "function"
+  ) {
+    throw new TypeError("object prototype must be an object or null");
   }
 
-  return {
-    ...(candidateMessage.admissionKey === undefined
-      ? {}
-      : { admissionKey: candidateMessage.admissionKey }),
-    parts: candidateMessage.parts,
-  };
-}
+  Object.setPrototypeOf(clone, prototype);
+  seen.set(value, clone);
 
-/**
- * Returns a clone of error details only when they validate as a kernel
- * record; anything else (including values that fail to clone) becomes
- * `undefined`.
- */
-function sanitizeErrorDetails(details: unknown): unknown {
-  if (details === undefined) {
-    return undefined;
+  for (const key of Reflect.ownKeys(value)) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+
+    if (descriptor === undefined) {
+      continue;
+    }
+
+    if ("value" in descriptor) {
+      const descriptorValue: unknown = descriptor.value;
+      descriptor.value = cloneNestedValue(descriptorValue, seen);
+    }
+
+    Object.defineProperty(clone, key, descriptor);
   }
 
-  try {
-    assertKernelRecord(details, "error details");
-    return cloneValue(details);
-  } catch {
-    return undefined;
-  }
-}
+  return clone;
+};
 
 /**
  * Recursive worker behind {@link cloneSnapshotPreservingFunctions} and
@@ -330,14 +229,18 @@ function sanitizeErrorDetails(details: unknown): unknown {
  */
 function cloneValuePreservingFunctions<T>(
   value: T,
+  seen?: Map<object, unknown>
+): T;
+function cloneValuePreservingFunctions(
+  value: unknown,
   seen = new Map<object, unknown>()
-): T {
+): unknown {
   if (value === null || typeof value !== "object") {
     return value;
   }
 
   if (value instanceof Uint8Array) {
-    return value.slice() as T;
+    return new Uint8Array(value);
   }
 
   if (ArrayBuffer.isView(value)) {
@@ -345,7 +248,7 @@ function cloneValuePreservingFunctions<T>(
   }
 
   if (value instanceof Date) {
-    return new Date(value.getTime()) as T;
+    return new Date(value);
   }
 
   if (value instanceof Map) {
@@ -359,7 +262,7 @@ function cloneValuePreservingFunctions<T>(
       );
     }
 
-    return clone as T;
+    return clone;
   }
 
   if (value instanceof Set) {
@@ -370,13 +273,13 @@ function cloneValuePreservingFunctions<T>(
       clone.add(cloneValuePreservingFunctions(entry, seen));
     }
 
-    return clone as T;
+    return clone;
   }
 
   const existing = seen.get(value);
 
   if (existing !== undefined) {
-    return existing as T;
+    return existing;
   }
 
   if (Array.isArray(value)) {
@@ -387,31 +290,24 @@ function cloneValuePreservingFunctions<T>(
       clone.push(cloneValuePreservingFunctions(entry, seen));
     }
 
-    return clone as T;
+    return clone;
   }
 
-  const clone = Object.create(Object.getPrototypeOf(value)) as Record<
-    PropertyKey,
-    unknown
-  >;
-  seen.set(value, clone);
-
-  for (const key of Reflect.ownKeys(value)) {
-    const descriptor = Object.getOwnPropertyDescriptor(value, key);
-
-    if (descriptor === undefined) {
-      continue;
-    }
-
-    if ("value" in descriptor) {
-      descriptor.value = cloneValuePreservingFunctions(descriptor.value, seen);
-    }
-
-    Object.defineProperty(clone, key, descriptor);
-  }
-
-  return clone as T;
+  return cloneObjectPreservingFunctions(
+    value,
+    seen,
+    cloneValuePreservingFunctions
+  );
 }
+
+/**
+ * Deep-clones a value while keeping function values (and non-Uint8Array
+ * ArrayBuffer views) by reference, preserving prototypes, property
+ * descriptors, and cyclic references. `Uint8Array`, `Date`, `Map`, `Set`,
+ * arrays, and plain/prototyped objects are copied.
+ */
+export const cloneSnapshotPreservingFunctions = <T>(value: T): T =>
+  cloneValuePreservingFunctions(value);
 
 /**
  * Recursively `Object.freeze`s a value graph, tolerating cycles via `seen`.
@@ -422,7 +318,7 @@ function cloneValuePreservingFunctions<T>(
  * themselves so their internal slots keep working; every other object and
  * array is frozen after its own-property values are.
  */
-function freezeSnapshot<T>(value: T, seen = new Set<object>()): T {
+const freezeSnapshot = <T>(value: T, seen = new Set<object>()): T => {
   if (value === null || typeof value !== "object") {
     return value;
   }
@@ -465,13 +361,150 @@ function freezeSnapshot<T>(value: T, seen = new Set<object>()): T {
   }
 
   return Object.freeze(value);
-}
+};
+
+/**
+ * Deep-clones a value (preserving functions by reference, as in
+ * {@link cloneSnapshotPreservingFunctions}) and then deep-freezes the clone,
+ * yielding an immutable snapshot safe to share with runners and extensions.
+ * `Map`/`Set` containers and ArrayBuffer views are traversed but not frozen
+ * themselves; see the non-exported `freezeSnapshot` for details.
+ */
+export const createFrozenSnapshot = <T>(value: T): T =>
+  freezeSnapshot(cloneValuePreservingFunctions(value));
+
+const detachedRejectionObservers = new WeakSet<Promise<void>>();
+
+/**
+ * Detaches a promise from the caller's control flow, swallowing its
+ * rejection solely to prevent an unhandled-rejection crash. This is NOT an
+ * error-handling mechanism: the detached task must route its own errors
+ * (log, telemetry signal, state transition) before this boundary, because
+ * any rejection reaching here is silently discarded.
+ */
+export const detachPromise = (task: Promise<unknown>): void => {
+  const ignoreRejection = async (): Promise<void> => {
+    try {
+      await task;
+    } catch {
+      // The task owns error reporting before reaching this boundary.
+    }
+  };
+
+  detachedRejectionObservers.add(ignoreRejection());
+};
+
+/**
+ * Creates the canonical cancellation error with code
+ * `runtime_execution_cancelled`, used when an execution is cancelled by the
+ * caller rather than failing on its own.
+ */
+export const createExecutionCancelledError = (): TuvrenRuntimeError =>
+  new TuvrenRuntimeError("execution cancelled", {
+    code: "runtime_execution_cancelled",
+  });
+
+/**
+ * Coerces an arbitrary thrown value into an `Error`, wrapping non-Error
+ * values in `new Error(String(value))`.
+ */
+export const normalizeError = (error: unknown): Error =>
+  error instanceof Error ? error : new Error(String(error));
+
+/**
+ * Type guard for a non-null, non-array object usable as a string-keyed
+ * record.
+ */
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+/**
+ * Returns a clone of error details only when they validate as a kernel
+ * record; anything else (including values that fail to clone) becomes
+ * `undefined`.
+ */
+const sanitizeErrorDetails = (details: unknown): unknown => {
+  if (details === undefined) {
+    return undefined;
+  }
+
+  try {
+    assertKernelRecord(details, "error details");
+    return cloneValue(details);
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * Projects an `Error` into the stream-facing {@link TuvrenErrorProjection}:
+ * `message` always, `code` when the error carries a string `code`, and
+ * `details` only when the error's `details` validate as a kernel record
+ * (otherwise they are dropped rather than leaking arbitrary values).
+ */
+export const projectError = (error: Error): TuvrenErrorProjection => {
+  const errorRecord = isRecord(error) ? error : undefined;
+
+  return {
+    code:
+      errorRecord !== undefined && typeof errorRecord.code === "string"
+        ? errorRecord.code
+        : undefined,
+    details:
+      errorRecord === undefined
+        ? undefined
+        : sanitizeErrorDetails(errorRecord.details),
+    message: error.message,
+  };
+};
+
+/**
+ * Normalizes an {@link InputSignal} by deep-cloning its parts and validating
+ * that they form a well-formed user message.
+ *
+ * @param label - Name used in the message-validation error.
+ * @returns A new signal containing the cloned, validated parts.
+ * @throws {TuvrenRuntimeError} With code `invalid_input_signal` when the parts
+ *   do not normalize to a user-role message; the underlying message
+ *   assertion throws for structurally invalid parts.
+ */
+export const normalizeInputSignal = (
+  signal: InputSignal,
+  label: string
+): InputSignal => {
+  const candidateMessage: unknown = {
+    ...(signal.admissionKey === undefined
+      ? {}
+      : { admissionKey: signal.admissionKey }),
+    parts: cloneValue(signal.parts),
+    role: "user",
+  };
+  assertTuvrenMessage(candidateMessage, label);
+
+  if (candidateMessage.role !== "user") {
+    throw new TuvrenRuntimeError(
+      "input signals must normalize to user messages",
+      {
+        code: "invalid_input_signal",
+      }
+    );
+  }
+
+  return {
+    ...(candidateMessage.admissionKey === undefined
+      ? {}
+      : { admissionKey: candidateMessage.admissionKey }),
+    parts: candidateMessage.parts,
+  };
+};
 
 /**
  * Returns the event without its `source` attribution (or the event itself
  * when it carries none), revalidating the stripped shape before returning.
  */
-export function stripEventSource(event: TuvrenStreamEvent): TuvrenStreamEvent {
+export const stripEventSource = (
+  event: TuvrenStreamEvent
+): TuvrenStreamEvent => {
   if (event.source === undefined) {
     return event;
   }
@@ -479,4 +512,4 @@ export function stripEventSource(event: TuvrenStreamEvent): TuvrenStreamEvent {
   const { source: _source, ...rest } = event;
   assertTuvrenStreamEvent(rest, "stream event without source");
   return rest;
-}
+};
