@@ -19,7 +19,7 @@ files:
     bytes: 2581
     role: measurement
   - path: suppressions.json
-    sha256: 72fdf09e77cc0aeee415f2e38381d6d8f4453d25c1d615a14a5762ed1bda6a5c
-    bytes: 112731
+    sha256: c2356a079380c9c75337ae8176f1d49bdc25d9c80b819c2e8a1d938e4aceafb9
+    bytes: 116262
     role: measurement
 pass_criteria: Every baseline and live directive across the CA-owned core, SDK, streaming, MCP, testkit and telemetry paths has a reason-preserving retained-Biome and native disposition; needed directives remain while Biome owns each path; no directive or native suppression is added; measured native counterparts actually fire; focused and repository typecheck, tests, retained lint, full lint and direct changeset coverage pass; tools/run-nx.mjs remains byte-identical and covered for EPIC-CB.
