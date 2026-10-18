@@ -226,9 +226,9 @@ const TUVREN_MODEL_RESPONSE_KEYS = new Set([
  * `tuvren-client`), a known `owner` (`provider` | `tuvren`), and a plain
  * `observation` object. Additive optional field per ADR-0046 AW006.
  */
-function isOptionalCapabilityAttribution(
+const isOptionalCapabilityAttribution = (
   parent: Record<string, unknown>
-): boolean {
+): boolean => {
   if (!("attribution" in parent) || parent.attribution === undefined) {
     return true;
   }
@@ -245,7 +245,7 @@ function isOptionalCapabilityAttribution(
     CAPABILITY_INVOCATION_OWNERS.has(attr.owner) &&
     isPlainObject(attr.observation)
   );
-}
+};
 
 /**
  * True when `value` is a valid `ProviderNativeInvocationRecord`: exact key
@@ -254,8 +254,8 @@ function isOptionalCapabilityAttribution(
  * `result` field, optional boolean `isError`, and optional serializable
  * `providerMetadata`.
  */
-function isProviderNativeInvocationRecord(value: unknown): boolean {
-  return safePredicate(
+const isProviderNativeInvocationRecord = (value: unknown): boolean =>
+  safePredicate(
     () =>
       isPlainObject(value) &&
       hasOnlyAllowedKeys(value, PROVIDER_NATIVE_INVOCATION_RECORD_KEYS) &&
@@ -268,7 +268,6 @@ function isProviderNativeInvocationRecord(value: unknown): boolean {
       (value.isError === undefined || typeof value.isError === "boolean") &&
       isOptionalSerializableRecordProperty(value, "providerMetadata")
   );
-}
 
 /**
  * Returns `true` when `value` is a structurally valid
@@ -284,10 +283,10 @@ function isProviderNativeInvocationRecord(value: unknown): boolean {
  *
  * @see {@link assertTuvrenModelResponse} for the throwing variant.
  */
-export function isTuvrenModelResponse(
+export const isTuvrenModelResponse = (
   value: unknown
-): value is TuvrenModelResponse {
-  return safePredicate(
+): value is TuvrenModelResponse =>
+  safePredicate(
     () =>
       isPlainObject(value) &&
       hasOnlyAllowedKeys(value, TUVREN_MODEL_RESPONSE_KEYS) &&
@@ -301,7 +300,6 @@ export function isTuvrenModelResponse(
       isOptionalProviderUsage(value, "usage") &&
       isOptionalSerializableRecordProperty(value, "providerMetadata")
   );
-}
 
 /**
  * Asserts that `value` is a valid {@link TuvrenModelResponse}.
@@ -311,17 +309,20 @@ export function isTuvrenModelResponse(
  * @throws TuvrenValidationError with code `invalid_model_response` when
  *   {@link isTuvrenModelResponse} rejects the value.
  */
-export function assertTuvrenModelResponse(
+export const assertTuvrenModelResponse: (
+  value: unknown,
+  label?: string
+) => asserts value is TuvrenModelResponse = (
   value: unknown,
   label = "value"
-): asserts value is TuvrenModelResponse {
+): asserts value is TuvrenModelResponse => {
   if (!isTuvrenModelResponse(value)) {
     throw new TuvrenValidationError(
       `${label} must be a valid TuvrenModelResponse`,
       { code: "invalid_model_response", details: value }
     );
   }
-}
+};
 
 /**
  * Returns `true` when `value` is a structurally valid {@link TuvrenMessage}
@@ -340,8 +341,8 @@ export function assertTuvrenModelResponse(
  *
  * @see {@link assertTuvrenMessage} for the throwing variant.
  */
-export function isTuvrenMessage(value: unknown): value is TuvrenMessage {
-  return safePredicate(() => {
+export const isTuvrenMessage = (value: unknown): value is TuvrenMessage =>
+  safePredicate(() => {
     if (!isPlainObject(value)) {
       return false;
     }
@@ -389,7 +390,6 @@ export function isTuvrenMessage(value: unknown): value is TuvrenMessage {
       }
     }
   });
-}
 
 /**
  * Asserts that `value` is a valid {@link TuvrenMessage}.
@@ -399,17 +399,20 @@ export function isTuvrenMessage(value: unknown): value is TuvrenMessage {
  * @throws TuvrenValidationError with code `invalid_tuvren_message` when
  *   {@link isTuvrenMessage} rejects the value.
  */
-export function assertTuvrenMessage(
+export const assertTuvrenMessage: (
+  value: unknown,
+  label?: string
+) => asserts value is TuvrenMessage = (
   value: unknown,
   label = "value"
-): asserts value is TuvrenMessage {
+): asserts value is TuvrenMessage => {
   if (!isTuvrenMessage(value)) {
     throw new TuvrenValidationError(`${label} must be a valid TuvrenMessage`, {
       code: "invalid_tuvren_message",
       details: value,
     });
   }
-}
+};
 
 /**
  * Returns `true` when `value` is a structurally valid {@link ApprovalRequest}
@@ -424,8 +427,8 @@ export function assertTuvrenMessage(
  *
  * @see {@link assertApprovalRequest} for the throwing variant.
  */
-export function isApprovalRequest(value: unknown): value is ApprovalRequest {
-  return safePredicate(() => {
+export const isApprovalRequest = (value: unknown): value is ApprovalRequest =>
+  safePredicate(() => {
     if (
       !(
         isPlainObject(value) &&
@@ -445,7 +448,6 @@ export function isApprovalRequest(value: unknown): value is ApprovalRequest {
       value.completedResults
     );
   });
-}
 
 /**
  * Asserts that `value` is a valid {@link ApprovalRequest}.
@@ -455,17 +457,20 @@ export function isApprovalRequest(value: unknown): value is ApprovalRequest {
  * @throws TuvrenValidationError with code `invalid_approval_request` when
  *   {@link isApprovalRequest} rejects the value.
  */
-export function assertApprovalRequest(
+export const assertApprovalRequest: (
+  value: unknown,
+  label?: string
+) => asserts value is ApprovalRequest = (
   value: unknown,
   label = "value"
-): asserts value is ApprovalRequest {
+): asserts value is ApprovalRequest => {
   if (!isApprovalRequest(value)) {
     throw new TuvrenValidationError(
       `${label} must be a valid ApprovalRequest`,
       { code: "invalid_approval_request", details: value }
     );
   }
-}
+};
 
 /**
  * Returns `true` when `value` is a structurally valid
@@ -484,10 +489,10 @@ export function assertApprovalRequest(
  *
  * @see {@link assertProviderStreamChunk} for the throwing variant.
  */
-export function isProviderStreamChunk(
+export const isProviderStreamChunk = (
   value: unknown
-): value is ProviderStreamChunk {
-  return safePredicate(() => {
+): value is ProviderStreamChunk =>
+  safePredicate(() => {
     if (
       !(
         isPlainObject(value) &&
@@ -583,7 +588,6 @@ export function isProviderStreamChunk(
       }
     }
   });
-}
 
 /**
  * Asserts that `value` is a valid {@link ProviderStreamChunk}.
@@ -593,70 +597,50 @@ export function isProviderStreamChunk(
  * @throws TuvrenValidationError with code `invalid_provider_stream_chunk`
  *   when {@link isProviderStreamChunk} rejects the value.
  */
-export function assertProviderStreamChunk(
+export const assertProviderStreamChunk: (
+  value: unknown,
+  label?: string
+) => asserts value is ProviderStreamChunk = (
   value: unknown,
   label = "value"
-): asserts value is ProviderStreamChunk {
+): asserts value is ProviderStreamChunk => {
   if (!isProviderStreamChunk(value)) {
     throw new TuvrenValidationError(
       `${label} must be a valid ProviderStreamChunk`,
       { code: "invalid_provider_stream_chunk", details: value }
     );
   }
-}
+};
 
 /**
  * Returns `true` when `value` is a structurally valid
- * {@link TuvrenStreamEvent} (KrakenFrameworkSpecification §1.8).
+ * {@link ApprovalResponse} (KrakenFrameworkSpecification §1.7).
  *
- * Three layers are checked:
- * 1. The `type` discriminant must belong to the canonical event vocabulary
- *    (`turn.*`, `iteration.*`, `message.*`, `text.*`, `reasoning.*`,
- *    `file.done`, `structured.*`, `tool_call.*`, `tool.*`, `approval.*`,
- *    `steering.incorporated`, `state.*`, `error`, `custom`).
- * 2. The envelope must carry a canonical `EpochMs` `timestamp` and, when
- *    present, a valid `source` attribution record.
- * 3. The variant payload must match that event type's exact key set and
- *    field predicates (non-empty identifiers, canonical `finishReason` and
- *    status enums, serializable `input`/`output`/`data`, valid nested
- *    approval request/response, manifest, or error projection, and the
- *    additive optional `attribution` on `tool.start`/`tool.result` per
- *    ADR-0046 AW006).
- *
- * Never throws; probe failures collapse to `false`.
- *
- * @see {@link assertTuvrenStreamEvent} for the throwing variant.
+ * Requires exactly the key `decisions`, holding a non-empty array of valid
+ * approval decisions with unique `callId`s. This check is
+ * request-independent; use {@link isApprovalResponseForRequest} to also
+ * verify coverage against the pending {@link ApprovalRequest}. Never
+ * throws; probe failures collapse to `false`.
  */
-export function isTuvrenStreamEvent(
-  value: unknown
-): value is TuvrenStreamEvent {
-  return safePredicate(() => {
-    if (
-      !(
-        isPlainObject(value) &&
-        isStringProperty(value, "type") &&
-        STREAM_EVENT_TYPES.has(value.type)
-      )
-    ) {
-      return false;
-    }
-
-    if (!hasCanonicalEpochMsTimestampAndValidSource(value)) {
-      return false;
-    }
-
-    return hasValidStreamEventPayload(value);
-  });
-}
+export const isApprovalResponse = (value: unknown): value is ApprovalResponse =>
+  safePredicate(
+    () =>
+      isPlainObject(value) &&
+      hasOnlyAllowedKeys(value, APPROVAL_RESPONSE_KEYS) &&
+      Array.isArray(value.decisions) &&
+      value.decisions.length > 0 &&
+      value.decisions.every(isApprovalDecision) &&
+      hasUniqueApprovalDecisionCallIds(value.decisions)
+  );
 
 /**
  * Dispatches on the event `type` and validates the variant payload against
  * its exact key set (plus the shared `type`/`timestamp`/`source` envelope
  * keys) and per-field predicates.
  */
-function hasValidStreamEventPayload(
+const hasValidStreamEventPayload = (
   value: Record<string, unknown> & { timestamp: EpochMs; type: string }
-): boolean {
+): boolean => {
   switch (value.type) {
     case "turn.start": {
       return matchesStreamEventVariant(
@@ -905,7 +889,50 @@ function hasValidStreamEventPayload(
       return false;
     }
   }
-}
+};
+
+/**
+ * Returns `true` when `value` is a structurally valid
+ * {@link TuvrenStreamEvent} (KrakenFrameworkSpecification §1.8).
+ *
+ * Three layers are checked:
+ * 1. The `type` discriminant must belong to the canonical event vocabulary
+ *    (`turn.*`, `iteration.*`, `message.*`, `text.*`, `reasoning.*`,
+ *    `file.done`, `structured.*`, `tool_call.*`, `tool.*`, `approval.*`,
+ *    `steering.incorporated`, `state.*`, `error`, `custom`).
+ * 2. The envelope must carry a canonical `EpochMs` `timestamp` and, when
+ *    present, a valid `source` attribution record.
+ * 3. The variant payload must match that event type's exact key set and
+ *    field predicates (non-empty identifiers, canonical `finishReason` and
+ *    status enums, serializable `input`/`output`/`data`, valid nested
+ *    approval request/response, manifest, or error projection, and the
+ *    additive optional `attribution` on `tool.start`/`tool.result` per
+ *    ADR-0046 AW006).
+ *
+ * Never throws; probe failures collapse to `false`.
+ *
+ * @see {@link assertTuvrenStreamEvent} for the throwing variant.
+ */
+export const isTuvrenStreamEvent = (
+  value: unknown
+): value is TuvrenStreamEvent =>
+  safePredicate(() => {
+    if (
+      !(
+        isPlainObject(value) &&
+        isStringProperty(value, "type") &&
+        STREAM_EVENT_TYPES.has(value.type)
+      )
+    ) {
+      return false;
+    }
+
+    if (!hasCanonicalEpochMsTimestampAndValidSource(value)) {
+      return false;
+    }
+
+    return hasValidStreamEventPayload(value);
+  });
 
 /**
  * Asserts that `value` is a valid {@link TuvrenStreamEvent}.
@@ -915,17 +942,20 @@ function hasValidStreamEventPayload(
  * @throws TuvrenValidationError with code `invalid_stream_event` when
  *   {@link isTuvrenStreamEvent} rejects the value.
  */
-export function assertTuvrenStreamEvent(
+export const assertTuvrenStreamEvent: (
+  value: unknown,
+  label?: string
+) => asserts value is TuvrenStreamEvent = (
   value: unknown,
   label = "value"
-): asserts value is TuvrenStreamEvent {
+): asserts value is TuvrenStreamEvent => {
   if (!isTuvrenStreamEvent(value)) {
     throw new TuvrenValidationError(
       `${label} must be a valid TuvrenStreamEvent`,
       { code: "invalid_stream_event", details: value }
     );
   }
-}
+};
 
 /**
  * Returns `true` when `value` is a structurally valid
@@ -944,10 +974,10 @@ export function assertTuvrenStreamEvent(
  *
  * @see {@link assertTuvrenToolDefinition} for the throwing variant.
  */
-export function isTuvrenToolDefinition(
+export const isTuvrenToolDefinition = (
   value: unknown
-): value is TuvrenToolDefinition {
-  return safePredicate(
+): value is TuvrenToolDefinition =>
+  safePredicate(
     () =>
       isPlainObject(value) &&
       hasOnlyAllowedKeys(value, TOOL_DEFINITION_KEYS) &&
@@ -980,7 +1010,6 @@ export function isTuvrenToolDefinition(
         value.riskClass === "high") &&
       isOptionalTimeoutProperty(value, "timeout")
   );
-}
 
 /**
  * Asserts that `value` is a valid {@link TuvrenToolDefinition}.
@@ -990,17 +1019,29 @@ export function isTuvrenToolDefinition(
  * @throws TuvrenValidationError with code `invalid_tool_definition` when
  *   {@link isTuvrenToolDefinition} rejects the value.
  */
-export function assertTuvrenToolDefinition(
+export const assertTuvrenToolDefinition: (
+  value: unknown,
+  label?: string
+) => asserts value is TuvrenToolDefinition = (
   value: unknown,
   label = "value"
-): asserts value is TuvrenToolDefinition {
+): asserts value is TuvrenToolDefinition => {
   if (!isTuvrenToolDefinition(value)) {
     throw new TuvrenValidationError(
       `${label} must be a valid TuvrenToolDefinition`,
       { code: "invalid_tool_definition", details: value }
     );
   }
-}
+};
+
+/** True when `value[key]` is `undefined` or a valid {@link ApprovalRequest}. */
+const isOptionalApprovalRequest = <
+  TKey extends string,
+  TObject extends Record<string, unknown>,
+>(
+  value: TObject,
+  key: TKey
+): boolean => value[key] === undefined || isApprovalRequest(value[key]);
 
 /**
  * Returns `true` when `value` is a structurally valid {@link ExecutionStatus}
@@ -1016,8 +1057,8 @@ export function assertTuvrenToolDefinition(
  *
  * @see {@link assertExecutionStatus} for the throwing variant.
  */
-export function isExecutionStatus(value: unknown): value is ExecutionStatus {
-  return safePredicate(() => {
+export const isExecutionStatus = (value: unknown): value is ExecutionStatus =>
+  safePredicate(() => {
     if (
       !(
         isPlainObject(value) &&
@@ -1051,7 +1092,6 @@ export function isExecutionStatus(value: unknown): value is ExecutionStatus {
 
     return true;
   });
-}
 
 /**
  * Asserts that `value` is a valid {@link ExecutionStatus}.
@@ -1061,39 +1101,20 @@ export function isExecutionStatus(value: unknown): value is ExecutionStatus {
  * @throws TuvrenValidationError with code `invalid_execution_status` when
  *   {@link isExecutionStatus} rejects the value.
  */
-export function assertExecutionStatus(
+export const assertExecutionStatus: (
+  value: unknown,
+  label?: string
+) => asserts value is ExecutionStatus = (
   value: unknown,
   label = "value"
-): asserts value is ExecutionStatus {
+): asserts value is ExecutionStatus => {
   if (!isExecutionStatus(value)) {
     throw new TuvrenValidationError(
       `${label} must be a valid ExecutionStatus`,
       { code: "invalid_execution_status", details: value }
     );
   }
-}
-
-/**
- * Returns `true` when `value` is a structurally valid
- * {@link ApprovalResponse} (KrakenFrameworkSpecification §1.7).
- *
- * Requires exactly the key `decisions`, holding a non-empty array of valid
- * approval decisions with unique `callId`s. This check is
- * request-independent; use {@link isApprovalResponseForRequest} to also
- * verify coverage against the pending {@link ApprovalRequest}. Never
- * throws; probe failures collapse to `false`.
- */
-export function isApprovalResponse(value: unknown): value is ApprovalResponse {
-  return safePredicate(
-    () =>
-      isPlainObject(value) &&
-      hasOnlyAllowedKeys(value, APPROVAL_RESPONSE_KEYS) &&
-      Array.isArray(value.decisions) &&
-      value.decisions.length > 0 &&
-      value.decisions.every(isApprovalDecision) &&
-      hasUniqueApprovalDecisionCallIds(value.decisions)
-  );
-}
+};
 
 /**
  * Returns `true` when `value` is a valid {@link ApprovalResponse} that fully
@@ -1107,16 +1128,15 @@ export function isApprovalResponse(value: unknown): value is ApprovalResponse {
  * @param value - Untrusted candidate response.
  * @param request - The active approval request the response must cover.
  */
-export function isApprovalResponseForRequest(
+export const isApprovalResponseForRequest = (
   value: unknown,
   request: ApprovalRequest
-): value is ApprovalResponse {
-  return safePredicate(
+): value is ApprovalResponse =>
+  safePredicate(
     () =>
       isApprovalResponse(value) &&
       hasApprovalDecisionCoverage(value.decisions, request.toolCalls)
   );
-}
 
 /**
  * Asserts that `value` is a valid {@link ApprovalResponse}.
@@ -1126,17 +1146,20 @@ export function isApprovalResponseForRequest(
  * @throws TuvrenValidationError with code `invalid_approval_response` when
  *   {@link isApprovalResponse} rejects the value.
  */
-export function assertApprovalResponse(
+export const assertApprovalResponse: (
+  value: unknown,
+  label?: string
+) => asserts value is ApprovalResponse = (
   value: unknown,
   label = "value"
-): asserts value is ApprovalResponse {
+): asserts value is ApprovalResponse => {
   if (!isApprovalResponse(value)) {
     throw new TuvrenValidationError(
       `${label} must be a valid ApprovalResponse`,
       { code: "invalid_approval_response", details: value }
     );
   }
-}
+};
 
 /**
  * Asserts that `value` is a valid {@link ApprovalResponse} that fully covers
@@ -1148,26 +1171,22 @@ export function assertApprovalResponse(
  * @throws TuvrenValidationError with code `invalid_approval_response` when
  *   {@link isApprovalResponseForRequest} rejects the value.
  */
-export function assertApprovalResponseForRequest(
+export const assertApprovalResponseForRequest: (
+  value: unknown,
+  request: ApprovalRequest,
+  label?: string
+) => asserts value is ApprovalResponse = (
   value: unknown,
   request: ApprovalRequest,
   label = "value"
-): asserts value is ApprovalResponse {
+): asserts value is ApprovalResponse => {
   if (!isApprovalResponseForRequest(value, request)) {
     throw new TuvrenValidationError(
       `${label} must be a valid ApprovalResponse for the active approval request`,
       { code: "invalid_approval_response", details: value }
     );
   }
-}
-
-/** True when `value[key]` is `undefined` or a valid {@link ApprovalRequest}. */
-function isOptionalApprovalRequest<
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(value: TObject, key: TKey): boolean {
-  return value[key] === undefined || isApprovalRequest(value[key]);
-}
+};
 
 /**
  * Asserts that `value` is a valid {@link ContextManifest}
@@ -1182,14 +1201,17 @@ function isOptionalApprovalRequest<
  * @throws TuvrenValidationError with code `invalid_context_manifest` when
  *   the value is not a valid manifest.
  */
-export function assertContextManifest(
+export const assertContextManifest: (
+  value: unknown,
+  label?: string
+) => asserts value is ContextManifest = (
   value: unknown,
   label = "value"
-): asserts value is ContextManifest {
+): asserts value is ContextManifest => {
   if (!isContextManifest(value)) {
     throw new TuvrenValidationError(
       `${label} must be a valid ContextManifest`,
       { code: "invalid_context_manifest", details: value }
     );
   }
-}
+};
