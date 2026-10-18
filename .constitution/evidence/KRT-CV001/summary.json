@@ -9,15 +9,19 @@
     "unionTree": "32fd3ce665f6e54b6311363bb876e13f4f6756b8",
     "milestoneCommit": "d7d749d775cf519f3e1ac31cb81934927830c76b",
     "milestoneTree": "41846ac56761e416c4d1bf928cbb08a38676d3d5",
-    "candidateDiffSha256": "5c45e8575e059360010f67b3f89ac321cba68bc06ac653addb33724d3aa36aa7",
-    "candidateDiffCommand": "git diff --binary 5ca9532a19b9ef3294fe5971fa35e16016cbf2fd d7d749d775cf519f3e1ac31cb81934927830c76b | sha256sum"
+    "reviewFixCommit": "fbbf3a18764e5373f5c8f58d72812f587e149fa7",
+    "finalSourceTree": "e61d21988329dd57fa2cefb5b53c72bb1af8a661",
+    "candidateDiffSha256": "67c036b5046f0e4878c1ae4fa911ae7b6baeda126df5de100c6f4b2607d53494",
+    "candidateDiffCommand": "git diff --binary 5ca9532a19b9ef3294fe5971fa35e16016cbf2fd fbbf3a18764e5373f5c8f58d72812f587e149fa7 -- typescript/conformance-adapter | sha256sum"
   },
   "scope": {
     "filesChanged": 23,
-    "insertions": 6984,
+    "insertions": 6890,
     "deletions": 6041,
-    "rawChangedLines": 13025,
-    "proofTreeModeAndBlobMatches": 69,
+    "rawChangedLines": 12931,
+    "frozenFilesExact": 22,
+    "frozenModeAndBlobMatches": 66,
+    "reviewFixFiles": 1,
     "outOfScopeFilesChanged": 0,
     "largestOwnedFileLines": 925,
     "compilerFiles": 797,
@@ -26,6 +30,25 @@
     "liveSiblingSourceFiles": 0,
     "retainedBiomeDirectives": 4,
     "reviewedEarlyDirectiveRemovals": 2
+  },
+  "reviewFix": {
+    "commit": "fbbf3a18764e5373f5c8f58d72812f587e149fa7",
+    "file": "typescript/conformance-adapter/src/framework-adapter.ts",
+    "diff": {
+      "insertions": 144,
+      "deletions": 238,
+      "sha256": "e639ca44184fb059d115241c8f558bc8330a810b37034197e7aa404d424d2cbe",
+      "command": "git diff --binary d7d749d775cf519f3e1ac31cb81934927830c76b fbbf3a18764e5373f5c8f58d72812f587e149fa7 -- typescript/conformance-adapter/src/framework-adapter.ts | sha256sum"
+    },
+    "reason": "The immutable tuple representation preserved behavior but failed the mandatory machine-authority routing guard. The reviewed correction retains the canonical Map and the exact ordered set of 92 unique operation-to-handler mappings through the guard's accepted object-property form.",
+    "checks": [
+      "machine authority guardrails",
+      "framework adapter typecheck",
+      "retained Biome lint",
+      "Oxfmt",
+      "fresh import with inherited and unknown operation rejection",
+      "constitution validation"
+    ]
   },
   "checks": [
     {
@@ -84,6 +107,6 @@
     "commit": "d7d749d775cf519f3e1ac31cb81934927830c76b",
     "coverage": "Every changed file and meaningful observation, including execution, error, initialization, export, child-cleanup, scenario, tooling, and whole-change interactions.",
     "findings": [],
-    "limits": "Broad command results were available as command summaries without durable logs and were not duplicated; focused independent behavior checks passed."
+    "limits": "Broad command results were available as command summaries without durable logs and were not duplicated; focused independent behavior checks passed. PR round one later found the tuple representation failed the full gate, and the review fix above records its bounded correction."
   }
 }
