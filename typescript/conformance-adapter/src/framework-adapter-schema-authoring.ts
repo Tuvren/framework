@@ -20,13 +20,9 @@ import type { FlexibleSchema } from "@tuvren/sdk";
 
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
-export function createFrameworkAdapterSchemaAuthoring() {
-  return { runSchemaAuthoringDefineTool, runSchemaAuthoringRoute };
-}
-
 // ── Input reading ─────────────────────────────────────────────────────────────
 
-function readBranch(input: unknown): string {
+const readBranch = (input: unknown): string => {
   if (typeof input !== "object" || input === null) {
     return "json-schema-object";
   }
@@ -36,84 +32,11 @@ function readBranch(input: unknown): string {
   }
   const { branch } = checkInput as Record<string, unknown>;
   return typeof branch === "string" ? branch : "json-schema-object";
-}
-
-// ── Operation handlers ────────────────────────────────────────────────────────
-
-function runSchemaAuthoringRoute(input: unknown): Promise<AdapterProjection> {
-  const branch = readBranch(input);
-  const schema = buildBranchSchema(branch);
-  const normalized = asSchema(schema);
-
-  const jsonSchemaValue = normalized.jsonSchema;
-  const jsonSchemaIsBoolean = typeof jsonSchemaValue === "boolean";
-  const jsonSchemaType =
-    !jsonSchemaIsBoolean &&
-    typeof jsonSchemaValue === "object" &&
-    jsonSchemaValue !== null
-      ? ((jsonSchemaValue as Record<string, unknown>).type ?? null)
-      : null;
-
-  const validateFn = normalized.validate;
-  let validateSuccess: boolean | null = null;
-  if (validateFn !== undefined) {
-    validateSuccess = validateFn("test-input").success;
-  }
-
-  return Promise.resolve({
-    result: {
-      schemaAuthoring: {
-        hasSchemaSymbol: normalized[schemaSymbol] === true,
-        hasValidate: validateFn !== undefined,
-        jsonSchemaIsBoolean,
-        jsonSchemaType:
-          typeof jsonSchemaType === "string" ? jsonSchemaType : null,
-        jsonSchemaValue: jsonSchemaIsBoolean ? jsonSchemaValue : null,
-        validateSuccess,
-      },
-    },
-  });
-}
-
-function runSchemaAuthoringDefineTool(
-  _input: unknown
-): Promise<AdapterProjection> {
-  const tool = defineTool({
-    description: "conformance test tool",
-    execute: (_in) => "done",
-    inputSchema: { type: "string" },
-    name: "test-tool",
-  });
-
-  // defineTool always assigns a CustomSchema object to inputSchema; the wider
-  // union type on TuvrenToolDefinition accommodates legacy bare-JSON-Schema
-  // paths that don't go through defineTool.
-  const customSchema = tool.inputSchema as CustomSchema;
-  const rawJsonSchema = customSchema.toJSONSchema();
-  const jsonSchemaType =
-    typeof rawJsonSchema === "object" && rawJsonSchema !== null
-      ? ((rawJsonSchema as Record<string, unknown>).type ?? null)
-      : null;
-
-  const validateResult = customSchema.validate("test-input");
-
-  return Promise.resolve({
-    result: {
-      schemaAuthoring: {
-        defineTool: {
-          jsonSchemaType:
-            typeof jsonSchemaType === "string" ? jsonSchemaType : null,
-          name: tool.name,
-          validateSuccess: validateResult.valid,
-        },
-      },
-    },
-  });
-}
+};
 
 // ── Branch schema factory (ADR-0038 ordering) ──────────────────────────────────
 
-function buildBranchSchema(branch: string): FlexibleSchema<unknown> {
+const buildBranchSchema = (branch: string): FlexibleSchema<unknown> => {
   switch (branch) {
     // Branch 1: already-wrapped Schema — identity pass-through
     case "already-wrapped": {
@@ -186,4 +109,83 @@ function buildBranchSchema(branch: string): FlexibleSchema<unknown> {
       return { type: "object" } as FlexibleSchema<unknown>;
     }
   }
-}
+};
+
+// ── Operation handlers ────────────────────────────────────────────────────────
+
+const runSchemaAuthoringRoute = (
+  input: unknown
+): Promise<AdapterProjection> => {
+  const branch = readBranch(input);
+  const schema = buildBranchSchema(branch);
+  const normalized = asSchema(schema);
+
+  const jsonSchemaValue = normalized.jsonSchema;
+  const jsonSchemaIsBoolean = typeof jsonSchemaValue === "boolean";
+  const jsonSchemaType =
+    !jsonSchemaIsBoolean &&
+    typeof jsonSchemaValue === "object" &&
+    jsonSchemaValue !== null
+      ? ((jsonSchemaValue as Record<string, unknown>).type ?? null)
+      : null;
+
+  const validateFn = normalized.validate;
+  let validateSuccess: boolean | null = null;
+  if (validateFn !== undefined) {
+    validateSuccess = validateFn("test-input").success;
+  }
+
+  return Promise.resolve({
+    result: {
+      schemaAuthoring: {
+        hasSchemaSymbol: normalized[schemaSymbol] === true,
+        hasValidate: validateFn !== undefined,
+        jsonSchemaIsBoolean,
+        jsonSchemaType:
+          typeof jsonSchemaType === "string" ? jsonSchemaType : null,
+        jsonSchemaValue: jsonSchemaIsBoolean ? jsonSchemaValue : null,
+        validateSuccess,
+      },
+    },
+  });
+};
+
+const runSchemaAuthoringDefineTool = (
+  _input: unknown
+): Promise<AdapterProjection> => {
+  const tool = defineTool({
+    description: "conformance test tool",
+    execute: (_in) => "done",
+    inputSchema: { type: "string" },
+    name: "test-tool",
+  });
+
+  // defineTool always assigns a CustomSchema object to inputSchema; the wider
+  // union type on TuvrenToolDefinition accommodates legacy bare-JSON-Schema
+  // paths that don't go through defineTool.
+  const customSchema = tool.inputSchema as CustomSchema;
+  const rawJsonSchema = customSchema.toJSONSchema();
+  const jsonSchemaType =
+    typeof rawJsonSchema === "object" && rawJsonSchema !== null
+      ? ((rawJsonSchema as Record<string, unknown>).type ?? null)
+      : null;
+
+  const validateResult = customSchema.validate("test-input");
+
+  return Promise.resolve({
+    result: {
+      schemaAuthoring: {
+        defineTool: {
+          jsonSchemaType:
+            typeof jsonSchemaType === "string" ? jsonSchemaType : null,
+          name: tool.name,
+          validateSuccess: validateResult.valid,
+        },
+      },
+    },
+  });
+};
+
+export const createFrameworkAdapterSchemaAuthoring = () => {
+  return { runSchemaAuthoringDefineTool, runSchemaAuthoringRoute };
+};
