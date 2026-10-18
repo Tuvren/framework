@@ -200,7 +200,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
 
   finish(): void {
     this.eventsQueue.close();
-    const phase = this.statusSnapshot.phase;
+    const { phase } = this.statusSnapshot;
     if (!this.resultSettled && phase !== "running" && phase !== "paused") {
       this.settleResult(phase);
     }
@@ -235,13 +235,15 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
 
   private trackEventForResult(event: TuvrenStreamEvent): void {
     switch (event.type) {
-      case "message.start":
+      case "message.start": {
         this.pendingAssistantParts = [];
         return;
-      case "text.done":
+      }
+      case "text.done": {
         this.pendingAssistantParts.push({ text: event.text, type: "text" });
         return;
-      case "file.done":
+      }
+      case "file.done": {
         this.pendingAssistantParts.push({
           data:
             typeof event.data === "string"
@@ -252,14 +254,16 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
           type: "file",
         });
         return;
-      case "structured.done":
+      }
+      case "structured.done": {
         this.pendingAssistantParts.push({
           data: structuredClone(event.data),
           name: event.name,
           type: "structured",
         });
         return;
-      case "tool_call.done":
+      }
+      case "tool_call.done": {
         this.pendingAssistantParts.push({
           callId: event.callId,
           input: event.input,
@@ -268,7 +272,8 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
           type: "tool_call",
         });
         return;
-      case "message.done":
+      }
+      case "message.done": {
         if (this.pendingAssistantParts.length > 0) {
           this.lastFinalAssistantMessage = {
             parts: this.pendingAssistantParts as [
@@ -281,11 +286,14 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
         }
         this.pendingAssistantParts = [];
         return;
-      case "turn.end":
+      }
+      case "turn.end": {
         this.settleResult(event.status);
         return;
-      default:
+      }
+      default: {
         return;
+      }
     }
   }
 
@@ -389,7 +397,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   }
 
   takeActiveRunId(): string | undefined {
-    const activeRunId = this.activeRunId;
+    const { activeRunId } = this;
     this.activeRunId = undefined;
     return activeRunId;
   }
@@ -402,7 +410,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
       return undefined;
     }
 
-    const pauseContext = this.pauseContext;
+    const { pauseContext } = this;
     this.pauseContext = undefined;
     return pauseContext;
   }

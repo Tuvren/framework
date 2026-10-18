@@ -50,10 +50,8 @@ import {
 } from "./binding-resolver.js";
 import { buildToolAttribution } from "./capability-attribution.js";
 import { runWithTimeout } from "./execution-timeouts.js";
-import {
-  buildSharedExports,
-  type ExtensionStateUpdate,
-} from "./extension-runtime.js";
+import { buildSharedExports } from "./extension-runtime.js";
+import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import type { ServerRateLimiter } from "./server-rate-limiter.js";
 import {
   applyApprovalDecisionMetadata,
@@ -463,9 +461,8 @@ export async function executeToolBatch(
     toolCalls.length,
     environment,
     mode,
-    async (index) => {
-      return await resolveExecutableToolCall(toolCalls[index], environment);
-    }
+    async (index) =>
+      await resolveExecutableToolCall(toolCalls[index], environment)
   );
 }
 
@@ -514,7 +511,7 @@ export async function resumeToolBatch(
       const decision = responseMap.get(pendingToolCall.callId);
 
       if (decision === undefined) {
-        return undefined;
+        return;
       }
 
       return await resolveResumeDecision(
@@ -555,8 +552,8 @@ async function runToolBatch(
 async function resolveToolBatchSteps(
   totalCalls: number,
   resolveStep: (index: number) => Promise<ResolvedToolBatchStep | undefined>
-): Promise<Array<ResolvedToolBatchStep | undefined>> {
-  const resolvedSteps: Array<ResolvedToolBatchStep | undefined> = [];
+): Promise<(ResolvedToolBatchStep | undefined)[]> {
+  const resolvedSteps: (ResolvedToolBatchStep | undefined)[] = [];
 
   for (let index = 0; index < totalCalls; index += 1) {
     resolvedSteps[index] = await resolveStep(index);
@@ -578,7 +575,7 @@ async function resolveToolBatchSteps(
  * §6.4 mixed-approval batch ordering).
  */
 async function runParallelToolBatch(
-  resolvedSteps: Array<ResolvedToolBatchStep | undefined>,
+  resolvedSteps: (ResolvedToolBatchStep | undefined)[],
   environment: ToolBatchEnvironment
 ): Promise<ToolBatchOutcome> {
   const totalCalls = resolvedSteps.length;
@@ -1207,7 +1204,7 @@ async function executeSingleTool(
   // pause, or execution failure — carries a known execution class into the
   // sanitization seam (ADR-0064), unlike stageImmediateResults' pre-binding
   // outcomes.
-  const executionClass = buildToolAttribution(toolCall.tool).executionClass;
+  const { executionClass } = buildToolAttribution(toolCall.tool);
   // Idempotent retry per §4.21 / AX002. Non-idempotent tools are never
   // retried. maxRetries defaults to 1 when idempotent is true and unset.
   // BB004: nonRetryable overrides idempotent: true — policy governs retry.
@@ -1300,8 +1297,8 @@ async function executeSingleTool(
   );
 
   return {
-    resultHash: staged.hash,
     result: staged.result,
+    resultHash: staged.hash,
     updates: [],
   };
 }
@@ -1365,8 +1362,8 @@ async function stageSingleToolOutcome(
     outcome.updates
   );
   return {
-    resultHash: staged.hash,
     result: staged.result,
+    resultHash: staged.hash,
     updates: outcome.updates,
   };
 }
@@ -1593,12 +1590,12 @@ function applyOutputValidation(
  * - Handler timeouts (`extension.timeout`) behave like handler throws.
  */
 async function runAroundToolHandlers(
-  handlers: Array<{
+  handlers: {
     extensionName: string;
     handler: AroundToolHandler;
     receiver: object;
     timeout?: number;
-  }>,
+  }[],
   index: number,
   toolCall: ExecutableToolCall,
   environment: ToolBatchEnvironment,
