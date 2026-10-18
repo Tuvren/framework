@@ -28,6 +28,8 @@ import type {
   TuvrenStreamEvent,
 } from "./runtime-contract-shapes.js";
 
+/* oxlint-disable typescript/method-signature-style -- Preserve the published runner method signatures and their method bivariance under strictFunctionTypes. */
+
 /**
  * Runtime capabilities the framework lends a runner during execution
  * (KrakenFrameworkSpecification §5.6).
@@ -178,7 +180,10 @@ export interface RuntimeRunnerFactory {
  * `list` enumerates everything registered.
  */
 export interface RunnerRegistry {
+  // oxlint-disable-next-line typescript/array-type -- Preserve the frozen public return-type spelling in the API snapshot.
   list(): Array<RuntimeRunner | RuntimeRunnerFactory>;
   register(runner: RuntimeRunner | RuntimeRunnerFactory): void;
   resolve(runnerId: string): RuntimeRunner | RuntimeRunnerFactory | undefined;
 }
+
+/* oxlint-enable typescript/method-signature-style */

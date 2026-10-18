@@ -24,6 +24,8 @@
 
 import type { TuvrenJsonSchema } from "./runtime-contract-shapes.js";
 
+/* oxlint-disable typescript/method-signature-style -- Preserve the published public method signatures and their method bivariance under strictFunctionTypes. */
+
 // ---------------------------------------------------------------------------
 // Closed sets
 // ---------------------------------------------------------------------------
@@ -289,6 +291,7 @@ export interface CapabilityPolicyContext {
  * (AX004)
  */
 export interface TuvrenSandboxExecutor {
+  // oxlint-disable-next-line typescript/no-redundant-type-constituents -- Preserve the published sync-or-Promise return spelling and its exact API snapshot.
   execute(input: unknown, context: unknown): Promise<unknown> | unknown;
 }
 
@@ -459,3 +462,5 @@ export interface ClientDispatchResult {
   content: unknown;
   isError: boolean;
 }
+
+/* oxlint-enable typescript/method-signature-style */

@@ -140,7 +140,7 @@ describe("host admission-key JSON Schema contracts", () => {
       minLength: 1,
       type: "string",
     });
-    expect(Object.keys(schema.properties).sort()).toEqual([
+    expect(Object.keys(schema.properties).toSorted()).toEqual([
       ...entry.allowedKeys,
     ]);
     expect(schema.required).not.toContain("admissionKey");

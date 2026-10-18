@@ -122,10 +122,12 @@ describe("screenValueForSecretPatterns", () => {
   });
 
   test("passes a top-level number/boolean/null/undefined through unchanged", () => {
+    const optional: { value?: unknown } = {};
+
     expect(screenValueForSecretPatterns(42)).toBe(42);
     expect(screenValueForSecretPatterns(true)).toBe(true);
     expect(screenValueForSecretPatterns(null)).toBeNull();
-    expect(screenValueForSecretPatterns(undefined)).toBeUndefined();
+    expect(screenValueForSecretPatterns(optional.value)).toBeUndefined();
   });
 
   test("handles a sanitizeMetadataValue-shaped uint8array base64 payload without corrupting non-secret-shaped data", () => {
@@ -144,10 +146,18 @@ describe("screenValueForSecretPatterns", () => {
     const base64 = randomBytes.toString("base64");
     const value = { base64, type: "uint8array" };
 
-    const screened = screenValueForSecretPatterns(value) as {
-      base64: string;
-      type: string;
-    };
+    const screened = screenValueForSecretPatterns(value);
+    if (
+      typeof screened !== "object" ||
+      screened === null ||
+      Array.isArray(screened) ||
+      !("base64" in screened) ||
+      typeof screened.base64 !== "string" ||
+      !("type" in screened) ||
+      typeof screened.type !== "string"
+    ) {
+      throw new TypeError("expected a screened uint8array metadata object");
+    }
 
     expect(screened.type).toBe("uint8array");
     // The base64 blob is >= 32 chars, so it is expected to be redacted.

@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/* oxlint-disable eslint/max-classes-per-file -- Preserve the intentionally co-located published error family. */
+/* oxlint-disable eslint/no-useless-constructor -- Preserve the public constructors that re-expose the protected base constructor. */
+/* oxlint-disable unicorn/custom-error-definition -- Preserve dynamic concrete subclass names, including future TuvrenError subclasses. */
+
 const KRAKEN_ERROR_CODE_PATTERN = /^[a-z0-9]+(?:_[a-z0-9]+)*$/u;
 
 /**
@@ -148,3 +152,7 @@ export class TuvrenProviderError extends TuvrenError {
     super(message, options);
   }
 }
+
+/* oxlint-enable eslint/max-classes-per-file */
+/* oxlint-enable eslint/no-useless-constructor */
+/* oxlint-enable unicorn/custom-error-definition */

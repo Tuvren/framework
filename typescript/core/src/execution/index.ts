@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */
 
 /**
  * `@tuvren/core/execution` — execution handles, the runtime interface,
@@ -25,6 +25,8 @@
  *
  * @packageDocumentation
  */
+
+/* oxlint-enable jsdoc/check-tag-names */
 
 export {
   assertContextManifest,

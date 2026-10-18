@@ -41,10 +41,13 @@ import type {
 
 // Binding-local harness only: cross-implementation runtime-api authority lives
 // in the packet TypeSpec and conformance plans, not in these TypeScript values.
-const emptyEvents = <T>(): AsyncIterable<T> =>
-  (async function* () {
+const emptyEvents = <T>(): AsyncIterable<T> => ({
+  async *[Symbol.asyncIterator]() {
     yield* [];
-  })();
+  },
+});
+
+/* oxlint-disable typescript/promise-function-async -- These contract fixtures intentionally return the exact resolved Promise instances used to model the public handle and runtime seams. */
 
 const contextManifestFixture = {
   byRole: {
@@ -105,7 +108,7 @@ const resumedExecutionHandle: ExecutionHandle = {
     });
   },
   cancel() {
-    return;
+    // Intentional fixture no-op.
   },
   events() {
     return emptyEvents();
@@ -121,7 +124,7 @@ const resumedExecutionHandle: ExecutionHandle = {
     };
   },
   steer() {
-    return;
+    // Intentional fixture no-op.
   },
 };
 
@@ -133,7 +136,7 @@ const noopExecutionHandle: ExecutionHandle = {
     });
   },
   cancel() {
-    return;
+    // Intentional fixture no-op.
   },
   events() {
     return emptyEvents();
@@ -145,12 +148,16 @@ const noopExecutionHandle: ExecutionHandle = {
     return executionStatusFixture;
   },
   steer() {
-    return;
+    // Intentional fixture no-op.
   },
 };
 
+// These handles are assigned after the mutually recursive fixture graph is
+// declared so resolveApproval and spawn can return the same identities.
+/* oxlint-disable prefer-const -- Preserve the deliberate post-declaration wiring of the recursive handle graph. */
 let resumedOrchestrationHandle: OrchestrationHandle;
 let childOrchestrationHandle: OrchestrationHandle;
+/* oxlint-enable prefer-const */
 
 const noopOrchestrationHandle: OrchestrationHandle = {
   ...noopExecutionHandle,
@@ -374,6 +381,8 @@ export const frameworkContractFixtures = {
     name: "search",
   } satisfies TuvrenToolDefinition,
 };
+
+/* oxlint-enable typescript/promise-function-async */
 
 export const invalidFrameworkContractFixtures = {
   malformedApprovalRequest: {

@@ -25,6 +25,9 @@ import type {
   RunnerExecutionContext,
   RuntimeRunner,
 } from "../src/runner/index.js";
+import type { TuvrenToolDefinition } from "../src/tools/index.js";
+
+const absentTool: { value?: TuvrenToolDefinition } = {};
 
 const createRunnerExecutionContext = (): RunnerExecutionContext => ({
   branchId: "branch-1",
@@ -100,22 +103,23 @@ const createRunnerExecutionContext = (): RunnerExecutionContext => ({
   },
   messages: [],
   runtime: {
-    emit: () => undefined,
+    emit: () => {},
     now: () => 0,
   },
   schemaId: "schema-1",
   threadId: "thread-1",
   toolRegistry: {
-    get: () => undefined,
+    get: () => absentTool.value,
     has: () => false,
     list: () => [],
-    register: () => undefined,
+    register: () => {},
     toDefinitions: () => [],
   },
   turnId: "turn-1",
 });
 
 describe("runner-contract-guards", () => {
+  /* oxlint-disable typescript/promise-function-async -- These fixtures intentionally expose direct Promise resolution and rejection without async wrapper identity or scheduling changes. */
   test("accepts explicit runner contracts", async () => {
     const continueIteration = {
       type: "continue_iteration",
@@ -140,7 +144,7 @@ describe("runner-contract-guards", () => {
     }).not.toThrow();
 
     const context = createRunnerExecutionContext();
-    await expect(runner.execute(context)).resolves.toEqual({
+    expect(await runner.execute(context)).toEqual({
       resolution: { type: "continue_iteration" },
     });
     expect(() => {
@@ -525,6 +529,7 @@ describe("runner-contract-guards", () => {
       });
     }).not.toThrow();
   });
+  /* oxlint-enable typescript/promise-function-async */
 
   test("rejects terminal resolutions paired with assistant tool calls", () => {
     expect(() => {

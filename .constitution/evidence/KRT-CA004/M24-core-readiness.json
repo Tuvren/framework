@@ -1,0 +1,557 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CA004",
+  "milestone": "M24-ticket-partial-core-admission",
+  "reviewed_parent": "a2e8b7cda2373f3026f691107affe5be5c2de601",
+  "working_tree_candidate": true,
+  "scope": "typescript/core",
+  "selection": {
+    "code_count": 42,
+    "code_files": [
+      "typescript/core/src/capabilities/index.ts",
+      "typescript/core/src/errors/index.ts",
+      "typescript/core/src/events/index.ts",
+      "typescript/core/src/execution/index.ts",
+      "typescript/core/src/extensions/index.ts",
+      "typescript/core/src/index.ts",
+      "typescript/core/src/lib/capability-error-codes.ts",
+      "typescript/core/src/lib/capability-shapes.ts",
+      "typescript/core/src/lib/kernel-records.ts",
+      "typescript/core/src/lib/payload-codec.ts",
+      "typescript/core/src/lib/runner-contract-guards.ts",
+      "typescript/core/src/lib/runner-contract-shapes.ts",
+      "typescript/core/src/lib/runner-contracts.ts",
+      "typescript/core/src/lib/runtime-content-approval-predicates.ts",
+      "typescript/core/src/lib/runtime-context-manifest-predicates.ts",
+      "typescript/core/src/lib/runtime-contract-guards.ts",
+      "typescript/core/src/lib/runtime-contract-predicates.ts",
+      "typescript/core/src/lib/runtime-contract-shapes.ts",
+      "typescript/core/src/lib/scope.ts",
+      "typescript/core/src/lib/secret-pattern-screening.ts",
+      "typescript/core/src/lib/tuvren-error.ts",
+      "typescript/core/src/lifecycle/index.ts",
+      "typescript/core/src/messages/index.ts",
+      "typescript/core/src/provider/index.ts",
+      "typescript/core/src/runner/index.ts",
+      "typescript/core/src/security/index.ts",
+      "typescript/core/src/telemetry/index.ts",
+      "typescript/core/src/telemetry/telemetry-destination.ts",
+      "typescript/core/src/tools/index.ts",
+      "typescript/core/test/admission-key-contracts.test.ts",
+      "typescript/core/test/events-json-schema.test.ts",
+      "typescript/core/test/payload-codec.test.ts",
+      "typescript/core/test/runner-contract-guards.test.ts",
+      "typescript/core/test/runtime-contract-guards-fixtures.ts",
+      "typescript/core/test/runtime-contract-guards.approval.test.ts",
+      "typescript/core/test/runtime-contract-guards.execution-shape.test.ts",
+      "typescript/core/test/runtime-contract-guards.manifest-status.test.ts",
+      "typescript/core/test/runtime-contract-guards.test.ts",
+      "typescript/core/test/runtime-contract-guards.tool-definition.test.ts",
+      "typescript/core/test/runtime-contract-guards.validation.test.ts",
+      "typescript/core/test/secret-pattern-screening.test.ts",
+      "typescript/core/tsup.config.ts"
+    ],
+    "json_count": 8,
+    "json_files": [
+      "typescript/core/package.json",
+      "typescript/core/project.json",
+      "typescript/core/tsconfig.dts.json",
+      "typescript/core/tsconfig.json",
+      "typescript/core/tsconfig.lib.json",
+      "typescript/core/tsconfig.spec.json",
+      "typescript/core/tsconfig.tsup.json",
+      "typescript/core/tsconfig.typecheck.json"
+    ],
+    "format_count": 8,
+    "protected_files": []
+  },
+  "diagnostics": {
+    "fresh_syntactic": {
+      "files": 42,
+      "rules": 419,
+      "count": 175
+    },
+    "fresh_type_aware": {
+      "files": 42,
+      "rules": 474,
+      "count": 203
+    },
+    "direct_fixes": 57,
+    "justified_exception_diagnostics": 146,
+    "exception_breakdown": [
+      {
+        "rule": "jsdoc/check-tag-names",
+        "count": 35,
+        "reason": "required TypeScript package documentation and ADR-0056 experimental release tags"
+      },
+      {
+        "rule": "typescript/method-signature-style",
+        "count": 65,
+        "reason": "published callable spelling and strictFunctionTypes method bivariance"
+      },
+      {
+        "rule": "typescript/array-type",
+        "count": 2,
+        "reason": "frozen public API snapshot spelling"
+      },
+      {
+        "rule": "typescript/ban-types",
+        "count": 2,
+        "reason": "open-string unions retain known-value completion"
+      },
+      {
+        "rule": "typescript/consistent-indexed-object-style",
+        "count": 1,
+        "reason": "frozen recursive JSON Schema alias"
+      },
+      {
+        "rule": "typescript/no-redundant-type-constituents",
+        "count": 3,
+        "reason": "frozen sync-or-Promise public callable spelling"
+      },
+      {
+        "rule": "typescript/promise-function-async",
+        "count": 20,
+        "reason": "exact Promise identity and scheduling in identity codec and contract fixtures"
+      },
+      {
+        "rule": "eslint/max-classes-per-file",
+        "count": 1,
+        "reason": "co-located published error family"
+      },
+      {
+        "rule": "eslint/no-useless-constructor",
+        "count": 6,
+        "reason": "public subclass constructors re-expose protected base construction"
+      },
+      {
+        "rule": "unicorn/custom-error-definition",
+        "count": 7,
+        "reason": "dynamic concrete error names, including future subclasses"
+      },
+      {
+        "rule": "unicorn/no-useless-undefined",
+        "count": 2,
+        "reason": "explicit undefined-returning frozen noop sink callbacks"
+      },
+      {
+        "rule": "eslint/prefer-const",
+        "count": 2,
+        "reason": "post-declaration wiring preserves mutually recursive handle identities"
+      }
+    ],
+    "final_type_aware_with_unused_denied": {
+      "files": 42,
+      "rules": 474,
+      "count": 0
+    }
+  },
+  "native_directives": {
+    "regions": 36,
+    "entries": [
+      {
+        "path": "typescript/core/src/capabilities/index.ts",
+        "line": 17,
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */"
+      },
+      {
+        "path": "typescript/core/src/capabilities/index.ts",
+        "line": 40,
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve every ADR-0056-required @experimental release tag on this public surface. */"
+      },
+      {
+        "path": "typescript/core/src/errors/index.ts",
+        "line": 17,
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */"
+      },
+      {
+        "path": "typescript/core/src/events/index.ts",
+        "line": 17,
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */"
+      },
+      {
+        "path": "typescript/core/src/execution/index.ts",
+        "line": 17,
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */"
+      },
+      {
+        "path": "typescript/core/src/extensions/index.ts",
+        "line": 17,
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */"
+      },
+      {
+        "path": "typescript/core/src/index.ts",
+        "line": 17,
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */"
+      },
+      {
+        "path": "typescript/core/src/lib/capability-shapes.ts",
+        "line": 27,
+        "text": "/* oxlint-disable typescript/method-signature-style -- Preserve the published public method signatures and their method bivariance under strictFunctionTypes. */"
+      },
+      {
+        "path": "typescript/core/src/lib/capability-shapes.ts",
+        "line": 294,
+        "text": "// oxlint-disable-next-line typescript/no-redundant-type-constituents -- Preserve the published sync-or-Promise return spelling and its exact API snapshot."
+      },
+      {
+        "path": "typescript/core/src/lib/payload-codec.ts",
+        "line": 36,
+        "text": "/* oxlint-disable typescript/method-signature-style -- Preserve the published codec method signatures and their method bivariance under strictFunctionTypes. */"
+      },
+      {
+        "path": "typescript/core/src/lib/payload-codec.ts",
+        "line": 140,
+        "text": "/* oxlint-disable typescript/promise-function-async -- Preserve the shared identity codec's exact Promise instances and scheduling behavior. */"
+      },
+      {
+        "path": "typescript/core/src/lib/runner-contract-shapes.ts",
+        "line": 31,
+        "text": "/* oxlint-disable typescript/method-signature-style -- Preserve the published runner method signatures and their method bivariance under strictFunctionTypes. */"
+      },
+      {
+        "path": "typescript/core/src/lib/runner-contract-shapes.ts",
+        "line": 183,
+        "text": "// oxlint-disable-next-line typescript/array-type -- Preserve the frozen public return-type spelling in the API snapshot."
+      },
+      {
+        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
+        "line": 28,
+        "text": "/* oxlint-disable typescript/method-signature-style -- Preserve the frozen public method signatures and their method bivariance under strictFunctionTypes. */"
+      },
+      {
+        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
+        "line": 50,
+        "text": "// oxlint-disable-next-line typescript/consistent-indexed-object-style -- Preserve the frozen recursive JSON Schema alias spelling in the public API snapshot."
+      },
+      {
+        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
+        "line": 64,
+        "text": "// oxlint-disable-next-line typescript/ban-types -- Preserve the intentional open-string union without collapsing editor completion for known values."
+      },
+      {
+        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
+        "line": 77,
+        "text": "// oxlint-disable-next-line typescript/ban-types -- Preserve the intentional open-string union without collapsing editor completion for known values."
+      },
+      {
+        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
+        "line": 1116,
+        "text": "/* oxlint-disable typescript/no-redundant-type-constituents -- Preserve the frozen sync-or-Promise callable spelling in the public API snapshot. */"
+      },
+      {
+        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
+        "line": 1760,
+        "text": "/* oxlint-disable typescript/no-redundant-type-constituents -- Preserve the frozen sync-or-Promise sandbox callable spelling in the public API snapshot. */"
+      },
+      {
+        "path": "typescript/core/src/lib/tuvren-error.ts",
+        "line": 17,
+        "text": "/* oxlint-disable eslint/max-classes-per-file -- Preserve the intentionally co-located published error family. */"
+      },
+      {
+        "path": "typescript/core/src/lib/tuvren-error.ts",
+        "line": 18,
+        "text": "/* oxlint-disable eslint/no-useless-constructor -- Preserve the public constructors that re-expose the protected base constructor. */"
+      },
+      {
+        "path": "typescript/core/src/lib/tuvren-error.ts",
+        "line": 19,
+        "text": "/* oxlint-disable unicorn/custom-error-definition -- Preserve dynamic concrete subclass names, including future TuvrenError subclasses. */"
+      },
+      {
+        "path": "typescript/core/src/lifecycle/index.ts",
+        "line": 17,
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */"
+      },
+      {
+        "path": "typescript/core/src/messages/index.ts",
+        "line": 17,
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */"
+      },
+      {
+        "path": "typescript/core/src/provider/index.ts",
+        "line": 17,
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */"
+      },
+      {
+        "path": "typescript/core/src/runner/index.ts",
+        "line": 17,
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */"
+      },
+      {
+        "path": "typescript/core/src/security/index.ts",
+        "line": 17,
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */"
+      },
+      {
+        "path": "typescript/core/src/telemetry/index.ts",
+        "line": 17,
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */"
+      },
+      {
+        "path": "typescript/core/src/telemetry/index.ts",
+        "line": 114,
+        "text": "/* oxlint-disable typescript/method-signature-style -- Preserve the frozen public sink method signatures and their method bivariance. */"
+      },
+      {
+        "path": "typescript/core/src/telemetry/index.ts",
+        "line": 125,
+        "text": "/* oxlint-disable unicorn/no-useless-undefined -- Preserve explicit undefined-returning noop callbacks on the shared frozen sink. */"
+      },
+      {
+        "path": "typescript/core/src/telemetry/telemetry-destination.ts",
+        "line": 93,
+        "text": "/* oxlint-disable typescript/method-signature-style -- Preserve the frozen public destination method signatures and their method bivariance. */"
+      },
+      {
+        "path": "typescript/core/src/telemetry/telemetry-destination.ts",
+        "line": 107,
+        "text": "// oxlint-disable-next-line typescript/array-type -- Preserve the frozen public batch parameter spelling in the API snapshot."
+      },
+      {
+        "path": "typescript/core/src/tools/index.ts",
+        "line": 17,
+        "text": "/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */"
+      },
+      {
+        "path": "typescript/core/test/runner-contract-guards.test.ts",
+        "line": 122,
+        "text": "/* oxlint-disable typescript/promise-function-async -- These fixtures intentionally expose direct Promise resolution and rejection without async wrapper identity or scheduling changes. */"
+      },
+      {
+        "path": "typescript/core/test/runtime-contract-guards-fixtures.ts",
+        "line": 50,
+        "text": "/* oxlint-disable typescript/promise-function-async -- These contract fixtures intentionally return the exact resolved Promise instances used to model the public handle and runtime seams. */"
+      },
+      {
+        "path": "typescript/core/test/runtime-contract-guards-fixtures.ts",
+        "line": 157,
+        "text": "/* oxlint-disable prefer-const -- Preserve the deliberate post-declaration wiring of the recursive handle graph. */"
+      }
+    ],
+    "all_firing": true,
+    "unused_directive_diagnostics": 0,
+    "config_overrides": 0
+  },
+  "legacy_biome": {
+    "baseline_identities": 14,
+    "remaining_directive_comments": 0,
+    "entries": [
+      {
+        "identity": "typescript/core/src/capabilities/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/capabilities/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "original-retained-but-fresh-removal-probe-shows-no-retained-biome-diagnostic",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/core/src/capabilities/index.ts::assist/source/organizeImports::1",
+        "path": "typescript/core/src/capabilities/index.ts",
+        "rule": "assist/source/organizeImports",
+        "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+        "retained_checker_disposition": "original-retained-but-fresh-removal-probe-shows-no-retained-biome-diagnostic",
+        "native_candidate_rule": null,
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/core/src/errors/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/errors/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/core/src/events/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/events/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/core/src/execution/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/execution/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/core/src/extensions/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/extensions/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "original-retained-but-fresh-removal-probe-shows-no-retained-biome-diagnostic",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/core/src/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package entrypoint is the intentional public contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/core/src/lib/runner-contracts.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/lib/runner-contracts.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/core/src/lifecycle/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/lifecycle/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/core/src/messages/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/messages/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/core/src/provider/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/provider/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/core/src/runner/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/runner/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/core/src/security/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/security/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      },
+      {
+        "identity": "typescript/core/src/tools/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/core/src/tools/index.ts",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package subpath is the intentional focused contract surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "equivalent_native_rule": null,
+        "native_admission_disposition": "removed-at-atomic-native-admission-no-firing-equivalent-native-counterpart"
+      }
+    ],
+    "drift": {
+      "added": [],
+      "removed": [],
+      "reason_changed": []
+    }
+  },
+  "atomic_admission": {
+    "target": {
+      "executor": "nx:run-commands",
+      "cwd": ".",
+      "commands": [
+        "bunx --bun oxlint --type-aware typescript/core",
+        "bun tools/scripts/json-check.ts typescript/core"
+      ],
+      "parallel": false,
+      "inputs": "inherited"
+    },
+    "coverage_removed": [
+      "typescript/core"
+    ],
+    "remaining_ca_entries_unchanged": true
+  },
+  "negative_controls": {
+    "unused_directive": {
+      "exit": 1,
+      "diagnostics": 1,
+      "report_sha256": "799f465fa85b0f5b10be35442c7ddcd7a590d78658ce7d1107cab58f0bc83ac6",
+      "report_retained": false
+    },
+    "removed_firing_exception": {
+      "exit": 1,
+      "diagnostics": 2,
+      "rule": "typescript/promise-function-async",
+      "report_sha256": "efe330888f2c53c372ca31f2a80db0d7344c4b1c5910b03f3cdfa6474e7d3077",
+      "report_retained": false
+    }
+  },
+  "behavior": {
+    "stable_and_experimental_api_freeze": "pass",
+    "release_kind": "unchanged patch changeset",
+    "api_snapshot_changed": false,
+    "identity_promise_timing": "preserved",
+    "noop_sink_behavior": "preserved",
+    "error_names_and_constructors": "preserved",
+    "adr0056_tags": "preserved"
+  },
+  "a19_composition": {
+    "files": 28,
+    "insertions": 216,
+    "deletions": 173,
+    "total_lines": 389,
+    "production": {
+      "files": 20,
+      "insertions": 86,
+      "deletions": 15
+    },
+    "tests": {
+      "files": 6,
+      "insertions": 125,
+      "deletions": 156
+    },
+    "metadata": {
+      "files": 2,
+      "insertions": 5,
+      "deletions": 2
+    }
+  },
+  "drift": {
+    "constitution_files": 0,
+    "generated_files": 0,
+    "dependency_files": 0,
+    "config_overrides": 0,
+    "tools_run_nx_changed": false,
+    "changeset_changed": false
+  }
+}
