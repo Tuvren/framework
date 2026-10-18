@@ -323,15 +323,17 @@ const runInterceptHooks = async (
   let resolution: RuntimeResolution | undefined;
 
   const runHookAt = async (index: number): Promise<void> => {
-    const extension = orderedExtensions[index];
-    if (extension === undefined) {
-      return;
+    let nextIndex = index;
+    let extension = orderedExtensions[nextIndex];
+    let handler = extension?.[hookName];
+
+    while (extension !== undefined && handler === undefined) {
+      nextIndex += 1;
+      extension = orderedExtensions[nextIndex];
+      handler = extension?.[hookName];
     }
 
-    const handler = extension[hookName];
-
-    if (handler === undefined) {
-      await runHookAt(index + 1);
+    if (extension === undefined || handler === undefined) {
       return;
     }
 
@@ -376,7 +378,7 @@ const runInterceptHooks = async (
       );
     }
 
-    await runHookAt(index + 1);
+    await runHookAt(nextIndex + 1);
   };
 
   await runHookAt(0);
@@ -435,14 +437,17 @@ export const runAfterIterationHooks = async (
 
   const orderedExtensions = extensions.toReversed();
   const runHookAt = async (index: number): Promise<void> => {
-    const extension = orderedExtensions[index];
-    if (extension === undefined) {
-      return;
+    let nextIndex = index;
+    let extension = orderedExtensions[nextIndex];
+    let handler = extension?.afterIteration;
+
+    while (extension !== undefined && handler === undefined) {
+      nextIndex += 1;
+      extension = orderedExtensions[nextIndex];
+      handler = extension?.afterIteration;
     }
 
-    const handler = extension.afterIteration;
-    if (handler === undefined) {
-      await runHookAt(index + 1);
+    if (extension === undefined || handler === undefined) {
       return;
     }
     const timeoutController = new AbortController();
@@ -492,7 +497,7 @@ export const runAfterIterationHooks = async (
       );
     }
 
-    await runHookAt(index + 1);
+    await runHookAt(nextIndex + 1);
   };
 
   await runHookAt(0);
