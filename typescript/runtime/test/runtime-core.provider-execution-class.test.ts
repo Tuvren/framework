@@ -50,14 +50,14 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function buildProviderToolMessage(opts: {
+const buildProviderToolMessage = (opts: {
   callId: string;
   executionClass: "provider-native" | "provider-mediated";
   name: string;
   output: unknown;
   /** Optional extra keys to include in providerMetadata (e.g. continuity). */
   extraMeta?: Record<string, unknown>;
-}): TuvrenMessage {
+}): TuvrenMessage => {
   return {
     parts: [
       {
@@ -75,12 +75,12 @@ function buildProviderToolMessage(opts: {
     ],
     role: "tool",
   };
-}
+};
 
-function makeProviderRunner(
+const makeProviderRunner = (
   executionClass: "provider-native" | "provider-mediated",
   extraMeta?: Record<string, unknown>
-): RuntimeRunner {
+): RuntimeRunner => {
   return {
     async execute(context) {
       if (!context.messages.some((m) => m.role === "tool")) {
@@ -107,12 +107,12 @@ function makeProviderRunner(
       throw new Error("no");
     },
   };
-}
+};
 
-async function runWithProviderTool(
+const runWithProviderTool = async (
   executionClass: "provider-native" | "provider-mediated",
   extraMeta?: Record<string, unknown>
-): Promise<Record<string, unknown>[]> {
+): Promise<Record<string, unknown>[]> => {
   const harness = createFakeKernelHarness();
   const runner = makeProviderRunner(executionClass, extraMeta);
   const runtime = createTuvrenRuntime({
@@ -129,15 +129,14 @@ async function runWithProviderTool(
   });
   const events = await collectEvents(handle.events());
   return events as unknown as Record<string, unknown>[];
-}
+};
 
-function filterByType(
+const filterByType = (
   events: Record<string, unknown>[],
   type: string
-): Record<string, unknown>[] {
+): Record<string, unknown>[] => {
   return events.filter((e) => e.type === type);
-}
-
+};
 // ---------------------------------------------------------------------------
 // KRT-AY003: provider attribution event recording
 // ---------------------------------------------------------------------------
