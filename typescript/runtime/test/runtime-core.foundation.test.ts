@@ -218,7 +218,7 @@ describe("framework-runtime-core", () => {
   });
 
   test("collectSystemPrompts reports non-fatal prompt contribution failures", () => {
-    const issues: Array<{ extensionName: string; message: string }> = [];
+    const issues: { extensionName: string; message: string }[] = [];
     const prompts = collectSystemPrompts(
       [
         {
@@ -285,17 +285,17 @@ describe("framework-runtime-core", () => {
     const extension: ReceiverExtension = {
       afterTurn() {
         this.afterTurnCalls += 1;
-        return undefined;
+        return;
       },
       afterTurnCalls: 0,
       beforeIteration() {
         this.beforeIterationCalls += 1;
-        return undefined;
+        return;
       },
       beforeIterationCalls: 0,
       beforeTurn() {
         this.beforeTurnCalls += 1;
-        return undefined;
+        return;
       },
       beforeTurnCalls: 0,
       name: "receiver-aware",
@@ -446,7 +446,7 @@ describe("framework-runtime-core", () => {
                 count: 200,
               },
             };
-            return undefined;
+            return;
           },
           name: "viewer",
         },

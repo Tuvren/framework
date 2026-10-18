@@ -59,8 +59,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -70,7 +70,7 @@ describe("framework-runtime-core", () => {
           {
             afterIteration(context) {
               capturedFinishReason = context.response.finishReason;
-              return undefined;
+              return;
             },
             name: "response-capture",
           },
@@ -108,8 +108,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -119,7 +119,7 @@ describe("framework-runtime-core", () => {
           {
             afterIteration(context) {
               capturedFinishReason = context.response.finishReason;
-              return undefined;
+              return;
             },
             name: "response-capture",
           },
@@ -165,8 +165,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -251,8 +251,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -262,7 +262,7 @@ describe("framework-runtime-core", () => {
           {
             afterIteration(context) {
               capturedResponse = context.response;
-              return undefined;
+              return;
             },
             name: "response-capture",
           },
@@ -325,8 +325,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -339,7 +339,7 @@ describe("framework-runtime-core", () => {
                 finishReason: context.response.finishReason,
                 parts: context.response.parts,
               };
-              return undefined;
+              return;
             },
             name: "response-capture",
           },
@@ -366,11 +366,11 @@ describe("framework-runtime-core", () => {
 
   test("clones afterIteration resolution, response, and toolResults per hook invocation", async () => {
     const harness = createFakeKernelHarness();
-    const capturedSnapshots: Array<{
+    const capturedSnapshots: {
       resolutionType: string;
       responsePartName?: string;
       toolOutput: unknown;
-    }> = [];
+    }[] = [];
     const runner = {
       async execute(context) {
         const toolMessages = extractToolMessages(context.messages);
@@ -407,8 +407,8 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -418,7 +418,7 @@ describe("framework-runtime-core", () => {
           {
             afterIteration(context) {
               if (context.resolution.type !== "continue_iteration") {
-                return undefined;
+                return;
               }
 
               const firstPart = context.response.parts[0];
@@ -429,7 +429,7 @@ describe("framework-runtime-core", () => {
                   firstPart?.type === "tool_call" ? firstPart.name : undefined,
                 toolOutput: firstToolResult?.output,
               });
-              return undefined;
+              return;
             },
             name: "capture",
           },
@@ -453,7 +453,7 @@ describe("framework-runtime-core", () => {
                   type: "end_turn",
                 });
               }
-              return undefined;
+              return;
             },
             name: "mutate",
           },
@@ -497,7 +497,7 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
 ) {
   return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
@@ -524,7 +524,7 @@ function isKrakenRunnerFactory(
 }
 
 function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const resume = runner.resume;
+  const { resume } = runner;
 
   return {
     async execute(context) {

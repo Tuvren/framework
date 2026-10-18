@@ -175,7 +175,7 @@ describe("framework-runtime-core", () => {
     let storedMessage: TuvrenMessage | null = null;
     const builder = createPreserveTraceHandoffContextBuilder();
     const longAssistantText = `First line with spacing\n${"x".repeat(180)}`;
-    const normalizedText = longAssistantText.replace(/\s+/g, " ").trim();
+    const normalizedText = longAssistantText.replaceAll(/\s+/g, " ").trim();
     const expectedSummary = `${normalizedText.slice(0, 117)}...`;
 
     builder({
@@ -217,10 +217,10 @@ describe("framework-runtime-core", () => {
 
   test("runner handoff plans expose full source and target agent configs", async () => {
     const harness = createFakeKernelHarness();
-    const capturedAgents: Array<{
+    const capturedAgents: {
       source: AgentConfig;
       target: AgentConfig;
-    }> = [];
+    }[] = [];
     const reviewerTool = {
       description: "Review a draft",
       execute() {
@@ -307,9 +307,9 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       resolveAgentConfig: (agentName) => agents[agentName],
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -397,9 +397,9 @@ describe("framework-runtime-core", () => {
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
       resolveAgentConfig: (agentName) => agents[agentName],
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -551,6 +551,13 @@ describe("framework-runtime-core", () => {
     let overrideUsed = false;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
+      handoffContextBuilder: (context) => {
+        overrideUsed = true;
+        return createPreserveTraceHandoffContextBuilder()(context);
+      },
+      kernel: harness.kernel,
+      resolveAgentConfig: (agentName) =>
+        agentName === "reviewer" ? { name: "reviewer" } : undefined,
       runnerRegistry: createRunnerRegistry([
         {
           async execute(context) {
@@ -583,13 +590,6 @@ describe("framework-runtime-core", () => {
           },
         } satisfies RuntimeRunner,
       ]),
-      handoffContextBuilder: (context) => {
-        overrideUsed = true;
-        return createPreserveTraceHandoffContextBuilder()(context);
-      },
-      kernel: harness.kernel,
-      resolveAgentConfig: (agentName) =>
-        agentName === "reviewer" ? { name: "reviewer" } : undefined,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -612,7 +612,7 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
+  runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
 ) {
   return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
@@ -639,7 +639,7 @@ function isKrakenRunnerFactory(
 }
 
 function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
-  const resume = runner.resume;
+  const { resume } = runner;
 
   return {
     async execute(context) {

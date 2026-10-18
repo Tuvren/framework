@@ -72,7 +72,6 @@ function makeOkEndpoint(
   content: unknown
 ): AttachedClientEndpoint {
   return {
-    endpointId,
     advertisedCapabilities: [
       {
         capabilityId,
@@ -89,6 +88,7 @@ function makeOkEndpoint(
         leaseToken: envelope.leaseToken,
       };
     },
+    endpointId,
   };
 }
 
@@ -98,7 +98,6 @@ function makeStaleEndpoint(
   capabilityId: string
 ): AttachedClientEndpoint {
   return {
-    endpointId,
     advertisedCapabilities: [
       {
         capabilityId,
@@ -115,6 +114,7 @@ function makeStaleEndpoint(
         leaseToken: "stale-token-from-prior-invocation", // does NOT match envelope token
       };
     },
+    endpointId,
   };
 }
 
@@ -125,7 +125,6 @@ function makeClientMcpEndpoint(
   mcpServerName: string
 ): AttachedClientEndpoint {
   return {
-    endpointId,
     advertisedCapabilities: [
       {
         capabilityId,
@@ -143,13 +142,13 @@ function makeClientMcpEndpoint(
         leaseToken: envelope.leaseToken,
       };
     },
+    endpointId,
   };
 }
 
 /** Build a runner that requests one tool call then ends. */
 function makeOneCallRunner(toolName: string, input: unknown = {}) {
   return {
-    id: "test-runner",
     execute(context: RunnerExecutionContext): Promise<RunnerExecutionResult> {
       const hasToolResult = context.messages.some((m) => m.role === "tool");
       if (!hasToolResult) {
@@ -166,6 +165,7 @@ function makeOneCallRunner(toolName: string, input: unknown = {}) {
         resolution: { reason: "done", type: "end_turn" as const },
       });
     },
+    id: "test-runner",
   };
 }
 
@@ -179,16 +179,16 @@ async function runTurnWithClientEndpoint(
   const runtime = createTuvrenRuntime({
     createId: makeId,
     defaultRunnerId: "test-runner",
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
 
   const thread = await runtime.createThread({});
   const handle = runtime.executeTurn({
     branchId: thread.branchId,
     config: {
-      name: "test-agent",
       clientEndpoints: [endpoint],
+      name: "test-agent",
     },
     signal: textSignal("run client endpoint test"),
     threadId: thread.threadId,
@@ -268,7 +268,6 @@ describe("tuvren-client: attach and dispatch (KRT-AZ001, KRT-AZ002)", () => {
     // (no denial) and was dispatched (endpoint received the call).
     let received: ClientInvocationEnvelope | undefined;
     const endpoint: AttachedClientEndpoint = {
-      endpointId: "ep1",
       advertisedCapabilities: [
         {
           capabilityId: "tracked.call",
@@ -284,6 +283,7 @@ describe("tuvren-client: attach and dispatch (KRT-AZ001, KRT-AZ002)", () => {
           leaseToken: envelope.leaseToken,
         };
       },
+      endpointId: "ep1",
     };
     await runTurnWithClientEndpoint(endpoint, "tracked.call", { param: 42 });
     expect(received).toBeDefined();
@@ -321,8 +321,8 @@ describe("tuvren-client: unavailability and staleness (KRT-AZ003)", () => {
     const runtime = createTuvrenRuntime({
       createId: makeId,
       defaultRunnerId: "test-runner",
-      runnerRegistry: createRunnerRegistry([makeOneCallRunner("detached.cap")]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([makeOneCallRunner("detached.cap")]),
     });
 
     const thread = await runtime.createThread({});
@@ -480,7 +480,6 @@ describe("tuvren-client: boundary preserved through approval pause/resume", () =
     const harness = createFakeKernelHarness();
     let callCount = 0;
     const runner = {
-      id: "test-runner",
       execute(
         _context: RunnerExecutionContext
       ): Promise<RunnerExecutionResult> {
@@ -512,22 +511,23 @@ describe("tuvren-client: boundary preserved through approval pause/resume", () =
           resolution: { reason: "done", type: "end_turn" as const },
         });
       },
+      id: "test-runner",
     };
 
     const runtime = createTuvrenRuntime({
       createId: makeId,
       defaultRunnerId: "test-runner",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
 
     const pausedHandle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        name: "test-agent",
-        clientEndpoints: [endpoint],
         clientEndpointBoundary: boundary,
+        clientEndpoints: [endpoint],
+        name: "test-agent",
         tools: [
           {
             approval: true,
@@ -586,15 +586,15 @@ describe("tuvren-client: tool name collision with regular tools", () => {
     const runtime = createTuvrenRuntime({
       createId: makeId,
       defaultRunnerId: "test-runner",
-      runnerRegistry: createRunnerRegistry([runner]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
-        name: "test-agent",
         clientEndpoints: [endpoint],
+        name: "test-agent",
         tools: [
           {
             description: "a regular server tool with the same name",
