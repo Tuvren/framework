@@ -44,12 +44,15 @@ import {
   textSignal,
 } from "./framework-adapter-runtime.ts";
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function makeSingleCallRunner(toolName: string, input: unknown = {}) {
-  return createStaticRunner(async (context) => {
+const makeSingleCallRunner = (toolName: string, input: unknown = {}) =>
+  createStaticRunner(async (context) => {
     await Promise.resolve();
     if (!context.messages.some((m) => m.role === "tool")) {
       return {
@@ -65,10 +68,9 @@ function makeSingleCallRunner(toolName: string, input: unknown = {}) {
       resolution: { reason: "done", type: "end_turn" as const },
     };
   });
-}
 
-function makeMultiCallRunner(toolName: string, callCount: number) {
-  return createStaticRunner(async (context) => {
+const makeMultiCallRunner = (toolName: string, callCount: number) =>
+  createStaticRunner(async (context) => {
     await Promise.resolve();
     const toolMessages = context.messages.filter((m) => m.role === "tool");
     if (toolMessages.length < callCount) {
@@ -91,13 +93,12 @@ function makeMultiCallRunner(toolName: string, callCount: number) {
       resolution: { reason: "done", type: "end_turn" as const },
     };
   });
-}
 
-async function runTurn(
+const runTurn = async (
   tool: TuvrenToolDefinition,
   config: Record<string, unknown> = {},
   callCount = 1
-) {
+) => {
   const harness = createConformanceKernelHarness();
   const runner =
     callCount > 1
@@ -107,8 +108,8 @@ async function runTurn(
   const runtime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
     kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
   });
 
   const thread = await runtime.createThread({});
@@ -121,19 +122,25 @@ async function runTurn(
 
   const events = await collectValues(handle.events());
   return events;
-}
+};
 
-function findEvent(events: unknown[], type: string) {
-  return events.find((e) => (e as Record<string, unknown>).type === type) as
-    | Record<string, unknown>
-    | undefined;
-}
+const findEvent = (
+  events: readonly unknown[],
+  type: string
+): Record<string, unknown> | undefined =>
+  events.find(
+    (event): event is Record<string, unknown> =>
+      isRecord(event) && event.type === type
+  );
 
-function findAllEvents(events: unknown[], type: string) {
-  return events.filter(
-    (e) => (e as Record<string, unknown>).type === type
-  ) as Record<string, unknown>[];
-}
+const findAllEvents = (
+  events: readonly unknown[],
+  type: string
+): Record<string, unknown>[] =>
+  events.filter(
+    (event): event is Record<string, unknown> =>
+      isRecord(event) && event.type === type
+  );
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.tuvren-server.lifecycle
@@ -147,421 +154,34 @@ function findAllEvents(events: unknown[], type: string) {
 // - Audit signal emission (input_validated lifecycle point)
 // ---------------------------------------------------------------------------
 
-export async function runTuvrenServerLifecycle(): Promise<AdapterProjection> {
-  // --- 1. Input validation failure ---
-  const INPUT_VALIDATION_TOOL = "ax006-input-validation";
-  const strictTool: TuvrenToolDefinition = {
-    name: INPUT_VALIDATION_TOOL,
-    description: "strict input schema",
-    inputSchema: {
-      type: "object",
-      properties: { value: { type: "number" } },
-      required: ["value"],
-      additionalProperties: false,
-    },
-    execute() {
-      return { result: 1 };
-    },
-  };
-
-  const invalidRunner = createStaticRunner(async (context) => {
-    await Promise.resolve();
-    if (!context.messages.some((m) => m.role === "tool")) {
-      return {
-        messages: [
-          assistantToolCalls([
-            {
-              callId: "ax-call-1",
-              input: { wrongField: "bad" },
-              name: INPUT_VALIDATION_TOOL,
-            },
-          ]),
-        ],
-        resolution: { type: "continue_iteration" as const },
-        toolExecutionMode: "parallel" as const,
-      };
-    }
-    return {
-      messages: [assistantText("done")],
-      resolution: { reason: "done", type: "end_turn" as const },
+export const runTuvrenServerLifecycle =
+  async (): Promise<AdapterProjection> => {
+    // --- 1. Input validation failure ---
+    const INPUT_VALIDATION_TOOL = "ax006-input-validation";
+    const strictTool: TuvrenToolDefinition = {
+      description: "strict input schema",
+      execute() {
+        return { result: 1 };
+      },
+      inputSchema: {
+        additionalProperties: false,
+        properties: { value: { type: "number" } },
+        required: ["value"],
+        type: "object",
+      },
+      name: INPUT_VALIDATION_TOOL,
     };
-  });
 
-  const inputValidationHarness = createConformanceKernelHarness();
-  const inputValidationRuntime = createTuvrenRuntimeCore({
-    createId: createConformanceIdFactory(),
-    defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([invalidRunner]),
-    kernel: inputValidationHarness.kernel,
-  });
-  const inputThread = await inputValidationRuntime.createThread({});
-  const inputHandle = inputValidationRuntime.executeTurn({
-    branchId: inputThread.branchId,
-    config: { name: AGENT_NAME, tools: [strictTool] },
-    signal: textSignal("input validation"),
-    threadId: inputThread.threadId,
-  });
-  const inputEvents = await collectValues(inputHandle.events());
-  const inputToolResult = findEvent(inputEvents, "tool.result") as
-    | { isError?: boolean; output?: Record<string, unknown> }
-    | undefined;
-  const inputAuditEvent = findEvent(inputEvents, "tool.audit") as
-    | { lifecycle?: string; validationPassed?: boolean }
-    | undefined;
-
-  // --- 2. Output validation failure ---
-  const OUTPUT_VALIDATION_TOOL = "ax006-output-validation";
-  const outputSchemaTool: TuvrenToolDefinition = {
-    name: OUTPUT_VALIDATION_TOOL,
-    description: "output schema tool",
-    inputSchema: { type: "object" },
-    outputSchema: {
-      type: "object",
-      properties: { count: { type: "number" } },
-      required: ["count"],
-      additionalProperties: false,
-    },
-    execute() {
-      return { wrongField: "bad" };
-    },
-  };
-  const outputEvents = await runTurn(outputSchemaTool);
-  const outputToolResult = findEvent(outputEvents, "tool.result") as
-    | { isError?: boolean; output?: Record<string, unknown> }
-    | undefined;
-  const outputAuditEvent = findAllEvents(outputEvents, "tool.audit").find(
-    (e) => e.lifecycle === "output_validated"
-  ) as { lifecycle?: string; validationPassed?: boolean } | undefined;
-
-  // --- 3. Within-contract execution ---
-  const WITHIN_CONTRACT_TOOL = "ax006-within-contract";
-  let withinContractExecuted = false;
-  const withinContractTool: TuvrenToolDefinition = {
-    name: WITHIN_CONTRACT_TOOL,
-    description: "within-contract tool",
-    inputSchema: { type: "object" },
-    execute() {
-      withinContractExecuted = true;
-      return { result: "ok" };
-    },
-  };
-  const withinEvents = await runTurn(withinContractTool);
-  const withinToolResult = findEvent(withinEvents, "tool.result") as
-    | { isError?: boolean; output?: Record<string, unknown> }
-    | undefined;
-
-  // --- 4. Idempotent retry ---
-  const RETRY_TOOL = "ax006-idempotent-retry";
-  let retryCallCount = 0;
-  const retryTool: TuvrenToolDefinition = {
-    name: RETRY_TOOL,
-    description: "idempotent tool",
-    idempotent: true,
-    maxRetries: 1,
-    inputSchema: { type: "object" },
-    execute() {
-      retryCallCount += 1;
-      if (retryCallCount === 1) {
-        throw new Error("transient failure");
-      }
-      return { result: "retried-ok" };
-    },
-  };
-  const retryEvents = await runTurn(retryTool);
-  const retryToolResult = findEvent(retryEvents, "tool.result") as
-    | { isError?: boolean; output?: Record<string, unknown> }
-    | undefined;
-  const retryAuditEvents = findAllEvents(retryEvents, "tool.audit").filter(
-    (e) => e.lifecycle === "retry_attempt"
-  );
-
-  // --- 5. Non-idempotent no-retry ---
-  const NO_RETRY_TOOL = "ax006-non-idempotent";
-  let noRetryCallCount = 0;
-  const noRetryTool: TuvrenToolDefinition = {
-    name: NO_RETRY_TOOL,
-    description: "non-idempotent tool",
-    inputSchema: { type: "object" },
-    execute() {
-      noRetryCallCount += 1;
-      throw new Error("failure");
-    },
-  };
-  await runTurn(noRetryTool);
-
-  // --- 6. Rate limit ---
-  const RATE_LIMIT_TOOL = "ax006-rate-limit";
-  const rateLimitTool: TuvrenToolDefinition = {
-    name: RATE_LIMIT_TOOL,
-    description: "rate limited tool",
-    inputSchema: { type: "object" },
-    execute() {
-      return { ok: true };
-    },
-  };
-  const rateLimitEvents = await runTurn(rateLimitTool, {
-    serverExecution: { rateLimit: { maxCalls: 0, windowMs: 60_000 } },
-  });
-  const rateLimitToolResult = findEvent(rateLimitEvents, "tool.result") as
-    | { isError?: boolean; output?: Record<string, unknown> }
-    | undefined;
-  const rateLimitAuditEvent = findAllEvents(rateLimitEvents, "tool.audit").find(
-    (e) => e.lifecycle === "rate_limited"
-  ) as { lifecycle?: string } | undefined;
-
-  const evidence = {
-    tuvrenServer: {
-      inputValidation: {
-        resultIsError: inputToolResult?.isError,
-        resultOutputCode: inputToolResult?.output?.code,
-        auditLifecycle: inputAuditEvent?.lifecycle,
-        auditValidationPassed: inputAuditEvent?.validationPassed,
-      },
-      outputValidation: {
-        resultIsError: outputToolResult?.isError,
-        resultOutputCode: outputToolResult?.output?.code,
-        auditLifecycle: outputAuditEvent?.lifecycle,
-        auditValidationPassed: outputAuditEvent?.validationPassed,
-      },
-      withinContract: {
-        toolExecuted: withinContractExecuted,
-        resultIsError: withinToolResult?.isError,
-        resultOutput: withinToolResult?.output,
-      },
-      idempotentRetry: {
-        callCount: retryCallCount,
-        resultIsError: retryToolResult?.isError,
-        retryAuditCount: retryAuditEvents.length,
-        firstRetryAttemptNumber: retryAuditEvents[0]?.attempt,
-      },
-      nonIdempotentNoRetry: {
-        callCount: noRetryCallCount,
-      },
-      rateLimit: {
-        resultIsError: rateLimitToolResult?.isError,
-        resultOutputCode: rateLimitToolResult?.output?.code,
-        auditLifecycle: rateLimitAuditEvent?.lifecycle,
-      },
-    },
-  };
-
-  return { evidence, result: evidence };
-}
-
-// ---------------------------------------------------------------------------
-// Operation: runtime.tuvren-server.binding-classification
-//
-// Exercises:
-// - MCP binding → tuvren-server / mcp-server endpoint kind
-// - Sandbox binding → tuvren-server / tuvren-sandbox endpoint kind
-// - Full tuvren-server CapabilityObservation
-// ---------------------------------------------------------------------------
-
-export async function runTuvrenServerBindingClassification(): Promise<AdapterProjection> {
-  const resolver = createBindingResolver();
-
-  // MCP tool
-  const mcpTool: TuvrenToolDefinition = {
-    name: "ax006-mcp-tool",
-    description: "mcp tool",
-    inputSchema: { type: "object" },
-    execute() {
-      return {};
-    },
-    metadata: { mcp: { serverName: "ax006-server" } },
-  };
-  const mcpBinding = resolver.resolveFromToolDefinition(mcpTool);
-
-  // Sandbox tool
-  const sandboxTool: TuvrenToolDefinition = {
-    name: "ax006-sandbox-tool",
-    description: "sandbox tool",
-    inputSchema: { type: "object" },
-    execute() {
-      return {};
-    },
-    metadata: { sandbox: { endpointId: "ax006-sandbox" } },
-  };
-  const sandboxBinding = resolver.resolveFromToolDefinition(sandboxTool);
-
-  // MCP tool emits attribution in event stream — read production-emitted observation
-  // from the real tool.result event so the AX005 check detects regressions in
-  // capability-attribution.ts rather than asserting a hardcoded adapter constant.
-  const mcpEvents = await runTurn(mcpTool);
-  const mcpToolResult = findEvent(mcpEvents, "tool.result") as
-    | { attribution?: Record<string, unknown> }
-    | undefined;
-  const mcpAttribution = mcpToolResult?.attribution as
-    | Record<string, unknown>
-    | undefined;
-  const productionObservation = mcpAttribution?.observation as
-    | Record<string, unknown>
-    | undefined;
-
-  const evidence = {
-    tuvrenServer: {
-      mcpBinding: {
-        executionClass: mcpBinding.executionClass,
-        endpointKind: mcpBinding.endpoint.kind,
-        capabilityId: mcpBinding.capabilityId,
-      },
-      sandboxBinding: {
-        executionClass: sandboxBinding.executionClass,
-        endpointKind: sandboxBinding.endpoint.kind,
-        capabilityId: sandboxBinding.capabilityId,
-      },
-      observation: {
-        executionClass: productionObservation?.executionClass,
-        canAudit: productionObservation?.canAudit,
-        canCancel: productionObservation?.canCancel,
-        canObserveIntermediate: productionObservation?.canObserveIntermediate,
-        canPersistResult: productionObservation?.canPersistResult,
-        canResume: productionObservation?.canResume,
-        canRetry: productionObservation?.canRetry,
-      },
-      mcpToolResultAttribution: {
-        executionClass: mcpAttribution?.executionClass,
-      },
-    },
-  };
-
-  return { evidence, result: evidence };
-}
-
-// ---------------------------------------------------------------------------
-// Operation: runtime.tuvren-server.cancellation
-//
-// Exercises:
-// - A late completion after handle.cancel() does not appear in durable branch
-//   messages — proving "late completion is ignored and cannot mutate invocation"
-// ---------------------------------------------------------------------------
-
-export async function runTuvrenServerCancellation(): Promise<AdapterProjection> {
-  const LATE_VALUE = "ax006-late-should-not-appear";
-  const TOOL_NAME = "ax006-cancellation-tool";
-  const harness = createConformanceKernelHarness();
-
-  let releaseToolLatch: (() => void) | undefined;
-  const toolStarted = new Promise<void>((resolve) => {
-    releaseToolLatch = resolve;
-  });
-  let releaseTool: (() => void) | undefined;
-
-  const runner = createStaticRunner(async (context) => {
-    await Promise.resolve();
-    if (!context.messages.some((m) => m.role === "tool")) {
-      return {
-        messages: [
-          assistantToolCalls([
-            { callId: "ax-cancel-1", input: {}, name: TOOL_NAME },
-          ]),
-        ],
-        resolution: { type: "continue_iteration" as const },
-        toolExecutionMode: "parallel" as const,
-      };
-    }
-    return {
-      messages: [assistantText("cancel done")],
-      resolution: { reason: "done", type: "end_turn" as const },
-    };
-  });
-
-  const runtime = createTuvrenRuntimeCore({
-    createId: createConformanceIdFactory(),
-    defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
-    kernel: harness.kernel,
-  });
-
-  const thread = await runtime.createThread({});
-  const handle = runtime.executeTurn({
-    branchId: thread.branchId,
-    config: {
-      name: AGENT_NAME,
-      tools: [
-        {
-          name: TOOL_NAME,
-          description: "cancellation tool",
-          inputSchema: { type: "object" },
-          async execute() {
-            releaseToolLatch?.();
-            await new Promise<void>((resolve) => {
-              releaseTool = resolve;
-            });
-            return { value: LATE_VALUE };
-          },
-        },
-      ],
-    },
-    signal: textSignal("ax006 cancellation"),
-    threadId: thread.threadId,
-  });
-
-  const eventsPromise = collectValues(handle.events()).then(
-    (v) => ({ ok: true as const, value: v }),
-    () => ({ ok: false as const, value: [] })
-  );
-
-  await toolStarted;
-  handle.cancel();
-  releaseTool?.();
-  await eventsPromise;
-
-  const messages = await harness.readBranchMessages(thread.branchId);
-  const toolMessages = messages.filter(
-    (m) => (m as Record<string, unknown>).role === "tool"
-  );
-  const lateResultPresent = toolMessages.some((m) => {
-    const parts = (m as Record<string, unknown>).parts;
-    if (!Array.isArray(parts)) {
-      return false;
-    }
-    return parts.some((p) => {
-      const output = (p as Record<string, unknown>).output;
-      return (
-        output !== null &&
-        typeof output === "object" &&
-        "value" in (output as Record<string, unknown>) &&
-        (output as Record<string, unknown>).value === LATE_VALUE
-      );
-    });
-  });
-
-  const evidence = {
-    tuvrenServer: {
-      cancellation: {
-        lateValueFoundInDurableMessages: lateResultPresent,
-      },
-    },
-  };
-
-  return { evidence, result: evidence };
-}
-
-// ---------------------------------------------------------------------------
-// Operation: runtime.tuvren-server.tenant-isolation
-//
-// Exercises:
-// - Two independent runtime instances with separate rate limits
-// - Exhausting instance A does not affect instance B
-// ---------------------------------------------------------------------------
-
-export async function runTuvrenServerTenantIsolation(): Promise<AdapterProjection> {
-  const TOOL_NAME = "ax006-isolation-tool";
-
-  async function runIsolatedTurn(maxCalls: number, callCount: number) {
-    const harness = createConformanceKernelHarness();
-    const runner = createStaticRunner(async (context) => {
+    const invalidRunner = createStaticRunner(async (context) => {
       await Promise.resolve();
-      const toolMessages = context.messages.filter((m) => m.role === "tool");
-      if (toolMessages.length < callCount) {
+      if (!context.messages.some((m) => m.role === "tool")) {
         return {
           messages: [
             assistantToolCalls([
               {
-                callId: `ax-iso-${toolMessages.length}`,
-                input: {},
-                name: TOOL_NAME,
+                callId: "ax-call-1",
+                input: { wrongField: "bad" },
+                name: INPUT_VALIDATION_TOOL,
               },
             ]),
           ],
@@ -575,64 +195,462 @@ export async function runTuvrenServerTenantIsolation(): Promise<AdapterProjectio
       };
     });
 
-    const runtime = createTuvrenRuntimeCore({
+    const inputValidationHarness = createConformanceKernelHarness();
+    const inputValidationRuntime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([runner]),
-      kernel: harness.kernel,
+      kernel: inputValidationHarness.kernel,
+      runnerRegistry: createRunnerRegistry([invalidRunner]),
     });
-    const tool: TuvrenToolDefinition = {
-      name: TOOL_NAME,
-      description: "isolation tool",
+    const inputThread = await inputValidationRuntime.createThread({});
+    const inputHandle = inputValidationRuntime.executeTurn({
+      branchId: inputThread.branchId,
+      config: { name: AGENT_NAME, tools: [strictTool] },
+      signal: textSignal("input validation"),
+      threadId: inputThread.threadId,
+    });
+    const inputEvents = await collectValues(inputHandle.events());
+    const inputToolResult = findEvent(inputEvents, "tool.result") as
+      | { isError?: boolean; output?: Record<string, unknown> }
+      | undefined;
+    const inputAuditEvent = findEvent(inputEvents, "tool.audit") as
+      | { lifecycle?: string; validationPassed?: boolean }
+      | undefined;
+
+    // --- 2. Output validation failure ---
+    const OUTPUT_VALIDATION_TOOL = "ax006-output-validation";
+    const outputSchemaTool: TuvrenToolDefinition = {
+      description: "output schema tool",
+      execute() {
+        return { wrongField: "bad" };
+      },
       inputSchema: { type: "object" },
+      name: OUTPUT_VALIDATION_TOOL,
+      outputSchema: {
+        additionalProperties: false,
+        properties: { count: { type: "number" } },
+        required: ["count"],
+        type: "object",
+      },
+    };
+    const outputEvents = await runTurn(outputSchemaTool);
+    const outputToolResult = findEvent(outputEvents, "tool.result") as
+      | { isError?: boolean; output?: Record<string, unknown> }
+      | undefined;
+    const outputAuditEvent = findAllEvents(outputEvents, "tool.audit").find(
+      (e) => e.lifecycle === "output_validated"
+    ) as { lifecycle?: string; validationPassed?: boolean } | undefined;
+
+    // --- 3. Within-contract execution ---
+    const WITHIN_CONTRACT_TOOL = "ax006-within-contract";
+    let withinContractExecuted = false;
+    const withinContractTool: TuvrenToolDefinition = {
+      description: "within-contract tool",
+      execute() {
+        withinContractExecuted = true;
+        return { result: "ok" };
+      },
+      inputSchema: { type: "object" },
+      name: WITHIN_CONTRACT_TOOL,
+    };
+    const withinEvents = await runTurn(withinContractTool);
+    const withinToolResult = findEvent(withinEvents, "tool.result") as
+      | { isError?: boolean; output?: Record<string, unknown> }
+      | undefined;
+
+    // --- 4. Idempotent retry ---
+    const RETRY_TOOL = "ax006-idempotent-retry";
+    let retryCallCount = 0;
+    const retryTool: TuvrenToolDefinition = {
+      description: "idempotent tool",
+      execute() {
+        retryCallCount += 1;
+        if (retryCallCount === 1) {
+          throw new Error("transient failure");
+        }
+        return { result: "retried-ok" };
+      },
+      idempotent: true,
+      inputSchema: { type: "object" },
+      maxRetries: 1,
+      name: RETRY_TOOL,
+    };
+    const retryEvents = await runTurn(retryTool);
+    const retryToolResult = findEvent(retryEvents, "tool.result") as
+      | { isError?: boolean; output?: Record<string, unknown> }
+      | undefined;
+    const retryAuditEvents = findAllEvents(retryEvents, "tool.audit").filter(
+      (e) => e.lifecycle === "retry_attempt"
+    );
+
+    // --- 5. Non-idempotent no-retry ---
+    const NO_RETRY_TOOL = "ax006-non-idempotent";
+    let noRetryCallCount = 0;
+    const noRetryTool: TuvrenToolDefinition = {
+      description: "non-idempotent tool",
+      execute() {
+        noRetryCallCount += 1;
+        throw new Error("failure");
+      },
+      inputSchema: { type: "object" },
+      name: NO_RETRY_TOOL,
+    };
+    await runTurn(noRetryTool);
+
+    // --- 6. Rate limit ---
+    const RATE_LIMIT_TOOL = "ax006-rate-limit";
+    const rateLimitTool: TuvrenToolDefinition = {
+      description: "rate limited tool",
       execute() {
         return { ok: true };
       },
+      inputSchema: { type: "object" },
+      name: RATE_LIMIT_TOOL,
     };
+    const rateLimitEvents = await runTurn(rateLimitTool, {
+      serverExecution: { rateLimit: { maxCalls: 0, windowMs: 60_000 } },
+    });
+    const rateLimitToolResult = findEvent(rateLimitEvents, "tool.result") as
+      | { isError?: boolean; output?: Record<string, unknown> }
+      | undefined;
+    const rateLimitAuditEvent = findAllEvents(
+      rateLimitEvents,
+      "tool.audit"
+    ).find((e) => e.lifecycle === "rate_limited") as
+      | { lifecycle?: string }
+      | undefined;
+
+    const evidence = {
+      tuvrenServer: {
+        idempotentRetry: {
+          callCount: retryCallCount,
+          firstRetryAttemptNumber: retryAuditEvents[0]?.attempt,
+          resultIsError: retryToolResult?.isError,
+          retryAuditCount: retryAuditEvents.length,
+        },
+        inputValidation: {
+          auditLifecycle: inputAuditEvent?.lifecycle,
+          auditValidationPassed: inputAuditEvent?.validationPassed,
+          resultIsError: inputToolResult?.isError,
+          resultOutputCode: inputToolResult?.output?.code,
+        },
+        nonIdempotentNoRetry: {
+          callCount: noRetryCallCount,
+        },
+        outputValidation: {
+          auditLifecycle: outputAuditEvent?.lifecycle,
+          auditValidationPassed: outputAuditEvent?.validationPassed,
+          resultIsError: outputToolResult?.isError,
+          resultOutputCode: outputToolResult?.output?.code,
+        },
+        rateLimit: {
+          auditLifecycle: rateLimitAuditEvent?.lifecycle,
+          resultIsError: rateLimitToolResult?.isError,
+          resultOutputCode: rateLimitToolResult?.output?.code,
+        },
+        withinContract: {
+          resultIsError: withinToolResult?.isError,
+          resultOutput: withinToolResult?.output,
+          toolExecuted: withinContractExecuted,
+        },
+      },
+    };
+
+    return { evidence, result: evidence };
+  };
+
+// ---------------------------------------------------------------------------
+// Operation: runtime.tuvren-server.binding-classification
+//
+// Exercises:
+// - MCP binding → tuvren-server / mcp-server endpoint kind
+// - Sandbox binding → tuvren-server / tuvren-sandbox endpoint kind
+// - Full tuvren-server CapabilityObservation
+// ---------------------------------------------------------------------------
+
+export const runTuvrenServerBindingClassification =
+  async (): Promise<AdapterProjection> => {
+    const resolver = createBindingResolver();
+
+    // MCP tool
+    const mcpTool: TuvrenToolDefinition = {
+      description: "mcp tool",
+      execute() {
+        return {};
+      },
+      inputSchema: { type: "object" },
+      metadata: { mcp: { serverName: "ax006-server" } },
+      name: "ax006-mcp-tool",
+    };
+    const mcpBinding = resolver.resolveFromToolDefinition(mcpTool);
+
+    // Sandbox tool
+    const sandboxTool: TuvrenToolDefinition = {
+      description: "sandbox tool",
+      execute() {
+        return {};
+      },
+      inputSchema: { type: "object" },
+      metadata: { sandbox: { endpointId: "ax006-sandbox" } },
+      name: "ax006-sandbox-tool",
+    };
+    const sandboxBinding = resolver.resolveFromToolDefinition(sandboxTool);
+
+    // MCP tool emits attribution in event stream — read production-emitted observation
+    // from the real tool.result event so the AX005 check detects regressions in
+    // capability-attribution.ts rather than asserting a hardcoded adapter constant.
+    const mcpEvents = await runTurn(mcpTool);
+    const mcpToolResult = findEvent(mcpEvents, "tool.result");
+    const mcpAttribution = isRecord(mcpToolResult?.attribution)
+      ? mcpToolResult.attribution
+      : undefined;
+    const productionObservation = isRecord(mcpAttribution?.observation)
+      ? mcpAttribution.observation
+      : undefined;
+
+    const evidence = {
+      tuvrenServer: {
+        mcpBinding: {
+          capabilityId: mcpBinding.capabilityId,
+          endpointKind: mcpBinding.endpoint.kind,
+          executionClass: mcpBinding.executionClass,
+        },
+        mcpToolResultAttribution: {
+          executionClass: mcpAttribution?.executionClass,
+        },
+        observation: {
+          canAudit: productionObservation?.canAudit,
+          canCancel: productionObservation?.canCancel,
+          canObserveIntermediate: productionObservation?.canObserveIntermediate,
+          canPersistResult: productionObservation?.canPersistResult,
+          canResume: productionObservation?.canResume,
+          canRetry: productionObservation?.canRetry,
+          executionClass: productionObservation?.executionClass,
+        },
+        sandboxBinding: {
+          capabilityId: sandboxBinding.capabilityId,
+          endpointKind: sandboxBinding.endpoint.kind,
+          executionClass: sandboxBinding.executionClass,
+        },
+      },
+    };
+
+    return { evidence, result: evidence };
+  };
+
+// ---------------------------------------------------------------------------
+// Operation: runtime.tuvren-server.cancellation
+//
+// Exercises:
+// - A late completion after handle.cancel() does not appear in durable branch
+//   messages — proving "late completion is ignored and cannot mutate invocation"
+// ---------------------------------------------------------------------------
+
+export const runTuvrenServerCancellation =
+  async (): Promise<AdapterProjection> => {
+    const LATE_VALUE = "ax006-late-should-not-appear";
+    const TOOL_NAME = "ax006-cancellation-tool";
+    const harness = createConformanceKernelHarness();
+
+    const toolStartedBarrier = Promise.withResolvers<undefined>();
+    const releaseToolLatch = (): void => {
+      toolStartedBarrier.resolve();
+    };
+    let releaseTool: (() => void) | undefined;
+
+    const runner = createStaticRunner(async (context) => {
+      await Promise.resolve();
+      if (!context.messages.some((m) => m.role === "tool")) {
+        return {
+          messages: [
+            assistantToolCalls([
+              { callId: "ax-cancel-1", input: {}, name: TOOL_NAME },
+            ]),
+          ],
+          resolution: { type: "continue_iteration" as const },
+          toolExecutionMode: "parallel" as const,
+        };
+      }
+      return {
+        messages: [assistantText("cancel done")],
+        resolution: { reason: "done", type: "end_turn" as const },
+      };
+    });
+
+    const runtime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
+    });
+
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
         name: AGENT_NAME,
-        tools: [tool],
-        serverExecution: { rateLimit: { maxCalls, windowMs: 60_000 } },
+        tools: [
+          {
+            description: "cancellation tool",
+            async execute() {
+              releaseToolLatch();
+              const toolReleaseBarrier = Promise.withResolvers<undefined>();
+              releaseTool = () => {
+                toolReleaseBarrier.resolve();
+              };
+              await toolReleaseBarrier.promise;
+              return { value: LATE_VALUE };
+            },
+            inputSchema: { type: "object" },
+            name: TOOL_NAME,
+          },
+        ],
       },
-      signal: textSignal("isolation test"),
+      signal: textSignal("ax006 cancellation"),
       threadId: thread.threadId,
     });
-    return collectValues(handle.events());
-  }
 
-  const eventsA = await runIsolatedTurn(1, 2);
-  const toolResultsA = findAllEvents(eventsA, "tool.result");
-  const limitedInA = toolResultsA.some(
-    (r) =>
-      r.isError === true &&
-      (r.output as Record<string, unknown>)?.code ===
-        "tool_invocation_rate_limited"
-  );
-  const successInA = toolResultsA.some((r) => !r.isError);
+    const eventsPromise = (async () => {
+      try {
+        return {
+          ok: true as const,
+          value: await collectValues(handle.events()),
+        };
+      } catch {
+        return { ok: false as const, value: [] };
+      }
+    })();
 
-  const eventsB = await runIsolatedTurn(5, 1);
-  const toolResultsB = findAllEvents(eventsB, "tool.result");
-  const limitedInB = toolResultsB.some(
-    (r) =>
-      r.isError === true &&
-      (r.output as Record<string, unknown>)?.code ===
-        "tool_invocation_rate_limited"
-  );
-  const successInB = toolResultsB.some((r) => !r.isError);
+    await toolStartedBarrier.promise;
+    handle.cancel();
+    releaseTool?.();
+    await eventsPromise;
 
-  const evidence = {
-    tuvrenServer: {
-      tenantIsolation: {
-        instanceAHadRateLimitedResult: limitedInA,
-        instanceAHadSuccessResult: successInA,
-        instanceBHadRateLimitedResult: limitedInB,
-        instanceBHadSuccessResult: successInB,
+    const messages = await harness.readBranchMessages(thread.branchId);
+    const toolMessages = messages.filter(
+      (message): message is Record<string, unknown> =>
+        isRecord(message) && message.role === "tool"
+    );
+    const lateResultPresent = toolMessages.some((message) => {
+      const { parts } = message;
+      if (!Array.isArray(parts)) {
+        return false;
+      }
+      return parts.some((part) => {
+        if (!(isRecord(part) && isRecord(part.output))) {
+          return false;
+        }
+        return part.output.value === LATE_VALUE;
+      });
+    });
+
+    const evidence = {
+      tuvrenServer: {
+        cancellation: {
+          lateValueFoundInDurableMessages: lateResultPresent,
+        },
       },
-    },
+    };
+
+    return { evidence, result: evidence };
   };
 
-  return { evidence, result: evidence };
-}
+// ---------------------------------------------------------------------------
+// Operation: runtime.tuvren-server.tenant-isolation
+//
+// Exercises:
+// - Two independent runtime instances with separate rate limits
+// - Exhausting instance A does not affect instance B
+// ---------------------------------------------------------------------------
+
+export const runTuvrenServerTenantIsolation =
+  async (): Promise<AdapterProjection> => {
+    const TOOL_NAME = "ax006-isolation-tool";
+
+    const runIsolatedTurn = async (maxCalls: number, callCount: number) => {
+      const harness = createConformanceKernelHarness();
+      const runner = createStaticRunner(async (context) => {
+        await Promise.resolve();
+        const toolMessages = context.messages.filter((m) => m.role === "tool");
+        if (toolMessages.length < callCount) {
+          return {
+            messages: [
+              assistantToolCalls([
+                {
+                  callId: `ax-iso-${toolMessages.length}`,
+                  input: {},
+                  name: TOOL_NAME,
+                },
+              ]),
+            ],
+            resolution: { type: "continue_iteration" as const },
+            toolExecutionMode: "parallel" as const,
+          };
+        }
+        return {
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" as const },
+        };
+      });
+
+      const runtime = createTuvrenRuntimeCore({
+        createId: createConformanceIdFactory(),
+        defaultRunnerId: RUNNER_ID,
+        kernel: harness.kernel,
+        runnerRegistry: createRunnerRegistry([runner]),
+      });
+      const tool: TuvrenToolDefinition = {
+        description: "isolation tool",
+        execute() {
+          return { ok: true };
+        },
+        inputSchema: { type: "object" },
+        name: TOOL_NAME,
+      };
+      const thread = await runtime.createThread({});
+      const handle = runtime.executeTurn({
+        branchId: thread.branchId,
+        config: {
+          name: AGENT_NAME,
+          serverExecution: { rateLimit: { maxCalls, windowMs: 60_000 } },
+          tools: [tool],
+        },
+        signal: textSignal("isolation test"),
+        threadId: thread.threadId,
+      });
+      return await collectValues(handle.events());
+    };
+
+    const eventsA = await runIsolatedTurn(1, 2);
+    const toolResultsA = findAllEvents(eventsA, "tool.result");
+    const limitedInA = toolResultsA.some(
+      (r) =>
+        r.isError === true &&
+        isRecord(r.output) &&
+        r.output.code === "tool_invocation_rate_limited"
+    );
+    const successInA = toolResultsA.some((r) => r.isError !== true);
+
+    const eventsB = await runIsolatedTurn(5, 1);
+    const toolResultsB = findAllEvents(eventsB, "tool.result");
+    const limitedInB = toolResultsB.some(
+      (r) =>
+        r.isError === true &&
+        isRecord(r.output) &&
+        r.output.code === "tool_invocation_rate_limited"
+    );
+    const successInB = toolResultsB.some((r) => r.isError !== true);
+
+    const evidence = {
+      tuvrenServer: {
+        tenantIsolation: {
+          instanceAHadRateLimitedResult: limitedInA,
+          instanceAHadSuccessResult: successInA,
+          instanceBHadRateLimitedResult: limitedInB,
+          instanceBHadSuccessResult: successInB,
+        },
+      },
+    };
+
+    return { evidence, result: evidence };
+  };

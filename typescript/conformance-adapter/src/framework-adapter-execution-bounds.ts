@@ -25,9 +25,13 @@
  * about whether a bound "held". Raw observations only.
  */
 
+import { once } from "node:events";
+import { setTimeout as delay } from "node:timers/promises";
+
 import type { ExecutionResult } from "@tuvren/core/execution";
 import type {
   TelemetryEvent,
+  TelemetrySpan,
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
@@ -53,77 +57,88 @@ import {
 // Raw-observation helpers (no grading)
 // ---------------------------------------------------------------------------
 
-function createBoundsTelemetryCapture(): {
+const createBoundsTelemetryCapture = (): {
   events: TelemetryEvent[];
   sink: TuvrenTelemetrySink;
-} {
+  spans: TelemetrySpan[];
+} => {
   const events: TelemetryEvent[] = [];
+  const spans: TelemetrySpan[] = [];
   return {
     events,
     sink: {
       event: (event) => {
         events.push(event);
       },
-      span: () => {
-        return;
+      span: (span) => {
+        spans.push(span);
       },
     },
+    spans,
   };
-}
+};
 
 /** A clock that advances 10ms per read; large enough to keep wall-clock unset cases stable. */
-function createDeterministicClock(): () => number {
+const createDeterministicClock = (): (() => number) => {
   let now = 10_000;
   return () => {
     now += 10;
     return now;
   };
-}
+};
 
-function asRecord(value: unknown): Record<string, unknown> {
-  return value as Record<string, unknown>;
-}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
-function findCanonicalErrorCode(events: readonly unknown[]): string | null {
+const fromSynchronousWithoutArguments = <Value>(
+  operation: () => Value
+): (() => Promise<Value>) =>
+  Promise.try.bind<typeof Promise, [() => Value], [], Promise<Value>>(
+    Promise,
+    operation
+  );
+
+const findCanonicalErrorCode = (events: readonly unknown[]): string | null => {
   for (const event of events) {
-    const record = asRecord(event);
-    if (record.type === "error" && typeof record.error === "object") {
-      const code = asRecord(record.error).code;
+    if (isRecord(event) && event.type === "error" && isRecord(event.error)) {
+      const { code } = event.error;
       if (typeof code === "string") {
         return code;
       }
     }
   }
   return null;
-}
+};
 
-function findTerminalTurnEndStatus(events: readonly unknown[]): string | null {
+const findTerminalTurnEndStatus = (
+  events: readonly unknown[]
+): string | null => {
   const turnEnds = events.filter(
-    (event) => asRecord(event).type === "turn.end"
+    (event): event is Record<string, unknown> =>
+      isRecord(event) && event.type === "turn.end"
   );
-  const last = turnEnds.at(-1);
-  const status = last === undefined ? undefined : asRecord(last).status;
+  const status = turnEnds.at(-1)?.status;
   return typeof status === "string" ? status : null;
-}
+};
 
-function summarizeBoundedTelemetry(
+const summarizeBoundedTelemetry = (
   telemetryEvents: readonly TelemetryEvent[]
-): Record<string, unknown> {
+): Record<string, unknown> => {
   const bounded = telemetryEvents.filter(
     (event) => event.kind === "execution.bounded"
   );
-  const first = bounded[0];
+  const [first] = bounded;
   return {
     bound: first?.attributes["tuvren.runtime.bound"] ?? null,
     count: bounded.length,
     limit: first?.attributes["tuvren.runtime.bound.limit"] ?? null,
     observed: first?.attributes["tuvren.runtime.bound.observed"] ?? null,
   };
-}
+};
 
-function summarizeExecutionResult(
+const summarizeExecutionResult = (
   result: ExecutionResult
-): Record<string, unknown> {
+): Record<string, unknown> => {
   if (result.status === "failed") {
     return {
       errorCode: result.error.code,
@@ -132,47 +147,40 @@ function summarizeExecutionResult(
     };
   }
   return { status: result.status };
-}
+};
 
 interface BoundsTurnObservation {
   events: readonly unknown[];
   result: Record<string, unknown>;
 }
 
-function summarizeBoundsTurn(
+const summarizeBoundsTurn = (
   events: readonly unknown[],
   telemetryEvents: readonly TelemetryEvent[],
   result: ExecutionResult,
   extra: Record<string, unknown> = {}
-): BoundsTurnObservation {
-  return {
-    events,
-    result: {
-      ...summarizeExecutionResult(result),
-      boundedTelemetry: summarizeBoundedTelemetry(telemetryEvents),
-      fatalErrorEventCode: findCanonicalErrorCode(events),
-      terminalTurnEndStatus: findTerminalTurnEndStatus(events),
-      ...extra,
-    },
-  };
-}
-
-const runawayTextRunner = createStaticRunner(async () => {
-  await Promise.resolve();
-  return {
-    messages: [assistantText("keep going")],
-    resolution: { type: "continue_iteration" as const },
-  };
+): BoundsTurnObservation => ({
+  events,
+  result: {
+    ...summarizeExecutionResult(result),
+    boundedTelemetry: summarizeBoundedTelemetry(telemetryEvents),
+    fatalErrorEventCode: findCanonicalErrorCode(events),
+    terminalTurnEndStatus: findTerminalTurnEndStatus(events),
+    ...extra,
+  },
 });
 
-function noopTool(name: string): TuvrenToolDefinition {
-  return {
-    description: "noop bounds tool",
-    execute: async () => ({ ok: true }),
-    inputSchema: { type: "object" },
-    name,
-  };
-}
+const runawayTextRunner = createStaticRunner(() => ({
+  messages: [assistantText("keep going")],
+  resolution: { type: "continue_iteration" as const },
+}));
+
+const noopTool = (name: string): TuvrenToolDefinition => ({
+  description: "noop bounds tool",
+  execute: () => ({ ok: true }),
+  inputSchema: { type: "object" },
+  name,
+});
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.execution-bounds.max-iterations
@@ -181,29 +189,30 @@ function noopTool(name: string): TuvrenToolDefinition {
 // requests a far larger maxIterations to prove the bound clamps it from above.
 // ---------------------------------------------------------------------------
 
-export async function runExecutionBoundsMaxIterations(): Promise<AdapterProjection> {
-  const capture = createBoundsTelemetryCapture();
-  const harness = createConformanceKernelHarness();
-  const runtime = createTuvrenRuntimeCore({
-    bounds: { maxIterations: 3 },
-    createId: createConformanceIdFactory(),
-    defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runawayTextRunner]),
-    kernel: harness.kernel,
-    now: createDeterministicClock(),
-    telemetry: capture.sink,
-  });
-  const thread = await runtime.createThread({});
-  const handle = runtime.executeTurn({
-    branchId: thread.branchId,
-    config: { maxIterations: 1000, name: AGENT_NAME },
-    signal: textSignal("run"),
-    threadId: thread.threadId,
-  });
-  const events = await collectValues(handle.events());
-  const result = await handle.awaitResult();
-  return summarizeBoundsTurn(events, capture.events, result);
-}
+export const runExecutionBoundsMaxIterations =
+  async (): Promise<AdapterProjection> => {
+    const capture = createBoundsTelemetryCapture();
+    const harness = createConformanceKernelHarness();
+    const runtime = createTuvrenRuntimeCore({
+      bounds: { maxIterations: 3 },
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      now: createDeterministicClock(),
+      runnerRegistry: createRunnerRegistry([runawayTextRunner]),
+      telemetry: capture.sink,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { maxIterations: 1000, name: AGENT_NAME },
+      signal: textSignal("run"),
+      threadId: thread.threadId,
+    });
+    const events = await collectValues(handle.events());
+    const result = await handle.awaitResult();
+    return summarizeBoundsTurn(events, capture.events, result);
+  };
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.execution-bounds.max-tool-calls
@@ -212,12 +221,11 @@ export async function runExecutionBoundsMaxIterations(): Promise<AdapterProjecti
 // at the tool-batch boundary.
 // ---------------------------------------------------------------------------
 
-export async function runExecutionBoundsMaxToolCalls(): Promise<AdapterProjection> {
-  const capture = createBoundsTelemetryCapture();
-  const harness = createConformanceKernelHarness();
-  const runner = createStaticRunner(async () => {
-    await Promise.resolve();
-    return {
+export const runExecutionBoundsMaxToolCalls =
+  async (): Promise<AdapterProjection> => {
+    const capture = createBoundsTelemetryCapture();
+    const harness = createConformanceKernelHarness();
+    const runner = createStaticRunner(() => ({
       messages: [
         assistantToolCalls([
           { callId: "t1", input: {}, name: "noop" },
@@ -227,28 +235,27 @@ export async function runExecutionBoundsMaxToolCalls(): Promise<AdapterProjectio
       ],
       resolution: { type: "continue_iteration" as const },
       toolExecutionMode: "parallel" as const,
-    };
-  });
-  const runtime = createTuvrenRuntimeCore({
-    bounds: { maxIterations: 100, maxToolCalls: 2 },
-    createId: createConformanceIdFactory(),
-    defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
-    kernel: harness.kernel,
-    now: createDeterministicClock(),
-    telemetry: capture.sink,
-  });
-  const thread = await runtime.createThread({});
-  const handle = runtime.executeTurn({
-    branchId: thread.branchId,
-    config: { name: AGENT_NAME, tools: [noopTool("noop")] },
-    signal: textSignal("run"),
-    threadId: thread.threadId,
-  });
-  const events = await collectValues(handle.events());
-  const result = await handle.awaitResult();
-  return summarizeBoundsTurn(events, capture.events, result);
-}
+    }));
+    const runtime = createTuvrenRuntimeCore({
+      bounds: { maxIterations: 100, maxToolCalls: 2 },
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      now: createDeterministicClock(),
+      runnerRegistry: createRunnerRegistry([runner]),
+      telemetry: capture.sink,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: AGENT_NAME, tools: [noopTool("noop")] },
+      signal: textSignal("run"),
+      threadId: thread.threadId,
+    });
+    const events = await collectValues(handle.events());
+    const result = await handle.awaitResult();
+    return summarizeBoundsTurn(events, capture.events, result);
+  };
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.execution-bounds.max-wall-clock
@@ -260,32 +267,33 @@ export async function runExecutionBoundsMaxToolCalls(): Promise<AdapterProjectio
 // late-completion path is covered separately by wall-clock-signal-delivery.
 // ---------------------------------------------------------------------------
 
-export async function runExecutionBoundsMaxWallClock(): Promise<AdapterProjection> {
-  // Deterministic loop-boundary breach: a runaway runner under a clock that
-  // advances past the deadline trips the wall-clock check at an iteration
-  // boundary, finalizing cleanly (fatal error event before the failed turn.end).
-  const capture = createBoundsTelemetryCapture();
-  const harness = createConformanceKernelHarness();
-  const runtime = createTuvrenRuntimeCore({
-    bounds: { maxIterations: 100_000, maxWallClockMs: 50 },
-    createId: createConformanceIdFactory(),
-    defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runawayTextRunner]),
-    kernel: harness.kernel,
-    now: createDeterministicClock(),
-    telemetry: capture.sink,
-  });
-  const thread = await runtime.createThread({});
-  const handle = runtime.executeTurn({
-    branchId: thread.branchId,
-    config: { name: AGENT_NAME },
-    signal: textSignal("run"),
-    threadId: thread.threadId,
-  });
-  const events = await collectValues(handle.events());
-  const result = await handle.awaitResult();
-  return summarizeBoundsTurn(events, capture.events, result);
-}
+export const runExecutionBoundsMaxWallClock =
+  async (): Promise<AdapterProjection> => {
+    // Deterministic loop-boundary breach: a runaway runner under a clock that
+    // advances past the deadline trips the wall-clock check at an iteration
+    // boundary, finalizing cleanly (fatal error event before the failed turn.end).
+    const capture = createBoundsTelemetryCapture();
+    const harness = createConformanceKernelHarness();
+    const runtime = createTuvrenRuntimeCore({
+      bounds: { maxIterations: 100_000, maxWallClockMs: 50 },
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      now: createDeterministicClock(),
+      runnerRegistry: createRunnerRegistry([runawayTextRunner]),
+      telemetry: capture.sink,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: AGENT_NAME },
+      signal: textSignal("run"),
+      threadId: thread.threadId,
+    });
+    const events = await collectValues(handle.events());
+    const result = await handle.awaitResult();
+    return summarizeBoundsTurn(events, capture.events, result);
+  };
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.execution-bounds.wall-clock-signal-delivery
@@ -296,80 +304,76 @@ export async function runExecutionBoundsMaxWallClock(): Promise<AdapterProjectio
 // turn finalizes as the bounds failure rather than the runner's later end_turn.
 // ---------------------------------------------------------------------------
 
-export async function runExecutionBoundsWallClockSignalDelivery(): Promise<AdapterProjection> {
-  const capture = createBoundsTelemetryCapture();
-  const harness = createConformanceKernelHarness();
-  let toolObservedAbort = false;
-  let toolCompletedAfterAbort = false;
+export const runExecutionBoundsWallClockSignalDelivery =
+  async (): Promise<AdapterProjection> => {
+    const capture = createBoundsTelemetryCapture();
+    const harness = createConformanceKernelHarness();
+    let toolObservedAbort = false;
+    let toolCompletedAfterAbort = false;
 
-  const hangingTool: TuvrenToolDefinition = {
-    description: "awaits the cooperative cancellation signal",
-    async execute(_input, context) {
-      const signal = (context as { signal?: AbortSignal }).signal;
-      await new Promise<void>((resolve) => {
-        if (signal === undefined || signal.aborted) {
-          resolve();
-          return;
+    const hangingTool: TuvrenToolDefinition = {
+      description: "awaits the cooperative cancellation signal",
+      async execute(_input, context) {
+        const { signal } = context;
+        if (signal !== undefined && !signal.aborted) {
+          await once(signal, "abort");
         }
-        signal.addEventListener("abort", () => resolve(), { once: true });
-      });
-      toolObservedAbort = signal?.aborted === true;
-      toolCompletedAfterAbort = true;
-      return { ok: true };
-    },
-    inputSchema: { type: "object" },
-    name: "hang",
-  };
-
-  const runner = createStaticRunner(async (context) => {
-    await Promise.resolve();
-    if (context.messages.some((message) => message.role === "tool")) {
-      return {
-        messages: [assistantText("late")],
-        resolution: { reason: "done", type: "end_turn" as const },
-      };
-    }
-    return {
-      messages: [
-        assistantToolCalls([{ callId: "hang-1", input: {}, name: "hang" }]),
-      ],
-      resolution: { type: "continue_iteration" as const },
-      toolExecutionMode: "parallel" as const,
+        toolObservedAbort = signal?.aborted === true;
+        toolCompletedAfterAbort = true;
+        return { ok: true };
+      },
+      inputSchema: { type: "object" },
+      name: "hang",
     };
-  });
 
-  const runtime = createTuvrenRuntimeCore({
-    // Real clock + a real deadline comfortably larger than turn setup so the
-    // out-of-band abort timer fires while the owned tool is awaiting its signal
-    // (the tool hangs indefinitely until aborted).
-    bounds: { maxWallClockMs: 150 },
-    createId: createConformanceIdFactory(),
-    defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
-    kernel: harness.kernel,
-    telemetry: capture.sink,
-  });
-  const thread = await runtime.createThread({});
-  const handle = runtime.executeTurn({
-    branchId: thread.branchId,
-    config: { name: AGENT_NAME, tools: [hangingTool] },
-    signal: textSignal("run"),
-    threadId: thread.threadId,
-  });
-  // Drive the turn to completion; this op grades the result and tool
-  // observations, not the event ordering (the in-flight abort path is covered
-  // by the deterministic max-wall-clock op).
-  await collectValues(handle.events());
-  const result = await handle.awaitResult();
-  return {
-    result: {
-      ...summarizeExecutionResult(result),
-      boundedTelemetry: summarizeBoundedTelemetry(capture.events),
-      toolCompletedAfterAbort,
-      toolObservedAbort,
-    },
+    const runner = createStaticRunner((context) => {
+      if (context.messages.some((message) => message.role === "tool")) {
+        return {
+          messages: [assistantText("late")],
+          resolution: { reason: "done", type: "end_turn" as const },
+        };
+      }
+      return {
+        messages: [
+          assistantToolCalls([{ callId: "hang-1", input: {}, name: "hang" }]),
+        ],
+        resolution: { type: "continue_iteration" as const },
+        toolExecutionMode: "parallel" as const,
+      };
+    });
+
+    const runtime = createTuvrenRuntimeCore({
+      // Real clock + a real deadline comfortably larger than turn setup so the
+      // out-of-band abort timer fires while the owned tool is awaiting its signal
+      // (the tool hangs indefinitely until aborted).
+      bounds: { maxWallClockMs: 150 },
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
+      telemetry: capture.sink,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: AGENT_NAME, tools: [hangingTool] },
+      signal: textSignal("run"),
+      threadId: thread.threadId,
+    });
+    // Drive the turn to completion; this op grades the result and tool
+    // observations, not the event ordering (the in-flight abort path is covered
+    // by the deterministic max-wall-clock op).
+    await collectValues(handle.events());
+    const result = await handle.awaitResult();
+    return {
+      result: {
+        ...summarizeExecutionResult(result),
+        boundedTelemetry: summarizeBoundedTelemetry(capture.events),
+        toolCompletedAfterAbort,
+        toolObservedAbort,
+      },
+    };
   };
-}
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.execution-bounds.concurrency-throttle
@@ -379,78 +383,76 @@ export async function runExecutionBoundsWallClockSignalDelivery(): Promise<Adapt
 // observed concurrency.
 // ---------------------------------------------------------------------------
 
-export async function runExecutionBoundsConcurrencyThrottle(): Promise<AdapterProjection> {
-  const harness = createConformanceKernelHarness();
-  let active = 0;
-  let maxObservedConcurrency = 0;
+export const runExecutionBoundsConcurrencyThrottle =
+  async (): Promise<AdapterProjection> => {
+    const harness = createConformanceKernelHarness();
+    let active = 0;
+    let maxObservedConcurrency = 0;
 
-  const probeTool: TuvrenToolDefinition = {
-    description: "concurrency probe",
-    async execute() {
-      active += 1;
-      maxObservedConcurrency = Math.max(maxObservedConcurrency, active);
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 15);
-      });
-      active -= 1;
-      return { ok: true };
-    },
-    inputSchema: { type: "object" },
-    name: "probe",
-  };
-
-  const runner = createStaticRunner(async (context) => {
-    await Promise.resolve();
-    if (context.messages.some((message) => message.role === "tool")) {
-      return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" as const },
-      };
-    }
-    return {
-      messages: [
-        assistantToolCalls([
-          { callId: "p1", input: {}, name: "probe" },
-          { callId: "p2", input: {}, name: "probe" },
-          { callId: "p3", input: {}, name: "probe" },
-        ]),
-      ],
-      resolution: { type: "continue_iteration" as const },
-      toolExecutionMode: "parallel" as const,
+    const probeTool: TuvrenToolDefinition = {
+      description: "concurrency probe",
+      async execute() {
+        active += 1;
+        maxObservedConcurrency = Math.max(maxObservedConcurrency, active);
+        await delay(15);
+        active -= 1;
+        return { ok: true };
+      },
+      inputSchema: { type: "object" },
+      name: "probe",
     };
-  });
 
-  const runtime = createTuvrenRuntimeCore({
-    bounds: { maxConcurrentToolCalls: 1 },
-    createId: createConformanceIdFactory(),
-    // Both the agent-level maxParallelToolCalls and the runtime
-    // defaultMaxParallelToolCalls request 10; the bound clamps the effective
-    // parallelism to 1.
-    defaultMaxParallelToolCalls: 10,
-    defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
-    kernel: harness.kernel,
-  });
-  const thread = await runtime.createThread({});
-  const handle = runtime.executeTurn({
-    branchId: thread.branchId,
-    config: {
-      maxParallelToolCalls: 10,
-      name: AGENT_NAME,
-      tools: [probeTool],
-    },
-    signal: textSignal("run"),
-    threadId: thread.threadId,
-  });
-  await collectValues(handle.events());
-  const result = await handle.awaitResult();
-  return {
-    result: {
-      ...summarizeExecutionResult(result),
-      maxObservedConcurrency,
-    },
+    const runner = createStaticRunner((context) => {
+      if (context.messages.some((message) => message.role === "tool")) {
+        return {
+          messages: [assistantText("done")],
+          resolution: { reason: "done", type: "end_turn" as const },
+        };
+      }
+      return {
+        messages: [
+          assistantToolCalls([
+            { callId: "p1", input: {}, name: "probe" },
+            { callId: "p2", input: {}, name: "probe" },
+            { callId: "p3", input: {}, name: "probe" },
+          ]),
+        ],
+        resolution: { type: "continue_iteration" as const },
+        toolExecutionMode: "parallel" as const,
+      };
+    });
+
+    const runtime = createTuvrenRuntimeCore({
+      bounds: { maxConcurrentToolCalls: 1 },
+      createId: createConformanceIdFactory(),
+      // Both the agent-level maxParallelToolCalls and the runtime
+      // defaultMaxParallelToolCalls request 10; the bound clamps the effective
+      // parallelism to 1.
+      defaultMaxParallelToolCalls: 10,
+      defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        maxParallelToolCalls: 10,
+        name: AGENT_NAME,
+        tools: [probeTool],
+      },
+      signal: textSignal("run"),
+      threadId: thread.threadId,
+    });
+    await collectValues(handle.events());
+    const result = await handle.awaitResult();
+    return {
+      result: {
+        ...summarizeExecutionResult(result),
+        maxObservedConcurrency,
+      },
+    };
   };
-}
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.execution-bounds.invalid-config
@@ -459,8 +461,7 @@ export async function runExecutionBoundsConcurrencyThrottle(): Promise<AdapterPr
 // rejected and with which error code. The runner grades.
 // ---------------------------------------------------------------------------
 
-export async function runExecutionBoundsInvalidConfig(): Promise<AdapterProjection> {
-  await Promise.resolve();
+const runExecutionBoundsInvalidConfigSynchronous = (): AdapterProjection => {
   const invalidValues = [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY];
   const rejections = invalidValues.map((value) => {
     try {
@@ -469,20 +470,22 @@ export async function runExecutionBoundsInvalidConfig(): Promise<AdapterProjecti
         bounds: { maxIterations: value },
         createId: createConformanceIdFactory(),
         defaultRunnerId: RUNNER_ID,
-        runnerRegistry: createRunnerRegistry([runawayTextRunner]),
         kernel: harness.kernel,
+        runnerRegistry: createRunnerRegistry([runawayTextRunner]),
       });
       return { code: null, rejected: false, value: String(value) };
     } catch (error: unknown) {
       const code =
-        typeof (error as { code?: unknown }).code === "string"
-          ? (error as { code: string }).code
-          : null;
+        isRecord(error) && typeof error.code === "string" ? error.code : null;
       return { code, rejected: true, value: String(value) };
     }
   });
   return { result: { rejections } };
-}
+};
+
+export const runExecutionBoundsInvalidConfig = fromSynchronousWithoutArguments(
+  runExecutionBoundsInvalidConfigSynchronous
+);
 
 // ---------------------------------------------------------------------------
 // Operation: runtime.execution-bounds.within-bounds
@@ -490,36 +493,34 @@ export async function runExecutionBoundsInvalidConfig(): Promise<AdapterProjecti
 // A control turn under default bounds completes normally.
 // ---------------------------------------------------------------------------
 
-export async function runExecutionBoundsWithinBounds(): Promise<AdapterProjection> {
-  const harness = createConformanceKernelHarness();
-  const runner = createStaticRunner(async () => {
-    await Promise.resolve();
-    return {
+export const runExecutionBoundsWithinBounds =
+  async (): Promise<AdapterProjection> => {
+    const harness = createConformanceKernelHarness();
+    const runner = createStaticRunner(() => ({
       messages: [assistantText("all done")],
       resolution: { reason: "done", type: "end_turn" as const },
+    }));
+    const runtime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
+      now: createDeterministicClock(),
+      runnerRegistry: createRunnerRegistry([runner]),
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: AGENT_NAME },
+      signal: textSignal("run"),
+      threadId: thread.threadId,
+    });
+    const events = await collectValues(handle.events());
+    const result = await handle.awaitResult();
+    return {
+      events,
+      result: {
+        ...summarizeExecutionResult(result),
+        terminalTurnEndStatus: findTerminalTurnEndStatus(events),
+      },
     };
-  });
-  const runtime = createTuvrenRuntimeCore({
-    createId: createConformanceIdFactory(),
-    defaultRunnerId: RUNNER_ID,
-    runnerRegistry: createRunnerRegistry([runner]),
-    kernel: harness.kernel,
-    now: createDeterministicClock(),
-  });
-  const thread = await runtime.createThread({});
-  const handle = runtime.executeTurn({
-    branchId: thread.branchId,
-    config: { name: AGENT_NAME },
-    signal: textSignal("run"),
-    threadId: thread.threadId,
-  });
-  const events = await collectValues(handle.events());
-  const result = await handle.awaitResult();
-  return {
-    events,
-    result: {
-      ...summarizeExecutionResult(result),
-      terminalTurnEndStatus: findTerminalTurnEndStatus(events),
-    },
   };
-}

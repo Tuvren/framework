@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { setTimeout as sleep } from "node:timers/promises";
+
 import {
   createOrchestrationRuntime,
   createRunnerRegistry,
@@ -21,7 +23,6 @@ import {
 } from "@tuvren/runtime";
 
 import {
-  type AdapterProjection,
   assistantText,
   assistantToolCalls,
   collectValues,
@@ -31,243 +32,108 @@ import {
   RUNNER_ID,
   textSignal,
 } from "./framework-adapter-runtime.ts";
+import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 export interface FrameworkAdapterOrchestrationLifecycleDependencies {
-  createObservedErrorEnvelope(error: unknown): Record<string, unknown>;
-  readOperationScenario(
+  createObservedErrorEnvelope: (error: unknown) => Record<string, unknown>;
+  readOperationScenario: (
     input: unknown,
     operation: string
-  ): Record<string, unknown>;
-  readStringProperty(
+  ) => Record<string, unknown>;
+  readStringProperty: (
     record: Record<string, unknown>,
     property: string,
     path: string
-  ): string;
+  ) => string;
 }
 
-export function createFrameworkAdapterOrchestrationLifecycle(
+const fromSynchronousWithoutArguments = <Value>(
+  operation: () => Value
+): (() => Promise<Value>) =>
+  Promise.try.bind<typeof Promise, [() => Value], [], Promise<Value>>(
+    Promise,
+    operation
+  );
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const waitUntil = async (
+  predicate: () => boolean,
+  timeoutMs = 1000,
+  start = Date.now()
+): Promise<void> => {
+  if (predicate()) {
+    return;
+  }
+
+  if (Date.now() - start > timeoutMs) {
+    throw new Error(`timed out after ${timeoutMs}ms`);
+  }
+
+  await sleep(5);
+  await waitUntil(predicate, timeoutMs, start);
+};
+
+const firstVisibleText = (result: unknown): string | undefined => {
+  if (!(isRecord(result) && isRecord(result.finalAssistantMessage))) {
+    return undefined;
+  }
+
+  const { parts } = result.finalAssistantMessage;
+  if (!Array.isArray(parts)) {
+    return undefined;
+  }
+
+  const textPart = parts.find(
+    (part): part is Record<string, unknown> =>
+      isRecord(part) && part.type === "text"
+  );
+  return isRecord(textPart) && typeof textPart.text === "string"
+    ? textPart.text
+    : undefined;
+};
+
+export const createFrameworkAdapterOrchestrationLifecycle = (
   dependencies: FrameworkAdapterOrchestrationLifecycleDependencies
 ): {
-  runOrchestrationLifecycleLocality(input: unknown): Promise<AdapterProjection>;
-} {
-  async function runOrchestrationLifecycleLocality(
+  runOrchestrationLifecycleLocality: (
     input: unknown
-  ): Promise<AdapterProjection> {
-    const scenario = dependencies.readOperationScenario(
-      input,
-      "runtime.orchestration.lifecycle-locality"
-    );
-    const lifecycleCase = dependencies.readStringProperty(
-      scenario,
-      "case",
-      "runtime.orchestration.lifecycle-locality.case"
-    );
-
-    switch (lifecycleCase) {
-      case "parent_pause_child_continues":
-        return await runOrchestrationParentPauseChildContinues(
-          dependencies.readStringProperty(
-            scenario,
-            "childText",
-            "runtime.orchestration.lifecycle-locality.childText"
-          ),
-          dependencies.readStringProperty(
-            scenario,
-            "parentText",
-            "runtime.orchestration.lifecycle-locality.parentText"
-          )
-        );
-      case "child_pause_parent_completes":
-        return await runOrchestrationChildPauseParentCompletes(
-          dependencies.readStringProperty(
-            scenario,
-            "childText",
-            "runtime.orchestration.lifecycle-locality.childText"
-          ),
-          dependencies.readStringProperty(
-            scenario,
-            "parentText",
-            "runtime.orchestration.lifecycle-locality.parentText"
-          )
-        );
-      case "child_cancel_parent_completes":
-        return await runOrchestrationChildCancelParentCompletes(
-          dependencies.readStringProperty(
-            scenario,
-            "childText",
-            "runtime.orchestration.lifecycle-locality.childText"
-          ),
-          dependencies.readStringProperty(
-            scenario,
-            "parentText",
-            "runtime.orchestration.lifecycle-locality.parentText"
-          )
-        );
-      case "parent_cancel_child_completes":
-        return await runOrchestrationParentCancelChildCompletes(
-          dependencies.readStringProperty(
-            scenario,
-            "childText",
-            "runtime.orchestration.lifecycle-locality.childText"
-          ),
-          dependencies.readStringProperty(
-            scenario,
-            "parentText",
-            "runtime.orchestration.lifecycle-locality.parentText"
-          )
-        );
-      case "spawn_requires_running_handle":
-        return await runOrchestrationSpawnRequiresRunningHandle();
-      default:
-        throw new Error(
-          `runtime.orchestration.lifecycle-locality declared unsupported case ${lifecycleCase}`
-        );
-    }
-  }
-
-  return {
-    runOrchestrationLifecycleLocality,
-  };
-
-  async function runOrchestrationParentPauseChildContinues(
-    childText: string,
-    parentText: string
-  ): Promise<AdapterProjection> {
-    const harness = createConformanceKernelHarness();
-    const framework = createTuvrenRuntimeCore({
-      createId: createConformanceIdFactory(),
-      defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([
-        createStaticRunner(async (context) => {
-          if (context.config.name === "worker") {
-            await sleep(40);
-            return {
-              messages: [assistantText(childText)],
-              resolution: {
-                reason: "done",
-                type: "end_turn",
-              },
-            };
-          }
-
-          const toolMessages = context.messages.filter(
-            (message) => message.role === "tool"
-          );
-
-          if (toolMessages.length === 0) {
-            return {
-              messages: [
-                assistantToolCalls([
-                  {
-                    callId: "call-hold",
-                    input: { hold: true },
-                    name: "hold",
-                  },
-                ]),
-              ],
-              resolution: {
-                type: "continue_iteration",
-              },
-              toolExecutionMode: "parallel",
-            };
-          }
-
-          return {
-            messages: [assistantText(parentText)],
-            resolution: {
-              reason: "done",
-              type: "end_turn",
-            },
-          };
-        }),
-      ]),
-      kernel: harness.kernel,
-    });
-    const orchestration = createOrchestrationRuntime({
-      agents: {
-        primary: {
-          name: "primary",
-          tools: [
-            {
-              approval: true,
-              description: "Pause the parent turn",
-              execute() {
-                return { approved: true };
-              },
-              inputSchema: {
-                properties: {
-                  hold: { type: "boolean" },
+  ) => Promise<AdapterProjection>;
+} => {
+  const independentScenarios = {
+    async parentPauseChildContinues(
+      childText: string,
+      parentText: string
+    ): Promise<AdapterProjection> {
+      const harness = createConformanceKernelHarness();
+      const framework = createTuvrenRuntimeCore({
+        createId: createConformanceIdFactory(),
+        defaultRunnerId: RUNNER_ID,
+        kernel: harness.kernel,
+        runnerRegistry: createRunnerRegistry([
+          createStaticRunner(async (context) => {
+            if (context.config.name === "worker") {
+              await sleep(40);
+              return {
+                messages: [assistantText(childText)],
+                resolution: {
+                  reason: "done",
+                  type: "end_turn",
                 },
-                required: ["hold"],
-                type: "object",
-              },
-              name: "hold",
-            },
-          ],
-        },
-        worker: { name: "worker" },
-      },
-      framework,
-    });
-    const thread = await framework.createThread({});
-    const handle = orchestration.executeTurn({
-      agent: "primary",
-      branchId: thread.branchId,
-      signal: textSignal("pause"),
-      threadId: thread.threadId,
-    });
-    const subtreeEventsPromise = collectValues(handle.allEvents());
+              };
+            }
 
-    await sleep(0);
+            const toolMessages = context.messages.filter(
+              (message) => message.role === "tool"
+            );
 
-    const childHandle = handle.spawn({
-      agent: "worker",
-      signal: textSignal("background"),
-    });
-    await waitUntil(() => handle.status().phase === "paused");
-    const childResult = await childHandle.awaitResult();
-    const pausedPhase = handle.status().phase;
-    const resumedHandle = handle.resolveApproval({
-      decisions: [{ callId: "call-hold", type: "approve" }],
-    });
-    const resumedResult = await resumedHandle.awaitResult();
-    await subtreeEventsPromise;
-
-    const lifecycle = {
-      childResult,
-      parentPausedWhileChildCompleted:
-        pausedPhase === "paused" && firstVisibleText(childResult) === childText,
-      resumedParentPhase: resumedHandle.status().phase,
-      resumedParentResult: resumedResult,
-    };
-
-    return {
-      evidence: { orchestration: { lifecycle } },
-      result: { orchestration: { lifecycle } },
-    };
-  }
-
-  async function runOrchestrationChildPauseParentCompletes(
-    childText: string,
-    parentText: string
-  ): Promise<AdapterProjection> {
-    const harness = createConformanceKernelHarness();
-    const framework = createTuvrenRuntimeCore({
-      createId: createConformanceIdFactory(),
-      defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([
-        createStaticRunner(async (context) => {
-          const toolMessages = context.messages.filter(
-            (message) => message.role === "tool"
-          );
-
-          if (context.config.name === "worker") {
             if (toolMessages.length === 0) {
               return {
                 messages: [
                   assistantToolCalls([
                     {
-                      callId: "call-approve-worker",
+                      callId: "call-hold",
                       input: { hold: true },
                       name: "hold",
                     },
@@ -281,104 +147,225 @@ export function createFrameworkAdapterOrchestrationLifecycle(
             }
 
             return {
-              messages: [assistantText(childText)],
+              messages: [assistantText(parentText)],
               resolution: {
                 reason: "done",
                 type: "end_turn",
               },
             };
-          }
-
-          await sleep(20);
-          return {
-            messages: [assistantText(parentText)],
-            resolution: {
-              reason: "done",
-              type: "end_turn",
-            },
-          };
-        }),
-      ]),
-      kernel: harness.kernel,
-    });
-    const orchestration = createOrchestrationRuntime({
-      agents: {
-        primary: { name: "primary" },
-        worker: {
-          name: "worker",
-          tools: [
-            {
-              approval: true,
-              description: "Pause worker review",
-              execute() {
-                return { approved: true };
-              },
-              inputSchema: {
-                properties: {
-                  hold: { type: "boolean" },
+          }),
+        ]),
+      });
+      const orchestration = createOrchestrationRuntime({
+        agents: {
+          primary: {
+            name: "primary",
+            tools: [
+              {
+                approval: true,
+                description: "Pause the parent turn",
+                execute() {
+                  return { approved: true };
                 },
-                required: ["hold"],
-                type: "object",
+                inputSchema: {
+                  properties: {
+                    hold: { type: "boolean" },
+                  },
+                  required: ["hold"],
+                  type: "object",
+                },
+                name: "hold",
               },
-              name: "hold",
-            },
-          ],
+            ],
+          },
+          worker: { name: "worker" },
         },
-      },
-      framework,
-    });
-    const thread = await framework.createThread({});
-    const handle = orchestration.executeTurn({
-      agent: "primary",
-      branchId: thread.branchId,
-      signal: textSignal("root"),
-      threadId: thread.threadId,
-    });
-    const parentEventsPromise = collectValues(handle.allEvents());
+        framework,
+      });
+      const thread = await framework.createThread({});
+      const handle = orchestration.executeTurn({
+        agent: "primary",
+        branchId: thread.branchId,
+        signal: textSignal("pause"),
+        threadId: thread.threadId,
+      });
+      const subtreeEventsPromise = collectValues(handle.allEvents());
 
-    await sleep(0);
+      await sleep(0);
 
-    const childHandle = handle.spawn({
-      agent: "worker",
-      signal: textSignal("approval"),
-    });
-    await collectValues(childHandle.events());
-    // Child is now paused. Wait for the parent to complete independently (it does not
-    // collect child results), then resume the child and collect both results.
-    const pausedPhase = childHandle.status().phase;
-    await waitUntil(() => handle.status().phase === "completed");
-    const parentPhaseWhileChildPaused = handle.status().phase;
-    const resumedChildHandle = childHandle.resolveApproval({
-      decisions: [{ callId: "call-approve-worker", type: "approve" }],
-    });
-    const resumedChildResult = await resumedChildHandle.awaitResult();
-    const parentResult = await handle.awaitResult();
-    await parentEventsPromise;
+      const childHandle = handle.spawn({
+        agent: "worker",
+        signal: textSignal("background"),
+      });
+      await waitUntil(() => handle.status().phase === "paused");
+      const childResult = await childHandle.awaitResult();
+      const pausedPhase = handle.status().phase;
+      const resumedHandle = handle.resolveApproval({
+        decisions: [{ callId: "call-hold", type: "approve" }],
+      });
+      const resumedResult = await resumedHandle.awaitResult();
+      await subtreeEventsPromise;
 
-    const lifecycle = {
-      childPausedPhase: pausedPhase,
-      childResumedPhase: resumedChildHandle.status().phase,
-      parentCompletedWhileChildPaused:
-        pausedPhase === "paused" &&
-        parentPhaseWhileChildPaused === "completed" &&
-        firstVisibleText(parentResult) === parentText,
-      resumedChildResult,
-    };
+      const lifecycle = {
+        childResult,
+        parentPausedWhileChildCompleted:
+          pausedPhase === "paused" &&
+          firstVisibleText(childResult) === childText,
+        resumedParentPhase: resumedHandle.status().phase,
+        resumedParentResult: resumedResult,
+      };
 
-    return {
-      evidence: { orchestration: { lifecycle } },
-      result: { orchestration: { lifecycle } },
-    };
-  }
+      return {
+        evidence: { orchestration: { lifecycle } },
+        result: { orchestration: { lifecycle } },
+      };
+    },
 
-  async function runOrchestrationChildCancelParentCompletes(
+    async workerPauseParentCompletes(
+      childText: string,
+      parentText: string
+    ): Promise<AdapterProjection> {
+      const harness = createConformanceKernelHarness();
+      const framework = createTuvrenRuntimeCore({
+        createId: createConformanceIdFactory(),
+        defaultRunnerId: RUNNER_ID,
+        kernel: harness.kernel,
+        runnerRegistry: createRunnerRegistry([
+          createStaticRunner(async (context) => {
+            const toolMessages = context.messages.filter(
+              (message) => message.role === "tool"
+            );
+
+            if (context.config.name === "worker") {
+              if (toolMessages.length === 0) {
+                return {
+                  messages: [
+                    assistantToolCalls([
+                      {
+                        callId: "call-approve-worker",
+                        input: { hold: true },
+                        name: "hold",
+                      },
+                    ]),
+                  ],
+                  resolution: {
+                    type: "continue_iteration",
+                  },
+                  toolExecutionMode: "parallel",
+                };
+              }
+
+              return {
+                messages: [assistantText(childText)],
+                resolution: {
+                  reason: "done",
+                  type: "end_turn",
+                },
+              };
+            }
+
+            await sleep(20);
+            return {
+              messages: [assistantText(parentText)],
+              resolution: {
+                reason: "done",
+                type: "end_turn",
+              },
+            };
+          }),
+        ]),
+      });
+      const orchestration = createOrchestrationRuntime({
+        agents: {
+          primary: { name: "primary" },
+          worker: {
+            name: "worker",
+            tools: [
+              {
+                approval: true,
+                description: "Pause worker review",
+                execute() {
+                  return { approved: true };
+                },
+                inputSchema: {
+                  properties: {
+                    hold: { type: "boolean" },
+                  },
+                  required: ["hold"],
+                  type: "object",
+                },
+                name: "hold",
+              },
+            ],
+          },
+        },
+        framework,
+      });
+      const thread = await framework.createThread({});
+      const handle = orchestration.executeTurn({
+        agent: "primary",
+        branchId: thread.branchId,
+        signal: textSignal("root"),
+        threadId: thread.threadId,
+      });
+      const parentEventsPromise = collectValues(handle.allEvents());
+
+      await sleep(0);
+
+      const childHandle = handle.spawn({
+        agent: "worker",
+        signal: textSignal("approval"),
+      });
+      await collectValues(childHandle.events());
+      // Child is now paused. Wait for the parent to complete independently (it does not
+      // collect child results), then resume the child and collect both results.
+      const pausedPhase = childHandle.status().phase;
+      await waitUntil(() => handle.status().phase === "completed");
+      const parentPhaseWhileChildPaused = handle.status().phase;
+      const resumedChildHandle = childHandle.resolveApproval({
+        decisions: [{ callId: "call-approve-worker", type: "approve" }],
+      });
+      const resumedChildResult = await resumedChildHandle.awaitResult();
+      const parentResult = await handle.awaitResult();
+      await parentEventsPromise;
+
+      const lifecycle = {
+        childPausedPhase: pausedPhase,
+        childResumedPhase: resumedChildHandle.status().phase,
+        parentCompletedWhileChildPaused:
+          pausedPhase === "paused" &&
+          parentPhaseWhileChildPaused === "completed" &&
+          firstVisibleText(parentResult) === parentText,
+        resumedChildResult,
+      };
+
+      return {
+        evidence: { orchestration: { lifecycle } },
+        result: { orchestration: { lifecycle } },
+      };
+    },
+  };
+
+  const captureAsyncActionError = async (
+    action: () => Promise<unknown>
+  ): Promise<Record<string, unknown> | undefined> => {
+    try {
+      await action();
+      return undefined;
+    } catch (error: unknown) {
+      return dependencies.createObservedErrorEnvelope(error);
+    }
+  };
+
+  const runOrchestrationChildCancelParentCompletes = async (
     childText: string,
     parentText: string
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -402,7 +389,6 @@ export function createFrameworkAdapterOrchestrationLifecycle(
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -420,7 +406,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     });
     const parentEventsPromise = collectValues(handle.events());
 
-    await Promise.resolve();
+    await sleep(0);
 
     const childHandle = handle.spawn({
       agent: "worker",
@@ -446,16 +432,17 @@ export function createFrameworkAdapterOrchestrationLifecycle(
       evidence: { orchestration: { lifecycle } },
       result: { orchestration: { lifecycle } },
     };
-  }
+  };
 
-  async function runOrchestrationParentCancelChildCompletes(
+  const runOrchestrationParentCancelChildCompletes = async (
     childText: string,
     _parentText: string
-  ): Promise<AdapterProjection> {
+  ): Promise<AdapterProjection> => {
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner(async (context) => {
           if (context.config.name === "worker") {
@@ -479,7 +466,6 @@ export function createFrameworkAdapterOrchestrationLifecycle(
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -497,7 +483,7 @@ export function createFrameworkAdapterOrchestrationLifecycle(
     });
     const parentEventsPromise = collectValues(handle.events());
 
-    await Promise.resolve();
+    await sleep(0);
 
     const childHandle = handle.spawn({
       agent: "worker",
@@ -524,30 +510,27 @@ export function createFrameworkAdapterOrchestrationLifecycle(
       evidence: { orchestration: { lifecycle } },
       result: { orchestration: { lifecycle } },
     };
-  }
+  };
 
-  async function runOrchestrationSpawnRequiresRunningHandle(): Promise<AdapterProjection> {
-    const pausedSpawnError = await runPausedParentSpawnRejection();
-    const completedSpawnError = await runCompletedParentSpawnRejection();
+  const captureActionError = (
+    action: () => unknown
+  ): Record<string, unknown> | undefined => {
+    try {
+      action();
+      return undefined;
+    } catch (error: unknown) {
+      return dependencies.createObservedErrorEnvelope(error);
+    }
+  };
 
-    const lifecycle = {
-      completedSpawnError,
-      pausedSpawnError,
-    };
-
-    return {
-      evidence: { orchestration: { lifecycle } },
-      result: { orchestration: { lifecycle } },
-    };
-  }
-
-  async function runPausedParentSpawnRejection(): Promise<
+  const runPausedParentSpawnRejection = async (): Promise<
     Record<string, unknown> | undefined
-  > {
+  > => {
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createStaticRunner((context) => {
           const toolMessages = context.messages.filter(
@@ -581,7 +564,6 @@ export function createFrameworkAdapterOrchestrationLifecycle(
           };
         }),
       ]),
-      kernel: harness.kernel,
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -629,25 +611,27 @@ export function createFrameworkAdapterOrchestrationLifecycle(
         signal: textSignal("background"),
       })
     );
-  }
+  };
 
-  async function runCompletedParentSpawnRejection(): Promise<
+  const runCompletedParentSpawnRejection = async (): Promise<
     Record<string, unknown> | undefined
-  > {
+  > => {
     const harness = createConformanceKernelHarness();
     const framework = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,
-      runnerRegistry: createRunnerRegistry([
-        createStaticRunner(async () => ({
-          messages: [assistantText("Parent complete.")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        })),
-      ]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([
+        createStaticRunner(
+          fromSynchronousWithoutArguments(() => ({
+            messages: [assistantText("Parent complete.")],
+            resolution: {
+              reason: "done",
+              type: "end_turn",
+            },
+          }))
+        ),
+      ]),
     });
     const orchestration = createOrchestrationRuntime({
       agents: {
@@ -676,76 +660,105 @@ export function createFrameworkAdapterOrchestrationLifecycle(
         signal: textSignal("too-late"),
       })
     );
-  }
+  };
 
-  function firstVisibleText(result: unknown): string | undefined {
-    if (
-      typeof result !== "object" ||
-      result === null ||
-      Array.isArray(result)
-    ) {
-      return undefined;
-    }
-    type KV = Record<string, unknown>;
-    const r = result as KV;
-    const msg = r.finalAssistantMessage;
-    if (typeof msg !== "object" || msg === null) {
-      return undefined;
-    }
-    const parts = (msg as KV).parts;
-    if (!Array.isArray(parts)) {
-      return undefined;
-    }
-    const textPart = parts.find(
-      (p) => typeof p === "object" && p !== null && (p as KV).type === "text"
+  const runOrchestrationSpawnRequiresRunningHandle =
+    async (): Promise<AdapterProjection> => {
+      const pausedSpawnError = await runPausedParentSpawnRejection();
+      const completedSpawnError = await runCompletedParentSpawnRejection();
+
+      const lifecycle = {
+        completedSpawnError,
+        pausedSpawnError,
+      };
+
+      return {
+        evidence: { orchestration: { lifecycle } },
+        result: { orchestration: { lifecycle } },
+      };
+    };
+  const runOrchestrationLifecycleLocality = async (
+    input: unknown
+  ): Promise<AdapterProjection> => {
+    const scenario = dependencies.readOperationScenario(
+      input,
+      "runtime.orchestration.lifecycle-locality"
     );
-    if (textPart === undefined) {
-      return undefined;
-    }
-    const text = (textPart as KV).text;
-    return typeof text === "string" ? text : undefined;
-  }
+    const lifecycleCase = dependencies.readStringProperty(
+      scenario,
+      "case",
+      "runtime.orchestration.lifecycle-locality.case"
+    );
 
-  function captureActionError(
-    action: () => unknown
-  ): Record<string, unknown> | undefined {
-    try {
-      action();
-      return undefined;
-    } catch (error: unknown) {
-      return dependencies.createObservedErrorEnvelope(error);
-    }
-  }
-
-  async function captureAsyncActionError(
-    action: () => Promise<unknown>
-  ): Promise<Record<string, unknown> | undefined> {
-    try {
-      await action();
-      return undefined;
-    } catch (error: unknown) {
-      return dependencies.createObservedErrorEnvelope(error);
-    }
-  }
-
-  async function waitUntil(
-    predicate: () => boolean,
-    timeoutMs = 1000
-  ): Promise<void> {
-    const start = Date.now();
-
-    while (!predicate()) {
-      if (Date.now() - start > timeoutMs) {
-        throw new Error(`timed out after ${timeoutMs}ms`);
+    switch (lifecycleCase) {
+      case "parent_pause_child_continues": {
+        return await independentScenarios.parentPauseChildContinues(
+          dependencies.readStringProperty(
+            scenario,
+            "childText",
+            "runtime.orchestration.lifecycle-locality.childText"
+          ),
+          dependencies.readStringProperty(
+            scenario,
+            "parentText",
+            "runtime.orchestration.lifecycle-locality.parentText"
+          )
+        );
       }
-
-      await sleep(5);
+      case "child_pause_parent_completes": {
+        return await independentScenarios.workerPauseParentCompletes(
+          dependencies.readStringProperty(
+            scenario,
+            "childText",
+            "runtime.orchestration.lifecycle-locality.childText"
+          ),
+          dependencies.readStringProperty(
+            scenario,
+            "parentText",
+            "runtime.orchestration.lifecycle-locality.parentText"
+          )
+        );
+      }
+      case "child_cancel_parent_completes": {
+        return await runOrchestrationChildCancelParentCompletes(
+          dependencies.readStringProperty(
+            scenario,
+            "childText",
+            "runtime.orchestration.lifecycle-locality.childText"
+          ),
+          dependencies.readStringProperty(
+            scenario,
+            "parentText",
+            "runtime.orchestration.lifecycle-locality.parentText"
+          )
+        );
+      }
+      case "parent_cancel_child_completes": {
+        return await runOrchestrationParentCancelChildCompletes(
+          dependencies.readStringProperty(
+            scenario,
+            "childText",
+            "runtime.orchestration.lifecycle-locality.childText"
+          ),
+          dependencies.readStringProperty(
+            scenario,
+            "parentText",
+            "runtime.orchestration.lifecycle-locality.parentText"
+          )
+        );
+      }
+      case "spawn_requires_running_handle": {
+        return await runOrchestrationSpawnRequiresRunningHandle();
+      }
+      default: {
+        throw new Error(
+          `runtime.orchestration.lifecycle-locality declared unsupported case ${lifecycleCase}`
+        );
+      }
     }
-  }
+  };
 
-  function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
-  }
-}
+  return {
+    runOrchestrationLifecycleLocality,
+  };
+};
