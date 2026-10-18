@@ -41,6 +41,41 @@ import {
 } from "./session-test-helpers.js";
 import type { FakeSink } from "./session-test-helpers.js";
 
+interface TestFrameMessage {
+  cursor?: string;
+  frame: unknown;
+  kind: "frame";
+}
+
+interface TestInvocationMessage {
+  frame: { invocation: Record<string, unknown> };
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const requireFrameMessage = (value: unknown): TestFrameMessage => {
+  if (!isRecord(value) || value.kind !== "frame" || !("frame" in value)) {
+    throw new Error("expected a frame message");
+  }
+  if (value.cursor !== undefined && typeof value.cursor !== "string") {
+    throw new Error("expected frame cursor to be a string when present");
+  }
+  return value.cursor === undefined
+    ? { frame: value.frame, kind: "frame" }
+    : { cursor: value.cursor, frame: value.frame, kind: "frame" };
+};
+
+const requireCursor = (message: TestFrameMessage): string => {
+  if (message.cursor === undefined) {
+    throw new Error("expected frame message to carry a cursor");
+  }
+  return message.cursor;
+};
+
+const isInvocationMessage = (value: unknown): value is TestInvocationMessage =>
+  isRecord(value) && isRecord(value.frame) && isRecord(value.frame.invocation);
+
 describe("createWsSessionTransport: claim and lifecycle", () => {
   test("a second start() throws", () => {
     const fake = createFakeBinding(createHangingOutboundIterable([]));
@@ -150,6 +185,7 @@ describe("createWsSessionTransport: claim and lifecycle", () => {
 });
 
 describe("createWsSessionTransport: happy path", () => {
+  // oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep this setup helper local to the happy-path scenario group that owns it.
   const startHandshakedTransport = async (
     outboundFrames: SessionOutboundFrame[]
   ): Promise<{
@@ -187,34 +223,26 @@ describe("createWsSessionTransport: happy path", () => {
     const { sink } = await startHandshakedTransport(outboundFrames);
 
     // First message is the handshake_ack; the rest are frame envelopes.
-    const frameMessages = sink.sent.slice(1) as {
-      cursor?: string;
-      frame: SessionOutboundFrame;
-      kind: "frame";
-    }[];
+    const frameMessages = sink.sent.slice(1).map(requireFrameMessage);
 
     expect(frameMessages).toHaveLength(events.length);
 
-    frameMessages.forEach((message, index) => {
+    for (const [index, message] of frameMessages.entries()) {
       expect(message.kind).toBe("frame");
       expect(message.cursor).toBeDefined();
 
-      const decoded = decodeResumeCursor(message.cursor as string);
+      const decoded = decodeResumeCursor(requireCursor(message));
       expect(decoded?.sequence).toBe(index);
       expect(decoded?.turnId).toBe("turn-main");
       expect(message.frame).toEqual(outboundFrames[index]);
-    });
+    }
   });
 
   test("a non-event outbound frame is sent without a cursor", async () => {
     const invocationFrame = clientInvocationOutboundFrame();
     const { sink } = await startHandshakedTransport([invocationFrame]);
 
-    const frameMessage = sink.sent[1] as {
-      cursor?: string;
-      frame: SessionOutboundFrame;
-      kind: "frame";
-    };
+    const frameMessage = requireFrameMessage(sink.sent[1]);
 
     expect(frameMessage.kind).toBe("frame");
     expect(frameMessage.cursor).toBeUndefined();
@@ -229,6 +257,7 @@ describe("createWsSessionTransport: happy path", () => {
     // currently attached when it fires. This test pins that composition
     // contract rather than any transport-internal behavior.
     const fake = createFakeBinding(createFiniteOutboundIterable([]));
+    // oxlint-disable-next-line eslint/prefer-const -- The callback closes over this binding before the transport can be assigned.
     let currentTransport: WsSessionTransport | undefined;
     const session = createTestSession({
       binding: fake.binding,
@@ -277,11 +306,7 @@ describe("createWsSessionTransport: resume and redelivery across a reconnect", (
     transportOne.ingest(handshakeMessage());
     await flushMicrotasks();
 
-    const sentFrameMessages = sinkOne.sent.slice(1) as {
-      cursor: string;
-      frame: SessionOutboundFrame;
-      kind: "frame";
-    }[];
+    const sentFrameMessages = sinkOne.sent.slice(1).map(requireFrameMessage);
     expect(sentFrameMessages).toHaveLength(outboundFrames.length);
 
     // Close the first socket (not the session) partway through, then attach
@@ -289,7 +314,11 @@ describe("createWsSessionTransport: resume and redelivery across a reconnect", (
     // partway through what the first socket already received.
     transportOne.close();
 
-    const resumeCursor = sentFrameMessages[1]?.cursor;
+    const [, secondSentFrame] = sentFrameMessages;
+    if (secondSentFrame === undefined) {
+      throw new Error("expected at least two sent frame messages");
+    }
+    const resumeCursor = requireCursor(secondSentFrame);
     const expectedTail = sentFrameMessages.slice(2);
 
     const sinkTwo = createFakeSink();
@@ -309,24 +338,24 @@ describe("createWsSessionTransport: resume and redelivery across a reconnect", (
       sessionId: SESSION_ID,
     });
 
-    const replayedMessages = sinkTwo.sent.slice(1) as {
-      cursor: string;
-      frame: SessionOutboundFrame;
-      kind: "frame";
-    }[];
+    const replayedMessages = sinkTwo.sent.slice(1).map(requireFrameMessage);
 
     expect(replayedMessages).toHaveLength(expectedTail.length);
-    replayedMessages.forEach((message, index) => {
+    for (const [index, message] of replayedMessages.entries()) {
+      const expectedMessage = expectedTail[index];
+      if (expectedMessage === undefined) {
+        throw new Error("expected matching replay tail message");
+      }
       // Continuous numbering: the replayed sequence on the SECOND socket
       // picks up exactly where the FIRST socket's own cursors left off —
       // there is only ever one sequencer (ADR-0063), owned by the session,
       // not recreated per transport.
-      expect(decodeResumeCursor(message.cursor)?.sequence).toBe(
-        decodeResumeCursor(expectedTail[index]?.cursor)?.sequence
+      expect(decodeResumeCursor(requireCursor(message))?.sequence).toBe(
+        decodeResumeCursor(requireCursor(expectedMessage))?.sequence
       );
-      expect(message.cursor).toBe(expectedTail[index]?.cursor);
-      expect(message.frame).toEqual(expectedTail[index]?.frame);
-    });
+      expect(message.cursor).toBe(expectedMessage.cursor);
+      expect(message.frame).toEqual(expectedMessage.frame);
+    }
 
     transportTwo.close();
   });
@@ -355,12 +384,17 @@ describe("createWsSessionTransport: resume and redelivery across a reconnect", (
       input: {},
       leaseToken: "reconnect-lease-1",
     });
-    dispatchPromise.catch(() => undefined);
+    dispatchPromise.catch(() => {
+      // The test intentionally leaves this client invocation unanswered.
+    });
     await flushMicrotasks();
 
-    const invocationMessages = (
-      sinkOne.sent as { frame?: { kind: string } }[]
-    ).filter((message) => message.frame?.kind === "client_invocation");
+    const invocationMessages = sinkOne.sent.filter(
+      (message) =>
+        isRecord(message) &&
+        isRecord(message.frame) &&
+        message.frame.kind === "client_invocation"
+    );
     expect(invocationMessages).toHaveLength(1);
 
     // The socket drops before a client_result ever arrives: close the first
@@ -378,14 +412,14 @@ describe("createWsSessionTransport: resume and redelivery across a reconnect", (
     transportTwo.ingest(handshakeMessage());
     await flushMicrotasks();
 
-    const redeliveredMessages = (
-      sinkTwo.sent as { frame?: { invocation?: { callId?: string } } }[]
-    ).filter((message) => message.frame?.invocation !== undefined);
+    const redeliveredMessages = sinkTwo.sent.filter(isInvocationMessage);
 
     expect(redeliveredMessages).toHaveLength(1);
-    expect(redeliveredMessages[0]?.frame?.invocation?.callId).toBe(
-      "reconnect-call-1"
-    );
+    const [redelivered] = redeliveredMessages;
+    if (redelivered === undefined) {
+      throw new Error("expected a redelivered client invocation frame");
+    }
+    expect(redelivered.frame.invocation.callId).toBe("reconnect-call-1");
 
     transportTwo.close();
   });
@@ -614,6 +648,7 @@ describe("createWsSessionTransport: handshake close codes", () => {
 });
 
 describe("createWsSessionTransport: post-handshake inbound routing", () => {
+  // oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep this setup helper local to the inbound-routing scenario group that owns it.
   const startHandshakedTransport = async (): Promise<{
     fake: ReturnType<typeof createFakeBinding>;
     sink: FakeSink;
@@ -693,9 +728,11 @@ describe("createWsSessionTransport: ingest ordering", () => {
     const fake = createFakeBinding(createHangingOutboundIterable([]));
     const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
-    let resolveAuthorize: (authorized: boolean) => void = () => undefined;
+    let resolveAuthorize: ((authorized: boolean) => void) | undefined;
     const transport = createWsSessionTransport({
+      // oxlint-disable-next-line typescript/promise-function-async -- Return the exact externally-settled authorization promise used to prove ingest serialization.
       authorize: () =>
+        // oxlint-disable-next-line promise/avoid-new -- The test resolves this promise explicitly after proving later ingest calls remain queued.
         new Promise<boolean>((resolve) => {
           resolveAuthorize = resolve;
         }),
@@ -717,6 +754,9 @@ describe("createWsSessionTransport: ingest ordering", () => {
     expect(sink.sent).toEqual([]);
     expect(fake.dispatched).toEqual([]);
 
+    if (resolveAuthorize === undefined) {
+      throw new Error("expected authorize callback to install its resolver");
+    }
     resolveAuthorize(true);
     await flushMicrotasks();
 

@@ -30,7 +30,6 @@
 
 /* oxlint-enable jsdoc/check-tag-names */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
 export type {
   TuvrenDecodedSseEvent,
   TuvrenDecodedSseStream,

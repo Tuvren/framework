@@ -352,7 +352,6 @@ const flushPendingAgUiSubstreams = (
  * @yields {AGUIEvent} Each validated AG-UI projection event in canonical input order.
  */
 /* oxlint-disable eslint/complexity -- Protocol projection intentionally keeps the canonical-to-AG-UI mapping table in one switch. */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Protocol projection intentionally keeps the canonical-to-AG-UI mapping table in one switch.
 const toAgUiEventsSubscribed = async function* toAgUiEventsSubscribed(
   events: AsyncIterable<TuvrenStreamEvent>,
   options?: StreamAdapterOptions

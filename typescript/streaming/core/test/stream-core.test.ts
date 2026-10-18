@@ -134,7 +134,6 @@ const frameworkStreamFixtures = await readFrameworkStreamFixtures();
 describe("stream-core", () => {
   test("tees one canonical stream into isolated single-consumer branches", async () => {
     let started = false;
-    // biome-ignore lint/suspicious/useAwait: Async generators must remain async even when fixture production is synchronous.
     const source = (async function* source(): AsyncIterable<TuvrenStreamEvent> {
       started = true;
 

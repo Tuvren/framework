@@ -54,6 +54,11 @@ const describeError = (error: unknown): string =>
 const isPositiveFiniteNumber = (value: number): boolean =>
   Number.isFinite(value) && value > 0;
 
+const isSinkAlreadyAttachedError = (error: unknown): boolean =>
+  error instanceof TuvrenRuntimeError &&
+  error.code === REMOTE_SESSION_ALREADY_ATTACHED;
+
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established @experimental API stability markers on the public WebSocket transport surface. */
 /**
  * The runtime-agnostic push-model socket seam a host adapts from its real
  * socket (`Bun.serve` websockets, the browser `WebSocket` global, Node
@@ -63,6 +68,7 @@ const isPositiveFiniteNumber = (value: number): boolean =>
  * @experimental
  */
 export interface WsSocketSink {
+  /* oxlint-disable typescript/method-signature-style -- Preserve the established public socket seam and byte-identical generated declarations. */
   /**
    * Optional capability: bytes currently queued on the real socket,
    * matching the WebSocket `bufferedAmount` concept. When present alongside
@@ -76,6 +82,7 @@ export interface WsSocketSink {
   close(code: number, reason?: string): void;
   /** Sends one text message over the underlying socket. */
   send(data: string): void;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -158,6 +165,7 @@ export interface WsSessionTransportOptions {
  * @experimental
  */
 export interface WsSessionTransport {
+  /* oxlint-disable typescript/method-signature-style -- Preserve the established public transport API and byte-identical generated declarations. */
   /**
    * Idempotently closes the connection: closes `sink` with `code` (default
    * `1000`), and — only if this transport's handshake ever succeeded in
@@ -175,6 +183,7 @@ export interface WsSessionTransport {
   ingest(data: string | Uint8Array): void;
   /** Enters the `awaiting-handshake` state. May only be called once. */
   start(): void;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -227,6 +236,7 @@ export interface WsSessionTransport {
 export const createWsSessionTransport = (
   options: WsSessionTransportOptions
 ): WsSessionTransport => {
+  /* oxlint-enable jsdoc/check-tag-names */
   if (options.heartbeat !== undefined) {
     if (!isPositiveFiniteNumber(options.heartbeat.intervalMs)) {
       throw new RangeError(
@@ -463,7 +473,7 @@ export const createWsSessionTransport = (
    * not paced one frame at a time by this transport's own pump.
    */
   const createSessionSinkAdapter = (): {
-    release(): boolean;
+    release: () => boolean;
     sink: RemoteClientSessionSink;
   } => {
     let released = false;
@@ -507,10 +517,6 @@ export const createWsSessionTransport = (
    * already-attached code (including a non-Tuvren error) falls through to
    * the session-not-found close below.
    */
-  const isSinkAlreadyAttachedError = (error: unknown): boolean =>
-    error instanceof TuvrenRuntimeError &&
-    error.code === REMOTE_SESSION_ALREADY_ATTACHED;
-
   /**
    * Attaches this transport's sink adapter to `options.session` for the
    * given (already-authorized) handshake request, closing the connection
@@ -667,18 +673,18 @@ export const createWsSessionTransport = (
     switch (parsed.kind) {
       case "ping": {
         options.sink.send(JSON.stringify({ kind: "pong" }));
-        return;
+        break;
       }
       case "pong": {
         // pong is the answer a quiet peer produces (the transport always
         // answers an inbound ping); liveness itself is already recorded
         // above for every inbound message, wiring the M6 no-op seam into
         // heartbeat tracking.
-        return;
+        break;
       }
       case "frame": {
         dispatchInboundSafely(parsed.frame);
-        return;
+        break;
       }
       case "handshake": {
         // A stray post-handshake handshake message is not a transport
@@ -686,22 +692,22 @@ export const createWsSessionTransport = (
         // never close the socket) — forward it so the binding's schema
         // validation turns it into a session_rejection.
         dispatchInboundSafely(parsed.message);
-        return;
+        break;
       }
       case "handshake_ack": {
         dispatchInboundSafely(parsed.message);
-        return;
+        break;
       }
       case "unparseable": {
         // Same rule: no inbound message is silently dropped. The binding's
         // schema validation rejects this with session_frame_invalid.
         dispatchInboundSafely(parsed.raw);
-        return;
+        break;
       }
       default: {
         // Exhaustive over ParsedWsMessage; kept only to satisfy the lint
         // rule requiring a default clause.
-        return;
+        break;
       }
     }
   };
@@ -724,24 +730,28 @@ export const createWsSessionTransport = (
       // authorize() is reported as a warning instead) so one bad message can
       // never wedge every subsequent ingest() call behind a rejected
       // promise.
+      /* oxlint-disable promise/prefer-await-to-then, promise/prefer-await-to-callbacks -- Promise chaining is the transport's serialized ingest queue; replacing it with detached async work would change message ordering and rejection recovery. */
       ingestChain = ingestChain
-        .then(() => {
+        .then((): Promise<void> | void => {
           if (closed) {
             return;
           }
 
           const parsed = parseWsMessage(data);
-          return handshakeDone
-            ? processPostHandshake(parsed)
-            : processHandshake(parsed);
+          if (handshakeDone) {
+            processPostHandshake(parsed);
+            return;
+          }
+          return processHandshake(parsed);
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
           reportWarning({
             code: "ws_transport_inbound_dispatch_failed",
             details: { error: describeError(error) },
             message: "ingest() processing failed unexpectedly",
           });
         });
+      /* oxlint-enable promise/prefer-await-to-then, promise/prefer-await-to-callbacks */
     },
     start(): void {
       if (started) {
