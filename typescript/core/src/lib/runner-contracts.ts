@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
-
 export {
   assertRunnerExecutionResult,
   assertRunnerHandoffContextPlan,

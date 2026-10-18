@@ -22,7 +22,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import Ajv2020 from "ajv/dist/2020.js";
@@ -88,15 +88,22 @@ const loadJsonSchemas = (directoryUrl: URL): Ajv2020 => {
     entry.endsWith(".json")
   );
 
-  expect(entries.sort()).toEqual(
+  expect(entries.toSorted()).toEqual(
     EXPECTED_EVENT_STREAM_ARTIFACT_SCHEMAS.map(
       (schemaName) => `${schemaName}.json`
-    ).sort()
+    ).toSorted()
   );
 
   for (const entry of entries) {
-    const schemaPath = join(directory, entry);
-    const schema = JSON.parse(readFileSync(schemaPath, "utf-8"));
+    const schemaPath = path.join(directory, entry);
+    const schema: unknown = JSON.parse(readFileSync(schemaPath, "utf-8"));
+    if (
+      typeof schema !== "object" ||
+      schema === null ||
+      Array.isArray(schema)
+    ) {
+      throw new TypeError(`invalid object JSON Schema artifact ${schemaPath}`);
+    }
     ajv.addSchema(schema);
   }
 

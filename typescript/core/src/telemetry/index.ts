@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */
+
 /**
  * `@tuvren/core/telemetry` — the host-facing telemetry contract: the
  * span/event vocabulary with its lineage correlation context, the
@@ -109,8 +111,10 @@ export interface TelemetryEvent {
  * methods are synchronous, fire-and-forget notifications.
  */
 export interface TuvrenTelemetrySink {
+  /* oxlint-disable typescript/method-signature-style -- Preserve the frozen public sink method signatures and their method bivariance. */
   event(event: TelemetryEvent): void;
   span(span: TelemetrySpan): void;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -118,8 +122,10 @@ export interface TuvrenTelemetrySink {
  * the runtime when the host does not supply a telemetry sink.
  */
 export const NoopTelemetrySink: TuvrenTelemetrySink = Object.freeze({
+  /* oxlint-disable unicorn/no-useless-undefined -- Preserve explicit undefined-returning noop callbacks on the shared frozen sink. */
   event: () => undefined,
   span: () => undefined,
+  /* oxlint-enable unicorn/no-useless-undefined */
 });
 
 // ── Telemetry-funnel destination contract (ADR-0058) ───────────────────────────
@@ -134,3 +140,5 @@ export type {
   TelemetryRoute,
   TelemetryRouting,
 } from "./telemetry-destination.js";
+
+/* oxlint-enable jsdoc/check-tag-names */

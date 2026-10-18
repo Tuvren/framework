@@ -1,5 +1,4 @@
 [
-  "typescript/core",
   "typescript/sdk",
   "typescript/streaming",
   "typescript/tools",

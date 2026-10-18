@@ -25,6 +25,8 @@ import type { EpochMs, HashString } from "./kernel-records.js";
 import type { ErasedPayload } from "./payload-codec.js";
 import type { TuvrenError } from "./tuvren-error.js";
 
+/* oxlint-disable typescript/method-signature-style -- Preserve the frozen public method signatures and their method bivariance under strictFunctionTypes. */
+
 /**
  * A JSON-serializable value at the shared contract seam: `null`, booleans,
  * numbers, strings, and acyclic arrays/objects thereof.
@@ -45,6 +47,7 @@ export type TuvrenJsonValue =
  *
  * @see {@link isTuvrenJsonSchema} for the structural validator.
  */
+// oxlint-disable-next-line typescript/consistent-indexed-object-style -- Preserve the frozen recursive JSON Schema alias spelling in the public API snapshot.
 export type TuvrenJsonSchema = { [key: string]: TuvrenJsonValue } | boolean;
 /**
  * The operator's disposition for a single pending tool call in an
@@ -58,6 +61,7 @@ export type ApprovalDecisionType =
   | "approve"
   | "edit"
   | "reject"
+  // oxlint-disable-next-line typescript/ban-types -- Preserve the intentional open-string union without collapsing editor completion for known values.
   | (string & {});
 /**
  * Selects which standard {@link HandoffContextBuilder} the framework applies
@@ -70,6 +74,7 @@ export type ApprovalDecisionType =
 export type HandoffContextMode =
   | "preserve_trace"
   | "last_output_only"
+  // oxlint-disable-next-line typescript/ban-types -- Preserve the intentional open-string union without collapsing editor completion for known values.
   | (string & {});
 
 /** Freeform assistant/user text content (KrakenFrameworkSpecification §1.1). */
@@ -1108,10 +1113,12 @@ export interface ToolExecutionContext {
  * per-invocation {@link ToolExecutionContext}, and returns the tool's raw
  * result (validated against `outputSchema`, if declared, before surfacing).
  */
+/* oxlint-disable typescript/no-redundant-type-constituents -- Preserve the frozen sync-or-Promise callable spelling in the public API snapshot. */
 export type ExecuteFunction = (
   input: unknown,
   context: ToolExecutionContext
 ) => Promise<unknown> | unknown;
+/* oxlint-enable typescript/no-redundant-type-constituents */
 
 /**
  * A model-callable, framework-executed tool
@@ -1750,10 +1757,12 @@ export interface AgentConfig {
   sandboxExecutors?: Map<
     string,
     {
+      /* oxlint-disable typescript/no-redundant-type-constituents -- Preserve the frozen sync-or-Promise sandbox callable spelling in the public API snapshot. */
       execute(
         input: unknown,
         context: ToolExecutionContext
       ): Promise<unknown> | unknown;
+      /* oxlint-enable typescript/no-redundant-type-constituents */
     }
   >;
   /**
@@ -2127,3 +2136,5 @@ export interface TuvrenRuntime {
     archiveBranchId?: string;
   }>;
 }
+
+/* oxlint-enable typescript/method-signature-style */
