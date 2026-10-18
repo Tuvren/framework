@@ -15,12 +15,8 @@
  */
 
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
-import {
-  createStreamAdapterWarningReporter,
-  type SequencedTuvrenStreamEvent,
-  type StreamAdapterOptions,
-  serializeTuvrenStreamEvent,
-} from "@tuvren/stream-core";
+import { createStreamAdapterWarningReporter, serializeTuvrenStreamEvent } from '@tuvren/stream-core';
+import type { SequencedTuvrenStreamEvent, StreamAdapterOptions } from '@tuvren/stream-core';
 
 const SSE_RESPONSE_HEADERS = {
   "cache-control": "no-cache, no-transform",
@@ -102,16 +98,16 @@ async function* toResumableSseFramesSubscribed(
   const reportWarning = createStreamAdapterWarningReporter(options);
 
   for await (const sequenced of sequencedEvents) {
-    const event = sequenced.event;
+    const {event} = sequenced;
 
     if (event.type === "file.done" && event.data instanceof Uint8Array) {
       reportWarning({
         code: "sse_binary_payload_json_encoded",
-        message:
-          "SSE file.done binary payloads were encoded into a JSON marker object.",
         details: {
           messageId: event.messageId,
         },
+        message:
+          "SSE file.done binary payloads were encoded into a JSON marker object.",
       });
     }
 
@@ -133,11 +129,11 @@ async function* toSseFramesSubscribed(
     if (event.type === "file.done" && event.data instanceof Uint8Array) {
       reportWarning({
         code: "sse_binary_payload_json_encoded",
-        message:
-          "SSE file.done binary payloads were encoded into a JSON marker object.",
         details: {
           messageId: event.messageId,
         },
+        message:
+          "SSE file.done binary payloads were encoded into a JSON marker object.",
       });
     }
 

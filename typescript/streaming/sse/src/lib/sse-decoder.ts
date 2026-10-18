@@ -171,24 +171,29 @@ function applyFieldUpdate(
   state: DecoderState
 ): void {
   switch (fieldName) {
-    case "event":
+    case "event": {
       state.eventTypeBuffer = fieldValue;
       return;
-    case "data":
+    }
+    case "data": {
       state.dataBuffer += `${fieldValue}\n`;
       return;
-    case "id":
+    }
+    case "id": {
       if (!fieldValue.includes(NULL_CHARACTER)) {
         state.lastEventId = fieldValue;
       }
       return;
-    case "retry":
+    }
+    case "retry": {
       if (RETRY_DIGITS_PATTERN.test(fieldValue)) {
         state.reconnectDelayMs = Number.parseInt(fieldValue, 10);
       }
       return;
-    default:
+    }
+    default: {
       return;
+    }
   }
 }
 

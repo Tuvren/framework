@@ -27,13 +27,8 @@ import {
   teeTuvrenStreamEvents,
 } from "@tuvren/stream-core";
 
-import {
-  decodeSseStream,
-  type TuvrenSseFrame,
-  toResumableSseFrames,
-  toSseFrames,
-  toSseResponse,
-} from "../src/index.ts";
+import { decodeSseStream, toResumableSseFrames, toSseFrames, toSseResponse } from '../src/index.ts';
+import type { TuvrenSseFrame } from '../src/index.ts';
 
 const frameworkStreamFixtures = await readFrameworkStreamFixtures();
 
@@ -181,7 +176,7 @@ describe("toResumableSseFrames", () => {
     const wireFrames: string[] = [];
 
     // Server side: record each sequenced frame while emitting SSE wire text.
-    const recording = (async function* () {
+    const recording = (async function*  recording() {
       for await (const frame of sequenced) {
         buffer.record(frame);
         yield frame;

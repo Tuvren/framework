@@ -41,7 +41,7 @@ interface SseTraceFixture {
 const FIXTURE_PATH =
   "../../../../spec/conformance/streaming/fixtures/event-stream-sse-traces.json";
 const fixture = JSON.parse(
-  await readFile(new URL(FIXTURE_PATH, import.meta.url), "utf8")
+  await readFile(new URL(FIXTURE_PATH, import.meta.url), "utf-8")
 ) as SseTraceFixture;
 
 describe("sse-decoder", () => {
@@ -85,7 +85,7 @@ async function observeEncoderForTest(): Promise<{
   contentType: string;
 }> {
   // biome-ignore lint/suspicious/useAwait: encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously
-  const events = (async function* () {
+  const events = (async function*  events() {
     yield {
       data: { value: "probe" },
       messageId: "probe-msg",

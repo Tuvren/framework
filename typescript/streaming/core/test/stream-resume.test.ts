@@ -18,17 +18,8 @@ import { describe, expect, test } from "bun:test";
 
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 
-import {
-  createFixtureStream,
-  createReplayBuffer,
-  createSequencedTuvrenStreamEvents,
-  decodeResumeCursor,
-  encodeResumeCursor,
-  type SequencedTuvrenStreamEvent,
-  type StreamAdapterWarning,
-  streamAdapterFixtures,
-  teeTuvrenStreamEvents,
-} from "../src/index.ts";
+import { createFixtureStream, createReplayBuffer, createSequencedTuvrenStreamEvents, decodeResumeCursor, encodeResumeCursor, streamAdapterFixtures, teeTuvrenStreamEvents } from '../src/index.ts';
+import type { SequencedTuvrenStreamEvent, StreamAdapterWarning } from '../src/index.ts';
 
 const HASH_ONE = "1".repeat(64);
 const HASH_EARLY = "e".repeat(64);
