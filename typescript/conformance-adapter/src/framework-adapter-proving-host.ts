@@ -15,15 +15,21 @@
  */
 
 import { spawn } from "node:child_process";
+import { once } from "node:events";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
-const REPO_ROOT = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
-const REPL_CLI_PATH = resolve(REPO_ROOT, "typescript/host/repl/dist/cli.js");
+const REPO_ROOT = path.resolve(
+  fileURLToPath(new URL("../../..", import.meta.url))
+);
+const REPL_CLI_PATH = path.resolve(
+  REPO_ROOT,
+  "typescript/host/repl/dist/cli.js"
+);
 
 interface ProvingHostInput {
   backend: "memory";
@@ -31,9 +37,8 @@ interface ProvingHostInput {
   stdin: string;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const readLiteral = <T extends string>(
   value: unknown,
@@ -44,7 +49,14 @@ const readLiteral = <T extends string>(
     return expected;
   }
 
-  throw new Error(`unsupported proving-host ${label} "${String(value)}"`);
+  const received =
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "bigint"
+      ? String(value)
+      : typeof value;
+  throw new Error(`unsupported proving-host ${label} "${received}"`);
 };
 
 const readProvingHostInput = (input: unknown): ProvingHostInput => {
@@ -101,16 +113,12 @@ const runCli = async (
   });
   child.stdin.end(stdin);
 
-  return await new Promise((resolve, reject) => {
-    child.once("error", reject);
-    child.once("close", (exitCode) => {
-      resolve({ exitCode, stderr, stdout });
-    });
-  });
+  await once(child, "close");
+  return { exitCode: child.exitCode, stderr, stdout };
 };
 
-const parseJsonlOutputs = (text: string): string[] => {
-  return text
+const parseJsonlOutputs = (text: string): string[] =>
+  text
     .split("\n")
     .filter((line) => line.trim().length > 0)
     .map((line) => JSON.parse(line) as unknown)
@@ -119,7 +127,6 @@ const parseJsonlOutputs = (text: string): string[] => {
         isRecord(record) && typeof record.output === "string"
     )
     .map((record) => record.output);
-};
 
 const readRecordKind = (value: unknown): string => {
   if (isRecord(value) && typeof value.recordKind === "string") {
@@ -129,67 +136,64 @@ const readRecordKind = (value: unknown): string => {
   return "<unknown>";
 };
 
-const parseJsonlKinds = (text: string): string[] => {
-  return text
+const parseJsonlKinds = (text: string): string[] =>
+  text
     .split("\n")
     .filter((line) => line.trim().length > 0)
     .map((line) => readRecordKind(JSON.parse(line) as unknown));
-};
 
 export const createFrameworkAdapterProvingHost = (): {
-  runHeadlessTranscriptReplay(input: unknown): Promise<AdapterProjection>;
-} => {
-  return {
-    async runHeadlessTranscriptReplay(
-      input: unknown
-    ): Promise<AdapterProjection> {
-      const scenario = readProvingHostInput(input);
-      const workspace = await mkdtemp(join(tmpdir(), "tuvren-repl-conf-"));
-      const transcriptPath = join(workspace, "session.jsonl");
+  runHeadlessTranscriptReplay: (input: unknown) => Promise<AdapterProjection>;
+} => ({
+  async runHeadlessTranscriptReplay(
+    input: unknown
+  ): Promise<AdapterProjection> {
+    const scenario = readProvingHostInput(input);
+    const workspace = await mkdtemp(path.join(tmpdir(), "tuvren-repl-conf-"));
+    const transcriptPath = path.join(workspace, "session.jsonl");
 
-      try {
-        const record = await runCli(
-          [
-            "--backend",
-            scenario.backend,
-            "--provider",
-            scenario.providerMode,
-            "--headless",
-            "--record",
-            transcriptPath,
-          ],
-          scenario.stdin
+    try {
+      const record = await runCli(
+        [
+          "--backend",
+          scenario.backend,
+          "--provider",
+          scenario.providerMode,
+          "--headless",
+          "--record",
+          transcriptPath,
+        ],
+        scenario.stdin
+      );
+
+      if (record.exitCode !== 0) {
+        throw new Error(
+          `headless record failed: ${record.stderr || record.stdout}`
         );
-
-        if (record.exitCode !== 0) {
-          throw new Error(
-            `headless record failed: ${record.stderr || record.stdout}`
-          );
-        }
-
-        const replay = await runCli(["--replay", transcriptPath], "");
-
-        if (replay.exitCode !== 0) {
-          throw new Error(
-            `transcript replay failed: ${replay.stderr || replay.stdout}`
-          );
-        }
-
-        return {
-          result: {
-            provingHost: {
-              headlessOutputs: parseJsonlOutputs(record.stdout),
-              headlessRecordKinds: parseJsonlKinds(record.stdout),
-              replay: JSON.parse(replay.stdout) as unknown,
-              transcriptRecordKinds: parseJsonlKinds(
-                await readFile(transcriptPath, "utf8")
-              ),
-            },
-          },
-        };
-      } finally {
-        await rm(workspace, { force: true, recursive: true });
       }
-    },
-  };
-};
+
+      const replay = await runCli(["--replay", transcriptPath], "");
+
+      if (replay.exitCode !== 0) {
+        throw new Error(
+          `transcript replay failed: ${replay.stderr || replay.stdout}`
+        );
+      }
+
+      return {
+        result: {
+          provingHost: {
+            headlessOutputs: parseJsonlOutputs(record.stdout),
+            headlessRecordKinds: parseJsonlKinds(record.stdout),
+            replay: JSON.parse(replay.stdout) as unknown,
+            transcriptRecordKinds: parseJsonlKinds(
+              await readFile(transcriptPath, "utf-8")
+            ),
+          },
+        },
+      };
+    } finally {
+      await rm(workspace, { force: true, recursive: true });
+    }
+  },
+});

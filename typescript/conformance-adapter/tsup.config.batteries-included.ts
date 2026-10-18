@@ -14,22 +14,25 @@
  * limitations under the License.
  */
 
-import { join } from "node:path";
+import path from "node:path";
 
 import { defineConfig } from "tsup";
 
 const configDir = import.meta.dirname;
 
-const SQLITE_MIGRATIONS_SRC = join(
+const SQLITE_MIGRATIONS_SRC = path.join(
   configDir,
   "../kernel/backends/sqlite/migrations"
 );
-const SQLITE_MIGRATIONS_DEST = join(configDir, "dist/sqlite-migrations");
-const POSTGRES_MIGRATIONS_SRC = join(
+const SQLITE_MIGRATIONS_DEST = path.join(configDir, "dist/sqlite-migrations");
+const POSTGRES_MIGRATIONS_SRC = path.join(
   configDir,
   "../kernel/backends/postgres/migrations"
 );
-const POSTGRES_MIGRATIONS_DEST = join(configDir, "dist/postgres-migrations");
+const POSTGRES_MIGRATIONS_DEST = path.join(
+  configDir,
+  "dist/postgres-migrations"
+);
 
 export default defineConfig({
   banner: {
@@ -40,7 +43,7 @@ export default defineConfig({
   entry: ["src/batteries-included-node-host.ts"],
   external: ["better-sqlite3"],
   format: ["esm"],
-  noExternal: [/^@tuvren\//],
+  noExternal: [/^@tuvren\//u],
   onSuccess: `rm -rf "${SQLITE_MIGRATIONS_DEST}" "${POSTGRES_MIGRATIONS_DEST}" && cp -r "${SQLITE_MIGRATIONS_SRC}" "${SQLITE_MIGRATIONS_DEST}" && cp -r "${POSTGRES_MIGRATIONS_SRC}" "${POSTGRES_MIGRATIONS_DEST}"`,
   outDir: "dist",
   platform: "node",
