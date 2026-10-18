@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CU001",
+  "delivery_commit": "b544e98ffdbb81ec5b7c5578ab164c18f4d2284e",
+  "source": {
+    "tag": "evidence/wave-1-bt-source-freeze-20261018",
+    "commit": "6a181a8e590ad2d9600f9a0547c0ecfe8ae4185f",
+    "tree": "ae393ec6b1dd1db2aa3a3bcf1866ad035e631c6f",
+    "measured_tree": "a6d2e2b818dc28d66611a30d63c7d05f2ca896e9",
+    "owned_files_checked": 54,
+    "mode_or_blob_mismatches": 0
+  },
+  "delivery": {
+    "changed_paths": 55,
+    "raw_changed_lines": 12306,
+    "changeset": ".changeset/runtime-execution-tooling-lint-prep.md",
+    "changeset_release": "@tuvren/runtime patch",
+    "constitution_paths_in_source_commit": 0,
+    "debug_tags": 0
+  },
+  "checks": [
+    {"name":"retained-biome","result":"pass","detail":"154 files checked"},
+    {"name":"oxfmt","result":"pass","detail":"33 new or grown TypeScript files checked; maximum 913 physical lines"},
+    {"name":"compiler-isolation","result":"pass","detail":"715 files; zero live source from another framework checkout"},
+    {"name":"cold-runtime-import","result":"pass"},
+    {"name":"focused-runtime-tests","result":"pass","detail":"11 tests; 26 assertions"},
+    {"name":"native-routing-argv-tests","result":"pass","detail":"45 tests; 222 assertions"},
+    {"name":"changeset-coverage","result":"pass","detail":"one directly covered publishable package"},
+    {"name":"framework-runtime-typecheck","result":"pass"},
+    {"name":"constitution-validation","result":"pass","detail":"0 errors; 0 warnings"}
+  ],
+  "milestone_review": {
+    "model": "gpt-6.1-sol",
+    "reviewed_commit": "b544e98ffdbb81ec5b7c5578ab164c18f4d2284e",
+    "coverage": "all 55 changed files, meaningful assertions, and whole-change interactions",
+    "findings": 0
+  }
+}

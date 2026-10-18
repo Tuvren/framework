@@ -1,0 +1,13 @@
+owner: KRT-CU001
+mode: contract_test
+produced:
+  date: 2026-10-18
+  commit: b544e98ffdbb81ec5b7c5578ab164c18f4d2284e
+  command: "Frozen identity comparison; retained Biome and Oxfmt checks; compiler-isolation inventory; cold runtime import; focused runtime and routing tests; Changeset coverage; framework-runtime typecheck; complete milestone review."
+result: pass
+files:
+  - path: delivery-provenance.json
+    sha256: 9266721d54bd85b43d1f1bfa4fbe1f2265785a51ef24c3ce1989bed07808de7d
+    bytes: 1754
+    role: summary
+pass_criteria: "All owned source files match the durable CU source freeze, the declared checks pass on the assembled delivery, compiler resolution uses no live sibling source, the direct runtime Changeset is present, and complete milestone review finds no defect."
