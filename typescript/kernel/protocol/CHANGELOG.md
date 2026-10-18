@@ -1,5 +1,25 @@
 # @tuvren/kernel-protocol
 
+## 0.3.0
+
+### Minor Changes
+
+- f13a6fe: Apply lint cleanup to the kernel protocol and runtime. Protocol repository and syscall callables use property signatures, which reject implementations with narrower input parameters under strict function checking. Protocol `hashKernelRecord` and `hashTurnTreeIdentity` report invalid inputs through Promise rejection instead of synchronous throws; validation codes, messages, order, and canonical identities are preserved.
+  
+  The SDK re-exports `RuntimeBackend`, `RuntimeKernel`, and `RuntimeKernelRunLiveness`; their callable properties enforce the same strict input-parameter variance.
+  
+  Runtime `verdicts.compose` reports malformed-input failures through Promise rejection instead of synchronous throws. Verdict priority, returned values, and error values are preserved. Runtime async iteration remains lazy and sequential, preserving transaction writes and lineage reads.
+
+### Patch Changes
+
+- 8639023: Toolchain preparation moves TypeScript and JSON formatting and import organization to native Oxfmt and prepares the OXC toolchain (ADR-0070, KRT-BP003/KRT-BP004). These public packages receive the mechanical reformat and import-organization output and the supporting configuration edits. Parsed authority, public APIs, signatures, stored encodings, and runtime behavior are unchanged.
+  
+  Telemetry codegen passes the JSON attribute artifact and the TypeScript helper to Oxfmt in one invocation. The shipped preset ignores generated directories, so only the JSON artifact matches and Oxfmt normalizes its layout. The JSON path stays in the invocation as the required matched file. The ignored TypeScript helper, parsed values, and runtime behavior remain unchanged. A second generator and formatter pass produces no diff.
+- Updated dependencies [29de200]
+- Updated dependencies [0f3e64f]
+- Updated dependencies [8639023]
+  - @tuvren/core@0.3.0
+
 ## 0.2.0
 
 ### Patch Changes

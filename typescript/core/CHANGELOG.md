@@ -1,5 +1,18 @@
 # @tuvren/core
 
+## 0.3.0
+
+### Minor Changes
+
+- 0f3e64f: Add the optional host-owned `admissionKey` to user messages and input signals. Preserve the key through durable input and steering while excluding it from runner and provider messages.
+
+### Patch Changes
+
+- 29de200: Internal tooling update for the Biome 2.5 upgrade with no change to published behavior. `@tuvren/core` replaces six `biome-ignore` comments that Biome 2.5 reports as unused with plain comments, and the `@tuvren/runtime` and `@tuvren/backend-postgres` test suites pick up a lint fix and formatter output.
+- 8639023: Toolchain preparation moves TypeScript and JSON formatting and import organization to native Oxfmt and prepares the OXC toolchain (ADR-0070, KRT-BP003/KRT-BP004). These public packages receive the mechanical reformat and import-organization output and the supporting configuration edits. Parsed authority, public APIs, signatures, stored encodings, and runtime behavior are unchanged.
+  
+  Telemetry codegen passes the JSON attribute artifact and the TypeScript helper to Oxfmt in one invocation. The shipped preset ignores generated directories, so only the JSON artifact matches and Oxfmt normalizes its layout. The JSON path stays in the invocation as the required matched file. The ignored TypeScript helper, parsed values, and runtime behavior remain unchanged. A second generator and formatter pass produces no diff.
+
 ## 0.2.0
 
 ### Patch Changes

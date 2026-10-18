@@ -1,6 +1,6 @@
 {
   "name": "@tuvren/stream-core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Tuvren streaming core: the shared stream-adapter contract and helpers for projecting Tuvren stream events onto transport-specific encodings.",
   "license": "Apache-2.0",
   "repository": {
