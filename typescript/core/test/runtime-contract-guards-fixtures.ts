@@ -41,63 +41,10 @@ import type {
 
 // Binding-local harness only: cross-implementation runtime-api authority lives
 // in the packet TypeSpec and conformance plans, not in these TypeScript values.
-function emptyEvents<T>(): AsyncIterable<T> {
-  return (async function* () {
+const emptyEvents = <T>(): AsyncIterable<T> =>
+  (async function* () {
     yield* [];
   })();
-}
-
-const noopExecutionHandle: ExecutionHandle = {
-  awaitResult(): Promise<ExecutionResult> {
-    return Promise.resolve({
-      executionStatus: { iterationCount: 0, phase: "completed" },
-      status: "completed",
-    });
-  },
-  cancel() {
-    return;
-  },
-  events() {
-    return emptyEvents();
-  },
-  resolveApproval() {
-    return resumedExecutionHandle;
-  },
-  status() {
-    return frameworkContractFixtures.executionStatus;
-  },
-  steer() {
-    return;
-  },
-};
-
-const resumedExecutionHandle: ExecutionHandle = {
-  awaitResult(): Promise<ExecutionResult> {
-    return Promise.resolve({
-      executionStatus: { iterationCount: 2, phase: "completed" },
-      status: "completed",
-    });
-  },
-  cancel() {
-    return;
-  },
-  events() {
-    return emptyEvents();
-  },
-  resolveApproval() {
-    return this;
-  },
-  status() {
-    return {
-      activeAgent: "primary",
-      iterationCount: 2,
-      phase: "running",
-    };
-  },
-  steer() {
-    return;
-  },
-};
 
 const contextManifestFixture = {
   byRole: {
@@ -129,6 +76,78 @@ const contextManifestFixture = {
   },
   turnBoundaries: [0],
 } satisfies ContextManifest;
+
+const executionStatusFixture = {
+  activeAgent: "primary",
+  approval: {
+    completedResults: [],
+    toolCalls: [
+      {
+        callId: "call_2",
+        decisions: ["approve", "edit", "reject"],
+        input: { query: "latest status" },
+        message: "Approve the outbound search?",
+        name: "search",
+      },
+    ],
+  },
+  iterationCount: 2,
+  manifest: contextManifestFixture,
+  pauseReason: "approval_required",
+  phase: "paused",
+} satisfies ExecutionStatus;
+
+const resumedExecutionHandle: ExecutionHandle = {
+  awaitResult(): Promise<ExecutionResult> {
+    return Promise.resolve({
+      executionStatus: { iterationCount: 2, phase: "completed" },
+      status: "completed",
+    });
+  },
+  cancel() {
+    return;
+  },
+  events() {
+    return emptyEvents();
+  },
+  resolveApproval() {
+    return this;
+  },
+  status() {
+    return {
+      activeAgent: "primary",
+      iterationCount: 2,
+      phase: "running",
+    };
+  },
+  steer() {
+    return;
+  },
+};
+
+const noopExecutionHandle: ExecutionHandle = {
+  awaitResult(): Promise<ExecutionResult> {
+    return Promise.resolve({
+      executionStatus: { iterationCount: 0, phase: "completed" },
+      status: "completed",
+    });
+  },
+  cancel() {
+    return;
+  },
+  events() {
+    return emptyEvents();
+  },
+  resolveApproval() {
+    return resumedExecutionHandle;
+  },
+  status() {
+    return executionStatusFixture;
+  },
+  steer() {
+    return;
+  },
+};
 
 let resumedOrchestrationHandle: OrchestrationHandle;
 let childOrchestrationHandle: OrchestrationHandle;
@@ -257,25 +276,7 @@ export const frameworkContractFixtures = {
     role: "assistant",
   } satisfies TuvrenMessage,
   contextManifest: contextManifestFixture,
-  executionStatus: {
-    activeAgent: "primary",
-    approval: {
-      completedResults: [],
-      toolCalls: [
-        {
-          callId: "call_2",
-          decisions: ["approve", "edit", "reject"],
-          input: { query: "latest status" },
-          message: "Approve the outbound search?",
-          name: "search",
-        },
-      ],
-    },
-    iterationCount: 2,
-    manifest: contextManifestFixture,
-    pauseReason: "approval_required",
-    phase: "paused",
-  } satisfies ExecutionStatus,
+  executionStatus: executionStatusFixture,
   orchestrationHandle: noopOrchestrationHandle,
   orchestrationRuntime: noopOrchestrationRuntime,
   providerStreamChunk: {

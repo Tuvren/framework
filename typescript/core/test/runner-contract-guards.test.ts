@@ -26,6 +26,95 @@ import type {
   RuntimeRunner,
 } from "../src/runner/index.js";
 
+const createRunnerExecutionContext = (): RunnerExecutionContext => ({
+  branchId: "branch-1",
+  config: { name: "primary" },
+  handoff: {
+    createContextPlan: (input) => ({
+      builder:
+        input.builder ?? ((context) => context.helpers.storeMessages([])),
+      mode: input.mode ?? "preserve_trace",
+      reason: input.reason,
+      sourceContext: {
+        handoffIntent: {
+          payload: input.payload,
+          reason: input.reason,
+          targetAgent: input.targetAgent,
+        },
+        helpers: {
+          loadMessage: () => null,
+          storeMessage: () => "1".repeat(64),
+          storeMessages: () => [],
+        },
+        manifest: {
+          byRole: {
+            assistant: 0,
+            system: 0,
+            tool: 0,
+            user: 0,
+          },
+          extensions: {},
+          lastAssistantMessageIndex: -1,
+          lastUserMessageIndex: -1,
+          messageCount: 0,
+          tokenEstimate: 0,
+          toolCalls: {
+            byName: {},
+            total: 0,
+          },
+          toolResults: {
+            byName: {},
+            total: 0,
+          },
+          turnBoundaries: [],
+        },
+        messages: [],
+        sourceAgent: { name: "primary" },
+        targetAgent: { name: input.targetAgent },
+      },
+      targetAgent: input.targetAgent,
+    }),
+  },
+  iterationCount: 1,
+  manifest: {
+    byRole: {
+      assistant: 0,
+      system: 0,
+      tool: 0,
+      user: 0,
+    },
+    extensions: {},
+    lastAssistantMessageIndex: -1,
+    lastUserMessageIndex: -1,
+    messageCount: 0,
+    tokenEstimate: 0,
+    toolCalls: {
+      byName: {},
+      total: 0,
+    },
+    toolResults: {
+      byName: {},
+      total: 0,
+    },
+    turnBoundaries: [],
+  },
+  messages: [],
+  runtime: {
+    emit: () => undefined,
+    now: () => 0,
+  },
+  schemaId: "schema-1",
+  threadId: "thread-1",
+  toolRegistry: {
+    get: () => undefined,
+    has: () => false,
+    list: () => [],
+    register: () => undefined,
+    toDefinitions: () => [],
+  },
+  turnId: "turn-1",
+});
+
 describe("runner-contract-guards", () => {
   test("accepts explicit runner contracts", async () => {
     const continueIteration = {
@@ -506,94 +595,3 @@ describe("runner-contract-guards", () => {
     }).toThrow('resolution must not include unsupported field "reason"');
   });
 });
-
-function createRunnerExecutionContext(): RunnerExecutionContext {
-  return {
-    branchId: "branch-1",
-    config: { name: "primary" },
-    handoff: {
-      createContextPlan: (input) => ({
-        builder:
-          input.builder ?? ((context) => context.helpers.storeMessages([])),
-        mode: input.mode ?? "preserve_trace",
-        reason: input.reason,
-        sourceContext: {
-          handoffIntent: {
-            payload: input.payload,
-            reason: input.reason,
-            targetAgent: input.targetAgent,
-          },
-          helpers: {
-            loadMessage: () => null,
-            storeMessage: () => "1".repeat(64),
-            storeMessages: () => [],
-          },
-          manifest: {
-            byRole: {
-              assistant: 0,
-              system: 0,
-              tool: 0,
-              user: 0,
-            },
-            extensions: {},
-            lastAssistantMessageIndex: -1,
-            lastUserMessageIndex: -1,
-            messageCount: 0,
-            tokenEstimate: 0,
-            toolCalls: {
-              byName: {},
-              total: 0,
-            },
-            toolResults: {
-              byName: {},
-              total: 0,
-            },
-            turnBoundaries: [],
-          },
-          messages: [],
-          sourceAgent: { name: "primary" },
-          targetAgent: { name: input.targetAgent },
-        },
-        targetAgent: input.targetAgent,
-      }),
-    },
-    iterationCount: 1,
-    manifest: {
-      byRole: {
-        assistant: 0,
-        system: 0,
-        tool: 0,
-        user: 0,
-      },
-      extensions: {},
-      lastAssistantMessageIndex: -1,
-      lastUserMessageIndex: -1,
-      messageCount: 0,
-      tokenEstimate: 0,
-      toolCalls: {
-        byName: {},
-        total: 0,
-      },
-      toolResults: {
-        byName: {},
-        total: 0,
-      },
-      turnBoundaries: [],
-    },
-    messages: [],
-    runtime: {
-      emit: () => undefined,
-      now: () => 0,
-    },
-    schemaId: "schema-1",
-    threadId: "thread-1",
-    toolRegistry: {
-      get: () => undefined,
-      has: () => false,
-      list: () => [],
-      register: () => undefined,
-      toDefinitions: () => [],
-    },
-    turnId: "turn-1",
-  };
-}
