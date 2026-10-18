@@ -42,7 +42,7 @@ export interface HelperBundle {
    * canonical hash so subsequent lookups and {@link resolveHashes} calls see
    * it.
    */
-  flush(): Promise<void>;
+  flush: () => Promise<void>;
   /** Load/store helpers handed to context-engineering and handoff plans. */
   helpers: ContextEngineeringHelpers;
   /**
@@ -50,7 +50,7 @@ export interface HelperBundle {
    * exists, passing already-canonical hashes through unchanged. Only
    * meaningful after {@link flush}.
    */
-  resolveHashes(hashes: HashString[]): HashString[];
+  resolveHashes: (hashes: HashString[]) => HashString[];
 }
 
 /**
@@ -59,11 +59,11 @@ export interface HelperBundle {
  * persistence (including provisional pre-persistence hashing).
  */
 export interface RuntimeCoreContextHost {
-  cloneAgentConfigForRequest(config: AgentConfig): AgentConfig;
-  createFrozenAgentConfig(config: AgentConfig): AgentConfig;
-  createPendingKernelHash(value: Uint8Array): HashString;
-  encodeMessageRecord(message: TuvrenMessage): Uint8Array;
-  putKernelRecord(record: Uint8Array): Promise<HashString>;
+  cloneAgentConfigForRequest: (config: AgentConfig) => AgentConfig;
+  createFrozenAgentConfig: (config: AgentConfig) => AgentConfig;
+  createPendingKernelHash: (value: Uint8Array) => HashString;
+  encodeMessageRecord: (message: TuvrenMessage) => Uint8Array;
+  putKernelRecord: (record: Uint8Array) => Promise<HashString>;
 }
 
 /**
@@ -73,8 +73,8 @@ export interface RuntimeCoreContextHost {
  */
 export const projectMessagesForRunner = (
   messages: readonly TuvrenMessage[]
-): TuvrenMessage[] => {
-  return messages.map((message) => {
+): TuvrenMessage[] =>
+  messages.map((message) => {
     if (message.role !== "user") {
       return message;
     }
@@ -82,7 +82,6 @@ export const projectMessagesForRunner = (
     const { admissionKey: _admissionKey, ...projectedMessage } = message;
     return projectedMessage;
   });
-};
 
 /**
  * Projects message reads from context helpers before exposing them to a
@@ -91,16 +90,14 @@ export const projectMessagesForRunner = (
  */
 export const projectContextEngineeringHelpersForRunner = (
   helpers: ContextEngineeringHelpers
-): ContextEngineeringHelpers => {
-  return {
-    loadMessage(hash) {
-      const message = helpers.loadMessage(hash);
-      return message === null ? null : projectMessagesForRunner([message])[0];
-    },
-    storeMessage: (message) => helpers.storeMessage(message),
-    storeMessages: (messages) => helpers.storeMessages(messages),
-  };
-};
+): ContextEngineeringHelpers => ({
+  loadMessage(hash) {
+    const message = helpers.loadMessage(hash);
+    return message === null ? null : projectMessagesForRunner([message])[0];
+  },
+  storeMessage: (message) => helpers.storeMessage(message),
+  storeMessages: (messages) => helpers.storeMessages(messages),
+});
 
 /**
  * Create a {@link HelperBundle} over the current head messages.
@@ -128,6 +125,23 @@ export const createContextEngineeringHelpers = (
     { message: TuvrenMessage; record: Uint8Array }
   >();
   const resolvedHashes = new Map<HashString, HashString>();
+  const flushPendingRecords = async (
+    entries: Iterator<
+      [HashString, { message: TuvrenMessage; record: Uint8Array }]
+    >
+  ): Promise<void> => {
+    const nextEntry = entries.next();
+
+    if (nextEntry.done === true) {
+      return;
+    }
+
+    const [provisionalHash, pendingRecord] = nextEntry.value;
+    const canonicalHash = await host.putKernelRecord(pendingRecord.record);
+    resolvedHashes.set(provisionalHash, canonicalHash);
+    pendingMessages.set(canonicalHash, cloneValue(pendingRecord.message));
+    await flushPendingRecords(entries);
+  };
 
   for (let index = 0; index < messageHashes.length; index += 1) {
     existingMessages.set(messageHashes[index], cloneValue(messages[index]));
@@ -135,11 +149,7 @@ export const createContextEngineeringHelpers = (
 
   return {
     async flush() {
-      for (const [provisionalHash, pendingRecord] of pendingRecords) {
-        const canonicalHash = await host.putKernelRecord(pendingRecord.record);
-        resolvedHashes.set(provisionalHash, canonicalHash);
-        pendingMessages.set(canonicalHash, cloneValue(pendingRecord.message));
-      }
+      await flushPendingRecords(pendingRecords.entries());
     },
     helpers: {
       loadMessage(hash) {
@@ -205,25 +215,23 @@ export const resolveHandoffSourceContext = (
   loopState: LoopState,
   targetConfig: AgentConfig,
   helpers: ContextEngineeringHelpers
-): HandoffSourceContext => {
-  return {
-    handoffIntent: cloneValue(plan.sourceContext.handoffIntent),
-    helpers: projectContextEngineeringHelpersForRunner(helpers),
-    manifest: cloneValue(headState.manifest),
-    messages: cloneValue(projectMessagesForRunner(headState.messages)),
-    sourceAgent: host.createFrozenAgentConfig(
-      host.cloneAgentConfigForRequest(loopState.activeConfig)
-    ),
-    targetAgent: host.createFrozenAgentConfig(
-      host.cloneAgentConfigForRequest(targetConfig)
-    ),
-  };
-};
+): HandoffSourceContext => ({
+  handoffIntent: cloneValue(plan.sourceContext.handoffIntent),
+  helpers: projectContextEngineeringHelpersForRunner(helpers),
+  manifest: cloneValue(headState.manifest),
+  messages: cloneValue(projectMessagesForRunner(headState.messages)),
+  sourceAgent: host.createFrozenAgentConfig(
+    host.cloneAgentConfigForRequest(loopState.activeConfig)
+  ),
+  targetAgent: host.createFrozenAgentConfig(
+    host.cloneAgentConfigForRequest(targetConfig)
+  ),
+});
 
 /**
  * Load every message named by `hashes` through the helpers, in order.
  *
- * @throws Error when any hash cannot be resolved to a message — a plan must
+ * @throws {Error} When any hash cannot be resolved to a message — a plan must
  *   only return hashes that exist or were stored through the same helper
  *   bundle.
  */

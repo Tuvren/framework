@@ -115,16 +115,22 @@ export class AsyncEventQueue<T> implements AsyncIterable<T> {
           };
         }
 
-        return await new Promise<IteratorResult<T>>((resolve) => {
-          this.waiters.push(resolve);
-        });
+        const { promise, resolve } = Promise.withResolvers<IteratorResult<T>>();
+        this.waiters.push(resolve);
+        return await promise;
       },
-      return: (): Promise<IteratorResult<T>> => {
+      return: async (): Promise<IteratorResult<T>> => {
+        if (this.closed) {
+          return {
+            done: true,
+            value: undefined,
+          };
+        }
+
+        const { promise, resolve } = Promise.withResolvers<IteratorResult<T>>();
+        this.waiters.push(resolve);
         this.close();
-        return Promise.resolve({
-          done: true,
-          value: undefined,
-        });
+        return await promise;
       },
     };
   }
@@ -135,9 +141,7 @@ export class AsyncEventQueue<T> implements AsyncIterable<T> {
  * here — use {@link cloneSnapshotPreservingFunctions} for values that carry
  * function members.
  */
-export const cloneValue = <T>(value: T): T => {
-  return globalThis.structuredClone(value);
-};
+export const cloneValue = <T>(value: T): T => globalThis.structuredClone(value);
 
 /**
  * Deep-copies an {@link ExecutionStatus} so callers can hold or mutate the
@@ -146,16 +150,14 @@ export const cloneValue = <T>(value: T): T => {
  */
 export const cloneExecutionStatus = (
   status: ExecutionStatus
-): ExecutionStatus => {
-  return {
-    activeAgent: status.activeAgent,
-    approval: cloneValue(status.approval),
-    iterationCount: status.iterationCount,
-    manifest: cloneValue(status.manifest),
-    pauseReason: status.pauseReason,
-    phase: status.phase,
-  };
-};
+): ExecutionStatus => ({
+  activeAgent: status.activeAgent,
+  approval: cloneValue(status.approval),
+  iterationCount: status.iterationCount,
+  manifest: cloneValue(status.manifest),
+  pauseReason: status.pauseReason,
+  phase: status.phase,
+});
 
 /**
  * Creates a deferred: a promise together with its externally callable
@@ -164,19 +166,49 @@ export const cloneExecutionStatus = (
  */
 export const createDeferred = <T>(): {
   promise: Promise<T>;
-  resolve(value: T): void;
+  resolve: (value: T) => void;
 } => {
-  let resolveValue: ((value: T) => void) | undefined;
-  const promise = new Promise<T>((resolve) => {
-    resolveValue = resolve;
-  });
+  const { promise, resolve: resolvePromise } = Promise.withResolvers<T>();
 
   return {
     promise,
     resolve(value: T) {
-      resolveValue?.(value);
+      resolvePromise(value);
     },
   };
+};
+
+const cloneObjectPreservingFunctions = (
+  value: object,
+  seen: Map<object, unknown>,
+  cloneNestedValue: (value: unknown, seen: Map<object, unknown>) => unknown
+): object => {
+  const clone: Record<PropertyKey, unknown> = {};
+  const prototype: unknown = Object.getPrototypeOf(value);
+
+  if (prototype !== null && typeof prototype !== "object") {
+    throw new TypeError("object prototype must be an object or null");
+  }
+
+  Object.setPrototypeOf(clone, prototype);
+  seen.set(value, clone);
+
+  for (const key of Reflect.ownKeys(value)) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+
+    if (descriptor === undefined) {
+      continue;
+    }
+
+    if ("value" in descriptor) {
+      const descriptorValue: unknown = descriptor.value;
+      descriptor.value = cloneNestedValue(descriptorValue, seen);
+    }
+
+    Object.defineProperty(clone, key, descriptor);
+  }
+
+  return clone;
 };
 
 /**
@@ -191,16 +223,20 @@ export const createDeferred = <T>(): {
  * shared references among arrays and plain objects so the clone mirrors the
  * source's object graph.
  */
-const cloneValuePreservingFunctions = <T>(
+function cloneValuePreservingFunctions<T>(
   value: T,
+  seen?: Map<object, unknown>
+): T;
+function cloneValuePreservingFunctions(
+  value: unknown,
   seen = new Map<object, unknown>()
-): T => {
+): unknown {
   if (value === null || typeof value !== "object") {
     return value;
   }
 
   if (value instanceof Uint8Array) {
-    return value.slice() as T;
+    return new Uint8Array(value);
   }
 
   if (ArrayBuffer.isView(value)) {
@@ -208,7 +244,7 @@ const cloneValuePreservingFunctions = <T>(
   }
 
   if (value instanceof Date) {
-    return new Date(value) as T;
+    return new Date(value);
   }
 
   if (value instanceof Map) {
@@ -222,7 +258,7 @@ const cloneValuePreservingFunctions = <T>(
       );
     }
 
-    return clone as T;
+    return clone;
   }
 
   if (value instanceof Set) {
@@ -233,13 +269,13 @@ const cloneValuePreservingFunctions = <T>(
       clone.add(cloneValuePreservingFunctions(entry, seen));
     }
 
-    return clone as T;
+    return clone;
   }
 
   const existing = seen.get(value);
 
   if (existing !== undefined) {
-    return existing as T;
+    return existing;
   }
 
   if (Array.isArray(value)) {
@@ -250,31 +286,15 @@ const cloneValuePreservingFunctions = <T>(
       clone.push(cloneValuePreservingFunctions(entry, seen));
     }
 
-    return clone as T;
+    return clone;
   }
 
-  const clone = Object.create(Object.getPrototypeOf(value)) as Record<
-    PropertyKey,
-    unknown
-  >;
-  seen.set(value, clone);
-
-  for (const key of Reflect.ownKeys(value)) {
-    const descriptor = Object.getOwnPropertyDescriptor(value, key);
-
-    if (descriptor === undefined) {
-      continue;
-    }
-
-    if ("value" in descriptor) {
-      descriptor.value = cloneValuePreservingFunctions(descriptor.value, seen);
-    }
-
-    Object.defineProperty(clone, key, descriptor);
-  }
-
-  return clone as T;
-};
+  return cloneObjectPreservingFunctions(
+    value,
+    seen,
+    cloneValuePreservingFunctions
+  );
+}
 
 /**
  * Deep-clones a value while keeping function values (and non-Uint8Array
@@ -282,9 +302,8 @@ const cloneValuePreservingFunctions = <T>(
  * descriptors, and cyclic references. `Uint8Array`, `Date`, `Map`, `Set`,
  * arrays, and plain/prototyped objects are copied.
  */
-export const cloneSnapshotPreservingFunctions = <T>(value: T): T => {
-  return cloneValuePreservingFunctions(value);
-};
+export const cloneSnapshotPreservingFunctions = <T>(value: T): T =>
+  cloneValuePreservingFunctions(value);
 
 /**
  * Recursively `Object.freeze`s a value graph, tolerating cycles via `seen`.
@@ -347,9 +366,10 @@ const freezeSnapshot = <T>(value: T, seen = new Set<object>()): T => {
  * `Map`/`Set` containers and ArrayBuffer views are traversed but not frozen
  * themselves; see the non-exported `freezeSnapshot` for details.
  */
-export const createFrozenSnapshot = <T>(value: T): T => {
-  return freezeSnapshot(cloneValuePreservingFunctions(value));
-};
+export const createFrozenSnapshot = <T>(value: T): T =>
+  freezeSnapshot(cloneValuePreservingFunctions(value));
+
+const detachedRejectionObservers = new WeakSet<Promise<void>>();
 
 /**
  * Detaches a promise from the caller's control flow, swallowing its
@@ -359,7 +379,15 @@ export const createFrozenSnapshot = <T>(value: T): T => {
  * any rejection reaching here is silently discarded.
  */
 export const detachPromise = (task: Promise<unknown>): void => {
-  task.catch(() => undefined);
+  const ignoreRejection = async (): Promise<void> => {
+    try {
+      await task;
+    } catch {
+      // The task owns error reporting before reaching this boundary.
+    }
+  };
+
+  detachedRejectionObservers.add(ignoreRejection());
 };
 
 /**
@@ -367,27 +395,24 @@ export const detachPromise = (task: Promise<unknown>): void => {
  * `runtime_execution_cancelled`, used when an execution is cancelled by the
  * caller rather than failing on its own.
  */
-export const createExecutionCancelledError = (): TuvrenRuntimeError => {
-  return new TuvrenRuntimeError("execution cancelled", {
+export const createExecutionCancelledError = (): TuvrenRuntimeError =>
+  new TuvrenRuntimeError("execution cancelled", {
     code: "runtime_execution_cancelled",
   });
-};
 
 /**
  * Coerces an arbitrary thrown value into an `Error`, wrapping non-Error
  * values in `new Error(String(value))`.
  */
-export const normalizeError = (error: unknown): Error => {
-  return error instanceof Error ? error : new Error(String(error));
-};
+export const normalizeError = (error: unknown): Error =>
+  error instanceof Error ? error : new Error(String(error));
 
 /**
  * Type guard for a non-null, non-array object usable as a string-keyed
  * record.
  */
-export const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-};
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
 
 /**
  * Returns a clone of error details only when they validate as a kernel
@@ -435,7 +460,7 @@ export const projectError = (error: Error): TuvrenErrorProjection => {
  *
  * @param label - Name used in the message-validation error.
  * @returns A new signal containing the cloned, validated parts.
- * @throws TuvrenRuntimeError with code `invalid_input_signal` when the parts
+ * @throws {TuvrenRuntimeError} With code `invalid_input_signal` when the parts
  *   do not normalize to a user-role message; the underlying message
  *   assertion throws for structurally invalid parts.
  */

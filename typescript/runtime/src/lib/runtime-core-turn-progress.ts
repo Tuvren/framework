@@ -34,49 +34,49 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
  * and the checkpointed-pause reconciliation helpers.
  */
 export interface RuntimeCoreTurnProgressHost {
-  advanceTurnAndBranchHead(
+  advanceTurnAndBranchHead: (
     handle: RuntimeExecutionHandle,
     turnNodeHash: HashString
-  ): Promise<void>;
-  branchSetHead(branchId: string, turnNodeHash: HashString): Promise<void>;
-  completeKernelRun(
+  ) => Promise<void>;
+  branchSetHead: (branchId: string, turnNodeHash: HashString) => Promise<void>;
+  completeKernelRun: (
     runId: string,
     status: RunCompletionStatus,
     eventHash?: HashString
-  ): Promise<{ turnNodeHash?: HashString }>;
-  completeRunStep(
+  ) => Promise<{ turnNodeHash?: HashString }>;
+  completeRunStep: (
     runId: string,
     stepId: string,
     eventHash: HashString,
     treeHash?: HashString
-  ): Promise<{
+  ) => Promise<{
     lease?: { fencingToken: string; leaseExpiresAtMs: EpochMs };
     turnNodeHash?: HashString;
   }>;
-  completeTrackedRun(
+  completeTrackedRun: (
     handle: RuntimeExecutionHandle,
     runId: string,
     status: RunCompletionStatus,
     event?: KernelRecord
-  ): Promise<{ turnNodeHash?: HashString }>;
-  emitStateObservability(
+  ) => Promise<{ turnNodeHash?: HashString }>;
+  emitStateObservability: (
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
     turnNodeHash: HashString,
     iterationCount: number,
     manifest?: ContextManifest
-  ): Promise<void>;
-  storeEventRecord(event: KernelRecord): Promise<HashString>;
-  syncRunLeaseStateFromStepResult(
+  ) => void;
+  storeEventRecord: (event: KernelRecord) => Promise<HashString>;
+  syncRunLeaseStateFromStepResult: (
     handle: RuntimeExecutionHandle,
     runId: string,
     stepResult: { lease?: { fencingToken: string; leaseExpiresAtMs: EpochMs } }
-  ): void;
-  treeCreate(
+  ) => void;
+  treeCreate: (
     schemaId: string,
     changes: Record<string, PathValue>,
     baseTurnTreeHash: HashString
-  ): Promise<HashString>;
+  ) => Promise<HashString>;
 }
 
 /**
@@ -114,7 +114,7 @@ export const completeIterationRun = async (
       turnId: handle.turnId,
       type: "iteration_failed",
     });
-    turnNodeHash = completion.turnNodeHash;
+    ({ turnNodeHash } = completion);
   } else {
     const stepEventHash = await host.storeEventRecord({
       iteration: iterationCount,
@@ -149,7 +149,7 @@ export const completeIterationRun = async (
 
   if (turnNodeHash !== undefined) {
     await host.advanceTurnAndBranchHead(handle, turnNodeHash);
-    await host.emitStateObservability(
+    host.emitStateObservability(
       handle,
       loopState,
       turnNodeHash,
