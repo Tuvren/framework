@@ -32,6 +32,7 @@
 
 import { describe, expect, test } from "bun:test";
 
+import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { RuntimeRunner } from "@tuvren/core/runner";
 
@@ -41,6 +42,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantText,
   collectEvents,
   textSignal,
@@ -57,62 +59,58 @@ const buildProviderToolMessage = (opts: {
   output: unknown;
   /** Optional extra keys to include in providerMetadata (e.g. continuity). */
   extraMeta?: Record<string, unknown>;
-}): TuvrenMessage => {
-  return {
-    parts: [
-      {
-        callId: opts.callId,
-        name: opts.name,
-        output: opts.output,
-        providerMetadata: {
-          ...(opts.extraMeta ?? {}),
-          executionClass: opts.executionClass,
-          owner: "provider",
-          providerCallId: opts.callId,
-        },
-        type: "tool_result",
+}): TuvrenMessage => ({
+  parts: [
+    {
+      callId: opts.callId,
+      name: opts.name,
+      output: opts.output,
+      providerMetadata: {
+        ...opts.extraMeta,
+        executionClass: opts.executionClass,
+        owner: "provider",
+        providerCallId: opts.callId,
       },
-    ],
-    role: "tool",
-  };
-};
+      type: "tool_result",
+    },
+  ],
+  role: "tool",
+});
 
 const makeProviderRunner = (
   executionClass: "provider-native" | "provider-mediated",
   extraMeta?: Record<string, unknown>
-): RuntimeRunner => {
-  return {
-    async execute(context) {
-      if (!context.messages.some((m) => m.role === "tool")) {
-        return {
-          messages: [
-            buildProviderToolMessage({
-              callId: "prov-call-ay003",
-              executionClass,
-              extraMeta,
-              name: "code_execution",
-              output: { outputs: [{ text: "42", type: "text" }] },
-            }),
-          ],
-          resolution: { type: "continue_iteration" },
-        };
-      }
+): RuntimeRunner => ({
+  execute: fromSynchronousVariadicAwaited((context) => {
+    if (!context.messages.some((m) => m.role === "tool")) {
       return {
-        messages: [assistantText("done")],
-        resolution: { reason: "done", type: "end_turn" },
+        messages: [
+          buildProviderToolMessage({
+            callId: "prov-call-ay003",
+            executionClass,
+            extraMeta,
+            name: "code_execution",
+            output: { outputs: [{ text: "42", type: "text" }] },
+          }),
+        ],
+        resolution: { type: "continue_iteration" },
       };
-    },
-    id: "ay003-runner",
-    async resume() {
-      throw new Error("no");
-    },
-  };
-};
+    }
+    return {
+      messages: [assistantText("done")],
+      resolution: { reason: "done", type: "end_turn" },
+    };
+  }),
+  id: "ay003-runner",
+  resume: fromSynchronousVariadicAwaited(() => {
+    throw new Error("no");
+  }),
+});
 
 const runWithProviderTool = async (
   executionClass: "provider-native" | "provider-mediated",
   extraMeta?: Record<string, unknown>
-): Promise<Record<string, unknown>[]> => {
+): Promise<TuvrenStreamEvent[]> => {
   const harness = createFakeKernelHarness();
   const runner = makeProviderRunner(executionClass, extraMeta);
   const runtime = createTuvrenRuntime({
@@ -128,15 +126,17 @@ const runWithProviderTool = async (
     threadId: thread.threadId,
   });
   const events = await collectEvents(handle.events());
-  return events as unknown as Record<string, unknown>[];
+  return events;
 };
 
-const filterByType = (
-  events: Record<string, unknown>[],
-  type: string
-): Record<string, unknown>[] => {
-  return events.filter((e) => e.type === type);
-};
+const filterByType = <T extends TuvrenStreamEvent["type"]>(
+  events: TuvrenStreamEvent[],
+  type: T
+): Extract<TuvrenStreamEvent, { type: T }>[] =>
+  events.filter(
+    (event): event is Extract<TuvrenStreamEvent, { type: T }> =>
+      event.type === type
+  );
 // ---------------------------------------------------------------------------
 // KRT-AY003: provider attribution event recording
 // ---------------------------------------------------------------------------
@@ -146,14 +146,14 @@ describe("KRT-AY003 — provider-native attribution events", () => {
     const events = await runWithProviderTool("provider-native");
     const starts = filterByType(events, "tool.start");
     const providerStart = starts.find(
-      (e) =>
-        typeof e.attribution === "object" &&
-        e.attribution !== null &&
-        (e.attribution as Record<string, unknown>).owner === "provider"
+      (event) => event.attribution?.owner === "provider"
     );
 
     expect(providerStart).toBeDefined();
-    const attr = providerStart?.attribution as Record<string, unknown>;
+    if (providerStart?.attribution === undefined) {
+      throw new Error("expected a provider-owned tool.start event");
+    }
+    const attr = providerStart.attribution;
     expect(attr.owner).toBe("provider");
     expect(attr.executionClass).toBe("provider-native");
     expect(providerStart?.callId).toBe("prov-call-ay003");
@@ -165,14 +165,14 @@ describe("KRT-AY003 — provider-native attribution events", () => {
     const events = await runWithProviderTool("provider-native");
     const results = filterByType(events, "tool.result");
     const providerResult = results.find(
-      (e) =>
-        typeof e.attribution === "object" &&
-        e.attribution !== null &&
-        (e.attribution as Record<string, unknown>).owner === "provider"
+      (event) => event.attribution?.owner === "provider"
     );
 
     expect(providerResult).toBeDefined();
-    const attr = providerResult?.attribution as Record<string, unknown>;
+    if (providerResult?.attribution === undefined) {
+      throw new Error("expected a provider-owned tool.result event");
+    }
+    const attr = providerResult.attribution;
     expect(attr.owner).toBe("provider");
     expect(attr.executionClass).toBe("provider-native");
     expect(providerResult?.callId).toBe("prov-call-ay003");
@@ -186,18 +186,14 @@ describe("KRT-AY003 — provider-native attribution events", () => {
     const events = await runWithProviderTool("provider-native");
     const results = filterByType(events, "tool.result");
     const providerResult = results.find(
-      (e) =>
-        typeof e.attribution === "object" &&
-        e.attribution !== null &&
-        (e.attribution as Record<string, unknown>).owner === "provider"
+      (event) => event.attribution?.owner === "provider"
     );
 
     expect(providerResult).toBeDefined();
-    if (providerResult === undefined) {
+    if (providerResult?.attribution?.observation === undefined) {
       throw new Error("expected a provider-owned tool.result event");
     }
-    const obs = (providerResult.attribution as Record<string, unknown>)
-      .observation as Record<string, unknown>;
+    const obs = providerResult.attribution.observation;
     expect(obs.canAudit).toBe(false);
     expect(obs.canCancel).toBe(false);
     expect(obs.canRetry).toBe(false);
@@ -217,14 +213,14 @@ describe("KRT-AY003 — provider-mediated attribution events", () => {
     const events = await runWithProviderTool("provider-mediated");
     const starts = filterByType(events, "tool.start");
     const providerStart = starts.find(
-      (e) =>
-        typeof e.attribution === "object" &&
-        e.attribution !== null &&
-        (e.attribution as Record<string, unknown>).owner === "provider"
+      (event) => event.attribution?.owner === "provider"
     );
 
     expect(providerStart).toBeDefined();
-    const attr = providerStart?.attribution as Record<string, unknown>;
+    if (providerStart?.attribution === undefined) {
+      throw new Error("expected a provider-owned tool.start event");
+    }
+    const attr = providerStart.attribution;
     expect(attr.owner).toBe("provider");
     expect(attr.executionClass).toBe("provider-mediated");
   });
@@ -233,14 +229,14 @@ describe("KRT-AY003 — provider-mediated attribution events", () => {
     const events = await runWithProviderTool("provider-mediated");
     const results = filterByType(events, "tool.result");
     const providerResult = results.find(
-      (e) =>
-        typeof e.attribution === "object" &&
-        e.attribution !== null &&
-        (e.attribution as Record<string, unknown>).owner === "provider"
+      (event) => event.attribution?.owner === "provider"
     );
 
     expect(providerResult).toBeDefined();
-    const attr = providerResult?.attribution as Record<string, unknown>;
+    if (providerResult?.attribution === undefined) {
+      throw new Error("expected a provider-owned tool.result event");
+    }
+    const attr = providerResult.attribution;
     expect(attr.executionClass).toBe("provider-mediated");
     expect(attr.owner).toBe("provider");
   });
@@ -287,10 +283,7 @@ describe("KRT-AY005 — providerContinuity not in emitted events (event-emitter 
     const events = await runWithProviderTool("provider-native");
     const starts = filterByType(events, "tool.start");
     const providerStart = starts.find(
-      (e) =>
-        typeof e.attribution === "object" &&
-        e.attribution !== null &&
-        (e.attribution as Record<string, unknown>).owner === "provider"
+      (event) => event.attribution?.owner === "provider"
     );
     // tool.start input is null — the "not observed" sentinel used so the event
     // passes assertTuvrenStreamEvent validation (BA002). Asserting null (not

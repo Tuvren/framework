@@ -29,6 +29,7 @@ import {
 } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
+  fromSynchronousVariadicAwaited,
   assistantStructured,
   assistantText,
   assistantToolCalls,
@@ -39,17 +40,15 @@ import {
 
 const isKrakenRunnerFactory = (
   entry: RuntimeRunner | RuntimeRunnerFactory
-): entry is RuntimeRunnerFactory => {
-  return "create" in entry && typeof entry.create === "function";
-};
+): entry is RuntimeRunnerFactory =>
+  "create" in entry && typeof entry.create === "function";
 
-const requestsToolExecution = (result: RunnerExecutionResult): boolean => {
-  return (result.messages ?? []).some(
+const requestsToolExecution = (result: RunnerExecutionResult): boolean =>
+  (result.messages ?? []).some(
     (message) =>
       message.role === "assistant" &&
       message.parts.some((part) => part.type === "tool_call")
   );
-};
 
 const normalizeRunnerResult = (
   result: RunnerExecutionResult
@@ -68,7 +67,7 @@ const normalizeRunnerResult = (
 };
 
 const wrapRunner = (runner: RuntimeRunner): RuntimeRunner => {
-  const { resume } = runner;
+  const resume = runner.resume?.bind(runner);
 
   return {
     async execute(context) {
@@ -102,26 +101,22 @@ const wrapRunnerEntry = (
 
 const createRunnerRegistry = (
   runners: (RuntimeRunner | RuntimeRunnerFactory)[] = []
-) => {
-  return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
-};
+) => createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 describe("framework-runtime-core", () => {
   test("synthesizes structured delta events when a runner returns durable structured output without streaming it", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute() {
-        return {
-          messages: [assistantStructured("result", { answer: "ok" })],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited(() => ({
+        messages: [assistantStructured("result", { answer: "ok" })],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -155,19 +150,17 @@ describe("framework-runtime-core", () => {
   test("synthesizes structured string deltas as serialized JSON strings", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute() {
-        return {
-          messages: [assistantStructured("result", "hello")],
-          resolution: {
-            reason: "done",
-            type: "end_turn",
-          },
-        };
-      },
+      execute: fromSynchronousVariadicAwaited(() => ({
+        messages: [assistantStructured("result", "hello")],
+        resolution: {
+          reason: "done",
+          type: "end_turn",
+        },
+      })),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -195,7 +188,7 @@ describe("framework-runtime-core", () => {
   test("synthesizes tool-call args deltas when a runner returns durable tool calls without streaming them", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
         );
@@ -225,11 +218,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -281,7 +274,7 @@ describe("framework-runtime-core", () => {
   test("synthesizes string tool-call arg deltas as serialized JSON strings", async () => {
     const harness = createFakeKernelHarness();
     const runner = {
-      async execute(context) {
+      execute: fromSynchronousVariadicAwaited((context) => {
         const toolMessages = context.messages.filter(
           (message) => message.role === "tool"
         );
@@ -311,11 +304,11 @@ describe("framework-runtime-core", () => {
             type: "end_turn",
           },
         };
-      },
+      }),
       id: "fake",
-      async resume() {
+      resume: fromSynchronousVariadicAwaited(() => {
         throw new Error("resume was not expected");
-      },
+      }),
     } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
