@@ -271,11 +271,16 @@ decisions:
         - tools/scripts/lib/nx-projects.ts
         - KRT-BS004
         - typescript/kernel/grpc-client/src/lib/grpc-kernel-client.ts
-    status: proposed
+    status: closed
     asked:
       date: 2026-10-13
       in: EPIC-BU
     proposed_by: EPIC-BU @ 5508fea
+    ruling:
+      ref: ".constitution/reports/2026-10-19-interview-techspec-lint-alignment.md"
+      date: 2026-10-19
+      summary: "The owner approved the recommended supported-contract boundary for OD-09 and its copies. Internal Promise timing or identity, generic error types and cause fields may change to satisfy the selected preset, while documented and authority-backed behavior, ordering, cancellation and durable outcomes remain protected. Intentional public changes still require coordinated authority, tests and release metadata."
+      chosen: "Preserve supported contracts and apply the selected preset's internal normalizations"
   - id: OD-10
     question: "Should M24 retain four targeted native promise exceptions where reviewed rewrites change observer, rejection, or cleanup behavior?"
     blocks: [KRT-BZ004]
@@ -331,7 +336,7 @@ decisions:
     proposed_by: EPIC-BT @ 0262ff6
   - id: OD-12
     question: "Should native readiness preserve supported and authority-backed contracts while allowing the selected preset's internal async and error normalizations, or additionally freeze unpromised reflection and scheduling observations?"
-    blocks: [KRT-BY001]
+    blocks: [KRT-BY004]
     options:
       - name: "Preserve supported contracts and apply the selected preset's internal normalizations"
         pros:
@@ -382,11 +387,16 @@ decisions:
         - typescript/conformance-adapter/src/framework-adapter.ts
         - typescript/conformance-adapter/src/framework-adapter-batteries-included.ts
         - typescript/conformance-adapter/src/batteries-included-node-host.ts
-    status: proposed
+    status: closed
     asked:
       date: 2026-10-18
       in: EPIC-BY
     proposed_by: EPIC-BY @ 0262ff6
+    ruling:
+      ref: ".constitution/reports/2026-10-19-interview-techspec-lint-alignment.md"
+      date: 2026-10-19
+      summary: "The owner approved the recommended supported-contract boundary for OD-12 as a copy of OD-09. KRT-BY001 remains in applied_by as historical source provenance; KRT-BY004 is the resolvable evidence owner that completed the copied decision's blocking work."
+      chosen: "Preserve supported contracts and apply the selected preset's internal normalizations"
   - id: OD-13
     question: "Should native readiness preserve supported and authority-backed contracts while allowing the selected preset's internal async and error normalizations, or additionally freeze unpromised reflection and scheduling observations?"
     blocks: [KRT-CV001]
@@ -423,11 +433,16 @@ decisions:
         - typescript/conformance-adapter/src/framework-adapter.ts
         - typescript/conformance-adapter/src/framework-adapter-batteries-included.ts
         - typescript/conformance-adapter/src/batteries-included-node-host.ts
-    status: proposed
+    status: closed
     asked:
       date: 2026-10-18
       in: EPIC-BY
     proposed_by: EPIC-CV @ 0262ff6
+    ruling:
+      ref: ".constitution/reports/2026-10-19-interview-techspec-lint-alignment.md"
+      date: 2026-10-19
+      summary: "The owner approved the recommended supported-contract boundary for OD-13 as a copy of OD-09. The original EPIC-BY asked.in value remains the source-question history; EPIC-CV remains the proposal provenance."
+      chosen: "Preserve supported contracts and apply the selected preset's internal normalizations"
   - id: OD-14
     question: "Should native readiness preserve supported and authority-backed contracts while allowing the selected preset's internal async and error normalizations, or additionally freeze unpromised reflection and scheduling observations?"
     blocks: [KRT-CW001]
@@ -459,8 +474,13 @@ decisions:
         - typescript/conformance-adapter/src/framework-adapter-tuvren-server-execution-class.ts
         - typescript/conformance-adapter/src/framework-adapter-execution-bounds.ts
         - typescript/conformance-adapter/src/framework-adapter-runner.ts
-    status: proposed
+    status: closed
     asked:
       date: 2026-10-18
       in: EPIC-BY
     proposed_by: EPIC-CW @ 0262ff6
+    ruling:
+      ref: ".constitution/reports/2026-10-19-interview-techspec-lint-alignment.md"
+      date: 2026-10-19
+      summary: "The owner approved the recommended supported-contract boundary for OD-14 as a copy of OD-09. The original EPIC-BY asked.in value remains the source-question history; EPIC-CW remains the proposal provenance."
+      chosen: "Preserve supported contracts and apply the selected preset's internal normalizations"
