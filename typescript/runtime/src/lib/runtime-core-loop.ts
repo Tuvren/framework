@@ -669,13 +669,25 @@ export const runExecutionLoop = async (
     );
   };
 
+  let nextOutcome: Promise<LoopOutcome | "continue"> | undefined;
   const iterationOutcomes = {
     [Symbol.asyncIterator]() {
       return {
         async next(): Promise<IteratorResult<LoopOutcome | "continue">> {
+          const outcome = await (nextOutcome ?? runNextIteration());
+          nextOutcome = undefined;
+
+          // Match the old recursive loop's scheduling: enter the next
+          // iteration synchronously through its first await before yielding
+          // control to the event consumer. Replacing this promise on each pull
+          // keeps iteration state constant-space.
+          if (outcome === "continue") {
+            nextOutcome = runNextIteration();
+          }
+
           return {
             done: false,
-            value: await runNextIteration(),
+            value: outcome,
           };
         },
       };
