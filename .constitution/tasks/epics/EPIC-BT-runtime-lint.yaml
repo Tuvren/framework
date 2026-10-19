@@ -159,10 +159,10 @@ closeout:
       paths:
         - typescript/runtime/project.json
       commit: af3c0e6a526fdaa6e2fe5012aafc5b8433ebcdcc
-    - summary: "Drive sequential awaited runtime and benchmark work through local pull-based async iterators so iteration stays constant-space while satisfying the shipped no-await-in-loop rule without a suppression."
+    - summary: "Drive sequential awaited runtime and benchmark work through local pull-based async iterators with one eagerly prefetched next-iteration promise, preserving cancellation scheduling and constant-space behavior while satisfying the shipped no-await-in-loop rule without a suppression."
       kind: pattern
       paths:
         - typescript/runtime/src/lib/runtime-core-loop.ts
         - typescript/runtime/bench/runtime-boundary.bench.ts
-      commit: f2e61656b4bd8284b814ac7363112ad1063f4285
+      commit: 1f62bc31ea89394283ddbacb0e306a3508361f0b
   settled: []
