@@ -1,0 +1,300 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CA004",
+  "milestone": "M31-telemetry-cleanup-and-atomic-native-admission",
+  "result": "pass",
+  "reviewed_predecessor": "3e1af0446965ca1616dee6c5bdd8c0dd5e2dbd51",
+  "branch": "epic/ca-small-package-lint",
+  "working_tree_candidate": true,
+  "scope": [
+    "typescript/telemetry/otel",
+    "typescript/telemetry/semconv",
+    "tools/biome-coverage/ca.json"
+  ],
+  "toolchain": {
+    "bun": "1.4.2",
+    "typescript": "6.0.2",
+    "oxlint": "1.86.0",
+    "oxlint_tsgolint": "7.0.2003",
+    "oxfmt": "0.71.0",
+    "biome": "2.5.14",
+    "nx": "22.7.12",
+    "opentelemetry_api": "1.9.1",
+    "opentelemetry_sdk_trace_base": "2.7.1",
+    "weaver": "0.25.1"
+  },
+  "selection": {
+    "oxlint_code_count": 9,
+    "oxlint_code_files": [
+      "typescript/telemetry/otel/smoke/package-exports.ts",
+      "typescript/telemetry/otel/src/index.ts",
+      "typescript/telemetry/otel/src/lib/otel-telemetry-sink.ts",
+      "typescript/telemetry/otel/test/otel-telemetry-sink.test.ts",
+      "typescript/telemetry/otel/tsup.config.ts",
+      "typescript/telemetry/semconv/smoke/package-exports.ts",
+      "typescript/telemetry/semconv/src/index.ts",
+      "typescript/telemetry/semconv/test/tuvren-runtime-telemetry.test.ts",
+      "typescript/telemetry/semconv/tsup.config.ts"
+    ],
+    "native_json_code_inventory_count": 10,
+    "native_json_code_inventory": [
+      "typescript/telemetry/otel/smoke/package-exports.ts",
+      "typescript/telemetry/otel/src/index.ts",
+      "typescript/telemetry/otel/src/lib/otel-telemetry-sink.ts",
+      "typescript/telemetry/otel/test/otel-telemetry-sink.test.ts",
+      "typescript/telemetry/otel/tsup.config.ts",
+      "typescript/telemetry/semconv/smoke/package-exports.ts",
+      "typescript/telemetry/semconv/src/index.ts",
+      "typescript/telemetry/semconv/src/lib/generated/tuvren-runtime-telemetry.ts",
+      "typescript/telemetry/semconv/test/tuvren-runtime-telemetry.test.ts",
+      "typescript/telemetry/semconv/tsup.config.ts"
+    ],
+    "json_count": 14,
+    "json_files": [
+      "typescript/telemetry/otel/package.json",
+      "typescript/telemetry/otel/project.json",
+      "typescript/telemetry/otel/tsconfig.dts.json",
+      "typescript/telemetry/otel/tsconfig.json",
+      "typescript/telemetry/otel/tsconfig.lib.json",
+      "typescript/telemetry/otel/tsconfig.tsup.json",
+      "typescript/telemetry/otel/tsconfig.typecheck.json",
+      "typescript/telemetry/semconv/package.json",
+      "typescript/telemetry/semconv/project.json",
+      "typescript/telemetry/semconv/tsconfig.dts.json",
+      "typescript/telemetry/semconv/tsconfig.json",
+      "typescript/telemetry/semconv/tsconfig.lib.json",
+      "typescript/telemetry/semconv/tsconfig.tsup.json",
+      "typescript/telemetry/semconv/tsconfig.typecheck.json"
+    ],
+    "json_format_count": 14,
+    "protected_json_files": 0,
+    "oxlint_debug_files_exact": true,
+    "json_files_exact": true,
+    "nonempty": true,
+    "generated_semconv_selection_disposition": "The shipped generated-directory ignore excludes the generated semantic-convention TypeScript helper from Oxlint's nine-file selection; native JSON discovery still records it in the ten-file code inventory, and forced telemetry codegen proves its bytes remain identical."
+  },
+  "native_diagnostics": {
+    "baseline": 7,
+    "baseline_by_rule": {
+      "jsdoc(check-tag-names)": 3,
+      "typescript(no-confusing-void-expression)": 2,
+      "typescript(no-deprecated)": 2
+    },
+    "final": 0,
+    "selected_files": 9,
+    "installed_rules": 474,
+    "project_resolution_errors": 0,
+    "unused_disable_directives": 0,
+    "unused_directives_reported_at_deny_severity": true,
+    "shipped_type_aware_preset_unchanged": true,
+    "effective_config_sha256": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05",
+    "local_config_override": false
+  },
+  "measured_native_exceptions": [
+    {
+      "rule": "jsdoc/check-tag-names",
+      "scope": "@tuvren/telemetry-otel package entrypoint",
+      "reason": "Preserve the standard TypeScript @packageDocumentation tag on the public entrypoint."
+    },
+    {
+      "rule": "jsdoc/check-tag-names",
+      "scope": "CreateOtelTelemetrySinkOptions.instrumentationName",
+      "reason": "Preserve the standard TypeScript @defaultValue tag in the published option documentation."
+    },
+    {
+      "rule": "jsdoc/check-tag-names",
+      "scope": "@tuvren/telemetry-semconv package entrypoint",
+      "reason": "Preserve the standard TypeScript @packageDocumentation tag on the public generated-sink entrypoint."
+    }
+  ],
+  "code_decisions": [
+    {
+      "pattern": "supported-opentelemetry-attributes-type",
+      "reason": "Replace the deprecated SpanAttributes alias with its supported Attributes target. The installed API declares SpanAttributes as a deprecated alias of Attributes, so this changes no runtime value, public export, or accepted attribute shape."
+    },
+    {
+      "pattern": "explicit-void-sink-callbacks",
+      "reason": "Use block-bodied event and span callbacks so the sink retains the same single synchronous emission call and void return without a confusing concise-arrow return."
+    },
+    {
+      "pattern": "bounded-typescript-documentation-tags",
+      "reason": "Keep only three measured jsdoc/check-tag-names exception regions around established TypeScript documentation tags; each region has an explicit matching enable directive and passes unused-directive denial."
+    },
+    {
+      "pattern": "generated-semconv-byte-identity",
+      "reason": "Do not edit the generated semantic-convention helper. Forced telemetry code generation reproduces the same SHA-256 and leaves no generated diff."
+    }
+  ],
+  "retained_biome_reconciliation": {
+    "source_ledger": ".constitution/evidence/KRT-CA002/suppressions.json",
+    "telemetry_identities": 2,
+    "fresh_unsuppressed_diagnostics": 2,
+    "identities": [
+      {
+        "identity": "typescript/telemetry/otel/src/index.ts::lint/performance/noBarrelFile::1",
+        "original_reason": "This package entrypoint is the intentional public export surface.",
+        "fresh_unsuppressed_category": "lint/performance/noBarrelFile",
+        "fresh_unsuppressed_count": 1,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "native_counterpart_fired": false,
+        "disposition": "removed at atomic native admission with no firing native counterpart"
+      },
+      {
+        "identity": "typescript/telemetry/semconv/src/index.ts::lint/performance/noBarrelFile::1",
+        "original_reason": "This package entrypoint is the intentional public generated-sink surface.",
+        "fresh_unsuppressed_category": "lint/performance/noBarrelFile",
+        "fresh_unsuppressed_count": 1,
+        "native_candidate_rule": "oxc/no-barrel-file",
+        "native_counterpart_fired": false,
+        "disposition": "removed at atomic native admission with no firing native counterpart"
+      }
+    ],
+    "remaining_biome_directives_in_admitted_root": 0
+  },
+  "atomic_admission": {
+    "projects": [
+      {
+        "project": "framework-telemetry-otel",
+        "root": "typescript/telemetry/otel",
+        "executor": "nx:run-commands",
+        "cwd": ".",
+        "commands": [
+          "bunx --bun oxlint --type-aware typescript/telemetry/otel",
+          "bun tools/scripts/json-check.ts typescript/telemetry/otel"
+        ],
+        "parallel": false,
+        "inputs": "inherited"
+      },
+      {
+        "project": "telemetry-semconv",
+        "root": "typescript/telemetry/semconv",
+        "executor": "nx:run-commands",
+        "cwd": ".",
+        "commands": [
+          "bunx --bun oxlint --type-aware typescript/telemetry/semconv",
+          "bun tools/scripts/json-check.ts typescript/telemetry/semconv"
+        ],
+        "parallel": false,
+        "inputs": "inherited"
+      }
+    ],
+    "removed_coverage_entries": [
+      "typescript/telemetry"
+    ],
+    "retained_coverage_entries": [
+      "typescript/certification",
+      "typescript/certification-batteries-included",
+      "tools/run-nx.mjs"
+    ]
+  },
+  "behavior_and_api": {
+    "otel_tests": {
+      "passed": 3,
+      "failed": 0
+    },
+    "semconv_tests": {
+      "passed": 1,
+      "failed": 0
+    },
+    "exports_smoke": {
+      "otel_passed": 1,
+      "semconv_passed": 1,
+      "failed": 0
+    },
+    "telemetry_conformance": {
+      "plans": [
+        "spec/conformance/telemetry/plans/framework-operational-telemetry.json",
+        "spec/conformance/telemetry/plans/invocation-lifecycle-observation.json"
+      ],
+      "passed": 31,
+      "failed": 0,
+      "non_applicable": 0
+    },
+    "api_freeze": {
+      "entrypoints": 14,
+      "exports": 404,
+      "status": "pass"
+    },
+    "generated_semconv": {
+      "sha256_before": "5bbc62d2f1f0ad672abc8b8da6d02c327115365cfba1de35169f4d4d126edfb4",
+      "sha256_after": "5bbc62d2f1f0ad672abc8b8da6d02c327115365cfba1de35169f4d4d126edfb4",
+      "byte_identical": true,
+      "tracked_diff": false
+    },
+    "telemetry_attribute_order": "preserved",
+    "telemetry_span_order": "preserved",
+    "telemetry_event_order": "preserved",
+    "public_api": "preserved",
+    "release_metadata": "unchanged; existing direct eight-package patch changeset retained",
+    "changeset_sha256": "b0f5b0573b3ffa31372e2b3f4fcf2653be6b849ee5350c888b28ef39f24d70af"
+  },
+  "gates": {
+    "otel_and_semconv_lint_typecheck_test_build_exports": "pass",
+    "routing_partition_controls": {
+      "passed": 85,
+      "failed": 0,
+      "files": 6
+    },
+    "telemetry_conformance": "pass: 31 of 31",
+    "api_freeze": "pass: 14 entrypoints and 404 exports",
+    "telemetry_codegen_identity": "pass",
+    "full_lint": "pass",
+    "full_typecheck": {
+      "projects": 33,
+      "status": "pass"
+    },
+    "format_check": {
+      "files": 1336,
+      "status": "pass"
+    },
+    "changeset_check": {
+      "direct_publishable_packages": 8,
+      "status": "pass"
+    },
+    "constitution_validate": {
+      "errors": 0,
+      "warnings": 0,
+      "info": 78,
+      "status": "pass"
+    },
+    "diff_check": "pass"
+  },
+  "verification_notes": {
+    "current_documentation": "Current Oxlint documentation confirms type-aware linting, automatic tsconfig discovery, inline disable comments, and deny-severity unused-directive reporting. Current OpenTelemetry JavaScript API documentation confirms tracer acquisition, startSpan, addEvent, setStatus, and explicit span end behavior; the installed 1.9.1 declarations confirm Attributes is the supported replacement for SpanAttributes.",
+    "environment_retry": "The first plain-shell telemetry invocation inherited every adapter authority packet and reported four failures across the resulting 523-check suite, so it is excluded from scoped evidence. The exact two-plan run under the repository direnv passed 31 of 31. The first plain-shell generator attempt could not resolve Weaver; the repository-direnv forced codegen passed and reproduced identical bytes.",
+    "final_unresolved_failures": 0
+  },
+  "a19_composition": {
+    "files": 6,
+    "insertions": 30,
+    "deletions": 10,
+    "total_lines": 40,
+    "production": {
+      "files": 3,
+      "insertions": 20,
+      "deletions": 7
+    },
+    "tests": {
+      "files": 0,
+      "insertions": 0,
+      "deletions": 0
+    },
+    "metadata": {
+      "files": 3,
+      "insertions": 10,
+      "deletions": 3
+    },
+    "reviewability": "Three small TypeScript files contain one supported type-alias replacement, two equivalent callback-body expansions, and three narrowly scoped measured documentation exceptions. Two project files perform the exact canonical native target switch, and one coverage file transfers only the telemetry root. No tests, dependencies, generated tracked artifacts, release metadata, API snapshots, or constitution files change."
+  },
+  "drift": {
+    "changed_files_outside_scope": 0,
+    "constitution_files": 0,
+    "dependency_files": 0,
+    "generated_tracked_files": 0,
+    "api_snapshot_files": 0,
+    "test_files": 0,
+    "config_overrides": 0,
+    "changeset_files": 0,
+    "release_files": 0
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CX001",
+  "result": "pass",
+  "verified_at": "060c835b55015b591e71dba0a9975d95a4131d90",
+  "source": {
+    "base": "b54bf35342b312dde303f7b945a553ac24df5d34",
+    "freeze_tag": "evidence/wave-1-ca-source-freeze-20261018",
+    "freeze_commit": "d67b9b8d2bb370e25d03415d6573ace25b4fa46b",
+    "measured_tree": "32fd3ce665f6e54b6311363bb876e13f4f6756b8",
+    "planned_identities": 70,
+    "exact_frozen_files": 58,
+    "exact_target_transformations": 12,
+    "reviewed_integration_deviations": 1
+  },
+  "targets": {
+    "native": 12,
+    "forward_all_args_false": 12,
+    "full_root_inputs_plus_production": 9,
+    "no_target_local_inputs": 3,
+    "commands_cwd_parallel_executor_and_other_fields_invariant": true,
+    "selected_code_files": 112,
+    "selected_json_files": 76
+  },
+  "directives": {
+    "legacy_paths_checked": 33,
+    "final_owned_identities_removed": 29,
+    "final_owned_paths": 27,
+    "legacy_remaining": 0,
+    "native_exception_regions": 164,
+    "retained_biome_coverage": ["tools/run-nx.mjs"]
+  },
+  "verification": {
+    "source_typechecks": 11,
+    "native_lints": 12,
+    "package_tests_before_a66": 349,
+    "mcp_tests_after_a66": 9,
+    "compiler_file_entries": 4246,
+    "live_sibling_source_entries": 0,
+    "workspace_dist_entries": 0,
+    "public_cold_imports": 8,
+    "changeset_public_packages": 8,
+    "api_freeze": "14 entrypoints and 404 exports unchanged",
+    "maximum_changed_typescript_lines": 958,
+    "check": "pass",
+    "verify": "pass",
+    "constitution": "0 errors, 0 warnings",
+    "milestone_review": "clean"
+  },
+  "a66": {
+    "path": "typescript/tools/mcp-client/test/mcp-client.test.ts",
+    "reason": "Merged KRT-CA005 raw whole-envelope assertions exposed six native no-unsafe-assignment diagnostics during final package admission.",
+    "resolution": "Route Bun asymmetric matcher values through unknown locals while preserving every raw envelope assertion and the whole-file assertion AST.",
+    "policy_or_contract_change": false
+  },
+  "source_diff": {
+    "files": 71,
+    "additions": 3157,
+    "deletions": 4001,
+    "raw_changed_lines": 7158,
+    "hard_limit": 15000
+  }
+}
