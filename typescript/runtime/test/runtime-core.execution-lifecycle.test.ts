@@ -346,4 +346,67 @@ describe("framework-runtime-core", () => {
     expect(observedAbort).toBe(true);
     expect(handle.status().phase).toBe("failed");
   });
+
+  test("stages a partial assistant message when cancellation follows iteration.end", async () => {
+    const harness = createFakeKernelHarness();
+    let executeCount = 0;
+    const runner = {
+      async execute(context) {
+        executeCount += 1;
+
+        if (executeCount === 1) {
+          return {
+            messages: [assistantText("first pass")],
+            resolution: { type: "continue_iteration" as const },
+          };
+        }
+
+        await waitForAbort(context.signal);
+        return {
+          messages: [assistantText("interrupted")],
+          partial: true,
+          resolution: {
+            error: new Error("runner observed cancellation"),
+            fatality: "hard" as const,
+            type: "fail" as const,
+          },
+        };
+      },
+      id: "fake",
+    } satisfies RuntimeRunner;
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([runner]),
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("Cancel after the first iteration"),
+      threadId: thread.threadId,
+    });
+    const resultPromise = handle.awaitResult();
+    let cancelledAfterIterationEnd = false;
+
+    for await (const event of handle.events()) {
+      if (event.type === "iteration.end" && !cancelledAfterIterationEnd) {
+        cancelledAfterIterationEnd = true;
+        handle.cancel();
+      }
+    }
+
+    let cancellationError: unknown;
+    try {
+      await resultPromise;
+    } catch (error: unknown) {
+      cancellationError = error;
+    }
+    const messages = await harness.readBranchMessages(thread.branchId);
+
+    expect(executeCount).toBe(2);
+    expect(cancelledAfterIterationEnd).toBe(true);
+    expect(cancellationError).toMatchObject({ code: "execution_cancelled" });
+    expect(messages).toContainEqual(assistantText("interrupted"));
+  });
 });
