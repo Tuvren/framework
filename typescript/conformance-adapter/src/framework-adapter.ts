@@ -340,105 +340,132 @@ const runCapabilityOrchestrationFoundationFromInput: OperationHandler = async (
 
 const OPERATION_HANDLERS = new Map<string, OperationHandler>(
   Object.entries({
-    "runtime.execute-turn": runtimeScenarios.runCompletedRuntimeTurn,
-    "runtime.cancel-execution": runCancelledRuntimeTurn,
-    "runtime.approval-resolve": runtimeScenarios.runApprovalResume,
-    "runtime.operational-telemetry": runtimeScenarios.runOperationalTelemetry,
-    "runtime.branch-create": runtimeScenarios.runBranchCreate,
-    "runtime.durable-read.list-threads":
-      runtimeScenarios.runDurableReadListThreads,
-    "runtime.durable-read.list-threads-paginate":
-      runtimeScenarios.runDurableReadListThreadsPaginate,
-    "runtime.durable-read.list-threads-capability-rejected":
-      runtimeScenarios.runDurableReadListThreadsCapabilityRejected,
-    "runtime.durable-read.list-branches":
-      runtimeScenarios.runDurableReadListBranches,
-    "runtime.durable-read.get-turn-state":
-      runtimeScenarios.runDurableReadGetTurnState,
-    "runtime.durable-read.get-turn-state-lineage":
-      runtimeScenarios.runDurableReadGetTurnStateLineage,
-    "runtime.durable-read.get-turn-history":
-      runtimeScenarios.runDurableReadGetTurnHistory,
-    "runtime.durable-read.read-branch-messages":
-      runtimeScenarios.runDurableReadReadBranchMessages,
-    "runtime.durable-read.read-branch-messages-head-drift":
-      runtimeScenarios.runDurableReadReadBranchMessagesHeadDrift,
-    "runtime.handle-terminal-value": runtimeScenarios.runHandleTerminalValue,
-    "runtime.provider-generate": runtimeScenarios.runProviderGenerate,
-    "runtime.provider-stream": runtimeScenarios.runProviderStream,
-    "runtime.tool-execute": runtimeScenarios.runToolExecution,
-    "runtime.validate-structured-output":
-      runtimeScenarios.runStructuredValidationFailure,
-    "runtime.context-transform": runtimeScenarios.runContextTransform,
-    "runtime.recover-result": runtimeScenarios.runRecoverResult,
-    "runtime.recover-stale-run": runtimeScenarios.runRecoverStaleRun,
-    "runtime.client-result-as-proposal":
-      runtimeScenarios.runClientResultAsProposal,
-    "runtime.admission-key.crash-recovery":
-      admissionKeyScenarios.runCrashRecovery,
-    "runtime.admission-key.provider-exclusion":
-      admissionKeyScenarios.runProviderExclusion,
-    "runtime.admission-key.initial-input-recovery":
-      admissionKeyScenarios.runInitialInputRecovery,
-    "runtime.admission-key.keyless-identity":
-      admissionKeyScenarios.runKeylessIdentity,
-    "runtime.orchestration.launch-preconditions":
-      orchestrationScenarios.runOrchestrationLaunchPreconditions,
-    "runtime.orchestration.lifecycle-locality":
-      orchestrationScenarios.runOrchestrationLifecycleLocality,
-    "runtime.orchestration.event-surfaces":
-      orchestrationScenarios.runOrchestrationEventSurfaces,
-    "runtime.orchestration.execution-inheritance":
-      orchestrationScenarios.runOrchestrationExecutionInheritance,
-    "runtime.orchestration.nested-attribution":
-      orchestrationScenarios.runOrchestrationNestedAttribution,
-    "runtime.batteries-included.lifecycle":
-      batteriesIncludedScenarios.runBatteriesIncludedLifecycle,
-    "runtime.proving-host.headless-transcript-replay":
-      provingHostScenarios.runHeadlessTranscriptReplay,
-    "runtime.schema-authoring.route":
-      schemaAuthoringScenarios.runSchemaAuthoringRoute,
-    "runtime.schema-authoring.define-tool":
-      schemaAuthoringScenarios.runSchemaAuthoringDefineTool,
-    "runner.execute": runnerScenarios.runRunnerExecute,
-    "runner.resume": runnerScenarios.runRunnerResume,
-    "runner.checkpoint": runnerScenarios.runRunnerCheckpoint,
+    "event-stream-resume.replay-scenario":
+      eventStreamResumeScenarios.runReplayScenario,
+    "event-stream-resume.sse-reconnect":
+      eventStreamResumeScenarios.runSseReconnect,
+    "event-stream-sse.decode-trace": eventStreamSseScenarios.runDecodeTrace,
+    "event-stream-sse.report-wire-compliance":
+      eventStreamSseScenarios.runReportWireCompliance,
+    "event-stream-ws.decode-trace": eventStreamWsScenarios.runDecodeTrace,
+    "event-stream-ws.handshake-rejections":
+      eventStreamWsScenarios.runHandshakeRejections,
+    "event-stream-ws.policy-closures": eventStreamWsScenarios.runPolicyClosures,
+    "event-stream-ws.reconnect-with-cursor":
+      eventStreamWsScenarios.runReconnectWithCursor,
+    "event-stream-ws.session-roundtrip":
+      eventStreamWsScenarios.runSessionRoundtrip,
     "event-stream.runtime-agui-projection":
       eventStreamScenarios.runAgUiProjection,
     "event-stream.runtime-sse-eager-subscription":
       eventStreamScenarios.runSseEagerSubscription,
     "event-stream.runtime-sse-projection":
       eventStreamScenarios.runSseProjection,
-    "event-stream-sse.decode-trace": eventStreamSseScenarios.runDecodeTrace,
-    "event-stream-sse.report-wire-compliance":
-      eventStreamSseScenarios.runReportWireCompliance,
-    "event-stream-resume.replay-scenario":
-      eventStreamResumeScenarios.runReplayScenario,
-    "event-stream-resume.sse-reconnect":
-      eventStreamResumeScenarios.runSseReconnect,
+    "host-session.admission-key-steer-carriage": runAdmissionKeySteerCarriage,
+    "host-session.approval-response-resume": runApprovalResponseResume,
+    "host-session.cancel-cooperative": runCancelCooperative,
+    "host-session.cancel-while-paused": runCancelWhilePaused,
+    "host-session.dispatch-timeout": runDispatchTimeout,
+    "host-session.grace-window-expiry": runGraceWindowExpiry,
+    "host-session.reattach-redelivery": runReattachRedelivery,
+    "host-session.sequence-continuity": runSequenceContinuity,
+    "host-session.stale-client-result": runStaleClientResult,
+    "host-session.validate-frame-fixtures": runValidateFrameFixtures,
+    "runner.checkpoint": runnerScenarios.runRunnerCheckpoint,
+    "runner.execute": runnerScenarios.runRunnerExecute,
+    "runner.resume": runnerScenarios.runRunnerResume,
+    "runtime.admission-key.crash-recovery":
+      admissionKeyScenarios.runCrashRecovery,
+    "runtime.admission-key.initial-input-recovery":
+      admissionKeyScenarios.runInitialInputRecovery,
+    "runtime.admission-key.keyless-identity":
+      admissionKeyScenarios.runKeylessIdentity,
+    "runtime.admission-key.provider-exclusion":
+      admissionKeyScenarios.runProviderExclusion,
+    "runtime.approval-resolve": runtimeScenarios.runApprovalResume,
+    "runtime.batteries-included.lifecycle":
+      batteriesIncludedScenarios.runBatteriesIncludedLifecycle,
+    "runtime.branch-create": runtimeScenarios.runBranchCreate,
+    "runtime.cancel-execution": runCancelledRuntimeTurn,
     "runtime.capability-orchestration.foundation":
       runCapabilityOrchestrationFoundationFromInput,
-    "runtime.capability-orchestration.policy-decisions":
-      runCapabilityOrchestrationPolicyDecisions,
     "runtime.capability-orchestration.integration":
       runCapabilityOrchestrationIntegration,
-    "runtime.invocation-lifecycle.cross-class":
-      runInvocationLifecycleCrossClass,
+    "runtime.capability-orchestration.policy-decisions":
+      runCapabilityOrchestrationPolicyDecisions,
+    "runtime.capability-policy.composition": runCapabilityPolicyComposition,
+    "runtime.capability-policy.exposure-dimensions":
+      runCapabilityPolicyExposureDimensions,
+    "runtime.capability-policy.invocation-dimensions":
+      runCapabilityPolicyInvocationDimensions,
+    "runtime.capability-policy.nonretryable-policy":
+      runCapabilityPolicyNonretryablePolicy,
+    "runtime.capability-policy.wired-invocation-denial":
+      runCapabilityPolicyWiredInvocationDenial,
+    "runtime.capability-policy.wired-risk-approval":
+      runCapabilityPolicyWiredRiskApproval,
+    "runtime.client-result-as-proposal":
+      runtimeScenarios.runClientResultAsProposal,
+    "runtime.context-transform": runtimeScenarios.runContextTransform,
+    "runtime.durable-read.get-turn-history":
+      runtimeScenarios.runDurableReadGetTurnHistory,
+    "runtime.durable-read.get-turn-state":
+      runtimeScenarios.runDurableReadGetTurnState,
+    "runtime.durable-read.get-turn-state-lineage":
+      runtimeScenarios.runDurableReadGetTurnStateLineage,
+    "runtime.durable-read.list-branches":
+      runtimeScenarios.runDurableReadListBranches,
+    "runtime.durable-read.list-threads":
+      runtimeScenarios.runDurableReadListThreads,
+    "runtime.durable-read.list-threads-capability-rejected":
+      runtimeScenarios.runDurableReadListThreadsCapabilityRejected,
+    "runtime.durable-read.list-threads-paginate":
+      runtimeScenarios.runDurableReadListThreadsPaginate,
+    "runtime.durable-read.read-branch-messages":
+      runtimeScenarios.runDurableReadReadBranchMessages,
+    "runtime.durable-read.read-branch-messages-head-drift":
+      runtimeScenarios.runDurableReadReadBranchMessagesHeadDrift,
+    "runtime.execute-turn": runtimeScenarios.runCompletedRuntimeTurn,
+    "runtime.execution-bounds.concurrency-throttle":
+      runExecutionBoundsConcurrencyThrottle,
+    "runtime.execution-bounds.invalid-config": runExecutionBoundsInvalidConfig,
     "runtime.execution-bounds.max-iterations": runExecutionBoundsMaxIterations,
     "runtime.execution-bounds.max-tool-calls": runExecutionBoundsMaxToolCalls,
     "runtime.execution-bounds.max-wall-clock": runExecutionBoundsMaxWallClock,
     "runtime.execution-bounds.wall-clock-signal-delivery":
       runExecutionBoundsWallClockSignalDelivery,
-    "runtime.execution-bounds.concurrency-throttle":
-      runExecutionBoundsConcurrencyThrottle,
-    "runtime.execution-bounds.invalid-config": runExecutionBoundsInvalidConfig,
     "runtime.execution-bounds.within-bounds": runExecutionBoundsWithinBounds,
-    "runtime.secret-isolation.surfaces": runSecretIsolationRuntimeApi,
-    "runtime.secret-isolation.telemetry": runSecretIsolationTelemetry,
+    "runtime.handle-terminal-value": runtimeScenarios.runHandleTerminalValue,
+    "runtime.invocation-lifecycle.cross-class":
+      runInvocationLifecycleCrossClass,
+    "runtime.operational-telemetry": runtimeScenarios.runOperationalTelemetry,
+    "runtime.orchestration.event-surfaces":
+      orchestrationScenarios.runOrchestrationEventSurfaces,
+    "runtime.orchestration.execution-inheritance":
+      orchestrationScenarios.runOrchestrationExecutionInheritance,
+    "runtime.orchestration.launch-preconditions":
+      orchestrationScenarios.runOrchestrationLaunchPreconditions,
+    "runtime.orchestration.lifecycle-locality":
+      orchestrationScenarios.runOrchestrationLifecycleLocality,
+    "runtime.orchestration.nested-attribution":
+      orchestrationScenarios.runOrchestrationNestedAttribution,
+    "runtime.provider-generate": runtimeScenarios.runProviderGenerate,
+    "runtime.provider-stream": runtimeScenarios.runProviderStream,
+    "runtime.proving-host.headless-transcript-replay":
+      provingHostScenarios.runHeadlessTranscriptReplay,
+    "runtime.recover-result": runtimeScenarios.runRecoverResult,
+    "runtime.recover-stale-run": runtimeScenarios.runRecoverStaleRun,
+    "runtime.sanitize-seam.tool-result": runSanitizeSeamToolResult,
+    "runtime.schema-authoring.define-tool":
+      schemaAuthoringScenarios.runSchemaAuthoringDefineTool,
+    "runtime.schema-authoring.route":
+      schemaAuthoringScenarios.runSchemaAuthoringRoute,
+    "runtime.scope-isolation.surfaces": runScopeIsolationSurfaces,
     "runtime.secret-isolation.provider-bridge":
       runSecretIsolationProviderBridge,
-    "runtime.sanitize-seam.tool-result": runSanitizeSeamToolResult,
-    "runtime.scope-isolation.surfaces": runScopeIsolationSurfaces,
+    "runtime.secret-isolation.surfaces": runSecretIsolationRuntimeApi,
+    "runtime.secret-isolation.telemetry": runSecretIsolationTelemetry,
+    "runtime.tool-execute": runtimeScenarios.runToolExecution,
     "runtime.trust-boundary.approval-gate":
       runTrustBoundaryApprovalNonBypassable,
     "runtime.trust-boundary.local-tool-input": runTrustBoundaryLocalToolInput,
@@ -446,40 +473,13 @@ const OPERATION_HANDLERS = new Map<string, OperationHandler>(
     "runtime.tuvren-client.network-reconnect-redelivery":
       runTuvrenClientNetworkReconnectRedelivery,
     "runtime.tuvren-client.result-durability": runTuvrenClientResultDurability,
-    "runtime.tuvren-server.lifecycle": runTuvrenServerLifecycle,
     "runtime.tuvren-server.binding-classification":
       runTuvrenServerBindingClassification,
     "runtime.tuvren-server.cancellation": runTuvrenServerCancellation,
+    "runtime.tuvren-server.lifecycle": runTuvrenServerLifecycle,
     "runtime.tuvren-server.tenant-isolation": runTuvrenServerTenantIsolation,
-    "runtime.capability-policy.exposure-dimensions":
-      runCapabilityPolicyExposureDimensions,
-    "runtime.capability-policy.invocation-dimensions":
-      runCapabilityPolicyInvocationDimensions,
-    "runtime.capability-policy.composition": runCapabilityPolicyComposition,
-    "runtime.capability-policy.wired-invocation-denial":
-      runCapabilityPolicyWiredInvocationDenial,
-    "runtime.capability-policy.nonretryable-policy":
-      runCapabilityPolicyNonretryablePolicy,
-    "runtime.capability-policy.wired-risk-approval":
-      runCapabilityPolicyWiredRiskApproval,
-    "host-session.stale-client-result": runStaleClientResult,
-    "host-session.approval-response-resume": runApprovalResponseResume,
-    "host-session.cancel-cooperative": runCancelCooperative,
-    "host-session.cancel-while-paused": runCancelWhilePaused,
-    "host-session.validate-frame-fixtures": runValidateFrameFixtures,
-    "host-session.reattach-redelivery": runReattachRedelivery,
-    "host-session.grace-window-expiry": runGraceWindowExpiry,
-    "host-session.dispatch-timeout": runDispatchTimeout,
-    "host-session.sequence-continuity": runSequenceContinuity,
-    "host-session.admission-key-steer-carriage": runAdmissionKeySteerCarriage,
-    "event-stream-ws.decode-trace": eventStreamWsScenarios.runDecodeTrace,
-    "event-stream-ws.session-roundtrip":
-      eventStreamWsScenarios.runSessionRoundtrip,
-    "event-stream-ws.reconnect-with-cursor":
-      eventStreamWsScenarios.runReconnectWithCursor,
-    "event-stream-ws.handshake-rejections":
-      eventStreamWsScenarios.runHandshakeRejections,
-    "event-stream-ws.policy-closures": eventStreamWsScenarios.runPolicyClosures,
+    "runtime.validate-structured-output":
+      runtimeScenarios.runStructuredValidationFailure,
   } satisfies Record<string, OperationHandler>)
 );
 

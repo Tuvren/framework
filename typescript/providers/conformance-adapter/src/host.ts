@@ -25,8 +25,10 @@ import type { ToolExecutionContext, ToolResultPart } from "@tuvren/core/tools";
 import {
   assertProviderStreamChunk,
   assertTuvrenModelResponse,
-  type ProviderStreamChunk,
-  type StructuredOutputRequest,
+} from "@tuvren/provider-api";
+import type {
+  ProviderStreamChunk,
+  StructuredOutputRequest,
 } from "@tuvren/provider-api";
 import {
   createOfficialMcpEverythingStdioCommand,
@@ -36,7 +38,6 @@ import {
 
 import type {
   AdapterCapabilities,
-  AdapterControls,
   OperationOutcome,
 } from "../../../../tools/conformance/adapter-protocol/index.js";
 import { createAdapterErrorEnvelope } from "../../../../tools/conformance/adapter-protocol/index.js";
@@ -49,120 +50,135 @@ import { providerConformanceFixtures } from "./provider-conformance-fixtures.ts"
 import { runProviderMediatedAttribution } from "./provider-mediated-execution-class.ts";
 import { runProviderNativeAttribution } from "./provider-native-execution-class.ts";
 
-class TypeScriptProviderAdapter {
-  initialize(
-    packetId: string,
-    planVersion: string
-  ): Promise<AdapterCapabilities> {
-    return Promise.resolve({
-      adapterId: "typescript-providers",
-      capabilities: [
-        "providers.provider-api",
-        "providers.ai-sdk-bridge",
-        "providers.framework-owned-approval-boundary",
-        "providers.framework-owned-tool-execution",
-        "providers.mcp-client",
-        "providers.rejects-native-strict-structured-output",
-        "providers.provider-native-execution-class",
-        "providers.provider-mediated-execution-class",
-        "providers.conversation-state-ownership",
-      ],
-      packetId,
-      planVersion,
-    });
-  }
-
-  async dispatch(
-    operation: string,
-    input: unknown,
-    _controls: AdapterControls
-  ): Promise<OperationOutcome> {
-    try {
-      switch (operation) {
-        case "providers.bridge.generate-mapping":
-          return result(await generateMapping());
-        case "providers.bridge.stream-metadata-continuity":
-          return result(await streamMetadataContinuity());
-        case "providers.conversation-state.continuity-carriage":
-          return result(await conversationStateContinuityCarriage());
-        case "providers.conversation-state.continuity-replay":
-          return result(await conversationStateContinuityReplay());
-        case "providers.conversation-state.continuity-roundtrip":
-          return result(await conversationStateContinuityRoundTrip());
-        case "providers.conversation-state.cache-correctness-neutral":
-          return result(await conversationStateCacheCorrectnessNeutral());
-        case "providers.conversation-state.provider-executed-fidelity":
-          return result(await conversationStateProviderExecutedFidelity());
-        case "providers.bridge.structured-output-stream":
-          return result(await structuredOutputStream());
-        case "providers.bridge.provider-failure-normalization":
-          return result(await providerFailureNormalization());
-        case "providers.bridge.strict-structured-output-rejection":
-          return result(await strictStructuredOutputRejection());
-        case "providers.bridge.provider-owned-tool-result-rejection":
-          return result(await providerOwnedToolResultRejection());
-        case "providers.bridge.provider-owned-tool-execution-rejection":
-          return result(await providerOwnedToolExecutionRejection());
-        case "providers.bridge.provider-approval-request-rejection":
-          return result(await providerApprovalRequestRejection());
-        case "providers.mcp-client.translation-rules":
-          return result(await mcpClientTranslationRules());
-        case "providers.mcp-client.auth-headers":
-          return result(await mcpClientAuthHeaders());
-        case "providers.mcp-client.validation-errors":
-          return result(await mcpClientValidationErrors());
-        case "providers.mcp-client.transport-error-normalization":
-          return result(await mcpClientTransportErrorNormalization());
-        case "providers.mcp-client.secret-isolation":
-          return result(await mcpClientSecretIsolation(input));
-        case "providers.mcp-client.trust-boundary":
-          return result(await mcpClientTrustBoundary());
-        case "providers.provider-native.attribution":
-          return result(await runProviderNativeAttribution());
-        case "providers.provider-mediated.attribution":
-          return result(await runProviderMediatedAttribution());
-        default:
-          return {
-            error: {
-              code: "adapter_operation_not_implemented",
-              message: `provider adapter does not implement ${operation}`,
-            },
-            kind: "error",
-          };
-      }
-    } catch (error: unknown) {
-      return {
-        error: createAdapterErrorEnvelope(error),
-        kind: "error",
-      };
-    }
-  }
+interface McpSecretFixture {
+  mcpBearerToken: string;
+  mcpHeaderAuth: { name: string; value: string };
 }
 
-await serveStdioAdapter(new TypeScriptProviderAdapter());
+const createUsage = (inputTokens: number, outputTokens: number) => ({
+  inputTokens: {
+    cacheRead: 1,
+    cacheWrite: 0,
+    noCache: inputTokens - 1,
+    total: inputTokens,
+  },
+  outputTokens: {
+    reasoning: outputTokens > 2 ? 2 : 0,
+    text: outputTokens > 2 ? outputTokens - 2 : outputTokens,
+    total: outputTokens,
+  },
+  raw: { provider: "mock-provider" },
+});
 
-async function generateMapping(): Promise<Record<string, unknown>> {
+const createGenerateResult = (
+  overrides: Partial<LanguageModelV3GenerateResult> = {}
+): LanguageModelV3GenerateResult => ({
+  content: [{ text: "default", type: "text" }],
+  finishReason: { raw: "stop", unified: "stop" },
+  usage: createUsage(1, 1),
+  warnings: [],
+  ...overrides,
+});
+
+const fromSynchronous = <Argument, Value>(
+  operation: (argument: Argument) => Value
+): ((argument: Argument) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(argument: Argument) => Value],
+    [Argument],
+    Promise<Value>
+  >(Promise, operation);
+
+const fromSynchronousWithoutArguments = <Value>(
+  operation: () => Value
+): (() => Promise<Value>) =>
+  Promise.try.bind<typeof Promise, [() => Value], [], Promise<Value>>(
+    Promise,
+    operation
+  );
+
+const fromSynchronousPair = <First, Second, Value>(
+  operation: (first: First, second: Second) => Value
+): ((first: First, second: Second) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(first: First, second: Second) => Value],
+    [First, Second],
+    Promise<Value>
+  >(Promise, operation);
+
+const streamFromParts = (
+  parts: readonly LanguageModelV3StreamPart[]
+): ReadableStream<LanguageModelV3StreamPart> =>
+  new ReadableStream<LanguageModelV3StreamPart>({
+    start(controller) {
+      for (const part of parts) {
+        controller.enqueue(part);
+      }
+
+      controller.close();
+    },
+  });
+
+const createMockModel = (
+  overrides: Partial<LanguageModelV3> & {
+    doGenerate?: LanguageModelV3["doGenerate"];
+    doStream?: LanguageModelV3["doStream"];
+  } = {}
+): LanguageModelV3 => ({
+  doGenerate: fromSynchronousWithoutArguments(() => createGenerateResult()),
+  doStream: fromSynchronousWithoutArguments(() => ({
+    stream: streamFromParts([
+      {
+        finishReason: { raw: "stop", unified: "stop" },
+        type: "finish",
+        usage: createUsage(1, 1),
+      },
+    ]),
+  })),
+  modelId: "mock-model",
+  provider: "mock-provider",
+  specificationVersion: "v3",
+  supportedUrls: {},
+  ...overrides,
+});
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const result = (value: Record<string, unknown>): OperationOutcome => ({
+  kind: "result",
+  value,
+});
+
+const createProjection = (
+  evidence: Record<string, unknown>
+): Record<string, unknown> => ({
+  evidence,
+  result: evidence,
+});
+
+const generateMapping = async (): Promise<Record<string, unknown>> => {
   let capturedOptions: LanguageModelV3CallOptions | undefined;
   const bridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doGenerate(options) {
+      doGenerate: fromSynchronous((options: LanguageModelV3CallOptions) => {
         capturedOptions = options;
-        return Promise.resolve(
-          createGenerateResult({
-            content: [
-              {
-                text: '{"answer":"ready"}',
-                type: "text",
-              },
-            ],
-            providerMetadata: {
-              openai: {
-                requestId: "req-bridge-generate",
-              },
+        return createGenerateResult({
+          content: [
+            {
+              text: '{"answer":"ready"}',
+              type: "text",
             },
-          })
-        );
-      },
+          ],
+          providerMetadata: {
+            openai: {
+              requestId: "req-bridge-generate",
+            },
+          },
+        });
+      }),
     }),
   });
   const response = await bridge.generate(
@@ -187,40 +203,75 @@ async function generateMapping(): Promise<Record<string, unknown>> {
       responsePartTypes: response.parts.map((part) => part.type),
     },
   });
-}
+};
 
-async function streamMetadataContinuity(): Promise<Record<string, unknown>> {
+const collectProviderStreamChunks = async (
+  stream: AsyncIterable<ProviderStreamChunk>
+): Promise<ProviderStreamChunk[]> => {
+  const chunks: ProviderStreamChunk[] = [];
+  let index = 0;
+
+  for await (const chunk of stream) {
+    assertProviderStreamChunk(chunk, `provider stream chunk ${index}`);
+    chunks.push(structuredClone(chunk));
+    index += 1;
+  }
+
+  return chunks;
+};
+
+const findFinishChunk = (
+  chunks: readonly ProviderStreamChunk[],
+  expected: "tool_call" | "stop"
+): Extract<ProviderStreamChunk, { type: "finish" }> => {
+  const finishChunk = chunks.find(
+    (chunk): chunk is Extract<ProviderStreamChunk, { type: "finish" }> =>
+      chunk.type === "finish"
+  );
+
+  if (finishChunk === undefined) {
+    throw new Error("provider stream did not emit a finish chunk");
+  }
+
+  if (finishChunk.finishReason !== expected) {
+    throw new Error(
+      `provider stream finished with ${finishChunk.finishReason}; expected ${expected}`
+    );
+  }
+
+  return finishChunk;
+};
+
+const streamMetadataContinuity = async (): Promise<Record<string, unknown>> => {
   const bridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doStream() {
-        return Promise.resolve({
-          stream: streamFromParts([
-            {
-              id: "call-1",
-              providerMetadata: {
-                google: { thoughtSignature: "tool-thought-1" },
-              },
-              toolName: "search",
-              type: "tool-input-start",
+      doStream: fromSynchronousWithoutArguments(() => ({
+        stream: streamFromParts([
+          {
+            id: "call-1",
+            providerMetadata: {
+              google: { thoughtSignature: "tool-thought-1" },
             },
-            {
-              delta: '{"query":"docs"}',
-              id: "call-1",
-              type: "tool-input-delta",
-            },
-            {
-              id: "call-1",
-              type: "tool-input-end",
-            },
-            {
-              finishReason: { raw: "tool-calls", unified: "tool-calls" },
-              providerMetadata: { openai: { requestId: "req-stream-1" } },
-              type: "finish",
-              usage: createUsage(4, 2),
-            },
-          ]),
-        });
-      },
+            toolName: "search",
+            type: "tool-input-start",
+          },
+          {
+            delta: '{"query":"docs"}',
+            id: "call-1",
+            type: "tool-input-delta",
+          },
+          {
+            id: "call-1",
+            type: "tool-input-end",
+          },
+          {
+            finishReason: { raw: "tool-calls", unified: "tool-calls" },
+            providerMetadata: { openai: { requestId: "req-stream-1" } },
+            type: "finish",
+            usage: createUsage(4, 2),
+          },
+        ]),
+      })),
     }),
   });
   const chunks = await collectProviderStreamChunks(
@@ -236,7 +287,7 @@ async function streamMetadataContinuity(): Promise<Record<string, unknown>> {
         : [],
     },
   });
-}
+};
 
 // ---------------------------------------------------------------------------
 // Operation: providers.conversation-state.continuity-carriage
@@ -248,19 +299,16 @@ async function streamMetadataContinuity(): Promise<Record<string, unknown>> {
 // evidence that the token reaches the provider call's `providerOptions` and the
 // response is produced normally (continuity is non-blocking).
 // ---------------------------------------------------------------------------
-
-async function conversationStateContinuityCarriage(): Promise<
+const conversationStateContinuityCarriage = async (): Promise<
   Record<string, unknown>
-> {
+> => {
   let capturedProviderOptions: Record<string, unknown> | undefined;
   const bridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doGenerate(options) {
-        capturedProviderOptions = options.providerOptions as
-          | Record<string, unknown>
-          | undefined;
-        return Promise.resolve(createGenerateResult());
-      },
+      doGenerate: fromSynchronous((options: LanguageModelV3CallOptions) => {
+        capturedProviderOptions = options.providerOptions;
+        return createGenerateResult();
+      }),
     }),
   });
 
@@ -282,7 +330,34 @@ async function conversationStateContinuityCarriage(): Promise<
     continuityNamespacePresent: anthropicOptions !== undefined,
     responseFinishReason: response.finishReason,
   });
-}
+};
+
+const extractReplayedThoughtSignature = (
+  prompt: unknown
+): string | undefined => {
+  if (!Array.isArray(prompt)) {
+    return undefined;
+  }
+  for (const message of prompt) {
+    if (!isRecord(message) || message.role !== "assistant") {
+      continue;
+    }
+    const { content } = message;
+    if (!Array.isArray(content)) {
+      continue;
+    }
+    for (const part of content) {
+      if (!(isRecord(part) && isRecord(part.providerOptions))) {
+        continue;
+      }
+      const { google } = part.providerOptions;
+      if (isRecord(google) && typeof google.thoughtSignature === "string") {
+        return google.thoughtSignature;
+      }
+    }
+  }
+  return undefined;
+};
 
 // KRT-BH002: a carried continuity artifact persisted on a prior assistant
 // message is reconstructed from durable history and replayed into the next
@@ -290,16 +365,16 @@ async function conversationStateContinuityCarriage(): Promise<
 // "the next provider request is rebuilt from durable lineage, not provider-held
 // state". The continuity rides only on the supplied prompt; the bridge consults
 // no out-of-band provider session.
-async function conversationStateContinuityReplay(): Promise<
+const conversationStateContinuityReplay = async (): Promise<
   Record<string, unknown>
-> {
+> => {
   let capturedPrompt: LanguageModelV3CallOptions["prompt"] | undefined;
   const bridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doGenerate(options) {
+      doGenerate: fromSynchronous((options: LanguageModelV3CallOptions) => {
         capturedPrompt = options.prompt;
-        return Promise.resolve(createGenerateResult());
-      },
+        return createGenerateResult();
+      }),
       provider: "google",
     }),
   });
@@ -327,32 +402,7 @@ async function conversationStateContinuityReplay(): Promise<
     continuityReplayedFromHistory:
       extractReplayedThoughtSignature(capturedPrompt) === "bh002-continuity",
   });
-}
-
-function extractReplayedThoughtSignature(prompt: unknown): string | undefined {
-  if (!Array.isArray(prompt)) {
-    return undefined;
-  }
-  for (const message of prompt) {
-    if (!isRecord(message) || message.role !== "assistant") {
-      continue;
-    }
-    const content = message.content;
-    if (!Array.isArray(content)) {
-      continue;
-    }
-    for (const part of content) {
-      if (!(isRecord(part) && isRecord(part.providerOptions))) {
-        continue;
-      }
-      const google = part.providerOptions.google;
-      if (isRecord(google) && typeof google.thoughtSignature === "string") {
-        return google.thoughtSignature;
-      }
-    }
-  }
-  return undefined;
-}
+};
 
 // Operation: providers.conversation-state.continuity-roundtrip
 //
@@ -364,27 +414,25 @@ function extractReplayedThoughtSignature(prompt: unknown): string | undefined {
 // reasoning output; that assistant output becomes part of turn 2's history; and
 // the bridge replays it into turn 2's request providerOptions. The continuity
 // rides only through the reconstructed history (ADR-0053 source of truth).
-async function conversationStateContinuityRoundTrip(): Promise<
+const conversationStateContinuityRoundTrip = async (): Promise<
   Record<string, unknown>
-> {
+> => {
   const signature = "bh003-roundtrip-thought";
 
   // Turn 1 — the model emits a continuity artifact on its reasoning output.
   const turnOneBridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doGenerate() {
-        return Promise.resolve(
-          createGenerateResult({
-            content: [
-              {
-                providerMetadata: { google: { thoughtSignature: signature } },
-                text: "prior reasoning",
-                type: "reasoning",
-              },
-            ],
-          })
-        );
-      },
+      doGenerate: fromSynchronousWithoutArguments(() =>
+        createGenerateResult({
+          content: [
+            {
+              providerMetadata: { google: { thoughtSignature: signature } },
+              text: "prior reasoning",
+              type: "reasoning",
+            },
+          ],
+        })
+      ),
       provider: "google",
     }),
   });
@@ -401,10 +449,10 @@ async function conversationStateContinuityRoundTrip(): Promise<
   let capturedPrompt: LanguageModelV3CallOptions["prompt"] | undefined;
   const turnTwoBridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doGenerate(options) {
+      doGenerate: fromSynchronous((options: LanguageModelV3CallOptions) => {
         capturedPrompt = options.prompt;
-        return Promise.resolve(createGenerateResult());
-      },
+        return createGenerateResult();
+      }),
       provider: "google",
     }),
   });
@@ -420,7 +468,61 @@ async function conversationStateContinuityRoundTrip(): Promise<
     continuityRoundTrippedAcrossTurns:
       extractReplayedThoughtSignature(capturedPrompt) === signature,
   });
-}
+};
+
+const extractBridgeCacheRead = (metadata: unknown): unknown => {
+  if (!(isRecord(metadata) && isRecord(metadata.aiSdkBridge))) {
+    return undefined;
+  }
+  const { rawUsage } = metadata.aiSdkBridge;
+  if (!(isRecord(rawUsage) && isRecord(rawUsage.inputTokens))) {
+    return undefined;
+  }
+  return rawUsage.inputTokens.cacheRead;
+};
+
+const runWithCacheRead = async (cacheReadTokens: number) => {
+  let capturedPrompt: LanguageModelV3CallOptions["prompt"] | undefined;
+  const bridge = createAiSdkProviderBridge({
+    model: createMockModel({
+      doGenerate: fromSynchronous((options: LanguageModelV3CallOptions) => {
+        capturedPrompt = options.prompt;
+        return createGenerateResult({
+          content: [{ text: "the cached answer", type: "text" }],
+          usage: {
+            inputTokens: {
+              cacheRead: cacheReadTokens,
+              cacheWrite: 0,
+              noCache: 1024 - cacheReadTokens,
+              total: 1024,
+            },
+            outputTokens: { reasoning: 0, text: 40, total: 40 },
+            raw: { provider: "anthropic" },
+          },
+        });
+      }),
+      provider: "anthropic",
+    }),
+  });
+  const response = await bridge.generate({
+    messages: [
+      { parts: [{ text: "summarize the doc", type: "text" }], role: "user" },
+    ],
+    providerContinuity: {
+      anthropic: { cacheControl: { type: "ephemeral" } },
+    },
+  });
+  return { capturedPrompt, response };
+};
+
+const canonicalProviderResult = (response: {
+  finishReason: string;
+  parts: unknown;
+}): string =>
+  JSON.stringify({
+    finishReason: response.finishReason,
+    parts: response.parts,
+  });
 
 // Operation: providers.conversation-state.cache-correctness-neutral
 //
@@ -434,58 +536,15 @@ async function conversationStateContinuityRoundTrip(): Promise<
 // from cache). It then projects that the produced result and the reconstructed
 // provider request are identical across the two calls, while the cost (the
 // bridge's `cacheRead` usage breakdown) genuinely differs.
-async function conversationStateCacheCorrectnessNeutral(): Promise<
+const conversationStateCacheCorrectnessNeutral = async (): Promise<
   Record<string, unknown>
-> {
+> => {
   // Drive one bridge call with a fixed cache-read cost. The request and the
   // produced content are byte-identical across calls; only `cacheRead` varies.
-  const runWithCacheRead = async (cacheReadTokens: number) => {
-    let capturedPrompt: LanguageModelV3CallOptions["prompt"] | undefined;
-    const bridge = createAiSdkProviderBridge({
-      model: createMockModel({
-        doGenerate(options) {
-          capturedPrompt = options.prompt;
-          return Promise.resolve(
-            createGenerateResult({
-              content: [{ text: "the cached answer", type: "text" }],
-              usage: {
-                inputTokens: {
-                  cacheRead: cacheReadTokens,
-                  cacheWrite: 0,
-                  noCache: 1024 - cacheReadTokens,
-                  total: 1024,
-                },
-                outputTokens: { reasoning: 0, text: 40, total: 40 },
-                raw: { provider: "anthropic" },
-              },
-            })
-          );
-        },
-        provider: "anthropic",
-      }),
-    });
-    const response = await bridge.generate({
-      messages: [
-        { parts: [{ text: "summarize the doc", type: "text" }], role: "user" },
-      ],
-      providerContinuity: {
-        anthropic: { cacheControl: { type: "ephemeral" } },
-      },
-    });
-    return { capturedPrompt, response };
-  };
-
-  const miss = await runWithCacheRead(0); // cold cache: nothing read from cache
-  const hit = await runWithCacheRead(960); // warm cache: most input from cache
-
-  const canonicalResult = (response: {
-    finishReason: string;
-    parts: unknown;
-  }) =>
-    JSON.stringify({
-      finishReason: response.finishReason,
-      parts: response.parts,
-    });
+  // Cold cache: nothing is read from cache.
+  const miss = await runWithCacheRead(0);
+  // Warm cache: most input is read from cache.
+  const hit = await runWithCacheRead(960);
 
   return createProjection({
     cacheCostDiffered:
@@ -495,24 +554,14 @@ async function conversationStateCacheCorrectnessNeutral(): Promise<
       JSON.stringify(miss.capturedPrompt) ===
       JSON.stringify(hit.capturedPrompt),
     cacheNeutralResultIdentical:
-      canonicalResult(miss.response) === canonicalResult(hit.response),
+      canonicalProviderResult(miss.response) ===
+      canonicalProviderResult(hit.response),
   });
-}
+};
 
-function extractBridgeCacheRead(metadata: unknown): unknown {
-  if (!(isRecord(metadata) && isRecord(metadata.aiSdkBridge))) {
-    return undefined;
-  }
-  const rawUsage = metadata.aiSdkBridge.rawUsage;
-  if (!(isRecord(rawUsage) && isRecord(rawUsage.inputTokens))) {
-    return undefined;
-  }
-  return rawUsage.inputTokens.cacheRead;
-}
-
-async function conversationStateProviderExecutedFidelity(): Promise<
+const conversationStateProviderExecutedFidelity = async (): Promise<
   Record<string, unknown>
-> {
+> => {
   // ADR-0055 / KRT-BH005: a realistic AI SDK v6 provider-executed round-trip — a
   // tool-call carrying providerExecuted + dynamic (the exact vercel/ai #10888
   // shape) FOLLOWED BY its tool-result — declared to Tuvren as a provider-native
@@ -533,63 +582,9 @@ async function conversationStateProviderExecutedFidelity(): Promise<
 
   const generateBridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doGenerate() {
-        return Promise.resolve(
-          createGenerateResult({
-            content: [
-              {
-                dynamic: true,
-                input: '{"query":"tuvren"}',
-                providerExecuted: true,
-                toolCallId: "ws-1",
-                toolName: "web_search",
-                type: "tool-call",
-              },
-              {
-                result: { results: [{ title: "Tuvren" }] },
-                toolCallId: "ws-1",
-                toolName: "web_search",
-                type: "tool-result",
-              },
-              { text: "Tuvren is a runtime.", type: "text" },
-            ],
-            finishReason: { raw: "stop", unified: "stop" },
-          })
-        );
-      },
-      provider: "openai",
-    }),
-  });
-  const generateResponse = await generateBridge.generate({
-    messages: [{ parts: [{ text: "search", type: "text" }], role: "user" }],
-    providerNativeTools: [declaration],
-    tools: userTools,
-  });
-
-  const streamBridge = createAiSdkProviderBridge({
-    model: createMockModel({
-      doStream() {
-        // Realistic provider-executed streaming shape — the incremental prelude
-        // real providers emit (e.g. @ai-sdk/openai Responses web_search):
-        // tool-input-start{providerExecuted} → tool-input-delta → tool-input-end →
-        // tool-call{providerExecuted} → tool-result. This exercises the path that
-        // would throw provider_owned_tool_execution_unsupported if the bridge
-        // failed to recognise the declared provider tool at tool-input-start.
-        return Promise.resolve({
-          stream: streamFromParts([
-            {
-              dynamic: true,
-              id: "ws-1",
-              providerExecuted: true,
-              toolName: "web_search",
-              type: "tool-input-start",
-            },
-            {
-              delta: '{"query":"tuvren"}',
-              id: "ws-1",
-              type: "tool-input-delta",
-            },
-            { id: "ws-1", type: "tool-input-end" },
+      doGenerate: fromSynchronousWithoutArguments(() =>
+        createGenerateResult({
+          content: [
             {
               dynamic: true,
               input: '{"query":"tuvren"}',
@@ -604,15 +599,65 @@ async function conversationStateProviderExecutedFidelity(): Promise<
               toolName: "web_search",
               type: "tool-result",
             },
-            { delta: "ok", id: "t-1", type: "text-delta" },
-            {
-              finishReason: { raw: "stop", unified: "stop" },
-              type: "finish",
-              usage: createUsage(3, 2),
-            },
-          ]),
-        });
-      },
+            { text: "Tuvren is a runtime.", type: "text" },
+          ],
+          finishReason: { raw: "stop", unified: "stop" },
+        })
+      ),
+      provider: "openai",
+    }),
+  });
+  const generateResponse = await generateBridge.generate({
+    messages: [{ parts: [{ text: "search", type: "text" }], role: "user" }],
+    providerNativeTools: [declaration],
+    tools: userTools,
+  });
+
+  const streamBridge = createAiSdkProviderBridge({
+    model: createMockModel({
+      // Realistic provider-executed streaming shape — the incremental prelude
+      // real providers emit (e.g. @ai-sdk/openai Responses web_search):
+      // tool-input-start{providerExecuted} → tool-input-delta → tool-input-end →
+      // tool-call{providerExecuted} → tool-result. This exercises the path that
+      // would throw provider_owned_tool_execution_unsupported if the bridge
+      // failed to recognise the declared provider tool at tool-input-start.
+      doStream: fromSynchronousWithoutArguments(() => ({
+        stream: streamFromParts([
+          {
+            dynamic: true,
+            id: "ws-1",
+            providerExecuted: true,
+            toolName: "web_search",
+            type: "tool-input-start",
+          },
+          {
+            delta: '{"query":"tuvren"}',
+            id: "ws-1",
+            type: "tool-input-delta",
+          },
+          { id: "ws-1", type: "tool-input-end" },
+          {
+            dynamic: true,
+            input: '{"query":"tuvren"}',
+            providerExecuted: true,
+            toolCallId: "ws-1",
+            toolName: "web_search",
+            type: "tool-call",
+          },
+          {
+            result: { results: [{ title: "Tuvren" }] },
+            toolCallId: "ws-1",
+            toolName: "web_search",
+            type: "tool-result",
+          },
+          { delta: "ok", id: "t-1", type: "text-delta" },
+          {
+            finishReason: { raw: "stop", unified: "stop" },
+            type: "finish",
+            usage: createUsage(3, 2),
+          },
+        ]),
+      })),
       provider: "openai",
     }),
   });
@@ -642,6 +687,11 @@ async function conversationStateProviderExecutedFidelity(): Promise<
     assistantContentProduced: generateResponse.parts.some(
       (part) => part.type === "text" && part.text.includes("Tuvren")
     ),
+    // Generate and stream both attribute the provider-executed result to the
+    // provider-native execution class.
+    providerExecutedAttributedNative:
+      generateNativeClass === "provider-native" &&
+      streamNativeClass === "provider-native",
     // The provider-executed call does not contaminate the client-facing parts /
     // chunks with a function tool_call the runtime would attempt to execute —
     // including the incremental input prelude (tool_call_args_delta).
@@ -656,11 +706,6 @@ async function conversationStateProviderExecutedFidelity(): Promise<
           chunk.type === "tool_call_done"
       )
     ),
-    // Generate and stream both attribute the provider-executed result to the
-    // provider-native execution class.
-    providerExecutedAttributedNative:
-      generateNativeClass === "provider-native" &&
-      streamNativeClass === "provider-native",
     // Stream/generate finish-reason parity: a provider-executed-only turn that the
     // provider finished with `stop` reports `stop` on BOTH paths. The skipped
     // provider-owned tool-state must not push the stream turn through the
@@ -668,29 +713,53 @@ async function conversationStateProviderExecutedFidelity(): Promise<
     providerExecutedFinishReasonParity:
       generateResponse.finishReason === "stop" && streamFinishReason === "stop",
   });
-}
+};
 
-async function structuredOutputStream(): Promise<Record<string, unknown>> {
+const findStructuredDoneChunk = (
+  chunks: readonly ProviderStreamChunk[],
+  expectedName: string
+): Extract<ProviderStreamChunk, { type: "structured_done" }> => {
+  const structuredDoneChunk = chunks.find(
+    (
+      chunk
+    ): chunk is Extract<ProviderStreamChunk, { type: "structured_done" }> =>
+      chunk.type === "structured_done"
+  );
+
+  if (structuredDoneChunk === undefined) {
+    throw new Error("provider stream did not emit a structured_done chunk");
+  }
+
+  if (structuredDoneChunk.name !== expectedName) {
+    throw new Error(
+      `provider stream structured_done name was ${String(
+        structuredDoneChunk.name
+      )}; expected ${expectedName}`
+    );
+  }
+
+  return structuredDoneChunk;
+};
+
+const structuredOutputStream = async (): Promise<Record<string, unknown>> => {
   const bridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doStream() {
-        return Promise.resolve({
-          stream: streamFromParts([
-            { id: "message-1", type: "text-start" },
-            {
-              delta: '{"answer":"ready"}',
-              id: "message-1",
-              type: "text-delta",
-            },
-            { id: "message-1", type: "text-end" },
-            {
-              finishReason: { raw: "stop", unified: "stop" },
-              type: "finish",
-              usage: createUsage(7, 2),
-            },
-          ]),
-        });
-      },
+      doStream: fromSynchronousWithoutArguments(() => ({
+        stream: streamFromParts([
+          { id: "message-1", type: "text-start" },
+          {
+            delta: '{"answer":"ready"}',
+            id: "message-1",
+            type: "text-delta",
+          },
+          { id: "message-1", type: "text-end" },
+          {
+            finishReason: { raw: "stop", unified: "stop" },
+            type: "finish",
+            usage: createUsage(7, 2),
+          },
+        ]),
+      })),
     }),
   });
   const chunks = await collectProviderStreamChunks(
@@ -704,21 +773,33 @@ async function structuredOutputStream(): Promise<Record<string, unknown>> {
       doneName: structuredDoneChunk.name,
     },
   });
-}
+};
 
-async function providerFailureNormalization(): Promise<
+const collectProviderOperationError = async (
+  run: () => unknown
+): Promise<Error> => {
+  try {
+    await run();
+  } catch (error: unknown) {
+    return error instanceof Error ? error : new Error(String(error));
+  }
+
+  throw new Error("provider operation did not fail");
+};
+
+const providerFailureNormalization = async (): Promise<
   Record<string, unknown>
-> {
+> => {
   const bridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doGenerate() {
-        return Promise.reject(new Error("bridge boom"));
-      },
+      doGenerate: fromSynchronousWithoutArguments(() => {
+        throw new Error("bridge boom");
+      }),
     }),
   });
-  const error = await collectProviderOperationError(() =>
-    bridge.generate(providerConformanceFixtures.prompt)
-  );
+  const error = await collectProviderOperationError(async () => {
+    await bridge.generate(providerConformanceFixtures.prompt);
+  });
 
   return createProjection({
     failure: {
@@ -729,20 +810,42 @@ async function providerFailureNormalization(): Promise<
           : error.constructor.name,
     },
   });
-}
+};
 
-async function strictStructuredOutputRejection(): Promise<
+const readStructuredResponseFormat = (): StructuredOutputRequest => {
+  const { responseFormat } = providerConformanceFixtures.structuredPrompt;
+
+  if (responseFormat === undefined) {
+    throw new Error(
+      "provider structured prompt fixture must define responseFormat"
+    );
+  }
+
+  return responseFormat;
+};
+
+const readProviderErrorReason = (error: unknown): string | undefined => {
+  if (!(error instanceof TuvrenProviderError && isRecord(error.details))) {
+    return undefined;
+  }
+
+  return typeof error.details.reason === "string"
+    ? error.details.reason
+    : undefined;
+};
+
+const strictStructuredOutputRejection = async (): Promise<
   Record<string, unknown>
-> {
+> => {
   let generateCalls = 0;
   let streamCalls = 0;
   const responseFormat = readStructuredResponseFormat();
   const generateBridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doGenerate() {
+      doGenerate: fromSynchronousWithoutArguments(() => {
         generateCalls += 1;
-        return Promise.resolve(createGenerateResult());
-      },
+        return createGenerateResult();
+      }),
     }),
   });
   const generateError = await collectProviderOperationError(async () => {
@@ -756,12 +859,12 @@ async function strictStructuredOutputRejection(): Promise<
   });
   const streamBridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doStream() {
+      doStream: fromSynchronousWithoutArguments(() => {
         streamCalls += 1;
-        return Promise.resolve({
+        return {
           stream: streamFromParts([]),
-        });
-      },
+        };
+      }),
     }),
   });
   const streamError = await collectProviderOperationError(async () => {
@@ -792,28 +895,26 @@ async function strictStructuredOutputRejection(): Promise<
       streamErrorReason: readProviderErrorReason(streamError),
     },
   });
-}
+};
 
-async function providerOwnedToolExecutionRejection(): Promise<
+const providerOwnedToolExecutionRejection = async (): Promise<
   Record<string, unknown>
-> {
+> => {
   const generateBridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doGenerate() {
-        return Promise.resolve(
-          createGenerateResult({
-            content: [
-              {
-                input: '{"query":"docs"}',
-                providerExecuted: true,
-                toolCallId: "provider-tool-call-1",
-                toolName: "search",
-                type: "tool-call",
-              },
-            ],
-          })
-        );
-      },
+      doGenerate: fromSynchronousWithoutArguments(() =>
+        createGenerateResult({
+          content: [
+            {
+              input: '{"query":"docs"}',
+              providerExecuted: true,
+              toolCallId: "provider-tool-call-1",
+              toolName: "search",
+              type: "tool-call",
+            },
+          ],
+        })
+      ),
     }),
   });
   const generateError = await collectProviderOperationError(async () => {
@@ -821,18 +922,16 @@ async function providerOwnedToolExecutionRejection(): Promise<
   });
   const streamBridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doStream() {
-        return Promise.resolve({
-          stream: streamFromParts([
-            {
-              id: "provider-tool-call-1",
-              providerExecuted: true,
-              toolName: "search",
-              type: "tool-input-start",
-            },
-          ]),
-        });
-      },
+      doStream: fromSynchronousWithoutArguments(() => ({
+        stream: streamFromParts([
+          {
+            id: "provider-tool-call-1",
+            providerExecuted: true,
+            toolName: "search",
+            type: "tool-input-start",
+          },
+        ]),
+      })),
     }),
   });
   const streamError = await collectProviderOperationError(async () => {
@@ -855,31 +954,29 @@ async function providerOwnedToolExecutionRejection(): Promise<
       streamErrorReason: readProviderErrorReason(streamError),
     },
   });
-}
+};
 
-async function providerOwnedToolResultRejection(): Promise<
+const providerOwnedToolResultRejection = async (): Promise<
   Record<string, unknown>
-> {
+> => {
   let generateResolved = false;
   let streamChunkCount = 0;
   const generateBridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doGenerate() {
-        return Promise.resolve(
-          createGenerateResult({
-            content: [
-              {
-                result: {
-                  status: "done",
-                },
-                toolCallId: "provider-tool-call-1",
-                toolName: "search",
-                type: "tool-result",
+      doGenerate: fromSynchronousWithoutArguments(() =>
+        createGenerateResult({
+          content: [
+            {
+              result: {
+                status: "done",
               },
-            ],
-          })
-        );
-      },
+              toolCallId: "provider-tool-call-1",
+              toolName: "search",
+              type: "tool-result",
+            },
+          ],
+        })
+      ),
     }),
   });
   const generateError = await collectProviderOperationError(async () => {
@@ -888,20 +985,18 @@ async function providerOwnedToolResultRejection(): Promise<
   });
   const streamBridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doStream() {
-        return Promise.resolve({
-          stream: streamFromParts([
-            {
-              result: {
-                ok: true,
-              },
-              toolCallId: "provider-tool-call-1",
-              toolName: "search",
-              type: "tool-result",
+      doStream: fromSynchronousWithoutArguments(() => ({
+        stream: streamFromParts([
+          {
+            result: {
+              ok: true,
             },
-          ]),
-        });
-      },
+            toolCallId: "provider-tool-call-1",
+            toolName: "search",
+            type: "tool-result",
+          },
+        ]),
+      })),
     }),
   });
   const streamError = await collectProviderOperationError(async () => {
@@ -928,24 +1023,22 @@ async function providerOwnedToolResultRejection(): Promise<
       streamErrorReason: readProviderErrorReason(streamError),
     },
   });
-}
+};
 
-async function providerApprovalRequestRejection(): Promise<
+const providerApprovalRequestRejection = async (): Promise<
   Record<string, unknown>
-> {
+> => {
   const bridge = createAiSdkProviderBridge({
     model: createMockModel({
-      doStream() {
-        return Promise.resolve({
-          stream: streamFromParts([
-            {
-              approvalId: "approval-1",
-              toolCallId: "provider-tool-call-1",
-              type: "tool-approval-request",
-            },
-          ]),
-        });
-      },
+      doStream: fromSynchronousWithoutArguments(() => ({
+        stream: streamFromParts([
+          {
+            approvalId: "approval-1",
+            toolCallId: "provider-tool-call-1",
+            type: "tool-approval-request",
+          },
+        ]),
+      })),
     }),
   });
   const error = await collectProviderOperationError(async () => {
@@ -960,9 +1053,92 @@ async function providerApprovalRequestRejection(): Promise<
       errorReason: readProviderErrorReason(error),
     },
   });
-}
+};
 
-async function mcpClientTranslationRules(): Promise<Record<string, unknown>> {
+const requireMcpTool = <
+  T extends {
+    execute: (input: unknown, context: ToolExecutionContext) => unknown;
+    name: string;
+  },
+>(
+  tools: readonly T[],
+  name: string
+): T => {
+  const tool = tools.find((candidate) => candidate.name === name);
+
+  if (tool === undefined) {
+    throw new Error(`missing MCP tool ${name}`);
+  }
+
+  return tool;
+};
+
+const createToolContext = (
+  callId: string,
+  name: string
+): ToolExecutionContext => ({ callId, name });
+
+const readInputSchemaType = (schema: unknown): unknown => {
+  if (isRecord(schema)) {
+    const toJSONSchema = Reflect.get(schema, "toJSONSchema");
+
+    if (typeof toJSONSchema !== "function") {
+      return schema.type;
+    }
+
+    const jsonSchema: unknown = Reflect.apply(toJSONSchema, schema, []);
+    return isRecord(jsonSchema) ? jsonSchema.type : undefined;
+  }
+
+  return undefined;
+};
+
+const readMcpOriginalName = (metadata: unknown): string | undefined => {
+  if (!(isRecord(metadata) && isRecord(metadata.mcp))) {
+    return undefined;
+  }
+
+  return typeof metadata.mcp.originalName === "string"
+    ? metadata.mcp.originalName
+    : undefined;
+};
+
+const readStringOrFallback = (value: unknown, fallback: string): string =>
+  typeof value === "string" && value.length > 0 ? value : fallback;
+
+const projectMcpToolSource = async (
+  tools: readonly {
+    description: string;
+    execute: (input: unknown, context: ToolExecutionContext) => unknown;
+    inputSchema: unknown;
+    metadata?: Record<string, unknown>;
+    name: string;
+  }[]
+): Promise<Record<string, unknown>> => {
+  const echo = requireMcpTool(tools, "mcp.echo");
+  const structured = requireMcpTool(tools, "mcp.get-structured-content");
+  const echoOutput = await echo.execute(
+    { message: "hello" },
+    createToolContext("mcp-echo", "mcp.echo")
+  );
+  const structuredOutput = await structured.execute(
+    { location: "Chicago" },
+    createToolContext("mcp-structured", "mcp.get-structured-content")
+  );
+
+  return {
+    echoDescription: echo.description,
+    echoInputSchemaType: readInputSchemaType(echo.inputSchema),
+    echoMetadataOriginalName: readMcpOriginalName(echo.metadata),
+    echoOutput,
+    structuredOutput,
+    toolNames: tools.map((tool) => tool.name).toSorted(),
+  };
+};
+
+const mcpClientTranslationRules = async (): Promise<
+  Record<string, unknown>
+> => {
   const stdio = createOfficialMcpEverythingStdioCommand();
   const httpServer = await startOfficialMcpEverythingStreamableHttpServer();
   const stdioSource = await createMcpToolSource({
@@ -1002,9 +1178,9 @@ async function mcpClientTranslationRules(): Promise<Record<string, unknown>> {
     await httpSource.close();
     await httpServer.close();
   }
-}
+};
 
-async function mcpClientAuthHeaders(): Promise<Record<string, unknown>> {
+const mcpClientAuthHeaders = async (): Promise<Record<string, unknown>> => {
   const server = await startMockMcpHttpServer({
     requireHeaders: {
       authorization: "Bearer conformance-token",
@@ -1038,7 +1214,37 @@ async function mcpClientAuthHeaders(): Promise<Record<string, unknown>> {
     await source.close();
     await server.close();
   }
-}
+};
+
+const readMcpSecretFixture = (input: unknown): McpSecretFixture => {
+  const fixture =
+    isRecord(input) && isRecord(input.fixture) ? input.fixture : {};
+  const headerAuth = isRecord(fixture.mcpHeaderAuth)
+    ? fixture.mcpHeaderAuth
+    : {};
+  return {
+    mcpBearerToken: readStringOrFallback(
+      fixture.mcpBearerToken,
+      "missing-mcp-bearer"
+    ),
+    mcpHeaderAuth: {
+      name: readStringOrFallback(headerAuth.name, "x-missing"),
+      value: readStringOrFallback(headerAuth.value, "missing-mcp-header"),
+    },
+  };
+};
+
+const readToolInputJsonSchema = (schema: unknown): unknown => {
+  if (isRecord(schema)) {
+    const toJSONSchema = Reflect.get(schema, "toJSONSchema");
+
+    return typeof toJSONSchema === "function"
+      ? Reflect.apply(toJSONSchema, schema, [])
+      : schema;
+  }
+
+  return null;
+};
 
 // ---------------------------------------------------------------------------
 // Operation: providers.mcp-client.secret-isolation
@@ -1053,10 +1259,9 @@ async function mcpClientAuthHeaders(): Promise<Record<string, unknown>> {
 // credential-free zone. The shared runner-owned `secretAbsence` assertion owns
 // the verdict — this adapter performs no scanning or grading.
 // ---------------------------------------------------------------------------
-
-async function mcpClientSecretIsolation(
+const mcpClientSecretIsolation = async (
   input: unknown
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, unknown>> => {
   const fixture = readMcpSecretFixture(input);
   const server = await startMockMcpHttpServer({
     requireHeaders: {
@@ -1089,7 +1294,7 @@ async function mcpClientSecretIsolation(
       mcpToolSurface: {
         sessionEstablished: true,
         toolDefinitions,
-        toolNames: source.tools.map((tool) => tool.name).sort(),
+        toolNames: source.tools.map((tool) => tool.name).toSorted(),
         toolOutput,
       },
     });
@@ -1097,43 +1302,68 @@ async function mcpClientSecretIsolation(
     await source.close();
     await server.close();
   }
-}
+};
 
-interface McpSecretFixture {
-  mcpBearerToken: string;
-  mcpHeaderAuth: { name: string; value: string };
-}
-
-function readMcpSecretFixture(input: unknown): McpSecretFixture {
-  const fixture =
-    isRecord(input) && isRecord(input.fixture) ? input.fixture : {};
-  const headerAuth = isRecord(fixture.mcpHeaderAuth)
-    ? fixture.mcpHeaderAuth
-    : {};
-  const readString = (value: unknown, fallback: string): string =>
-    typeof value === "string" && value.length > 0 ? value : fallback;
-
-  return {
-    mcpBearerToken: readString(fixture.mcpBearerToken, "missing-mcp-bearer"),
-    mcpHeaderAuth: {
-      name: readString(headerAuth.name, "x-missing"),
-      value: readString(headerAuth.value, "missing-mcp-header"),
+const createTransportCountingMcpClient = (transport: {
+  invokeToolCalls: number;
+}): MCPClient => ({
+  close: Promise.resolve.bind(Promise),
+  initialize: fromSynchronousWithoutArguments(() => ({
+    serverName: "trust-boundary",
+  })),
+  invokeTool: fromSynchronousWithoutArguments(() => {
+    // The transport must never be reached: input validation rejects the
+    // invalid call pre-transport. Count the breach AND reject loudly so an
+    // accidental transport reach fails conspicuously (a different error code
+    // plus a non-zero count) rather than passing through a fake success.
+    transport.invokeToolCalls += 1;
+    throw new Error(
+      "trust-boundary transport reached: invalid input must be rejected before transport invocation"
+    );
+  }),
+  listTools: fromSynchronousWithoutArguments(() => [
+    {
+      description: "Strict-input echo for trust-boundary verification.",
+      inputSchema: {
+        properties: {
+          message: { type: "string" },
+        },
+        required: ["message"],
+        type: "object",
+      },
+      name: "strict-echo",
     },
-  };
-}
+  ]),
+});
 
-function readToolInputJsonSchema(schema: unknown): unknown {
-  if (
-    typeof schema === "object" &&
-    schema !== null &&
-    "toJSONSchema" in schema &&
-    typeof schema.toJSONSchema === "function"
-  ) {
-    return schema.toJSONSchema();
+const isToolResultPart = (value: unknown): value is ToolResultPart =>
+  isRecord(value) &&
+  value.type === "tool_result" &&
+  typeof value.callId === "string" &&
+  typeof value.name === "string" &&
+  "output" in value &&
+  (value.isError === undefined || typeof value.isError === "boolean") &&
+  (value.providerMetadata === undefined || isRecord(value.providerMetadata));
+
+const asToolResultPart = (value: unknown): ToolResultPart => {
+  if (isToolResultPart(value)) {
+    return value;
   }
 
-  return isRecord(schema) ? schema : null;
-}
+  throw new Error("expected MCP tool result part");
+};
+
+const readToolErrorCode = (part: ToolResultPart): string | undefined => {
+  if (!isRecord(part.output)) {
+    return undefined;
+  }
+
+  const { error } = part.output;
+
+  return isRecord(error) && typeof error.code === "string"
+    ? error.code
+    : undefined;
+};
 
 // ---------------------------------------------------------------------------
 // Operation: providers.mcp-client.trust-boundary
@@ -1145,8 +1375,7 @@ function readToolInputJsonSchema(schema: unknown): unknown {
 // called; a count of zero proves the rejection happened pre-transport rather
 // than being normalized from a server response.
 // ---------------------------------------------------------------------------
-
-async function mcpClientTrustBoundary(): Promise<Record<string, unknown>> {
+const mcpClientTrustBoundary = async (): Promise<Record<string, unknown>> => {
   const transport = { invokeToolCalls: 0 };
   const source = await createMcpToolSourceInternal({
     client: createTransportCountingMcpClient(transport),
@@ -1180,49 +1409,42 @@ async function mcpClientTrustBoundary(): Promise<Record<string, unknown>> {
   } finally {
     await source.close();
   }
-}
+};
 
-function createTransportCountingMcpClient(transport: {
-  invokeToolCalls: number;
-}): MCPClient {
-  return {
-    close() {
-      return Promise.resolve();
-    },
-    initialize() {
-      return Promise.resolve({ serverName: "trust-boundary" });
-    },
-    invokeTool() {
-      // The transport must never be reached: input validation rejects the
-      // invalid call pre-transport. Count the breach AND reject loudly so an
-      // accidental transport reach fails conspicuously (a different error code
-      // plus a non-zero count) rather than passing through a fake success.
-      transport.invokeToolCalls += 1;
-      return Promise.reject(
-        new Error(
-          "trust-boundary transport reached: invalid input must be rejected before transport invocation"
-        )
-      );
-    },
-    listTools() {
-      return Promise.resolve([
-        {
-          description: "Strict-input echo for trust-boundary verification.",
-          inputSchema: {
-            properties: {
-              message: { type: "string" },
-            },
-            required: ["message"],
-            type: "object",
-          },
-          name: "strict-echo",
+const createInvalidStructuredOutputMcpClient = (): MCPClient => ({
+  close: Promise.resolve.bind(Promise),
+  initialize: fromSynchronousWithoutArguments(() => ({
+    serverName: "invalid-output",
+  })),
+  invokeTool: fromSynchronousWithoutArguments(() => ({
+    content: [{ text: "bad structured output", type: "text" }],
+    structuredContent: { echoed: 123 },
+  })),
+  listTools: fromSynchronousWithoutArguments(() => [
+    {
+      description: "Returns invalid structured output.",
+      inputSchema: {
+        properties: {
+          message: { type: "string" },
         },
-      ]);
+        required: ["message"],
+        type: "object",
+      },
+      name: "echo",
+      outputSchema: {
+        properties: {
+          echoed: { type: "string" },
+        },
+        required: ["echoed"],
+        type: "object",
+      },
     },
-  };
-}
+  ]),
+});
 
-async function mcpClientValidationErrors(): Promise<Record<string, unknown>> {
+const mcpClientValidationErrors = async (): Promise<
+  Record<string, unknown>
+> => {
   const command = createOfficialMcpEverythingStdioCommand();
   const source = await createMcpToolSource({
     ...command,
@@ -1266,11 +1488,11 @@ async function mcpClientValidationErrors(): Promise<Record<string, unknown>> {
     await source.close();
     await invalidSource.close();
   }
-}
+};
 
-async function mcpClientTransportErrorNormalization(): Promise<
+const mcpClientTransportErrorNormalization = async (): Promise<
   Record<string, unknown>
-> {
+> => {
   const server = await startMockMcpHttpServer({
     failToolCallsWithTransportClose: true,
   });
@@ -1306,338 +1528,95 @@ async function mcpClientTransportErrorNormalization(): Promise<
     await source.close();
     await server.close();
   }
-}
+};
 
-async function projectMcpToolSource(
-  tools: readonly {
-    description: string;
-    execute: (
-      input: unknown,
-      context: ToolExecutionContext
-    ) => Promise<unknown> | unknown;
-    inputSchema: unknown;
-    metadata?: Record<string, unknown>;
-    name: string;
-  }[]
-): Promise<Record<string, unknown>> {
-  const echo = requireMcpTool(tools, "mcp.echo");
-  const structured = requireMcpTool(tools, "mcp.get-structured-content");
-  const echoOutput = await echo.execute(
-    { message: "hello" },
-    createToolContext("mcp-echo", "mcp.echo")
-  );
-  const structuredOutput = await structured.execute(
-    { location: "Chicago" },
-    createToolContext("mcp-structured", "mcp.get-structured-content")
-  );
+const providerOperations: Record<
+  string,
+  (input: unknown) => Promise<Record<string, unknown>>
+> = {
+  "providers.bridge.generate-mapping": generateMapping,
+  "providers.bridge.provider-approval-request-rejection":
+    providerApprovalRequestRejection,
+  "providers.bridge.provider-failure-normalization":
+    providerFailureNormalization,
+  "providers.bridge.provider-owned-tool-execution-rejection":
+    providerOwnedToolExecutionRejection,
+  "providers.bridge.provider-owned-tool-result-rejection":
+    providerOwnedToolResultRejection,
+  "providers.bridge.stream-metadata-continuity": streamMetadataContinuity,
+  "providers.bridge.strict-structured-output-rejection":
+    strictStructuredOutputRejection,
+  "providers.bridge.structured-output-stream": structuredOutputStream,
+  "providers.conversation-state.cache-correctness-neutral":
+    conversationStateCacheCorrectnessNeutral,
+  "providers.conversation-state.continuity-carriage":
+    conversationStateContinuityCarriage,
+  "providers.conversation-state.continuity-replay":
+    conversationStateContinuityReplay,
+  "providers.conversation-state.continuity-roundtrip":
+    conversationStateContinuityRoundTrip,
+  "providers.conversation-state.provider-executed-fidelity":
+    conversationStateProviderExecutedFidelity,
+  "providers.mcp-client.auth-headers": mcpClientAuthHeaders,
+  "providers.mcp-client.secret-isolation": mcpClientSecretIsolation,
+  "providers.mcp-client.translation-rules": mcpClientTranslationRules,
+  "providers.mcp-client.transport-error-normalization":
+    mcpClientTransportErrorNormalization,
+  "providers.mcp-client.trust-boundary": mcpClientTrustBoundary,
+  "providers.mcp-client.validation-errors": mcpClientValidationErrors,
+  "providers.provider-mediated.attribution": runProviderMediatedAttribution,
+  "providers.provider-native.attribution": runProviderNativeAttribution,
+};
 
-  return {
-    echoDescription: echo.description,
-    echoInputSchemaType: readInputSchemaType(echo.inputSchema),
-    echoMetadataOriginalName: readMcpOriginalName(echo.metadata),
-    echoOutput,
-    structuredOutput,
-    toolNames: tools.map((tool) => tool.name).sort(),
-  };
-}
-
-function requireMcpTool<
-  T extends {
-    execute: (
-      input: unknown,
-      context: ToolExecutionContext
-    ) => Promise<unknown> | unknown;
-    name: string;
-  },
->(tools: readonly T[], name: string): T {
-  const tool = tools.find((candidate) => candidate.name === name);
-
-  if (tool === undefined) {
-    throw new Error(`missing MCP tool ${name}`);
-  }
-
-  return tool;
-}
-
-function createToolContext(callId: string, name: string): ToolExecutionContext {
-  return { callId, name };
-}
-
-function asToolResultPart(value: unknown): ToolResultPart {
-  if (
-    typeof value === "object" &&
-    value !== null &&
-    "type" in value &&
-    value.type === "tool_result"
-  ) {
-    return value as ToolResultPart;
-  }
-
-  throw new Error("expected MCP tool result part");
-}
-
-function readToolErrorCode(part: ToolResultPart): string | undefined {
-  if (!isRecord(part.output)) {
-    return undefined;
-  }
-
-  const error = part.output.error;
-
-  return isRecord(error) && typeof error.code === "string"
-    ? error.code
+const dispatchProviderOperation = async (
+  operation: string,
+  input: unknown
+): Promise<OperationOutcome> => {
+  const operationHandler = Object.hasOwn(providerOperations, operation)
+    ? providerOperations[operation]
     : undefined;
-}
 
-function readInputSchemaType(schema: unknown): unknown {
-  if (
-    typeof schema === "object" &&
-    schema !== null &&
-    "toJSONSchema" in schema &&
-    typeof schema.toJSONSchema === "function"
-  ) {
-    const jsonSchema = schema.toJSONSchema();
-    return isRecord(jsonSchema) ? jsonSchema.type : undefined;
+  if (operationHandler === undefined) {
+    return {
+      error: {
+        code: "adapter_operation_not_implemented",
+        message: `provider adapter does not implement ${operation}`,
+      },
+      kind: "error",
+    };
   }
 
-  return isRecord(schema) ? schema.type : undefined;
-}
-
-function readMcpOriginalName(metadata: unknown): string | undefined {
-  if (!(isRecord(metadata) && isRecord(metadata.mcp))) {
-    return undefined;
-  }
-
-  return typeof metadata.mcp.originalName === "string"
-    ? metadata.mcp.originalName
-    : undefined;
-}
-
-function createInvalidStructuredOutputMcpClient(): MCPClient {
-  return {
-    close() {
-      return Promise.resolve();
-    },
-    initialize() {
-      return Promise.resolve({ serverName: "invalid-output" });
-    },
-    invokeTool() {
-      return Promise.resolve({
-        content: [{ text: "bad structured output", type: "text" }],
-        structuredContent: { echoed: 123 },
-      });
-    },
-    listTools() {
-      return Promise.resolve([
-        {
-          description: "Returns invalid structured output.",
-          inputSchema: {
-            properties: {
-              message: { type: "string" },
-            },
-            required: ["message"],
-            type: "object",
-          },
-          name: "echo",
-          outputSchema: {
-            properties: {
-              echoed: { type: "string" },
-            },
-            required: ["echoed"],
-            type: "object",
-          },
-        },
-      ]);
-    },
-  };
-}
-
-function result(value: Record<string, unknown>): OperationOutcome {
-  return {
-    kind: "result",
-    value,
-  };
-}
-
-function createProjection<T extends Record<string, unknown>>(
-  evidence: T
-): Record<string, unknown> {
-  return {
-    evidence,
-    result: evidence,
-  };
-}
-
-function createMockModel(
-  overrides: Partial<LanguageModelV3> & {
-    doGenerate?: LanguageModelV3["doGenerate"];
-    doStream?: LanguageModelV3["doStream"];
-  } = {}
-): LanguageModelV3 {
-  return {
-    doGenerate() {
-      return Promise.resolve(createGenerateResult());
-    },
-    doStream() {
-      return Promise.resolve({
-        stream: streamFromParts([
-          {
-            finishReason: { raw: "stop", unified: "stop" },
-            type: "finish",
-            usage: createUsage(1, 1),
-          },
-        ]),
-      });
-    },
-    modelId: "mock-model",
-    provider: "mock-provider",
-    specificationVersion: "v3",
-    supportedUrls: {},
-    ...overrides,
-  };
-}
-
-function createGenerateResult(
-  overrides: Partial<LanguageModelV3GenerateResult> = {}
-): LanguageModelV3GenerateResult {
-  return {
-    content: [{ text: "default", type: "text" }],
-    finishReason: { raw: "stop", unified: "stop" },
-    usage: createUsage(1, 1),
-    warnings: [],
-    ...overrides,
-  };
-}
-
-function createUsage(inputTokens: number, outputTokens: number) {
-  return {
-    inputTokens: {
-      cacheRead: 1,
-      cacheWrite: 0,
-      noCache: inputTokens - 1,
-      total: inputTokens,
-    },
-    outputTokens: {
-      reasoning: outputTokens > 2 ? 2 : 0,
-      text: outputTokens > 2 ? outputTokens - 2 : outputTokens,
-      total: outputTokens,
-    },
-    raw: { provider: "mock-provider" },
-  };
-}
-
-function streamFromParts(
-  parts: readonly LanguageModelV3StreamPart[]
-): ReadableStream<LanguageModelV3StreamPart> {
-  return new ReadableStream<LanguageModelV3StreamPart>({
-    start(controller) {
-      for (const part of parts) {
-        controller.enqueue(part);
-      }
-
-      controller.close();
-    },
-  });
-}
-
-async function collectProviderStreamChunks(
-  stream: AsyncIterable<ProviderStreamChunk>
-): Promise<ProviderStreamChunk[]> {
-  const chunks: ProviderStreamChunk[] = [];
-  let index = 0;
-
-  for await (const chunk of stream) {
-    assertProviderStreamChunk(chunk, `provider stream chunk ${index}`);
-    chunks.push(structuredClone(chunk));
-    index += 1;
-  }
-
-  return chunks;
-}
-
-async function collectProviderOperationError(
-  run: () => Promise<unknown> | unknown
-): Promise<Error> {
   try {
-    await run();
+    return result(await operationHandler(input));
   } catch (error: unknown) {
-    return error instanceof Error ? error : new Error(String(error));
+    return {
+      error: createAdapterErrorEnvelope(error),
+      kind: "error",
+    };
   }
+};
 
-  throw new Error("provider operation did not fail");
-}
-
-function findFinishChunk(
-  chunks: readonly ProviderStreamChunk[],
-  expected: "tool_call" | "stop"
-): Extract<ProviderStreamChunk, { type: "finish" }> {
-  const finishChunk = chunks.find(
-    (chunk): chunk is Extract<ProviderStreamChunk, { type: "finish" }> =>
-      chunk.type === "finish"
+class TypeScriptProviderAdapter {
+  initialize = fromSynchronousPair(
+    (packetId: string, planVersion: string): AdapterCapabilities => ({
+      adapterId: "typescript-providers",
+      capabilities: [
+        "providers.provider-api",
+        "providers.ai-sdk-bridge",
+        "providers.framework-owned-approval-boundary",
+        "providers.framework-owned-tool-execution",
+        "providers.mcp-client",
+        "providers.rejects-native-strict-structured-output",
+        "providers.provider-native-execution-class",
+        "providers.provider-mediated-execution-class",
+        "providers.conversation-state-ownership",
+      ],
+      packetId,
+      planVersion,
+    })
   );
 
-  if (finishChunk === undefined) {
-    throw new Error("provider stream did not emit a finish chunk");
-  }
-
-  if (finishChunk.finishReason !== expected) {
-    throw new Error(
-      `provider stream finished with ${String(
-        finishChunk.finishReason
-      )}; expected ${expected}`
-    );
-  }
-
-  return finishChunk;
+  dispatch = dispatchProviderOperation;
 }
 
-function findStructuredDoneChunk(
-  chunks: readonly ProviderStreamChunk[],
-  expectedName: string
-): Extract<ProviderStreamChunk, { type: "structured_done" }> {
-  const structuredDoneChunk = chunks.find(
-    (
-      chunk
-    ): chunk is Extract<ProviderStreamChunk, { type: "structured_done" }> =>
-      chunk.type === "structured_done"
-  );
-
-  if (structuredDoneChunk === undefined) {
-    throw new Error("provider stream did not emit a structured_done chunk");
-  }
-
-  if (structuredDoneChunk.name !== expectedName) {
-    throw new Error(
-      `provider stream structured_done name was ${String(
-        structuredDoneChunk.name
-      )}; expected ${expectedName}`
-    );
-  }
-
-  return structuredDoneChunk;
-}
-
-function readProviderErrorReason(error: unknown): string | undefined {
-  if (!(error instanceof TuvrenProviderError && isRecord(error.details))) {
-    return undefined;
-  }
-
-  return typeof error.details.reason === "string"
-    ? error.details.reason
-    : undefined;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function readStructuredResponseFormat(): StructuredOutputRequest {
-  const { responseFormat } = providerConformanceFixtures.structuredPrompt;
-
-  if (responseFormat === undefined) {
-    throw new Error(
-      "provider structured prompt fixture must define responseFormat"
-    );
-  }
-
-  return responseFormat;
-}
+await serveStdioAdapter(new TypeScriptProviderAdapter());

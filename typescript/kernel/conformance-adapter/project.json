@@ -20,9 +20,31 @@
     },
     "lint": {
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/biome.jsonc",
+        "{workspaceRoot}/oxlint.config.ts",
+        "{workspaceRoot}/oxfmt.config.ts",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/bun.lock",
+        "{workspaceRoot}/tools/scripts/json-check.ts",
+        "{workspaceRoot}/tools/scripts/json-source-check.ts",
+        "{workspaceRoot}/tools/scripts/lib/biome-inventory.ts",
+        "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+        "{workspaceRoot}/tools/scripts/lib/json-source-integrity.ts",
+        "{workspaceRoot}/Cargo.toml",
+        "{workspaceRoot}/Cargo.lock",
+        "{workspaceRoot}/rust-toolchain.toml"
+      ],
       "options": {
         "cwd": ".",
-        "command": "bunx --bun @biomejs/biome check typescript/kernel/conformance-adapter"
+        "commands": [
+          "bunx --bun oxlint --type-aware typescript/kernel/conformance-adapter",
+          "bun tools/scripts/json-check.ts typescript/kernel/conformance-adapter"
+        ],
+        "forwardAllArgs": false,
+        "parallel": false
       }
     },
     "typecheck": {

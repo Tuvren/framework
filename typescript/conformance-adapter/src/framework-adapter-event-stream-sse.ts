@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import type { TurnStartEvent } from "@tuvren/core/events";
 import {
   decodeSseStream,
   reportSseWireCompliance,
@@ -22,98 +23,103 @@ import {
 
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
-export function createFrameworkAdapterEventStreamSse(): {
-  runDecodeTrace(input: unknown): Promise<AdapterProjection>;
-  runReportWireCompliance(input: unknown): Promise<AdapterProjection>;
-} {
-  async function runDecodeTrace(input: unknown): Promise<AdapterProjection> {
-    // The shared runner resolves the plan's `fixturePath` against the SSE
-    // trace fixture and passes the resolved value on `input.fixture`. For
-    // every check in `event-stream-sse.json`, that value is the
-    // `encodedBytes` string for one WHATWG-normative trace, so the adapter's
-    // only responsibility is to feed the bytes through the language-local
-    // WHATWG decoder and surface the result under `result.sse.decoded` —
-    // the shape the SSE plan's `resultField` and `schemaValid` assertions
-    // walk.
-    await Promise.resolve();
-    const encodedBytes = readEncodedBytes(input);
-    const decoded = decodeSseStream(encodedBytes);
+const fromSynchronous = <Argument, Value>(
+  operation: (argument: Argument) => Value
+): ((argument: Argument) => Promise<Value>) =>
+  Promise.try.bind<
+    typeof Promise,
+    [(argument: Argument) => Value],
+    [Argument],
+    Promise<Value>
+  >(Promise, operation);
 
-    return {
-      result: {
-        sse: {
-          decoded,
-        },
-      },
-    };
+const readEncodedBytes = (input: unknown): string => {
+  if (
+    typeof input === "object" &&
+    input !== null &&
+    "fixture" in input &&
+    typeof input.fixture === "string"
+  ) {
+    return input.fixture;
   }
 
-  async function runReportWireCompliance(
-    _input: unknown
-  ): Promise<AdapterProjection> {
-    // The wire-compliance booleans are derived from real observations: a
-    // one-shot probe of `toSseResponse` for the response-header surface,
-    // plus targeted decoder probes for each WHATWG line-terminator,
-    // BOM-stripping, leading-space, dispatch, and comment-handling rule.
-    // A regression in `@tuvren/stream-sse` (encoder headers, decoder
-    // behavior) flips the appropriate boolean to false and the plan's
-    // independent assertions surface it.
-    const wire = await reportSseWireCompliance(observeSseEncoder);
+  throw new Error(
+    "event-stream-sse.decode-trace expects the runner to supply the resolved encodedBytes string under input.fixture"
+  );
+};
 
-    return {
-      result: {
-        sse: {
-          wire,
-        },
-      },
-    };
-  }
+const createEncoderProbeEvents = async function* createEncoderProbeEvents() {
+  const event: TurnStartEvent & { messageId: string } = {
+    messageId: "probe-1",
+    threadId: "thread-probe",
+    timestamp: 0,
+    turnId: "turn-probe",
+    type: "turn.start",
+  };
+  yield event;
+};
 
-  return { runDecodeTrace, runReportWireCompliance };
-}
-
-async function observeSseEncoder(): Promise<{
+const observeSseEncoder = async (): Promise<{
   body: Uint8Array;
   contentType: string;
-}> {
+}> => {
   // Drive `toSseResponse` with a one-event probe stream and read both the
   // surfaced `Content-Type` header and the encoded body bytes. This is the
   // observation surface the wire-compliance report consumes — it confirms
   // the encoder emits `text/event-stream` and that the body is valid UTF-8
   // without coupling either claim to a hardcoded `true` literal.
-  // biome-ignore lint/suspicious/useAwait: encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously
-  const events = (async function* () {
-    yield {
-      data: { value: "wire-compliance-probe" },
-      messageId: "probe-1",
-      threadId: "thread-probe",
-      timestamp: 0,
-      turnId: "turn-probe",
-      type: "turn.start",
-    };
-  })();
-  const response = toSseResponse(
-    events as unknown as AsyncIterable<never> & AsyncIterator<never>
-  );
+  const response = toSseResponse(createEncoderProbeEvents());
   const body = new Uint8Array(await response.arrayBuffer());
 
   return {
     body,
     contentType: response.headers.get("content-type") ?? "",
   };
-}
+};
 
-function readEncodedBytes(input: unknown): string {
-  if (
-    typeof input === "object" &&
-    input !== null &&
-    "fixture" in input &&
-    typeof (input as { fixture: unknown }).fixture === "string"
-  ) {
-    return (input as { fixture: string }).fixture;
-  }
+const runDecodeTrace = fromSynchronous((input: unknown): AdapterProjection => {
+  // The shared runner resolves the plan's `fixturePath` against the SSE
+  // trace fixture and passes the resolved value on `input.fixture`. For
+  // every check in `event-stream-sse.json`, that value is the
+  // `encodedBytes` string for one WHATWG-normative trace, so the adapter's
+  // only responsibility is to feed the bytes through the language-local
+  // WHATWG decoder and surface the result under `result.sse.decoded` —
+  // the shape the SSE plan's `resultField` and `schemaValid` assertions
+  // walk.
+  const encodedBytes = readEncodedBytes(input);
+  const decoded = decodeSseStream(encodedBytes);
 
-  throw new Error(
-    "event-stream-sse.decode-trace expects the runner to supply the resolved encodedBytes string under input.fixture"
-  );
-}
+  return {
+    result: {
+      sse: {
+        decoded,
+      },
+    },
+  };
+});
+
+const runReportWireCompliance = async (
+  _input: unknown
+): Promise<AdapterProjection> => {
+  // The wire-compliance booleans are derived from real observations: a
+  // one-shot probe of `toSseResponse` for the response-header surface,
+  // plus targeted decoder probes for each WHATWG line-terminator,
+  // BOM-stripping, leading-space, dispatch, and comment-handling rule.
+  // A regression in `@tuvren/stream-sse` (encoder headers, decoder
+  // behavior) flips the appropriate boolean to false and the plan's
+  // independent assertions surface it.
+  const wire = await reportSseWireCompliance(observeSseEncoder);
+
+  return {
+    result: {
+      sse: {
+        wire,
+      },
+    },
+  };
+};
+
+export const createFrameworkAdapterEventStreamSse = (): {
+  runDecodeTrace: (input: unknown) => Promise<AdapterProjection>;
+  runReportWireCompliance: (input: unknown) => Promise<AdapterProjection>;
+} => ({ runDecodeTrace, runReportWireCompliance });
