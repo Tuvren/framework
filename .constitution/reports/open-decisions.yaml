@@ -277,7 +277,7 @@ decisions:
       in: EPIC-BU
     proposed_by: EPIC-BU @ 5508fea
     ruling:
-      ref: ".constitution/reports/2026-10-19-interview-techspec-lint-alignment.md"
+      ref: ".constitution/reports/2026-10-19-interview-techspec.md"
       date: 2026-10-19
       summary: "The owner approved the recommended supported-contract boundary for OD-09 and its copies. Internal Promise timing or identity, generic error types and cause fields may change to satisfy the selected preset, while documented and authority-backed behavior, ordering, cancellation and durable outcomes remain protected. Intentional public changes still require coordinated authority, tests and release metadata."
       chosen: "Preserve supported contracts and apply the selected preset's internal normalizations"
@@ -393,7 +393,7 @@ decisions:
       in: EPIC-BY
     proposed_by: EPIC-BY @ 0262ff6
     ruling:
-      ref: ".constitution/reports/2026-10-19-interview-techspec-lint-alignment.md"
+      ref: ".constitution/reports/2026-10-19-interview-techspec.md"
       date: 2026-10-19
       summary: "The owner approved the recommended supported-contract boundary for OD-12 as a copy of OD-09. KRT-BY001 remains in applied_by as historical source provenance; KRT-BY004 is the resolvable evidence owner that completed the copied decision's blocking work."
       chosen: "Preserve supported contracts and apply the selected preset's internal normalizations"
@@ -439,7 +439,7 @@ decisions:
       in: EPIC-BY
     proposed_by: EPIC-CV @ 0262ff6
     ruling:
-      ref: ".constitution/reports/2026-10-19-interview-techspec-lint-alignment.md"
+      ref: ".constitution/reports/2026-10-19-interview-techspec.md"
       date: 2026-10-19
       summary: "The owner approved the recommended supported-contract boundary for OD-13 as a copy of OD-09. The original EPIC-BY asked.in value remains the source-question history; EPIC-CV remains the proposal provenance."
       chosen: "Preserve supported contracts and apply the selected preset's internal normalizations"
@@ -480,7 +480,7 @@ decisions:
       in: EPIC-BY
     proposed_by: EPIC-CW @ 0262ff6
     ruling:
-      ref: ".constitution/reports/2026-10-19-interview-techspec-lint-alignment.md"
+      ref: ".constitution/reports/2026-10-19-interview-techspec.md"
       date: 2026-10-19
       summary: "The owner approved the recommended supported-contract boundary for OD-14 as a copy of OD-09. The original EPIC-BY asked.in value remains the source-question history; EPIC-CW remains the proposal provenance."
       chosen: "Preserve supported contracts and apply the selected preset's internal normalizations"
