@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CA004",
+  "milestone": "M28-ws-cleanup-and-atomic-four-project-streaming-admission",
+  "result": "pass",
+  "reviewed_predecessor": "53447895fa0300200bd77f2def1b3d6be4feec1e",
+  "branch": "epic/ca-small-package-lint",
+  "working_tree_candidate": true,
+  "scope": [
+    "typescript/streaming/agui",
+    "typescript/streaming/core",
+    "typescript/streaming/sse",
+    "typescript/streaming/ws",
+    "tools/biome-coverage/ca.json"
+  ],
+  "toolchain": {
+    "bun": "1.4.2",
+    "node": "24.20.0",
+    "typescript": "6.0.2",
+    "oxlint": "1.86.0",
+    "oxfmt": "0.71.0",
+    "biome": "2.5.14",
+    "nx": "22.7.12"
+  },
+  "selection": {
+    "debug_files_exact": true,
+    "json_files_exact": true,
+    "nonempty": true,
+    "projects": {
+      "framework-stream-agui": { "code": 5, "json": 7 },
+      "framework-stream-core": { "code": 7, "json": 7 },
+      "framework-stream-sse": { "code": 7, "json": 7 },
+      "framework-stream-ws": { "code": 11, "json": 7 }
+    }
+  },
+  "native_diagnostics": {
+    "agui": 0,
+    "core": 0,
+    "sse": 0,
+    "ws": 0,
+    "project_resolution_errors": 0,
+    "unused_disable_directives": 0,
+    "unused_directives_reported_and_denied": true
+  },
+  "ws_cleanup": {
+    "baseline_type_aware_diagnostics": 107,
+    "final_type_aware_diagnostics": 0,
+    "project_resolution_errors": 0,
+    "decisions": [
+      "Replace the resume-status assertion with a complete runtime type guard.",
+      "Hoist the pure session-attach error classifier without changing its predicate.",
+      "Preserve the serialized ingest promise chain with a measured, scoped native exception because it defines message ordering and rejection recovery.",
+      "Preserve public method declarations and API stability tags with scoped native exceptions; generated declarations remain byte-identical.",
+      "Replace unsafe test assertions with runtime guards while retaining exact pending-promise and sequential-flush timing where tests exercise transport behavior."
+    ],
+    "preserved": [
+      "public API and declarations",
+      "event and error ordering",
+      "warning delivery",
+      "queue and iterator settlement timing",
+      "handshake, replay, redelivery, heartbeat, backpressure and close semantics"
+    ]
+  },
+  "directive_reconciliation": {
+    "ca002_m8_cohort_identities": 17,
+    "sdk_identities_removed_at_m25": 6,
+    "streaming_identities_removed_at_m28": 11,
+    "streaming_no_native_counterpart": 8,
+    "streaming_measured_native_counterpart": 3,
+    "measured_counterpart_rule": "eslint/require-await",
+    "fresh_unsuppressed_biome": {
+      "agui": {
+        "count": 2,
+        "categories": [
+          "lint/complexity/noExcessiveCognitiveComplexity",
+          "lint/performance/noBarrelFile"
+        ]
+      },
+      "core": {
+        "count": 3,
+        "categories": [
+          "lint/performance/noBarrelFile",
+          "lint/suspicious/useAwait"
+        ]
+      },
+      "sse": {
+        "count": 2,
+        "categories": [
+          "lint/performance/noBarrelFile",
+          "lint/suspicious/useAwait"
+        ]
+      },
+      "ws": {
+        "count": 4,
+        "categories": [
+          "lint/performance/noBarrelFile",
+          "lint/suspicious/useAwait"
+        ]
+      }
+    },
+    "remaining_biome_directives_in_admitted_roots": 0
+  },
+  "atomic_admission": {
+    "project_targets": 4,
+    "cwd": ".",
+    "command_order": [
+      "bunx --bun oxlint --type-aware ROOT",
+      "bun tools/scripts/json-check.ts ROOT"
+    ],
+    "parallel": false,
+    "inputs": "inherited",
+    "removed_coverage_entries": ["typescript/streaming"],
+    "remaining_coverage": [
+      "typescript/tools",
+      "typescript/testkit",
+      "typescript/telemetry",
+      "typescript/certification",
+      "typescript/certification-batteries-included",
+      "tools/run-nx.mjs"
+    ]
+  },
+  "behavior_and_api": {
+    "package_tests": {
+      "agui": { "passed": 9, "failed": 0 },
+      "core": { "passed": 25, "failed": 0 },
+      "sse": { "passed": 26, "failed": 0 },
+      "ws": { "passed": 62, "failed": 0 }
+    },
+    "runtime_tests": { "passed": 566, "failed": 0 },
+    "focused_conformance": {
+      "requested_streaming_plans": 5,
+      "applicable": 511,
+      "passed": 511,
+      "failed": 0,
+      "non_applicable": 12
+    },
+    "api_freeze": { "entrypoints": 14, "exports": 404, "status": "pass" },
+    "ws_declarations_byte_identical": true,
+    "core_and_sse_index_declaration_hashes_match_m27": true,
+    "release_metadata": "unchanged"
+  },
+  "gates": {
+    "four_project_lint_typecheck_test_build_exports": "pass",
+    "routing_partition_admission_tests": { "passed": 102, "failed": 0 },
+    "full_lint": "pass",
+    "full_typecheck": { "projects": 33, "status": "pass" },
+    "format_check": { "files": 1336, "status": "pass" },
+    "changeset_check": { "direct_publishable_packages": 8, "status": "pass" },
+    "constitution_validate": { "errors": 0, "warnings": 0, "status": "pass" },
+    "diff_check": "pass"
+  },
+  "retry_disposition": {
+    "runtime": "Attempt 1 ran without the repository environment and had two SQLite child-start timing failures; attempt 2 under direnv passed 566/566.",
+    "conformance": "Attempts 1 and 2 ran without the repository environment and four expanded checks could not find node; attempt 3 under direnv passed 511/511.",
+    "final_unresolved_failures": 0
+  },
+  "a19_composition": {
+    "files": 20,
+    "insertions": 283,
+    "deletions": 146,
+    "total_lines": 429,
+    "ws_production": { "files": 4, "insertions": 40, "deletions": 29 },
+    "ws_tests_and_smoke": { "files": 4, "insertions": 223, "deletions": 105 },
+    "directive_removal_outside_ws": { "files": 7, "insertions": 0, "deletions": 7 },
+    "admission_metadata": { "files": 5, "insertions": 20, "deletions": 5 },
+    "reviewability": "The code-bearing delta is concentrated in WS cleanup and test runtime narrowing; the remaining changes are the atomic four-project ownership transfer."
+  },
+  "drift": {
+    "changed_files_outside_m28_scope": 0,
+    "constitution_files": 0,
+    "dependency_files": 0,
+    "generated_tracked_files": 0,
+    "api_snapshot_files": 0,
+    "config_overrides": 0,
+    "changeset_files": 0,
+    "release_files": 0
+  }
+}

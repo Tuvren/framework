@@ -1,0 +1,53 @@
+owner: KRT-CA004
+mode: contract_test
+result: pass
+produced:
+  date: '2026-10-18'
+  commit: 1061584080a496bb852f8c4e640524b7f2887555
+  command: 'M24 through M33 native admission and M34 through M38 core source correction; package-native lint and JSON checking; build, source-only typecheck, tests, API freeze and export smoke; exact native directive probes; downstream typechecks; framework/provider/telemetry conformance; bun run lint; canonical locked bun run check --base=7004e9b7b505482802ec724167aa4968587850a3; bun run changeset:check --base=master; canonical locked bun run verify'
+files:
+  - path: M24-core-readiness.json
+    sha256: 221d0f71aee93a43c5c5514db9ef20bc02dfe33386ff734efa749ee50ac58029
+    bytes: 25772
+    role: measurement
+  - path: M25-sdk-readiness.json
+    sha256: 40266cbe4171fdb7e3215329e1a17e9fc64f20ed6608ea6385c468f7ffaf8e21
+    bytes: 12983
+    role: measurement
+  - path: M26-agui-readiness.json
+    sha256: 1a57f7ccdea338b291592ecff4952fc4987cd57e47b6b9e651553e8e44d8c37a
+    bytes: 11002
+    role: measurement
+  - path: M27-stream-core-sse-readiness.json
+    sha256: 12ed977445b8fd8e9499f56181e79415eb5ebad652506e35928e665aba1000e1
+    bytes: 12327
+    role: measurement
+  - path: M28-streaming-admission.json
+    sha256: f13fb21d92f1553a03e507733d8721b0378ed2e32fd2df32689ada3f6977a379
+    bytes: 6247
+    role: measurement
+  - path: M29-mcp-readiness.json
+    sha256: 6287470001ba78ee6cf0352fdea0547b9842394d709c97d3c2518b553956e146
+    bytes: 8033
+    role: measurement
+  - path: M30-testkit-readiness.json
+    sha256: 96c31f361e09619da10cb13813a09d2f5b120123bb334e61a75c34ae46947fd1
+    bytes: 9966
+    role: measurement
+  - path: M31-telemetry-readiness.json
+    sha256: c82b00c22ab3595f0130460800e965c91995133a036c523dd744bfcbbc4fe135
+    bytes: 12115
+    role: measurement
+  - path: M33-final-summary.json
+    sha256: c451bb14f5bb1fd16aaa86382537e114454bb84cb4d1b15a75f49daf57394709
+    bytes: 23664
+    role: measurement
+  - path: M38-final-source-summary.json
+    sha256: de511416bef2e52dae7227f9bb78e91c9fb916a20c145301c1ac88e867045483
+    bytes: 7439
+    role: measurement
+  - path: suppressions.json
+    sha256: cf00839f1d73b2c1c149b8db5d9327a95d719062aecedf205028fda540c065e6
+    bytes: 130238
+    role: measurement
+pass_criteria: The 12 project targets retain their canonical commands (11 exact Oxlint-plus-JSON targets and one exact JSON-only target); the complete 112-code and 76-JSON selections are nonempty and exact; the unchanged shipped type-aware preset reports zero diagnostics, resolution errors and unused directives; all 164 firing native exception regions and 36 legacy Biome removals are reconciled with measured reasons; every changed core TypeScript source is at most 1000 formatter-clean physical lines; ca.json retains only tools/run-nx.mjs for EPIC-CB; public API, explicitly protected Promise identities, queue and iterator behavior, MCP pagination, testkit fixture lookup and telemetry capture, transport lifecycle, telemetry attributes and operation order, event and error ordering, schema boundaries, generated artifacts and release metadata remain aligned; lint, check, changeset, API freeze and the sole canonical locked full verify pass on the review-clean M38 source freeze. Final current acceptance remains held until review-clean BT merges, CA rebases through its shared classifier, and top-level options.forwardAllArgs false is added to the same 12 targets without changing command, cwd, parallel or inputs.

@@ -1,0 +1,318 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CA004",
+  "milestone": "M26-agui-cleanup-retained-streaming-ownership",
+  "result": "pass",
+  "reviewed_parent": "8e04ccb6afe59afb2a10784e3be1f5ae88519597",
+  "working_tree_candidate": true,
+  "scope": "typescript/streaming/agui",
+  "toolchain": {
+    "bun": "1.4.2",
+    "oxlint": "1.86.0",
+    "biome": "2.5.14"
+  },
+  "selection": {
+    "code_count": 5,
+    "code_files": [
+      "typescript/streaming/agui/smoke/package-exports.ts",
+      "typescript/streaming/agui/src/index.ts",
+      "typescript/streaming/agui/src/lib/stream-agui.ts",
+      "typescript/streaming/agui/test/stream-agui.test.ts",
+      "typescript/streaming/agui/tsup.config.ts"
+    ],
+    "json_count": 7,
+    "json_files": [
+      "typescript/streaming/agui/package.json",
+      "typescript/streaming/agui/project.json",
+      "typescript/streaming/agui/tsconfig.dts.json",
+      "typescript/streaming/agui/tsconfig.json",
+      "typescript/streaming/agui/tsconfig.lib.json",
+      "typescript/streaming/agui/tsconfig.tsup.json",
+      "typescript/streaming/agui/tsconfig.typecheck.json"
+    ],
+    "format_count": 7,
+    "format_files": [
+      "typescript/streaming/agui/package.json",
+      "typescript/streaming/agui/project.json",
+      "typescript/streaming/agui/tsconfig.dts.json",
+      "typescript/streaming/agui/tsconfig.json",
+      "typescript/streaming/agui/tsconfig.lib.json",
+      "typescript/streaming/agui/tsconfig.tsup.json",
+      "typescript/streaming/agui/tsconfig.typecheck.json"
+    ],
+    "protected_files": [],
+    "debug_selection_exact": true,
+    "json_selection_exact": true,
+    "nonempty": true
+  },
+  "diagnostics": {
+    "baseline_syntactic": {
+      "source_commit": "8e04ccb6afe59afb2a10784e3be1f5ae88519597",
+      "files": 5,
+      "rules": 419,
+      "count": 45,
+      "breakdown": [
+        {
+          "rule": "eslint/complexity",
+          "count": 1
+        },
+        {
+          "rule": "jsdoc/check-tag-names",
+          "count": 1
+        },
+        {
+          "rule": "jsdoc/require-throws-type",
+          "count": 4
+        },
+        {
+          "rule": "jsdoc/require-yields",
+          "count": 38
+        },
+        {
+          "rule": "unicorn/no-await-expression-member",
+          "count": 1
+        }
+      ]
+    },
+    "baseline_type_aware": {
+      "source_commit": "8e04ccb6afe59afb2a10784e3be1f5ae88519597",
+      "files": 5,
+      "rules": 474,
+      "count": 46,
+      "additional_breakdown": [
+        {
+          "rule": "typescript/no-unsafe-type-assertion",
+          "count": 1
+        }
+      ]
+    },
+    "directly_fixed_diagnostics": 44,
+    "justified_exception_diagnostics": 2,
+    "final_syntactic": {
+      "files": 5,
+      "rules": 419,
+      "count": 0
+    },
+    "final_type_aware_with_unused_denied": {
+      "files": 5,
+      "rules": 474,
+      "count": 0
+    },
+    "project_resolution_errors": 0
+  },
+  "native_exception_regions": [
+    {
+      "path": "typescript/streaming/agui/src/index.ts",
+      "rule": "jsdoc/check-tag-names",
+      "region": "the package documentation block only",
+      "reason": "Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint.",
+      "baseline_firing_diagnostics": 1,
+      "baseline_source_sha256": "5c6c54421afc1e0c2e8892c25f0835fdf3a3614d8eaa73e63fb4b3a3e59a3898",
+      "candidate_source_sha256": "8ab7efd21f0cfe2074694a9f46b70ccd65cd946cf2cc1c42e3407ab5df900967",
+      "unused_directive_diagnostics": 0,
+      "firing": true
+    },
+    {
+      "path": "typescript/streaming/agui/src/lib/stream-agui.ts",
+      "rule": "eslint/complexity",
+      "region": "toAgUiEventsSubscribed only",
+      "reason": "Protocol projection intentionally keeps the canonical-to-AG-UI mapping table in one switch.",
+      "baseline_firing_diagnostics": 1,
+      "baseline_source_sha256": "39a9d1e1e60c8eb709a46616e36702aa8d2eb5cecee0d909a83c717e8a470c6d",
+      "candidate_source_sha256": "3ed2cbbf589e2d6b4a6a59b84ff5465180295c0495ae1b22359d7cca95d44a0f",
+      "unused_directive_diagnostics": 0,
+      "firing": true
+    }
+  ],
+  "negative_controls": {
+    "removed_firing_exceptions": {
+      "source": "reviewed parent before native regions",
+      "exit": 1,
+      "diagnostics": 2,
+      "rules": ["eslint/complexity", "jsdoc/check-tag-names"]
+    },
+    "synthetic_unused_directive": {
+      "fixture": "controls/unused-disable.ts",
+      "command": "bunx --bun oxlint --report-unused-disable-directives-severity=deny -f json controls/unused-disable.ts",
+      "exit": 1,
+      "diagnostics": 1,
+      "severity": "error",
+      "message": "Unused oxlint-disable directive (no problems were reported)."
+    },
+    "candidate_unused_directive": {
+      "command": "bunx --bun oxlint --type-aware --report-unused-disable-directives-severity=deny -f json typescript/streaming/agui",
+      "exit": 0,
+      "diagnostics": 0
+    }
+  },
+  "repairs": [
+    {
+      "path": "typescript/streaming/agui/smoke/package-exports.ts",
+      "decision": "Narrow IteratorResult by its done discriminant before reading value.",
+      "effect": "Removes the await-member and unsafe-assertion diagnostics without changing iterator pulls or cleanup."
+    },
+    {
+      "path": "typescript/streaming/agui/src/lib/stream-agui.ts",
+      "decision": "Add four explicit JSDoc throws types and one generator yields type.",
+      "effect": "Documents existing error and yield contracts without executable changes."
+    },
+    {
+      "path": "typescript/streaming/agui/src/lib/stream-agui.ts",
+      "decision": "Keep the canonical projection in one switch and use one measured cyclomatic-complexity region.",
+      "effect": "Preserves canonical event, warning, error and yield order."
+    }
+  ],
+  "retained_biome": {
+    "source_ledger": ".constitution/evidence/KRT-CA002/suppressions.json",
+    "source_ledger_sha256": "c2356a079380c9c75337ae8176f1d49bdc25d9c80b819c2e8a1d938e4aceafb9",
+    "baseline_identities": 2,
+    "currently_retained": 2,
+    "reason_changed": 0,
+    "directives_added": 0,
+    "entries": [
+      {
+        "identity": "typescript/streaming/agui/src/index.ts::lint/performance/noBarrelFile::1",
+        "path": "typescript/streaming/agui/src/index.ts",
+        "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+        "rule": "lint/performance/noBarrelFile",
+        "original_reason": "This package entrypoint is the intentional public implementation surface.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "reason_unchanged": true
+      },
+      {
+        "identity": "typescript/streaming/agui/src/lib/stream-agui.ts::lint/complexity/noExcessiveCognitiveComplexity::1",
+        "path": "typescript/streaming/agui/src/lib/stream-agui.ts",
+        "directive": "// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Protocol projection intentionally keeps the canonical-to-AG-UI mapping table in one switch.",
+        "rule": "lint/complexity/noExcessiveCognitiveComplexity",
+        "original_reason": "Protocol projection intentionally keeps the canonical-to-AG-UI mapping table in one switch.",
+        "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+        "reason_unchanged": true
+      }
+    ],
+    "direct_check": {
+      "status": "pass",
+      "files": 5
+    },
+    "project_check": {
+      "status": "pass",
+      "files": 12
+    }
+  },
+  "deferred_atomic_admission": {
+    "milestone": "M28",
+    "project_target_unchanged": true,
+    "project_json_sha256_before": "df6154e61df3c190e19b153c1b5a723946fd62bd6cc667b22eaf8300dc90daa7",
+    "project_json_sha256_after": "df6154e61df3c190e19b153c1b5a723946fd62bd6cc667b22eaf8300dc90daa7",
+    "current_target": {
+      "executor": "nx:run-commands",
+      "cwd": ".",
+      "command": "bunx --bun @biomejs/biome check typescript/streaming/agui"
+    },
+    "coverage_unchanged": true,
+    "coverage_sha256_before": "eeecd62a988777e40bf4158159b348efc557b0dc3b0b998f5c3d54ce3965f54a",
+    "coverage_sha256_after": "eeecd62a988777e40bf4158159b348efc557b0dc3b0b998f5c3d54ce3965f54a",
+    "retained_coverage_entry": "typescript/streaming",
+    "reason": "AGUI, stream core, SSE and WS transfer atomically in M28."
+  },
+  "behavior": {
+    "projection_switch_executable_diff": false,
+    "event_order": "preserved",
+    "warning_order": "preserved",
+    "error_order": "preserved",
+    "iterator_behavior": "preserved",
+    "public_exports": "preserved",
+    "release_metadata": "unchanged"
+  },
+  "gates": {
+    "agui_typecheck": "pass",
+    "agui_build": "pass",
+    "agui_tests": {
+      "status": "pass",
+      "passed": 9,
+      "failed": 0
+    },
+    "agui_exports_smoke": {
+      "status": "pass",
+      "passed": 1,
+      "failed": 0
+    },
+    "agui_retained_biome_direct": "pass",
+    "agui_retained_biome_project": "pass",
+    "stream_core_tests": {
+      "status": "pass",
+      "passed": 25,
+      "failed": 0
+    },
+    "runtime_tests_under_direnv": {
+      "status": "pass",
+      "passed": 566,
+      "failed": 0
+    },
+    "agui_projection_conformance": {
+      "status": "pass",
+      "passed": 57,
+      "failed": 0
+    },
+    "api_freeze": {
+      "status": "pass",
+      "entrypoints": 14,
+      "exports": 404
+    },
+    "full_lint": "pass",
+    "format_check": {
+      "status": "pass",
+      "files": 1336
+    },
+    "changeset_check": {
+      "status": "pass",
+      "direct_publishable_packages": 8,
+      "base": "master"
+    },
+    "constitution_validate": {
+      "status": "pass",
+      "errors": 0,
+      "warnings": 0,
+      "info": 78
+    },
+    "json_check": "pass",
+    "diff_check": "pass"
+  },
+  "a19_composition": {
+    "files": 3,
+    "insertions": 14,
+    "deletions": 5,
+    "total_lines": 19,
+    "production": {
+      "files": 2,
+      "insertions": 12,
+      "deletions": 4
+    },
+    "export_smoke": {
+      "files": 1,
+      "insertions": 2,
+      "deletions": 1
+    },
+    "metadata": {
+      "files": 0,
+      "insertions": 0,
+      "deletions": 0
+    }
+  },
+  "candidate_source_hashes": {
+    "typescript/streaming/agui/smoke/package-exports.ts": "bdbcfed7d62f910e4efbf5ac5fa78ce0848274a5a783aded068dfdce3fe8e3dd",
+    "typescript/streaming/agui/src/index.ts": "8ab7efd21f0cfe2074694a9f46b70ccd65cd946cf2cc1c42e3407ab5df900967",
+    "typescript/streaming/agui/src/lib/stream-agui.ts": "3ed2cbbf589e2d6b4a6a59b84ff5465180295c0495ae1b22359d7cca95d44a0f",
+    "typescript/streaming/agui/test/stream-agui.test.ts": "f4894e52e5b486efba6089fbc0dab5dae5f8ec94dfe3c69cae38bac9e76fc847",
+    "typescript/streaming/agui/tsup.config.ts": "d4eff88f13f38e0397b71bec69793f6c2364c29372cf1c9638ed2ae2793bd28d"
+  },
+  "drift": {
+    "changed_files_outside_m26_scope": 0,
+    "constitution_files": 0,
+    "generated_files": 0,
+    "dependency_files": 0,
+    "project_target_files": 0,
+    "coverage_files": 0,
+    "config_overrides": 0,
+    "changeset_files": 0
+  }
+}

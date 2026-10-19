@@ -1,0 +1,227 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-CA004",
+  "milestone": "M38-final-source-gate",
+  "result": "pass",
+  "source": {
+    "commit": "1061584080a496bb852f8c4e640524b7f2887555",
+    "predecessor": "2c57b67506e4bd8b587446981acd5bcdf7466d29",
+    "patch_sha256": "4edae63d580da8b1212b654cfb0c9c7a3c03b262a8c9ec4ed8ab23a9cece0815",
+    "stable_patch_id": "f540f9f4671119986b949e3cf1541529f69aed05",
+    "packet_sha256s_sha256": "121ac21a2aba291853e2f46531c8261771b71547319fe9ba6b1813cb6ff8f9ae",
+    "packet_location": "/tmp/tuvren-framework-epic-ca-m38-2c57b67-xHJBUH",
+    "packet_note": "The packet is an execution handoff; this committed summary retains the durable acceptance facts."
+  },
+  "authority_integration": {
+    "old_head": "2d0647bf1b037d29a071b3229a55d48f038b4abf",
+    "old_merge_base": "fd8ee5d4060ddfce23e250c32a675d41cca255b9",
+    "new_base": "7004e9b7b505482802ec724167aa4968587850a3",
+    "rebased_head_before_m34": "9adad9683bcaa8436f6adc4df5234fb13e749247",
+    "full_stable_patch_id_before_after": "474100144ebd7181205badc0f256172dc1260b29",
+    "source_stable_patch_id_before_after": "0f31c4b64cc77bf6b1e8e66ee6b5c4d88f289303",
+    "source_diff_sha256_before_after": "f0af2d4f5189e87d50bb8ae072f049053e6e53e4e17f0a77e18c2d8b6fc479be",
+    "conflict": false
+  },
+  "corrective_milestones": [
+    {
+      "id": "M34",
+      "commit": "f9583997ef9a40d0cf04bce8cfcdd8a1e15306cb",
+      "review": "clean",
+      "raw_changed_lines": 839
+    },
+    {
+      "id": "M35",
+      "commit": "15d87f4c42abb0a17af97ff4ff86a479b6899a2a",
+      "review": "clean",
+      "raw_changed_lines": 651
+    },
+    {
+      "id": "M36",
+      "commit": "43fe6b417822f7d3aa49ca3e7ad48169523a44bb",
+      "review": "clean",
+      "raw_changed_lines": 1114
+    },
+    {
+      "id": "M37",
+      "commit": "2c57b67506e4bd8b587446981acd5bcdf7466d29",
+      "review": "clean",
+      "raw_changed_lines": 894
+    },
+    {
+      "id": "M38",
+      "commit": "1061584080a496bb852f8c4e640524b7f2887555",
+      "review": "clean",
+      "raw_changed_lines": 753
+    }
+  ],
+  "file_ceiling": {
+    "result": "pass",
+    "maximum_changed_core_typescript_lines": 959,
+    "changed_core_typescript_files_over_1000": 0,
+    "final_files": [
+      {
+        "path": "typescript/core/src/lib/runner-contract-guards.ts",
+        "lines": 745
+      },
+      {
+        "path": "typescript/core/src/lib/runner-agent-config-snapshot-guards.ts",
+        "lines": 426
+      },
+      {
+        "path": "typescript/core/src/lib/runtime-contract-guards.ts",
+        "lines": 958
+      },
+      {
+        "path": "typescript/core/src/lib/runtime-provider-contract-guards.ts",
+        "lines": 337
+      },
+      {
+        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
+        "lines": 901
+      },
+      {
+        "path": "typescript/core/src/lib/runtime-data-contract-shapes.ts",
+        "lines": 525
+      },
+      {
+        "path": "typescript/core/src/lib/runtime-event-contract-shapes.ts",
+        "lines": 450
+      },
+      {
+        "path": "typescript/core/src/lib/runtime-execution-contract-shapes.ts",
+        "lines": 369
+      }
+    ]
+  },
+  "contract_preservation": {
+    "api_freeze": "14 entrypoints and 404 exports unchanged",
+    "declaration_moves": {
+      "data": 33,
+      "event": 31,
+      "execution": 18
+    },
+    "all_cross_module_type_edges_erased": true,
+    "compatibility_barrel_added": false,
+    "recursive_agent_extension_resolution_handoff_scc_retained": true,
+    "guard_bodies_errors_keys_and_public_bindings_preserved": true
+  },
+  "native_directives": {
+    "final_region_count": 164,
+    "legacy_biome_removals": 36,
+    "split_shape_regions": 8,
+    "method_signature_regions": [
+      {
+        "path": "typescript/core/src/lib/runtime-data-contract-shapes.ts",
+        "line": 19,
+        "diagnostics": 6
+      },
+      {
+        "path": "typescript/core/src/lib/runtime-contract-shapes.ts",
+        "line": 49,
+        "diagnostics": 13
+      },
+      {
+        "path": "typescript/core/src/lib/runtime-execution-contract-shapes.ts",
+        "line": 33,
+        "diagnostics": 23
+      }
+    ],
+    "event_path": {
+      "path": "typescript/core/src/lib/runtime-event-contract-shapes.ts",
+      "disposition": "no-counterpart",
+      "diagnostics": 0
+    },
+    "mapping_path": ".constitution/evidence/KRT-CA004/suppressions.json",
+    "biome_directives_in_admitted_core": 0
+  },
+  "final_ownership": {
+    "native_projects": 12,
+    "selected_code_files": 112,
+    "selected_json_files": 76,
+    "retained_ca_biome_entries": [
+      "tools/run-nx.mjs"
+    ]
+  },
+  "verification": {
+    "focused_core_tests": 105,
+    "shared_core_tests": 119,
+    "downstream_source_typechecks": [
+      "framework-runtime",
+      "runner-react",
+      "sdk",
+      "provider-api",
+      "framework-testkit"
+    ],
+    "promoted_conformance": {
+      "passed": 410,
+      "failed": 0
+    },
+    "api_freeze": {
+      "entrypoints": 14,
+      "exports": 404
+    },
+    "locked_check": {
+      "session": 73535,
+      "exit": 0,
+      "base": "7004e9b7b505482802ec724167aa4968587850a3"
+    },
+    "locked_full_verify": {
+      "session": 27008,
+      "exit": 0,
+      "run_count": 1,
+      "all_phases": "pass"
+    },
+    "changeset_check": "pass: direct patch coverage for eight publishable packages",
+    "constitution_validate": {
+      "errors": 0,
+      "warnings": 0,
+      "info": 78
+    }
+  },
+  "aggregate_at_source_freeze": {
+    "base": "7004e9b7b505482802ec724167aa4968587850a3",
+    "files": 132,
+    "additions": 16610,
+    "deletions": 7544,
+    "raw_changed_lines": 24154,
+    "source_ts": {
+      "files": 100,
+      "additions": 8401,
+      "deletions": 7513,
+      "raw_changed_lines": 15914
+    },
+    "metadata": {
+      "files": 32,
+      "additions": 8209,
+      "deletions": 31,
+      "raw_changed_lines": 8240
+    }
+  },
+  "held_acceptance": {
+    "forwarding_dependency_resolved": false,
+    "final_admission_closed": false,
+    "target_paths": [
+      "typescript/certification-batteries-included/project.json",
+      "typescript/certification/project.json",
+      "typescript/core/project.json",
+      "typescript/sdk/project.json",
+      "typescript/streaming/agui/project.json",
+      "typescript/streaming/core/project.json",
+      "typescript/streaming/sse/project.json",
+      "typescript/streaming/ws/project.json",
+      "typescript/telemetry/otel/project.json",
+      "typescript/telemetry/semconv/project.json",
+      "typescript/testkit/project.json",
+      "typescript/tools/mcp-client/project.json"
+    ],
+    "current_forward_all_args": "absent on all 12 targets",
+    "required_follow_up": "After review-clean BT implementation merges and CA rebases through it, add top-level targets.lint.options.forwardAllArgs:false to these exact targets without changing command/cwd/parallel/inputs, then complete the PR review loop.",
+    "pr": 176,
+    "original_remote_head": "2d0647bf1b037d29a071b3229a55d48f038b4abf"
+  },
+  "operational_notes": [
+    "M30 worker invoked services:down without effect; the shared daemon/socket remained healthy and no recovery was performed.",
+    "M37 disclosed one duplicate conformance execution after losing its first output handle; the captured authoritative locked run passed.",
+    "The M38 packet extraction identity field named bytes stores 12859 UTF-16 code units; the verified UTF-8 length is 13082 and the recorded SHA-256 is correct."
+  ]
+}

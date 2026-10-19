@@ -1,0 +1,12 @@
+owner: KRT-CX001
+mode: contract_test
+result: pass
+produced:
+  date: '2026-10-19'
+  commit: 060c835b55015b591e71dba0a9975d95a4131d90
+  command: 'Compare the 70 planned source/config/Changeset identities with evidence/wave-1-ca-source-freeze-20261018 and measured tree 32fd3ce; verify exact target transformations, legacy/native directive accounting, compiler isolation, direct Changeset coverage and API freeze; run 11 source-only typechecks, 12 native lints, package tests, cold imports, bun run check and the sole locked bun run verify; validate the constitution after recording A66.'
+  host: 'local devenv; Bun 1.4.2, TypeScript 6.0.2, Nx 22.7.12, Oxlint 1.86.0, tsgolint 7.0.2003, Oxfmt 0.71.0'
+files:
+  - path: summary.json
+    role: delivery-summary
+pass_criteria: 'The assembled tree preserves the 70 frozen/measured input identities plus the reviewed A66 integration correction; all 12 targets use exact canonical forwarding and cache profiles; all 33 legacy paths are directive-free while 164 native exception regions remain distinct; compiler resolution reaches no sibling source; direct patch coverage names all eight public packages; public API and behavior remain unchanged; and focused checks, bun run check, bun run verify, milestone review and constitution validation pass.'
