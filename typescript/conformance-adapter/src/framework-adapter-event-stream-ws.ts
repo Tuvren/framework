@@ -771,8 +771,11 @@ const runReconnectWithCursor = async (): Promise<AdapterProjection> => {
   const replayedSequences = secondSent
     .slice(1)
     .filter((message) => message.kind === "frame")
-    .filter(hasStringCursor)
-    .map((message) => decodeResumeCursor(message.cursor)?.sequence ?? null);
+    .map((message) =>
+      hasStringCursor(message)
+        ? (decodeResumeCursor(message.cursor)?.sequence ?? null)
+        : null
+    );
   const expectedReplaySequences =
     midSequence === undefined
       ? []
