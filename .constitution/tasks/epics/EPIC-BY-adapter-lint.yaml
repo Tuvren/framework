@@ -85,6 +85,10 @@ tickets:
       - files:
           - typescript/conformance-adapter/src/framework-adapter.ts
         justification: "Plan amendment A63 authorized canonical ordering of the merged CV object-property dispatch table after the complete native target exposed eslint(sort-keys). The correction preserves all 92 mappings, the accepted own-property routing form, private get-only dispatch and every unrelated source statement."
+      - files:
+          - typescript/conformance-adapter/test/host-protocol.test.ts
+          - typescript/providers/conformance-adapter/test/host-protocol.test.ts
+        justification: "Plan amendment A65 replaced the two owned shell wrappers with package-local Bun tests after hosted verify proved zsh absent from the canonical devenv. The tests preserve every JSONL request and assertion, use the pinned runtime's stdin, output, exit and cleanup APIs, and require no dependency or target expansion."
 decisions:
   - id: OD-09
     question: "Should native readiness preserve supported and authority-backed contracts while allowing the selected preset's internal async and error normalizations, or additionally freeze unpromised reflection and scheduling observations?"
