@@ -1,4 +1,15 @@
 entries:
+  - version: v0.47.10
+    date: 2026-10-19
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+    changed:
+      - "Aligned all 22 native-lint code decisions from the October 19 reconciliation into seven bounded TypeScript conventions: local Promise ports and sequential iterators, safe adapter registries, focused one-way module ownership, recursive predicate injection, strict internal variance, native target routing and cache inputs, and shared test-fixture topology."
+      - "Recorded the owner's supported-contract compatibility ruling in ADR-0070 and guidelines.md while preserving documented behavior, ordering, cancellation and durable outcomes; intentional public changes still require coordinated authority, tests and release metadata."
+      - "Corrected the generic native-lint cache-input rule to require complete inherited inputs and transitive production sources without freezing one target's input count as a quota; kept prior target, directive and exception counts as historical measurements."
+      - "Recorded the observed BT, BY and CX native-ratchet result and closed OD-09 plus its OD-12 through OD-14 copies through the companion interview record."
   - version: v0.47.9
     date: 2026-10-19
     by: reconcile
