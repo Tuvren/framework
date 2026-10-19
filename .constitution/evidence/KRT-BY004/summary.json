@@ -7,13 +7,14 @@
     "freezeCommit": "0efb4c0c3b314673ece9e9ac9931c50ddce2cb6f",
     "measuredTree": "b6b5cd1a32eb7ccd691b475614f2db6ae3fe219e",
     "milestoneCommit": "eaff021dc209772ca7d93bcd42c91797be9b5cbc",
-    "reviewFixCommit": "3e4db8aba41f310d1957913b99837300d50a82e0"
+    "reviewFixCommit": "3e4db8aba41f310d1957913b99837300d50a82e0",
+    "portabilityFixCommit": "1bcd417f66dfa6f673f6247d2d534f19d1af7733"
   },
   "candidate": {
     "sourcePaths": 24,
-    "addedLines": 5542,
-    "deletedLines": 5264,
-    "rawChangedLines": 10806,
+    "addedLines": 5661,
+    "deletedLines": 5262,
+    "rawChangedLines": 10923,
     "debugTags": 0,
     "adapterBiomeDirectives": 0,
     "changesetRequired": false
@@ -50,12 +51,21 @@
       "review": "M1 P1",
       "path": "typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts",
       "change": "Malformed replay cursors remain observable as null so shared equality grading fails closed."
+    },
+    {
+      "amendment": "A65",
+      "paths": [
+        "typescript/conformance-adapter/test/host-protocol.test.ts",
+        "typescript/providers/conformance-adapter/test/host-protocol.test.ts"
+      ],
+      "change": "Package-local Bun tests preserve the JSONL protocol cases and assertions without depending on zsh in the hosted environment."
     }
   ],
   "verification": {
     "focusedAdapters": "pass",
     "authorityGuardrails": "pass",
     "protocolTargets": "pass",
+    "bunNativeProtocolTargets": "pass",
     "frameworkConformanceApplicable": 511,
     "providerConformanceApplicable": 60,
     "coldImports": "pass",
