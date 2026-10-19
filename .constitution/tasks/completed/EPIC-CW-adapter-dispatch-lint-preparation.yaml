@@ -1,0 +1,77 @@
+id: CW
+name: Framework adapter dispatch lint preparation delivery
+kind: tooling
+capabilities: []
+depends_on: [BQ, CS]
+scope:
+  paths:
+    - ".constitution/evidence/KRT-CW001"
+    - typescript/conformance-adapter/src/framework-adapter-capability-orchestration-integration.ts
+    - typescript/conformance-adapter/src/framework-adapter-capability-orchestration.ts
+    - typescript/conformance-adapter/src/framework-adapter-execution-bounds.ts
+    - typescript/conformance-adapter/src/framework-adapter-orchestration-lifecycle.ts
+    - typescript/conformance-adapter/src/framework-adapter-orchestration.ts
+    - typescript/conformance-adapter/src/framework-adapter-runner.ts
+    - typescript/conformance-adapter/src/framework-adapter-runtime.ts
+    - typescript/conformance-adapter/src/framework-adapter-tuvren-client-execution-class.ts
+    - typescript/conformance-adapter/src/framework-adapter-tuvren-server-execution-class.ts
+  tech_spec_patchable: []
+estimated_diff_lines: 9000
+estimate_source: planned
+tickets:
+  - id: KRT-CW001
+    title: Deliver the reviewed adapter dispatch slice
+    type: Chore
+    effort: 3
+    depends_on: []
+    scope:
+      in:
+        - ".constitution/evidence/KRT-CW001"
+        - typescript/conformance-adapter/src/framework-adapter-capability-orchestration-integration.ts
+        - typescript/conformance-adapter/src/framework-adapter-capability-orchestration.ts
+        - typescript/conformance-adapter/src/framework-adapter-execution-bounds.ts
+        - typescript/conformance-adapter/src/framework-adapter-orchestration-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-orchestration.ts
+        - typescript/conformance-adapter/src/framework-adapter-runner.ts
+        - typescript/conformance-adapter/src/framework-adapter-runtime.ts
+        - typescript/conformance-adapter/src/framework-adapter-tuvren-client-execution-class.ts
+        - typescript/conformance-adapter/src/framework-adapter-tuvren-server-execution-class.ts
+    verification:
+      command: bun run typecheck
+      expected: "Exit 0; the standalone dispatch tree passes adapter typecheck, retained Biome, and a fresh framework-adapter import."
+    stop_conditions:
+      - "STOP if a changed entrypoint or session bridge is required before CV, shared grading changes, or retained Biome fails; do not improvise."
+      - "STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise."
+    description: "Deliver the exact whole-file framework adapter dispatch/orchestration slice from frozen EPIC-BY head 0efb4c0c3b314673ece9e9ac9931c50ddce2cb6f. This carries the dispatch-side KRT-BY001 safe-fix and KRT-BY003 ordering outcomes. Preserve the original source reviews, adapter observation-only boundary, protocol behavior, and OD-09 decisions. Leave project targets, coverage, evidence, entrypoint/session bridge files, and all six historical directives unchanged. This private adapter slice requires no Changeset. Feasibility measured 6951 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 7451, leaving 7549 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert every file matches frozen BY provenance and the standalone tree passes framework adapter typecheck, retained-Biome lint with all six historical directives, and a fresh framework-adapter import. Prove no shared grader, target configuration, coverage file, public package, or live sibling source is changed."
+    flows: []
+    certainty: settled
+    status: done
+closeout:
+  tickets_completed: [KRT-CW001]
+  tickets_deferred: []
+  points_completed: 3
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-CW: the reviewed framework adapter dispatch and orchestration slice is assembled from frozen BY provenance, preserves the six retained Biome directives, and passes typecheck, fresh import, compiler isolation, and focused conformance checks."
+  candidate_terms: []
+  routed_upstream: []
+  follow_ups:
+    - Stage 3 alignment should rule on OD-09 after the complete lint migration wave and promoted conformance evidence are available.
+  code_decisions: []
+  settled: []
+  actuals:
+    diff_lines: 7081
+    files_touched: 12
+    milestones: 3
+    review_rounds: 0
+    per_ticket:
+      - id: KRT-CW001
+        diff_lines: 7081
+        review_rounds: 0
+    merged_commit: 0262ff6
+    measured_at: 2026-10-19

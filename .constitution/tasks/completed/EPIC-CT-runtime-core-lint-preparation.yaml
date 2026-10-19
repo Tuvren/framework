@@ -2,12 +2,11 @@ id: CT
 name: Runtime core lint preparation delivery
 kind: tooling
 capabilities: []
-depends_on:
-  - CU
+depends_on: [CU]
 scope:
   paths:
-    - .changeset/runtime-core-lint-prep.md
-    - .constitution/evidence/KRT-CT001
+    - ".changeset/runtime-core-lint-prep.md"
+    - ".constitution/evidence/KRT-CT001"
     - typescript/runtime/src/lib/runtime-core-assistant-validation-sequences.ts
     - typescript/runtime/src/lib/runtime-core-assistant-validation.ts
     - typescript/runtime/src/lib/runtime-core-bounds.ts
@@ -58,8 +57,8 @@ tickets:
     depends_on: []
     scope:
       in:
-        - .changeset/runtime-core-lint-prep.md
-        - .constitution/evidence/KRT-CT001
+        - ".changeset/runtime-core-lint-prep.md"
+        - ".constitution/evidence/KRT-CT001"
         - typescript/runtime/src/lib/runtime-core-assistant-validation-sequences.ts
         - typescript/runtime/src/lib/runtime-core-assistant-validation.ts
         - typescript/runtime/src/lib/runtime-core-bounds.ts
@@ -100,15 +99,15 @@ tickets:
         - typescript/runtime/src/lib/runtime-core-turn-progress.ts
         - typescript/runtime/src/lib/runtime-core.ts
     verification:
-      command: bun run nx run framework-runtime:typecheck
-      expected: Exit 0; the cumulative CU then CT tree passes source-only typecheck, retained Biome, cold import, and focused core behavior tests.
+      command: "bun run nx run framework-runtime:typecheck"
+      expected: "Exit 0; the cumulative CU then CT tree passes source-only typecheck, retained Biome, cold import, and focused core behavior tests."
     stop_conditions:
-      - STOP if CU is not merged, a whole-file dependency falls outside the declared slice, or runtime behavior changes; do not improvise.
-      - STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise.
-    description: After EPIC-CU, deliver the exact whole-file runtime-core slice from frozen EPIC-BT. This carries the KRT-BT001 safe-fix and KRT-BT003 definition-ordering outcomes for the core modules. The dependency is mandatory because the extracted iteration, runner-result, and tool-execution edges do not form a valid standalone CT tree. Preserve original initialization order, source reviews, OD-09 decisions, and public behavior. Keep retained Biome ownership and every still-needed directive; do not switch project metadata or coverage. Add a direct patch Changeset for @tuvren/runtime and compactly map the assembled files back to their frozen commits and reviews. Feasibility measured 12943 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 13448, leaving 1552 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast.
+      - "STOP if CU is not merged, a whole-file dependency falls outside the declared slice, or runtime behavior changes; do not improvise."
+      - "STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise."
+    description: "After EPIC-CU, deliver the exact whole-file runtime-core slice from frozen EPIC-BT. This carries the KRT-BT001 safe-fix and KRT-BT003 definition-ordering outcomes for the core modules. The dependency is mandatory because the extracted iteration, runner-result, and tool-execution edges do not form a valid standalone CT tree. Preserve original initialization order, source reviews, OD-09 decisions, and public behavior. Keep retained Biome ownership and every still-needed directive; do not switch project metadata or coverage. Add a direct patch Changeset for @tuvren/runtime and compactly map the assembled files back to their frozen commits and reviews. Feasibility measured 12943 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 13448, leaving 1552 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast."
     acceptance:
       mode: contract_test
-      evidence: Assert the CU+CT cumulative tree matches frozen blobs and passes runtime source-only typecheck, retained-Biome lint, a fresh runtime entrypoint import, and focused foundation/execution-lifecycle tests. Prove the compiler inventory resolves no live sibling source, initialization remains clean, no project target or coverage file changes, and the PR has a direct @tuvren/runtime patch Changeset.
+      evidence: "Assert the CU+CT cumulative tree matches frozen blobs and passes runtime source-only typecheck, retained-Biome lint, a fresh runtime entrypoint import, and focused foundation/execution-lifecycle tests. Prove the compiler inventory resolves no live sibling source, initialization remains clean, no project target or coverage file changes, and the PR has a direct @tuvren/runtime patch Changeset."
     flows: []
     certainty: settled
     status: done
@@ -127,8 +126,7 @@ closeout:
   code_decisions:
     - summary: "Own persistence-host construction in a focused runtime module while retaining its original body, ordering and supported package surface."
       kind: pattern
-      paths:
-        - typescript/runtime/src/lib/runtime-core-hosts-persistence.ts
+      paths: [typescript/runtime/src/lib/runtime-core-hosts-persistence.ts]
       commit: 1c74c19666a5c02d7aa6d18ff1067f98bb3f5ed4
     - summary: "Keep construction contracts and defaults in a runtime options owner and delegate handle, session and loop coordination to an inert private controller while the runtime shell retains host wiring, WeakMaps, bounds, timers and observability."
       kind: pattern
@@ -138,3 +136,14 @@ closeout:
         - typescript/runtime/src/lib/runtime-core.ts
       commit: 1c74c19666a5c02d7aa6d18ff1067f98bb3f5ed4
   settled: []
+  actuals:
+    diff_lines: 13055
+    files_touched: 43
+    milestones: 3
+    review_rounds: 2
+    per_ticket:
+      - id: KRT-CT001
+        diff_lines: 13055
+        review_rounds: 2
+    merged_commit: 0262ff6
+    measured_at: 2026-10-19

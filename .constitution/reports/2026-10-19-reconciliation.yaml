@@ -1,0 +1,101 @@
+date: 2026-10-19
+commit: 0262ff6
+epics: [BT, BY, CA, CT, CU, CV, CW, CX, CY]
+routed:
+  - stage: tasks
+    item: decision OD-11 added closed with the ruling EPIC-BT carried
+    from: BT
+  - stage: tasks
+    item: EPIC-CB suppression aggregation should consume .constitution/evidence/KRT-BT004/suppressions.json while preserving its links to KRT-BT002 and the distinction between 30 prior behavior-proven removals and 29 atomic admission removals.
+    from: BT
+  - stage: tech-spec
+    item: "code decision (pattern): Lift synchronous test callbacks into required Promise ports with Promise.try.bind, an explicit undefined receiver and variadic arguments while preserving synchronous throws, thenables and receiver behavior. [typescript/runtime/test/fake-kernel.ts, typescript/runtime/test/orchestration-runtime-runner-helpers.ts] at af3c0e6a526fdaa6e2fe5012aafc5b8433ebcdcc"
+    from: BT
+  - stage: tech-spec
+    item: "code decision (convention): When a type-aware lint target declares project-level inputs, preserve every inherited checker and configuration input and include transitive production sources so dependency-only type changes invalidate the Nx cache. [typescript/runtime/project.json] at af3c0e6a526fdaa6e2fe5012aafc5b8433ebcdcc"
+    from: BT
+  - stage: tech-spec
+    item: "code decision (pattern): Drive sequential awaited runtime and benchmark work through local pull-based async iterators with one eagerly prefetched next-iteration promise, preserving cancellation scheduling and constant-space behavior while satisfying the shipped no-await-in-loop rule without a suppression. [typescript/runtime/src/lib/runtime-core-loop.ts, typescript/runtime/bench/runtime-boundary.bench.ts] at 1f62bc31ea89394283ddbacb0e306a3508361f0b"
+    from: BT
+  - stage: tasks
+    item: decision OD-09 renumbered to OD-12
+    from: BY
+  - stage: tasks
+    item: EPIC-CB should aggregate .constitution/evidence/KRT-BY002/suppressions.json and the KRT-BY004 final-admission result without replacing historical directive identities with final zero-count summaries.
+    from: BY
+  - stage: tech-spec
+    item: "code decision (pattern): Lift synchronous adapter helpers into required Promise contracts with bound Promise.try wrappers while preserving arguments, thenables, rejection identity, messages and observable ordering. [typescript/providers/conformance-adapter/src/host.ts, typescript/conformance-adapter/src/framework-adapter-admission-key.ts, typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts, typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts] at eaff021dc209772ca7d93bcd42c91797be9b5cbc"
+    from: BY
+  - stage: tech-spec
+    item: "code decision (pattern): Dispatch untrusted adapter operation names through own-property checked or canonical Map registries so inherited object keys cannot become valid operations while preserving the existing unknown-operation error. [typescript/providers/conformance-adapter/src/host.ts, typescript/kernel/conformance-adapter/src/host.ts] at eaff021dc209772ca7d93bcd42c91797be9b5cbc"
+    from: BY
+  - stage: tech-spec
+    item: "code decision (convention): Split the oversized kernel adapter host into one-way internal scenario modules while retaining the host as the sole protocol dispatcher and composition owner. [typescript/kernel/conformance-adapter/src/host.ts, typescript/kernel/conformance-adapter/src/host-protocol-logical-scenarios.ts, typescript/kernel/conformance-adapter/src/host-reclamation-scenarios.ts, typescript/kernel/conformance-adapter/src/host-restart-recovery-scenarios.ts, typescript/kernel/conformance-adapter/src/host-run-liveness-scenarios.ts, typescript/kernel/conformance-adapter/src/host-scenario-support.ts] at eaff021dc209772ca7d93bcd42c91797be9b5cbc"
+    from: BY
+  - stage: tech-spec
+    item: "code decision (pattern): Pass the recursive predicate into leaf object and schema helpers to break private validator initialization cycles while preserving traversal, evaluation order, and error behavior. [typescript/core/src/lib/runtime-contract-predicates.ts] at 4befa79e4db85afdf0443ea64a910e1e8b3e5aca"
+    from: CA
+  - stage: tech-spec
+    item: "code decision (pattern): Apply predicate injection to dense kernel-record validation so JSON and kernel recursion remain behaviorally identical without declaration hoisting or mutable forward bindings. [typescript/core/src/lib/kernel-records.ts] at 4befa79e4db85afdf0443ea64a910e1e8b3e5aca"
+    from: CA
+  - stage: tech-spec
+    item: "code decision (convention): Use return-await normalization in the MCP tool execution wrapper; the internal microtask observation may change while supported connection, rejection, and test Promise behavior stays protected. [typescript/tools/mcp-client/src/lib/mcp-tool-source.ts] at 4befa79e4db85afdf0443ea64a910e1e8b3e5aca"
+    from: CA
+  - stage: tech-spec
+    item: "code decision (pattern): Split core guards into acyclic validation leaves and separate data, event, and execution type families through erased imports while preserving public exports, method bivariance, validation behavior, and API snapshots. [typescript/core/src/lib/runner-agent-config-snapshot-guards.ts, typescript/core/src/lib/runner-contract-guards.ts, typescript/core/src/lib/runtime-provider-contract-guards.ts, typescript/core/src/lib/runtime-data-contract-shapes.ts, typescript/core/src/lib/runtime-event-contract-shapes.ts, typescript/core/src/lib/runtime-execution-contract-shapes.ts] at 4befa79e4db85afdf0443ea64a910e1e8b3e5aca"
+    from: CA
+  - stage: tech-spec
+    item: "code decision (pattern): Own persistence-host construction in a focused runtime module while retaining its original body, ordering and supported package surface. [typescript/runtime/src/lib/runtime-core-hosts-persistence.ts] at 1c74c19666a5c02d7aa6d18ff1067f98bb3f5ed4"
+    from: CT
+  - stage: tech-spec
+    item: "code decision (pattern): Keep construction contracts and defaults in a runtime options owner and delegate handle, session and loop coordination to an inert private controller while the runtime shell retains host wiring, WeakMaps, bounds, timers and observability. [typescript/runtime/src/lib/runtime-core-options.ts, typescript/runtime/src/lib/runtime-core-execution-controller.ts, typescript/runtime/src/lib/runtime-core.ts] at 1c74c19666a5c02d7aa6d18ff1067f98bb3f5ed4"
+    from: CT
+  - stage: tech-spec
+    item: "code decision (convention): Use internal function-valued properties where the shipped method-signature rule requires strict variance; the frozen source review found no supported runtime, core or SDK export exposure. [typescript/runtime/src/lib/binding-resolver.ts, typescript/runtime/src/lib/capability-policy-engine.ts] at b544e98ffdbb81ec5b7c5578ab164c18f4d2284e"
+    from: CU
+  - stage: tech-spec
+    item: "code decision (pattern): Lift synchronous test callbacks into required Promise ports with Promise.try.bind, an explicit undefined receiver and variadic arguments while preserving synchronous throws, thenables and receiver behavior. [typescript/runtime/test/runtime-core-test-helpers.ts] at b544e98ffdbb81ec5b7c5578ab164c18f4d2284e"
+    from: CU
+  - stage: tech-spec
+    item: "code decision (pattern): Own lazy orchestration streams and runner-result validation in dependency-safe focused modules while retaining their original ordering and supported package surface. [typescript/runtime/src/lib/orchestration-runtime-lazy-stream.ts, typescript/runtime/src/lib/runtime-core-runner-result.ts] at b544e98ffdbb81ec5b7c5578ab164c18f4d2284e"
+    from: CU
+  - stage: tech-spec
+    item: "code decision (pattern): Split tool execution into validation, staging, single-call, batch and resolution owners with type-only reverse edges, one shared validator cache and a dependency-free staging-error class. [typescript/runtime/src/lib/tool-execution-validation.ts, typescript/runtime/src/lib/tool-execution-staging.ts, typescript/runtime/src/lib/tool-execution-single.ts, typescript/runtime/src/lib/tool-execution-batch.ts, typescript/runtime/src/lib/tool-execution-resolution.ts, typescript/runtime/src/lib/tool-execution-errors.ts] at b544e98ffdbb81ec5b7c5578ab164c18f4d2284e"
+    from: CU
+  - stage: tech-spec
+    item: "code decision (pattern): Share run-liveness fixtures through the same base fake-kernel state and split recovery helpers without test-to-test imports or duplicated staging logic. [typescript/runtime/test/fake-run-liveness-kernel.ts, typescript/runtime/test/runtime-core-recovery-test-helpers.ts] at b544e98ffdbb81ec5b7c5578ab164c18f4d2284e"
+    from: CU
+  - stage: tech-spec
+    item: "code decision (convention): Accept explicit top-level forwardAllArgs:false for canonical native-lint targets while preserving legacy omission and rejecting malformed, nested or configured forwarding. [tools/scripts/lib/native-lint-routing.ts, tools/scripts/lib/native-lint-routing-argv.test.ts] at b544e98ffdbb81ec5b7c5578ab164c18f4d2284e"
+    from: CU
+  - stage: tasks
+    item: decision OD-09 renumbered to OD-13
+    from: CV
+  - stage: tech-spec
+    item: "code decision (pattern): Normalize synchronous adapter helpers into required Promise contracts with bound Promise.try wrappers while preserving arguments, thenables, rejection identity, messages and observable ordering. [typescript/conformance-adapter/src/framework-adapter.ts, typescript/conformance-adapter/src/framework-adapter-batteries-included.ts, typescript/conformance-adapter/src/framework-adapter-capability-policy.ts, typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts, typescript/conformance-adapter/src/framework-adapter-provider-scenarios.ts, typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts, typescript/conformance-adapter/src/framework-adapter-schema-authoring.ts, typescript/conformance-adapter/src/framework-adapter-secret-isolation.ts, typescript/conformance-adapter/src/framework-adapter-session.ts, typescript/conformance-adapter/src/batteries-included-node-host.ts] at d7d749d775cf519f3e1ac31cb81934927830c76b"
+    from: CV
+  - stage: tech-spec
+    item: "code decision (pattern): Dispatch untrusted adapter operation names through a canonical Map with an explicit unknown-operation error so inherited object keys cannot become valid operations. [typescript/conformance-adapter/src/framework-adapter.ts] at fbbf3a18764e5373f5c8f58d72812f587e149fa7"
+    from: CV
+  - stage: tech-spec
+    item: "code decision (convention): Split oversized framework adapter domains into one-way internal leaf modules while retaining the existing root modules as the sole public factories, composers and dispatch owners. [typescript/conformance-adapter/src/framework-adapter-admission-key-crash.ts, typescript/conformance-adapter/src/framework-adapter-input.ts, typescript/conformance-adapter/src/framework-adapter-recovery-result.ts, typescript/conformance-adapter/src/framework-adapter-runtime-lifecycle-scenarios.ts, typescript/conformance-adapter/src/framework-adapter-runtime-telemetry-scenarios.ts, typescript/conformance-adapter/src/framework-adapter-session-lifecycle.ts, typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts, typescript/conformance-adapter/src/framework-adapter-runtime-scenarios.ts, typescript/conformance-adapter/src/framework-adapter-session.ts, typescript/conformance-adapter/src/framework-adapter.ts] at d7d749d775cf519f3e1ac31cb81934927830c76b"
+    from: CV
+  - stage: tasks
+    item: decision OD-09 renumbered to OD-14
+    from: CW
+  - stage: tech-spec
+    item: "code decision (pattern): Preserve the frozen CA split of grown core contract guards and type families across acyclic modules and erased imports while retaining the runtime-contract-shapes compatibility bridge; public exports, validation order, errors and API snapshots remain unchanged. [typescript/core/src/lib/runner-contract-guards.ts, typescript/core/src/lib/runtime-contract-guards.ts, typescript/core/src/lib/runtime-contract-shapes.ts] at 060c835b55015b591e71dba0a9975d95a4131d90"
+    from: CX
+proposed_decisions: [OD-12, OD-13, OD-14]
+candidate_terms: []
+stale_owners:
+  - ".constitution/evidence/KRT-CT001/manifest.yaml: KRT-CT001"
+  - ".constitution/evidence/KRT-CX001/manifest.yaml: KRT-CX001"
+  - ".constitution/evidence/KRT-CW001/manifest.yaml: KRT-CW001"
+  - ".constitution/evidence/KRT-CY001/manifest.yaml: KRT-CY001"
+  - ".constitution/evidence/KRT-BY004/manifest.yaml: KRT-BY004"
+  - ".constitution/evidence/KRT-CA005/manifest.yaml: KRT-CA005"
+  - ".constitution/evidence/KRT-CU001/manifest.yaml: KRT-CU001"
+  - ".constitution/evidence/KRT-BT004/manifest.yaml: KRT-BT004"
+  - ".constitution/evidence/KRT-CV001/manifest.yaml: KRT-CV001"
+  - ".constitution/tasks/changelog.yaml: KRT-BT004"

@@ -2,13 +2,11 @@ id: CU
 name: Runtime execution and native lint tooling delivery
 kind: tooling
 capabilities: []
-depends_on:
-  - BQ
-  - CS
+depends_on: [BQ, CS]
 scope:
   paths:
-    - .changeset/runtime-execution-tooling-lint-prep.md
-    - .constitution/evidence/KRT-CU001
+    - ".changeset/runtime-execution-tooling-lint-prep.md"
+    - ".constitution/evidence/KRT-CU001"
     - tools/scripts/lib/biome-oxc-discovery.test.ts
     - tools/scripts/lib/native-lint-routing-argv.test.ts
     - tools/scripts/lib/native-lint-routing.ts
@@ -74,8 +72,8 @@ tickets:
     depends_on: []
     scope:
       in:
-        - .changeset/runtime-execution-tooling-lint-prep.md
-        - .constitution/evidence/KRT-CU001
+        - ".changeset/runtime-execution-tooling-lint-prep.md"
+        - ".constitution/evidence/KRT-CU001"
         - tools/scripts/lib/biome-oxc-discovery.test.ts
         - tools/scripts/lib/native-lint-routing-argv.test.ts
         - tools/scripts/lib/native-lint-routing.ts
@@ -131,15 +129,15 @@ tickets:
         - typescript/runtime/test/runtime-core.foundation.test.ts
         - typescript/runtime/tsup.config.ts
     verification:
-      command: bun run nx run framework-runtime:typecheck
-      expected: Exit 0; the exact frozen slice passes source-only typecheck, retained Biome, cold import, focused runtime tests, and the native-routing regression matrix.
+      command: "bun run nx run framework-runtime:typecheck"
+      expected: "Exit 0; the exact frozen slice passes source-only typecheck, retained Biome, cold import, focused runtime tests, and the native-routing regression matrix."
     stop_conditions:
-      - STOP if a file differs from the frozen BT provenance, a new source seam is required, or retained Biome fails; do not improvise.
-      - STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise.
-    description: Deliver the exact whole-file execution, tool workflow, helper, and shared native-lint routing slice from frozen EPIC-BT head 6a181a8e590ad2d9600f9a0547c0ecfe8ae4185f. This carries the KRT-BT001 safe-fix and KRT-BT003 ordering outcomes on its owned runtime files plus KRT-BT004's shared routing prerequisite; the final admission outcome stays in BT. Preserve original milestone reviews, OD-09 decisions, public behavior, and file/blob provenance. This slice owns the frozen tools/scripts/verify.ts version that registers native-lint-routing-argv.test.ts, but it adds no future adapter registry entries. Keep the runtime lint target, Biome coverage, all still-needed directives, and final admission metadata unchanged. Add a direct patch Changeset for @tuvren/runtime. Reuse compact historical evidence; do not recreate raw logs, change policy, or refactor source during assembly. Feasibility measured 12301 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 12806, leaving 2194 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast.
+      - "STOP if a file differs from the frozen BT provenance, a new source seam is required, or retained Biome fails; do not improvise."
+      - "STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise."
+    description: "Deliver the exact whole-file execution, tool workflow, helper, and shared native-lint routing slice from frozen EPIC-BT head 6a181a8e590ad2d9600f9a0547c0ecfe8ae4185f. This carries the KRT-BT001 safe-fix and KRT-BT003 ordering outcomes on its owned runtime files plus KRT-BT004's shared routing prerequisite; the final admission outcome stays in BT. Preserve original milestone reviews, OD-09 decisions, public behavior, and file/blob provenance. This slice owns the frozen tools/scripts/verify.ts version that registers native-lint-routing-argv.test.ts, but it adds no future adapter registry entries. Keep the runtime lint target, Biome coverage, all still-needed directives, and final admission metadata unchanged. Add a direct patch Changeset for @tuvren/runtime. Reuse compact historical evidence; do not recreate raw logs, change policy, or refactor source during assembly. Feasibility measured 12301 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 12806, leaving 2194 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast."
     acceptance:
       mode: contract_test
-      evidence: Assert every delivered file matches the frozen BT source identity and the assembled tree passes source-only runtime typecheck, retained-Biome lint, a fresh runtime entrypoint import, the focused tool-execution tests, and the complete native-routing/argv regression matrix. Assert tools/scripts/verify.ts preserves the original nine BP follow-up suites, registers the BT argv suite exactly once, and contains neither future adapter registry name. Prove the compiler inventory resolves no live sibling source, preserve all public behavior, and require a direct @tuvren/runtime patch Changeset.
+      evidence: "Assert every delivered file matches the frozen BT source identity and the assembled tree passes source-only runtime typecheck, retained-Biome lint, a fresh runtime entrypoint import, the focused tool-execution tests, and the complete native-routing/argv regression matrix. Assert tools/scripts/verify.ts preserves the original nine BP follow-up suites, registers the BT argv suite exactly once, and contains neither future adapter registry name. Prove the compiler inventory resolves no live sibling source, preserve all public behavior, and require a direct @tuvren/runtime patch Changeset."
     flows: []
     certainty: settled
     status: done
@@ -164,10 +162,9 @@ closeout:
       commit: b544e98ffdbb81ec5b7c5578ab164c18f4d2284e
     - summary: "Lift synchronous test callbacks into required Promise ports with Promise.try.bind, an explicit undefined receiver and variadic arguments while preserving synchronous throws, thenables and receiver behavior."
       kind: pattern
-      paths:
-        - typescript/runtime/test/runtime-core-test-helpers.ts
+      paths: [typescript/runtime/test/runtime-core-test-helpers.ts]
       commit: b544e98ffdbb81ec5b7c5578ab164c18f4d2284e
-    - summary: "Own lazy orchestration streams and runner-result validation in dependency-safe focused modules while retaining their original ordering and supported package surface."
+    - summary: Own lazy orchestration streams and runner-result validation in dependency-safe focused modules while retaining their original ordering and supported package surface.
       kind: pattern
       paths:
         - typescript/runtime/src/lib/orchestration-runtime-lazy-stream.ts
@@ -183,7 +180,7 @@ closeout:
         - typescript/runtime/src/lib/tool-execution-resolution.ts
         - typescript/runtime/src/lib/tool-execution-errors.ts
       commit: b544e98ffdbb81ec5b7c5578ab164c18f4d2284e
-    - summary: "Share run-liveness fixtures through the same base fake-kernel state and split recovery helpers without test-to-test imports or duplicated staging logic."
+    - summary: Share run-liveness fixtures through the same base fake-kernel state and split recovery helpers without test-to-test imports or duplicated staging logic.
       kind: pattern
       paths:
         - typescript/runtime/test/fake-run-liveness-kernel.ts
@@ -196,3 +193,14 @@ closeout:
         - tools/scripts/lib/native-lint-routing-argv.test.ts
       commit: b544e98ffdbb81ec5b7c5578ab164c18f4d2284e
   settled: []
+  actuals:
+    diff_lines: 12412
+    files_touched: 58
+    milestones: 3
+    review_rounds: 0
+    per_ticket:
+      - id: KRT-CU001
+        diff_lines: 12412
+        review_rounds: 0
+    merged_commit: 0262ff6
+    measured_at: 2026-10-19

@@ -1,4 +1,48 @@
 entries:
+  - version: v0.49.1
+    date: 2026-10-19
+    changed:
+      - "Completed EPIC-BT: assembled the reviewed runtime slice, reconciled all 59 suppression identities, removed the final 29 directives atomically, and admitted the complete runtime package to native type-aware lint and JSON checks."
+      - "EPIC-BT Atomic framework runtime native lint admission archived: 1 tickets, 8 points, 10966 diff lines, 0 review rounds"
+      - "Completed EPIC-BY: assembled the reviewed adapter slice, removed the final four legacy directives atomically, admitted all three adapters to native type-aware lint and JSON checks, and placed both protocol targets in the durable release lane."
+      - "EPIC-BY Atomic conformance adapter native lint admission archived: 1 tickets, 8 points, 12484 diff lines, 0 review rounds"
+      - "Completed EPIC-CA: delivered the retained-clean core, SDK, and MCP client preparation slice with frozen provenance, direct patch Changeset coverage, and current contract evidence."
+      - "EPIC-CA Core, SDK, and MCP lint preparation delivery archived: 1 tickets, 5 points, 11624 diff lines, 0 review rounds"
+      - "Completed EPIC-CT: delivered the frozen runtime-core slice with exact source provenance, preserved initialization and public behavior, direct runtime Changeset coverage, and complete correctness review."
+      - "EPIC-CT Runtime core lint preparation delivery archived: 1 tickets, 5 points, 13055 diff lines, 2 review rounds"
+      - "Completed EPIC-CU: delivered the frozen runtime execution, recovery, tool workflow and shared native-lint routing slice with exact source provenance, direct runtime Changeset coverage and complete correctness review."
+      - "EPIC-CU Runtime execution and native lint tooling delivery archived: 1 tickets, 5 points, 12412 diff lines, 0 review rounds"
+      - "Completed EPIC-CV: the reviewed framework adapter leaf, session bridge, entrypoint and batteries-included slice is assembled from immutable BY provenance, preserves the four final-BY directives, and passes adapter checks, compiler isolation, affected checks and both certification lanes."
+      - "EPIC-CV Framework adapter leaf lint preparation delivery archived: 1 tickets, 5 points, 13641 diff lines, 0 review rounds"
+      - "Completed EPIC-CW: the reviewed framework adapter dispatch and orchestration slice is assembled from frozen BY provenance, preserves the six retained Biome directives, and passes typecheck, fresh import, compiler isolation, and focused conformance checks."
+      - "EPIC-CW Framework adapter dispatch lint preparation delivery archived: 1 tickets, 3 points, 7081 diff lines, 0 review rounds"
+      - "Completed EPIC-CX: twelve small TypeScript package targets use canonical native lint and JSON admission with explicit argument-forwarding control; all final CA legacy identities are removed while tools/run-nx.mjs remains under Biome for EPIC-CB."
+      - "EPIC-CX Atomic small-package native lint admission archived: 1 tickets, 8 points, 13367 diff lines, 0 review rounds"
+      - "Completed EPIC-CY: delivered the frozen runtime regression test slice, 30 behavior-proven early directive removals, preserved historical suppression evidence, direct runtime Changeset coverage, and complete correctness review."
+      - "EPIC-CY Runtime test and early-removal lint preparation delivery archived: 1 tickets, 8 points, 12084 diff lines, 0 review rounds"
+    added:
+      - "Follow-up from EPIC-BT: Have EPIC-CB aggregate the final KRT-BT004 suppression ledger without replacing its historical identity evidence with final counts."
+      - "Follow-up from EPIC-BT: Schedule the byte-identical typescript/runtime/test/capability-policy-engine.test.ts file-size debt in an owned future refactor."
+      - "Follow-up from EPIC-BT: The wave lead must require hosted verify and Bazel to pass on the exact rebased PR head before merge."
+      - "Follow-up from EPIC-BY: Stage 3 alignment should rule on OD-09 after the complete lint migration wave and promoted conformance evidence are available."
+      - "Follow-up from EPIC-BY: Have EPIC-CB consume the KRT-BY002 disposition ledger and preserve its historical identities while retiring Biome."
+      - "Follow-up from EPIC-BY: The wave lead must require hosted verify and Bazel to pass on the exact rebased PR head before merge."
+      - "Follow-up from EPIC-CA: EPIC-CX owns final native admission for these packages, including the excluded runtime-contract-shapes bridge and the atomic target and coverage transition."
+      - "Follow-up from EPIC-CA: The wave lead must require hosted verify and Bazel to pass on the exact rebased PR head before merge."
+      - "Follow-up from EPIC-CV: Stage 3 alignment should rule on OD-09 after the complete lint migration wave and promoted conformance evidence are available."
+      - "Follow-up from EPIC-CV: EPIC-BY owns activation of the staged admission-key crash leaf and the atomic native target, directive and coverage transition."
+      - "Follow-up from EPIC-CW: Stage 3 alignment should rule on OD-09 after the complete lint migration wave and promoted conformance evidence are available."
+      - "Follow-up from EPIC-CX: EPIC-CB should consume the KRT-CA002 and KRT-CA004 suppression ledgers, retain tools/run-nx.mjs until whole-tools admission, then remove the final CA coverage entry when Biome retires."
+      - "Follow-up from EPIC-CX: Stage 3 alignment should review the carried core guard/type-family split recorded under code_decisions."
+      - "Follow-up from EPIC-CX: The wave lead preserves the reviewed-head tag and performs the final ordered-base, stable-patch, raw-total, exact rebased verify and hosted Bazel checks before merge."
+      - "Follow-up from EPIC-CY: EPIC-BT owns final native lint admission for the runtime package and the remaining 29 still-needed directives."
+      - "Follow-up from EPIC-CY: The wave lead must require hosted verify and Bazel to pass on the exact rebased PR head before merge."
+    by: reconcile
+    fast_lane_through: 0262ff6a84f3f7dd5bac51918ddd841096a6a77f
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.9
   - version: v0.49.0
     date: 2026-10-18
     by: stage

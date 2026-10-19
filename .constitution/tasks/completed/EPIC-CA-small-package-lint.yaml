@@ -1,15 +1,13 @@
 id: CA
-name: Core, SDK, and MCP lint preparation delivery
+name: "Core, SDK, and MCP lint preparation delivery"
 kind: tooling
 capabilities: []
-depends_on:
-  - BQ
-  - CS
+depends_on: [BQ, CS]
 scope:
   paths:
-    - .changeset/core-sdk-mcp-lint-prep.md
-    - .constitution/evidence/KRT-CA002
-    - .constitution/evidence/KRT-CA005
+    - ".changeset/core-sdk-mcp-lint-prep.md"
+    - ".constitution/evidence/KRT-CA002"
+    - ".constitution/evidence/KRT-CA005"
     - tools/run-nx.mjs
     - typescript/core/src/capabilities/index.ts
     - typescript/core/src/extensions/index.ts
@@ -60,15 +58,15 @@ estimated_diff_lines: 13000
 estimate_source: planned
 tickets:
   - id: KRT-CA005
-    title: Deliver the retained-clean core, SDK, and MCP foundation
+    title: "Deliver the retained-clean core, SDK, and MCP foundation"
     type: Chore
     effort: 5
     depends_on: []
     scope:
       in:
-        - .changeset/core-sdk-mcp-lint-prep.md
-        - .constitution/evidence/KRT-CA002
-        - .constitution/evidence/KRT-CA005
+        - ".changeset/core-sdk-mcp-lint-prep.md"
+        - ".constitution/evidence/KRT-CA002"
+        - ".constitution/evidence/KRT-CA005"
         - tools/run-nx.mjs
         - typescript/core/src/capabilities/index.ts
         - typescript/core/src/extensions/index.ts
@@ -116,14 +114,14 @@ tickets:
         - typescript/tools/mcp-client/tsup.config.ts
     verification:
       command: bun run typecheck
-      expected: Exit 0; core, SDK, and MCP pass typecheck, retained Biome, cold imports, and their package tests without switching native ownership.
+      expected: "Exit 0; core, SDK, and MCP pass typecheck, retained Biome, cold imports, and their package tests without switching native ownership."
     stop_conditions:
-      - STOP if a file lacks retained-Biome proof, the runtime-contract-shapes bridge enters this slice, or a project target or coverage file changes; do not improvise.
-      - STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise.
-    description: Deliver the exact retained-clean core, SDK, and MCP whole-file slice from frozen EPIC-CA head d67b9b8d2bb370e25d03415d6573ace25b4fa46b. Preserve the original CA001-CA003 source outcomes, reviews, OD-09 decisions, and the whole KRT-CA002 evidence directory. This slice includes the seven historically proven early removals. Keep runtime-contract-shapes and the four files that freshly failed retained Biome in final CX ownership; keep all 29 original admission removals, project targets, and coverage unchanged. Add one direct patch Changeset for @tuvren/core, @tuvren/sdk, and @tuvren/mcp-client. Use compact provenance and do not recreate milestone evidence. Feasibility measured 11363 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 11870, leaving 3130 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast.
+      - "STOP if a file lacks retained-Biome proof, the runtime-contract-shapes bridge enters this slice, or a project target or coverage file changes; do not improvise."
+      - "STOP if the final authored diff exceeds 15000 raw changed lines, compact provenance and closeout exceed the 500-line reserve, or evidence is expanded instead of reused; do not improvise."
+    description: "Deliver the exact retained-clean core, SDK, and MCP whole-file slice from frozen EPIC-CA head d67b9b8d2bb370e25d03415d6573ace25b4fa46b. Preserve the original CA001-CA003 source outcomes, reviews, OD-09 decisions, and the whole KRT-CA002 evidence directory. This slice includes the seven historically proven early removals. Keep runtime-contract-shapes and the four files that freshly failed retained Biome in final CX ownership; keep all 29 original admission removals, project targets, and coverage unchanged. Add one direct patch Changeset for @tuvren/core, @tuvren/sdk, and @tuvren/mcp-client. Use compact provenance and do not recreate milestone evidence. Feasibility measured 11363 raw changed lines from the declared dependency tree; reserve at most 500 additional lines for compact provenance and closeout, plus the declared direct Changeset where new. The resulting bounded total is 11870, leaving 3130 lines below the hard 15000-line review cap. These measurements prove the cut fits; estimated_diff_lines remains an independently planned forecast."
     acceptance:
       mode: contract_test
-      evidence: Assert every delivered file maps to frozen CA provenance; core, SDK, and MCP each pass source-only typecheck, retained-Biome lint, cold import, and package tests; the seven early-removal identities retain their reviewed proof; and all 29 original admission removals remain protected in final-owned files. Prove the KRT-CA002 directory stays whole, compiler resolution reaches no live sibling source, no target or coverage metadata changes, and the PR carries direct patch Changeset entries for @tuvren/core, @tuvren/sdk, and @tuvren/mcp-client.
+      evidence: "Assert every delivered file maps to frozen CA provenance; core, SDK, and MCP each pass source-only typecheck, retained-Biome lint, cold import, and package tests; the seven early-removal identities retain their reviewed proof; and all 29 original admission removals remain protected in final-owned files. Prove the KRT-CA002 directory stays whole, compiler resolution reaches no live sibling source, no target or coverage metadata changes, and the PR carries direct patch Changeset entries for @tuvren/core, @tuvren/sdk, and @tuvren/mcp-client."
     flows: []
     certainty: settled
     status: done
@@ -143,22 +141,19 @@ closeout:
   routed_upstream: []
   follow_ups:
     - "EPIC-CX owns final native admission for these packages, including the excluded runtime-contract-shapes bridge and the atomic target and coverage transition."
-    - "The wave lead must require hosted verify and Bazel to pass on the exact rebased PR head before merge."
+    - The wave lead must require hosted verify and Bazel to pass on the exact rebased PR head before merge.
   code_decisions:
     - summary: "Pass the recursive predicate into leaf object and schema helpers to break private validator initialization cycles while preserving traversal, evaluation order, and error behavior."
       kind: pattern
-      paths:
-        - typescript/core/src/lib/runtime-contract-predicates.ts
+      paths: [typescript/core/src/lib/runtime-contract-predicates.ts]
       commit: 4befa79e4db85afdf0443ea64a910e1e8b3e5aca
-    - summary: "Apply predicate injection to dense kernel-record validation so JSON and kernel recursion remain behaviorally identical without declaration hoisting or mutable forward bindings."
+    - summary: Apply predicate injection to dense kernel-record validation so JSON and kernel recursion remain behaviorally identical without declaration hoisting or mutable forward bindings.
       kind: pattern
-      paths:
-        - typescript/core/src/lib/kernel-records.ts
+      paths: [typescript/core/src/lib/kernel-records.ts]
       commit: 4befa79e4db85afdf0443ea64a910e1e8b3e5aca
     - summary: "Use return-await normalization in the MCP tool execution wrapper; the internal microtask observation may change while supported connection, rejection, and test Promise behavior stays protected."
       kind: convention
-      paths:
-        - typescript/tools/mcp-client/src/lib/mcp-tool-source.ts
+      paths: [typescript/tools/mcp-client/src/lib/mcp-tool-source.ts]
       commit: 4befa79e4db85afdf0443ea64a910e1e8b3e5aca
     - summary: "Split core guards into acyclic validation leaves and separate data, event, and execution type families through erased imports while preserving public exports, method bivariance, validation behavior, and API snapshots."
       kind: pattern
@@ -171,3 +166,14 @@ closeout:
         - typescript/core/src/lib/runtime-execution-contract-shapes.ts
       commit: 4befa79e4db85afdf0443ea64a910e1e8b3e5aca
   settled: []
+  actuals:
+    diff_lines: 11624
+    files_touched: 54
+    milestones: 4
+    review_rounds: 0
+    per_ticket:
+      - id: KRT-CA005
+        diff_lines: 11624
+        review_rounds: 0
+    merged_commit: 0262ff6
+    measured_at: 2026-10-19

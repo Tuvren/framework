@@ -302,3 +302,165 @@ decisions:
       summary: "Approved only the reviewed three-comment patch for four promise-style diagnostics; no executable behavior or broader policy waiver."
       chosen: Approve four targeted exceptions
     proposed_by: EPIC-BZ @ cb79e1c
+  - id: OD-11
+    question: "Should KRT-BT004 convert internal runtime interface methods to function-valued properties when the shipped native preset requires it?"
+    blocks: [KRT-BT004]
+    options:
+      - name: Convert internal methods
+        pros:
+          - Clears the shipped method-signature-style rule without an override.
+          - Produces the canonical strictFunctionTypes surface selected by the approved lint preset.
+        cons:
+          - Changes internal TypeScript assignability and requires full source and declaration verification.
+      - name: Preserve method signatures and stop admission
+        pros: [Preserves the current bivariant TypeScript method surface.]
+        cons:
+          - Leaves the runtime project noncompliant with the unchanged shipped preset and blocks KRT-BT004.
+    recommendation: Convert internal methods
+    closure: ruling
+    ruler: wave lead
+    status: closed
+    asked:
+      date: 2026-10-18
+      in: EPIC-BT
+    ruling:
+      ref: "EPIC-BT source plan amendment A26, 2026-10-18"
+      date: 2026-10-18
+      summary: "TypeChecker reachability found none of the 63 converted method signatures reachable from supported runtime, core, or SDK exports; ADR-0057 excludes the internal runtime shape from stable guarantees. Apply the required internal function-property convention with direct patch changeset coverage and reassess only if later cleanup changes supported exports or behavior."
+      chosen: Convert internal methods
+    proposed_by: EPIC-BT @ 0262ff6
+  - id: OD-12
+    question: "Should native readiness preserve supported and authority-backed contracts while allowing the selected preset's internal async and error normalizations, or additionally freeze unpromised reflection and scheduling observations?"
+    blocks: [KRT-BY001]
+    options:
+      - name: "Preserve supported contracts and apply the selected preset's internal normalizations"
+        pros:
+          - "Preserves public signatures, domain errors, validation order, durable outcomes and promoted conformance while implementing ADR-0070 without exceptions."
+          - "Permits consistent Promise rejection, internal TypeError and cause preservation selected by the shipped rules."
+        cons:
+          - Changes unpromised internal observations such as synchronous invalid-input throws or generic error constructors.
+      - name: Freeze additional reflection and scheduling observations before migration
+        pros:
+          - Preserves those implementation observations even where no public or promoted contract promises them.
+        cons:
+          - Requires a separate policy ruling before native readiness and may conflict with the selected unchanged preset.
+    recommendation: "Preserve supported contracts and apply the selected preset's internal normalizations"
+    closure: ruling
+    ruler: Repository owner through Stage 3 alignment after this wave
+    waiting_on: "Review the native-readiness evidence, master tests and promoted conformance after the lint migration wave merges."
+    interim:
+      assumption: "ADR-0070 authorizes honest preset-required internal async, TypeError and cause normalization. Preserve supported contracts, documented domain errors and messages, first-validation-failure order, fail-closed behavior, emitted event ordering, commit phases, rollback and durable outcomes. The 2026-10-18 user ruling permits separately authorized intentional breaking API or shape changes with the affected authority, tests and release metadata. Unpromised Promise identity, arbitrary microtask counts, generic internal error constructors and absent cause fields are not additional contracts. No suppressions, overrides, fake awaits or signature workarounds are authorized."
+      applied_by:
+        - KRT-BY001
+        - typescript/kernel/conformance-adapter/src/host-support.ts
+        - typescript/kernel/conformance-adapter/src/host.ts
+        - typescript/kernel/conformance-adapter/src/sqlite-restart-recovery-scenario.ts
+        - typescript/providers/conformance-adapter/src/host.ts
+        - typescript/providers/conformance-adapter/src/provider-mediated-execution-class.ts
+        - typescript/providers/conformance-adapter/src/provider-native-execution-class.ts
+        - typescript/conformance-adapter/src/framework-adapter-admission-key-session.ts
+        - typescript/conformance-adapter/src/framework-adapter-admission-key.ts
+        - typescript/conformance-adapter/src/framework-adapter-capability-policy.ts
+        - typescript/conformance-adapter/src/framework-adapter-capability-orchestration-integration.ts
+        - typescript/conformance-adapter/src/framework-adapter-capability-orchestration.ts
+        - typescript/conformance-adapter/src/framework-adapter-event-stream-resume.ts
+        - typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts
+        - typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts
+        - typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-orchestration-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-provider-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-runtime.ts
+        - typescript/conformance-adapter/src/framework-adapter-tuvren-client-execution-class.ts
+        - typescript/conformance-adapter/src/framework-adapter-tuvren-server-execution-class.ts
+        - typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-execution-bounds.ts
+        - typescript/conformance-adapter/src/framework-adapter-schema-authoring.ts
+        - typescript/conformance-adapter/src/framework-adapter-secret-isolation.ts
+        - typescript/conformance-adapter/src/framework-adapter-runner.ts
+        - typescript/conformance-adapter/src/framework-adapter-session.ts
+        - typescript/conformance-adapter/src/framework-adapter-trust-boundary.ts
+        - typescript/conformance-adapter/src/framework-adapter.ts
+        - typescript/conformance-adapter/src/framework-adapter-batteries-included.ts
+        - typescript/conformance-adapter/src/batteries-included-node-host.ts
+    status: proposed
+    asked:
+      date: 2026-10-18
+      in: EPIC-BY
+    proposed_by: EPIC-BY @ 0262ff6
+  - id: OD-13
+    question: "Should native readiness preserve supported and authority-backed contracts while allowing the selected preset's internal async and error normalizations, or additionally freeze unpromised reflection and scheduling observations?"
+    blocks: [KRT-CV001]
+    options:
+      - name: "Preserve supported contracts and apply the selected preset's internal normalizations"
+        pros:
+          - "Preserves public signatures, domain errors, validation order, durable outcomes and promoted conformance while implementing ADR-0070 without exceptions."
+          - "Permits consistent Promise rejection, internal TypeError and cause preservation selected by the shipped rules."
+        cons:
+          - Changes unpromised internal observations such as synchronous invalid-input throws or generic error constructors.
+      - name: Freeze additional reflection and scheduling observations before migration
+        pros:
+          - Preserves those implementation observations even where no public or promoted contract promises them.
+        cons:
+          - Requires a separate policy ruling before native readiness and may conflict with the selected unchanged preset.
+    recommendation: "Preserve supported contracts and apply the selected preset's internal normalizations"
+    closure: ruling
+    ruler: Repository owner through Stage 3 alignment after this wave
+    waiting_on: "Review the native-readiness evidence, master tests and promoted conformance after the lint migration wave merges."
+    interim:
+      assumption: "ADR-0070 authorizes honest preset-required internal async, TypeError and cause normalization. Preserve supported contracts, documented domain errors and messages, first-validation-failure order, fail-closed behavior, emitted event ordering, commit phases, rollback and durable outcomes. The 2026-10-18 user ruling permits separately authorized intentional breaking API or shape changes with the affected authority, tests and release metadata. Unpromised Promise identity, arbitrary microtask counts, generic internal error constructors and absent cause fields are not additional contracts. No suppressions, overrides, fake awaits or signature workarounds are authorized."
+      applied_by:
+        - KRT-CV001
+        - typescript/conformance-adapter/src/framework-adapter-admission-key-session.ts
+        - typescript/conformance-adapter/src/framework-adapter-capability-policy.ts
+        - typescript/conformance-adapter/src/framework-adapter-event-stream-resume.ts
+        - typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-provider-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-schema-authoring.ts
+        - typescript/conformance-adapter/src/framework-adapter-secret-isolation.ts
+        - typescript/conformance-adapter/src/framework-adapter-session.ts
+        - typescript/conformance-adapter/src/framework-adapter-trust-boundary.ts
+        - typescript/conformance-adapter/src/framework-adapter.ts
+        - typescript/conformance-adapter/src/framework-adapter-batteries-included.ts
+        - typescript/conformance-adapter/src/batteries-included-node-host.ts
+    status: proposed
+    asked:
+      date: 2026-10-18
+      in: EPIC-BY
+    proposed_by: EPIC-CV @ 0262ff6
+  - id: OD-14
+    question: "Should native readiness preserve supported and authority-backed contracts while allowing the selected preset's internal async and error normalizations, or additionally freeze unpromised reflection and scheduling observations?"
+    blocks: [KRT-CW001]
+    options:
+      - name: "Preserve supported contracts and apply the selected preset's internal normalizations"
+        pros:
+          - "Preserves public signatures, domain errors, validation order, durable outcomes and promoted conformance while implementing ADR-0070 without exceptions."
+          - "Permits consistent Promise rejection, internal TypeError and cause preservation selected by the shipped rules."
+        cons:
+          - Changes unpromised internal observations such as synchronous invalid-input throws or generic error constructors.
+      - name: Freeze additional reflection and scheduling observations before migration
+        pros:
+          - Preserves those implementation observations even where no public or promoted contract promises them.
+        cons:
+          - Requires a separate policy ruling before native readiness and may conflict with the selected unchanged preset.
+    recommendation: "Preserve supported contracts and apply the selected preset's internal normalizations"
+    closure: ruling
+    ruler: Repository owner through Stage 3 alignment after this wave
+    waiting_on: "Review the native-readiness evidence, master tests and promoted conformance after the lint migration wave merges."
+    interim:
+      assumption: "ADR-0070 authorizes honest preset-required internal async, TypeError and cause normalization. Preserve supported contracts, documented domain errors and messages, first-validation-failure order, fail-closed behavior, emitted event ordering, commit phases, rollback and durable outcomes. The 2026-10-18 user ruling permits separately authorized intentional breaking API or shape changes with the affected authority, tests and release metadata. Unpromised Promise identity, arbitrary microtask counts, generic internal error constructors and absent cause fields are not additional contracts. No suppressions, overrides, fake awaits or signature workarounds are authorized."
+      applied_by:
+        - KRT-CW001
+        - typescript/conformance-adapter/src/framework-adapter-capability-orchestration-integration.ts
+        - typescript/conformance-adapter/src/framework-adapter-capability-orchestration.ts
+        - typescript/conformance-adapter/src/framework-adapter-orchestration-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-runtime.ts
+        - typescript/conformance-adapter/src/framework-adapter-tuvren-client-execution-class.ts
+        - typescript/conformance-adapter/src/framework-adapter-tuvren-server-execution-class.ts
+        - typescript/conformance-adapter/src/framework-adapter-execution-bounds.ts
+        - typescript/conformance-adapter/src/framework-adapter-runner.ts
+    status: proposed
+    asked:
+      date: 2026-10-18
+      in: EPIC-BY
+    proposed_by: EPIC-CW @ 0262ff6
