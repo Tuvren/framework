@@ -21,9 +21,9 @@ export default defineConfig({
   dts: false,
   entry: ["src/host.ts", "src/sqlite-restart-recovery-scenario.ts"],
   format: ["esm"],
-  noExternal: [/^@tuvren\//],
+  noExternal: [/^@tuvren\//u],
   outDir: "dist",
   sourcemap: false,
-  tsconfig: "tsconfig.tsup.json",
   target: "esnext",
+  tsconfig: "tsconfig.tsup.json",
 });
