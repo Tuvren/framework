@@ -34,7 +34,7 @@ describe("stream-core package exports", () => {
 
     expect(nextEvent.done).toBe(false);
 
-    if (nextEvent.done || nextEvent.value.type !== "turn.start") {
+    if (nextEvent.done === true || nextEvent.value.type !== "turn.start") {
       throw new Error("expected turn.start fixture event");
     }
 

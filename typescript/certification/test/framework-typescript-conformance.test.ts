@@ -16,14 +16,12 @@
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import path from "node:path";
 
-import {
-  type CompiledConformancePlan,
-  loadConformancePlan,
-} from "../../../tools/conformance/plan-compiler/index.js";
+import { loadConformancePlan } from "../../../tools/conformance/plan-compiler/index.js";
+import type { CompiledConformancePlan } from "../../../tools/conformance/plan-compiler/index.js";
 
-const REPO_ROOT = resolve(import.meta.dir, "../../..");
+const REPO_ROOT = path.resolve(import.meta.dir, "../../..");
 const FRAMEWORK_PACKET_PATHS: readonly string[] = [
   "spec/core/authority-packet.json",
   "spec/streaming/sse/authority-packet.json",
@@ -40,6 +38,62 @@ interface AuthorityPacketPlanReference {
   planId: string;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readPlanReference = (
+  value: unknown,
+  label: string
+): AuthorityPacketPlanReference => {
+  if (
+    !isRecord(value) ||
+    typeof value.path !== "string" ||
+    typeof value.planId !== "string"
+  ) {
+    throw new Error(`${label} must contain planId and path strings`);
+  }
+
+  return {
+    path: value.path,
+    planId: value.planId,
+  };
+};
+
+const readPlanReferences = (
+  value: unknown,
+  label: string
+): readonly AuthorityPacketPlanReference[] => {
+  if (value === undefined) {
+    return [];
+  }
+
+  if (!Array.isArray(value)) {
+    throw new TypeError(
+      `${label}.conformancePlans must be an array when present`
+    );
+  }
+
+  return value.map((entry, index) =>
+    readPlanReference(entry, `${label}.conformancePlans[${index}]`)
+  );
+};
+
+const readAuthorityPacket = (
+  authorityPath: string
+): AuthorityPacketManifest => {
+  const value: unknown = JSON.parse(
+    readFileSync(path.resolve(REPO_ROOT, authorityPath), "utf-8")
+  );
+
+  if (!isRecord(value)) {
+    throw new Error(`${authorityPath} must contain an authority packet object`);
+  }
+
+  return {
+    conformancePlans: readPlanReferences(value.conformancePlans, authorityPath),
+  };
+};
+
 describe("framework TypeScript certification", () => {
   test("loads every framework authority-packet conformance plan", async () => {
     const planPaths = new Set<string>();
@@ -54,7 +108,8 @@ describe("framework TypeScript certification", () => {
 
     const compiledPlans: CompiledConformancePlan[] = [];
 
-    for (const planPath of [...planPaths].sort()) {
+    for (const planPath of [...planPaths].toSorted()) {
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Compile plans sequentially to preserve deterministic validation and first-failure order.
       compiledPlans.push(await loadConformancePlan(planPath));
     }
 
@@ -66,54 +121,3 @@ describe("framework TypeScript certification", () => {
     );
   });
 });
-
-function readAuthorityPacket(path: string): AuthorityPacketManifest {
-  const value = JSON.parse(readFileSync(resolve(REPO_ROOT, path), "utf8"));
-
-  if (!isRecord(value)) {
-    throw new Error(`${path} must contain an authority packet object`);
-  }
-
-  return {
-    conformancePlans: readPlanReferences(value.conformancePlans, path),
-  };
-}
-
-function readPlanReferences(
-  value: unknown,
-  label: string
-): readonly AuthorityPacketPlanReference[] {
-  if (value === undefined) {
-    return [];
-  }
-
-  if (!Array.isArray(value)) {
-    throw new Error(`${label}.conformancePlans must be an array when present`);
-  }
-
-  return value.map((entry, index) =>
-    readPlanReference(entry, `${label}.conformancePlans[${index}]`)
-  );
-}
-
-function readPlanReference(
-  value: unknown,
-  label: string
-): AuthorityPacketPlanReference {
-  if (
-    !isRecord(value) ||
-    typeof value.path !== "string" ||
-    typeof value.planId !== "string"
-  ) {
-    throw new Error(`${label} must contain planId and path strings`);
-  }
-
-  return {
-    path: value.path,
-    planId: value.planId,
-  };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}

@@ -29,11 +29,27 @@ import {
 
 import {
   decodeSseStream,
-  type TuvrenSseFrame,
   toResumableSseFrames,
   toSseFrames,
   toSseResponse,
 } from "../src/index.ts";
+import type { TuvrenSseFrame } from "../src/index.ts";
+
+const collectStreamValues = async <T>(
+  values: AsyncIterable<T>
+): Promise<T[]> => {
+  const collected: T[] = [];
+
+  for await (const value of values) {
+    collected.push(value);
+  }
+
+  return collected;
+};
+
+const waitForAsyncTurn = async (): Promise<void> => {
+  await Promise.resolve();
+};
 
 const frameworkStreamFixtures = await readFrameworkStreamFixtures();
 
@@ -135,20 +151,6 @@ describe("stream-sse", () => {
   });
 });
 
-async function collectStreamValues<T>(values: AsyncIterable<T>): Promise<T[]> {
-  const collected: T[] = [];
-
-  for await (const value of values) {
-    collected.push(value);
-  }
-
-  return collected;
-}
-
-async function waitForAsyncTurn(): Promise<void> {
-  await Promise.resolve();
-}
-
 describe("toResumableSseFrames", () => {
   test("populates every frame id with the envelope's resume cursor", async () => {
     const sequenced = createSequencedTuvrenStreamEvents(
@@ -164,11 +166,16 @@ describe("toResumableSseFrames", () => {
 
     for (const [index, frame] of frames.entries()) {
       expect(frame.id).toBeDefined();
-      const payload = decodeResumeCursor(frame.id as string);
+
+      if (frame.id === undefined) {
+        throw new Error("expected a resumable SSE frame id");
+      }
+
+      const payload = decodeResumeCursor(frame.id);
       expect(payload?.turnId).toBe("turn-main");
       expect(payload?.sequence).toBe(index);
       expect(frame.event).toBe(
-        streamAdapterFixtures.completedTurn[index]?.type as string
+        streamAdapterFixtures.completedTurn[index]?.type
       );
     }
   });
@@ -181,7 +188,7 @@ describe("toResumableSseFrames", () => {
     const wireFrames: string[] = [];
 
     // Server side: record each sequenced frame while emitting SSE wire text.
-    const recording = (async function* () {
+    const recording = (async function* recording() {
       for await (const frame of sequenced) {
         buffer.record(frame);
         yield frame;
@@ -201,7 +208,11 @@ describe("toResumableSseFrames", () => {
 
     expect(decoded.lastEventId).toBeDefined();
 
-    const result = buffer.replayFrom(decoded.lastEventId as string);
+    if (decoded.lastEventId === undefined) {
+      throw new Error("expected a decoded Last-Event-ID");
+    }
+
+    const result = buffer.replayFrom(decoded.lastEventId);
 
     expect(result.status).toBe("resumed");
 

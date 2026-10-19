@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */
 
 /**
  * `@tuvren/core/execution` — execution handles, the runtime interface,
@@ -25,6 +25,8 @@
  *
  * @packageDocumentation
  */
+
+/* oxlint-enable jsdoc/check-tag-names */
 
 export {
   assertContextManifest,
@@ -40,40 +42,32 @@ export type {
   AroundModelContext,
   AroundModelHandler,
   AroundModelResult,
-  BranchMessagesCursor,
-  BranchSummary,
   CapabilityPolicyContextInputs,
+} from "../lib/runtime-contract-shapes.js";
+export type {
   ContextEngineeringContext,
   ContextEngineeringHelpers,
   ContextEngineeringPlan,
   ContextManifest,
   ContextManifestCounters,
   ContextManifestNameCounters,
+} from "../lib/runtime-data-contract-shapes.js";
+export type {
   ContextPolicy,
   ContextPolicyResult,
-  ExecutionBoundExceededDetails,
-  ExecutionBoundKind,
-  ExecutionBounds,
-  ExecutionHandle,
-  ExecutionResult,
-  ExecutionStatus,
   ExtensionContext,
   HandoffContextBuilder,
   HandoffContextMode,
   HandoffContextPlan,
   HandoffSourceContext,
-  InputSignal,
+} from "../lib/runtime-contract-shapes.js";
+export type { InputSignal } from "../lib/runtime-data-contract-shapes.js";
+export type {
   InterceptContext,
   InterceptHandler,
   InterceptResult,
   IterationDecision,
-  ListThreadsCursor,
   LoopPolicy,
-  OrchestrationHandle,
-  OrchestrationResult,
-  OrchestrationRuntime,
-  ReclamationSummary,
-  RuntimeMaintenance,
   RuntimeResolution,
   SanitizeToolResultContext,
   SanitizeToolResultHook,
@@ -81,10 +75,26 @@ export type {
   ServerExecutionRateLimitConfig,
   SystemPromptContext,
   SystemPromptFn,
+  TuvrenExtension,
+} from "../lib/runtime-contract-shapes.js";
+export type { TuvrenMessage } from "../lib/runtime-data-contract-shapes.js";
+export type {
+  BranchMessagesCursor,
+  BranchSummary,
+  ExecutionBoundExceededDetails,
+  ExecutionBoundKind,
+  ExecutionBounds,
+  ExecutionHandle,
+  ExecutionResult,
+  ExecutionStatus,
+  ListThreadsCursor,
+  OrchestrationHandle,
+  OrchestrationResult,
+  OrchestrationRuntime,
+  ReclamationSummary,
+  RuntimeMaintenance,
   ThreadSummary,
   TurnHistoryCursor,
   TurnSnapshot,
-  TuvrenExtension,
-  TuvrenMessage,
   TuvrenRuntime,
-} from "../lib/runtime-contract-shapes.js";
+} from "../lib/runtime-execution-contract-shapes.js";

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */
 
 /**
  * `@tuvren/core/events` — the canonical `TuvrenStreamEvent` vocabulary
@@ -23,6 +23,8 @@
  *
  * @packageDocumentation
  */
+
+/* oxlint-enable jsdoc/check-tag-names */
 
 export {
   assertTuvrenStreamEvent,
@@ -59,4 +61,4 @@ export type {
   TurnStartEvent,
   TuvrenErrorProjection,
   TuvrenStreamEvent,
-} from "../lib/runtime-contract-shapes.js";
+} from "../lib/runtime-event-contract-shapes.js";

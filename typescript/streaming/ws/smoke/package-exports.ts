@@ -24,6 +24,10 @@ import {
   WS_CLOSE_CODE_HANDSHAKE_INVALID,
 } from "@tuvren/stream-ws";
 
+const emptyOutbound = async function* emptyOutbound() {
+  // No frames; the session observes completion once it drains this.
+};
+
 describe("stream-ws package exports", () => {
   test("export the close-code vocabulary", () => {
     expect(WS_CLOSE_CODE_HANDSHAKE_INVALID).toBe(4000);
@@ -37,23 +41,22 @@ describe("stream-ws package exports", () => {
 
   test("createWsSessionTransport resolves and does something minimal end-to-end", () => {
     const sent: string[] = [];
-    const closes: Array<{ code: number; reason: string | undefined }> = [];
-
-    async function* emptyOutbound() {
-      // No frames; the session observes completion once it drains this.
-    }
+    const closes: { code: number; reason: string | undefined }[] = [];
 
     const session = createRemoteClientSession({
       binding: {
         clientEndpoint: {
           advertisedCapabilities: [],
+          // oxlint-disable-next-line typescript/promise-function-async -- Return the direct rejected promise from this intentionally unused smoke-test endpoint.
           dispatch: () => Promise.reject(new Error("unused in smoke test")),
           endpointId: "smoke-endpoint",
         },
         currentHandle: () => {
           throw new Error("unused in smoke test");
         },
-        dispatchInbound: () => undefined,
+        dispatchInbound: () => {
+          // Intentionally unused by this package-export smoke probe.
+        },
         outbound: () => emptyOutbound(),
         sessionId: "smoke-session",
       },
@@ -65,8 +68,12 @@ describe("stream-ws package exports", () => {
     const transport = createWsSessionTransport({
       session,
       sink: {
-        close: (code, reason) => closes.push({ code, reason }),
-        send: (data) => sent.push(data),
+        close: (code, reason) => {
+          closes.push({ code, reason });
+        },
+        send: (data) => {
+          sent.push(data);
+        },
       },
     });
 

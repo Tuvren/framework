@@ -15,8 +15,7 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import { assertTuvrenStreamEvent } from "@tuvren/core/events";
@@ -64,6 +63,7 @@ export interface FrameworkStreamFixtureSet {
  */
 export interface TelemetryCapture {
   /** Empties `events` and `spans` in place, for reuse across test cases. */
+  // oxlint-disable-next-line typescript/method-signature-style -- Preserve the published testkit method declaration and generated API spelling.
   clear(): void;
   /** Every event emitted through `sink.event`, deep-cloned at capture time. */
   readonly events: TelemetryEvent[];
@@ -73,38 +73,147 @@ export interface TelemetryCapture {
   readonly spans: TelemetrySpan[];
 }
 
-const FRAMEWORK_TESTKIT_ROOT = dirname(fileURLToPath(import.meta.url));
+const FRAMEWORK_TESTKIT_ROOT = import.meta.dirname;
 const STREAM_FIXTURE_PATHS = [
-  resolve(
+  path.resolve(
     FRAMEWORK_TESTKIT_ROOT,
     "../../../../spec/conformance/streaming/fixtures/stream-events.json"
   ),
-  resolve(
+  path.resolve(
     FRAMEWORK_TESTKIT_ROOT,
     "../../../spec/conformance/streaming/fixtures/stream-events.json"
   ),
 ];
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isNotFoundError = (error: unknown): boolean =>
+  typeof error === "object" &&
+  error !== null &&
+  "code" in error &&
+  error.code === "ENOENT";
+
+const assertTuvrenStreamEvents: (
+  value: unknown,
+  label: string
+) => asserts value is readonly TuvrenStreamEvent[] = (value, label) => {
+  if (!Array.isArray(value)) {
+    throw new TypeError(`${label} must be an array`);
+  }
+
+  for (const [index, event] of value.entries()) {
+    assertTuvrenStreamEvent(event, `${label}[${index}]`);
+  }
+};
+
+/**
+ * @throws {Error} When `value` is not an object, or (via
+ *   {@link assertTuvrenStreamEvents}) when any of its three named turn
+ *   sequences is missing, not an array, or contains an invalid stream event.
+ */
+const assertFrameworkStreamFixtureSet: (
+  value: unknown,
+  label: string
+) => asserts value is FrameworkStreamFixtureSet = (value, label) => {
+  if (!isRecord(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+
+  assertTuvrenStreamEvents(value.completedTurn, `${label}.completedTurn`);
+  assertTuvrenStreamEvents(value.failedTurn, `${label}.failedTurn`);
+  assertTuvrenStreamEvents(value.pausedTurn, `${label}.pausedTurn`);
+};
+
+const cloneTuvrenStreamEvent = (
+  event: TuvrenStreamEvent
+): TuvrenStreamEvent => {
+  const cloned = structuredClone(event);
+  assertTuvrenStreamEvent(cloned, "cloned stream event");
+  return cloned;
+};
+
+const assertStringArrays = (
+  actualValues: readonly string[],
+  expectedValues: readonly string[],
+  label: string
+): void => {
+  if (actualValues.length !== expectedValues.length) {
+    throw new Error(
+      `${label} emitted ${JSON.stringify(
+        actualValues
+      )}; expected ${JSON.stringify(expectedValues)}`
+    );
+  }
+
+  for (const [index, actualValue] of actualValues.entries()) {
+    if (actualValue !== expectedValues[index]) {
+      throw new Error(
+        `${label} emitted ${JSON.stringify(
+          actualValues
+        )}; expected ${JSON.stringify(expectedValues)}`
+      );
+    }
+  }
+};
+
+const assertEventTypes = (
+  events: readonly EventLike[],
+  expectedTypes: readonly string[],
+  label: string
+): void => {
+  const actualTypes = events.map((event) => event.type);
+  assertStringArrays(actualTypes, expectedTypes, label);
+};
+
+/**
+ * Reads and JSON-parses the first path in `paths` that exists, trying each
+ * in order and skipping past `ENOENT` failures.
+ *
+ * @throws {Error} The first non-`ENOENT` read/parse error encountered, or an `Error`
+ *   naming every attempted path if none exist.
+ */
+const readFirstJsonFile = async (
+  paths: readonly string[],
+  label: string
+): Promise<unknown> => {
+  const errors: string[] = [];
+
+  for (const candidatePath of paths) {
+    try {
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Candidate fixture paths have precedence; read them serially and stop at the first existing file.
+      return JSON.parse(await readFile(candidatePath, "utf-8")) as unknown;
+    } catch (error) {
+      if (isNotFoundError(error)) {
+        errors.push(candidatePath);
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error(`${label} was not found at ${errors.join(", ")}`);
+};
 
 /**
  * Wraps a fixed event list as a fresh, one-pass `AsyncIterable`, cloning each
  * event on yield so repeated iterations (or fixtures shared across tests)
  * never alias mutable state.
  */
-export function createFixtureEventStream(
+export const createFixtureEventStream = (
   events: readonly TuvrenStreamEvent[]
-): AsyncIterable<TuvrenStreamEvent> {
-  // biome-ignore lint/suspicious/useAwait: Async generators must remain async even for synchronous fixtures.
-  return (async function* () {
+): AsyncIterable<TuvrenStreamEvent> =>
+  (async function* fixtureEvents() {
     for (const event of events) {
       yield cloneTuvrenStreamEvent(event);
     }
   })();
-}
 
 /** Drains `stream` fully and returns every value in emission order. */
-export async function collectStreamValues<T>(
+export const collectStreamValues = async <T>(
   stream: AsyncIterable<T>
-): Promise<T[]> {
+): Promise<T[]> => {
   const values: T[] = [];
 
   for await (const value of stream) {
@@ -112,18 +221,18 @@ export async function collectStreamValues<T>(
   }
 
   return values;
-}
+};
 
 /**
  * Drains `stream` fully, validating and cloning each event.
  *
- * @throws If any yielded value fails `assertTuvrenStreamEvent`, with `label`
+ * @throws {Error} If any yielded value fails `assertTuvrenStreamEvent`, with `label`
  *   and the event's index in the message.
  */
-export async function collectTuvrenStreamEvents(
+export const collectTuvrenStreamEvents = async (
   stream: AsyncIterable<TuvrenStreamEvent>,
   label = "event stream"
-): Promise<TuvrenStreamEvent[]> {
+): Promise<TuvrenStreamEvent[]> => {
   const events: TuvrenStreamEvent[] = [];
   let index = 0;
 
@@ -134,7 +243,7 @@ export async function collectTuvrenStreamEvents(
   }
 
   return events;
-}
+};
 
 /**
  * Loads and validates the canonical `stream-events.json` conformance fixture
@@ -145,64 +254,65 @@ export async function collectTuvrenStreamEvents(
  * the helper works whether it's consumed from a package one or two levels
  * under `typescript/`.
  *
- * @throws If the fixture file is not found at any candidate path, or its
+ * @throws {Error} If the fixture file is not found at any candidate path, or its
  *   contents do not validate as a {@link FrameworkStreamFixtureSet} (via
  *   `assertTuvrenStreamEvent` on every entry).
  */
-export async function readFrameworkStreamFixtures(): Promise<FrameworkStreamFixtureSet> {
-  const fixture = (await readFirstJsonFile(
-    STREAM_FIXTURE_PATHS,
-    "stream-events fixture"
-  )) as unknown;
+export const readFrameworkStreamFixtures =
+  async (): Promise<FrameworkStreamFixtureSet> => {
+    const fixture = await readFirstJsonFile(
+      STREAM_FIXTURE_PATHS,
+      "stream-events fixture"
+    );
 
-  assertFrameworkStreamFixtureSet(fixture, "stream-events fixture");
-  return fixture;
-}
+    assertFrameworkStreamFixtureSet(fixture, "stream-events fixture");
+    return fixture;
+  };
 
 /**
  * Asserts that `events`' `type` values, in order, exactly equal
  * `expectedTypes`.
  *
- * @throws An `Error` (with both actual and expected sequences serialized)
- *   when the lengths or any positional value differ.
+ * @throws {Error} When the actual and expected sequences differ in length or
+ *   any positional value.
  */
-export function assertStreamEventTypes(
+export const assertStreamEventTypes = (
   events: readonly EventLike[],
   expectedTypes: readonly string[],
   label = "event stream"
-): void {
+): void => {
   assertEventTypes(events, expectedTypes, label);
-}
+};
 
 /**
  * Asserts that `frames`' SSE `event` fields, in order, exactly equal
  * `expectedEvents` — a frame with no `event` field is treated as the SSE
  * default event name `"message"`.
  *
- * @throws An `Error` when the lengths or any positional value differ.
+ * @throws {Error} When the lengths or any positional value differ.
  */
-export function assertSseFrameEvents(
+export const assertSseFrameEvents = (
   frames: readonly SseFrameLike[],
   expectedEvents: readonly string[],
   label = "SSE stream"
-): void {
+): void => {
   const actualEvents = frames.map((frame) => frame.event ?? "message");
   assertStringArrays(actualEvents, expectedEvents, label);
-}
+};
 
 /**
  * Asserts that `events`' `type` values, in order, exactly equal
  * `expectedTypes` (AG-UI event `type` values, e.g. `RUN_STARTED`).
  *
- * @throws An `Error` when the lengths or any positional value differ.
+ * @throws {Error} When the lengths or any positional value differ.
  */
-export function assertAgUiEventTypes(
+export const assertAgUiEventTypes = (
   events: readonly EventLike[],
   expectedTypes: readonly string[],
   label = "AG-UI stream"
-): void {
+): void => {
   assertEventTypes(events, expectedTypes, label);
-}
+};
 
 /**
  * Starts draining `stream` in the background immediately, returning a
@@ -210,9 +320,9 @@ export function assertAgUiEventTypes(
  * produced concurrently with other test actions (e.g. driving a handle while
  * observing its emitted stream).
  */
-export function startAsyncCapture<T>(
+export const startAsyncCapture = <T>(
   stream: AsyncIterable<T>
-): AsyncCapture<T> {
+): AsyncCapture<T> => {
   const events: T[] = [];
   const done = (async () => {
     for await (const event of stream) {
@@ -224,14 +334,14 @@ export function startAsyncCapture<T>(
     done,
     events,
   };
-}
+};
 
 /**
  * Builds an in-memory {@link TelemetryCapture}: its `sink` deep-clones every
  * event/span it receives into `events`/`spans`, so a test can assert on
  * emitted telemetry without a real OpenTelemetry (or other) backend.
  */
-export function createTelemetryCaptureSink(): TelemetryCapture {
+export const createTelemetryCaptureSink = (): TelemetryCapture => {
   const events: TelemetryEvent[] = [];
   const spans: TelemetrySpan[] = [];
 
@@ -251,19 +361,20 @@ export function createTelemetryCaptureSink(): TelemetryCapture {
     },
     spans,
   };
-}
+};
 
 /**
  * Polls `condition` at `options.intervalMs` (default `1`ms) until it returns
  * `true` or `options.timeoutMs` (default `1000`ms) elapses.
  *
- * @throws An `Error` if `condition` has not returned `true` before the
+ * @throws {Error} If `condition` has not returned `true` before the
  *   timeout elapses.
  */
-export async function waitForCondition(
+/* oxlint-disable eslint/no-await-in-loop, promise/avoid-new -- Polling must wait between serial condition checks, and setTimeout requires a Promise bridge. */
+export const waitForCondition = async (
   condition: () => boolean,
   options: { intervalMs?: number; timeoutMs?: number } = {}
-): Promise<void> {
+): Promise<void> => {
   const timeoutMs = options.timeoutMs ?? 1000;
   const intervalMs = options.intervalMs ?? 1;
   const startedAt = Date.now();
@@ -277,123 +388,13 @@ export async function waitForCondition(
       setTimeout(resolve, intervalMs);
     });
   }
-}
+};
+/* oxlint-enable eslint/no-await-in-loop, promise/avoid-new */
 
 /** Yields one macrotask (a zero-delay `setTimeout`), for letting pending microtasks/timers in the system under test settle. */
-export async function waitForAsyncTurn(): Promise<void> {
+export const waitForAsyncTurn = async (): Promise<void> => {
+  // oxlint-disable-next-line promise/avoid-new -- Yielding one timer turn requires a Promise bridge around setTimeout.
   await new Promise<void>((resolve) => {
     setTimeout(resolve, 0);
   });
-}
-
-function assertEventTypes(
-  events: readonly EventLike[],
-  expectedTypes: readonly string[],
-  label: string
-): void {
-  const actualTypes = events.map((event) => event.type);
-  assertStringArrays(actualTypes, expectedTypes, label);
-}
-
-function assertStringArrays(
-  actualValues: readonly string[],
-  expectedValues: readonly string[],
-  label: string
-): void {
-  if (actualValues.length !== expectedValues.length) {
-    throw new Error(
-      `${label} emitted ${JSON.stringify(
-        actualValues
-      )}; expected ${JSON.stringify(expectedValues)}`
-    );
-  }
-
-  for (const [index, actualValue] of actualValues.entries()) {
-    if (actualValue !== expectedValues[index]) {
-      throw new Error(
-        `${label} emitted ${JSON.stringify(
-          actualValues
-        )}; expected ${JSON.stringify(expectedValues)}`
-      );
-    }
-  }
-}
-
-function cloneTuvrenStreamEvent(event: TuvrenStreamEvent): TuvrenStreamEvent {
-  const cloned = structuredClone(event);
-  assertTuvrenStreamEvent(cloned, "cloned stream event");
-  return cloned;
-}
-
-/**
- * Reads and JSON-parses the first path in `paths` that exists, trying each
- * in order and skipping past `ENOENT` failures.
- *
- * @throws The first non-`ENOENT` read/parse error encountered, or an `Error`
- *   naming every attempted path if none exist.
- */
-async function readFirstJsonFile(
-  paths: readonly string[],
-  label: string
-): Promise<unknown> {
-  const errors: string[] = [];
-
-  for (const path of paths) {
-    try {
-      return JSON.parse(await readFile(path, "utf8")) as unknown;
-    } catch (error) {
-      if (isNotFoundError(error)) {
-        errors.push(path);
-        continue;
-      }
-
-      throw error;
-    }
-  }
-
-  throw new Error(`${label} was not found at ${errors.join(", ")}`);
-}
-
-/**
- * @throws An `Error` when `value` is not an object, or (via
- *   {@link assertTuvrenStreamEvents}) when any of its three named turn
- *   sequences is missing, not an array, or contains an invalid stream event.
- */
-function assertFrameworkStreamFixtureSet(
-  value: unknown,
-  label: string
-): asserts value is FrameworkStreamFixtureSet {
-  if (!isRecord(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-
-  assertTuvrenStreamEvents(value.completedTurn, `${label}.completedTurn`);
-  assertTuvrenStreamEvents(value.failedTurn, `${label}.failedTurn`);
-  assertTuvrenStreamEvents(value.pausedTurn, `${label}.pausedTurn`);
-}
-
-function assertTuvrenStreamEvents(
-  value: unknown,
-  label: string
-): asserts value is readonly TuvrenStreamEvent[] {
-  if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array`);
-  }
-
-  for (const [index, event] of value.entries()) {
-    assertTuvrenStreamEvent(event, `${label}[${index}]`);
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function isNotFoundError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "ENOENT"
-  );
-}
+};

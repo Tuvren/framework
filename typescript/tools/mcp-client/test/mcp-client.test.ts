@@ -361,15 +361,16 @@ describe("@tuvren/mcp-client", () => {
         { message: 1 },
         createToolContext("call-input", "invalid.echo")
       );
+      const inputErrorMatcher: unknown = expect.objectContaining({
+        code: "mcp_tool_input_invalid",
+        name: "TuvrenProviderError",
+      });
       expect(inputError).toEqual({
         callId: "call-input",
         isError: true,
         name: "invalid.echo",
         output: {
-          error: expect.objectContaining({
-            code: "mcp_tool_input_invalid",
-            name: "TuvrenProviderError",
-          }),
+          error: inputErrorMatcher,
         },
         type: "tool_result",
       });
@@ -399,15 +400,16 @@ describe("@tuvren/mcp-client", () => {
         { message: "bad-output" },
         createToolContext("call-output", "invalid.echo")
       );
+      const outputErrorMatcher: unknown = expect.objectContaining({
+        code: "mcp_tool_output_invalid",
+        name: "TuvrenProviderError",
+      });
       expect(outputError).toEqual({
         callId: "call-output",
         isError: true,
         name: "invalid.echo",
         output: {
-          error: expect.objectContaining({
-            code: "mcp_tool_output_invalid",
-            name: "TuvrenProviderError",
-          }),
+          error: outputErrorMatcher,
         },
         type: "tool_result",
       });
@@ -441,15 +443,16 @@ describe("@tuvren/mcp-client", () => {
         { message: "after-close" },
         createToolContext("call-closed", "closed.echo")
       );
+      const transportErrorMatcher: unknown = expect.objectContaining({
+        code: "mcp_transport_failure",
+        name: "TuvrenProviderError",
+      });
       expect(rawResult).toEqual({
         callId: "call-closed",
         isError: true,
         name: "closed.echo",
         output: {
-          error: expect.objectContaining({
-            code: "mcp_transport_failure",
-            name: "TuvrenProviderError",
-          }),
+          error: transportErrorMatcher,
         },
         type: "tool_result",
       });
@@ -484,16 +487,19 @@ describe("@tuvren/mcp-client", () => {
         { message: "fail" },
         createToolContext("call-tool-error", "server.failing")
       );
+      const toolErrorMessageMatcher: unknown =
+        expect.stringContaining("tool said no");
+      const toolErrorMatcher: unknown = expect.objectContaining({
+        code: "mcp_tool_error",
+        message: toolErrorMessageMatcher,
+        name: "TuvrenProviderError",
+      });
       expect(rawResult).toEqual({
         callId: "call-tool-error",
         isError: true,
         name: "server.failing",
         output: {
-          error: expect.objectContaining({
-            code: "mcp_tool_error",
-            message: expect.stringContaining("tool said no"),
-            name: "TuvrenProviderError",
-          }),
+          error: toolErrorMatcher,
         },
         type: "tool_result",
       });
@@ -527,15 +533,16 @@ describe("@tuvren/mcp-client", () => {
         { message: "fail" },
         createToolContext("call-schema-error", "server.failing")
       );
+      const schemaErrorMatcher: unknown = expect.objectContaining({
+        code: "mcp_tool_error",
+        name: "TuvrenProviderError",
+      });
       expect(rawResult).toEqual({
         callId: "call-schema-error",
         isError: true,
         name: "server.failing",
         output: {
-          error: expect.objectContaining({
-            code: "mcp_tool_error",
-            name: "TuvrenProviderError",
-          }),
+          error: schemaErrorMatcher,
         },
         type: "tool_result",
       });

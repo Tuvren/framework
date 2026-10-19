@@ -51,6 +51,156 @@ interface DecoderState {
 }
 
 /**
+ * Dispatches the buffered event on a blank-line boundary: a no-op when
+ * `dataBuffer` is empty (per spec, an event with no `data:` field is never
+ * dispatched), otherwise pushes a {@link TuvrenDecodedSseEvent} with its
+ * trailing newline stripped and the current `id`/`retry` buffers attached.
+ */
+const dispatchPendingEvent = (state: DecoderState): void => {
+  if (state.dataBuffer === "") {
+    return;
+  }
+
+  const trimmedData = state.dataBuffer.endsWith("\n")
+    ? state.dataBuffer.slice(0, -1)
+    : state.dataBuffer;
+  const event: TuvrenDecodedSseEvent = {
+    data: trimmedData,
+    type: state.eventTypeBuffer === "" ? "message" : state.eventTypeBuffer,
+  };
+
+  if (state.lastEventId !== undefined) {
+    event.id = state.lastEventId;
+  }
+
+  if (state.reconnectDelayMs !== undefined) {
+    event.retryMs = state.reconnectDelayMs;
+  }
+
+  state.events.push(event);
+};
+
+/**
+ * Applies one parsed field to the decoder state per its WHATWG semantics:
+ * `event` replaces the pending event-type buffer; `data` appends the value
+ * plus a newline to the pending data buffer; `id` updates the last-event-ID
+ * buffer unless the value contains a null character (silently ignored per
+ * spec); `retry` updates the reconnection-time buffer only when the value is
+ * all ASCII digits. Any other field name is ignored.
+ */
+const applyFieldUpdate = (
+  fieldName: string,
+  fieldValue: string,
+  state: DecoderState
+): void => {
+  switch (fieldName) {
+    case "event": {
+      state.eventTypeBuffer = fieldValue;
+      return;
+    }
+    case "data": {
+      state.dataBuffer += `${fieldValue}\n`;
+      return;
+    }
+    case "id": {
+      if (!fieldValue.includes(NULL_CHARACTER)) {
+        state.lastEventId = fieldValue;
+      }
+      return;
+    }
+    case "retry": {
+      if (RETRY_DIGITS_PATTERN.test(fieldValue)) {
+        state.reconnectDelayMs = Math.trunc(Number(fieldValue));
+      }
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+};
+
+/**
+ * Processes one already-terminated line per the WHATWG algorithm: a blank
+ * line dispatches the pending event and resets the per-event buffers; a line
+ * starting with `:` is a comment and ignored; any other line splits on the
+ * first `:` into a field name and value (a single leading space in the value
+ * is stripped) and applies it via {@link applyFieldUpdate}.
+ */
+const processSseLine = (line: string, state: DecoderState): void => {
+  if (line === "") {
+    dispatchPendingEvent(state);
+    state.eventTypeBuffer = "";
+    state.dataBuffer = "";
+    return;
+  }
+
+  if (line.startsWith(":")) {
+    return;
+  }
+
+  const colonIndex = line.indexOf(":");
+  const fieldName = colonIndex === -1 ? line : line.slice(0, colonIndex);
+  const rawValue = colonIndex === -1 ? "" : line.slice(colonIndex + 1);
+  const fieldValue = rawValue.startsWith(" ") ? rawValue.slice(1) : rawValue;
+
+  applyFieldUpdate(fieldName, fieldValue, state);
+};
+
+/** True when `bytes` decode as strict (non-lossy) UTF-8. */
+const isValidUtf8 = (bytes: Uint8Array): boolean => {
+  try {
+    new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Splits `text` into complete lines per the WHATWG line-terminator rule: LF,
+ * CRLF, or a bare CR each end a line. A trailing unterminated run of
+ * characters at end-of-stream is not a complete line and is therefore not
+ * yielded — it corresponds to a partial frame the algorithm must discard.
+ *
+ * @yields {string} Each complete line without its terminator, in wire order.
+ */
+const iterateCompleteLines = function* iterateCompleteLines(
+  text: string
+): Generator<string> {
+  // WHATWG line terminators are LF, CRLF, or bare CR. A trailing unterminated
+  // run of characters at end-of-stream is NOT a complete line and is
+  // therefore not yielded — it would correspond to a partial frame the
+  // algorithm must discard.
+  let current = "";
+  let index = 0;
+
+  while (index < text.length) {
+    const character = text[index] ?? "";
+
+    if (character === "\r") {
+      yield current;
+      current = "";
+      const next = text[index + 1];
+
+      index += next === "\n" ? 2 : 1;
+
+      continue;
+    }
+
+    if (character === "\n") {
+      yield current;
+      current = "";
+      index += 1;
+      continue;
+    }
+
+    current += character;
+    index += 1;
+  }
+};
+
+/**
  * Decodes a complete SSE byte or text trace per the WHATWG
  * `text/event-stream` interpretation algorithm
  * (https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation),
@@ -63,9 +213,9 @@ interface DecoderState {
  * than treated as a partial pending line. A leading UTF-8 BOM is stripped
  * before processing; `Uint8Array` input is decoded as UTF-8.
  */
-export function decodeSseStream(
+export const decodeSseStream = (
   input: string | Uint8Array
-): TuvrenDecodedSseStream {
+): TuvrenDecodedSseStream => {
   // Implements the WHATWG `text/event-stream` interpretation
   // (https://html.spec.whatwg.org/multipage/server-sent-events.html
   // #event-stream-interpretation). The decoder consumes a complete byte
@@ -98,99 +248,7 @@ export function decodeSseStream(
   }
 
   return result;
-}
-
-/**
- * Processes one already-terminated line per the WHATWG algorithm: a blank
- * line dispatches the pending event and resets the per-event buffers; a line
- * starting with `:` is a comment and ignored; any other line splits on the
- * first `:` into a field name and value (a single leading space in the value
- * is stripped) and applies it via {@link applyFieldUpdate}.
- */
-function processSseLine(line: string, state: DecoderState): void {
-  if (line === "") {
-    dispatchPendingEvent(state);
-    state.eventTypeBuffer = "";
-    state.dataBuffer = "";
-    return;
-  }
-
-  if (line.startsWith(":")) {
-    return;
-  }
-
-  const colonIndex = line.indexOf(":");
-  const fieldName = colonIndex === -1 ? line : line.slice(0, colonIndex);
-  const rawValue = colonIndex === -1 ? "" : line.slice(colonIndex + 1);
-  const fieldValue = rawValue.startsWith(" ") ? rawValue.slice(1) : rawValue;
-
-  applyFieldUpdate(fieldName, fieldValue, state);
-}
-
-/**
- * Dispatches the buffered event on a blank-line boundary: a no-op when
- * `dataBuffer` is empty (per spec, an event with no `data:` field is never
- * dispatched), otherwise pushes a {@link TuvrenDecodedSseEvent} with its
- * trailing newline stripped and the current `id`/`retry` buffers attached.
- */
-function dispatchPendingEvent(state: DecoderState): void {
-  if (state.dataBuffer === "") {
-    return;
-  }
-
-  const trimmedData = state.dataBuffer.endsWith("\n")
-    ? state.dataBuffer.slice(0, -1)
-    : state.dataBuffer;
-  const event: TuvrenDecodedSseEvent = {
-    data: trimmedData,
-    type: state.eventTypeBuffer === "" ? "message" : state.eventTypeBuffer,
-  };
-
-  if (state.lastEventId !== undefined) {
-    event.id = state.lastEventId;
-  }
-
-  if (state.reconnectDelayMs !== undefined) {
-    event.retryMs = state.reconnectDelayMs;
-  }
-
-  state.events.push(event);
-}
-
-/**
- * Applies one parsed field to the decoder state per its WHATWG semantics:
- * `event` replaces the pending event-type buffer; `data` appends the value
- * plus a newline to the pending data buffer; `id` updates the last-event-ID
- * buffer unless the value contains a null character (silently ignored per
- * spec); `retry` updates the reconnection-time buffer only when the value is
- * all ASCII digits. Any other field name is ignored.
- */
-function applyFieldUpdate(
-  fieldName: string,
-  fieldValue: string,
-  state: DecoderState
-): void {
-  switch (fieldName) {
-    case "event":
-      state.eventTypeBuffer = fieldValue;
-      return;
-    case "data":
-      state.dataBuffer += `${fieldValue}\n`;
-      return;
-    case "id":
-      if (!fieldValue.includes(NULL_CHARACTER)) {
-        state.lastEventId = fieldValue;
-      }
-      return;
-    case "retry":
-      if (RETRY_DIGITS_PATTERN.test(fieldValue)) {
-        state.reconnectDelayMs = Number.parseInt(fieldValue, 10);
-      }
-      return;
-    default:
-      return;
-  }
-}
+};
 
 /**
  * Per-check WHATWG SSE wire-compliance results produced by
@@ -226,9 +284,9 @@ export interface TuvrenSseWireCompliance {
  *   `toSseResponse`), decoupling this report from any specific host's
  *   response-construction path.
  */
-export async function reportSseWireCompliance(
+export const reportSseWireCompliance = async (
   observeEncoder: () => Promise<{ body: Uint8Array; contentType: string }>
-): Promise<TuvrenSseWireCompliance> {
+): Promise<TuvrenSseWireCompliance> => {
   // Each boolean is derived from an actual observation of this lane's
   // encoder/decoder pair, so a regression in either implementation surfaces
   // as a failed wire-compliance check rather than as a stale `true`. The
@@ -285,57 +343,4 @@ export async function reportSseWireCompliance(
     stripsLeadingBom,
     stripsSingleLeadingFieldSpace,
   };
-}
-
-/** True when `bytes` decode as strict (non-lossy) UTF-8. */
-function isValidUtf8(bytes: Uint8Array): boolean {
-  try {
-    new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Splits `text` into complete lines per the WHATWG line-terminator rule: LF,
- * CRLF, or a bare CR each end a line. A trailing unterminated run of
- * characters at end-of-stream is not a complete line and is therefore not
- * yielded — it corresponds to a partial frame the algorithm must discard.
- */
-function* iterateCompleteLines(text: string): Generator<string> {
-  // WHATWG line terminators are LF, CRLF, or bare CR. A trailing unterminated
-  // run of characters at end-of-stream is NOT a complete line and is
-  // therefore not yielded — it would correspond to a partial frame the
-  // algorithm must discard.
-  let current = "";
-  let index = 0;
-
-  while (index < text.length) {
-    const character = text[index] ?? "";
-
-    if (character === "\r") {
-      yield current;
-      current = "";
-      const next = text[index + 1];
-
-      if (next === "\n") {
-        index += 2;
-      } else {
-        index += 1;
-      }
-
-      continue;
-    }
-
-    if (character === "\n") {
-      yield current;
-      current = "";
-      index += 1;
-      continue;
-    }
-
-    current += character;
-    index += 1;
-  }
-}
+};

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */
+
 /**
  * @packageDocumentation
  *
@@ -25,5 +27,7 @@
  * and coercing a paused turn into a `CUSTOM` pause marker followed by
  * `RUN_FINISHED` so AG-UI lifecycle consumers stay well-formed.
  */
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
+
+/* oxlint-enable jsdoc/check-tag-names */
+
 export { toAgUiEvents } from "./lib/stream-agui.js";

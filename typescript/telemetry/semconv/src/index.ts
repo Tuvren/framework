@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */
+
 /**
  * @packageDocumentation
  *
@@ -24,7 +26,9 @@
  * under `src/lib/generated/` and is generated tooling output — this
  * entrypoint is the only hand-authored file in the package.
  */
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public generated-sink surface.
+
+/* oxlint-enable jsdoc/check-tag-names */
+
 export type {
   TuvrenRuntimeTelemetryAttributeDefinition,
   TuvrenRuntimeTelemetryAttributeKey,

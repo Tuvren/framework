@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */
+
 /**
  * @packageDocumentation
  *
@@ -23,7 +25,9 @@
  * event/frame-sequence assertions, async stream capture, and an in-memory
  * `TuvrenTelemetrySink` capture for asserting on emitted telemetry.
  */
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional testkit surface.
+
+/* oxlint-enable jsdoc/check-tag-names */
+
 export type {
   AsyncCapture,
   EventLike,
