@@ -174,8 +174,35 @@ tickets:
       evidence: Assert the final assembled tree is the pushed tag evidence/wave-1-ca-source-freeze-20261018 plus the transformations stated in this ticket; all 33 legacy paths contain zero Biome directives; the 164 native exception regions remain separate from legacy accounting; and native code/JSON selections are complete and diagnostic-free. Prove all 12 targets have literal false, exactly nine have every root lint input plus ^production, exactly three retain no inputs, and commands/cwd/parallel/unrelated fields are invariant. Run the 11 typechecks, 12 lints, public cold imports, meaningful package tests, compiler-isolation inventory, Changeset check, API freeze, and bun run verify. Preserve the whole KRT-CA004 directory and direct patch coverage for the eight published packages.
     flows: []
     certainty: settled
-    status: planned
+    status: done
     deviations:
       - files:
           - typescript/tools/mcp-client/test/mcp-client.test.ts
         justification: A66 authorized a bounded integration correction after the merged KRT-CA005 review-strengthened raw envelope assertions exposed six native no-unsafe-assignment diagnostics during final MCP admission. The correction preserves every raw whole-envelope assertion and supported behavior, changes no policy, fixture, deadline, dependency, target, public signature, or historical evidence, and keeps the original 70 frozen/transformed input identities independently verifiable.
+closeout:
+  tickets_completed: [KRT-CX001]
+  tickets_deferred: []
+  points_completed: 8
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: 'Completed EPIC-CX: twelve small TypeScript package targets use canonical native lint and JSON admission with explicit argument-forwarding control; all final CA legacy identities are removed while tools/run-nx.mjs remains under Biome for EPIC-CB.'
+    - directory: tech-spec
+      type: changed
+      text: 'Execution preserved the frozen CA core guard/type split, 164 measured native exception regions, exact native checker selections and cache inputs, public API freeze, and direct release coverage across eight public packages.'
+  candidate_terms: []
+  routed_upstream: []
+  follow_ups:
+    - 'EPIC-CB should consume the KRT-CA002 and KRT-CA004 suppression ledgers, retain tools/run-nx.mjs until whole-tools admission, then remove the final CA coverage entry when Biome retires.'
+    - 'Stage 3 alignment should review the carried core guard/type-family split recorded under code_decisions.'
+    - 'The wave lead preserves the reviewed-head tag and performs the final ordered-base, stable-patch, raw-total, exact rebased verify and hosted Bazel checks before merge.'
+  code_decisions:
+    - summary: 'Preserve the frozen CA split of grown core contract guards and type families across acyclic modules and erased imports while retaining the runtime-contract-shapes compatibility bridge; public exports, validation order, errors and API snapshots remain unchanged.'
+      kind: pattern
+      paths:
+        - typescript/core/src/lib/runner-contract-guards.ts
+        - typescript/core/src/lib/runtime-contract-guards.ts
+        - typescript/core/src/lib/runtime-contract-shapes.ts
+      commit: 060c835b55015b591e71dba0a9975d95a4131d90
+  settled: []
