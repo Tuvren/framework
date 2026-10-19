@@ -80,4 +80,109 @@ tickets:
       evidence: Assert the three native target profiles and their cache inputs, commands, cwd, parallel and forwarding fields match the transformations stated in this ticket applied to the pushed tag evidence/wave-1-by-source-freeze-20261018; all four pending identities are removed with the target/coverage switch; and no adapter biome-ignore remains. Prove verify.ts has the exact CU preimage plus only the two registry names, workspace-test parity passes before and after the ordered edit, actual Nx selection runs uncached kernel interop codegen and both protocol scripts, and lint needs no codegen edge. Run all three typechecks/lints, cold import, compiler isolation, routing regressions, JSON integrity, and bun run verify. Preserve observation-only adapter behavior and add no grading or policy.
     flows: []
     certainty: settled
-    status: planned
+    status: done
+    deviations:
+      - files:
+          - typescript/conformance-adapter/src/framework-adapter.ts
+        justification: "Plan amendment A63 authorized canonical ordering of the merged CV object-property dispatch table after the complete native target exposed eslint(sort-keys). The correction preserves all 92 mappings, the accepted own-property routing form, private get-only dispatch and every unrelated source statement."
+decisions:
+  - id: OD-09
+    question: "Should native readiness preserve supported and authority-backed contracts while allowing the selected preset's internal async and error normalizations, or additionally freeze unpromised reflection and scheduling observations?"
+    blocks: [KRT-BY001]
+    options:
+      - name: "Preserve supported contracts and apply the selected preset's internal normalizations"
+        pros:
+          - "Preserves public signatures, domain errors, validation order, durable outcomes and promoted conformance while implementing ADR-0070 without exceptions."
+          - "Permits consistent Promise rejection, internal TypeError and cause preservation selected by the shipped rules."
+        cons:
+          - Changes unpromised internal observations such as synchronous invalid-input throws or generic error constructors.
+      - name: Freeze additional reflection and scheduling observations before migration
+        pros:
+          - Preserves those implementation observations even where no public or promoted contract promises them.
+        cons:
+          - Requires a separate policy ruling before native readiness and may conflict with the selected unchanged preset.
+    recommendation: "Preserve supported contracts and apply the selected preset's internal normalizations"
+    closure: ruling
+    ruler: Repository owner through Stage 3 alignment after this wave
+    waiting_on: "Review the native-readiness evidence, master tests and promoted conformance after the lint migration wave merges."
+    interim:
+      assumption: "ADR-0070 authorizes honest preset-required internal async, TypeError and cause normalization. Preserve supported contracts, documented domain errors and messages, first-validation-failure order, fail-closed behavior, emitted event ordering, commit phases, rollback and durable outcomes. The 2026-10-18 user ruling permits separately authorized intentional breaking API or shape changes with the affected authority, tests and release metadata. Unpromised Promise identity, arbitrary microtask counts, generic internal error constructors and absent cause fields are not additional contracts. No suppressions, overrides, fake awaits or signature workarounds are authorized."
+      applied_by:
+        - KRT-BY001
+        - typescript/kernel/conformance-adapter/src/host-support.ts
+        - typescript/kernel/conformance-adapter/src/host.ts
+        - typescript/kernel/conformance-adapter/src/sqlite-restart-recovery-scenario.ts
+        - typescript/providers/conformance-adapter/src/host.ts
+        - typescript/providers/conformance-adapter/src/provider-mediated-execution-class.ts
+        - typescript/providers/conformance-adapter/src/provider-native-execution-class.ts
+        - typescript/conformance-adapter/src/framework-adapter-admission-key-session.ts
+        - typescript/conformance-adapter/src/framework-adapter-admission-key.ts
+        - typescript/conformance-adapter/src/framework-adapter-capability-policy.ts
+        - typescript/conformance-adapter/src/framework-adapter-capability-orchestration-integration.ts
+        - typescript/conformance-adapter/src/framework-adapter-capability-orchestration.ts
+        - typescript/conformance-adapter/src/framework-adapter-event-stream-resume.ts
+        - typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts
+        - typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts
+        - typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-orchestration-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-provider-scenarios.ts
+        - typescript/conformance-adapter/src/framework-adapter-runtime.ts
+        - typescript/conformance-adapter/src/framework-adapter-tuvren-client-execution-class.ts
+        - typescript/conformance-adapter/src/framework-adapter-tuvren-server-execution-class.ts
+        - typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts
+        - typescript/conformance-adapter/src/framework-adapter-execution-bounds.ts
+        - typescript/conformance-adapter/src/framework-adapter-schema-authoring.ts
+        - typescript/conformance-adapter/src/framework-adapter-secret-isolation.ts
+        - typescript/conformance-adapter/src/framework-adapter-runner.ts
+        - typescript/conformance-adapter/src/framework-adapter-session.ts
+        - typescript/conformance-adapter/src/framework-adapter-trust-boundary.ts
+        - typescript/conformance-adapter/src/framework-adapter.ts
+        - typescript/conformance-adapter/src/framework-adapter-batteries-included.ts
+        - typescript/conformance-adapter/src/batteries-included-node-host.ts
+    status: proposed
+    asked:
+      date: 2026-10-18
+      in: EPIC-BY
+closeout:
+  tickets_completed: [KRT-BY004]
+  tickets_deferred: []
+  points_completed: 8
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-BY: assembled the reviewed adapter slice, removed the final four legacy directives atomically, admitted all three adapters to native type-aware lint and JSON checks, and placed both protocol targets in the durable release lane."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tasks
+      item: "EPIC-CB should aggregate .constitution/evidence/KRT-BY002/suppressions.json and the KRT-BY004 final-admission result without replacing historical directive identities with final zero-count summaries."
+  follow_ups:
+    - "Stage 3 alignment should rule on OD-09 after the complete lint migration wave and promoted conformance evidence are available."
+    - "Have EPIC-CB consume the KRT-BY002 disposition ledger and preserve its historical identities while retiring Biome."
+    - "The wave lead must require hosted verify and Bazel to pass on the exact rebased PR head before merge."
+  code_decisions:
+    - summary: "Lift synchronous adapter helpers into required Promise contracts with bound Promise.try wrappers while preserving arguments, thenables, rejection identity, messages and observable ordering."
+      kind: pattern
+      paths:
+        - typescript/providers/conformance-adapter/src/host.ts
+        - typescript/conformance-adapter/src/framework-adapter-admission-key.ts
+        - typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts
+        - typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts
+      commit: eaff021dc209772ca7d93bcd42c91797be9b5cbc
+    - summary: "Dispatch untrusted adapter operation names through own-property checked or canonical Map registries so inherited object keys cannot become valid operations while preserving the existing unknown-operation error."
+      kind: pattern
+      paths:
+        - typescript/providers/conformance-adapter/src/host.ts
+        - typescript/kernel/conformance-adapter/src/host.ts
+      commit: eaff021dc209772ca7d93bcd42c91797be9b5cbc
+    - summary: "Split the oversized kernel adapter host into one-way internal scenario modules while retaining the host as the sole protocol dispatcher and composition owner."
+      kind: convention
+      paths:
+        - typescript/kernel/conformance-adapter/src/host.ts
+        - typescript/kernel/conformance-adapter/src/host-protocol-logical-scenarios.ts
+        - typescript/kernel/conformance-adapter/src/host-reclamation-scenarios.ts
+        - typescript/kernel/conformance-adapter/src/host-restart-recovery-scenarios.ts
+        - typescript/kernel/conformance-adapter/src/host-run-liveness-scenarios.ts
+        - typescript/kernel/conformance-adapter/src/host-scenario-support.ts
+      commit: eaff021dc209772ca7d93bcd42c91797be9b5cbc
+  settled: []
