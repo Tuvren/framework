@@ -175,3 +175,7 @@ tickets:
     flows: []
     certainty: settled
     status: planned
+    deviations:
+      - files:
+          - typescript/tools/mcp-client/test/mcp-client.test.ts
+        justification: A66 authorized a bounded integration correction after the merged KRT-CA005 review-strengthened raw envelope assertions exposed six native no-unsafe-assignment diagnostics during final MCP admission. The correction preserves every raw whole-envelope assertion and supported behavior, changes no policy, fixture, deadline, dependency, target, public signature, or historical evidence, and keeps the original 70 frozen/transformed input identities independently verifiable.

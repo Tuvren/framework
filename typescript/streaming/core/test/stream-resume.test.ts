@@ -24,10 +24,12 @@ import {
   createSequencedTuvrenStreamEvents,
   decodeResumeCursor,
   encodeResumeCursor,
-  type SequencedTuvrenStreamEvent,
-  type StreamAdapterWarning,
   streamAdapterFixtures,
   teeTuvrenStreamEvents,
+} from "../src/index.ts";
+import type {
+  SequencedTuvrenStreamEvent,
+  StreamAdapterWarning,
 } from "../src/index.ts";
 
 const HASH_ONE = "1".repeat(64);
@@ -37,10 +39,10 @@ const HASH_REAL = "d".repeat(64);
 const HASH_FOREIGN = "0".repeat(64);
 const HASH_A = "a".repeat(64);
 
-function turnEvents(
+const turnEvents = (
   turnId: string,
   withCheckpoint?: { turnNodeHash: string; afterIndex: number }
-): TuvrenStreamEvent[] {
+): TuvrenStreamEvent[] => {
   const events: TuvrenStreamEvent[] = [
     { threadId: "thread-1", timestamp: 1, turnId, type: "turn.start" },
     {
@@ -68,11 +70,11 @@ function turnEvents(
   }
 
   return events;
-}
+};
 
-async function collect(
+const collect = async (
   sequenced: AsyncIterable<SequencedTuvrenStreamEvent>
-): Promise<SequencedTuvrenStreamEvent[]> {
+): Promise<SequencedTuvrenStreamEvent[]> => {
   const frames: SequencedTuvrenStreamEvent[] = [];
 
   for await (const frame of sequenced) {
@@ -80,7 +82,25 @@ async function collect(
   }
 
   return frames;
-}
+};
+
+const sequencedFixture = async (
+  events: TuvrenStreamEvent[]
+): Promise<SequencedTuvrenStreamEvent[]> =>
+  await collect(createSequencedTuvrenStreamEvents(createFixtureStream(events)));
+
+const requireFrame = (
+  frames: readonly SequencedTuvrenStreamEvent[],
+  index: number
+): SequencedTuvrenStreamEvent => {
+  const frame = frames[index];
+
+  if (frame === undefined) {
+    throw new Error(`expected sequenced frame at index ${index}`);
+  }
+
+  return frame;
+};
 
 describe("resume cursor codec", () => {
   test("round-trips a payload with and without a checkpoint anchor", () => {
@@ -189,7 +209,9 @@ describe("createSequencedTuvrenStreamEvents", () => {
     ];
     const frames = await collect(
       createSequencedTuvrenStreamEvents(createFixtureStream(events), {
-        onWarning: (warning) => warnings.push(warning),
+        onWarning: (warning) => {
+          warnings.push(warning);
+        },
       })
     );
 
@@ -206,9 +228,12 @@ describe("createSequencedTuvrenStreamEvents", () => {
       createFixtureStream(streamAdapterFixtures.completedTurn),
       1
     );
-    const sequenced = createSequencedTuvrenStreamEvents(
-      branch as AsyncIterable<TuvrenStreamEvent>
-    );
+
+    if (branch === undefined) {
+      throw new Error("expected one tee branch");
+    }
+
+    const sequenced = createSequencedTuvrenStreamEvents(branch);
 
     const frames = await collect(sequenced);
     expect(frames).toHaveLength(streamAdapterFixtures.completedTurn.length);
@@ -216,14 +241,6 @@ describe("createSequencedTuvrenStreamEvents", () => {
 });
 
 describe("createReplayBuffer", () => {
-  async function sequencedFixture(
-    events: TuvrenStreamEvent[]
-  ): Promise<SequencedTuvrenStreamEvent[]> {
-    return await collect(
-      createSequencedTuvrenStreamEvents(createFixtureStream(events))
-    );
-  }
-
   test("replays retained frames strictly after the cursor position", async () => {
     const frames = await sequencedFixture(turnEvents("turn-1"));
     const buffer = createReplayBuffer({ capacity: 10 });
@@ -232,7 +249,7 @@ describe("createReplayBuffer", () => {
       buffer.record(frame);
     }
 
-    const midCursor = frames[1]?.cursor as string;
+    const midCursor = requireFrame(frames, 1).cursor;
     const result = buffer.replayFrom(midCursor);
 
     expect(result.status).toBe("resumed");
@@ -270,10 +287,10 @@ describe("createReplayBuffer", () => {
     }
 
     // Only sequences 2 and 3 are retained; a cursor at 0 fell out.
-    expect(buffer.replayFrom(frames[0]?.cursor as string).status).toBe(
+    expect(buffer.replayFrom(requireFrame(frames, 0).cursor).status).toBe(
       "out-of-window"
     );
-    expect(buffer.replayFrom(frames[2]?.cursor as string).status).toBe(
+    expect(buffer.replayFrom(requireFrame(frames, 2).cursor).status).toBe(
       "resumed"
     );
   });
@@ -320,7 +337,7 @@ describe("createReplayBuffer", () => {
     }
 
     // Cursor anchored at the earlier checkpoint, taken mid-turn.
-    const earlyAnchored = frames[2]?.cursor as string;
+    const earlyAnchored = requireFrame(frames, 2).cursor;
     const result = buffer.replayFrom(earlyAnchored);
 
     expect(result.status).toBe("resumed");
@@ -365,6 +382,7 @@ describe("review-fix regressions", () => {
         const events = turnEvents("turn-cleanup");
 
         return {
+          // oxlint-disable-next-line typescript/promise-function-async -- The probe iterator deliberately returns already-settled promises for deterministic cleanup timing.
           next(): Promise<IteratorResult<TuvrenStreamEvent>> {
             const event = events[index];
             index += 1;
@@ -375,6 +393,7 @@ describe("review-fix regressions", () => {
 
             return Promise.resolve({ done: false, value: event });
           },
+          // oxlint-disable-next-line typescript/promise-function-async -- The probe iterator deliberately returns an already-settled cleanup promise.
           return(): Promise<IteratorResult<TuvrenStreamEvent>> {
             returned = true;
             return Promise.resolve({ done: true, value: undefined });
@@ -409,8 +428,8 @@ describe("review-fix regressions", () => {
     }
 
     // turn-new's 4 frames pushed every turn-old frame out.
-    const firstTurnCursor = frames[0]?.cursor as string;
-    const secondTurnMidCursor = frames[5]?.cursor as string;
+    const firstTurnCursor = requireFrame(frames, 0).cursor;
+    const secondTurnMidCursor = requireFrame(frames, 5).cursor;
 
     expect(buffer.replayFrom(firstTurnCursor).status).toBe("unknown-turn");
     expect(buffer.replayFrom(secondTurnMidCursor).status).toBe("resumed");
@@ -431,7 +450,7 @@ describe("review-fix regressions", () => {
     }
 
     // Cursor mid-turn-a (sequence 1 of 0..3).
-    const result = buffer.replayFrom(frames[1]?.cursor as string);
+    const result = buffer.replayFrom(requireFrame(frames, 1).cursor);
 
     expect(result.status).toBe("resumed");
 

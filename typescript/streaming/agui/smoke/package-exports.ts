@@ -16,7 +16,8 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { type AGUIEvent, EventType } from "@ag-ui/core";
+import { EventType } from "@ag-ui/core";
+import type { AGUIEvent } from "@ag-ui/core";
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import {
   createFixtureStream,
@@ -29,7 +30,8 @@ describe("stream-agui package exports", () => {
       createFixtureStream(streamAdapterFixtures.completedTurn)
     );
     const iterator = events[Symbol.asyncIterator]();
-    const nextEvent = (await iterator.next()).value as AGUIEvent | undefined;
+    const nextResult: IteratorResult<AGUIEvent> = await iterator.next();
+    const nextEvent = nextResult.done === true ? undefined : nextResult.value;
 
     expect(nextEvent?.type).toBe(EventType.RUN_STARTED);
     await iterator.return?.();

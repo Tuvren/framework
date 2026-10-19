@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */
 
 /**
  * `@tuvren/core/tools` — the tool contract surface: `TuvrenToolDefinition`
@@ -23,6 +23,8 @@
  *
  * @packageDocumentation
  */
+
+/* oxlint-enable jsdoc/check-tag-names */
 
 export {
   assertApprovalRequest,
@@ -36,26 +38,36 @@ export {
 } from "../lib/runtime-contract-guards.js";
 export type {
   ApprovalDecision,
-  ApprovalPolicy,
   ApprovalRequest,
   ApprovalResponse,
+} from "../lib/runtime-data-contract-shapes.js";
+export type {
+  ApprovalPolicy,
   AroundToolContext,
   AroundToolHandler,
   AroundToolResult,
   AroundToolSpec,
   CustomSchema,
   ExecuteFunction,
+} from "../lib/runtime-contract-shapes.js";
+export type {
   PendingToolCall,
   RenderedToolDefinition,
   ToolCallPart,
+} from "../lib/runtime-data-contract-shapes.js";
+export type {
   ToolDispatchContext,
   ToolExecutionContext,
   ToolExecutionResult,
   ToolRegistry,
+} from "../lib/runtime-contract-shapes.js";
+export type {
   ToolResultPart,
   TuvrenJsonSchema,
+} from "../lib/runtime-data-contract-shapes.js";
+export type { ValidationErrorPayload } from "../lib/runtime-event-contract-shapes.js";
+export type {
   TuvrenToolDefinition,
   TuvrenToolResultBatch,
-  ValidationErrorPayload,
   ValidationResult,
 } from "../lib/runtime-contract-shapes.js";

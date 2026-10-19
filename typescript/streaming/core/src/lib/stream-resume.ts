@@ -16,10 +16,8 @@
 
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 
-import {
-  createStreamAdapterWarningReporter,
-  type StreamAdapterOptions,
-} from "./stream-core.js";
+import { createStreamAdapterWarningReporter } from "./stream-core.js";
+import type { StreamAdapterOptions } from "./stream-core.js";
 
 /**
  * Placeholder turn identity for events observed before any `turn.start`.
@@ -32,6 +30,15 @@ const UNATTRIBUTED_TURN_ID = "unattributed";
 /** Cursor payload version this implementation mints and accepts. */
 const RESUME_CURSOR_VERSION = 1;
 
+const BASE64_URL_PATTERN = /^[A-Za-z0-9_-]+$/u;
+
+/** True when `value` is a non-array object with string-keyed unknown fields. */
+const isStringKeyedObject = (
+  value: unknown
+): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established @experimental API stability marker. */
 /**
  * A canonical stream event wrapped with its wire-level sequencing envelope
  * (authority: `spec/streaming/resume/`, packet
@@ -53,7 +60,9 @@ export interface SequencedTuvrenStreamEvent {
   /** Identity of the Turn this event belongs to. */
   turnId: string;
 }
+/* oxlint-enable jsdoc/check-tag-names */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established @experimental API stability marker. */
 /**
  * Decoded content of an opaque resume-cursor token (authority model
  * `ResumeCursorPayload`). Only the minting side decodes tokens; clients treat
@@ -73,7 +82,38 @@ export interface ResumeCursorPayload {
   turnNodeHash?: string;
   v: 1;
 }
+/* oxlint-enable jsdoc/check-tag-names */
 
+/** Base64url encoder (no padding), matching the kernel thread-list cursor convention. */
+const base64UrlEncode = (text: string): string =>
+  Buffer.from(text, "utf-8").toString("base64url");
+
+/**
+ * Base64url decoder matching {@link base64UrlEncode}. `Buffer.from` silently
+ * skips characters it cannot map, so the alphabet is validated up front —
+ * callers treat any throw as a malformed token.
+ *
+ * @throws {SyntaxError} On an empty token or characters outside the base64url
+ *   alphabet.
+ */
+const base64UrlDecode = (token: string): string => {
+  if (!BASE64_URL_PATTERN.test(token)) {
+    throw new SyntaxError("invalid base64url token");
+  }
+
+  return Buffer.from(token, "base64url").toString("utf-8");
+};
+
+/** Wraps an already-claimed iterator as a single-use `AsyncIterable`, so `for await` drives (and cleans up) that exact iterator. */
+const createIteratorIterable = <T>(
+  iterator: AsyncIterator<T>
+): AsyncIterable<T> => ({
+  [Symbol.asyncIterator](): AsyncIterator<T> {
+    return iterator;
+  },
+});
+
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established @experimental API stability marker. */
 /**
  * Encodes a resume-cursor payload as an opaque base64url token.
  *
@@ -83,10 +123,11 @@ export interface ResumeCursorPayload {
  *
  * @experimental
  */
-export function encodeResumeCursor(payload: ResumeCursorPayload): string {
-  return base64UrlEncode(JSON.stringify(payload));
-}
+export const encodeResumeCursor = (payload: ResumeCursorPayload): string =>
+  base64UrlEncode(JSON.stringify(payload));
+/* oxlint-enable jsdoc/check-tag-names */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established @experimental API stability marker. */
 /**
  * Decodes a resume-cursor token minted by {@link encodeResumeCursor}.
  *
@@ -96,9 +137,9 @@ export function encodeResumeCursor(payload: ResumeCursorPayload): string {
  *
  * @experimental
  */
-export function decodeResumeCursor(
+export const decodeResumeCursor = (
   token: string
-): ResumeCursorPayload | undefined {
+): ResumeCursorPayload | undefined => {
   let parsed: unknown;
 
   try {
@@ -107,11 +148,11 @@ export function decodeResumeCursor(
     return undefined;
   }
 
-  if (typeof parsed !== "object" || parsed === null) {
+  if (!isStringKeyedObject(parsed)) {
     return undefined;
   }
 
-  const candidate = parsed as Record<string, unknown>;
+  const candidate = parsed;
 
   if (candidate.v !== RESUME_CURSOR_VERSION) {
     return undefined;
@@ -148,8 +189,10 @@ export function decodeResumeCursor(
   }
 
   return payload;
-}
+};
+/* oxlint-enable jsdoc/check-tag-names */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established @experimental API stability marker. */
 /**
  * Wraps a canonical `TuvrenStreamEvent` stream in the wire-level sequencing
  * envelope (ADR-0061): each event is stamped with its Turn identity, a
@@ -169,16 +212,16 @@ export function decodeResumeCursor(
  *
  * @experimental
  */
-export function createSequencedTuvrenStreamEvents(
+export const createSequencedTuvrenStreamEvents = (
   events: AsyncIterable<TuvrenStreamEvent>,
   options?: StreamAdapterOptions
-): AsyncIterable<SequencedTuvrenStreamEvent> {
+): AsyncIterable<SequencedTuvrenStreamEvent> => {
   const reportWarning = createStreamAdapterWarningReporter(options);
   // Claim synchronously so the source's claim-before-first-pull rules (e.g. a
   // tee branch) observe the subscription before any awaiting begins.
   const sourceIterator = events[Symbol.asyncIterator]();
 
-  return (async function* () {
+  return (async function* createSequencedStream() {
     let turnId: string | undefined;
     let turnNodeHash: string | undefined;
     let sequence = 0;
@@ -189,7 +232,7 @@ export function createSequencedTuvrenStreamEvents(
     // module exists to serve.
     for await (const event of createIteratorIterable(sourceIterator)) {
       if (event.type === "turn.start") {
-        turnId = event.turnId;
+        ({ turnId } = event);
         turnNodeHash = undefined;
         sequence = 0;
       } else if (turnId === undefined) {
@@ -203,7 +246,7 @@ export function createSequencedTuvrenStreamEvents(
       }
 
       if (event.type === "state.checkpoint") {
-        turnNodeHash = event.turnNodeHash;
+        ({ turnNodeHash } = event);
       }
 
       const effectiveTurnId = turnId ?? UNATTRIBUTED_TURN_ID;
@@ -227,19 +270,10 @@ export function createSequencedTuvrenStreamEvents(
       sequence += 1;
     }
   })();
-}
+};
+/* oxlint-enable jsdoc/check-tag-names */
 
-/** Wraps an already-claimed iterator as a single-use `AsyncIterable`, so `for await` drives (and cleans up) that exact iterator. */
-function createIteratorIterable<T>(
-  iterator: AsyncIterator<T>
-): AsyncIterable<T> {
-  return {
-    [Symbol.asyncIterator](): AsyncIterator<T> {
-      return iterator;
-    },
-  };
-}
-
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established @experimental API stability marker. */
 /**
  * Outcome of a {@link ReplayBuffer.replayFrom} attempt (authority model
  * `ReplayResult`). Both non-`resumed` statuses mean snapshot fallback:
@@ -252,12 +286,15 @@ export type ReplayResult =
   | { status: "resumed"; events: SequencedTuvrenStreamEvent[] }
   | { status: "out-of-window" }
   | { status: "unknown-turn" };
+/* oxlint-enable jsdoc/check-tag-names */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established @experimental API stability marker. */
 /**
  * Bounded, host-owned replay window over sequenced stream events (ADR-0061).
  *
  * @experimental
  */
+/* oxlint-disable typescript/method-signature-style -- Preserve the established public ReplayBuffer method declarations in generated API output. */
 export interface ReplayBuffer {
   /** Cursor of the most recently recorded frame, if any frame was recorded. */
   latestCursor(): string | undefined;
@@ -266,7 +303,10 @@ export interface ReplayBuffer {
   /** Attempts to replay every retained frame strictly after the cursor position. */
   replayFrom(cursor: string): ReplayResult;
 }
+/* oxlint-enable typescript/method-signature-style */
+/* oxlint-enable jsdoc/check-tag-names */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established @experimental API stability marker. */
 /**
  * Creates a bounded replay window retaining the most recent `capacity`
  * sequenced frames across turns, in arrival order.
@@ -288,10 +328,10 @@ export interface ReplayBuffer {
  *
  * @experimental
  */
-export function createReplayBuffer(options: {
+export const createReplayBuffer = (options: {
   capacity: number;
-}): ReplayBuffer {
-  const capacity = options.capacity;
+}): ReplayBuffer => {
+  const { capacity } = options;
 
   if (!Number.isInteger(capacity) || capacity < 1) {
     throw new RangeError(
@@ -391,27 +431,5 @@ export function createReplayBuffer(options: {
       };
     },
   };
-}
-
-const BASE64_URL_PATTERN = /^[A-Za-z0-9_-]+$/;
-
-/** Base64url encoder (no padding), matching the kernel thread-list cursor convention. */
-function base64UrlEncode(text: string): string {
-  return Buffer.from(text, "utf8").toString("base64url");
-}
-
-/**
- * Base64url decoder matching {@link base64UrlEncode}. `Buffer.from` silently
- * skips characters it cannot map, so the alphabet is validated up front —
- * callers treat any throw as a malformed token.
- *
- * @throws SyntaxError on an empty token or characters outside the base64url
- *   alphabet.
- */
-function base64UrlDecode(token: string): string {
-  if (!BASE64_URL_PATTERN.test(token)) {
-    throw new SyntaxError("invalid base64url token");
-  }
-
-  return Buffer.from(token, "base64url").toString("utf8");
-}
+};
+/* oxlint-enable jsdoc/check-tag-names */

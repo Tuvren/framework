@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * The host rejected the opaque `authToken`.
  *
  * @experimental ADR-0056 posture: `0.x`, subject to change before graduation.
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export const WS_CLOSE_CODE_AUTH_REJECTED = 4003;
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * The bounded outbound queue overflowed. The transport closes rather than
  * dropping frames — a silent drop would create a sequence gap the resume
@@ -29,8 +32,10 @@ export const WS_CLOSE_CODE_AUTH_REJECTED = 4003;
  *
  * @experimental ADR-0056 posture: `0.x`, subject to change before graduation.
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export const WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED = 4005;
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * The first client message was not a schema-valid handshake. Also reused
  * (ADR-0063) for a schema-valid handshake this transport still cannot honor
@@ -42,8 +47,10 @@ export const WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED = 4005;
  *
  * @experimental ADR-0056 posture: `0.x`, subject to change before graduation.
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export const WS_CLOSE_CODE_HANDSHAKE_INVALID = 4000;
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * Half-open connection detected: no inbound activity of any kind within the
  * configured timeout window after a `ping` was sent. `pong` is the answer of
@@ -51,15 +58,19 @@ export const WS_CLOSE_CODE_HANDSHAKE_INVALID = 4000;
  *
  * @experimental ADR-0056 posture: `0.x`, subject to change before graduation.
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export const WS_CLOSE_CODE_HEARTBEAT_TIMEOUT = 4004;
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * The handshake presented an unsupported `protocolVersion` literal.
  *
  * @experimental ADR-0056 posture: `0.x`, subject to change before graduation.
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export const WS_CLOSE_CODE_PROTOCOL_VERSION_UNSUPPORTED = 4001;
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * The presented `sessionId` does not match the bound session. Also reused
  * (ADR-0063) for a handshake presented against a `RemoteClientSession` that
@@ -70,8 +81,10 @@ export const WS_CLOSE_CODE_PROTOCOL_VERSION_UNSUPPORTED = 4001;
  *
  * @experimental ADR-0056 posture: `0.x`, subject to change before graduation.
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export const WS_CLOSE_CODE_SESSION_NOT_FOUND = 4002;
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established API documentation tag. */
 /**
  * Connection-level close codes in the WebSocket application range
  * (4000-4999) reserved for conditions the session frame vocabulary cannot
@@ -82,6 +95,7 @@ export const WS_CLOSE_CODE_SESSION_NOT_FOUND = 4002;
  *
  * @experimental ADR-0056 posture: `0.x`, subject to change before graduation.
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export type WsCloseCode =
   | typeof WS_CLOSE_CODE_AUTH_REJECTED
   | typeof WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED

@@ -28,16 +28,113 @@ import {
 } from "../src/index.ts";
 
 const EVENT_STREAMS_CONSUMED_PATTERN =
-  /event streams may only be consumed once/;
+  /event streams may only be consumed once/u;
 const LATE_SUBSCRIPTION_PATTERN =
-  /must subscribe before source consumption begins/;
+  /must subscribe before source consumption begins/u;
+
+const collectIteratorEvents = async <T>(
+  iterator: AsyncIterator<T>
+): Promise<T[]> => {
+  const collected: T[] = [];
+
+  for (;;) {
+    // oxlint-disable-next-line eslint/no-await-in-loop -- This helper must pull the single-consumer iterator sequentially until completion.
+    const nextEvent = await iterator.next();
+
+    if (nextEvent.done === true) {
+      return collected;
+    }
+
+    collected.push(nextEvent.value);
+  }
+};
+
+const readErrorCode = (error: unknown): unknown => {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return undefined;
+  }
+
+  return error.code;
+};
+
+const createInstrumentedSource = (
+  events: readonly TuvrenStreamEvent[]
+): {
+  events: AsyncIterable<TuvrenStreamEvent>;
+  produced: number;
+  returned: number;
+} => {
+  let index = 0;
+  let produced = 0;
+  let returned = 0;
+
+  return {
+    get events(): AsyncIterable<TuvrenStreamEvent> {
+      return {
+        [Symbol.asyncIterator](): AsyncIterator<TuvrenStreamEvent> {
+          return {
+            // oxlint-disable-next-line typescript/promise-function-async -- The instrumented iterator intentionally returns already-settled promises to preserve its test timing.
+            next(): Promise<IteratorResult<TuvrenStreamEvent>> {
+              const event = events[index];
+
+              if (event === undefined) {
+                return Promise.resolve({
+                  done: true,
+                  value: undefined,
+                });
+              }
+
+              index += 1;
+              produced += 1;
+
+              return Promise.resolve({
+                done: false,
+                value: cloneTuvrenStreamEvent(event),
+              });
+            },
+            // oxlint-disable-next-line typescript/promise-function-async -- The instrumented iterator intentionally returns an already-settled cleanup promise.
+            return(): Promise<IteratorResult<TuvrenStreamEvent>> {
+              returned += 1;
+              return Promise.resolve({
+                done: true,
+                value: undefined,
+              });
+            },
+          };
+        },
+      };
+    },
+    get produced(): number {
+      return produced;
+    },
+    get returned(): number {
+      return returned;
+    },
+  };
+};
+
+const collectStreamValues = async <T>(
+  values: AsyncIterable<T>
+): Promise<T[]> => {
+  const collected: T[] = [];
+
+  for await (const value of values) {
+    collected.push(value);
+  }
+
+  return collected;
+};
+
+const waitForAsyncTurn = async (): Promise<void> => {
+  await Promise.resolve();
+};
+
 const frameworkStreamFixtures = await readFrameworkStreamFixtures();
 
 describe("stream-core", () => {
   test("tees one canonical stream into isolated single-consumer branches", async () => {
     let started = false;
-    // biome-ignore lint/suspicious/useAwait: Async generators must remain async even when fixture production is synchronous.
-    const source = (async function* (): AsyncIterable<TuvrenStreamEvent> {
+    const source = (async function* source(): AsyncIterable<TuvrenStreamEvent> {
       started = true;
 
       for (const event of frameworkStreamFixtures.completedTurn) {
@@ -73,6 +170,28 @@ describe("stream-core", () => {
     expect(() => leftBranch[Symbol.asyncIterator]()).toThrow(
       EVENT_STREAMS_CONSUMED_PATTERN
     );
+  });
+
+  test("treats a truthy external iterator done value as completion", async () => {
+    const source = {
+      [Symbol.asyncIterator]() {
+        return {
+          async next() {
+            const done = await Promise.resolve(1);
+            return { done };
+          },
+        };
+      },
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This external iterator deliberately violates the TypeScript IteratorResult type to exercise ECMAScript ToBoolean completion semantics.
+    } as unknown as AsyncIterable<TuvrenStreamEvent>;
+    const [branch] = teeTuvrenStreamEvents(source, 1);
+    const iterator = branch[Symbol.asyncIterator]();
+    const result = await iterator.next();
+
+    expect(result).toEqual({
+      done: true,
+      value: undefined,
+    });
   });
 
   test("dedupes warnings by code and swallows observer failures", () => {
@@ -234,93 +353,3 @@ describe("stream-core", () => {
     await leftIterator.return?.();
   });
 });
-
-async function collectIteratorEvents<T>(
-  iterator: AsyncIterator<T>
-): Promise<T[]> {
-  const collected: T[] = [];
-
-  for (;;) {
-    const nextEvent = await iterator.next();
-
-    if (nextEvent.done) {
-      return collected;
-    }
-
-    collected.push(nextEvent.value);
-  }
-}
-
-function readErrorCode(error: unknown): unknown {
-  if (typeof error !== "object" || error === null || !("code" in error)) {
-    return undefined;
-  }
-
-  return error.code;
-}
-
-function createInstrumentedSource(events: readonly TuvrenStreamEvent[]): {
-  events: AsyncIterable<TuvrenStreamEvent>;
-  produced: number;
-  returned: number;
-} {
-  let index = 0;
-  let produced = 0;
-  let returned = 0;
-
-  return {
-    get events(): AsyncIterable<TuvrenStreamEvent> {
-      return {
-        [Symbol.asyncIterator](): AsyncIterator<TuvrenStreamEvent> {
-          return {
-            next(): Promise<IteratorResult<TuvrenStreamEvent>> {
-              const event = events[index];
-
-              if (event === undefined) {
-                return Promise.resolve({
-                  done: true,
-                  value: undefined,
-                });
-              }
-
-              index += 1;
-              produced += 1;
-
-              return Promise.resolve({
-                done: false,
-                value: cloneTuvrenStreamEvent(event),
-              });
-            },
-            return(): Promise<IteratorResult<TuvrenStreamEvent>> {
-              returned += 1;
-              return Promise.resolve({
-                done: true,
-                value: undefined,
-              });
-            },
-          };
-        },
-      };
-    },
-    get produced(): number {
-      return produced;
-    },
-    get returned(): number {
-      return returned;
-    },
-  };
-}
-
-async function collectStreamValues<T>(values: AsyncIterable<T>): Promise<T[]> {
-  const collected: T[] = [];
-
-  for await (const value of values) {
-    collected.push(value);
-  }
-
-  return collected;
-}
-
-async function waitForAsyncTurn(): Promise<void> {
-  await Promise.resolve();
-}

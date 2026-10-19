@@ -6,6 +6,14 @@
   "tags": ["boundary:framework", "language:typescript", "layer:certification"],
   "implicitDependencies": ["framework-typescript-conformance-adapter"],
   "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/json-check.ts --json-only typescript/certification-batteries-included",
+        "forwardAllArgs": false
+      }
+    },
     "conformance": {
       "executor": "nx:run-commands",
       "inputs": [

@@ -19,14 +19,16 @@ import type { SessionOutboundFrame } from "@tuvren/host-session";
 import {
   REMOTE_SESSION_ALREADY_ATTACHED,
   REMOTE_SESSION_ENDED,
-  type RemoteClientSession,
-  type RemoteClientSessionAttachResult,
-  type RemoteClientSessionSink,
 } from "@tuvren/remote-session";
-import {
-  createStreamAdapterWarningReporter,
-  type StreamAdapterOptions,
-  type StreamAdapterWarning,
+import type {
+  RemoteClientSession,
+  RemoteClientSessionAttachResult,
+  RemoteClientSessionSink,
+} from "@tuvren/remote-session";
+import { createStreamAdapterWarningReporter } from "@tuvren/stream-core";
+import type {
+  StreamAdapterOptions,
+  StreamAdapterWarning,
 } from "@tuvren/stream-core";
 
 import {
@@ -37,7 +39,8 @@ import {
   WS_CLOSE_CODE_PROTOCOL_VERSION_UNSUPPORTED,
   WS_CLOSE_CODE_SESSION_NOT_FOUND,
 } from "./ws-close-codes.js";
-import { type ParsedWsMessage, parseWsMessage } from "./ws-messages.js";
+import { parseWsMessage } from "./ws-messages.js";
+import type { ParsedWsMessage } from "./ws-messages.js";
 
 /** Standard WebSocket normal-closure code (RFC 6455 §7.4.1), not part of ADR-0062's 4000-range application vocabulary. */
 const WS_CLOSE_CODE_NORMAL = 1000;
@@ -45,6 +48,17 @@ const WS_CLOSE_CODE_NORMAL = 1000;
 const WS_CLOSE_CODE_INTERNAL_ERROR = 1011;
 const SUPPORTED_PROTOCOL_VERSION = "1";
 
+const describeError = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+const isPositiveFiniteNumber = (value: number): boolean =>
+  Number.isFinite(value) && value > 0;
+
+const isSinkAlreadyAttachedError = (error: unknown): boolean =>
+  error instanceof TuvrenRuntimeError &&
+  error.code === REMOTE_SESSION_ALREADY_ATTACHED;
+
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the established @experimental API stability markers on the public WebSocket transport surface. */
 /**
  * The runtime-agnostic push-model socket seam a host adapts from its real
  * socket (`Bun.serve` websockets, the browser `WebSocket` global, Node
@@ -54,6 +68,7 @@ const SUPPORTED_PROTOCOL_VERSION = "1";
  * @experimental
  */
 export interface WsSocketSink {
+  /* oxlint-disable typescript/method-signature-style -- Preserve the established public socket seam and byte-identical generated declarations. */
   /**
    * Optional capability: bytes currently queued on the real socket,
    * matching the WebSocket `bufferedAmount` concept. When present alongside
@@ -67,6 +82,7 @@ export interface WsSocketSink {
   close(code: number, reason?: string): void;
   /** Sends one text message over the underlying socket. */
   send(data: string): void;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -149,6 +165,7 @@ export interface WsSessionTransportOptions {
  * @experimental
  */
 export interface WsSessionTransport {
+  /* oxlint-disable typescript/method-signature-style -- Preserve the established public transport API and byte-identical generated declarations. */
   /**
    * Idempotently closes the connection: closes `sink` with `code` (default
    * `1000`), and — only if this transport's handshake ever succeeded in
@@ -166,6 +183,7 @@ export interface WsSessionTransport {
   ingest(data: string | Uint8Array): void;
   /** Enters the `awaiting-handshake` state. May only be called once. */
   start(): void;
+  /* oxlint-enable typescript/method-signature-style */
 }
 
 /**
@@ -215,9 +233,10 @@ export interface WsSessionTransport {
  *
  * @experimental
  */
-export function createWsSessionTransport(
+export const createWsSessionTransport = (
   options: WsSessionTransportOptions
-): WsSessionTransport {
+): WsSessionTransport => {
+  /* oxlint-enable jsdoc/check-tag-names */
   if (options.heartbeat !== undefined) {
     if (!isPositiveFiniteNumber(options.heartbeat.intervalMs)) {
       throw new RangeError(
@@ -262,7 +281,7 @@ export function createWsSessionTransport(
   // several pings' timeouts in flight at once.
   let lastHeartbeatLivenessAt = 0;
 
-  function clearHeartbeatTimers(): void {
+  const clearHeartbeatTimers = (): void => {
     if (heartbeatIntervalTimer !== undefined) {
       clearInterval(heartbeatIntervalTimer);
       heartbeatIntervalTimer = undefined;
@@ -271,9 +290,9 @@ export function createWsSessionTransport(
       clearTimeout(timer);
     }
     heartbeatTimeoutTimers.clear();
-  }
+  };
 
-  function doClose(code: number, reason?: string): void {
+  const doClose = (code: number, reason?: string): void => {
     if (closed) {
       return;
     }
@@ -292,7 +311,7 @@ export function createWsSessionTransport(
     }
 
     options.sink.close(code, reason);
-  }
+  };
 
   /**
    * Records inbound liveness for the heartbeat's half-open detection: any
@@ -300,11 +319,11 @@ export function createWsSessionTransport(
    * the connection alive, since a peer actively sending frames is
    * demonstrably alive.
    */
-  function noteHeartbeatLiveness(): void {
+  const noteHeartbeatLiveness = (): void => {
     lastHeartbeatLivenessAt = Date.now();
-  }
+  };
 
-  function sendHeartbeatPing(): void {
+  const sendHeartbeatPing = (): void => {
     if (closed || options.heartbeat === undefined) {
       return;
     }
@@ -321,7 +340,7 @@ export function createWsSessionTransport(
     }
 
     const pingSentAt = Date.now();
-    const timeoutMs = options.heartbeat.timeoutMs;
+    const { timeoutMs } = options.heartbeat;
 
     const timer = setTimeout(() => {
       heartbeatTimeoutTimers.delete(timer);
@@ -345,9 +364,9 @@ export function createWsSessionTransport(
     }, timeoutMs);
 
     heartbeatTimeoutTimers.add(timer);
-  }
+  };
 
-  function startHeartbeat(): void {
+  const startHeartbeat = (): void => {
     if (options.heartbeat === undefined || closed) {
       return;
     }
@@ -356,7 +375,7 @@ export function createWsSessionTransport(
       sendHeartbeatPing,
       options.heartbeat.intervalMs
     );
-  }
+  };
 
   /**
    * Enforces the configured outbound backpressure budget: returns `true`
@@ -366,7 +385,7 @@ export function createWsSessionTransport(
    * budget. Callers must not send the pending frame when this returns
    * `true` — ADR-0062 forbids a silent drop.
    */
-  function enforceBackpressure(): boolean {
+  const enforceBackpressure = (): boolean => {
     if (options.backpressure === undefined) {
       return false;
     }
@@ -393,9 +412,9 @@ export function createWsSessionTransport(
       "outbound socket buffer exceeded the configured backpressure budget"
     );
     return true;
-  }
+  };
 
-  function dispatchInboundSafely(value: unknown): void {
+  const dispatchInboundSafely = (value: unknown): void => {
     try {
       options.session.dispatchInbound(value);
     } catch (error) {
@@ -406,7 +425,7 @@ export function createWsSessionTransport(
           "session.dispatchInbound() threw for an inbound WebSocket message",
       });
     }
-  }
+  };
 
   /**
    * Sends one outbound envelope (a live frame, a replayed `event`, or a
@@ -415,10 +434,10 @@ export function createWsSessionTransport(
    * overflowed the budget and closed `4005` (backpressure already invoked
    * `doClose`).
    */
-  function sendFrameEnvelope(
+  const sendFrameEnvelope = (
     frame: SessionOutboundFrame,
     cursor: string | undefined
-  ): boolean {
+  ): boolean => {
     if (closed) {
       return false;
     }
@@ -435,7 +454,7 @@ export function createWsSessionTransport(
       )
     );
     return true;
-  }
+  };
 
   /**
    * Adapts this transport's `WsSocketSink` into the
@@ -453,15 +472,15 @@ export function createWsSessionTransport(
    * guaranteed, now produced by a session whose replay/redelivery burst is
    * not paced one frame at a time by this transport's own pump.
    */
-  function createSessionSinkAdapter(): {
-    release(): boolean;
+  const createSessionSinkAdapter = (): {
+    release: () => boolean;
     sink: RemoteClientSessionSink;
-  } {
+  } => {
     let released = false;
-    const queued: Array<{
+    const queued: {
       cursor: string | undefined;
       frame: SessionOutboundFrame;
-    }> = [];
+    }[] = [];
 
     const sink: RemoteClientSessionSink = {
       send(frame: SessionOutboundFrame, cursor?: string): void {
@@ -488,7 +507,7 @@ export function createWsSessionTransport(
       },
       sink,
     };
-  }
+  };
 
   /**
    * Distinguishes `session.attach()`'s two documented throw cases by their
@@ -498,13 +517,6 @@ export function createWsSessionTransport(
    * already-attached code (including a non-Tuvren error) falls through to
    * the session-not-found close below.
    */
-  function isSinkAlreadyAttachedError(error: unknown): boolean {
-    return (
-      error instanceof TuvrenRuntimeError &&
-      error.code === REMOTE_SESSION_ALREADY_ATTACHED
-    );
-  }
-
   /**
    * Attaches this transport's sink adapter to `options.session` for the
    * given (already-authorized) handshake request, closing the connection
@@ -513,7 +525,7 @@ export function createWsSessionTransport(
    * branching within the lint-enforced cognitive-complexity budget — no
    * behavioral seam.
    */
-  function attachToSession(cursor: string | undefined): void {
+  const attachToSession = (cursor: string | undefined): void => {
     const adapter = createSessionSinkAdapter();
     let attachResult: RemoteClientSessionAttachResult;
 
@@ -599,9 +611,9 @@ export function createWsSessionTransport(
     // Heartbeat pings start only once the handshake has fully completed
     // (ack plus any replay/redelivery burst sent), per ADR-0062 §6.
     startHeartbeat();
-  }
+  };
 
-  async function processHandshake(parsed: ParsedWsMessage): Promise<void> {
+  const processHandshake = async (parsed: ParsedWsMessage): Promise<void> => {
     if (parsed.kind !== "handshake") {
       doClose(
         WS_CLOSE_CODE_HANDSHAKE_INVALID,
@@ -610,7 +622,7 @@ export function createWsSessionTransport(
       return;
     }
 
-    const message = parsed.message;
+    const { message } = parsed;
 
     if (message.protocolVersion !== SUPPORTED_PROTOCOL_VERSION) {
       doClose(
@@ -651,9 +663,9 @@ export function createWsSessionTransport(
     }
 
     attachToSession(message.cursor);
-  }
+  };
 
-  function processPostHandshake(parsed: ParsedWsMessage): void {
+  const processPostHandshake = (parsed: ParsedWsMessage): void => {
     // ANY inbound message counts as heartbeat liveness, not only pong — a
     // peer actively sending frames is demonstrably alive.
     noteHeartbeatLiveness();
@@ -661,18 +673,18 @@ export function createWsSessionTransport(
     switch (parsed.kind) {
       case "ping": {
         options.sink.send(JSON.stringify({ kind: "pong" }));
-        return;
+        break;
       }
       case "pong": {
         // pong is the answer a quiet peer produces (the transport always
         // answers an inbound ping); liveness itself is already recorded
         // above for every inbound message, wiring the M6 no-op seam into
         // heartbeat tracking.
-        return;
+        break;
       }
       case "frame": {
         dispatchInboundSafely(parsed.frame);
-        return;
+        break;
       }
       case "handshake": {
         // A stray post-handshake handshake message is not a transport
@@ -680,25 +692,25 @@ export function createWsSessionTransport(
         // never close the socket) — forward it so the binding's schema
         // validation turns it into a session_rejection.
         dispatchInboundSafely(parsed.message);
-        return;
+        break;
       }
       case "handshake_ack": {
         dispatchInboundSafely(parsed.message);
-        return;
+        break;
       }
       case "unparseable": {
         // Same rule: no inbound message is silently dropped. The binding's
         // schema validation rejects this with session_frame_invalid.
         dispatchInboundSafely(parsed.raw);
-        return;
+        break;
       }
       default: {
         // Exhaustive over ParsedWsMessage; kept only to satisfy the lint
         // rule requiring a default clause.
-        return;
+        break;
       }
     }
-  }
+  };
 
   return {
     close(code?: number, reason?: string): void {
@@ -718,24 +730,28 @@ export function createWsSessionTransport(
       // authorize() is reported as a warning instead) so one bad message can
       // never wedge every subsequent ingest() call behind a rejected
       // promise.
+      /* oxlint-disable promise/prefer-await-to-then, promise/prefer-await-to-callbacks -- Promise chaining is the transport's serialized ingest queue; replacing it with detached async work would change message ordering and rejection recovery. */
       ingestChain = ingestChain
-        .then(() => {
+        .then((): Promise<void> | void => {
           if (closed) {
             return;
           }
 
           const parsed = parseWsMessage(data);
-          return handshakeDone
-            ? processPostHandshake(parsed)
-            : processHandshake(parsed);
+          if (handshakeDone) {
+            processPostHandshake(parsed);
+            return;
+          }
+          return processHandshake(parsed);
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
           reportWarning({
             code: "ws_transport_inbound_dispatch_failed",
             details: { error: describeError(error) },
             message: "ingest() processing failed unexpectedly",
           });
         });
+      /* oxlint-enable promise/prefer-await-to-then, promise/prefer-await-to-callbacks */
     },
     start(): void {
       if (started) {
@@ -752,12 +768,4 @@ export function createWsSessionTransport(
       // state until then — nothing is sent.
     },
   };
-}
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-function isPositiveFiniteNumber(value: number): boolean {
-  return Number.isFinite(value) && value > 0;
-}
+};

@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  type Span,
-  type SpanAttributes,
-  SpanKind,
-  SpanStatusCode,
-  type Tracer,
-  trace,
-} from "@opentelemetry/api";
+import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api";
+import type { Attributes, Span, Tracer } from "@opentelemetry/api";
 import type {
   TelemetryEvent,
   TelemetrySpan,
@@ -32,6 +26,7 @@ const DEFAULT_INSTRUMENTATION_NAME = "@tuvren/telemetry-otel";
 
 /** Construction options for {@link createOtelTelemetrySink}. */
 export interface CreateOtelTelemetrySinkOptions {
+  /* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @defaultValue tag in the published option documentation. */
   /**
    * Instrumentation scope name used to resolve a tracer via
    * `trace.getTracer` when `tracer` is not supplied.
@@ -39,6 +34,7 @@ export interface CreateOtelTelemetrySinkOptions {
    * @defaultValue `"@tuvren/telemetry-otel"`
    */
   instrumentationName?: string;
+  /* oxlint-enable jsdoc/check-tag-names */
   /** Instrumentation scope version passed to `trace.getTracer`, when resolving a tracer by name. */
   instrumentationVersion?: string;
   /**
@@ -47,6 +43,99 @@ export interface CreateOtelTelemetrySinkOptions {
    */
   tracer?: Tracer;
 }
+
+/** Drops `undefined`-valued entries, since `SpanAttributes` does not accept them. */
+const toOtelAttributes = (
+  attributes: Record<string, boolean | number | string | undefined>
+): Attributes => {
+  const otelAttributes: Attributes = {};
+
+  for (const [key, value] of Object.entries(attributes)) {
+    if (value !== undefined) {
+      otelAttributes[key] = value;
+    }
+  }
+
+  return otelAttributes;
+};
+
+/**
+ * Sets the OTel span status from `telemetrySpan.status`: `"ok"` maps to
+ * `SpanStatusCode.OK`; anything else maps to `SpanStatusCode.ERROR`, with an
+ * `exception` span event added when `telemetrySpan.error` is present.
+ */
+const applyStatus = (span: Span, telemetrySpan: TelemetrySpan): void => {
+  if (telemetrySpan.status === "ok") {
+    span.setStatus({ code: SpanStatusCode.OK });
+    return;
+  }
+
+  span.setStatus({
+    code: SpanStatusCode.ERROR,
+    message: telemetrySpan.error?.message,
+  });
+
+  if (telemetrySpan.error !== undefined) {
+    span.addEvent("exception", {
+      "exception.message": telemetrySpan.error.message,
+      "tuvren.runtime.error.code": telemetrySpan.error.code,
+    });
+  }
+};
+
+/** Projects one `TelemetrySpan` onto an OTel span with explicit start/end times and lineage attributes. */
+const emitTelemetrySpan = (
+  tracer: Tracer,
+  telemetrySpan: TelemetrySpan
+): void => {
+  const span = tracer.startSpan(telemetrySpan.name, {
+    attributes: toOtelAttributes({
+      ...telemetrySpan.attributes,
+      "tuvren.runtime.branch.id": telemetrySpan.lineage.branchId,
+      "tuvren.runtime.checkpoint.hash": telemetrySpan.lineage.turnNodeHash,
+      "tuvren.runtime.run.id": telemetrySpan.lineage.runId,
+      "tuvren.runtime.scope.id": telemetrySpan.lineage.scope,
+      "tuvren.runtime.thread.id": telemetrySpan.lineage.threadId,
+      "tuvren.runtime.turn.id": telemetrySpan.lineage.turnId,
+    }),
+    kind: SpanKind.INTERNAL,
+    startTime: telemetrySpan.startMs,
+  });
+
+  applyStatus(span, telemetrySpan);
+  span.end(telemetrySpan.endMs);
+};
+
+/**
+ * Projects one `TelemetryEvent` onto OTel: added to the active span if one
+ * exists, otherwise emitted on a short-lived wrapper span created and ended
+ * at `event.atMs` so the event is never dropped for lack of an active span.
+ */
+const emitTelemetryEvent = (tracer: Tracer, event: TelemetryEvent): void => {
+  const activeSpan = trace.getActiveSpan();
+  const attributes = toOtelAttributes({
+    ...event.attributes,
+    "tuvren.runtime.branch.id": event.lineage.branchId,
+    "tuvren.runtime.checkpoint.hash": event.lineage.turnNodeHash,
+    "tuvren.runtime.run.id": event.lineage.runId,
+    "tuvren.runtime.scope.id": event.lineage.scope,
+    "tuvren.runtime.thread.id": event.lineage.threadId,
+    "tuvren.runtime.turn.id": event.lineage.turnId,
+  });
+
+  if (activeSpan !== undefined) {
+    activeSpan.addEvent(event.kind, attributes, event.atMs);
+    return;
+  }
+
+  const span = tracer.startSpan(`tuvren.runtime.${event.kind}`, {
+    attributes,
+    kind: SpanKind.INTERNAL,
+    startTime: event.atMs,
+  });
+  span.addEvent(event.kind, attributes, event.atMs);
+  span.end(event.atMs);
+};
 
 /**
  * Builds a `TuvrenTelemetrySink` backed by the OpenTelemetry JS API.
@@ -64,9 +153,9 @@ export interface CreateOtelTelemetrySinkOptions {
  * @param options.tracer - Takes precedence over
  *   `instrumentationName`/`instrumentationVersion` when supplied.
  */
-export function createOtelTelemetrySink(
+export const createOtelTelemetrySink = (
   options: CreateOtelTelemetrySinkOptions = {}
-): TuvrenTelemetrySink {
+): TuvrenTelemetrySink => {
   const tracer =
     options.tracer ??
     trace.getTracer(
@@ -75,97 +164,11 @@ export function createOtelTelemetrySink(
     );
 
   return {
-    event: (event) => emitTelemetryEvent(tracer, event),
-    span: (span) => emitTelemetrySpan(tracer, span),
+    event: (event) => {
+      emitTelemetryEvent(tracer, event);
+    },
+    span: (span) => {
+      emitTelemetrySpan(tracer, span);
+    },
   };
-}
-
-/** Projects one `TelemetrySpan` onto an OTel span with explicit start/end times and lineage attributes. */
-function emitTelemetrySpan(tracer: Tracer, telemetrySpan: TelemetrySpan): void {
-  const span = tracer.startSpan(telemetrySpan.name, {
-    attributes: toOtelAttributes({
-      ...telemetrySpan.attributes,
-      "tuvren.runtime.branch.id": telemetrySpan.lineage.branchId,
-      "tuvren.runtime.run.id": telemetrySpan.lineage.runId,
-      "tuvren.runtime.scope.id": telemetrySpan.lineage.scope,
-      "tuvren.runtime.thread.id": telemetrySpan.lineage.threadId,
-      "tuvren.runtime.turn.id": telemetrySpan.lineage.turnId,
-      "tuvren.runtime.checkpoint.hash": telemetrySpan.lineage.turnNodeHash,
-    }),
-    kind: SpanKind.INTERNAL,
-    startTime: telemetrySpan.startMs,
-  });
-
-  applyStatus(span, telemetrySpan);
-  span.end(telemetrySpan.endMs);
-}
-
-/**
- * Projects one `TelemetryEvent` onto OTel: added to the active span if one
- * exists, otherwise emitted on a short-lived wrapper span created and ended
- * at `event.atMs` so the event is never dropped for lack of an active span.
- */
-function emitTelemetryEvent(tracer: Tracer, event: TelemetryEvent): void {
-  const activeSpan = trace.getActiveSpan();
-  const attributes = toOtelAttributes({
-    ...event.attributes,
-    "tuvren.runtime.branch.id": event.lineage.branchId,
-    "tuvren.runtime.run.id": event.lineage.runId,
-    "tuvren.runtime.scope.id": event.lineage.scope,
-    "tuvren.runtime.thread.id": event.lineage.threadId,
-    "tuvren.runtime.turn.id": event.lineage.turnId,
-    "tuvren.runtime.checkpoint.hash": event.lineage.turnNodeHash,
-  });
-
-  if (activeSpan !== undefined) {
-    activeSpan.addEvent(event.kind, attributes, event.atMs);
-    return;
-  }
-
-  const span = tracer.startSpan(`tuvren.runtime.${event.kind}`, {
-    attributes,
-    kind: SpanKind.INTERNAL,
-    startTime: event.atMs,
-  });
-  span.addEvent(event.kind, attributes, event.atMs);
-  span.end(event.atMs);
-}
-
-/**
- * Sets the OTel span status from `telemetrySpan.status`: `"ok"` maps to
- * `SpanStatusCode.OK`; anything else maps to `SpanStatusCode.ERROR`, with an
- * `exception` span event added when `telemetrySpan.error` is present.
- */
-function applyStatus(span: Span, telemetrySpan: TelemetrySpan): void {
-  if (telemetrySpan.status === "ok") {
-    span.setStatus({ code: SpanStatusCode.OK });
-    return;
-  }
-
-  span.setStatus({
-    code: SpanStatusCode.ERROR,
-    message: telemetrySpan.error?.message,
-  });
-
-  if (telemetrySpan.error !== undefined) {
-    span.addEvent("exception", {
-      "exception.message": telemetrySpan.error.message,
-      "tuvren.runtime.error.code": telemetrySpan.error.code,
-    });
-  }
-}
-
-/** Drops `undefined`-valued entries, since `SpanAttributes` does not accept them. */
-function toOtelAttributes(
-  attributes: Record<string, boolean | number | string | undefined>
-): SpanAttributes {
-  const otelAttributes: SpanAttributes = {};
-
-  for (const [key, value] of Object.entries(attributes)) {
-    if (value !== undefined) {
-      otelAttributes[key] = value;
-    }
-  }
-
-  return otelAttributes;
-}
+};

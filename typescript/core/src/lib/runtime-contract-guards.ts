@@ -51,40 +51,26 @@ import {
   matchesStreamEventVariant,
   safePredicate,
 } from "./runtime-contract-predicates.js";
+import type { TuvrenToolDefinition } from "./runtime-contract-shapes.js";
 import type {
   ApprovalRequest,
   ApprovalResponse,
   ContextManifest,
-  ExecutionStatus,
-  ProviderStreamChunk,
   TuvrenMessage,
-  TuvrenModelResponse,
-  TuvrenStreamEvent,
-  TuvrenToolDefinition,
-} from "./runtime-contract-shapes.js";
+} from "./runtime-data-contract-shapes.js";
+import type { TuvrenStreamEvent } from "./runtime-event-contract-shapes.js";
+import type { ExecutionStatus } from "./runtime-execution-contract-shapes.js";
+import { FINISH_REASONS } from "./runtime-provider-contract-guards.js";
 import { TuvrenValidationError } from "./tuvren-error.js";
 
+export {
+  assertProviderStreamChunk,
+  assertTuvrenModelResponse,
+  isProviderStreamChunk,
+  isTuvrenModelResponse,
+} from "./runtime-provider-contract-guards.js";
+
 const MESSAGE_ROLES = new Set(["system", "user", "assistant", "tool"]);
-const PROVIDER_STREAM_CHUNK_TYPES = new Set([
-  "text_delta",
-  "reasoning_delta",
-  "reasoning_done",
-  "structured_delta",
-  "structured_done",
-  "tool_call_start",
-  "tool_call_args_delta",
-  "tool_call_done",
-  "provider_tool_result",
-  "finish",
-  "error",
-]);
-const FINISH_REASONS = new Set([
-  "stop",
-  "tool_call",
-  "length",
-  "error",
-  "content_filter",
-]);
 const STREAM_EVENT_TYPES = new Set([
   "turn.start",
   "turn.end",
@@ -127,43 +113,6 @@ const SYSTEM_MESSAGE_KEYS = new Set(["role", "content"]);
 const USER_MESSAGE_KEYS = new Set(["role", "parts", "admissionKey"]);
 const ASSISTANT_MESSAGE_KEYS = new Set(["role", "parts", "providerMetadata"]);
 const TOOL_MESSAGE_KEYS = new Set(["role", "parts"]);
-const PROVIDER_TEXT_DELTA_KEYS = new Set(["type", "text"]);
-const PROVIDER_REASONING_DELTA_KEYS = new Set(["type", "text", "signature"]);
-const PROVIDER_REASONING_DONE_KEYS = new Set(["type"]);
-const PROVIDER_STRUCTURED_DELTA_KEYS = new Set(["type", "delta"]);
-const PROVIDER_STRUCTURED_DONE_KEYS = new Set(["type", "data", "name"]);
-const PROVIDER_TOOL_CALL_START_KEYS = new Set([
-  "type",
-  "providerCallId",
-  "name",
-]);
-const PROVIDER_TOOL_CALL_ARGS_DELTA_KEYS = new Set([
-  "type",
-  "providerCallId",
-  "delta",
-]);
-const PROVIDER_TOOL_CALL_DONE_KEYS = new Set([
-  "type",
-  "providerCallId",
-  "name",
-  "input",
-  "providerMetadata",
-]);
-const PROVIDER_TOOL_RESULT_KEYS = new Set([
-  "type",
-  "providerCallId",
-  "name",
-  "result",
-  "isError",
-  "providerMetadata",
-]);
-const PROVIDER_FINISH_KEYS = new Set([
-  "type",
-  "finishReason",
-  "usage",
-  "providerMetadata",
-]);
-const PROVIDER_ERROR_KEYS = new Set(["type", "error"]);
 const TOOL_DEFINITION_KEYS = new Set([
   "approval",
   "description",
@@ -198,27 +147,6 @@ const CAPABILITY_EXECUTION_CLASSES = new Set([
   "tuvren-client",
 ]);
 const CAPABILITY_INVOCATION_OWNERS = new Set(["provider", "tuvren"]);
-const PROVIDER_TOOL_EXECUTION_CLASSES = new Set([
-  "provider-native",
-  "provider-mediated",
-]);
-const PROVIDER_NATIVE_INVOCATION_RECORD_KEYS = new Set([
-  "callId",
-  "executionClass",
-  "isError",
-  "name",
-  "providerCallId",
-  "providerMetadata",
-  "result",
-]);
-const TUVREN_MODEL_RESPONSE_KEYS = new Set([
-  "finishReason",
-  "parts",
-  "providerToolResults",
-  "providerMetadata",
-  "usage",
-]);
-
 /**
  * True when `parent.attribution` is absent or is a valid capability
  * attribution record: non-empty `capabilityId`, a known `executionClass`
@@ -226,16 +154,16 @@ const TUVREN_MODEL_RESPONSE_KEYS = new Set([
  * `tuvren-client`), a known `owner` (`provider` | `tuvren`), and a plain
  * `observation` object. Additive optional field per ADR-0046 AW006.
  */
-function isOptionalCapabilityAttribution(
+const isOptionalCapabilityAttribution = (
   parent: Record<string, unknown>
-): boolean {
+): boolean => {
   if (!("attribution" in parent) || parent.attribution === undefined) {
     return true;
   }
   if (!isPlainObject(parent.attribution)) {
     return false;
   }
-  const attr = parent.attribution as Record<string, unknown>;
+  const attr = parent.attribution;
   return (
     typeof attr.capabilityId === "string" &&
     attr.capabilityId.length > 0 &&
@@ -245,83 +173,32 @@ function isOptionalCapabilityAttribution(
     CAPABILITY_INVOCATION_OWNERS.has(attr.owner) &&
     isPlainObject(attr.observation)
   );
-}
+};
 
-/**
- * True when `value` is a valid `ProviderNativeInvocationRecord`: exact key
- * allowlist, non-empty `callId`/`name`/`providerCallId`, an
- * `executionClass` of `provider-native` or `provider-mediated`, a present
- * `result` field, optional boolean `isError`, and optional serializable
- * `providerMetadata`.
- */
-function isProviderNativeInvocationRecord(value: unknown): boolean {
-  return safePredicate(
-    () =>
-      isPlainObject(value) &&
-      hasOnlyAllowedKeys(value, PROVIDER_NATIVE_INVOCATION_RECORD_KEYS) &&
-      isNonEmptyStringProperty(value, "callId") &&
-      isStringProperty(value, "executionClass") &&
-      PROVIDER_TOOL_EXECUTION_CLASSES.has(value.executionClass) &&
-      isNonEmptyStringProperty(value, "name") &&
-      isNonEmptyStringProperty(value, "providerCallId") &&
-      "result" in value &&
-      (value.isError === undefined || typeof value.isError === "boolean") &&
-      isOptionalSerializableRecordProperty(value, "providerMetadata")
-  );
-}
+const isSystemMessage = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, SYSTEM_MESSAGE_KEYS) &&
+  isNonEmptyStringProperty(value, "content") &&
+  !("parts" in value) &&
+  !("providerMetadata" in value);
 
-/**
- * Returns `true` when `value` is a structurally valid
- * {@link TuvrenModelResponse} (KrakenFrameworkSpecification §1.4).
- *
- * Requires an exact key allowlist (`finishReason`, `parts`,
- * `providerToolResults`, `usage`, `providerMetadata`), a `finishReason` from
- * the canonical set (`stop` | `tool_call` | `length` | `error` |
- * `content_filter`), `parts` composed entirely of valid content parts,
- * optional `providerToolResults` as provider-native invocation records,
- * optional token `usage`, and optional serializable `providerMetadata`.
- * Never throws; probe failures collapse to `false`.
- *
- * @see {@link assertTuvrenModelResponse} for the throwing variant.
- */
-export function isTuvrenModelResponse(
-  value: unknown
-): value is TuvrenModelResponse {
-  return safePredicate(
-    () =>
-      isPlainObject(value) &&
-      hasOnlyAllowedKeys(value, TUVREN_MODEL_RESPONSE_KEYS) &&
-      isStringProperty(value, "finishReason") &&
-      FINISH_REASONS.has(value.finishReason) &&
-      Array.isArray(value.parts) &&
-      value.parts.every(isContentPart) &&
-      (!("providerToolResults" in value) ||
-        (Array.isArray(value.providerToolResults) &&
-          value.providerToolResults.every(isProviderNativeInvocationRecord))) &&
-      isOptionalProviderUsage(value, "usage") &&
-      isOptionalSerializableRecordProperty(value, "providerMetadata")
-  );
-}
+const isUserMessage = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, USER_MESSAGE_KEYS) &&
+  (value.admissionKey === undefined ||
+    (typeof value.admissionKey === "string" &&
+      value.admissionKey.length > 0)) &&
+  isNonEmptyArray(value.parts) &&
+  value.parts.every(isContentPart);
 
-/**
- * Asserts that `value` is a valid {@link TuvrenModelResponse}.
- *
- * @param value - Untrusted candidate model response.
- * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_model_response` when
- *   {@link isTuvrenModelResponse} rejects the value.
- */
-export function assertTuvrenModelResponse(
-  value: unknown,
-  label = "value"
-): asserts value is TuvrenModelResponse {
-  if (!isTuvrenModelResponse(value)) {
-    throw new TuvrenValidationError(
-      `${label} must be a valid TuvrenModelResponse`,
-      { code: "invalid_model_response", details: value }
-    );
-  }
-}
+const isAssistantMessage = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, ASSISTANT_MESSAGE_KEYS) &&
+  isNonEmptyArray(value.parts) &&
+  value.parts.every(isContentPart) &&
+  isOptionalSerializableRecordProperty(value, "providerMetadata");
+
+const isToolMessage = (value: Record<string, unknown>): boolean =>
+  hasOnlyAllowedKeys(value, TOOL_MESSAGE_KEYS) &&
+  isNonEmptyArray(value.parts) &&
+  value.parts.every(isToolResultPart);
 
 /**
  * Returns `true` when `value` is a structurally valid {@link TuvrenMessage}
@@ -340,8 +217,8 @@ export function assertTuvrenModelResponse(
  *
  * @see {@link assertTuvrenMessage} for the throwing variant.
  */
-export function isTuvrenMessage(value: unknown): value is TuvrenMessage {
-  return safePredicate(() => {
+export const isTuvrenMessage = (value: unknown): value is TuvrenMessage =>
+  safePredicate(() => {
     if (!isPlainObject(value)) {
       return false;
     }
@@ -351,60 +228,46 @@ export function isTuvrenMessage(value: unknown): value is TuvrenMessage {
     }
 
     switch (value.role) {
-      case "system":
-        return (
-          hasOnlyAllowedKeys(value, SYSTEM_MESSAGE_KEYS) &&
-          isNonEmptyStringProperty(value, "content") &&
-          !("parts" in value) &&
-          !("providerMetadata" in value)
-        );
-      case "user":
-        return (
-          hasOnlyAllowedKeys(value, USER_MESSAGE_KEYS) &&
-          (value.admissionKey === undefined ||
-            (typeof value.admissionKey === "string" &&
-              value.admissionKey.length > 0)) &&
-          isNonEmptyArray(value.parts) &&
-          value.parts.every(isContentPart)
-        );
-      case "assistant":
-        return (
-          hasOnlyAllowedKeys(value, ASSISTANT_MESSAGE_KEYS) &&
-          isNonEmptyArray(value.parts) &&
-          value.parts.every(isContentPart) &&
-          isOptionalSerializableRecordProperty(value, "providerMetadata")
-        );
-      case "tool":
-        return (
-          hasOnlyAllowedKeys(value, TOOL_MESSAGE_KEYS) &&
-          isNonEmptyArray(value.parts) &&
-          value.parts.every(isToolResultPart)
-        );
-      default:
+      case "system": {
+        return isSystemMessage(value);
+      }
+      case "user": {
+        return isUserMessage(value);
+      }
+      case "assistant": {
+        return isAssistantMessage(value);
+      }
+      case "tool": {
+        return isToolMessage(value);
+      }
+      default: {
         return false;
+      }
     }
   });
-}
 
 /**
  * Asserts that `value` is a valid {@link TuvrenMessage}.
  *
  * @param value - Untrusted candidate message.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_tuvren_message` when
+ * @throws {TuvrenValidationError} With code `invalid_tuvren_message` when
  *   {@link isTuvrenMessage} rejects the value.
  */
-export function assertTuvrenMessage(
+export const assertTuvrenMessage: (
+  value: unknown,
+  label?: string
+) => asserts value is TuvrenMessage = (
   value: unknown,
   label = "value"
-): asserts value is TuvrenMessage {
+): asserts value is TuvrenMessage => {
   if (!isTuvrenMessage(value)) {
     throw new TuvrenValidationError(`${label} must be a valid TuvrenMessage`, {
       code: "invalid_tuvren_message",
       details: value,
     });
   }
-}
+};
 
 /**
  * Returns `true` when `value` is a structurally valid {@link ApprovalRequest}
@@ -419,8 +282,8 @@ export function assertTuvrenMessage(
  *
  * @see {@link assertApprovalRequest} for the throwing variant.
  */
-export function isApprovalRequest(value: unknown): value is ApprovalRequest {
-  return safePredicate(() => {
+export const isApprovalRequest = (value: unknown): value is ApprovalRequest =>
+  safePredicate(() => {
     if (
       !(
         isPlainObject(value) &&
@@ -440,153 +303,325 @@ export function isApprovalRequest(value: unknown): value is ApprovalRequest {
       value.completedResults
     );
   });
-}
 
 /**
  * Asserts that `value` is a valid {@link ApprovalRequest}.
  *
  * @param value - Untrusted candidate approval request.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_approval_request` when
+ * @throws {TuvrenValidationError} With code `invalid_approval_request` when
  *   {@link isApprovalRequest} rejects the value.
  */
-export function assertApprovalRequest(
+export const assertApprovalRequest: (
+  value: unknown,
+  label?: string
+) => asserts value is ApprovalRequest = (
   value: unknown,
   label = "value"
-): asserts value is ApprovalRequest {
+): asserts value is ApprovalRequest => {
   if (!isApprovalRequest(value)) {
     throw new TuvrenValidationError(
       `${label} must be a valid ApprovalRequest`,
       { code: "invalid_approval_request", details: value }
     );
   }
-}
+};
 
 /**
  * Returns `true` when `value` is a structurally valid
- * {@link ProviderStreamChunk} (KrakenFrameworkSpecification §3.2).
+ * {@link ApprovalResponse} (KrakenFrameworkSpecification §1.7).
  *
- * The chunk must carry a known `type` discriminant (`text_delta`,
- * `reasoning_delta`, `reasoning_done`, `structured_delta`,
- * `structured_done`, `tool_call_start`, `tool_call_args_delta`,
- * `tool_call_done`, `provider_tool_result`, `finish`, or `error`) and its
- * variant payload is checked against that variant's exact key allowlist:
- * identifiers (`providerCallId`, `name`) must be non-empty strings, deltas
- * must be strings, `input`/`result`/`data` must be present and
- * JSON-serializable, `finishReason` must come from the canonical set, and
- * `usage`/`providerMetadata` are optional. Never throws; probe failures
- * collapse to `false`.
- *
- * @see {@link assertProviderStreamChunk} for the throwing variant.
+ * Requires exactly the key `decisions`, holding a non-empty array of valid
+ * approval decisions with unique `callId`s. This check is
+ * request-independent; use {@link isApprovalResponseForRequest} to also
+ * verify coverage against the pending {@link ApprovalRequest}. Never
+ * throws; probe failures collapse to `false`.
  */
-export function isProviderStreamChunk(
-  value: unknown
-): value is ProviderStreamChunk {
-  return safePredicate(() => {
-    if (
-      !(
-        isPlainObject(value) &&
-        isStringProperty(value, "type") &&
-        PROVIDER_STREAM_CHUNK_TYPES.has(value.type)
-      )
-    ) {
-      return false;
-    }
+export const isApprovalResponse = (value: unknown): value is ApprovalResponse =>
+  safePredicate(
+    () =>
+      isPlainObject(value) &&
+      hasOnlyAllowedKeys(value, APPROVAL_RESPONSE_KEYS) &&
+      Array.isArray(value.decisions) &&
+      value.decisions.length > 0 &&
+      value.decisions.every(isApprovalDecision) &&
+      hasUniqueApprovalDecisionCallIds(value.decisions)
+  );
 
-    switch (value.type) {
-      case "text_delta":
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_TEXT_DELTA_KEYS) &&
-          typeof value.text === "string"
-        );
-      case "reasoning_delta":
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_REASONING_DELTA_KEYS) &&
-          typeof value.text === "string" &&
-          isOptionalStringProperty(value, "signature")
-        );
-      case "reasoning_done":
-        return hasOnlyAllowedKeys(value, PROVIDER_REASONING_DONE_KEYS);
-      case "structured_delta":
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_STRUCTURED_DELTA_KEYS) &&
+/**
+ * Dispatches on the event `type` and validates the variant payload against
+ * its exact key set (plus the shared `type`/`timestamp`/`source` envelope
+ * keys) and per-field predicates.
+ */
+const hasValidEarlyStreamEventPayload = (
+  value: Record<string, unknown> & { timestamp: EpochMs; type: string }
+): boolean | undefined => {
+  switch (value.type) {
+    case "turn.start": {
+      return matchesStreamEventVariant(
+        value,
+        ["turnId", "threadId", "resumedFrom"],
+        () =>
+          isNonEmptyStringProperty(value, "turnId") &&
+          isNonEmptyStringProperty(value, "threadId") &&
+          isOptionalHashStringProperty(value, "resumedFrom")
+      );
+    }
+    case "turn.end": {
+      return matchesStreamEventVariant(
+        value,
+        ["turnId", "status"],
+        () =>
+          isNonEmptyStringProperty(value, "turnId") &&
+          isStringProperty(value, "status") &&
+          TURN_END_STATUSES.has(value.status)
+      );
+    }
+    case "iteration.start":
+    case "iteration.end": {
+      return matchesStreamEventVariant(value, ["iterationCount"], () =>
+        isNonNegativeSafeIntegerProperty(value, "iterationCount")
+      );
+    }
+    case "message.start": {
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "role"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          value.role === "assistant"
+      );
+    }
+    case "text.delta": {
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "delta"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
           typeof value.delta === "string"
-        );
-      case "structured_done":
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_STRUCTURED_DONE_KEYS) &&
+      );
+    }
+    case "text.done": {
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "text"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          typeof value.text === "string"
+      );
+    }
+    case "reasoning.delta": {
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "delta"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          typeof value.delta === "string"
+      );
+    }
+    case "reasoning.done": {
+      return matchesStreamEventVariant(value, ["messageId"], () =>
+        isNonEmptyStringProperty(value, "messageId")
+      );
+    }
+    case "file.done": {
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "data", "filename", "mediaType"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          "data" in value &&
+          (typeof value.data === "string" ||
+            value.data instanceof Uint8Array) &&
+          isOptionalStringProperty(value, "filename") &&
+          isNonEmptyStringProperty(value, "mediaType")
+      );
+    }
+    case "structured.delta": {
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "delta"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          typeof value.delta === "string"
+      );
+    }
+    case "structured.done": {
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "data", "name"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
           "data" in value &&
           isSerializableContractValue(value.data) &&
           isOptionalStringProperty(value, "name")
-        );
-      case "tool_call_start":
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_START_KEYS) &&
-          isNonEmptyStringProperty(value, "providerCallId") &&
+      );
+    }
+    default: {
+      return undefined;
+    }
+  }
+};
+
+const hasValidLateStreamEventPayload = (
+  value: Record<string, unknown> & { timestamp: EpochMs; type: string }
+): boolean => {
+  switch (value.type) {
+    case "tool_call.start": {
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "callId", "name"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
+          isNonEmptyStringProperty(value, "callId") &&
           isNonEmptyStringProperty(value, "name")
-        );
-      case "tool_call_args_delta":
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_ARGS_DELTA_KEYS) &&
-          isNonEmptyStringProperty(value, "providerCallId") &&
+      );
+    }
+    case "tool_call.args_delta": {
+      return matchesStreamEventVariant(
+        value,
+        ["callId", "delta"],
+        () =>
+          isNonEmptyStringProperty(value, "callId") &&
           typeof value.delta === "string"
-        );
-      case "tool_call_done":
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_TOOL_CALL_DONE_KEYS) &&
-          isNonEmptyStringProperty(value, "providerCallId") &&
+      );
+    }
+    case "tool_call.done": {
+      return matchesStreamEventVariant(
+        value,
+        ["callId", "name", "input", "providerMetadata"],
+        () =>
+          isNonEmptyStringProperty(value, "callId") &&
           isNonEmptyStringProperty(value, "name") &&
           "input" in value &&
           isSerializableContractValue(value.input) &&
           isOptionalSerializableRecordProperty(value, "providerMetadata")
-        );
-      case "provider_tool_result":
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_TOOL_RESULT_KEYS) &&
-          isNonEmptyStringProperty(value, "providerCallId") &&
-          isNonEmptyStringProperty(value, "name") &&
-          "result" in value &&
-          isSerializableContractValue(value.result) &&
-          (value.isError === undefined || typeof value.isError === "boolean") &&
-          isOptionalSerializableRecordProperty(value, "providerMetadata")
-        );
-      case "finish":
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_FINISH_KEYS) &&
+      );
+    }
+    case "message.done": {
+      return matchesStreamEventVariant(
+        value,
+        ["messageId", "finishReason", "usage"],
+        () =>
+          isNonEmptyStringProperty(value, "messageId") &&
           isStringProperty(value, "finishReason") &&
           FINISH_REASONS.has(value.finishReason) &&
-          isOptionalProviderUsage(value, "usage") &&
-          isOptionalSerializableRecordProperty(value, "providerMetadata")
-        );
-      case "error":
-        return (
-          hasOnlyAllowedKeys(value, PROVIDER_ERROR_KEYS) && "error" in value
-        );
-      default:
-        return false;
+          isOptionalProviderUsage(value, "usage")
+      );
     }
-  });
-}
-
-/**
- * Asserts that `value` is a valid {@link ProviderStreamChunk}.
- *
- * @param value - Untrusted candidate chunk from a provider adapter.
- * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_provider_stream_chunk`
- *   when {@link isProviderStreamChunk} rejects the value.
- */
-export function assertProviderStreamChunk(
-  value: unknown,
-  label = "value"
-): asserts value is ProviderStreamChunk {
-  if (!isProviderStreamChunk(value)) {
-    throw new TuvrenValidationError(
-      `${label} must be a valid ProviderStreamChunk`,
-      { code: "invalid_provider_stream_chunk", details: value }
-    );
+    case "tool.start": {
+      return matchesStreamEventVariant(
+        value,
+        // "attribution" is an additive optional field per ADR-0046 AW006
+        ["callId", "name", "input", "attribution"],
+        () =>
+          isNonEmptyStringProperty(value, "callId") &&
+          isNonEmptyStringProperty(value, "name") &&
+          "input" in value &&
+          isSerializableContractValue(value.input) &&
+          isOptionalCapabilityAttribution(value)
+      );
+    }
+    case "tool.result": {
+      return matchesStreamEventVariant(
+        value,
+        // "attribution" is an additive optional field per ADR-0046 AW006
+        ["callId", "name", "output", "isError", "attribution"],
+        () =>
+          isNonEmptyStringProperty(value, "callId") &&
+          isNonEmptyStringProperty(value, "name") &&
+          "output" in value &&
+          isSerializableContractValue(value.output) &&
+          isOptionalBooleanProperty(value, "isError") &&
+          isOptionalCapabilityAttribution(value)
+      );
+    }
+    case "tool.audit": {
+      return matchesStreamEventVariant(
+        value,
+        [
+          "callId",
+          "capabilityId",
+          "executionClass",
+          "lifecycle",
+          "runId",
+          "turnId",
+          "attempt",
+          "validationPassed",
+        ],
+        () =>
+          isNonEmptyStringProperty(value, "callId") &&
+          isNonEmptyStringProperty(value, "capabilityId") &&
+          isNonEmptyStringProperty(value, "executionClass") &&
+          isNonEmptyStringProperty(value, "lifecycle") &&
+          TOOL_AUDIT_LIFECYCLES.has(value.lifecycle) &&
+          isNonEmptyStringProperty(value, "runId") &&
+          isNonEmptyStringProperty(value, "turnId") &&
+          (value.attempt === undefined || typeof value.attempt === "number") &&
+          (value.validationPassed === undefined ||
+            typeof value.validationPassed === "boolean")
+      );
+    }
+    case "approval.requested": {
+      return matchesStreamEventVariant(value, ["request"], () =>
+        isApprovalRequest(value.request)
+      );
+    }
+    case "approval.resolved": {
+      return matchesStreamEventVariant(value, ["response"], () =>
+        isApprovalResponse(value.response)
+      );
+    }
+    case "steering.incorporated": {
+      return matchesStreamEventVariant(value, ["messageId"], () =>
+        isNonEmptyStringProperty(value, "messageId")
+      );
+    }
+    case "state.snapshot": {
+      return matchesStreamEventVariant(value, ["manifest"], () =>
+        isContextManifest(value.manifest)
+      );
+    }
+    case "state.checkpoint": {
+      return matchesStreamEventVariant(
+        value,
+        ["iterationCount", "turnNodeHash"],
+        () =>
+          isNonNegativeSafeIntegerProperty(value, "iterationCount") &&
+          isHashString(value.turnNodeHash)
+      );
+    }
+    case "error": {
+      return matchesStreamEventVariant(
+        value,
+        ["error", "fatal"],
+        () =>
+          isTuvrenErrorProjection(value.error) &&
+          typeof value.fatal === "boolean"
+      );
+    }
+    case "custom": {
+      return matchesStreamEventVariant(
+        value,
+        ["name", "data"],
+        () =>
+          isNonEmptyStringProperty(value, "name") &&
+          "data" in value &&
+          isSerializableContractValue(value.data)
+      );
+    }
+    default: {
+      return false;
+    }
   }
-}
+};
+
+const hasValidStreamEventPayload = (
+  value: Record<string, unknown> & { timestamp: EpochMs; type: string }
+): boolean => {
+  const earlyResult = hasValidEarlyStreamEventPayload(value);
+  return earlyResult ?? hasValidLateStreamEventPayload(value);
+};
 
 /**
  * Returns `true` when `value` is a structurally valid
@@ -610,10 +645,10 @@ export function assertProviderStreamChunk(
  *
  * @see {@link assertTuvrenStreamEvent} for the throwing variant.
  */
-export function isTuvrenStreamEvent(
+export const isTuvrenStreamEvent = (
   value: unknown
-): value is TuvrenStreamEvent {
-  return safePredicate(() => {
+): value is TuvrenStreamEvent =>
+  safePredicate(() => {
     if (
       !(
         isPlainObject(value) &&
@@ -630,259 +665,67 @@ export function isTuvrenStreamEvent(
 
     return hasValidStreamEventPayload(value);
   });
-}
-
-/**
- * Dispatches on the event `type` and validates the variant payload against
- * its exact key set (plus the shared `type`/`timestamp`/`source` envelope
- * keys) and per-field predicates.
- */
-function hasValidStreamEventPayload(
-  value: Record<string, unknown> & { timestamp: EpochMs; type: string }
-): boolean {
-  switch (value.type) {
-    case "turn.start":
-      return matchesStreamEventVariant(
-        value,
-        ["turnId", "threadId", "resumedFrom"],
-        () =>
-          isNonEmptyStringProperty(value, "turnId") &&
-          isNonEmptyStringProperty(value, "threadId") &&
-          isOptionalHashStringProperty(value, "resumedFrom")
-      );
-    case "turn.end":
-      return matchesStreamEventVariant(
-        value,
-        ["turnId", "status"],
-        () =>
-          isNonEmptyStringProperty(value, "turnId") &&
-          isStringProperty(value, "status") &&
-          TURN_END_STATUSES.has(value.status)
-      );
-    case "iteration.start":
-    case "iteration.end":
-      return matchesStreamEventVariant(value, ["iterationCount"], () =>
-        isNonNegativeSafeIntegerProperty(value, "iterationCount")
-      );
-    case "message.start":
-      return matchesStreamEventVariant(
-        value,
-        ["messageId", "role"],
-        () =>
-          isNonEmptyStringProperty(value, "messageId") &&
-          value.role === "assistant"
-      );
-    case "text.delta":
-      return matchesStreamEventVariant(
-        value,
-        ["messageId", "delta"],
-        () =>
-          isNonEmptyStringProperty(value, "messageId") &&
-          typeof value.delta === "string"
-      );
-    case "text.done":
-      return matchesStreamEventVariant(
-        value,
-        ["messageId", "text"],
-        () =>
-          isNonEmptyStringProperty(value, "messageId") &&
-          typeof value.text === "string"
-      );
-    case "reasoning.delta":
-      return matchesStreamEventVariant(
-        value,
-        ["messageId", "delta"],
-        () =>
-          isNonEmptyStringProperty(value, "messageId") &&
-          typeof value.delta === "string"
-      );
-    case "reasoning.done":
-      return matchesStreamEventVariant(value, ["messageId"], () =>
-        isNonEmptyStringProperty(value, "messageId")
-      );
-    case "file.done":
-      return matchesStreamEventVariant(
-        value,
-        ["messageId", "data", "filename", "mediaType"],
-        () =>
-          isNonEmptyStringProperty(value, "messageId") &&
-          "data" in value &&
-          (typeof value.data === "string" ||
-            value.data instanceof Uint8Array) &&
-          isOptionalStringProperty(value, "filename") &&
-          isNonEmptyStringProperty(value, "mediaType")
-      );
-    case "structured.delta":
-      return matchesStreamEventVariant(
-        value,
-        ["messageId", "delta"],
-        () =>
-          isNonEmptyStringProperty(value, "messageId") &&
-          typeof value.delta === "string"
-      );
-    case "structured.done":
-      return matchesStreamEventVariant(
-        value,
-        ["messageId", "data", "name"],
-        () =>
-          isNonEmptyStringProperty(value, "messageId") &&
-          "data" in value &&
-          isSerializableContractValue(value.data) &&
-          isOptionalStringProperty(value, "name")
-      );
-    case "tool_call.start":
-      return matchesStreamEventVariant(
-        value,
-        ["messageId", "callId", "name"],
-        () =>
-          isNonEmptyStringProperty(value, "messageId") &&
-          isNonEmptyStringProperty(value, "callId") &&
-          isNonEmptyStringProperty(value, "name")
-      );
-    case "tool_call.args_delta":
-      return matchesStreamEventVariant(
-        value,
-        ["callId", "delta"],
-        () =>
-          isNonEmptyStringProperty(value, "callId") &&
-          typeof value.delta === "string"
-      );
-    case "tool_call.done":
-      return matchesStreamEventVariant(
-        value,
-        ["callId", "name", "input", "providerMetadata"],
-        () =>
-          isNonEmptyStringProperty(value, "callId") &&
-          isNonEmptyStringProperty(value, "name") &&
-          "input" in value &&
-          isSerializableContractValue(value.input) &&
-          isOptionalSerializableRecordProperty(value, "providerMetadata")
-      );
-    case "message.done":
-      return matchesStreamEventVariant(
-        value,
-        ["messageId", "finishReason", "usage"],
-        () =>
-          isNonEmptyStringProperty(value, "messageId") &&
-          isStringProperty(value, "finishReason") &&
-          FINISH_REASONS.has(value.finishReason) &&
-          isOptionalProviderUsage(value, "usage")
-      );
-    case "tool.start":
-      return matchesStreamEventVariant(
-        value,
-        // "attribution" is an additive optional field per ADR-0046 AW006
-        ["callId", "name", "input", "attribution"],
-        () =>
-          isNonEmptyStringProperty(value, "callId") &&
-          isNonEmptyStringProperty(value, "name") &&
-          "input" in value &&
-          isSerializableContractValue(value.input) &&
-          isOptionalCapabilityAttribution(value)
-      );
-    case "tool.result":
-      return matchesStreamEventVariant(
-        value,
-        // "attribution" is an additive optional field per ADR-0046 AW006
-        ["callId", "name", "output", "isError", "attribution"],
-        () =>
-          isNonEmptyStringProperty(value, "callId") &&
-          isNonEmptyStringProperty(value, "name") &&
-          "output" in value &&
-          isSerializableContractValue(value.output) &&
-          isOptionalBooleanProperty(value, "isError") &&
-          isOptionalCapabilityAttribution(value)
-      );
-    case "tool.audit":
-      return matchesStreamEventVariant(
-        value,
-        [
-          "callId",
-          "capabilityId",
-          "executionClass",
-          "lifecycle",
-          "runId",
-          "turnId",
-          "attempt",
-          "validationPassed",
-        ],
-        () =>
-          isNonEmptyStringProperty(value, "callId") &&
-          isNonEmptyStringProperty(value, "capabilityId") &&
-          isNonEmptyStringProperty(value, "executionClass") &&
-          isNonEmptyStringProperty(value, "lifecycle") &&
-          TOOL_AUDIT_LIFECYCLES.has(value.lifecycle as string) &&
-          isNonEmptyStringProperty(value, "runId") &&
-          isNonEmptyStringProperty(value, "turnId") &&
-          (value.attempt === undefined || typeof value.attempt === "number") &&
-          (value.validationPassed === undefined ||
-            typeof value.validationPassed === "boolean")
-      );
-    case "approval.requested":
-      return matchesStreamEventVariant(value, ["request"], () =>
-        isApprovalRequest(value.request)
-      );
-    case "approval.resolved":
-      return matchesStreamEventVariant(value, ["response"], () =>
-        isApprovalResponse(value.response)
-      );
-    case "steering.incorporated":
-      return matchesStreamEventVariant(value, ["messageId"], () =>
-        isNonEmptyStringProperty(value, "messageId")
-      );
-    case "state.snapshot":
-      return matchesStreamEventVariant(value, ["manifest"], () =>
-        isContextManifest(value.manifest)
-      );
-    case "state.checkpoint":
-      return matchesStreamEventVariant(
-        value,
-        ["iterationCount", "turnNodeHash"],
-        () =>
-          isNonNegativeSafeIntegerProperty(value, "iterationCount") &&
-          isHashString(value.turnNodeHash)
-      );
-    case "error":
-      return matchesStreamEventVariant(
-        value,
-        ["error", "fatal"],
-        () =>
-          isTuvrenErrorProjection(value.error) &&
-          typeof value.fatal === "boolean"
-      );
-    case "custom":
-      return matchesStreamEventVariant(
-        value,
-        ["name", "data"],
-        () =>
-          isNonEmptyStringProperty(value, "name") &&
-          "data" in value &&
-          isSerializableContractValue(value.data)
-      );
-    default:
-      return false;
-  }
-}
 
 /**
  * Asserts that `value` is a valid {@link TuvrenStreamEvent}.
  *
  * @param value - Untrusted candidate stream event.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_stream_event` when
+ * @throws {TuvrenValidationError} With code `invalid_stream_event` when
  *   {@link isTuvrenStreamEvent} rejects the value.
  */
-export function assertTuvrenStreamEvent(
+export const assertTuvrenStreamEvent: (
+  value: unknown,
+  label?: string
+) => asserts value is TuvrenStreamEvent = (
   value: unknown,
   label = "value"
-): asserts value is TuvrenStreamEvent {
+): asserts value is TuvrenStreamEvent => {
   if (!isTuvrenStreamEvent(value)) {
     throw new TuvrenValidationError(
       `${label} must be a valid TuvrenStreamEvent`,
       { code: "invalid_stream_event", details: value }
     );
   }
-}
+};
+
+const hasRequiredToolDefinitionFields = (
+  value: Record<string, unknown>
+): boolean =>
+  hasOnlyAllowedKeys(value, TOOL_DEFINITION_KEYS) &&
+  isNonEmptyStringProperty(value, "name") &&
+  typeof value.description === "string" &&
+  typeof value.execute === "function" &&
+  isKrakenToolSchema(value.inputSchema);
+
+const hasValidToolDefinitionExecutionPolicy = (
+  value: Record<string, unknown>
+): boolean =>
+  isOptionalApprovalPolicy(value, "approval") &&
+  (value.idempotent === undefined || typeof value.idempotent === "boolean") &&
+  (value.maxRetries === undefined || typeof value.maxRetries === "number") &&
+  isOptionalSerializableRecordProperty(value, "metadata") &&
+  (value.nonRetryable === undefined || typeof value.nonRetryable === "boolean");
+
+const hasValidToolDefinitionCapabilityPolicy = (
+  value: Record<string, unknown>
+): boolean =>
+  (value.outputSchema === undefined ||
+    isKrakenToolSchema(value.outputSchema)) &&
+  (value.requiredCredentialScopes === undefined ||
+    (Array.isArray(value.requiredCredentialScopes) &&
+      value.requiredCredentialScopes.every(
+        (scope) => typeof scope === "string"
+      ))) &&
+  (value.requiredResidency === undefined ||
+    typeof value.requiredResidency === "string") &&
+  (value.requiresUserPresence === undefined ||
+    typeof value.requiresUserPresence === "boolean") &&
+  (value.riskClass === undefined ||
+    value.riskClass === "low" ||
+    value.riskClass === "medium" ||
+    value.riskClass === "high") &&
+  isOptionalTimeoutProperty(value, "timeout");
 
 /**
  * Returns `true` when `value` is a structurally valid
@@ -901,63 +744,45 @@ export function assertTuvrenStreamEvent(
  *
  * @see {@link assertTuvrenToolDefinition} for the throwing variant.
  */
-export function isTuvrenToolDefinition(
+export const isTuvrenToolDefinition = (
   value: unknown
-): value is TuvrenToolDefinition {
-  return safePredicate(
+): value is TuvrenToolDefinition =>
+  safePredicate(
     () =>
       isPlainObject(value) &&
-      hasOnlyAllowedKeys(value, TOOL_DEFINITION_KEYS) &&
-      isNonEmptyStringProperty(value, "name") &&
-      typeof value.description === "string" &&
-      typeof value.execute === "function" &&
-      isKrakenToolSchema(value.inputSchema) &&
-      isOptionalApprovalPolicy(value, "approval") &&
-      (value.idempotent === undefined ||
-        typeof value.idempotent === "boolean") &&
-      (value.maxRetries === undefined ||
-        typeof value.maxRetries === "number") &&
-      isOptionalSerializableRecordProperty(value, "metadata") &&
-      (value.nonRetryable === undefined ||
-        typeof value.nonRetryable === "boolean") &&
-      (value.outputSchema === undefined ||
-        isKrakenToolSchema(value.outputSchema)) &&
-      (value.requiredCredentialScopes === undefined ||
-        (Array.isArray(value.requiredCredentialScopes) &&
-          value.requiredCredentialScopes.every(
-            (s) => typeof s === "string"
-          ))) &&
-      (value.requiredResidency === undefined ||
-        typeof value.requiredResidency === "string") &&
-      (value.requiresUserPresence === undefined ||
-        typeof value.requiresUserPresence === "boolean") &&
-      (value.riskClass === undefined ||
-        value.riskClass === "low" ||
-        value.riskClass === "medium" ||
-        value.riskClass === "high") &&
-      isOptionalTimeoutProperty(value, "timeout")
+      hasRequiredToolDefinitionFields(value) &&
+      hasValidToolDefinitionExecutionPolicy(value) &&
+      hasValidToolDefinitionCapabilityPolicy(value)
   );
-}
 
 /**
  * Asserts that `value` is a valid {@link TuvrenToolDefinition}.
  *
  * @param value - Untrusted candidate tool definition.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_tool_definition` when
+ * @throws {TuvrenValidationError} With code `invalid_tool_definition` when
  *   {@link isTuvrenToolDefinition} rejects the value.
  */
-export function assertTuvrenToolDefinition(
+export const assertTuvrenToolDefinition: (
+  value: unknown,
+  label?: string
+) => asserts value is TuvrenToolDefinition = (
   value: unknown,
   label = "value"
-): asserts value is TuvrenToolDefinition {
+): asserts value is TuvrenToolDefinition => {
   if (!isTuvrenToolDefinition(value)) {
     throw new TuvrenValidationError(
       `${label} must be a valid TuvrenToolDefinition`,
       { code: "invalid_tool_definition", details: value }
     );
   }
-}
+};
+
+/** True when `value[key]` is `undefined` or a valid {@link ApprovalRequest}. */
+const isOptionalApprovalRequest = (
+  value: Record<string, unknown>,
+  key: string
+): boolean => value[key] === undefined || isApprovalRequest(value[key]);
 
 /**
  * Returns `true` when `value` is a structurally valid {@link ExecutionStatus}
@@ -973,8 +798,8 @@ export function assertTuvrenToolDefinition(
  *
  * @see {@link assertExecutionStatus} for the throwing variant.
  */
-export function isExecutionStatus(value: unknown): value is ExecutionStatus {
-  return safePredicate(() => {
+export const isExecutionStatus = (value: unknown): value is ExecutionStatus =>
+  safePredicate(() => {
     if (
       !(
         isPlainObject(value) &&
@@ -1008,49 +833,29 @@ export function isExecutionStatus(value: unknown): value is ExecutionStatus {
 
     return true;
   });
-}
 
 /**
  * Asserts that `value` is a valid {@link ExecutionStatus}.
  *
  * @param value - Untrusted candidate execution status.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_execution_status` when
+ * @throws {TuvrenValidationError} With code `invalid_execution_status` when
  *   {@link isExecutionStatus} rejects the value.
  */
-export function assertExecutionStatus(
+export const assertExecutionStatus: (
+  value: unknown,
+  label?: string
+) => asserts value is ExecutionStatus = (
   value: unknown,
   label = "value"
-): asserts value is ExecutionStatus {
+): asserts value is ExecutionStatus => {
   if (!isExecutionStatus(value)) {
     throw new TuvrenValidationError(
       `${label} must be a valid ExecutionStatus`,
       { code: "invalid_execution_status", details: value }
     );
   }
-}
-
-/**
- * Returns `true` when `value` is a structurally valid
- * {@link ApprovalResponse} (KrakenFrameworkSpecification §1.7).
- *
- * Requires exactly the key `decisions`, holding a non-empty array of valid
- * approval decisions with unique `callId`s. This check is
- * request-independent; use {@link isApprovalResponseForRequest} to also
- * verify coverage against the pending {@link ApprovalRequest}. Never
- * throws; probe failures collapse to `false`.
- */
-export function isApprovalResponse(value: unknown): value is ApprovalResponse {
-  return safePredicate(
-    () =>
-      isPlainObject(value) &&
-      hasOnlyAllowedKeys(value, APPROVAL_RESPONSE_KEYS) &&
-      Array.isArray(value.decisions) &&
-      value.decisions.length > 0 &&
-      value.decisions.every(isApprovalDecision) &&
-      hasUniqueApprovalDecisionCallIds(value.decisions)
-  );
-}
+};
 
 /**
  * Returns `true` when `value` is a valid {@link ApprovalResponse} that fully
@@ -1064,36 +869,38 @@ export function isApprovalResponse(value: unknown): value is ApprovalResponse {
  * @param value - Untrusted candidate response.
  * @param request - The active approval request the response must cover.
  */
-export function isApprovalResponseForRequest(
+export const isApprovalResponseForRequest = (
   value: unknown,
   request: ApprovalRequest
-): value is ApprovalResponse {
-  return safePredicate(
+): value is ApprovalResponse =>
+  safePredicate(
     () =>
       isApprovalResponse(value) &&
       hasApprovalDecisionCoverage(value.decisions, request.toolCalls)
   );
-}
 
 /**
  * Asserts that `value` is a valid {@link ApprovalResponse}.
  *
  * @param value - Untrusted candidate approval response.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_approval_response` when
+ * @throws {TuvrenValidationError} With code `invalid_approval_response` when
  *   {@link isApprovalResponse} rejects the value.
  */
-export function assertApprovalResponse(
+export const assertApprovalResponse: (
+  value: unknown,
+  label?: string
+) => asserts value is ApprovalResponse = (
   value: unknown,
   label = "value"
-): asserts value is ApprovalResponse {
+): asserts value is ApprovalResponse => {
   if (!isApprovalResponse(value)) {
     throw new TuvrenValidationError(
       `${label} must be a valid ApprovalResponse`,
       { code: "invalid_approval_response", details: value }
     );
   }
-}
+};
 
 /**
  * Asserts that `value` is a valid {@link ApprovalResponse} that fully covers
@@ -1102,29 +909,25 @@ export function assertApprovalResponse(
  * @param value - Untrusted candidate approval response.
  * @param request - The active approval request the response must cover.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_approval_response` when
+ * @throws {TuvrenValidationError} With code `invalid_approval_response` when
  *   {@link isApprovalResponseForRequest} rejects the value.
  */
-export function assertApprovalResponseForRequest(
+export const assertApprovalResponseForRequest: (
+  value: unknown,
+  request: ApprovalRequest,
+  label?: string
+) => asserts value is ApprovalResponse = (
   value: unknown,
   request: ApprovalRequest,
   label = "value"
-): asserts value is ApprovalResponse {
+): asserts value is ApprovalResponse => {
   if (!isApprovalResponseForRequest(value, request)) {
     throw new TuvrenValidationError(
       `${label} must be a valid ApprovalResponse for the active approval request`,
       { code: "invalid_approval_response", details: value }
     );
   }
-}
-
-/** True when `value[key]` is `undefined` or a valid {@link ApprovalRequest}. */
-function isOptionalApprovalRequest<
-  TKey extends string,
-  TObject extends Record<string, unknown>,
->(value: TObject, key: TKey): boolean {
-  return value[key] === undefined || isApprovalRequest(value[key]);
-}
+};
 
 /**
  * Asserts that `value` is a valid {@link ContextManifest}
@@ -1136,17 +939,20 @@ function isOptionalApprovalRequest<
  *
  * @param value - Untrusted candidate manifest.
  * @param label - Name used in the error message (defaults to `"value"`).
- * @throws TuvrenValidationError with code `invalid_context_manifest` when
+ * @throws {TuvrenValidationError} With code `invalid_context_manifest` when
  *   the value is not a valid manifest.
  */
-export function assertContextManifest(
+export const assertContextManifest: (
+  value: unknown,
+  label?: string
+) => asserts value is ContextManifest = (
   value: unknown,
   label = "value"
-): asserts value is ContextManifest {
+): asserts value is ContextManifest => {
   if (!isContextManifest(value)) {
     throw new TuvrenValidationError(
       `${label} must be a valid ContextManifest`,
       { code: "invalid_context_manifest", details: value }
     );
   }
-}
+};

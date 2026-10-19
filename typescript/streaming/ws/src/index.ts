@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve the standard TypeScript @packageDocumentation tag on this public entrypoint. */
 /**
  * @packageDocumentation
  *
@@ -29,7 +30,7 @@
  * application-level heartbeat/half-open detection (`ping`/`pong` timeout
  * handling, close `4004`) and bounded outbound backpressure (close `4005`).
  */
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
+/* oxlint-enable jsdoc/check-tag-names */
 export type { WsCloseCode } from "./lib/ws-close-codes.js";
 export {
   WS_CLOSE_CODE_AUTH_REJECTED,
