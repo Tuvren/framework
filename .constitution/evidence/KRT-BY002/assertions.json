@@ -1,0 +1,41 @@
+{
+  "status": "pass",
+  "ticket": "KRT-BY002",
+  "milestone": "M4",
+  "baseline_commit": "fd8ee5d4060ddfce23e250c32a675d41cca255b9",
+  "measurement_commit": "e1f883f53bafded44d4a830496de73dcee3edd0c",
+  "cohort_files": 38,
+  "baseline_identities": 6,
+  "live_identities": 6,
+  "ledger_identities": 6,
+  "framework_identities": 6,
+  "kernel_inventory_empty": true,
+  "provider_inventory_empty": true,
+  "full_expected_identity_set_equality": true,
+  "drift": "none",
+  "original_reasons_preserved": true,
+  "needed_original_directives_retained": true,
+  "no_added_biome_directives": true,
+  "no_fabricated_native_counterparts": true,
+  "native_counterparts": 3,
+  "no_native_counterparts": 3,
+  "early_deletions": [],
+  "source_or_directive_changes": [],
+  "project_lint_exit_codes": [
+    0,
+    0,
+    0
+  ],
+  "project_typecheck_exit_codes": [
+    0,
+    0,
+    0
+  ],
+  "full_lint_exit_code": 0,
+  "repository_typecheck_exit_code": 0,
+  "worktree_unchanged": true,
+  "negative_controls": {
+    "missing_entry_rejected": true,
+    "altered_reason_rejected": true
+  }
+}

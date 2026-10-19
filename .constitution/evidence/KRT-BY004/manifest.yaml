@@ -1,0 +1,12 @@
+owner: KRT-BY004
+mode: contract_test
+produced:
+  date: '2026-10-19'
+  commit: 3e4db8aba41f310d1957913b99837300d50a82e0
+  command: 'Run focused native adapter lint, typecheck, protocol, import, routing, compiler-isolation and authority checks; run bun run verify once at eaff021; then run affected framework conformance after the reviewed fix at 3e4db8a'
+  host: 'local devenv; Bun 1.4.2, TypeScript 6.0.2, Nx 22.7.12, Oxlint 1.86.0, tsgolint 7.0.2003, Oxfmt 0.71.0'
+result: pass
+files:
+  - path: summary.json
+    role: delivery-summary
+pass_criteria: 'All three adapters are native-clean with exact target profiles and zero legacy directives; both protocol targets are selected in the durable lane; the authority guard, compiler isolation, conformance, imports and release gate pass; and observation-only replay grading rejects malformed cursor output.'
