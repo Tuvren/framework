@@ -1,0 +1,68 @@
+{
+  "ticket": "KRT-BY004",
+  "result": "pass",
+  "source": {
+    "base": "891eaa54ac2e71318b01b9469111ae7e848d23b6",
+    "freezeTag": "evidence/wave-1-by-source-freeze-20261018",
+    "freezeCommit": "0efb4c0c3b314673ece9e9ac9931c50ddce2cb6f",
+    "measuredTree": "b6b5cd1a32eb7ccd691b475614f2db6ae3fe219e",
+    "milestoneCommit": "eaff021dc209772ca7d93bcd42c91797be9b5cbc",
+    "reviewFixCommit": "3e4db8aba41f310d1957913b99837300d50a82e0"
+  },
+  "candidate": {
+    "sourcePaths": 24,
+    "addedLines": 5542,
+    "deletedLines": 5264,
+    "rawChangedLines": 10806,
+    "debugTags": 0,
+    "adapterBiomeDirectives": 0,
+    "changesetRequired": false
+  },
+  "transformations": {
+    "nativeTargets": 3,
+    "coverageEntriesRemaining": 0,
+    "removedPendingDirectives": 4,
+    "workspaceProjectsBefore": 43,
+    "workspaceRegistrationsBefore": 39,
+    "workspaceProjectsAfter": 45,
+    "workspaceRegistrationsAfter": 41,
+    "verifyPreimageBlob": "b6d43f834891dc0341c0d11f9334521c358156a3",
+    "verifyFinalBlob": "b325bb2a24ebd1f9b5e65cffd9766c199ac44d89",
+    "compilerFiles": 1997,
+    "liveSiblingSources": 0
+  },
+  "acceptedDeltas": [
+    {
+      "amendment": "A63",
+      "path": "typescript/conformance-adapter/src/framework-adapter.ts",
+      "mappingCount": 92,
+      "mappingHash": "71ac612a680a79f97867f53513de1485d70a6f12d316a49e8423c15c53078019",
+      "change": "Canonical key ordering of the accepted object-property routing table; mappings and get-only dispatch preserved."
+    },
+    {
+      "amendment": "A64",
+      "path": "typescript/kernel/conformance-adapter/src/host.ts",
+      "mappingCount": 21,
+      "mappingHash": "0c96bfa147d2ae940ea72b1e6c6673b0e992459f7394dbc8a245bc622a402dbd",
+      "change": "Authority-compatible object-property routing table; every mapping and both inline fixture readers preserved."
+    },
+    {
+      "review": "M1 P1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts",
+      "change": "Malformed replay cursors remain observable as null so shared equality grading fails closed."
+    }
+  ],
+  "verification": {
+    "focusedAdapters": "pass",
+    "authorityGuardrails": "pass",
+    "protocolTargets": "pass",
+    "frameworkConformanceApplicable": 511,
+    "providerConformanceApplicable": 60,
+    "coldImports": "pass",
+    "compilerIsolation": "pass",
+    "bunRunVerifyAtMilestone": "pass",
+    "affectedChecksAfterReviewFix": "pass",
+    "constitutionValidate": "pass",
+    "milestoneReview": "clean after one P1 fix"
+  }
+}

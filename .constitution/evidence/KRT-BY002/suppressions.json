@@ -1,0 +1,447 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BY002",
+  "milestone": "M4",
+  "future_handoff": "KRT-BY004/suppressions.json",
+  "base_commit": "fd8ee5d4060ddfce23e250c32a675d41cca255b9",
+  "producing_commit": "e1f883f53bafded44d4a830496de73dcee3edd0c",
+  "measurement_commit": "e1f883f53bafded44d4a830496de73dcee3edd0c",
+  "owned_paths": [
+    "typescript/conformance-adapter",
+    "typescript/kernel/conformance-adapter",
+    "typescript/providers/conformance-adapter"
+  ],
+  "cohort": [
+    "typescript/providers/conformance-adapter/src/host.ts",
+    "typescript/providers/conformance-adapter/src/provider-conformance-fixtures.ts",
+    "typescript/providers/conformance-adapter/src/provider-mediated-execution-class.ts",
+    "typescript/providers/conformance-adapter/src/provider-native-execution-class.ts",
+    "typescript/kernel/conformance-adapter/src/host-support.ts",
+    "typescript/kernel/conformance-adapter/src/sqlite-restart-recovery-scenario.ts",
+    "typescript/kernel/conformance-adapter/tsup.config.ts",
+    "typescript/kernel/conformance-adapter/src/host.ts",
+    "typescript/conformance-adapter/src/framework-adapter-admission-key-session.ts",
+    "typescript/conformance-adapter/src/framework-adapter-admission-key.ts",
+    "typescript/conformance-adapter/src/framework-adapter-recovery-scenarios.ts",
+    "typescript/conformance-adapter/src/framework-adapter-event-stream.ts",
+    "typescript/conformance-adapter/src/framework-adapter-event-stream-resume.ts",
+    "typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts",
+    "typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts",
+    "typescript/conformance-adapter/src/framework-adapter-capability-policy.ts",
+    "typescript/conformance-adapter/src/framework-adapter-capability-orchestration-integration.ts",
+    "typescript/conformance-adapter/src/framework-adapter-capability-orchestration.ts",
+    "typescript/conformance-adapter/src/framework-adapter-orchestration-lifecycle.ts",
+    "typescript/conformance-adapter/src/framework-adapter-orchestration.ts",
+    "typescript/conformance-adapter/src/framework-adapter-provider-scenarios.ts",
+    "typescript/conformance-adapter/src/framework-adapter-runtime-scenarios.ts",
+    "typescript/conformance-adapter/src/framework-adapter-session.ts",
+    "typescript/conformance-adapter/src/framework-adapter-tuvren-client-execution-class.ts",
+    "typescript/conformance-adapter/src/framework-adapter-tuvren-server-execution-class.ts",
+    "typescript/conformance-adapter/src/framework-adapter-runtime.ts",
+    "typescript/conformance-adapter/src/framework-adapter-runner.ts",
+    "typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts",
+    "typescript/conformance-adapter/src/framework-adapter-secret-isolation.ts",
+    "typescript/conformance-adapter/src/framework-adapter-trust-boundary.ts",
+    "typescript/conformance-adapter/src/framework-adapter-execution-bounds.ts",
+    "typescript/conformance-adapter/src/framework-adapter-schema-authoring.ts",
+    "typescript/conformance-adapter/src/framework-adapter.ts",
+    "typescript/conformance-adapter/src/framework-adapter-batteries-included.ts",
+    "typescript/conformance-adapter/src/framework-adapter-proving-host.ts",
+    "typescript/conformance-adapter/src/batteries-included-node-host.ts",
+    "typescript/conformance-adapter/src/host.ts",
+    "typescript/conformance-adapter/tsup.config.batteries-included.ts"
+  ],
+  "identity_convention": "repository-relative path::Biome rule::one-based occurrence within that path/rule; line is informational",
+  "drift": {
+    "added": [],
+    "removed": [],
+    "changed_reasons": []
+  },
+  "explicit_empty_inventories": {
+    "typescript/kernel/conformance-adapter": [],
+    "typescript/providers/conformance-adapter": []
+  },
+  "counts": {
+    "baseline": 6,
+    "live": 6,
+    "retained_needed": 6,
+    "native_counterpart": 3,
+    "no_native_counterpart": 3,
+    "early_deletions": 0,
+    "biome_directives_added": 0
+  },
+  "entries": [
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts::lint/correctness/noUndeclaredVariables::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts",
+      "directive": "  // biome-ignore lint/correctness/noUndeclaredVariables: This parent path runs under Bun; the Node child never calls it.",
+      "rule": "lint/correctness/noUndeclaredVariables",
+      "original_reason": "This parent path runs under Bun; the Node child never calls it.",
+      "baseline_line": 476,
+      "live_line": 477,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "eslint(no-undef)",
+      "native_candidate_enabled": false,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "e9a608c5cd314f54ffee630b37693635d1ed40da84a832f6d2bdfdd8972d3d30",
+        "bytes": 29531
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/framework-biome-root-suppressed.json",
+        "virtual_stdin_report": "raw/directive-1-biome-virtual-unsuppressed.json",
+        "virtual_stdin_sha256": "642fd60bcf06b10b4b3685d79ad4287b4e20f6f2554c9a032b69a5a6f0ad88b8",
+        "suppressed_mirror_report": "raw/directive-1-biome-mirror-suppressed.json",
+        "unsuppressed_mirror_report": "raw/directive-1-biome-mirror-unsuppressed.json",
+        "expected_category": "lint/correctness/noUndeclaredVariables",
+        "matching_diagnostics": 1,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/framework-oxlint-syntactic.json",
+        "type_aware_report": "raw/framework-oxlint-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "eslint(func-style)",
+          "eslint(no-await-in-loop)",
+          "eslint(no-plusplus)",
+          "eslint(no-use-before-define)",
+          "eslint(prefer-destructuring)",
+          "promise(avoid-new)",
+          "typescript(method-signature-style)",
+          "typescript(no-base-to-string)",
+          "typescript(no-confusing-void-expression)",
+          "typescript(no-invalid-void-type)",
+          "typescript(promise-function-async)",
+          "unicorn(consistent-function-scoping)",
+          "unicorn(import-style)"
+        ],
+        "rationale": "The semantic candidate eslint/no-undef is not enabled by the unchanged shipped preset and no equivalent native diagnostic fires; no native counterpart is justified."
+      },
+      "producing_commit": "e1f883f53bafded44d4a830496de73dcee3edd0c"
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts::lint/correctness/noUndeclaredVariables::2",
+      "path": "typescript/conformance-adapter/src/framework-adapter-admission-key.ts",
+      "directive": "  // biome-ignore lint/correctness/noUndeclaredVariables: This parent path runs under Bun; the Node child never calls it.",
+      "rule": "lint/correctness/noUndeclaredVariables",
+      "original_reason": "This parent path runs under Bun; the Node child never calls it.",
+      "baseline_line": 513,
+      "live_line": 514,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "eslint(no-undef)",
+      "native_candidate_enabled": false,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "e9a608c5cd314f54ffee630b37693635d1ed40da84a832f6d2bdfdd8972d3d30",
+        "bytes": 29531
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/framework-biome-root-suppressed.json",
+        "virtual_stdin_report": "raw/directive-2-biome-virtual-unsuppressed.json",
+        "virtual_stdin_sha256": "bcf41ef6ff9a4e04d1b8e58afeb368955dcbd4c8c38e6c10a54f72af7cfc45f5",
+        "suppressed_mirror_report": "raw/directive-2-biome-mirror-suppressed.json",
+        "unsuppressed_mirror_report": "raw/directive-2-biome-mirror-unsuppressed.json",
+        "expected_category": "lint/correctness/noUndeclaredVariables",
+        "matching_diagnostics": 1,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/framework-oxlint-syntactic.json",
+        "type_aware_report": "raw/framework-oxlint-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "eslint(func-style)",
+          "eslint(no-await-in-loop)",
+          "eslint(no-plusplus)",
+          "eslint(no-use-before-define)",
+          "eslint(prefer-destructuring)",
+          "promise(avoid-new)",
+          "typescript(method-signature-style)",
+          "typescript(no-base-to-string)",
+          "typescript(no-confusing-void-expression)",
+          "typescript(no-invalid-void-type)",
+          "typescript(promise-function-async)",
+          "unicorn(consistent-function-scoping)",
+          "unicorn(import-style)"
+        ],
+        "rationale": "The semantic candidate eslint/no-undef is not enabled by the unchanged shipped preset and no equivalent native diagnostic fires; no native counterpart is justified."
+      },
+      "producing_commit": "e1f883f53bafded44d4a830496de73dcee3edd0c"
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-event-stream-sse.ts",
+      "directive": "  // biome-ignore lint/suspicious/useAwait: encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "encoder probe stream is a sync generator wrapped to satisfy AsyncIterable; toSseResponse consumes it asynchronously",
+      "baseline_line": 84,
+      "live_line": 84,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "eslint(require-await)",
+      "native_candidate_enabled": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "3bedca191c5a42d0b1db8c22f68898aafb35f81678a21a68b2d0fe43dec810ab",
+        "bytes": 4160
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/framework-biome-root-suppressed.json",
+        "virtual_stdin_report": "raw/directive-3-biome-virtual-unsuppressed.json",
+        "virtual_stdin_sha256": "14030e0c9e9fba57c9aa6e8a5c490a3b5c9db31d94896deaa5896b961cd17d41",
+        "suppressed_mirror_report": "raw/directive-3-biome-mirror-suppressed.json",
+        "unsuppressed_mirror_report": "raw/directive-3-biome-mirror-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 1,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/framework-oxlint-syntactic.json",
+        "type_aware_report": "raw/framework-oxlint-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "eslint(func-style)",
+          "eslint(no-use-before-define)",
+          "typescript(method-signature-style)",
+          "typescript(no-unnecessary-type-assertion)",
+          "typescript(no-unsafe-type-assertion)",
+          "unicorn(consistent-function-scoping)"
+        ],
+        "rationale": "The enabled shipped eslint/require-await rule does not fire for this exact suppressed construct in fresh syntactic or type-aware diagnostics; unrelated findings cannot justify a native counterpart."
+      },
+      "producing_commit": "e1f883f53bafded44d4a830496de73dcee3edd0c"
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts",
+      "directive": "            // biome-ignore lint/suspicious/useAwait: intentionally synchronous resolution.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "intentionally synchronous resolution.",
+      "baseline_line": 675,
+      "live_line": 671,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "native_candidate_enabled": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "d1b6b24fb6a0aec6f2b7944f47cbd4d1fc93eb82752f2bc1efc6ec89ecafbf7c",
+        "bytes": 27857
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/framework-biome-root-suppressed.json",
+        "virtual_stdin_report": "raw/directive-4-biome-virtual-unsuppressed.json",
+        "virtual_stdin_sha256": "c76e57b28f68009d990ae169f6761e44067f90f6286b9c1b4729e621ff359c44",
+        "suppressed_mirror_report": "raw/directive-4-biome-mirror-suppressed.json",
+        "unsuppressed_mirror_report": "raw/directive-4-biome-mirror-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 1,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/framework-oxlint-syntactic.json",
+        "type_aware_report": "raw/framework-oxlint-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "code": "eslint(require-await)",
+            "filename": "typescript/conformance-adapter/src/framework-adapter-event-stream-ws.ts",
+            "line": 672,
+            "message": "Async function has no `await` expression."
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(func-style)",
+          "eslint(no-await-in-loop)",
+          "eslint(no-use-before-define)",
+          "eslint(prefer-destructuring)",
+          "eslint(require-await)",
+          "promise(avoid-new)",
+          "typescript(method-signature-style)",
+          "typescript(no-unnecessary-boolean-literal-compare)",
+          "typescript(no-unnecessary-type-assertion)",
+          "typescript(no-unsafe-type-assertion)",
+          "typescript(promise-function-async)",
+          "unicorn(import-style)",
+          "unicorn(prefer-array-find)"
+        ],
+        "rationale": "Fresh syntactic and type-aware diagnostics fire the enabled shipped eslint/require-await rule on the exact function covered by the retained Biome useAwait directive, preserving the original async-contract reason."
+      },
+      "producing_commit": "e1f883f53bafded44d4a830496de73dcee3edd0c"
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-capability-policy.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-capability-policy.ts",
+      "directive": "// biome-ignore-all lint/suspicious/useAwait: adapter operations must return Promise<AdapterProjection> per adapter contract",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "adapter operations must return Promise<AdapterProjection> per adapter contract",
+      "baseline_line": 17,
+      "live_line": 17,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "native_candidate_enabled": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "2ae2ad87bd87f08eab5e412368fd1f6c0a1f589f4c9133e848e1177191d10e83",
+        "bytes": 14318
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/framework-biome-root-suppressed.json",
+        "virtual_stdin_report": "raw/directive-5-biome-virtual-unsuppressed.json",
+        "virtual_stdin_sha256": "9f9d4cec7ada7b4fea007a42689b57a88b68d30b552d56a45e783d8bed1d163b",
+        "suppressed_mirror_report": "raw/directive-5-biome-mirror-suppressed.json",
+        "unsuppressed_mirror_report": "raw/directive-5-biome-mirror-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 3,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/framework-oxlint-syntactic.json",
+        "type_aware_report": "raw/framework-oxlint-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "code": "eslint(require-await)",
+            "filename": "typescript/conformance-adapter/src/framework-adapter-capability-policy.ts",
+            "line": 40,
+            "message": "Async function has no `await` expression."
+          },
+          {
+            "code": "eslint(require-await)",
+            "filename": "typescript/conformance-adapter/src/framework-adapter-capability-policy.ts",
+            "line": 115,
+            "message": "Async function has no `await` expression."
+          },
+          {
+            "code": "eslint(require-await)",
+            "filename": "typescript/conformance-adapter/src/framework-adapter-capability-policy.ts",
+            "line": 191,
+            "message": "Async function has no `await` expression."
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(func-style)",
+          "eslint(no-inline-comments)",
+          "eslint(require-await)",
+          "unicorn(consistent-function-scoping)"
+        ],
+        "rationale": "Fresh syntactic and type-aware diagnostics fire the enabled shipped eslint/require-await rule on the exact function covered by the retained Biome useAwait directive, preserving the original async-contract reason."
+      },
+      "producing_commit": "e1f883f53bafded44d4a830496de73dcee3edd0c"
+    },
+    {
+      "identity": "typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts",
+      "directive": "          // biome-ignore lint/suspicious/useAwait: async required by TuvrenToolDefinition.execute contract",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "async required by TuvrenToolDefinition.execute contract",
+      "baseline_line": 400,
+      "live_line": 400,
+      "equivalent_native_rule": "eslint(require-await)",
+      "native_candidate_rule": "eslint(require-await)",
+      "native_candidate_enabled": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-replace-original-at-atomic-native-admission-with-measured-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "source_digest": {
+        "sha256": "9b701bff30d92d0d4a8a47f48e411ae64e6f75bcb9eeae8748a9cb0a4e6fdfa7",
+        "bytes": 17887
+      },
+      "config_digests": {
+        "biome.jsonc": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+        "oxlint.config.ts": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05"
+      },
+      "retained_proof": {
+        "root_suppressed_report": "raw/framework-biome-root-suppressed.json",
+        "virtual_stdin_report": "raw/directive-6-biome-virtual-unsuppressed.json",
+        "virtual_stdin_sha256": "539c8af997759a3dbf7f6513a94ae6f69bf9d0755eedd8fee7be1858ba8e5942",
+        "suppressed_mirror_report": "raw/directive-6-biome-mirror-suppressed.json",
+        "unsuppressed_mirror_report": "raw/directive-6-biome-mirror-unsuppressed.json",
+        "expected_category": "lint/suspicious/useAwait",
+        "matching_diagnostics": 1,
+        "scratch_discovery_option": "--vcs-enabled=false changes scratch discovery only; repository lint policy remains exact",
+        "product_bytes_unchanged": true
+      },
+      "native_proof": {
+        "syntactic_report": "raw/framework-oxlint-syntactic.json",
+        "type_aware_report": "raw/framework-oxlint-type-aware.json",
+        "registry_report": "raw/oxlint-rules.json",
+        "effective_config_report": "raw/oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "code": "eslint(require-await)",
+            "filename": "typescript/conformance-adapter/src/framework-adapter-invocation-lifecycle.ts",
+            "line": 401,
+            "message": "Async function has no `await` expression."
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(complexity)",
+          "eslint(func-style)",
+          "eslint(no-inline-comments)",
+          "eslint(require-await)",
+          "eslint(sort-keys)",
+          "typescript(consistent-return)",
+          "typescript(no-unsafe-type-assertion)",
+          "typescript(promise-function-async)"
+        ],
+        "rationale": "Fresh syntactic and type-aware diagnostics fire the enabled shipped eslint/require-await rule on the exact function covered by the retained Biome useAwait directive, preserving the original async-contract reason."
+      },
+      "producing_commit": "e1f883f53bafded44d4a830496de73dcee3edd0c"
+    }
+  ]
+}
