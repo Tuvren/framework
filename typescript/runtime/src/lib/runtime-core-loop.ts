@@ -539,7 +539,7 @@ export const runExecutionLoop = async (
 ): Promise<LoopOutcome> => {
   const bounds = host.executionBounds();
 
-  const runNextIteration = async (): Promise<LoopOutcome> => {
+  const runNextIteration = async (): Promise<LoopOutcome | "continue"> => {
     const currentIterationCount = handle.status().iterationCount;
 
     // Framework execution-bounds guard (ADR-0043, BD006), enforced above the
@@ -660,7 +660,7 @@ export const runExecutionLoop = async (
         return cancelledBeforeContinue;
       }
 
-      return await runNextIteration();
+      return "continue";
     }
 
     return (
@@ -669,5 +669,24 @@ export const runExecutionLoop = async (
     );
   };
 
-  return await runNextIteration();
+  const iterationOutcomes = {
+    [Symbol.asyncIterator]() {
+      return {
+        async next(): Promise<IteratorResult<LoopOutcome | "continue">> {
+          return {
+            done: false,
+            value: await runNextIteration(),
+          };
+        },
+      };
+    },
+  };
+
+  for await (const outcome of iterationOutcomes) {
+    if (outcome !== "continue") {
+      return outcome;
+    }
+  }
+
+  throw new Error("Execution loop ended without a terminal outcome");
 };

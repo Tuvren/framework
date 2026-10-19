@@ -31,13 +31,20 @@ import type {
 import {
   createCapabilityPolicyEngine,
   createRunnerRegistry,
+  createToolRegistry,
   createTuvrenRuntime,
 } from "../src/index.ts";
 import type { RuntimeCoreOptions } from "../src/index.ts";
+import { createContextManifest } from "../src/lib/context-manifest.ts";
 import {
   DEFAULT_EXECUTION_BOUNDS,
   normalizeExecutionBounds,
 } from "../src/lib/runtime-core-bounds.ts";
+import type { IterationPhaseResult } from "../src/lib/runtime-core-iteration.ts";
+import { runExecutionLoop } from "../src/lib/runtime-core-loop.ts";
+import type { RuntimeCoreLoopHost } from "../src/lib/runtime-core-loop.ts";
+import { RuntimeExecutionHandle } from "../src/lib/runtime-execution-handle.ts";
+import type { RuntimeExecutionHandleRuntime } from "../src/lib/runtime-execution-handle.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {
   fromSynchronousVariadicAwaited,
@@ -193,6 +200,131 @@ describe("framework execution bounds (KRT-BD006)", () => {
     const details = expectBoundsFailure(result, "maxIterations");
     expect(details.limit).toBe(2);
     expect(details.observed).toBe(2);
+  });
+
+  test("keeps high-iteration loop memory bounded", async () => {
+    const iterationLimit = 100_000;
+    Bun.gc(true);
+    const baselineHeapBytes = process.memoryUsage().heapUsed;
+    const hash = "a".repeat(64);
+    const request = {
+      branchId: "branch-bounds-probe",
+      config: { name: AGENT },
+      signal: textSignal("run many iterations"),
+      threadId: "thread-bounds-probe",
+    };
+    const handleRuntime: RuntimeExecutionHandleRuntime = {
+      cancelPausedExecution() {},
+      createResumedExecutionHandle() {
+        throw new Error("resume was not expected");
+      },
+      async startExecution() {
+        await Promise.resolve();
+      },
+    };
+    const handle = new RuntimeExecutionHandle(
+      handleRuntime,
+      request,
+      "turn-bounds-probe",
+      "schema-bounds-probe"
+    );
+    const loopState = {
+      activeConfig: { name: AGENT },
+      activeRunnerId: "bounds-probe",
+      activeToolRegistry: createToolRegistry([]),
+      carriedStateUpdates: [],
+      enteredIterationLoop: false,
+    };
+    let executions = 0;
+    const host: RuntimeCoreLoopHost = {
+      async applyContextEngineeringPlan() {
+        await Promise.resolve();
+      },
+      async applyTerminalAgentTransitionIfNeeded() {
+        await Promise.resolve();
+        return false;
+      },
+      boundsDeadlineMs() {
+        return 100;
+      },
+      async commitPendingExtensionStateUpdates() {
+        await Promise.resolve();
+      },
+      createId() {
+        return "bounds-probe-id";
+      },
+      async executeIterationPhase() {
+        await Promise.resolve();
+        executions += 1;
+        const result: IterationPhaseResult = {
+          kind: "executed",
+          result: {
+            iterationRunId: `run-${executions}`,
+            partial: false,
+            requestedToolCalls: [],
+            resolution:
+              executions === iterationLimit
+                ? { reason: "probe-complete", type: "end_turn" }
+                : { type: "continue_iteration" },
+            runnerResponse: { finishReason: "stop", parts: [] },
+            stableHeadTurnNodeHash: hash,
+            toolExecutionMode: "parallel",
+            toolResults: [],
+            turnNodeHash: undefined,
+          },
+        };
+        return result;
+      },
+      executionBounds() {
+        return normalizeExecutionBounds({ maxIterations: iterationLimit });
+      },
+      async incorporateQueuedSteeringIfNeeded() {
+        if (executions === iterationLimit - 1) {
+          await Bun.sleep(1);
+          Bun.gc(true);
+          const retainedHeapGrowth =
+            process.memoryUsage().heapUsed - baselineHeapBytes;
+          expect(retainedHeapGrowth).toBeLessThan(16 * 1024 * 1024);
+        }
+        await Promise.resolve();
+      },
+      async loadHeadState() {
+        await Promise.resolve();
+        return {
+          branchHeadHash: hash,
+          manifest: createContextManifest([]),
+          messageHashes: [],
+          messages: [],
+          turnNode: {
+            consumedStagedResults: [],
+            eventHash: null,
+            hash,
+            previousTurnNodeHash: null,
+            schemaId: "schema-bounds-probe",
+            turnTreeHash: hash,
+          },
+        };
+      },
+      publishCustomEvent() {},
+      publishEvent() {},
+      publishProjectedError() {},
+      recordBoundsToolCalls(_handle, count) {
+        return count;
+      },
+    };
+    const outcome = await runExecutionLoop(
+      host,
+      handle,
+      "schema-bounds-probe",
+      loopState,
+      () => 0
+    );
+
+    expect(outcome.resolution).toEqual({
+      reason: "probe-complete",
+      type: "end_turn",
+    });
+    expect(executions).toBe(iterationLimit);
   });
 
   test("breaching maxToolCalls fails the turn with execution_bound_exceeded", async () => {

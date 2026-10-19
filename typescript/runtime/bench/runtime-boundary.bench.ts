@@ -301,15 +301,28 @@ const benchmarkExecutionHandleRuntime: RuntimeExecutionHandleRuntime = {
 
 const runSequentially = async (
   iterations: number,
-  action: (index: number) => Promise<void>,
-  index = 0
+  action: (index: number) => Promise<void>
 ): Promise<void> => {
-  if (index >= iterations) {
-    return;
-  }
+  let index = 0;
+  const actions = {
+    [Symbol.asyncIterator]() {
+      return {
+        async next(): Promise<IteratorResult<undefined>> {
+          if (index >= iterations) {
+            return { done: true, value: undefined };
+          }
 
-  await action(index);
-  await runSequentially(iterations, action, index + 1);
+          await action(index);
+          index += 1;
+          return { done: false, value: undefined };
+        },
+      };
+    },
+  };
+
+  for await (const _ of actions) {
+    // Each next() awaits one action before producing the next iteration.
+  }
 };
 
 const runExecutionHandleEventQueueBench = async (
