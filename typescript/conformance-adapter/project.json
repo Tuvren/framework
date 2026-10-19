@@ -67,7 +67,7 @@
       ],
       "options": {
         "cwd": ".",
-        "command": "zsh typescript/conformance-adapter/test/host-protocol.test.zsh",
+        "command": "bun test typescript/conformance-adapter/test/host-protocol.test.ts",
         "forwardAllArgs": false
       }
     },

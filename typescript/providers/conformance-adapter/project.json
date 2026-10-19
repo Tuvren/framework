@@ -43,7 +43,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "zsh typescript/providers/conformance-adapter/test/host-protocol.test.zsh",
+        "command": "bun test typescript/providers/conformance-adapter/test/host-protocol.test.ts",
         "forwardAllArgs": false
       }
     },
