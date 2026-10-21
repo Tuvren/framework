@@ -51,6 +51,10 @@ Use native tools as ecosystem truth and Nx as a wrapper.
 - `verify:kernel` includes PostgreSQL conformance; on a clean session, make sure direnv has loaded the repo environment and run `devenv up -d` once before either kernel verify lane.
 - Run `bun run verify` before claiming broad workspace readiness.
 - Run `bun run nx run <project>:test`, `:typecheck`, or `:build` for narrow TypeScript checks.
+- Keep Cargo operations sharing `target/` sequential, and keep artifact regeneration separate from checks that read those artifacts. Independent checkouts own their outputs and services separately.
+- Let the phase engine own its child commands. Cancellation stops queued steps and terminates owned POSIX process groups, escalating after a grace period. Commands must not detach background work from their owned process group.
+- Verification writes each step's combined output directly to a unique run directory under `.cache/verification`. Each step prints its log path when it starts; use `tail -f` on that file for live progress. Output replays after each serial step or in plan order after a parallel phase.
+- Set `VERIFY_LOG_DIR` to relocate verification logs to an ignored directory or a directory outside the checkout. Successful runs remove their logs; failed and interrupted runs print the retained location. Cleanup retains at most 20 inactive runs for seven days and preserves active runs and unrelated directories.
 
 ## Services
 Load the toolchain through direnv, and manage long-lived devenv services only when a command actually needs them.
