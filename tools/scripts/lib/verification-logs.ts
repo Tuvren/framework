@@ -148,10 +148,14 @@ export const pruneVerificationLogs = async (
   }
 };
 
-/** Streams fixed-size chunks with backpressure; never reads an entire log. */
+/**
+ * Streams fixed-size chunks with backpressure; never reads an entire log.
+ * Aborting `signal` stops the replay and rejects with an AbortError.
+ */
 export const replayVerificationLog = async (
   file: string,
-  output: Writable = process.stdout
+  output: Writable = process.stdout,
+  signal?: AbortSignal
 ): Promise<void> => {
   // pipeline retains listeners on its streams. Give each replay a disposable
   // destination instead of accumulating pipeline state on process.stdout.
@@ -165,7 +169,7 @@ export const replayVerificationLog = async (
   };
   output.on("error", onError);
   try {
-    await pipeline(createReadStream(file), forward);
+    await pipeline(createReadStream(file), forward, { signal });
   } finally {
     output.removeListener("error", onError);
   }

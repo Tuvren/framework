@@ -35,29 +35,60 @@ export interface RunCommandResult {
 }
 
 const SHUTDOWN_BUDGET_ENV = "TUVREN_COMMAND_SHUTDOWN_GRACE_MS";
-const activeCommands = new Set<(signal: NodeJS.Signals) => void>();
-const relaySignal = (signal: NodeJS.Signals): void => {
-  process.exitCode = signal === "SIGINT" ? 130 : 143;
-  for (const stop of activeCommands) {
+/** Termination signals that cancel work, with their 128+signo exit statuses. */
+const CANCELLATION_SIGNAL_CODES = {
+  SIGHUP: 129,
+  SIGINT: 130,
+  SIGQUIT: 131,
+  SIGTERM: 143,
+} as const;
+export type CancellationSignal = keyof typeof CANCELLATION_SIGNAL_CODES;
+export const CANCELLATION_SIGNALS = Object.keys(
+  CANCELLATION_SIGNAL_CODES
+) as CancellationSignal[];
+export const cancellationExitCode = (signal: CancellationSignal): number =>
+  CANCELLATION_SIGNAL_CODES[signal];
+
+const activeCommands = new Set<(signal: CancellationSignal) => void>();
+// Set when a signal arrived with no caller-owned listener; the default
+// disposition is restored once every relayed command has stopped.
+let pendingReraise: CancellationSignal | undefined;
+const relayHandlers = new Map<CancellationSignal, () => void>();
+const relaySignal = (signal: CancellationSignal): void => {
+  process.exitCode = cancellationExitCode(signal);
+  // Decided at delivery: the runner's own listener is the only one when the
+  // caller did not install its own cancellation handling.
+  if (process.listenerCount(signal) === 1) {
+    pendingReraise ??= signal;
+  }
+  for (const stop of [...activeCommands]) {
     stop(signal);
   }
 };
-const relayInterrupt = (): void => relaySignal("SIGINT");
-const relayTerminate = (): void => relaySignal("SIGTERM");
+for (const signal of CANCELLATION_SIGNALS) {
+  relayHandlers.set(signal, () => relaySignal(signal));
+}
 
 const registerTerminationRelay = (
-  stop: (signal: NodeJS.Signals) => void
+  stop: (signal: CancellationSignal) => void
 ): (() => void) => {
   if (activeCommands.size === 0) {
-    process.on("SIGINT", relayInterrupt);
-    process.on("SIGTERM", relayTerminate);
+    for (const [signal, handler] of relayHandlers) {
+      process.on(signal, handler);
+    }
   }
   activeCommands.add(stop);
   return () => {
-    activeCommands.delete(stop);
-    if (activeCommands.size === 0) {
-      process.removeListener("SIGINT", relayInterrupt);
-      process.removeListener("SIGTERM", relayTerminate);
+    if (!activeCommands.delete(stop) || activeCommands.size > 0) {
+      return;
+    }
+    for (const [signal, handler] of relayHandlers) {
+      process.removeListener(signal, handler);
+    }
+    const signal = pendingReraise;
+    pendingReraise = undefined;
+    if (signal !== undefined) {
+      process.kill(process.pid, signal);
     }
   };
 };
@@ -199,7 +230,7 @@ export const runCommand = async (
     const onAbort = (): void => stop(130, "command cancelled");
     const unregisterRelay = ownsGroup
       ? registerTerminationRelay((signal) =>
-          stop(signal === "SIGINT" ? 130 : 143, "command cancelled")
+          stop(cancellationExitCode(signal), "command cancelled")
         )
       : () => {
           /* This command inherits its caller's process group. */

@@ -144,3 +144,27 @@ test("SIGTERM cancels descendants, preserves its exit status, and stops queued s
     }
   }
 });
+
+test("a repeated signal abandons a stalled replay and keeps the signal status and log location", async () => {
+  const root = await createRoot();
+  const pidFile = path.join(root, "pid");
+  const logs = path.join(root, "logs");
+  const childSource = `import {writeFileSync} from 'node:fs'; writeFileSync(${JSON.stringify(pidFile)}, String(process.pid)); process.stdout.write('STEP-OUTPUT'); setInterval(()=>{},1000);`;
+  const result = await runFixture(
+    `
+    import {existsSync} from 'node:fs';
+    // A consumer that never drains: replay can only end by abortion.
+    process.stdout.write = () => true;
+    const timer = setInterval(() => { if (existsSync(${JSON.stringify(pidFile)})) { clearInterval(timer); process.kill(process.pid, 'SIGTERM'); setTimeout(() => process.kill(process.pid, 'SIGTERM'), 300); } }, 10);
+    const results = await runVerificationPhases([{ id: 'cancel', concurrency: 1, mutatesWorktree: true, steps: [
+      { id: 'running', command: [process.execPath, '-e', ${JSON.stringify(childSource)}] }
+    ] }], { logDirectory: ${JSON.stringify(logs)} });
+    clearInterval(timer);
+    if (hasVerificationFailure(results)) process.exitCode ??= 1;
+  `,
+    root
+  );
+  expect(result.code).toBe(143);
+  expect(result.stderr).toContain("Verification logs retained");
+  expect(await readdir(logs)).toHaveLength(1);
+});
