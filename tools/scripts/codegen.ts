@@ -22,15 +22,11 @@
 // phase, all validators run to completion instead of fail-fast, so one run
 // surfaces every failure at once).
 
-import process from "node:process";
-
 import { prependGeneratedPrerequisitePhase } from "./lib/generated-prerequisites.js";
 import {
   CODEGEN_PROJECTS,
-  hasVerificationFailure,
   MACHINE_AUTHORITY_GUARDRAILS_STEP,
-  printVerificationSummary,
-  runVerificationPhases,
+  runVerificationMain,
   selectAuthorityGateSteps,
 } from "./verify.js";
 import type { VerificationPhase } from "./verify.js";
@@ -100,10 +96,5 @@ export const createCodegenPhases = (): VerificationPhase[] =>
   );
 
 if (import.meta.main) {
-  const results = await runVerificationPhases(createCodegenPhases());
-  printVerificationSummary(results);
-
-  if (hasVerificationFailure(results)) {
-    process.exitCode ??= 1;
-  }
+  await runVerificationMain(createCodegenPhases());
 }

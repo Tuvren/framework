@@ -4,9 +4,18 @@
  */
 
 import { afterEach, expect, test } from "bun:test";
-import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import {
+  access,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
 
 import { runCommand } from "./lib/command-runner.js";
 
@@ -118,6 +127,7 @@ test("SIGTERM cancels descendants, preserves its exit status, and stops queued s
         { id: 'queued', command: [process.execPath, '-e', "process.stdout.write('UNEXPECTED')"] }
       ] }], { logDirectory: ${JSON.stringify(logs)} });
       clearInterval(timer);
+      console.log("STEP-CODES " + JSON.stringify(results.map((r) => [r.id, r.code])));
       if (hasVerificationFailure(results)) process.exitCode ??= 1;
     `,
       root
@@ -126,6 +136,7 @@ test("SIGTERM cancels descendants, preserves its exit status, and stops queued s
     expect(result.code).toBe(143);
     expect(result.stdout).not.toContain("UNEXPECTED");
     expect(result.stdout).toContain("command cancelled");
+    expect(result.stdout).toContain('STEP-CODES [["running",143]');
     const state = await runCommand(
       ["ps", "-o", "stat=", "-p", String(descendantPid)],
       { captureOutput: true }
@@ -168,3 +179,132 @@ test("a repeated signal abandons a stalled replay and keeps the signal status an
   expect(result.stderr).toContain("Verification logs retained");
   expect(await readdir(logs)).toHaveLength(1);
 });
+
+interface PipeScenario {
+  code: number | null;
+  elapsedMs: number;
+  stderr: string;
+  stdoutBytes: number;
+}
+
+/**
+ * Runs a verification scenario in a child whose stdout is a real OS pipe and
+ * delivers `signals` once the step has started. `consume` decides how the
+ * parent treats the read end of that pipe.
+ */
+const runPipeScenario = async (
+  root: string,
+  steps: readonly object[],
+  signals: readonly NodeJS.Signals[],
+  consume: "never-read" | "close"
+): Promise<PipeScenario> => {
+  const logs = path.join(root, "logs");
+  const pidFile = path.join(root, "pid");
+  const fixture = path.join(root, "pipe-scenario.ts");
+  await writeFile(
+    fixture,
+    `import { runVerificationMain } from ${JSON.stringify(new URL("./verify.ts", import.meta.url).href)};\nawait runVerificationMain([{ id: 'cancel', concurrency: 1, mutatesWorktree: true, steps: ${JSON.stringify(steps)} }], { logDirectory: ${JSON.stringify(logs)} });\n`
+  );
+  const child = spawn(process.execPath, [fixture], {
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let stderr = "";
+  child.stderr.on("data", (chunk: Buffer) => {
+    stderr += chunk.toString("utf-8");
+  });
+  let stdoutBytes = 0;
+  if (consume === "never-read") {
+    child.stdout.pause();
+  } else {
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdoutBytes += chunk.length;
+    });
+  }
+  const started = Date.now();
+  const exited = new Promise<number | null>((resolve) => {
+    child.once("close", (code) => resolve(code));
+  });
+  try {
+    for (let attempt = 0; attempt < 1000; attempt += 1) {
+      if (
+        await access(pidFile).then(
+          () => true,
+          () => false
+        )
+      ) {
+        break;
+      }
+      await sleep(10);
+    }
+    // Let the step's output reach the log before cancelling.
+    await sleep(300);
+    if (consume === "close") {
+      child.stdout.destroy();
+    }
+    for (const [index, signal] of signals.entries()) {
+      if (index > 0) {
+        await sleep(300);
+      }
+      child.kill(signal);
+    }
+    const code = await Promise.race([
+      exited,
+      sleep(15_000).then(() => "timeout" as const),
+    ]);
+    if (code === "timeout") {
+      throw new Error(`child did not exit promptly; stderr: ${stderr}`);
+    }
+    return { code, elapsedMs: Date.now() - started, stderr, stdoutBytes };
+  } finally {
+    child.kill("SIGKILL");
+  }
+};
+
+const bulkStep = (root: string): object => ({
+  id: "bulk",
+  command: [
+    process.execPath,
+    "-e",
+    `import {writeFileSync} from 'node:fs'; process.stdout.write('x'.repeat(8 * 1024 * 1024)); writeFileSync(${JSON.stringify(path.join(root, "pid"))}, String(process.pid)); setInterval(()=>{},1000);`,
+  ],
+});
+
+test("a repeated signal exits promptly despite pending writes to an unread stdout pipe", async () => {
+  const root = await createRoot();
+  const result = await runPipeScenario(
+    root,
+    [bulkStep(root)],
+    ["SIGTERM", "SIGTERM"],
+    "never-read"
+  );
+  expect(result.code).toBe(143);
+  expect(result.stderr).toContain("Verification logs retained");
+  const [run] = await readdir(path.join(root, "logs"));
+  if (run === undefined) {
+    throw new Error("missing retained log directory");
+  }
+  const owner = JSON.parse(
+    await readFile(path.join(root, "logs", run, "owner.json"), "utf-8")
+  ) as { finishedAt?: number };
+  expect(typeof owner.finishedAt).toBe("number");
+});
+
+test.each([
+  ["SIGHUP", 129],
+  ["SIGTERM", 143],
+] as const)(
+  "%s keeps its status when the stdout consumer has gone away",
+  async (signal, status) => {
+    const root = await createRoot();
+    const result = await runPipeScenario(
+      root,
+      [bulkStep(root)],
+      [signal],
+      "close"
+    );
+    expect(result.code).toBe(status);
+    expect(result.stderr).not.toContain("EPIPE");
+    expect(result.stderr).toContain("Verification logs retained");
+    expect(await readdir(path.join(root, "logs"))).toHaveLength(1);
+  }
+);

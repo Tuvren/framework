@@ -48,6 +48,13 @@ export const CANCELLATION_SIGNALS = Object.keys(
 ) as CancellationSignal[];
 export const cancellationExitCode = (signal: CancellationSignal): number =>
   CANCELLATION_SIGNAL_CODES[signal];
+const isCancellationSignal = (value: unknown): value is CancellationSignal =>
+  typeof value === "string" && Object.hasOwn(CANCELLATION_SIGNAL_CODES, value);
+/** An abort reason naming a cancellation signal keeps that signal's status. */
+const abortExitCode = (signal: AbortSignal): number =>
+  isCancellationSignal(signal.reason)
+    ? cancellationExitCode(signal.reason)
+    : 130;
 
 const activeCommands = new Set<(signal: CancellationSignal) => void>();
 // Set when a signal arrived with no caller-owned listener; the default
@@ -56,8 +63,9 @@ let pendingReraise: CancellationSignal | undefined;
 const relayHandlers = new Map<CancellationSignal, () => void>();
 const relaySignal = (signal: CancellationSignal): void => {
   process.exitCode = cancellationExitCode(signal);
-  // Decided at delivery: the runner's own listener is the only one when the
-  // caller did not install its own cancellation handling.
+  // The relay is prepended so it runs before any caller listener, including
+  // once-listeners that remove themselves when invoked. It is the only
+  // listener when the caller did not install its own cancellation handling.
   if (process.listenerCount(signal) === 1) {
     pendingReraise ??= signal;
   }
@@ -74,7 +82,7 @@ const registerTerminationRelay = (
 ): (() => void) => {
   if (activeCommands.size === 0) {
     for (const [signal, handler] of relayHandlers) {
-      process.on(signal, handler);
+      process.prependListener(signal, handler);
     }
   }
   activeCommands.add(stop);
@@ -109,7 +117,11 @@ export const runCommand = async (
     );
   }
   if (options.signal?.aborted === true) {
-    return { code: 130, stderr: "command cancelled", stdout: "" };
+    return {
+      code: abortExitCode(options.signal),
+      stderr: "command cancelled",
+      stdout: "",
+    };
   }
 
   const log =
@@ -227,7 +239,11 @@ export const runCommand = async (
       }, graceMs);
       finish();
     };
-    const onAbort = (): void => stop(130, "command cancelled");
+    const onAbort = (): void => {
+      if (options.signal !== undefined) {
+        stop(abortExitCode(options.signal), "command cancelled");
+      }
+    };
     const unregisterRelay = ownsGroup
       ? registerTerminationRelay((signal) =>
           stop(cancellationExitCode(signal), "command cancelled")
