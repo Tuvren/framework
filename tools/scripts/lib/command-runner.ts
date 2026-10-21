@@ -51,7 +51,7 @@ export const cancellationExitCode = (signal: CancellationSignal): number =>
 const isCancellationSignal = (value: unknown): value is CancellationSignal =>
   typeof value === "string" && Object.hasOwn(CANCELLATION_SIGNAL_CODES, value);
 /** An abort reason naming a cancellation signal keeps that signal's status. */
-const abortExitCode = (signal: AbortSignal): number =>
+export const abortExitCode = (signal: AbortSignal): number =>
   isCancellationSignal(signal.reason)
     ? cancellationExitCode(signal.reason)
     : 130;

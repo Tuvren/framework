@@ -122,8 +122,9 @@ test("SIGTERM cancels descendants, preserves its exit status, and stops queued s
       `
       import {existsSync} from 'node:fs';
       const timer = setInterval(() => { if (existsSync(${JSON.stringify(pidFile)})) { clearInterval(timer); process.kill(process.pid, 'SIGTERM'); } }, 10);
-      const results = await runVerificationPhases([{ id: 'cancel', concurrency: 1, mutatesWorktree: true, steps: [
+      const results = await runVerificationPhases([{ id: 'cancel', concurrency: 2, mutatesWorktree: true, steps: [
         { id: 'running', command: [process.execPath, '-e', ${JSON.stringify(childSource)}] },
+        { id: 'running-too', command: [process.execPath, '-e', ${JSON.stringify(childSource)}] },
         { id: 'queued', command: [process.execPath, '-e', "process.stdout.write('UNEXPECTED')"] }
       ] }], { logDirectory: ${JSON.stringify(logs)} });
       clearInterval(timer);
@@ -136,7 +137,9 @@ test("SIGTERM cancels descendants, preserves its exit status, and stops queued s
     expect(result.code).toBe(143);
     expect(result.stdout).not.toContain("UNEXPECTED");
     expect(result.stdout).toContain("command cancelled");
-    expect(result.stdout).toContain('STEP-CODES [["running",143]');
+    expect(result.stdout).toContain(
+      'STEP-CODES [["running",143],["running-too",143],["queued",143]]'
+    );
     const state = await runCommand(
       ["ps", "-o", "stat=", "-p", String(descendantPid)],
       { captureOutput: true }
