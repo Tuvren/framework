@@ -20,6 +20,7 @@ import path from "node:path";
 import process from "node:process";
 
 import {
+  abortExitCode,
   CANCELLATION_SIGNALS,
   cancellationExitCode,
   runCommand,
@@ -737,7 +738,11 @@ const runVerificationStep = async (
   const header = `\n==> ${step.id}\n$ ${step.command.join(" ")}\n`;
 
   if (options.signal.aborted) {
-    return { code: 130, durationMs: 0, id: step.id };
+    return {
+      code: abortExitCode(options.signal),
+      durationMs: 0,
+      id: step.id,
+    };
   }
   if (options.executeStep !== undefined) {
     const code = await options.executeStep(step);
@@ -876,6 +881,17 @@ const runPhase = async (
   return runs.map(toResult);
 };
 
+/** Reports retained logs; once cancelled, a vanished terminal is not an error. */
+const reportRetainedLogs = (directory: string, cancelled: boolean): void => {
+  try {
+    process.stderr.write(`Verification logs retained: ${directory}\n`);
+  } catch (error: unknown) {
+    if (!(cancelled && isVanishedConsumer(error))) {
+      throw error;
+    }
+  }
+};
+
 export const runVerificationPhases = async (
   phases: readonly VerificationPhase[],
   options: VerificationRunOptions = {}
@@ -883,7 +899,7 @@ export const runVerificationPhases = async (
   const results: VerificationResult[] = [];
   const controller = new AbortController();
   const replayController = new AbortController();
-  const abort = (reason?: CancellationSignal): void => controller.abort(reason);
+  const abort = (reason?: unknown): void => controller.abort(reason);
   // Output the consumer can no longer receive is dropped once cancelled.
   const dropVanishedConsumer = (error: Error): void => {
     if (!isVanishedConsumer(error)) {
@@ -895,14 +911,17 @@ export const runVerificationPhases = async (
   // so a stalled or vanished consumer cannot block exit.
   let signalsReceived = 0;
   let outputGuarded = false;
-  const interrupt = (signal: CancellationSignal): void => {
-    process.exitCode = cancellationExitCode(signal);
-    signalsReceived += 1;
+  const guardOutput = (): void => {
     if (!outputGuarded) {
       outputGuarded = true;
       process.stdout.on("error", dropVanishedConsumer);
       process.stderr.on("error", dropVanishedConsumer);
     }
+  };
+  controller.signal.addEventListener("abort", guardOutput, { once: true });
+  const interrupt = (signal: CancellationSignal): void => {
+    process.exitCode = cancellationExitCode(signal);
+    signalsReceived += 1;
     if (signalsReceived > 1 || signal === "SIGHUP") {
       if (!replayController.signal.aborted) {
         options.onReplayAbandoned?.();
@@ -914,10 +933,10 @@ export const runVerificationPhases = async (
   const handlers = CANCELLATION_SIGNALS.map(
     (signal) => [signal, () => interrupt(signal)] as const
   );
-  const abortFromOption = (): void => abort();
+  const abortFromOption = (): void => abort(options.signal?.reason);
   options.signal?.addEventListener("abort", abortFromOption, { once: true });
   if (options.signal?.aborted === true) {
-    abort();
+    abort(options.signal.reason);
   }
   for (const [signal, handler] of handlers) {
     process.on(signal, handler);
@@ -968,7 +987,11 @@ export const runVerificationPhases = async (
       controller.signal.aborted &&
       !results.some((result) => result.code !== 0)
     ) {
-      results.push({ code: 130, durationMs: 0, id: "verification cancelled" });
+      results.push({
+        code: abortExitCode(controller.signal),
+        durationMs: 0,
+        id: "verification cancelled",
+      });
     }
     success = !results.some((result) => result.code !== 0);
     return results;
@@ -981,9 +1004,7 @@ export const runVerificationPhases = async (
       if (logs !== undefined) {
         await logs.finish(success);
         if (!success) {
-          process.stderr.write(
-            `Verification logs retained: ${logs.directory}\n`
-          );
+          reportRetainedLogs(logs.directory, controller.signal.aborted);
         }
       }
     } finally {
@@ -1030,6 +1051,7 @@ export const runVerificationMain = async (
     ...options,
     onReplayAbandoned: () => {
       replayAbandoned = true;
+      options.onReplayAbandoned?.();
     },
   });
   if (!replayAbandoned) {
