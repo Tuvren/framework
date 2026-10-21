@@ -27,9 +27,7 @@ import { runCommand } from "./lib/command-runner.js";
 import { prependGeneratedPrerequisitePhase } from "./lib/generated-prerequisites.js";
 import {
   FORMAT_CHECK_STEP,
-  hasVerificationFailure,
-  printVerificationSummary,
-  runVerificationPhases,
+  runVerificationMain,
   selectAuthorityGateSteps,
 } from "./verify.js";
 import type { VerificationPhase } from "./verify.js";
@@ -201,12 +199,7 @@ const runCheckCli = async (args: readonly string[]): Promise<void> => {
     base,
     includeRust: await rustChangedSince(base),
   });
-  const results = await runVerificationPhases(phases);
-  printVerificationSummary(results);
-
-  if (hasVerificationFailure(results)) {
-    process.exitCode ??= 1;
-  }
+  await runVerificationMain(phases);
 };
 
 if (import.meta.main) {

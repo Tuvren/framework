@@ -143,6 +143,43 @@ describe("runCommand signal relay", () => {
     }
   );
 
+  test("a caller's once-listener counts as its own handling and prevents re-raise", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "relay-once-test-"));
+    try {
+      const pidFile = path.join(root, "pid");
+      const result = await runSignalScenario(
+        root,
+        `process.once("SIGTERM", () => {});\nconst r = await ${ownedSleep(pidFile)};\nconsole.log("CONTINUED " + r.code);`,
+        "SIGTERM",
+        [pidFile]
+      );
+      expect(result.signal).toBeNull();
+      expect(result.code).toBe(143);
+      expect(result.stdout).toContain("CONTINUED 143");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("an abort reason naming a cancellation signal sets the command status", async () => {
+    const controller = new AbortController();
+    const running = runCommand(["sleep", "30"], {
+      signal: controller.signal,
+      terminationGraceMs: 100,
+    });
+    await sleep(50);
+    controller.abort("SIGTERM");
+    expect((await running).code).toBe(143);
+    const other = new AbortController();
+    const plain = runCommand(["sleep", "30"], {
+      signal: other.signal,
+      terminationGraceMs: 100,
+    });
+    await sleep(50);
+    other.abort();
+    expect((await plain).code).toBe(130);
+  });
+
   test.each([
     ["SIGINT", 130],
     ["SIGHUP", 129],

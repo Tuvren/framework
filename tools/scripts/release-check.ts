@@ -17,11 +17,7 @@
 import { readFile } from "node:fs/promises";
 import process from "node:process";
 
-import {
-  hasVerificationFailure,
-  printVerificationSummary,
-  runVerification,
-} from "./verify.js";
+import { hasVerificationFailure, runVerificationMain } from "./verify.js";
 
 interface RuntimeVersionReport {
   declaredBunVersion?: string;
@@ -91,12 +87,9 @@ if (
   );
 }
 
-const results = await runVerification();
-printVerificationSummary(results);
+const results = await runVerificationMain();
 
-if (hasVerificationFailure(results)) {
-  process.exitCode ??= 1;
-} else {
+if (!hasVerificationFailure(results)) {
   console.log("");
   console.log("Transition release check completed successfully.");
 }

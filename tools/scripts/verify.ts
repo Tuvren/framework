@@ -107,6 +107,8 @@ export interface VerificationRunOptions {
   /** Executes the assembled plan without rewriting its phases in regression tests. */
   executeStep?: (step: VerificationStep) => number | Promise<number>;
   logDirectory?: string;
+  /** Called when a hang-up or repeated signal abandoned log replay. */
+  onReplayAbandoned?: () => void;
   signal?: AbortSignal;
 }
 
@@ -692,6 +694,11 @@ interface StepRunOptions extends VerificationRunOptions {
   signal: AbortSignal;
 }
 
+const isVanishedConsumer = (error: unknown): boolean =>
+  error instanceof Error &&
+  "code" in error &&
+  (error.code === "EPIPE" || error.code === "EIO");
+
 /** Replays a step log; a repeated cancellation abandons it without failing. */
 const replayStepLog = async (
   logFile: string,
@@ -703,7 +710,14 @@ const replayStepLog = async (
   try {
     await replayVerificationLog(logFile, process.stdout, options.replaySignal);
   } catch (error: unknown) {
-    if (!options.replaySignal.aborted) {
+    // Once cancelled, a vanished consumer (closed pipe, hung-up terminal) is
+    // expected and must not replace the cancellation status.
+    if (
+      !(
+        options.replaySignal.aborted ||
+        (options.signal.aborted && isVanishedConsumer(error))
+      )
+    ) {
       throw error;
     }
   }
@@ -869,22 +883,39 @@ export const runVerificationPhases = async (
   const results: VerificationResult[] = [];
   const controller = new AbortController();
   const replayController = new AbortController();
-  const abort = (): void => controller.abort();
+  const abort = (reason?: CancellationSignal): void => controller.abort(reason);
+  // Output the consumer can no longer receive is dropped once cancelled.
+  const dropVanishedConsumer = (error: Error): void => {
+    if (!isVanishedConsumer(error)) {
+      throw error;
+    }
+  };
   // The first cancellation still replays completed and stopped step logs; a
-  // repeated one abandons replay so a stalled consumer cannot block exit.
+  // repeated one, or a hang-up that already lost the terminal, abandons replay
+  // so a stalled or vanished consumer cannot block exit.
   let signalsReceived = 0;
+  let outputGuarded = false;
   const interrupt = (signal: CancellationSignal): void => {
     process.exitCode = cancellationExitCode(signal);
     signalsReceived += 1;
-    if (signalsReceived > 1) {
+    if (!outputGuarded) {
+      outputGuarded = true;
+      process.stdout.on("error", dropVanishedConsumer);
+      process.stderr.on("error", dropVanishedConsumer);
+    }
+    if (signalsReceived > 1 || signal === "SIGHUP") {
+      if (!replayController.signal.aborted) {
+        options.onReplayAbandoned?.();
+      }
       replayController.abort();
     }
-    abort();
+    abort(signal);
   };
   const handlers = CANCELLATION_SIGNALS.map(
     (signal) => [signal, () => interrupt(signal)] as const
   );
-  options.signal?.addEventListener("abort", abort, { once: true });
+  const abortFromOption = (): void => abort();
+  options.signal?.addEventListener("abort", abortFromOption, { once: true });
   if (options.signal?.aborted === true) {
     abort();
   }
@@ -942,27 +973,30 @@ export const runVerificationPhases = async (
     success = !results.some((result) => result.code !== 0);
     return results;
   } finally {
-    options.signal?.removeEventListener("abort", abort);
+    options.signal?.removeEventListener("abort", abortFromOption);
     for (const [signal, handler] of handlers) {
       process.removeListener(signal, handler);
     }
-    if (logs !== undefined) {
-      await logs.finish(success);
-      if (!success) {
-        process.stderr.write(`Verification logs retained: ${logs.directory}\n`);
+    try {
+      if (logs !== undefined) {
+        await logs.finish(success);
+        if (!success) {
+          process.stderr.write(
+            `Verification logs retained: ${logs.directory}\n`
+          );
+        }
+      }
+    } finally {
+      if (outputGuarded) {
+        // Late asynchronous write failures can still be emitted after return.
+        setImmediate(() => {
+          process.stdout.removeListener("error", dropVanishedConsumer);
+          process.stderr.removeListener("error", dropVanishedConsumer);
+        });
       }
     }
   }
 };
-
-/**
- * Runs the full phased verification pipeline (release-check and the `verify`
- * entry point). The other lanes (verify-kernel, check, codegen) build their
- * own phase lists and call runVerificationPhases directly — it is the single
- * phase-engine entry point for all four lanes (KRT-BM002).
- */
-export const runVerification = async (): Promise<VerificationResult[]> =>
-  await runVerificationPhases(DEFAULT_VERIFICATION_PHASES);
 
 export const hasVerificationFailure = (
   results: readonly VerificationResult[]
@@ -980,11 +1014,36 @@ export const printVerificationSummary = (
   }
 };
 
-if (import.meta.main) {
-  const results = await runVerification();
-  printVerificationSummary(results);
-
+/**
+ * Runs the pipeline as a process entry point shared by every verification
+ * lane (verify, release-check, verify-kernel, check, codegen), so each gets
+ * the same summary, exit code, and abandoned-replay handling. When a signal abandoned log
+ * replay, stdout writes may stay pending on an unread pipe and keep the
+ * runtime alive, so exit explicitly once logs are finalized.
+ */
+export const runVerificationMain = async (
+  phases: readonly VerificationPhase[] = DEFAULT_VERIFICATION_PHASES,
+  options: VerificationRunOptions = {}
+): Promise<VerificationResult[]> => {
+  let replayAbandoned = false;
+  const results = await runVerificationPhases(phases, {
+    ...options,
+    onReplayAbandoned: () => {
+      replayAbandoned = true;
+    },
+  });
+  if (!replayAbandoned) {
+    printVerificationSummary(results);
+  }
   if (hasVerificationFailure(results)) {
     process.exitCode ??= 1;
   }
+  if (replayAbandoned) {
+    process.exit(process.exitCode);
+  }
+  return results;
+};
+
+if (import.meta.main) {
+  await runVerificationMain();
 }

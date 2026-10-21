@@ -18,11 +18,7 @@ import process from "node:process";
 
 import { prependGeneratedPrerequisitePhase } from "./lib/generated-prerequisites.js";
 import { loadNxProjectFiles } from "./lib/nx-projects.js";
-import {
-  hasVerificationFailure,
-  printVerificationSummary,
-  runVerificationPhases,
-} from "./verify.js";
+import { runVerificationMain } from "./verify.js";
 import type { VerificationPhase } from "./verify.js";
 
 const KERNEL_TYPECHECK_PROJECTS = [
@@ -191,12 +187,7 @@ if (import.meta.main) {
     );
   }
 
-  const results = await runVerificationPhases(
+  await runVerificationMain(
     createKernelVerificationPhases({ fresh: args.includes(FRESH_FLAG) })
   );
-  printVerificationSummary(results);
-
-  if (hasVerificationFailure(results)) {
-    process.exitCode ??= 1;
-  }
 }
