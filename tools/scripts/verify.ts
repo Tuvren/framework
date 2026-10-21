@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
+import { appendFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
@@ -25,6 +25,11 @@ import {
   prependGeneratedPrerequisitePhase,
 } from "./lib/generated-prerequisites.js";
 import { loadNxProjectFiles } from "./lib/nx-projects.js";
+import {
+  createVerificationLogs,
+  replayVerificationLog,
+} from "./lib/verification-logs.js";
+import type { VerificationLogs } from "./lib/verification-logs.js";
 import {
   assertWorktreeUnchanged,
   readWorktreeSnapshot,
@@ -96,6 +101,8 @@ export interface VerificationPhase {
 export interface VerificationRunOptions {
   /** Executes the assembled plan without rewriting its phases in regression tests. */
   executeStep?: (step: VerificationStep) => number | Promise<number>;
+  logDirectory?: string;
+  signal?: AbortSignal;
 }
 
 // Cap parallel fan-out so a phase with many cheap steps does not oversubscribe a
@@ -356,6 +363,9 @@ export const FOLLOWUP_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/scripts/json-source-integrity.test.ts",
   "tools/scripts/lib/native-lint-routing-argv.test.ts",
   "tools/scripts/telemetry-codegen.test.ts",
+  "tools/scripts/lib/command-runner.test.ts",
+  "tools/scripts/lib/verification-logs.test.ts",
+  "tools/scripts/verification-lifecycle.test.ts",
 ];
 
 // This remains an explicit inventory rather than a glob. A new follow-up suite
@@ -667,31 +677,19 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] =
   createVerificationPhases();
 
 interface StepRun extends VerificationResult {
-  output: string | null;
+  logFile?: string;
 }
 
-const spawnCommand = async (
-  executable: string,
-  args: readonly string[]
-): Promise<number> => {
-  const child = spawn(executable, args, {
-    env: process.env,
-    stdio: "inherit",
-  });
-  const childCompletion = Promise.withResolvers<number>();
-  child.once("error", childCompletion.reject);
-  child.once("close", (code) => {
-    childCompletion.resolve(code ?? 1);
-  });
-  return await childCompletion.promise;
-};
+interface StepRunOptions extends VerificationRunOptions {
+  logs?: VerificationLogs;
+  signal: AbortSignal;
+}
 
 const runVerificationStep = async (
   step: VerificationStep,
-  capture: boolean,
-  options: VerificationRunOptions
+  options: StepRunOptions
 ): Promise<StepRun> => {
-  const [executable, ...args] = step.command;
+  const [executable] = step.command;
 
   if (executable === undefined) {
     throw new Error(`verification step "${step.id}" has no executable`);
@@ -700,35 +698,46 @@ const runVerificationStep = async (
   const startedAt = Date.now();
   const header = `\n==> ${step.id}\n$ ${step.command.join(" ")}\n`;
 
+  if (options.signal.aborted) {
+    return { code: 130, durationMs: 0, id: step.id };
+  }
   if (options.executeStep !== undefined) {
     const code = await options.executeStep(step);
     return {
       code,
       durationMs: Date.now() - startedAt,
       id: step.id,
-      output: null,
     };
   }
 
-  if (!capture) {
-    process.stdout.write(header);
-    const code = await spawnCommand(executable, args);
-
-    return {
-      code,
-      durationMs: Date.now() - startedAt,
-      id: step.id,
-      output: null,
-    };
+  if (options.logs === undefined) {
+    throw new Error("verification requires a log session");
   }
-
-  const result = await runCommand(step.command, { captureOutput: true });
+  const logFile = await options.logs.create(header);
+  process.stdout.write(`${header}Log: ${logFile}\n`);
+  let code: number;
+  try {
+    const result = await runCommand(step.command, {
+      outputFile: logFile,
+      signal: options.signal,
+    });
+    code = result.code;
+    if (result.stderr.length > 0) {
+      await appendFile(logFile, `\n${result.stderr}\n`);
+    }
+  } catch (error: unknown) {
+    code = 1;
+    await appendFile(
+      logFile,
+      `\n${error instanceof Error ? error.message : String(error)}\n`
+    );
+  }
 
   return {
-    code: result.code,
+    code,
     durationMs: Date.now() - startedAt,
     id: step.id,
-    output: header + result.stdout + result.stderr,
+    logFile,
   };
 };
 
@@ -740,7 +749,7 @@ const toResult = (run: StepRun): VerificationResult => ({
 
 const runPhaseSerially = async (
   steps: readonly VerificationStep[],
-  options: VerificationRunOptions
+  options: StepRunOptions
 ): Promise<VerificationResult[]> => {
   const results: VerificationResult[] = [];
   const runStep = async (index: number): Promise<void> => {
@@ -748,10 +757,13 @@ const runPhaseSerially = async (
     if (step === undefined) {
       return;
     }
-    const run = await runVerificationStep(step, false, options);
+    const run = await runVerificationStep(step, options);
+    if (run.logFile !== undefined) {
+      await replayVerificationLog(run.logFile);
+    }
     results.push(toResult(run));
 
-    if (run.code === 0) {
+    if (run.code === 0 && !options.signal.aborted) {
       await runStep(index + 1);
     }
   };
@@ -782,14 +794,21 @@ const mapWithConcurrency = async <T, R>(
   };
 
   const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
-  await Promise.all(workers);
+  const settled = await Promise.allSettled(workers);
+  // A failing log sink or callback must not let sibling commands outlive the
+  // log session or lose their cancellation handlers.
+  for (const result of settled) {
+    if (result.status === "rejected") {
+      throw result.reason;
+    }
+  }
 
   return results;
 };
 
 const runPhase = async (
   phase: VerificationPhase,
-  options: VerificationRunOptions
+  options: StepRunOptions
 ): Promise<VerificationResult[]> => {
   const forceSerial = process.env.VERIFY_SERIAL === "1";
   const limit = forceSerial
@@ -801,22 +820,17 @@ const runPhase = async (
     return await runPhaseSerially(phase.steps, options);
   }
 
-  // Capture each step's output so concurrent logs do not interleave; flush them
-  // in phase order once the phase completes. Captured output is held in memory
-  // until the phase finishes — fine for the only parallel phase today (phase 1
-  // is low-volume static analysis + authority validators). A side effect is that
-  // nothing prints mid-phase, so a hung parallel step shows no output until the
-  // phase ends; run VERIFY_SERIAL=1 for live streaming when diagnosing one. If a
-  // chatty step (e.g. a full build) ever moves into a parallel phase, stream it.
+  // Children write directly to unique log files. Replay incrementally in phase
+  // order so concurrent output stays readable without accumulating in memory.
   const runs = await mapWithConcurrency(
     phase.steps,
     limit,
-    async (step) => await runVerificationStep(step, true, options)
+    async (step) => await runVerificationStep(step, options)
   );
 
   for (const run of runs) {
-    if (run.output !== null) {
-      process.stdout.write(run.output);
+    if (run.logFile !== undefined) {
+      await replayVerificationLog(run.logFile);
     }
   }
 
@@ -828,16 +842,36 @@ export const runVerificationPhases = async (
   options: VerificationRunOptions = {}
 ): Promise<VerificationResult[]> => {
   const results: VerificationResult[] = [];
+  const controller = new AbortController();
+  const abort = (): void => controller.abort();
+  const interrupt = (signal: NodeJS.Signals): void => {
+    process.exitCode = signal === "SIGINT" ? 130 : 143;
+    abort();
+  };
+  const onInterrupt = (): void => interrupt("SIGINT");
+  const onTerminate = (): void => interrupt("SIGTERM");
+  options.signal?.addEventListener("abort", abort, { once: true });
+  if (options.signal?.aborted === true) {
+    abort();
+  }
+  process.on("SIGINT", onInterrupt);
+  process.on("SIGTERM", onTerminate);
+  let logs: VerificationLogs | undefined;
+  let success = false;
   const runPhaseAt = async (index: number): Promise<boolean> => {
     const phase = phases[index];
-    if (phase === undefined) {
+    if (phase === undefined || controller.signal.aborted) {
       return true;
     }
     const before =
       phase.mutatesWorktree === true
         ? undefined
         : await readWorktreeSnapshot(process.cwd());
-    const phaseResults = await runPhase(phase, options);
+    const phaseResults = await runPhase(phase, {
+      ...options,
+      logs,
+      signal: controller.signal,
+    });
     results.push(...phaseResults);
 
     if (before !== undefined) {
@@ -847,15 +881,41 @@ export const runVerificationPhases = async (
       });
     }
 
-    if (phaseResults.some((result) => result.code !== 0)) {
+    if (
+      phaseResults.some((result) => result.code !== 0) ||
+      controller.signal.aborted
+    ) {
       return false;
     }
 
     return await runPhaseAt(index + 1);
   };
 
-  await runPhaseAt(0);
-  return results;
+  try {
+    if (options.executeStep === undefined) {
+      logs = await createVerificationLogs(options.logDirectory);
+    }
+    await runPhaseAt(0);
+    // Cancellation between phases must still produce a failing result.
+    if (
+      controller.signal.aborted &&
+      !results.some((result) => result.code !== 0)
+    ) {
+      results.push({ code: 130, durationMs: 0, id: "verification cancelled" });
+    }
+    success = !results.some((result) => result.code !== 0);
+    return results;
+  } finally {
+    options.signal?.removeEventListener("abort", abort);
+    process.removeListener("SIGINT", onInterrupt);
+    process.removeListener("SIGTERM", onTerminate);
+    if (logs !== undefined) {
+      await logs.finish(success);
+      if (!success) {
+        process.stderr.write(`Verification logs retained: ${logs.directory}\n`);
+      }
+    }
+  }
 };
 
 /**
@@ -888,6 +948,6 @@ if (import.meta.main) {
   printVerificationSummary(results);
 
   if (hasVerificationFailure(results)) {
-    process.exitCode = 1;
+    process.exitCode ??= 1;
   }
 }

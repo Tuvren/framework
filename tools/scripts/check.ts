@@ -205,7 +205,7 @@ const runCheckCli = async (args: readonly string[]): Promise<void> => {
   printVerificationSummary(results);
 
   if (hasVerificationFailure(results)) {
-    process.exitCode = 1;
+    process.exitCode ??= 1;
   }
 };
 

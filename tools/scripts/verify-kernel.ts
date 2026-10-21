@@ -197,6 +197,6 @@ if (import.meta.main) {
   printVerificationSummary(results);
 
   if (hasVerificationFailure(results)) {
-    process.exitCode = 1;
+    process.exitCode ??= 1;
   }
 }

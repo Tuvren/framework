@@ -95,7 +95,7 @@ const results = await runVerification();
 printVerificationSummary(results);
 
 if (hasVerificationFailure(results)) {
-  process.exitCode = 1;
+  process.exitCode ??= 1;
 } else {
   console.log("");
   console.log("Transition release check completed successfully.");
