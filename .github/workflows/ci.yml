@@ -163,6 +163,19 @@ jobs:
             bun run verify
           '
 
+      # Serial step output is replayed only after the step ends, so a hung
+      # step would lose its output with the runner. Logs are written to disk
+      # while running; keep them when the job fails or is cancelled.
+      - name: Upload verification logs
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v7
+        with:
+          name: verification-logs
+          path: .cache/verification
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Check public package changesets
         if: github.event_name == 'pull_request'
         env:

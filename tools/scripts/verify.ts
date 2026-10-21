@@ -19,7 +19,12 @@ import { appendFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
-import { runCommand } from "./lib/command-runner.js";
+import {
+  CANCELLATION_SIGNALS,
+  cancellationExitCode,
+  runCommand,
+} from "./lib/command-runner.js";
+import type { CancellationSignal } from "./lib/command-runner.js";
 import {
   GENERATED_PREREQUISITE_PROJECT,
   prependGeneratedPrerequisitePhase,
@@ -682,8 +687,27 @@ interface StepRun extends VerificationResult {
 
 interface StepRunOptions extends VerificationRunOptions {
   logs?: VerificationLogs;
+  /** Aborted by a repeated cancellation signal to abandon log replay. */
+  replaySignal: AbortSignal;
   signal: AbortSignal;
 }
+
+/** Replays a step log; a repeated cancellation abandons it without failing. */
+const replayStepLog = async (
+  logFile: string,
+  options: StepRunOptions
+): Promise<void> => {
+  if (options.replaySignal.aborted) {
+    return;
+  }
+  try {
+    await replayVerificationLog(logFile, process.stdout, options.replaySignal);
+  } catch (error: unknown) {
+    if (!options.replaySignal.aborted) {
+      throw error;
+    }
+  }
+};
 
 const runVerificationStep = async (
   step: VerificationStep,
@@ -759,7 +783,7 @@ const runPhaseSerially = async (
     }
     const run = await runVerificationStep(step, options);
     if (run.logFile !== undefined) {
-      await replayVerificationLog(run.logFile);
+      await replayStepLog(run.logFile, options);
     }
     results.push(toResult(run));
 
@@ -820,8 +844,9 @@ const runPhase = async (
     return await runPhaseSerially(phase.steps, options);
   }
 
-  // Children write directly to unique log files. Replay incrementally in phase
-  // order so concurrent output stays readable without accumulating in memory.
+  // Children write directly to unique log files. Once the whole phase has
+  // finished, replay them in plan order so concurrent output stays readable
+  // without accumulating in memory.
   const runs = await mapWithConcurrency(
     phase.steps,
     limit,
@@ -830,7 +855,7 @@ const runPhase = async (
 
   for (const run of runs) {
     if (run.logFile !== undefined) {
-      await replayVerificationLog(run.logFile);
+      await replayStepLog(run.logFile, options);
     }
   }
 
@@ -843,19 +868,29 @@ export const runVerificationPhases = async (
 ): Promise<VerificationResult[]> => {
   const results: VerificationResult[] = [];
   const controller = new AbortController();
+  const replayController = new AbortController();
   const abort = (): void => controller.abort();
-  const interrupt = (signal: NodeJS.Signals): void => {
-    process.exitCode = signal === "SIGINT" ? 130 : 143;
+  // The first cancellation still replays completed and stopped step logs; a
+  // repeated one abandons replay so a stalled consumer cannot block exit.
+  let signalsReceived = 0;
+  const interrupt = (signal: CancellationSignal): void => {
+    process.exitCode = cancellationExitCode(signal);
+    signalsReceived += 1;
+    if (signalsReceived > 1) {
+      replayController.abort();
+    }
     abort();
   };
-  const onInterrupt = (): void => interrupt("SIGINT");
-  const onTerminate = (): void => interrupt("SIGTERM");
+  const handlers = CANCELLATION_SIGNALS.map(
+    (signal) => [signal, () => interrupt(signal)] as const
+  );
   options.signal?.addEventListener("abort", abort, { once: true });
   if (options.signal?.aborted === true) {
     abort();
   }
-  process.on("SIGINT", onInterrupt);
-  process.on("SIGTERM", onTerminate);
+  for (const [signal, handler] of handlers) {
+    process.on(signal, handler);
+  }
   let logs: VerificationLogs | undefined;
   let success = false;
   const runPhaseAt = async (index: number): Promise<boolean> => {
@@ -870,6 +905,7 @@ export const runVerificationPhases = async (
     const phaseResults = await runPhase(phase, {
       ...options,
       logs,
+      replaySignal: replayController.signal,
       signal: controller.signal,
     });
     results.push(...phaseResults);
@@ -907,8 +943,9 @@ export const runVerificationPhases = async (
     return results;
   } finally {
     options.signal?.removeEventListener("abort", abort);
-    process.removeListener("SIGINT", onInterrupt);
-    process.removeListener("SIGTERM", onTerminate);
+    for (const [signal, handler] of handlers) {
+      process.removeListener(signal, handler);
+    }
     if (logs !== undefined) {
       await logs.finish(success);
       if (!success) {

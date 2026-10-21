@@ -70,6 +70,27 @@ test("replay streams a large log in bounded chunks without closing the destinati
   sink.end();
 });
 
+test("an aborted replay into a stalled destination rejects promptly", async () => {
+  const root = await createRoot();
+  const file = path.join(root, "stalled.log");
+  await writeFile(file, "x".repeat(256 * 1024));
+  const stalled = new Writable({
+    highWaterMark: 16,
+    write() {
+      // Never acknowledge the chunk: the consumer is backpressured forever.
+    },
+  });
+  const controller = new AbortController();
+  const replay = replayVerificationLog(file, stalled, controller.signal);
+  const outcome = replay.then(
+    () => "completed",
+    (error: unknown) => (error instanceof Error ? error.name : "unknown")
+  );
+  setTimeout(() => controller.abort(), 50);
+  expect(await outcome).toBe("AbortError");
+  expect(stalled.listenerCount("error")).toBe(0);
+});
+
 test("failed sessions are retained, count bounded, and expired logs pruned", async () => {
   const root = await createRoot();
   for (let index = 0; index < 22; index += 1) {

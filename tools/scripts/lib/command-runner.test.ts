@@ -15,8 +15,9 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { spawn } from "node:child_process";
 import { getEventListeners } from "node:events";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
@@ -44,6 +45,153 @@ const expectStopped = async (pid: number): Promise<void> => {
   }
   expect(await isAlive(pid)).toBe(false);
 };
+
+interface ScenarioExit {
+  code: number | null;
+  signal: NodeJS.Signals | null;
+  stdout: string;
+}
+
+/**
+ * Runs `body` in a child process that imports runCommand, sends it `signal`
+ * once every listed pid file exists, and reports how it terminated.
+ */
+const runSignalScenario = async (
+  root: string,
+  body: string,
+  signal: NodeJS.Signals,
+  pidFiles: readonly string[]
+): Promise<ScenarioExit & { pids: number[] }> => {
+  const fixture = path.join(root, "scenario.ts");
+  await writeFile(
+    fixture,
+    `import { runCommand } from ${JSON.stringify(new URL("./command-runner.ts", import.meta.url).href)};\n${body}`
+  );
+  const child = spawn(process.execPath, [fixture], {
+    stdio: ["ignore", "pipe", "inherit"],
+  });
+  let stdout = "";
+  child.stdout.on("data", (chunk: Buffer) => {
+    stdout += chunk.toString("utf-8");
+  });
+  const exited = new Promise<ScenarioExit>((resolve) => {
+    child.once("close", (code, exitSignal) =>
+      resolve({ code, signal: exitSignal, stdout })
+    );
+  });
+  const pids: number[] = [];
+  try {
+    for (const pidFile of pidFiles) {
+      let pid = Number.NaN;
+      for (let attempt = 0; attempt < 500 && Number.isNaN(pid); attempt += 1) {
+        try {
+          pid = Number.parseInt(await readFile(pidFile, "utf-8"), 10);
+        } catch {
+          await sleep(10);
+        }
+      }
+      if (Number.isNaN(pid)) {
+        throw new Error("scenario descendant did not start");
+      }
+      pids.push(pid);
+    }
+    child.kill(signal);
+    const result = await exited;
+    return { ...result, pids };
+  } finally {
+    child.kill("SIGKILL");
+    for (const pid of pids) {
+      try {
+        process.kill(pid, "SIGKILL");
+      } catch {
+        /* Already stopped. */
+      }
+    }
+  }
+};
+
+const ownedSleep = (pidFile: string): string =>
+  `runCommand(["sh", "-c", ${JSON.stringify(`sleep 30 & echo $! > ${pidFile}; wait`)}], { signal: new AbortController().signal, terminationGraceMs: 100 })`;
+
+describe("runCommand signal relay", () => {
+  test.each([
+    ["SIGHUP", 129],
+    ["SIGQUIT", 131],
+  ] as const)(
+    "%s stops the owned group and leaves cancellation to a caller with its own listener",
+    async (signal, status) => {
+      const root = await mkdtemp(path.join(tmpdir(), "relay-hup-test-"));
+      try {
+        const pidFile = path.join(root, "pid");
+        const result = await runSignalScenario(
+          root,
+          `process.on(${JSON.stringify(signal)}, () => {});\nconst r = await ${ownedSleep(pidFile)};\nconsole.log("CONTINUED " + r.code);`,
+          signal,
+          [pidFile]
+        );
+        expect(result.signal).toBeNull();
+        expect(result.code).toBe(status);
+        expect(result.stdout).toContain(`CONTINUED ${status}`);
+        const [pid] = result.pids;
+        if (pid === undefined) {
+          throw new Error("missing pid");
+        }
+        await expectStopped(pid);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    }
+  );
+
+  test.each([
+    ["SIGINT", 130],
+    ["SIGHUP", 129],
+    ["SIGTERM", 143],
+  ] as const)(
+    "%s without a caller listener stops every owned group then terminates the caller",
+    async (signal, status) => {
+      const root = await mkdtemp(path.join(tmpdir(), "relay-default-test-"));
+      try {
+        const first = path.join(root, "first");
+        const second = path.join(root, "second");
+        const result = await runSignalScenario(
+          root,
+          `await Promise.all([${ownedSleep(first)}, ${ownedSleep(second)}]);\nconsole.log("CONTINUED");`,
+          signal,
+          [first, second]
+        );
+        expect(result.stdout).not.toContain("CONTINUED");
+        // Bun reports a re-raised default disposition as the signal itself or
+        // as the conventional 128+signo status.
+        expect(result.signal === signal || result.code === status).toBe(true);
+        for (const pid of result.pids) {
+          await expectStopped(pid);
+        }
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    }
+  );
+
+  test("normal completion does not re-raise or leave relay listeners", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "relay-clean-test-"));
+    try {
+      const fixture = path.join(root, "clean.ts");
+      await writeFile(
+        fixture,
+        `import { runCommand } from ${JSON.stringify(new URL("./command-runner.ts", import.meta.url).href)};\nawait runCommand(["true"], { timeoutMs: 5000 });\nconsole.log(["SIGHUP","SIGINT","SIGQUIT","SIGTERM"].map((s) => process.listenerCount(s)).join(","));`
+      );
+      const result = await runCommand([process.execPath, fixture], {
+        captureOutput: true,
+        timeoutMs: 5000,
+      });
+      expect(result.code).toBe(0);
+      expect(result.stdout.trim()).toBe("0,0,0,0");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("runCommand", () => {
   test("rejects empty argv with the executable precondition message", async () => {
