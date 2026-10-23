@@ -16,200 +16,329 @@
  */
 
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import nodePath from "node:path";
-import { isDeepStrictEqual } from "node:util";
 
 import { spawn } from "bun";
 
 import { assertConformanceEvidence } from "../../scripts/lib/conformance-contract.ts";
-import type { ConformanceCheckResult } from "../../scripts/lib/conformance-contract.ts";
+import { readAdapterManifest, readPlans } from "../harness/run-plans.ts";
+import {
+  compareObservations,
+  stabilizeObservations,
+  validateObservationSteps,
+} from "./observation-comparison.ts";
 
-interface ComparedCheck {
-  checkId: string;
-  status: string;
-  assertionResults: readonly unknown[];
-}
-interface Disagreement {
-  checkId: string;
-  differences: string[];
-  typescript: { outcome?: ComparedCheck; observations?: unknown };
-  rust: { outcome?: ComparedCheck; observations?: unknown };
-}
-
-export const compareObservations = (
-  typescript: readonly ComparedCheck[],
-  rust: readonly ComparedCheck[],
-  typescriptObservations: readonly unknown[],
-  rustObservations: readonly unknown[]
-): Disagreement[] => {
-  const indexed = (
-    checks: readonly ComparedCheck[],
-    observations: readonly unknown[]
-  ) =>
-    new Map(
-      checks.map((check, index) => [
-        check.checkId,
-        { outcome: check, observations: observations[index] },
-      ])
-    );
-  const left = indexed(typescript, typescriptObservations);
-  const right = indexed(rust, rustObservations);
-  return [...new Set([...left.keys(), ...right.keys()])]
-    .toSorted()
-    .flatMap((checkId) => {
-      const ts = left.get(checkId);
-      const rs = right.get(checkId);
-      const differences = [
-        ...(ts === undefined || rs === undefined ? ["applicability"] : []),
-        ...(ts !== undefined &&
-        rs !== undefined &&
-        !isDeepStrictEqual(ts.outcome, rs.outcome)
-          ? ["outcome"]
-          : []),
-        ...(ts !== undefined &&
-        rs !== undefined &&
-        !isDeepStrictEqual(ts.observations, rs.observations)
-          ? ["observations"]
-          : []),
-      ];
-      return differences.length === 0
-        ? []
-        : [{ checkId, differences, typescript: ts ?? {}, rust: rs ?? {} }];
-    });
-};
-
-export const DISAGREEMENT_DIRECTORY = ".cache/tuvren-certification/DD004";
 const ROOT = nodePath.resolve(import.meta.dirname, "../../..");
 const digest = (text: string): string =>
   createHash("sha256").update(text).digest("hex");
-const outcome = ({
-  checkId,
-  status,
-  assertionResults,
-}: ConformanceCheckResult): ComparedCheck => ({
-  checkId,
-  status,
-  assertionResults,
-});
+const json = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`;
+interface Options {
+  adapters: string[];
+  capabilities: string[];
+  output: string;
+  summaryOut?: string;
+}
 
-const captureImplementation = async (language: string, adapter: string) => {
-  const directory = nodePath.resolve(ROOT, DISAGREEMENT_DIRECTORY, language);
+const parseCli = (args: readonly string[]): Options => {
+  const options: Options = {
+    adapters: [],
+    capabilities: [],
+    output: ".cache/conformance-comparison",
+  };
+  for (let index = 0; index < args.length; index += 2) {
+    const flag = args[index];
+    const value = args[index + 1];
+    if (value === undefined || value.startsWith("--")) {
+      throw new Error(`${flag} requires a value`);
+    }
+    switch (flag) {
+      case "--adapter": {
+        options.adapters.push(value);
+        break;
+      }
+      case "--capability": {
+        options.capabilities.push(value);
+        break;
+      }
+      case "--output": {
+        options.output = value;
+        break;
+      }
+      case "--summary-out": {
+        options.summaryOut = value;
+        break;
+      }
+      default: {
+        throw new Error(`unknown comparison argument ${flag}`);
+      }
+    }
+  }
+  if (options.adapters.length < 2) {
+    throw new Error("comparison requires at least two --adapter manifests");
+  }
+  return options;
+};
+
+const captureImplementation = async (adapter: string, options: Options) => {
+  const manifest = await readAdapterManifest(adapter);
+  const plans = await readPlans(manifest, { packets: [], plans: [] });
+  const directory = nodePath.resolve(
+    ROOT,
+    options.output,
+    digest(manifest.implementationId).slice(0, 16)
+  );
   await mkdir(directory, { recursive: true });
   const probes = await mkdtemp(nodePath.join(directory, "observations-"));
-  const manifest: unknown = JSON.parse(
-    await readFile(nodePath.resolve(ROOT, adapter), "utf-8")
-  );
-  if (
-    typeof manifest !== "object" ||
-    manifest === null ||
-    !("command" in manifest) ||
-    !Array.isArray(manifest.command) ||
-    !manifest.command.every((item: unknown) => typeof item === "string")
-  ) {
-    throw new TypeError(`${adapter} must contain an adapter command`);
-  }
-  const wrapped = nodePath.join(directory, "adapter.json");
-  await writeFile(
-    wrapped,
-    `${JSON.stringify({ ...manifest, command: ["bun", "tools/conformance/meta-conformance/observation-probe.ts", probes, "--", ...manifest.command] }, null, 2)}\n`
-  );
-  const evidencePath = nodePath.join(directory, "evidence.json");
-  const command = [
-    "bun",
-    "tools/conformance/harness/run.ts",
-    "--adapter",
-    wrapped,
-    "--capability",
-    "kernel.syscall",
-    "--concurrency",
-    "1",
-    "--allow-failing-evidence",
-    "--evidence-out",
-    evidencePath,
-    "--summary-only",
-  ];
-  const child = spawn(command, {
-    cwd: ROOT,
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-  if ((await child.exited) !== 0) {
-    throw new Error(`${language} comparison harness failed`);
-  }
-  const text = await readFile(evidencePath, "utf-8");
-  const evidence: unknown = JSON.parse(text);
-  assertConformanceEvidence(evidence, `${language} comparison evidence`);
-  const files = await readdir(probes);
-  if (files.length !== 1) {
-    throw new Error(
-      `${language}: expected one serial observation stream, received ${files.length}`
+  try {
+    const wrapped = nodePath.join(directory, "adapter.json");
+    await writeFile(
+      wrapped,
+      json({
+        ...manifest,
+        command: [
+          "bun",
+          "tools/conformance/meta-conformance/observation-probe.ts",
+          probes,
+          "--",
+          ...manifest.command,
+        ],
+      })
     );
+    const evidencePath = nodePath.join(directory, "evidence.json");
+    const child = spawn(
+      [
+        "bun",
+        "tools/conformance/harness/run.ts",
+        "--adapter",
+        wrapped,
+        ...options.capabilities.flatMap((capability) => [
+          "--capability",
+          capability,
+        ]),
+        "--concurrency",
+        "1",
+        "--allow-failing-evidence",
+        "--evidence-out",
+        evidencePath,
+        "--summary-only",
+      ],
+      { cwd: ROOT, stderr: "inherit", stdout: "inherit" }
+    );
+    if ((await child.exited) !== 0) {
+      throw new Error(
+        `${manifest.implementationId}: comparison harness failed`
+      );
+    }
+    const evidenceText = await readFile(evidencePath, "utf-8");
+    const evidence: unknown = JSON.parse(evidenceText);
+    assertConformanceEvidence(
+      evidence,
+      `${manifest.implementationId} comparison evidence`
+    );
+    const inventory = evidence.selection;
+    if (inventory === undefined) {
+      throw new Error(
+        "comparison evidence is missing the harness selection inventory"
+      );
+    }
+    const files = await readdir(probes);
+    if (files.length !== 1) {
+      throw new Error(
+        `${manifest.implementationId}: expected one serial observation stream, received ${files.length}`
+      );
+    }
+    const raw = await readFile(nodePath.join(probes, files[0] ?? ""), "utf-8");
+    const observations: unknown[] = raw
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    if (observations.length !== evidence.checkResults.length) {
+      throw new Error(
+        `${manifest.implementationId}: incomplete observation capture`
+      );
+    }
+    const checksById = new Map(
+      plans.flatMap(({ checks }) =>
+        checks.map(({ check }) => [check.checkId, check] as const)
+      )
+    );
+    for (const [index, check] of evidence.checkResults.entries()) {
+      const planCheck = checksById.get(check.checkId);
+      if (planCheck === undefined || planCheck.steps === undefined) {
+        throw new Error(`${check.checkId}: comparison requires a trace plan`);
+      }
+      validateObservationSteps(
+        check.checkId,
+        planCheck.steps,
+        observations[index]
+      );
+    }
+    const selected = inventory
+      .filter(({ selected: applies }) => applies)
+      .map(({ checkId }) => checkId)
+      .toSorted();
+    if (
+      selected.join("\n") !==
+      evidence.checkResults
+        .map(({ checkId }) => checkId)
+        .toSorted()
+        .join("\n")
+    ) {
+      throw new Error(
+        `${manifest.implementationId}: evidence disagrees with selection inventory`
+      );
+    }
+    const stable = observations.map((observation) =>
+      stabilizeObservations(observation, manifest.implementationId)
+    );
+    const observationPath = nodePath.join(directory, "observations.json");
+    const observationText = json(stable);
+    await writeFile(observationPath, observationText);
+    return {
+      adapter,
+      checks: evidence.checkResults.map(
+        ({ checkId, status, assertionResults }) => ({
+          assertionResults,
+          checkId,
+          status,
+        })
+      ),
+      evidence: nodePath.relative(ROOT, evidencePath),
+      evidenceDigest: digest(evidenceText),
+      implementationId: manifest.implementationId,
+      observationDigest: digest(observationText),
+      observationPath: nodePath.relative(ROOT, observationPath),
+      observations: stable,
+      selection: inventory,
+      summary: evidence.summary,
+    };
+  } finally {
+    await rm(probes, { force: true, recursive: true });
   }
-  const raw = await readFile(nodePath.join(probes, files[0] ?? ""), "utf-8");
-  const observations: unknown[] = raw
-    .trim()
-    .split("\n")
-    .map((line) => JSON.parse(line));
-  if (observations.length !== evidence.checkResults.length) {
-    throw new Error(`${language}: incomplete observation capture`);
-  }
-  const observationPath = nodePath.join(directory, "observations.json");
-  const observationText = `${JSON.stringify(observations, null, 2)}\n`;
-  await writeFile(observationPath, observationText);
-  return {
-    checks: evidence.checkResults.map(outcome),
-    observations,
-    summary: evidence.summary,
-    evidence: nodePath.relative(ROOT, evidencePath),
-    evidenceDigest: digest(text),
-    observationPath: nodePath.relative(ROOT, observationPath),
-    observationDigest: digest(observationText),
-  };
 };
 
 const main = async (): Promise<void> => {
-  const typescript = await captureImplementation(
-    "typescript",
-    "typescript/kernel/conformance-adapter/adapter.json"
-  );
-  const rust = await captureImplementation(
-    "rust",
-    "rust/kernel-conformance-adapter/adapter-syscall.json"
-  );
-  const disagreements = compareObservations(
-    typescript.checks,
-    rust.checks,
-    typescript.observations,
-    rust.observations
+  const options = parseCli(process.argv.slice(2));
+  const implementations: Awaited<ReturnType<typeof captureImplementation>>[] =
+    [];
+  const captureNext = async (index: number): Promise<void> => {
+    const adapter = options.adapters[index];
+    if (adapter === undefined) {
+      return;
+    }
+    const captured = await captureImplementation(adapter, options);
+    if (
+      implementations.some(
+        ({ implementationId }) => implementationId === captured.implementationId
+      )
+    ) {
+      throw new Error(
+        `duplicate implementation id ${captured.implementationId}`
+      );
+    }
+    implementations.push(captured);
+    await captureNext(index + 1);
+  };
+  await captureNext(0);
+  const differences = compareObservations(implementations);
+  const classifications = ["sanctioned", "disagreement", "coverage"] as const;
+  const counts = Object.fromEntries(
+    classifications.map((classification) => [
+      classification,
+      {
+        checks: new Set(
+          differences
+            .filter((entry) => entry.classification === classification)
+            .map(({ checkId }) => checkId)
+        ).size,
+        differences: differences.filter(
+          (entry) => entry.classification === classification
+        ).length,
+      },
+    ])
   );
   const report = {
-    ticketId: "KRT-DD004",
-    selection: { capability: "kernel.syscall", concurrency: 1 },
+    counts,
+    differences,
+    implementations: implementations.map(
+      ({ implementationId, adapter, evidence, summary, selection }) => ({
+        adapter,
+        evidence,
+        implementationId,
+        selection,
+        summary,
+      })
+    ),
     interpretation:
-      "Observations and outcomes only; agreement does not decide authority. Error messages, physical storage summaries, and opaque cursors are compared verbatim.",
-    implementations: {
-      typescript: {
-        evidence: typescript.evidence,
-        summary: typescript.summary,
-      },
-      rust: { evidence: rust.evidence, summary: rust.summary },
-    },
-    disagreements,
+      "Uncertified observations and outcomes. Sanctioned variation cites authority; coverage records applicability gaps; disagreement means no authority rule decides the difference. Tagged maps compare by key. Fencing tokens are consistently pseudonymized per trace before hashing.",
+    selection: { capabilities: options.capabilities, concurrency: 1 },
   };
   const reportPath = nodePath.resolve(
     ROOT,
-    DISAGREEMENT_DIRECTORY,
+    options.output,
     "disagreements.json"
   );
-  const text = `${JSON.stringify(report, null, 2)}\n`;
+  const text = json(report);
   await writeFile(reportPath, text);
+  const replay = [
+    "bun",
+    "tools/conformance/meta-conformance/disagreements.ts",
+    ...options.adapters.flatMap((adapter) => ["--adapter", adapter]),
+    ...options.capabilities.flatMap((capability) => [
+      "--capability",
+      capability,
+    ]),
+    "--output",
+    options.output,
+  ]
+    .map((arg) => `'${arg.replaceAll("'", "'\\''")}'`)
+    .join(" ");
   await writeFile(
-    nodePath.resolve(ROOT, DISAGREEMENT_DIRECTORY, "manifest.json"),
-    `${JSON.stringify({ ticketId: "KRT-DD004", report: { path: nodePath.relative(ROOT, reportPath), sha256: digest(text) }, inputs: { typescript: { evidence: typescript.evidence, evidenceDigest: typescript.evidenceDigest, observationPath: typescript.observationPath, observationDigest: typescript.observationDigest }, rust: { evidence: rust.evidence, evidenceDigest: rust.evidenceDigest, observationPath: rust.observationPath, observationDigest: rust.observationDigest } }, replay: "bun tools/conformance/meta-conformance/disagreements.ts" }, null, 2)}\n`
+    nodePath.resolve(ROOT, options.output, "manifest.json"),
+    json({
+      inputs: implementations.map(
+        ({
+          implementationId,
+          evidence,
+          evidenceDigest,
+          observationPath,
+          observationDigest,
+        }) => ({
+          evidence,
+          evidenceDigest,
+          implementationId,
+          observationDigest,
+          observationPath,
+        })
+      ),
+      replay,
+      report: {
+        path: nodePath.relative(ROOT, reportPath),
+        sha256: digest(text),
+      },
+    })
   );
+  if (options.summaryOut !== undefined) {
+    const rows = differences.map(
+      ({ checkId, kind, path, classification, citation }) =>
+        `| ${checkId} | ${kind} | ${path} | ${classification} | ${citation ?? "No deciding authority rule"} |`
+    );
+    await mkdir(nodePath.dirname(options.summaryOut), { recursive: true });
+    await writeFile(
+      options.summaryOut,
+      `# Observation comparison\n\n${json(counts)}\n| Check | Kind | Path | Classification | Citation |\n| --- | --- | --- | --- | --- |\n${rows.join("\n")}\n`
+    );
+  }
   process.stdout.write(
-    `${disagreements.length} disagreements written to ${nodePath.relative(ROOT, reportPath)}\n`
+    `${JSON.stringify(counts)} written to ${nodePath.relative(ROOT, reportPath)}\n`
   );
 };
 

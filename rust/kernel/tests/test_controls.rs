@@ -227,3 +227,42 @@ fn control_inputs_use_closed_enums_selectors_and_safe_integer_bounds() {
         );
     }
 }
+
+#[test]
+fn reachable_delete_mutant_targets_only_fork_point_consumed_objects() {
+    use tuvren_kernel_rust::testkit::mutants::KernelMutant;
+
+    let mutant = KernelMutant::select("kernel.delete-object-reachable-through-live-root").unwrap();
+    let controls = KernelTestControls::with_mutant(Some(mutant.clone()));
+    controls.set_clock(ClockDomain::Backend, 0).unwrap();
+    controls.set_clock(ClockDomain::Worker, 0).unwrap();
+    let kernel = InMemoryKernel::with_test_controls(controls).unwrap();
+    schema(&kernel);
+    seed(&kernel, "b", "r", false);
+    let mut objects = Vec::new();
+    let mut nodes = Vec::new();
+    for index in 0..3 {
+        let (hash, _) = kernel
+            .staging_stage(
+                "r",
+                vec![index],
+                &format!("task-{index}"),
+                "o",
+                StagedResultStatus::Completed,
+                None,
+            )
+            .unwrap();
+        kernel
+            .run_complete_step("r", &format!("step-{index}"), None, vec![], None)
+            .unwrap();
+        objects.push(hash);
+        nodes.push(kernel.branch_get("b").unwrap().unwrap().head_turn_node_hash);
+    }
+    kernel.maintenance_reclaim().unwrap();
+    assert_eq!(mutant.activation_count(), 0);
+    kernel.branch_set_head("b", &nodes[1]).unwrap();
+    kernel.maintenance_reclaim().unwrap();
+    assert!(kernel.store_has(&objects[0]).unwrap());
+    assert!(!kernel.store_has(&objects[1]).unwrap());
+    assert_eq!(mutant.activation_count(), 1);
+}

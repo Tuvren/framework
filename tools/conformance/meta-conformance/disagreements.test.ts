@@ -16,55 +16,179 @@
 
 import { expect, test } from "bun:test";
 
-import { compareObservations } from "./disagreements.ts";
+import {
+  compareObservations,
+  normalizeObservation,
+  stabilizeObservations,
+  validateObservationSteps,
+} from "./observation-comparison.ts";
 
 const check = (checkId: string, status = "pass") => ({
+  assertionResults: [],
   checkId,
   status,
-  assertionResults: [],
+});
+const implementation = (
+  implementationId: string,
+  observations: unknown[],
+  checks = [check("check")]
+) => ({ checks, implementationId, observations });
+const frame = (result: unknown, operation = "kernel.thread.get") => ({
+  method: "dispatch",
+  operation,
+  outcome: { kind: "result", value: { result } },
 });
 
-test("reports every observation, outcome, and applicability disagreement without grading authority", () => {
-  const report = compareObservations(
-    [check("same"), check("observation"), check("outcome"), check("left-only")],
-    [
-      check("same"),
-      check("observation"),
-      check("outcome", "fail"),
-      check("right-only"),
-    ],
-    [[{ result: 1 }], [{ result: { a: 1, b: 2 } }], [], []],
-    [[{ result: 1 }], [{ result: { b: 2, a: 3 } }], [], []]
-  );
-  expect(report.map((entry) => entry.checkId)).toEqual([
-    "left-only",
-    "observation",
-    "outcome",
-    "right-only",
+const error = (code: string, message: string) => ({
+  method: "dispatch",
+  operation: "op",
+  outcome: { error: { code, message }, kind: "error" },
+});
+
+const fencingStream = (first: string, second: string) => [
+  frame({ fencingToken: first }),
+  frame({ fencingToken: second }),
+  frame({ fencingToken: first }),
+];
+
+test("compares N implementations and keeps unknown differences as disagreements", () => {
+  const report = compareObservations([
+    implementation("first", [[frame(1)]]),
+    implementation("second", [[frame(2)]]),
+    implementation("third", [[frame(3)]]),
   ]);
+  expect(report).toHaveLength(3);
   expect(
-    report.find((entry) => entry.checkId === "observation")?.differences
-  ).toEqual(["observations"]);
-  expect(
-    report.find((entry) => entry.checkId === "outcome")?.differences
-  ).toEqual(["outcome"]);
+    report.every(({ classification }) => classification === "disagreement")
+  ).toBe(true);
+  expect(report[0]?.path).toBe("$[0].outcome.value.result");
 });
 
-test("ignores JSON object key order and retains observation array order", () => {
+test("normalizes nested tagged maps by key while preserving ordinary array order", () => {
+  const left = {
+    $map: [
+      [
+        "b",
+        {
+          $map: [
+            ["z", 1],
+            ["a", 2],
+          ],
+        },
+      ],
+      ["a", 3],
+    ],
+  };
+  const right = {
+    $map: [
+      ["a", 3],
+      [
+        "b",
+        {
+          $map: [
+            ["a", 2],
+            ["z", 1],
+          ],
+        },
+      ],
+    ],
+  };
+  expect(normalizeObservation(left)).toEqual(normalizeObservation(right));
   expect(
-    compareObservations(
-      [check("same")],
-      [check("same")],
-      [[{ a: 1, b: 2 }]],
-      [[{ b: 2, a: 1 }]]
-    )
+    compareObservations([
+      implementation("a", [[left]]),
+      implementation("b", [[right]]),
+    ])
   ).toEqual([]);
   expect(
-    compareObservations(
-      [check("ordered")],
-      [check("ordered")],
-      [[[1, 2]]],
-      [[[2, 1]]]
-    )
-  ).toHaveLength(1);
+    compareObservations([
+      implementation("a", [[[1, 2]]]),
+      implementation("b", [[[2, 1]]]),
+    ]).length
+  ).toBeGreaterThan(0);
+});
+
+test("sanctions error prose only with equal codes and reports coverage separately", () => {
+  const report = compareObservations([
+    implementation(
+      "a",
+      [[error("same", "alpha")], []],
+      [check("check"), check("only")]
+    ),
+    implementation("b", [[error("same", "beta")]]),
+  ]);
+  expect(report.find(({ kind }) => kind === "observations")).toMatchObject({
+    citation: expect.stringContaining("ADR-0075"),
+    classification: "sanctioned",
+  });
+  expect(report.find(({ kind }) => kind === "applicability")).toMatchObject({
+    classification: "coverage",
+  });
+  expect(
+    compareObservations([
+      implementation("a", [[error("one", "alpha")]]),
+      implementation("b", [[error("two", "beta")]]),
+    ]).every(({ classification }) => classification === "disagreement")
+  ).toBe(true);
+});
+
+test("checks each recorded dispatch and events operation against its plan", () => {
+  const steps = [
+    { operation: "kernel.store.put", stepId: "put" },
+    { operation: "kernel.store.has", stepId: "has" },
+  ];
+  const observations = steps.flatMap(({ operation }) => [
+    frame(true, operation),
+    { method: "events", operation, outcome: [] },
+  ]);
+  expect(() =>
+    validateObservationSteps("check", steps, observations)
+  ).not.toThrow();
+  expect(() =>
+    validateObservationSteps("check", steps, [
+      observations[2],
+      observations[3],
+      observations[0],
+      observations[1],
+    ])
+  ).toThrow("put");
+  expect(() =>
+    validateObservationSteps("check", steps, observations.slice(0, 2))
+  ).toThrow();
+});
+
+test("pseudonymizes fencing tokens deterministically and preserves references and rotations", () => {
+  const left = stabilizeObservations(
+    fencingStream("random-a", "random-b"),
+    "port"
+  );
+  expect(left).toEqual(
+    stabilizeObservations(fencingStream("other-a", "other-b"), "port")
+  );
+  expect(left).not.toEqual(
+    stabilizeObservations(fencingStream("same", "same"), "port")
+  );
+});
+
+test("requires observed bootstrap ancestry before sanctioning node hashes", () => {
+  const stream = (hash: string) => [
+    frame({ rootTurnNodeHash: hash }, "kernel.thread.create"),
+    frame(
+      { hash: `${hash}-child`, previousTurnNodeHash: hash },
+      "kernel.node.get"
+    ),
+  ];
+  const report = compareObservations([
+    implementation("a", [stream("root-a")]),
+    implementation("b", [stream("root-b")]),
+  ]);
+  expect(
+    report.every(({ classification }) => classification === "sanctioned")
+  ).toBe(true);
+  expect(
+    compareObservations([
+      implementation("a", [[frame({ hash: "other-a" }, "kernel.node.get")]]),
+      implementation("b", [[frame({ hash: "other-b" }, "kernel.node.get")]]),
+    ])[0]?.classification
+  ).toBe("disagreement");
 });

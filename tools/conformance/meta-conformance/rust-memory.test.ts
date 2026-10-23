@@ -38,8 +38,30 @@ test("Rust memory controls activate and fail designated shared-plan assertions",
   const report = await runNegativeControls(config);
   expect(report.control.status).toBe("pass");
   expect(report.control.summary?.applicableChecks).toBeGreaterThan(0);
-  expect(report.mutants).toHaveLength(3);
+  const manifest: unknown = JSON.parse(
+    await readFile("spec/conformance/kernel/negative-controls.json", "utf-8")
+  );
+  if (
+    typeof manifest !== "object" ||
+    manifest === null ||
+    !("controls" in manifest) ||
+    !Array.isArray(manifest.controls)
+  ) {
+    throw new TypeError("invalid control manifest");
+  }
+  expect(report.mutants).toHaveLength(manifest.controls.length);
+  expect(report.totals.killed).toBe(3);
+  expect(report.totals.unsupported).toBe(manifest.controls.length - 3);
   for (const mutant of report.mutants) {
+    if (mutant.outcome === "unsupported") {
+      expect(mutant.reason).toContain(
+        mutant.mutantId === "kernel.resolve-object-across-scopes"
+          ? "no shared-substrate construction seam in the Rust kernel"
+          : "no Rust reproduction yet"
+      );
+      expect(mutant.activated).toBe(false);
+      continue;
+    }
     expect(mutant.outcome).toBe("killed");
     expect(mutant.activationCount).toBeGreaterThan(0);
     expect(mutant.designatedFailures.length).toBeGreaterThan(0);
@@ -69,6 +91,26 @@ test("Rust syscall evidence covers every check in all four memory families", asy
     expect(await child.exited).toBe(0);
     const evidence: unknown = JSON.parse(await readFile(evidencePath, "utf-8"));
     assertConformanceEvidence(evidence, "Rust memory family evidence");
+    expect(evidence.selection).toHaveLength(evidence.summary.totalChecks);
+    for (const entry of evidence.selection ?? []) {
+      if (!entry.selected) {
+        expect(entry.reason).toBeTruthy();
+      }
+    }
+    for (const checkId of [
+      "kernel.scope-isolation.store_has_is_scope_confined",
+      "kernel.scope-isolation.store_get_is_scope_confined",
+      "kernel.scope-isolation.enumeration_is_scope_confined",
+      "kernel.crash-recovery.in_process_fault_points",
+      "kernel.crash-recovery.concurrent_writer",
+    ]) {
+      expect(
+        evidence.selection?.find((entry) => entry.checkId === checkId)
+      ).toMatchObject({
+        selected: false,
+        reason: expect.stringContaining("missing capabilities:"),
+      });
+    }
     for (const family of [
       "scope-isolation",
       "reclamation",

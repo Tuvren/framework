@@ -451,7 +451,7 @@ fn production_grpc_dependency_graph_excludes_test_controls() {
 }
 
 #[test]
-fn remaining_memory_families_are_advertised_and_composites_cannot_enter_syscalls() {
+fn syscall_capabilities_do_not_claim_legacy_scope_and_restart_composites() {
     let mut adapter = Adapter::with_args(&["--syscall-families"]);
     let initialized = adapter.request(
         "initialize",
@@ -459,7 +459,7 @@ fn remaining_memory_families_are_advertised_and_composites_cannot_enter_syscalls
     );
     let capabilities = initialized["result"]["capabilities"].as_array().unwrap();
     for capability in ["kernel.scope-isolation", "kernel.restart-recovery"] {
-        assert!(capabilities.contains(&json!(capability)), "{capability}");
+        assert!(!capabilities.contains(&json!(capability)), "{capability}");
     }
     let instance = adapter.instance();
     for operation in [

@@ -28,6 +28,14 @@ pub(super) fn reclaim_with_reachable_delete(
         .values()
         .filter(|branch| branch.archived_from_branch_id.is_some())
     {
+        let Some(source) = branch
+            .archived_from_branch_id
+            .as_ref()
+            .and_then(|id| state.branches.get(id))
+        else {
+            continue;
+        };
+        let live = branch_lineage(state, &source.head_turn_node_hash);
         let mut current = Some(branch.head_turn_node_hash.as_str());
         let mut visited = HashSet::new();
         while let Some(hash) = current {
@@ -37,11 +45,14 @@ pub(super) fn reclaim_with_reachable_delete(
             let Some(node) = state.turn_nodes.get(hash) else {
                 break;
             };
-            candidates.extend(
-                node.consumed_staged_results
-                    .iter()
-                    .map(|result| result.object_hash.clone()),
-            );
+            if live.contains(hash) {
+                candidates.extend(
+                    node.consumed_staged_results
+                        .iter()
+                        .map(|result| result.object_hash.clone()),
+                );
+                break;
+            }
             current = node.previous_turn_node_hash.as_deref();
         }
     }
@@ -54,4 +65,19 @@ pub(super) fn reclaim_with_reachable_delete(
         }
     }
     summary
+}
+
+fn branch_lineage<'a>(state: &'a KernelState, head: &'a str) -> HashSet<&'a str> {
+    let mut lineage = HashSet::new();
+    let mut current = Some(head);
+    while let Some(hash) = current {
+        if !lineage.insert(hash) {
+            break;
+        }
+        current = state
+            .turn_nodes
+            .get(hash)
+            .and_then(|node| node.previous_turn_node_hash.as_deref());
+    }
+    lineage
 }

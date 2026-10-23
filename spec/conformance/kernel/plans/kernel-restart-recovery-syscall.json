@@ -4,7 +4,7 @@
   "packetId": "tuvren.kernel.protocol",
   "certificationRules": "enforcing",
   "applicability": {
-    "capabilities": ["kernel.syscall", "kernel.restart-recovery"]
+    "capabilities": ["kernel.syscall", "kernel.fault-injection"]
   },
   "checks": [
     {

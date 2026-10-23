@@ -1292,6 +1292,8 @@
             "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
             "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
             "kernel.syscall.reclamation.reachability",
+            "kernel.syscall.crash-recovery.after_commit_before_ack",
+            "kernel.syscall.crash-recovery.before_commit",
             "kernel-restart-af.expired-running-requires-preemption",
             "kernel-restart-af.paused-run-excluded-from-stale-preemption",
             "kernel.run-liveness.expired_listing",
@@ -1299,14 +1301,16 @@
             "kernel.run-liveness.stale_preemption",
             "kernel.syscall.run-liveness.expired_listing",
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.syscall.run-liveness.stale_preemption"
+            "kernel.syscall.run-liveness.stale_preemption",
+            "kernel.syscall.scope-isolation.own_content",
+            "kernel.syscall.scope-isolation.own_enumeration"
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 110,
+            "passedChecks": 114,
             "totalChecks": 137,
-            "applicableChecks": 110,
-            "nonApplicableChecks": 27
+            "applicableChecks": 114,
+            "nonApplicableChecks": 23
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",

@@ -1309,6 +1309,32 @@ const validateHandshakeForSelectedPlans = async (
   }
 };
 
+const capabilitySelection = (
+  checkId: string,
+  required: readonly string[],
+  adapter: ReadonlySet<string>,
+  requested: ReadonlySet<string>
+): NonNullable<ConformanceEvidence["selection"]>[number] => {
+  const missing = required.filter((capability) => !adapter.has(capability));
+  const matches =
+    requested.size === 0 ||
+    required.some((capability) => requested.has(capability));
+  const reasons: string[] = [];
+  if (missing.length > 0) {
+    reasons.push(`missing capabilities: ${missing.join(", ")}`);
+  }
+  if (!matches) {
+    reasons.push(
+      `outside requested capabilities: ${[...requested].join(", ")}`
+    );
+  }
+  return {
+    checkId,
+    selected: reasons.length === 0,
+    ...(reasons.length === 0 ? {} : { reason: reasons.join("; ") }),
+  };
+};
+
 const selectChecks = (
   plans: readonly CompiledConformancePlan[],
   manifest: AdapterManifest,
@@ -1316,6 +1342,7 @@ const selectChecks = (
 ): {
   applicable: ScheduledCheck[];
   nonApplicable: { checkId: string; planId: string }[];
+  selection: NonNullable<ConformanceEvidence["selection"]>;
 } => {
   const adapterCapabilities = new Set(manifest.capabilities);
   const requestedCapabilities = new Set(options.capabilities);
@@ -1324,6 +1351,8 @@ const selectChecks = (
   const availableCheckIds = new Set<string>();
   const applicable: ScheduledCheck[] = [];
   const nonApplicable: { checkId: string; planId: string }[] = [];
+  const selection: { checkId: string; selected: boolean; reason?: string }[] =
+    [];
   let index = 0;
 
   for (const plan of [...plans].toSorted((left, right) =>
@@ -1336,6 +1365,11 @@ const selectChecks = (
       availableCheckIds.add(check.checkId);
 
       if (requestedChecks.size > 0 && !requestedChecks.has(check.checkId)) {
+        selection.push({
+          checkId: check.checkId,
+          selected: false,
+          reason: "outside requested checks",
+        });
         continue;
       }
 
@@ -1348,16 +1382,14 @@ const selectChecks = (
         availableCapabilities.add(capability);
       }
 
-      const hasCapabilities = requiredCapabilities.every((capability) =>
-        adapterCapabilities.has(capability)
+      const entry = capabilitySelection(
+        check.checkId,
+        requiredCapabilities,
+        adapterCapabilities,
+        requestedCapabilities
       );
-      const matchesRequestedCapabilities =
-        requestedCapabilities.size === 0 ||
-        requiredCapabilities.some((capability) =>
-          requestedCapabilities.has(capability)
-        );
-
-      if (!(hasCapabilities && matchesRequestedCapabilities)) {
+      selection.push(entry);
+      if (!entry.selected) {
         nonApplicable.push({
           checkId: check.checkId,
           planId: plan.plan.planId,
@@ -1397,6 +1429,7 @@ const selectChecks = (
   return {
     applicable,
     nonApplicable,
+    selection,
   };
 };
 
@@ -1434,6 +1467,18 @@ const main = async (): Promise<void> => {
   );
 
   const scheduled = applyShard(selected.applicable, options);
+  const scheduledIds = new Set(
+    scheduled.map(({ compiledCheck }) => compiledCheck.check.checkId)
+  );
+  const selection = selected.selection.map((entry) =>
+    entry.selected && !scheduledIds.has(entry.checkId)
+      ? {
+          checkId: entry.checkId,
+          selected: false,
+          reason: "assigned to another shard",
+        }
+      : entry
+  );
   const results = await runScheduledChecks(
     adapterManifest,
     scheduled,
@@ -1465,6 +1510,7 @@ const main = async (): Promise<void> => {
     implementationId: adapterManifest.implementationId,
     language: adapterManifest.language,
     nonApplicableCheckIds,
+    selection,
     status: deriveConformanceRunStatus(summary),
     suiteId: adapterManifest.suiteId,
     suiteVersion: adapterManifest.suiteVersion,
