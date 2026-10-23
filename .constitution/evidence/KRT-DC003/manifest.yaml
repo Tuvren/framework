@@ -8,8 +8,8 @@ result: pass
 pass_criteria: "The run-liveness syscall checks pass with clock values only from the plan; lease-takeover-before-expiry and accept-stale-owner-after-takeover are killed with activation proof; no plan asserts a value computed from two plan constants; clock-skew obligations map to kernel.shared-backend."
 files:
   - path: obligation-map.md
-    sha256: 1a2375789425a865be3ee1ccc3232b51e9ffd97375ec1bd72a81f717f0f096ae
-    bytes: 20304
+    sha256: 10e280b1007ec647ed64eb106fc08375369a1b11d86e167c6006accabee34b32
+    bytes: 20299
     role: transcript
   - path: triage.md
     sha256: 908ce6907424d7be4977b724cc38746592b406a776a17e52bb50f194681af7e7
