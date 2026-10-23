@@ -46,6 +46,7 @@ export interface NegativeControlPortConfig {
   activationOperation: string;
   capabilities?: readonly string[];
   mutants?: readonly string[];
+  unsupportedReasons?: Readonly<Record<string, string>>;
   /** The certifying adapter whose unmutated run must pass first. */
   controlAdapter: string;
   mutantAdapter: string;
@@ -68,7 +69,7 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
   {
     activationOperation: "kernel.mutant.activation",
     capabilities: ["kernel.syscall"],
-    controlAdapter: "rust/kernel-conformance-adapter/adapter-syscall.json",
+    controlAdapter: "rust/kernel-conformance-adapter/adapter.json",
     mutantAdapter: "rust/kernel-conformance-adapter/adapter-mutant.json",
     mutantEnv: "TUVREN_KERNEL_MUTANT",
     mutants: [
@@ -76,6 +77,24 @@ export const NEGATIVE_CONTROL_PORTS: readonly NegativeControlPortConfig[] = [
       "kernel.drop-uncommitted-staged-result-on-recovery",
       "kernel.delete-object-reachable-through-live-root",
     ],
+    unsupportedReasons: {
+      "kernel.accept-noncanonical-cbor": "no Rust reproduction yet; not run",
+      "kernel.accept-stale-head-update": "no Rust reproduction yet; not run",
+      "kernel.accept-stale-owner-after-takeover":
+        "no Rust reproduction yet; not run",
+      "kernel.fault-seam-never-fires": "no Rust reproduction yet; not run",
+      "kernel.lease-takeover-before-expiry":
+        "no Rust reproduction yet; not run",
+      "kernel.never-sweep-eligible-objects":
+        "no Rust reproduction yet; not run",
+      "kernel.noncanonical-changed-paths-order":
+        "no Rust reproduction yet; not run",
+      "kernel.promote-staged-before-checkpoint":
+        "no Rust reproduction yet; not run",
+      "kernel.resolve-object-across-scopes":
+        "no shared-substrate construction seam in the Rust kernel; not run",
+      "kernel.sweep-inside-grace-window": "no Rust reproduction yet; not run",
+    },
     packet: "spec/kernel/authority-packet.json",
     port: "kernel",
     profile: "kernel.memory",
@@ -813,9 +832,8 @@ export const runNegativeControls = async (
             ...describeControl(control),
             outcome: "unsupported",
             reason:
-              control.mutantId === "kernel.resolve-object-across-scopes"
-                ? "no shared-substrate construction seam in the Rust kernel; not run"
-                : "no Rust reproduction yet; not run",
+              config.unsupportedReasons?.[control.mutantId] ??
+              "mutant is not supported by this port configuration; not run",
           };
         }
         if (!control.profiles.includes(config.profile)) {

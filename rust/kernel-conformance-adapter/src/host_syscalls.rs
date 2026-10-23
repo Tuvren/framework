@@ -319,10 +319,7 @@ pub(crate) struct Syscalls {
 impl Syscalls {
     pub(crate) fn configured() -> Result<Self, String> {
         let args: Vec<String> = std::env::args().skip(1).collect();
-        if args
-            .iter()
-            .any(|arg| arg != "--mutant-from-env" && arg != "--syscall-families")
-        {
+        if args.iter().any(|arg| arg != "--mutant-from-env") {
             return Err("unsupported Rust adapter argument".into());
         }
         let mutant = if args.iter().any(|arg| arg == "--mutant-from-env") {
@@ -440,6 +437,9 @@ const CONTROLS: &[(&str, ControlBinding)] = routing![
         request.remove("instance");
         let request: FaultRequest = serde_json::from_value(Value::Object(request))
             .map_err(|_| invalid("invalid fault request"))?;
+        if request.occurrence == 0 || request.occurrence > 9_007_199_254_740_991 {
+            return Err(invalid("fault occurrence requires a positive safe integer").into());
+        }
         Ok(json!({"token":instance.controls.arm_fault(request)?}))
     },
 ];

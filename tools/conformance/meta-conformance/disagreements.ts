@@ -197,7 +197,7 @@ const captureImplementation = async (adapter: string, options: Options) => {
       );
     }
     const stable = observations.map((observation) =>
-      stabilizeObservations(observation, manifest.implementationId)
+      stabilizeObservations(observation)
     );
     const observationPath = nodePath.join(directory, "observations.json");
     const observationText = json(stable);

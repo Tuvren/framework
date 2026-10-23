@@ -321,6 +321,25 @@ fn invalid_clock_inputs_are_protocol_errors() {
 }
 
 #[test]
+fn invalid_fault_inputs_are_protocol_errors() {
+    let mut adapter = Adapter::new();
+    let instance = adapter.instance();
+    for occurrence in [json!(0), json!(-1), json!(1.5), json!(9007199254740992_u64)] {
+        for point in ["before-commit", "commit-outcome-unknown"] {
+            let response = adapter.call(
+                &instance,
+                "kernel.fault.arm",
+                json!({
+                    "point": point, "mode": "throw", "selector": {}, "occurrence": occurrence
+                }),
+            );
+            assert!(response["error"].is_object(), "{response}");
+            assert!(response.get("result").is_none(), "{response}");
+        }
+    }
+}
+
+#[test]
 fn unsupported_fault_phases_and_block_mode_use_catalogued_error() {
     let mut adapter = Adapter::new();
     let instance = adapter.instance();
@@ -452,7 +471,7 @@ fn production_grpc_dependency_graph_excludes_test_controls() {
 
 #[test]
 fn syscall_capabilities_do_not_claim_legacy_scope_and_restart_composites() {
-    let mut adapter = Adapter::with_args(&["--syscall-families"]);
+    let mut adapter = Adapter::new();
     let initialized = adapter.request(
         "initialize",
         json!({"packetId":"test","planVersion":"0.1.0"}),
@@ -522,7 +541,8 @@ fn wrong_hash_mutant_requires_explicit_selection_and_proves_native_activation() 
 
 #[test]
 fn every_memory_plan_syscall_has_a_native_binding() {
-    let mut adapter = Adapter::with_args(&["--syscall-families"]);
+    let mut adapter = Adapter::new();
+    let instance = adapter.instance();
     for family in [
         "reclamation",
         "scope-isolation",
@@ -537,8 +557,12 @@ fn every_memory_plan_syscall_has_a_native_binding() {
         for check in plan["checks"].as_array().unwrap() {
             for step in check["steps"].as_array().unwrap() {
                 let operation = step["operation"].as_str().unwrap();
-                let response = adapter.call(&Value::Null, operation, json!({}));
-                assert_eq!(
+                let response = adapter.call(&instance, operation, json!({}));
+                assert_ne!(
+                    response["error"]["code"], "adapter_operation_not_implemented",
+                    "{family} {operation}: {response}"
+                );
+                assert_ne!(
                     response["error"]["code"], "adapter_invalid_instance",
                     "{family} {operation}: {response}"
                 );

@@ -60,7 +60,7 @@ pub struct InMemoryKernelOptions {
 
 #[derive(Clone, Debug)]
 struct ObjectRecord {
-    blob: Vec<u8>,
+    blob: Arc<[u8]>,
     created_at_ms: EpochMs,
 }
 
@@ -108,6 +108,8 @@ pub struct StoredThreadEntry {
 
 #[derive(Clone, Default)]
 struct KernelState {
+    #[cfg(feature = "conformance")]
+    clone_count: conformance::StateCloneCount,
     #[cfg(feature = "conformance")]
     checkpoint_writes: u64,
     archive_counter: u64,
@@ -177,7 +179,7 @@ impl InMemoryKernel {
         state.objects.insert(
             object_hash.clone(),
             ObjectRecord {
-                blob,
+                blob: blob.into(),
                 created_at_ms,
             },
         );
@@ -186,16 +188,16 @@ impl InMemoryKernel {
 
     pub fn store_get(&self, hash: &str) -> KernelResult<Option<Vec<u8>>> {
         if !self.in_transaction {
-            return self.transaction(None, None, |kernel| kernel.store_get(hash));
+            return self.read_transaction(None, |kernel| kernel.store_get(hash));
         }
 
         let state = self.lock_state()?;
-        Ok(state.objects.get(hash).map(|record| record.blob.clone()))
+        Ok(state.objects.get(hash).map(|record| record.blob.to_vec()))
     }
 
     pub fn store_has(&self, hash: &str) -> KernelResult<bool> {
         if !self.in_transaction {
-            return self.transaction(None, None, |kernel| kernel.store_has(hash));
+            return self.read_transaction(None, |kernel| kernel.store_has(hash));
         }
 
         let state = self.lock_state()?;
@@ -219,7 +221,7 @@ impl InMemoryKernel {
 
     pub fn schema_get(&self, schema_id: &str) -> KernelResult<Option<TurnTreeSchema>> {
         if !self.in_transaction {
-            return self.transaction(None, None, |kernel| kernel.schema_get(schema_id));
+            return self.read_transaction(None, |kernel| kernel.schema_get(schema_id));
         }
 
         let state = self.lock_state()?;
@@ -333,9 +335,8 @@ impl InMemoryKernel {
 
     pub fn tree_diff(&self, tree_hash_a: &str, tree_hash_b: &str) -> KernelResult<Vec<String>> {
         if !self.in_transaction {
-            return self.transaction(None, None, |kernel| {
-                kernel.tree_diff(tree_hash_a, tree_hash_b)
-            });
+            return self
+                .read_transaction(None, |kernel| kernel.tree_diff(tree_hash_a, tree_hash_b));
         }
 
         let state = self.lock_state()?;
@@ -365,7 +366,7 @@ impl InMemoryKernel {
 
     pub fn tree_resolve(&self, tree_hash: &str, path: &str) -> KernelResult<PathValue> {
         if !self.in_transaction {
-            return self.transaction(None, None, |kernel| kernel.tree_resolve(tree_hash, path));
+            return self.read_transaction(None, |kernel| kernel.tree_resolve(tree_hash, path));
         }
 
         let state = self.lock_state()?;
@@ -381,7 +382,7 @@ impl InMemoryKernel {
 
     pub fn tree_manifest(&self, tree_hash: &str) -> KernelResult<TurnTreeManifest> {
         if !self.in_transaction {
-            return self.transaction(None, None, |kernel| kernel.tree_manifest(tree_hash));
+            return self.read_transaction(None, |kernel| kernel.tree_manifest(tree_hash));
         }
 
         let state = self.lock_state()?;
@@ -395,7 +396,7 @@ impl InMemoryKernel {
 
     pub fn node_get(&self, hash: &str) -> KernelResult<Option<TurnNode>> {
         if !self.in_transaction {
-            return self.transaction(None, None, |kernel| kernel.node_get(hash));
+            return self.read_transaction(None, |kernel| kernel.node_get(hash));
         }
 
         let state = self.lock_state()?;
@@ -404,7 +405,7 @@ impl InMemoryKernel {
 
     pub fn node_walk_back(&self, from_hash: &str) -> KernelResult<Vec<TurnNode>> {
         if !self.in_transaction {
-            return self.transaction(None, None, |kernel| kernel.node_walk_back(from_hash));
+            return self.read_transaction(None, |kernel| kernel.node_walk_back(from_hash));
         }
 
         let state = self.lock_state()?;
@@ -474,7 +475,7 @@ impl InMemoryKernel {
         state.objects.insert(
             root_event_hash.clone(),
             ObjectRecord {
-                blob: root_event_blob,
+                blob: root_event_blob.into(),
                 created_at_ms,
             },
         );
@@ -530,7 +531,7 @@ impl InMemoryKernel {
     /// Supports cursor-based pagination and optional schemaId filter.
     pub fn thread_list(&self, options: ThreadListOptions) -> ThreadListResult {
         if !self.in_transaction {
-            return self.transaction(None, None, |kernel| kernel.thread_list(options));
+            return self.read_transaction(None, |kernel| kernel.thread_list(options));
         }
 
         let state = self.lock_state()?;
@@ -586,7 +587,7 @@ impl InMemoryKernel {
 
     pub fn thread_get(&self, thread_id: &str) -> KernelResult<Option<ThreadRecord>> {
         if !self.in_transaction {
-            return self.transaction(None, None, |kernel| kernel.thread_get(thread_id));
+            return self.read_transaction(None, |kernel| kernel.thread_get(thread_id));
         }
 
         validate_id(
@@ -637,7 +638,7 @@ impl InMemoryKernel {
 
     pub fn branch_get(&self, branch_id: &str) -> KernelResult<Option<BranchRecord>> {
         if !self.in_transaction {
-            return self.transaction(Some(branch_id), None, |kernel| kernel.branch_get(branch_id));
+            return self.read_transaction(Some(branch_id), |kernel| kernel.branch_get(branch_id));
         }
 
         validate_id(
@@ -724,7 +725,7 @@ impl InMemoryKernel {
 
     pub fn branch_list(&self, thread_id: &str) -> KernelResult<Vec<(String, HashString)>> {
         if !self.in_transaction {
-            return self.transaction(None, None, |kernel| kernel.branch_list(thread_id));
+            return self.read_transaction(None, |kernel| kernel.branch_list(thread_id));
         }
 
         validate_id(
@@ -861,7 +862,7 @@ impl InMemoryKernel {
 
     pub fn turn_get(&self, turn_id: &str) -> KernelResult<Option<TurnRecord>> {
         if !self.in_transaction {
-            return self.transaction(None, None, |kernel| kernel.turn_get(turn_id));
+            return self.read_transaction(None, |kernel| kernel.turn_get(turn_id));
         }
 
         validate_id(turn_id, "invalid_turn_id", "turn id must not be empty")?;
@@ -966,7 +967,7 @@ impl InMemoryKernel {
         state.objects.insert(
             object_hash.clone(),
             ObjectRecord {
-                blob,
+                blob: blob.into(),
                 created_at_ms: timestamp_ms,
             },
         );
@@ -977,7 +978,7 @@ impl InMemoryKernel {
 
     pub fn staging_current(&self, run_id: &str) -> KernelResult<Vec<StagedResult>> {
         if !self.in_transaction {
-            return self.transaction(None, Some(run_id), |kernel| kernel.staging_current(run_id));
+            return self.read_transaction(None, |kernel| kernel.staging_current(run_id));
         }
 
         validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
@@ -1196,9 +1197,7 @@ impl InMemoryKernel {
     /// compare, and a paused run is an orderly, intentional state.
     pub fn run_liveness_list_expired(&self, now_ms: EpochMs) -> KernelResult<Vec<RunRecord>> {
         if !self.in_transaction {
-            return self.transaction(None, None, |kernel| {
-                kernel.run_liveness_list_expired(now_ms)
-            });
+            return self.read_transaction(None, |kernel| kernel.run_liveness_list_expired(now_ms));
         }
 
         let state = self.lock_state()?;
@@ -1272,7 +1271,7 @@ impl InMemoryKernel {
         state.objects.insert(
             event_hash.clone(),
             ObjectRecord {
-                blob: event_blob,
+                blob: event_blob.into(),
                 created_at_ms: now_ms,
             },
         );
@@ -1339,7 +1338,7 @@ impl InMemoryKernel {
     /// ADR-0034/KRT-BK010: fetches a run by id without altering its state.
     pub fn run_get(&self, run_id: &str) -> KernelResult<Option<RunRecord>> {
         if !self.in_transaction {
-            return self.transaction(None, Some(run_id), |kernel| kernel.run_get(run_id));
+            return self.read_transaction(None, |kernel| kernel.run_get(run_id));
         }
 
         validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
@@ -1361,7 +1360,7 @@ impl InMemoryKernel {
         if !self.in_transaction {
             return self.transaction(None, None, |kernel| kernel.maintenance_reclaim_at(now_ms));
         }
-        let now_ms = now_ms.unwrap_or_else(|| (self.now)());
+        let now_ms = now_ms.unwrap_or_else(|| self.worker_now());
         let mut state = self.lock_state()?;
         #[cfg(feature = "conformance")]
         if let Some(mutant) = &self.mutant
@@ -1377,7 +1376,12 @@ impl InMemoryKernel {
 
     pub fn run_begin_step(&self, run_id: &str, step_id: &str) -> KernelResult<StepContext> {
         if !self.in_transaction {
-            return self.transaction(None, Some(run_id), |kernel| {
+            let branch_id = self
+                .lock_state()?
+                .runs
+                .get(run_id)
+                .map(|run| run.branch_id.clone());
+            return self.transaction(branch_id.as_deref(), None, |kernel| {
                 kernel.run_begin_step(run_id, step_id)
             });
         }
@@ -1478,7 +1482,7 @@ impl InMemoryKernel {
             state.objects.insert(
                 object_hash,
                 ObjectRecord {
-                    blob: annotation.clone(),
+                    blob: Arc::from(annotation.as_slice()),
                     created_at_ms: now_ms,
                 },
             );
@@ -1628,7 +1632,7 @@ impl InMemoryKernel {
 
     pub fn run_recover(&self, run_id: &str) -> KernelResult<RecoveryState> {
         if !self.in_transaction {
-            return self.transaction(None, Some(run_id), |kernel| kernel.run_recover(run_id));
+            return self.read_transaction(None, |kernel| kernel.run_recover(run_id));
         }
 
         validate_id(run_id, "invalid_run_id", "run id must not be empty")?;

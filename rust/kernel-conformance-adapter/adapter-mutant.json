@@ -14,7 +14,6 @@
     "-p",
     "tuvren-kernel-rust-conformance-adapter",
     "--",
-    "--syscall-families",
     "--mutant-from-env"
   ],
   "capabilities": [

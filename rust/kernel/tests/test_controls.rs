@@ -229,6 +229,111 @@ fn control_inputs_use_closed_enums_selectors_and_safe_integer_bounds() {
 }
 
 #[test]
+fn read_only_syscalls_do_not_clone_state_but_still_select_faults() {
+    let (kernel, controls) = initialized();
+    schema(&kernel);
+    seed(&kernel, "b", "r", false);
+    let hash = kernel.store_put(vec![7; 16 * 1024], None).unwrap();
+    let thread = kernel.thread_get("b").unwrap().unwrap();
+    let root = kernel
+        .node_get(&thread.root_turn_node_hash)
+        .unwrap()
+        .unwrap();
+    let clones = kernel.state_clone_count().unwrap();
+    kernel.store_has(&hash).unwrap();
+    kernel.store_get(&hash).unwrap();
+    kernel.schema_get("s").unwrap();
+    kernel
+        .tree_diff(&root.turn_tree_hash, &root.turn_tree_hash)
+        .unwrap();
+    kernel.tree_resolve(&root.turn_tree_hash, "p").unwrap();
+    kernel.tree_manifest(&root.turn_tree_hash).unwrap();
+    kernel.node_get(&root.hash).unwrap();
+    kernel.node_walk_back(&root.hash).unwrap();
+    kernel.thread_list(Default::default()).unwrap();
+    kernel.thread_get("b").unwrap();
+    kernel.branch_get("b").unwrap();
+    kernel.branch_list("b").unwrap();
+    kernel.turn_get("b").unwrap();
+    kernel.staging_current("r").unwrap();
+    kernel.run_get("r").unwrap();
+    kernel.run_recover("r").unwrap();
+    kernel.run_liveness_list_expired(0).unwrap();
+    assert_eq!(kernel.state_clone_count().unwrap(), clones);
+    controls
+        .arm_fault(FaultRequest {
+            point: FaultPoint::BeforeCommit,
+            selector: FaultSelector::default(),
+            occurrence: 1,
+            mode: FaultMode::Throw,
+        })
+        .unwrap();
+    assert_eq!(
+        kernel.store_has(&hash).unwrap_err().payload.code,
+        "kernel_persistence_fault_injected"
+    );
+    assert_eq!(kernel.state_clone_count().unwrap(), clones);
+    kernel.store_put(vec![8], None).unwrap();
+    assert_eq!(kernel.state_clone_count().unwrap(), clones + 1);
+}
+
+#[test]
+fn reclamation_defaults_to_worker_clock_with_skewed_backend_clock() {
+    for (worker, backend, retained) in [(50, 90_000_000, true), (90_000_000, 50, false)] {
+        let (kernel, controls) = initialized();
+        schema(&kernel);
+        seed(&kernel, "b", "r", false);
+        let hash = kernel.store_put(vec![42], None).unwrap();
+        controls.set_clock(ClockDomain::Worker, worker).unwrap();
+        controls.set_clock(ClockDomain::Backend, backend).unwrap();
+        kernel.maintenance_reclaim().unwrap();
+        assert_eq!(kernel.store_has(&hash).unwrap(), retained);
+    }
+}
+
+#[test]
+fn branch_only_faults_ignore_run_only_transactions_and_count_branch_reads() {
+    for point in [FaultPoint::BeforeCommit, FaultPoint::AfterCommitBeforeAck] {
+        let (kernel, controls) = initialized();
+        schema(&kernel);
+        seed(&kernel, "b", "r", true);
+        let run = kernel.run_get("r").unwrap().unwrap();
+        controls
+            .arm_fault(FaultRequest {
+                point,
+                selector: FaultSelector {
+                    branch_id: Some("b".into()),
+                    operation: None,
+                },
+                occurrence: 2,
+                mode: FaultMode::Throw,
+            })
+            .unwrap();
+        kernel.run_get("r").unwrap();
+        kernel.run_recover("r").unwrap();
+        kernel.staging_current("r").unwrap();
+        kernel
+            .staging_stage(
+                "r",
+                vec![1],
+                "task",
+                "o",
+                StagedResultStatus::Completed,
+                None,
+            )
+            .unwrap();
+        kernel
+            .run_liveness_renew_lease("r", "owner", run.fencing_token.as_deref().unwrap(), 200)
+            .unwrap();
+        kernel.turn_get("b").unwrap();
+        kernel.run_begin_step("r", "step-0").unwrap();
+        let error = kernel.branch_get("b").unwrap_err();
+        assert_eq!(error.payload.code, "kernel_persistence_fault_injected");
+        kernel.branch_get("b").unwrap();
+    }
+}
+
+#[test]
 fn reachable_delete_mutant_targets_only_fork_point_consumed_objects() {
     use tuvren_kernel_rust::testkit::mutants::KernelMutant;
 

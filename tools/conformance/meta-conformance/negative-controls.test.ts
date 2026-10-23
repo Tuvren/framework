@@ -175,6 +175,30 @@ afterAll(async () => {
 });
 
 describe("negative-control runner", () => {
+  test("uses generic or configured reasons for unsupported mutants", async () => {
+    for (const reason of [
+      undefined,
+      "synthetic port has no reproduction; not run",
+    ]) {
+      const limited = await runNegativeControls(
+        {
+          ...config(nodePath.join(directory, "adapter.json")),
+          mutants: [],
+          ...(reason === undefined
+            ? {}
+            : { unsupportedReasons: { "synthetic.wrong-alpha": reason } }),
+        },
+        { logDirectory, mutants: ["synthetic.wrong-alpha"] }
+      );
+      expect(limited.mutants[0]).toMatchObject({
+        outcome: "unsupported",
+        reason:
+          reason ??
+          "mutant is not supported by this port configuration; not run",
+      });
+    }
+  });
+
   test("counts mutants only after the unmutated control passes", () => {
     expect(report.control.status).toBe("pass");
     expect(report.counted).toBe(true);

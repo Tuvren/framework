@@ -222,10 +222,61 @@ describe("certification harness arguments and readers", () => {
       evidence.map((entry) => entry.checkResults.map((check) => check.checkId))
     ).toEqual([["runner.state.a", "runner.state.z"], ["runner.state.m"]]);
     expect(evidence.map((entry) => entry.nonApplicableCheckIds)).toEqual([
-      ["runner.state.unavailable"],
-      ["runner.state.unavailable"],
+      ["runner.state.m", "runner.state.unavailable"],
+      ["runner.state.a", "runner.state.unavailable", "runner.state.z"],
     ]);
     expect(evidence.map((entry) => entry.status)).toEqual(["pass", "pass"]);
+
+    for (const entry of evidence) {
+      expect(entry.selection).toHaveLength(entry.summary.totalChecks);
+      expect(
+        entry.summary.applicableChecks + entry.summary.nonApplicableChecks
+      ).toBe(entry.summary.totalChecks);
+      const emitted = new Set(entry.checkResults.map(({ checkId }) => checkId));
+      for (const id of ["a", "m", "z"]) {
+        expect(
+          entry.selection?.find(
+            ({ checkId }) => checkId === `runner.state.${id}`
+          )
+        ).toEqual(
+          emitted.has(`runner.state.${id}`)
+            ? { checkId: `runner.state.${id}`, selected: true }
+            : {
+                checkId: `runner.state.${id}`,
+                selected: false,
+                reason: "assigned to another shard",
+              }
+        );
+      }
+    }
+
+    const filtered = await runCommand([
+      ...command,
+      "--check",
+      "runner.state.a",
+    ]);
+    expect(filtered.code).toBe(0);
+    const filteredEvidence: unknown = JSON.parse(filtered.stdout);
+    assertConformanceEvidence(filteredEvidence, "filtered output");
+    expect(filteredEvidence.selection).toHaveLength(
+      filteredEvidence.summary.totalChecks
+    );
+    expect(filteredEvidence.summary).toMatchObject({
+      totalChecks: 4,
+      applicableChecks: 1,
+      nonApplicableChecks: 3,
+    });
+    for (const id of ["m", "z", "unavailable"]) {
+      expect(
+        filteredEvidence.selection?.find(
+          ({ checkId }) => checkId === `runner.state.${id}`
+        )
+      ).toEqual({
+        checkId: `runner.state.${id}`,
+        selected: false,
+        reason: "outside requested checks",
+      });
+    }
 
     const unknownChecks = await runCommand([
       ...command,
