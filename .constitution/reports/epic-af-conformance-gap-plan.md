@@ -93,7 +93,7 @@ This plan is generated from the Epic AD docs-to-authority coverage matrix. It is
 - Disposition: `promote`
 - Delivery ticket: `KRT-AF006`
 - Matrix follow-up tickets: `KRT-AF006`
-- Claim IDs: `KER-1C9229916315`, `KER-36BDA9C8EAD8`, `KER-3B60173B3983`, `KER-41407CFFA30B`, `KER-425485715489`, `KER-432CDAF5BECD`, `KER-5E3CA5C766D4`, `KER-67B9D6F6BE09`, `KER-6CF7B14B0E8D`, `KER-75CA970D8FAC`, `KER-91443F7814D5`, `KER-9D4754767E9F`, `KER-A8645FB7B391`, `KER-ACCA4D458DED`, `KER-BBF71E1726AD`, `KER-BFDDF853237E`, `KER-C6D3E87F842E`, `KER-C79A21671F76`, `KER-D955F623F729`, `KER-F3BF91436E20`
+- Claim IDs: `KER-1C9229916315`, `KER-36BDA9C8EAD8`, `KER-3B60173B3983`, `KER-41407CFFA30B`, `KER-425485715489`, `KER-432CDAF5BECD`, `KER-5E3CA5C766D4`, `KER-67B9D6F6BE09`, `KER-6CF7B14B0E8D`, `KER-75CA970D8FAC`, `KER-8C76FDA7E742`, `KER-91443F7814D5`, `KER-9D4754767E9F`, `KER-A8645FB7B391`, `KER-ACCA4D458DED`, `KER-BFDDF853237E`, `KER-C6D3E87F842E`, `KER-C79A21671F76`, `KER-D955F623F729`, `KER-F3BF91436E20`
 - Authority packet: `spec/kernel/authority-packet.json`
 - Conformance plan: `spec/conformance/kernel/plans/kernel-protocol-core.json; spec/conformance/kernel/plans/kernel-protocol-extended.json`
 - Fixture or scenario: `spec/conformance/kernel/fixtures/kernel-protocol-logical.json; spec/conformance/kernel/fixtures/kernel-protocol-deterministic.json`
