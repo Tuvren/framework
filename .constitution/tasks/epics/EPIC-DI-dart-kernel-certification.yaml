@@ -1,0 +1,102 @@
+id: DI
+name: Certify the Dart kernel on the kernel catalog
+kind: product
+capabilities: [CAP-035, CAP-036, CAP-037, CAP-038]
+depends_on: [DE]
+priority: 10
+scope:
+  paths:
+    - dart/kernel
+    - dart/kernel-conformance-adapter
+    - dart/kernel-certification
+    - reports/compatibility/evidence/certification-harness.kernel-dart-certification.json
+  tech_spec_patchable: []
+estimated_diff_lines: 7000
+estimate_source: planned
+tickets:
+  - id: KRT-DI001
+    title: Bind the Dart kernel to the protocol syscalls with lossless encoding
+    type: Feature
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - dart/kernel
+        - dart/kernel-conformance-adapter
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the rewritten protocol plans pass or are triaged against the Dart kernel adapter, which encodes observations per the encoding profile."
+    stop_conditions:
+      - "STOP if a protocol syscall has no public Dart kernel API; record it as an implementation finding; do not improvise."
+    description: "ADR-0075, ADR-0078, ADR-0080. Add the Dart observation encoding helpers, replace the protocol composites with syscall bindings that forward native results and errors unchanged, remove any adapter-side sorting, and make the Dart kernel return canonical changedPaths order. Triage every failure in this ticket's certification-triage.yaml."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the protocol plans pass or have triage entries, observations validate against the encoding profile, and the adapter performs no comparison, sorting, or normalization for these operations."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DI002
+    title: Re-express the Dart fault seam and clocks and bind the memory-profile families
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DI001]
+    scope:
+      in:
+        - dart/kernel
+        - dart/kernel-conformance-adapter
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; isolation, reclamation, liveness, and in-process recovery plans pass or are triaged against the Dart kernel with runner-owned clocks and armed faults."
+    stop_conditions:
+      - "STOP if recovery requires an adapter-inserted reconcile call; record a specification or implementation finding; do not improvise."
+    description: "ADR-0076. Re-express the existing Dart fault-injecting backend at the storage-boundary points with throw mode and activation tokens, inject backend and worker clocks through setClock, and replace the scope, reclamation, liveness, and in-process recovery composites with syscall bindings. Remove adapter-side reconciliation and expected-value derivation. Any observable partial checkpoint state between separate durable writes is an implementation finding against the all-or-nothing invariant."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert armed faults produce activation evidence, no adapter code derives an expected head or reconciles, and every failure has a triage entry."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DI003
+    title: Serve protocol 0.2 concurrently and run the writer race in Dart
+    type: Feature
+    effort: 3
+    depends_on: [KRT-DI002]
+    scope:
+      in:
+        - dart/kernel
+        - dart/kernel-conformance-adapter
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the Dart adapter serves operation handles concurrently and the concurrent-writer check passes or is triaged with both entry receipts before release."
+    stop_conditions:
+      - "STOP if the Dart kernel cannot run two writers concurrently; record the implementation finding; do not improvise."
+    description: "ADR-0077. Make the Dart adapter host concurrent, bind the operation handle methods, add a test-only barrier seam in the in-memory persistence path, and run the concurrent-writer checks. The current sequential race is replaced, not kept."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert both contenders reach the seam before release in both orderings and each failure has a triage entry."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DI004
+    title: Certify the Dart kernel under kernel.memory
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DI003]
+    scope:
+      in:
+        - dart/kernel
+        - dart/kernel-conformance-adapter
+        - dart/kernel-certification
+        - reports/compatibility/evidence/certification-harness.kernel-dart-certification.json
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the Dart kernel claims kernel.memory with every required check applicable, and its certificate validates or its red checks are triaged."
+    stop_conditions:
+      - "STOP if certifying requires weakening a plan; record the finding instead; do not improvise."
+    description: "ADR-0081. Claim kernel.memory in the Dart adapter manifest, launch the built executable directly, emit the certificate bundle (the certified list itself is updated in the compatibility-ledger epic), fix small local implementation findings, and file the rest as issues with replay commands. Every finding is classified in this ticket's certification-triage.yaml."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the kernel.memory run is complete, each failure has a triage entry and, for implementation findings, an issue with a replay command."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned

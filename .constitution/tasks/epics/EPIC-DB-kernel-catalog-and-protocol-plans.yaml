@@ -1,0 +1,123 @@
+id: DB
+name: Kernel catalog, lossless encoding, and protocol plans on the TypeScript memory kernel
+kind: product
+capabilities: [CAP-035, CAP-036, CAP-037, CAP-038]
+depends_on: [CZ]
+priority: 3
+scope:
+  paths:
+    - spec/conformance/kernel
+    - spec/kernel
+    - docs/KrakenKernelSpecification.md
+    - tools/conformance/harness
+    - tools/conformance/plan-compiler
+    - tools/conformance/meta-conformance
+    - tools/scripts/conformance
+    - typescript/kernel/conformance-adapter
+    - typescript/kernel/testkit
+    - typescript/kernel/runtime
+    - typescript/kernel/protocol
+    - typescript/kernel/backends/memory
+    - ".changeset/certification-db-kernel-protocol.md"
+  tech_spec_patchable:
+    - .constitution/tech-spec/contracts/kernel-identity-recipes.meta.yaml
+    - .constitution/tech-spec/contracts/conformance-operation-catalog.meta.yaml
+estimated_diff_lines: 12000
+estimate_source: planned
+tickets:
+  - id: KRT-DB001
+    title: Author the kernel operation catalog and identity recipes
+    type: Feature
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - spec/conformance/kernel/operations.json
+        - spec/conformance/kernel/identity-recipes.json
+        - spec/kernel/authority-packet.json
+    verification:
+      command: bun run check
+      expected: "Exit 0; the kernel catalog and identity recipes validate and the packet references both."
+    stop_conditions:
+      - "STOP if a kernel syscall in docs/KrakenKernelSpecification.md has no public binding in the authority packet; report the gap as a specification finding; do not improvise."
+    description: "ADR-0075 decision 3 and ADR-0078 decision 2. Write spec/conformance/kernel/operations.json with one syscall entry per kernel specification operation (store, schema, tree, node, branch, thread, staging, run, run-liveness, maintenance), control entries for setClock and armFault, canonical error codes taken from the current kernel plans, closed observation schemas, and the legacy composite operations marked deprecated. Write spec/conformance/kernel/identity-recipes.json for opaque objects, TurnNodes, TurnTrees, and schemas, pinned to the committed vectors. Reference both from spec/kernel/authority-packet.json."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert every non-deprecated kernel operation in the catalog has a binding reference that resolves in the authority packet, every identity recipe reproduces the committed vectors' digests, and every legacy composite operation used by a current plan is listed as deprecated."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DB002
+    title: Encode observations losslessly and verify kernel content integrity in the runner
+    type: Feature
+    effort: 8
+    depends_on: [KRT-DB001]
+    scope:
+      in:
+        - tools/conformance/harness
+        - tools/conformance/meta-conformance
+        - spec/conformance/kernel/fixtures
+        - spec/kernel
+        - typescript/kernel/conformance-adapter
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; migrated fixtures use $bytes, the runner rejects observations violating the encoding, and digest, canonicalCbor, identity, and referenceWalk assertions pass on the committed vectors and fail on byte flips."
+    stop_conditions:
+      - "STOP if the runner's encoder disagrees with a committed vector; record it as a verification or specification finding and do not regenerate the vector; do not improvise."
+    description: "ADR-0078. Validate every observation against tools/schemas/conformance-observation-encoding.schema.json and the operation's observation schema before assertions. Migrate kernel fixtures from integer arrays to $bytes. Add the digest, canonicalCbor, identity, and referenceWalk assertion kinds using a verifier encoder pinned to committed vectors and identity recipes, independent of the production encoder import path. Generate JSON Schema for kernel records from spec/kernel/cddl/kernel-records.cddl through the existing codegen lane so schemaValid can check observed records. Add the TypeScript adapter encoding helpers."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert each integrity assertion passes on every committed vector and fails on a flipped byte, a reordered map key, a dropped optional field, and an altered reference; assert an observation with a duplicate key, a fractional integer field, or an undeclared field is an adapter_protocol failure."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DB003
+    title: Make tree.diff changedPaths canonical in authority and the TypeScript kernel
+    type: Feature
+    effort: 3
+    depends_on: [KRT-DB001]
+    scope:
+      in:
+        - docs/KrakenKernelSpecification.md
+        - spec/kernel
+        - typescript/kernel/runtime
+        - typescript/kernel/protocol
+        - typescript/kernel/conformance-adapter
+        - ".changeset/certification-db-kernel-protocol.md"
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; the TypeScript kernel returns changedPaths in ascending UTF-8 byte order without the adapter sorting."
+    stop_conditions:
+      - "STOP if canonical ordering changes a committed hash or vector; do not improvise."
+    description: "ADR-0080. Add the ordering sentence to docs/KrakenKernelSpecification.md and the kernel authority packet, make the TypeScript kernel return changedPaths without duplicates in ascending unsigned UTF-8 byte order, and remove the sort in typescript/kernel/conformance-adapter. Add a changeset for the affected public packages under ADR-0069."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert tree.diff output order for paths that differ in UTF-8 versus UTF-16 ordering, assert the adapter no longer sorts, and assert the changeset covers @tuvren/kernel-runtime and any other affected public package."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: settled
+    status: planned
+  - id: KRT-DB004
+    title: Rewrite the protocol-core and protocol-extended plans as syscall traces
+    type: Feature
+    effort: 8
+    depends_on: [KRT-DB002, KRT-DB003]
+    scope:
+      in:
+        - spec/conformance/kernel/plans
+        - spec/conformance/kernel/negative-controls.json
+        - typescript/kernel/conformance-adapter
+        - typescript/kernel/testkit
+        - typescript/kernel/runtime
+        - ".changeset/certification-db-kernel-protocol.md"
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; the rewritten protocol plans pass on the TypeScript memory kernel, the compiler enforces the certification rules on them, and the designated mutants for these claims are killed."
+    stop_conditions:
+      - "STOP if an obligation in the old plans has no catalogued operation to express it; record a specification finding instead of adding a composite operation; do not improvise."
+    description: "ADR-0075. Rewrite kernel-protocol-core.json and kernel-protocol-extended.json as plan traces over catalogued syscalls with claimIds, explicit arguments, and captures, and ship an old-to-new obligation map in the pull request. Replace canonical-rejection, thread-list, recovery-state, edge-validation, and cross-thread-rejection composites with direct observations judged by the runner. Reduce the TypeScript kernel adapter for these operations to syscall bindings, remove normalizeLogicalErrorCode, and align the TypeScript kernel's emitted error codes with the three canonical plan codes (turn_node_thread_mismatch, run_lease_owner_mismatch, run_lease_token_mismatch) as an implementation finding with a changeset; the adapter's unbacked turn_head_lateral_move mapping is a specification finding settled in authority before any code changes (ADR-0075 decision 2). Update the negative-control designations to the new claims. Remove unit tests made redundant or self-asserting by the migration, listing each with its reason in the obligation map. Record every failure in this ticket's certification-triage.yaml."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the rewritten plans pass on the TypeScript memory kernel with compiler rules enforcing, every old obligation maps to a claimId or an explicit removal reason, the designated mutants for these claims are killed with activation proof, and no adapter code path compares, sorts, or normalizes for these operations."
+    flows: [flow-authority-packet-driven-conformance, flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
