@@ -57,6 +57,7 @@ import type {
 import { readAdapterManifest, readPlans } from "./run-plans.js";
 import {
   ArgumentResolutionError,
+  createCaptureStore,
   recordStepCaptures,
   resolveStepArguments,
 } from "./step-arguments.js";
@@ -481,6 +482,24 @@ const createTraceStepRequest = (
   };
 };
 
+const LEGACY_INPUT_SELECTORS = ["fixturePath", "scenarioPath"] as const;
+
+const rejectLegacySelectors = (input: unknown): void => {
+  if (!isRecord(input)) {
+    return;
+  }
+
+  const selector = LEGACY_INPUT_SELECTORS.find((key) =>
+    Object.hasOwn(input, key)
+  );
+
+  if (selector !== undefined) {
+    throw new ArgumentResolutionError(
+      `check input ${selector} cannot be combined with step arguments`
+    );
+  }
+};
+
 const runTraceCheck = async (
   client: JsonRpcAdapterClient,
   manifest: AdapterManifest,
@@ -488,19 +507,26 @@ const runTraceCheck = async (
   compiledCheck: CompiledConformancePlanCheck
 ): Promise<ConformanceCheckResult> => {
   const { check } = compiledCheck;
-  const baseInput = createAdapterInput(plan, compiledCheck);
   const steps = check.steps ?? [];
   const projected = steps.some((step) => step.arguments !== undefined);
+  if (projected) {
+    rejectLegacySelectors(check.input);
+  }
+  const baseInput = createAdapterInput(plan, compiledCheck);
   const instance = await client.createInstance(
     projected ? { checkInput: check.input } : baseInput
   );
   const trace: Record<string, AssertionContext> = {};
   const traceAdapterErrors: Record<string, unknown> = {};
   const assertionResults: AssertionEvaluation[] = [];
-  const captures: Record<string, unknown> = {};
+  const captureStore = createCaptureStore();
+  const captures = captureStore.values;
   const argumentRoots: ArgumentRoots = {
     capture: captures,
-    fixture: baseInput.fixture,
+    fixture:
+      check.fixture === undefined
+        ? undefined
+        : plan.fixtures.get(check.fixture),
     input: check.input,
   };
 
@@ -558,7 +584,11 @@ const runTraceCheck = async (
       }
 
       trace[step.stepId] = context;
-      recordStepCaptures(step.capture, context, captures);
+      recordStepCaptures(
+        step.capture,
+        { ...context, events: context.events ?? extraEvents },
+        captureStore
+      );
 
       if (step.assertions !== undefined) {
         const stepContext: RunnerContext = {

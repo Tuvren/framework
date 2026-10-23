@@ -126,20 +126,32 @@ export const resolveStepArguments = (
   );
 };
 
+export interface CaptureStore {
+  readonly declared: Set<string>;
+  readonly values: Record<string, unknown>;
+}
+
+export const createCaptureStore = (): CaptureStore => ({
+  declared: new Set(),
+  values: Object.create(null) as Record<string, unknown>,
+});
+
 /**
  * A capture whose path is absent from the observation is not recorded, so any
- * later `$ref` or assertion operand that reads it fails as unresolved.
+ * later `$ref` or assertion operand that reads it fails as unresolved. Its name
+ * still counts as declared.
  */
 export const recordStepCaptures = (
   captures: readonly ConformancePlanCapture[] | undefined,
   observation: StepObservation,
-  target: Record<string, unknown>
+  store: CaptureStore
 ): void => {
   for (const { name, path } of captures ?? []) {
-    if (Object.hasOwn(target, name)) {
+    if (store.declared.has(name)) {
       throw new ArgumentResolutionError(`capture ${name} is already defined`);
     }
 
+    store.declared.add(name);
     const value = readOwnSegments(
       {
         events: observation.events,
@@ -150,7 +162,7 @@ export const recordStepCaptures = (
     );
 
     if (value !== undefined) {
-      target[name] = value;
+      store.values[name] = value;
     }
   }
 };

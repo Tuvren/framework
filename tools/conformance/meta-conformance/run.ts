@@ -31,6 +31,7 @@ import {
 import type { AssertionContext } from "../harness/assertion-engine/index.js";
 import {
   ArgumentResolutionError,
+  createCaptureStore,
   recordStepCaptures,
   resolveStepArguments,
 } from "../harness/step-arguments.js";
@@ -405,7 +406,8 @@ const runWhenReportingCases = (failures: string[]): void => {
 };
 
 const runArgumentProjectionCases = (failures: string[]): void => {
-  const captures: Record<string, unknown> = {};
+  const captureStore = createCaptureStore();
+  const captures = captureStore.values;
   const roots = {
     capture: captures,
     fixture: {
@@ -421,10 +423,15 @@ const runArgumentProjectionCases = (failures: string[]): void => {
       { name: "absent", path: "result.missing" },
     ],
     { events: [{ type: "opened" }], result: { token: "tok-1" } },
-    captures
+    captureStore
   );
 
-  if (!isDeepStrictEqual(captures, { firstEvent: "opened", token: "tok-1" })) {
+  if (
+    !isDeepStrictEqual(
+      { ...captures },
+      { firstEvent: "opened", token: "tok-1" }
+    )
+  ) {
     failures.push(
       `captures recorded unexpected values: ${JSON.stringify(captures)}`
     );
@@ -487,7 +494,16 @@ const runArgumentProjectionCases = (failures: string[]): void => {
         recordStepCaptures(
           [{ name: "token", path: "result.token" }],
           { result: { token: "tok-2" } },
-          captures
+          captureStore
+        ),
+    ],
+    [
+      "reused name of an unrecorded capture",
+      () =>
+        recordStepCaptures(
+          [{ name: "absent", path: "result.token" }],
+          { result: { token: "tok-2" } },
+          captureStore
         ),
     ],
   ];

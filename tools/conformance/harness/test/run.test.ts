@@ -837,9 +837,14 @@ describe("certification harness trace lifecycle", () => {
 
 describe("certification harness explicit arguments and captures", () => {
   const EXPECTED_SENTINEL = "EXPECTED-ONLY-SENTINEL";
+  const DEFAULT_PROJECTION_FIXTURE = {
+    expected: { requestId: "req-1", secret: EXPECTED_SENTINEL },
+    input: { request: { id: "req-1", nested: [10, 20] } },
+  };
 
   const writeProjectionFixture = async (
-    checks: readonly unknown[]
+    checks: readonly unknown[],
+    fixture: unknown = DEFAULT_PROJECTION_FIXTURE
   ): Promise<{ adapterPath: string; logPath: string; planPath: string }> => {
     const directory = await mkdtemp(
       nodePath.join(tmpdir(), "tuvren-projection-test-")
@@ -851,13 +856,7 @@ describe("certification harness explicit arguments and captures", () => {
     const fixturePath = nodePath.join(directory, "fixture.json");
     const logPath = nodePath.join(directory, "frames.jsonl");
     await writeFile(packetPath, JSON.stringify({ packetId: "projection" }));
-    await writeFile(
-      fixturePath,
-      JSON.stringify({
-        expected: { requestId: "req-1", secret: EXPECTED_SENTINEL },
-        input: { request: { id: "req-1", nested: [10, 20] } },
-      })
-    );
+    await writeFile(fixturePath, JSON.stringify(fixture));
     await writeFile(
       adapterPath,
       JSON.stringify({
@@ -1115,6 +1114,86 @@ describe("certification harness explicit arguments and captures", () => {
     expect(result.code).toBe(1);
     expect(result.stdout).toBe("");
     expect(result.stderr).toContain("failed JSON Schema validation");
+  });
+
+  test.each([
+    { input: { fixturePath: "$.expected" }, selector: "fixturePath" },
+    { input: { scenarioPath: "$.expected" }, selector: "scenarioPath" },
+  ])(
+    "rejects the legacy $selector selector for checks with step arguments",
+    async ({ input, selector }) => {
+      const { adapterPath, logPath, planPath } = await writeProjectionFixture(
+        [
+          {
+            assertions: [
+              { field: "$.trace", kind: "stateField", present: true },
+            ],
+            checkId: "projection.selector",
+            fixture: "case",
+            input,
+            operation: "projection",
+            steps: [
+              {
+                arguments: { value: { $ref: "fixture.input.value" } },
+                operation: "open",
+                stepId: "first",
+              },
+            ],
+          },
+        ],
+        { expected: { input: { value: EXPECTED_SENTINEL } }, input: {} }
+      );
+      const result = await runProjection(adapterPath, planPath);
+
+      expect(result.code).toBe(1);
+      const evidence: unknown = JSON.parse(result.stdout);
+      assertConformanceEvidence(evidence, "selector evidence");
+      const [checkResult] = evidence.checkResults;
+      expect(checkResult?.status).toBe("fail");
+      expect(checkResult?.details).toMatchObject({
+        verificationError: expect.stringContaining(selector),
+      });
+      expect(checkResult?.details).not.toHaveProperty("adapterError");
+      const rawFrames = await readFile(logPath, "utf-8");
+      expect(rawFrames).not.toContain(EXPECTED_SENTINEL);
+      const frames = await readFrames(logPath);
+      expect(frames.map((frame) => frame.method)).not.toContain("dispatch");
+    }
+  );
+
+  test("captures an empty events array from a step observation", async () => {
+    const { adapterPath, logPath, planPath } = await writeProjectionFixture([
+      {
+        assertions: [{ field: "$.trace", kind: "stateField", present: true }],
+        checkId: "projection.empty-events",
+        fixture: "case",
+        input: { mode: "strict" },
+        operation: "projection",
+        steps: [
+          {
+            arguments: { mode: { $ref: "input.mode" } },
+            capture: [{ name: "seen", path: "events" }],
+            operation: "open",
+            stepId: "first",
+          },
+          {
+            arguments: { seen: { $ref: "capture.seen" } },
+            operation: "use",
+            stepId: "second",
+          },
+        ],
+      },
+    ]);
+    const result = await runProjection(adapterPath, planPath);
+
+    expect(result.stderr).toBe("");
+    expect(result.code).toBe(0);
+    const frames = await readFrames(logPath);
+    expect(
+      frames
+        .filter((frame) => frame.method === "dispatch")
+        .map((frame) => frame.params.input)
+    ).toEqual([{ mode: "strict" }, { seen: [] }]);
   });
 
   test("keeps whole-fixture forwarding for legacy steps without arguments", async () => {
