@@ -1,0 +1,103 @@
+{
+  "catalogId": "tuvren.fixture.operations",
+  "catalogVersion": "0.1.0",
+  "packetId": "tuvren.fixture.certification",
+  "operations": [
+    {
+      "operationId": "fixture.store.has",
+      "kind": "syscall",
+      "binding": "fixture.store",
+      "capability": "fixture.store",
+      "input": {
+        "type": "object"
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "present": {
+              "type": "boolean"
+            },
+            "hash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "key": {
+                    "type": "string"
+                  },
+                  "live": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "state": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "count": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "fixture.store.put",
+      "kind": "syscall",
+      "binding": "fixture.store",
+      "capability": "fixture.store",
+      "input": {
+        "type": "object"
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hash": {
+              "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash"
+            }
+          }
+        }
+      }
+    },
+    {
+      "operationId": "fixture.control.verdict",
+      "kind": "control",
+      "capability": "fixture.control",
+      "input": true,
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ok": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

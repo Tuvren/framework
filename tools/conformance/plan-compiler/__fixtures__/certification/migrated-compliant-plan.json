@@ -1,0 +1,18 @@
+{
+  "planId": "tuvren.fixture.migrated-compliant",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.fixture.certification",
+  "applicability": { "capabilities": ["fixture.store"] },
+  "checks": [
+    {
+      "checkId": "fixture.store.has.present",
+      "claimIds": ["fixture.store.membership"],
+      "operation": "fixture.store.has",
+      "input": { "key": "a" },
+      "assertions": [
+        { "kind": "resultField", "field": "$.present", "equals": true },
+        { "kind": "resultField", "field": "$.hash", "present": true }
+      ]
+    }
+  ]
+}

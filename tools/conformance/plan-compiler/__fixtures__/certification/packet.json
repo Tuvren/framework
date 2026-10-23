@@ -1,0 +1,5 @@
+{
+  "packetId": "tuvren.fixture.certification",
+  "operationCatalog": "tools/conformance/plan-compiler/__fixtures__/certification/operations.json",
+  "certificationProfiles": "tools/conformance/plan-compiler/__fixtures__/certification/profiles.json"
+}

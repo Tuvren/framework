@@ -1,0 +1,12 @@
+{
+  "profiles": [
+    {
+      "profileId": "fixture.memory",
+      "requiredCapabilities": ["fixture.store"],
+      "claimIds": ["fixture.store.membership"],
+      "faultPoints": [],
+      "negativeControls": [],
+      "requiredEvidence": []
+    }
+  ]
+}
