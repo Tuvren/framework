@@ -138,27 +138,31 @@ const duplicateIds = (
   return duplicates;
 };
 
-interface SchemaScope {
-  readonly root: unknown;
-  readonly id: string | undefined;
-}
-
-const IN_PLACE_LISTS = ["allOf", "anyOf", "oneOf"] as const;
-const IN_PLACE_SCHEMAS = ["then", "else"] as const;
-const IN_PLACE_MAPS = ["dependentSchemas"] as const;
-const CHILD_LISTS = ["prefixItems"] as const;
-const CHILD_SCHEMAS = [
-  "additionalProperties",
-  "unevaluatedProperties",
-  "items",
-  "unevaluatedItems",
+const ENCODING_DEFINITIONS = new Set([
+  "bytes",
+  "safeInteger",
+  "hash",
+  "identifier",
+  "handle",
+  "record",
+  "map",
+]);
+const UNSUPPORTED_KEYWORDS = [
+  "allOf",
+  "not",
+  "if",
+  "then",
+  "else",
+  "dependentSchemas",
+  "$dynamicRef",
 ] as const;
-const CHILD_MAPS = ["properties", "patternProperties"] as const;
+const DIALECT_HINT =
+  "use the certification observation dialect: typed schemas with closed objects and direct items, local #/$defs or encoding $refs, anyOf/oneOf, or const/enum";
 
-let encodingScope: SchemaScope | undefined;
+let encodingId: string | undefined;
 
-const loadEncodingScope = (): SchemaScope => {
-  if (encodingScope === undefined) {
+const loadEncodingId = (): string => {
+  if (encodingId === undefined) {
     const root: unknown = JSON.parse(
       readFileSync(
         nodePath.resolve(
@@ -168,220 +172,228 @@ const loadEncodingScope = (): SchemaScope => {
         "utf-8"
       )
     );
-    encodingScope = {
-      id: isRecord(root) && typeof root.$id === "string" ? root.$id : "",
-      root,
-    };
+    encodingId = isRecord(root) && typeof root.$id === "string" ? root.$id : "";
   }
 
-  return encodingScope;
+  return encodingId;
 };
 
-const resolvePointer = (root: unknown, fragment: string): unknown => {
-  if (fragment === "") {
-    return root;
-  }
+const escapePointer = (segment: string): string =>
+  segment.replaceAll("~", "~0").replaceAll("/", "~1");
 
-  if (!fragment.startsWith("/")) {
-    return undefined;
-  }
+const unescapePointer = (segment: string): string =>
+  segment.replaceAll("~1", "/").replaceAll("~0", "~");
 
-  let current = root;
+const LOCAL_DEF_REF = /^#\/\$defs\/([^/]+)$/u;
 
-  for (const raw of fragment.slice(1).split("/")) {
-    const segment = decodeURIComponent(raw)
-      .replaceAll("~1", "/")
-      .replaceAll("~0", "~");
-
-    if (!(isRecord(current) || Array.isArray(current))) {
-      return undefined;
-    }
-
-    current = (current as Record<string, unknown>)[segment];
-  }
-
-  return current;
-};
-
-const scopeForBase = (
-  base: string,
-  scope: SchemaScope
-): SchemaScope | undefined => {
-  if (base === "" || base === scope.id) {
-    return scope;
-  }
-
-  const encoding = loadEncodingScope();
-  return base === encoding.id ? encoding : undefined;
-};
-
-const resolveRef = (
-  ref: string,
-  scope: SchemaScope
-): { schema: unknown; scope: SchemaScope } | undefined => {
-  const [base = "", fragment = ""] = ref.split("#", 2);
-  const target = scopeForBase(base, scope);
-  const schema =
-    target === undefined ? undefined : resolvePointer(target.root, fragment);
-
-  return target === undefined || schema === undefined
-    ? undefined
-    : { schema, scope: target };
-};
-
-const declaresObject = (schema: Record<string, unknown>): boolean =>
-  schema.type === "object" ||
-  (Array.isArray(schema.type) && schema.type.includes("object")) ||
-  isRecord(schema.properties) ||
-  isRecord(schema.patternProperties);
-
-const closesObject = (schema: Record<string, unknown>): boolean =>
-  schema.additionalProperties === false ||
-  schema.unevaluatedProperties === false;
-
-const excludesType = (
+const declaresType = (
   schema: Record<string, unknown>,
   type: "array" | "object"
 ): boolean =>
-  typeof schema.type === "string"
-    ? schema.type !== type
-    : Array.isArray(schema.type) && !schema.type.includes(type);
+  schema.type === type ||
+  (Array.isArray(schema.type) && schema.type.includes(type));
 
-const excludesObject = (schema: Record<string, unknown>): boolean =>
-  excludesType(schema, "object") ||
-  (Object.hasOwn(schema, "const") && !isRecord(schema.const)) ||
-  (Array.isArray(schema.enum) && !schema.enum.some(isRecord));
-
-/** Whether `$ref` or a non-empty allOf, anyOf, or oneOf decides the type. */
-const delegatesInPlace = (schema: Record<string, unknown>): boolean =>
-  typeof schema.$ref === "string" ||
-  IN_PLACE_LISTS.some(
-    (key) => Array.isArray(schema[key]) && schema[key].length > 0
-  );
-
-/** An unclosed schema that can hold an object, including `{}` and type-less ones. */
-const admitsOpenObject = (schema: Record<string, unknown>): boolean =>
-  !(closesObject(schema) || excludesObject(schema)) &&
-  (declaresObject(schema) || !delegatesInPlace(schema));
-
-/** An array schema whose items no subschema constrains. */
-const admitsAnyItem = (schema: Record<string, unknown>): boolean =>
-  schema.type !== undefined &&
-  !excludesType(schema, "array") &&
-  schema.items === undefined &&
-  schema.unevaluatedItems === undefined;
-
-interface SubschemaEdge {
-  readonly schema: unknown;
-  readonly path: string;
-  readonly inPlace: boolean;
+interface DialectContext {
+  readonly defs: Record<string, unknown>;
+  readonly checkedDefs: Set<string>;
+  readonly report: (pointer: string, problem: string) => void;
 }
 
-/** Subschemas other than `$ref`, marked by whether they apply in place. */
-const subschemaEdges = (node: Record<string, unknown>): SubschemaEdge[] => {
-  const edges: SubschemaEdge[] = [];
-  const addList = (keys: readonly string[], inPlace: boolean): void => {
-    for (const key of keys) {
-      const list = node[key];
+type InPlaceDefs = ReadonlySet<string>;
 
-      if (Array.isArray(list)) {
-        for (const [index, schema] of list.entries()) {
-          edges.push({ inPlace, path: `/${key}/${index}`, schema });
-        }
-      }
-    }
-  };
-  const addMap = (keys: readonly string[], inPlace: boolean): void => {
-    for (const key of keys) {
-      const map = node[key];
+const NO_DEFS: InPlaceDefs = new Set();
 
-      if (isRecord(map)) {
-        for (const [name, schema] of Object.entries(map)) {
-          edges.push({ inPlace, path: `/${key}/${name}`, schema });
-        }
-      }
-    }
-  };
-
-  addList(IN_PLACE_LISTS, true);
-  addMap(IN_PLACE_MAPS, true);
-  addList(CHILD_LISTS, false);
-  addMap(CHILD_MAPS, false);
-
-  for (const key of IN_PLACE_SCHEMAS) {
-    edges.push({ inPlace: true, path: `/${key}`, schema: node[key] });
+/** Why a node is outside the dialect before its keywords are inspected. */
+const shapeProblem = (node: unknown, pointer: string): string | undefined => {
+  if (node === true) {
+    return "is true, which admits any value";
   }
 
-  for (const key of CHILD_SCHEMAS) {
-    edges.push({ inPlace: false, path: `/${key}`, schema: node[key] });
+  if (!isRecord(node)) {
+    return "is not a schema";
   }
 
-  return edges;
+  const unsupported = [
+    ...UNSUPPORTED_KEYWORDS.filter((key) => Object.hasOwn(node, key)),
+    ...(pointer !== "" && Object.hasOwn(node, "$id") ? ["$id"] : []),
+  ];
+
+  if (unsupported.length > 0) {
+    return `uses unsupported ${unsupported.join(", ")}`;
+  }
+
+  const anchored =
+    typeof node.$ref === "string" ||
+    Array.isArray(node.anyOf) ||
+    Array.isArray(node.oneOf) ||
+    node.type !== undefined ||
+    Object.hasOwn(node, "const") ||
+    Array.isArray(node.enum);
+
+  return anchored
+    ? undefined
+    : "declares no type, $ref, anyOf, oneOf, const, or enum";
 };
 
-const schemaNodeProblems = (
-  node: Record<string, unknown>,
-  closed: boolean
-): string[] => [
-  ...(!closed && admitsOpenObject(node) ? ["admits an open object"] : []),
-  ...(admitsAnyItem(node) ? ["admits unconstrained array items"] : []),
-  ...(node.$dynamicRef === undefined
-    ? []
-    : ["uses an unsupported $dynamicRef"]),
-];
+const walkDialect = (
+  context: DialectContext,
+  node: unknown,
+  pointer: string,
+  inPlaceDefs: InPlaceDefs
+): void => {
+  if (node === false) {
+    return;
+  }
 
-/**
- * Reports every schema reachable from an observation schema that can admit an
- * object without closing it: object schemas, `true`, `{}`, and type-less
- * schemas that neither exclude objects nor delegate to `$ref` or a
- * composition. Subschemas applied in place (allOf, anyOf, oneOf, then/else,
- * dependentSchemas, $ref) inherit closure from their parent; subschemas for
- * nested instances (properties, items, and similar) must close themselves.
- */
-const collectOpenObjectSchemas = (schema: unknown, label: string): string[] => {
-  const failures: string[] = [];
-  const visited = new Map<object, Set<boolean>>();
+  const problem = shapeProblem(node, pointer);
 
-  const walk = (
-    node: unknown,
-    scope: SchemaScope,
-    path: string,
-    closedInPlace: boolean
-  ): void => {
-    if (node === true && !closedInPlace) {
-      failures.push(`${label}${path} admits an open object`);
-    }
+  if (problem !== undefined || !isRecord(node)) {
+    context.report(pointer, problem ?? "is not a schema");
+    return;
+  }
 
-    if (!isRecord(node) || visited.get(node)?.has(closedInPlace) === true) {
-      return;
-    }
+  if (typeof node.$ref === "string") {
+    walkDialectRef(context, node.$ref, pointer, inPlaceDefs);
+  }
 
-    visited.set(node, new Set([...(visited.get(node) ?? []), closedInPlace]));
-    const closed = closedInPlace || closesObject(node);
-    failures.push(
-      ...schemaNodeProblems(node, closed).map(
-        (problem) => `${label}${path} ${problem}`
-      )
-    );
+  for (const key of ["anyOf", "oneOf"] as const) {
+    const branches = node[key];
 
-    if (typeof node.$ref === "string") {
-      const resolved = resolveRef(node.$ref, scope);
-
-      if (resolved === undefined) {
-        failures.push(`${label}${path} has unresolvable $ref ${node.$ref}`);
-      } else {
-        walk(resolved.schema, resolved.scope, `${path}/$ref`, closed);
+    if (Array.isArray(branches)) {
+      for (const [index, branch] of branches.entries()) {
+        walkDialect(context, branch, `${pointer}/${key}/${index}`, inPlaceDefs);
       }
     }
+  }
 
-    for (const edge of subschemaEdges(node)) {
-      walk(edge.schema, scope, `${path}${edge.path}`, edge.inPlace && closed);
+  if (declaresType(node, "object")) {
+    walkDialectObject(context, node, pointer);
+  }
+
+  if (declaresType(node, "array")) {
+    walkDialectArray(context, node, pointer);
+  }
+};
+
+const walkDialectObject = (
+  context: DialectContext,
+  node: Record<string, unknown>,
+  pointer: string
+): void => {
+  if (
+    node.additionalProperties !== false &&
+    node.unevaluatedProperties !== false
+  ) {
+    context.report(
+      pointer,
+      "is an object type without additionalProperties: false or unevaluatedProperties: false"
+    );
+  }
+
+  for (const key of ["properties", "patternProperties"] as const) {
+    const map = node[key];
+
+    if (isRecord(map)) {
+      for (const [name, child] of Object.entries(map)) {
+        walkDialect(
+          context,
+          child,
+          `${pointer}/${key}/${escapePointer(name)}`,
+          NO_DEFS
+        );
+      }
     }
+  }
+
+  if (Object.hasOwn(node, "additionalProperties")) {
+    walkDialect(
+      context,
+      node.additionalProperties,
+      `${pointer}/additionalProperties`,
+      NO_DEFS
+    );
+  }
+};
+
+const walkDialectArray = (
+  context: DialectContext,
+  node: Record<string, unknown>,
+  pointer: string
+): void => {
+  if (Object.hasOwn(node, "items")) {
+    walkDialect(context, node.items, `${pointer}/items`, NO_DEFS);
+  } else {
+    context.report(pointer, "is an array type without a direct items schema");
+  }
+
+  if (Array.isArray(node.prefixItems)) {
+    for (const [index, child] of node.prefixItems.entries()) {
+      walkDialect(context, child, `${pointer}/prefixItems/${index}`, NO_DEFS);
+    }
+  }
+};
+
+const walkDialectRef = (
+  context: DialectContext,
+  ref: string,
+  pointer: string,
+  inPlaceDefs: InPlaceDefs
+): void => {
+  const encodingPrefix = `${loadEncodingId()}#/$defs/`;
+
+  if (ref.startsWith(encodingPrefix)) {
+    if (!ENCODING_DEFINITIONS.has(ref.slice(encodingPrefix.length))) {
+      context.report(
+        pointer,
+        `has $ref ${ref}, which is not an encoding definition (${[...ENCODING_DEFINITIONS].join(", ")})`
+      );
+    }
+    return;
+  }
+
+  const escaped = LOCAL_DEF_REF.exec(ref)?.[1];
+  const name = escaped === undefined ? undefined : unescapePointer(escaped);
+
+  if (name === undefined || !Object.hasOwn(context.defs, name)) {
+    context.report(
+      pointer,
+      `has $ref ${ref}, which is neither a local #/$defs entry nor an encoding definition`
+    );
+  } else if (inPlaceDefs.has(name)) {
+    context.report(
+      pointer,
+      `has $ref ${ref}, which cycles in place without descending into a property or item`
+    );
+  } else if (!context.checkedDefs.has(name)) {
+    context.checkedDefs.add(name);
+    walkDialect(
+      context,
+      context.defs[name],
+      `/$defs/${escapePointer(name)}`,
+      new Set([...inPlaceDefs, name])
+    );
+  }
+};
+
+/**
+ * Enforces the certification observation dialect (ADR-0075 decision 3). Every
+ * reachable subschema is `false`, a `$ref` to a local `#/$defs/<name>` or to an
+ * encoding definition, `anyOf`/`oneOf` of dialect branches, `const`/`enum`, or
+ * an explicitly typed schema whose object types close and whose array types
+ * carry a direct `items` schema. Valid but composed schemas outside this
+ * dialect are rejected on purpose.
+ */
+const collectDialectViolations = (schema: unknown, label: string): string[] => {
+  const failures: string[] = [];
+  const context: DialectContext = {
+    checkedDefs: new Set(),
+    defs: isRecord(schema) && isRecord(schema.$defs) ? schema.$defs : {},
+    report: (pointer, problem) => {
+      failures.push(`${label}#${pointer} ${problem}; ${DIALECT_HINT}`);
+    },
   };
 
-  const id =
-    isRecord(schema) && typeof schema.$id === "string" ? schema.$id : undefined;
-  walk(schema, { id, root: schema }, "", false);
+  walkDialect(context, schema, "", NO_DEFS);
   return failures;
 };
 
@@ -397,7 +409,7 @@ const collectObservationClosureFailures = (
 
     return (["result", "events", "state"] as const).flatMap((surface) =>
       Object.hasOwn(observation, surface)
-        ? collectOpenObjectSchemas(
+        ? collectDialectViolations(
             observation[surface],
             `operation ${String(operation.operationId)} observation.${surface}`
           )
@@ -408,8 +420,8 @@ const collectObservationClosureFailures = (
 /**
  * Cross-item rules JSON Schema cannot express: unique ids within one
  * catalog, profile file, or control manifest, catalog seams that name
- * catalogued operations, and closure of every object schema reachable from
- * an observation schema.
+ * catalogued operations, and the certification observation dialect for
+ * every observation schema.
  */
 export const collectCertificationIntegrityFailures = (
   name: "certificationProfile" | "negativeControlManifest" | "operationCatalog",

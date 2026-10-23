@@ -315,6 +315,208 @@ describe("operation catalog schema", () => {
     ).toEqual([expect.stringContaining("kernel.tree.diff observation.result")]);
   });
 
+  describe("observation schema dialect", () => {
+    const ENCODING_ID =
+      "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json";
+    const failuresFor = (schema: unknown): readonly string[] =>
+      collectCertificationIntegrityFailures(
+        "operationCatalog",
+        mutated(PINNED_OPERATION_CATALOG, (draft) => {
+          at(draft, "operations", 1, "observation").result = schema;
+        })
+      );
+    const closedWith = (properties: Json): Json => ({
+      additionalProperties: false,
+      properties,
+      type: "object",
+    });
+
+    test.each([
+      [
+        "a type-less closed payload that admits arrays of open objects",
+        closedWith({ payload: { additionalProperties: false } }),
+        "/properties/payload",
+      ],
+      ["true", closedWith({ payload: true }), "/properties/payload"],
+      ["{}", closedWith({ payload: {} }), "/properties/payload"],
+      [
+        "a type-less schema",
+        closedWith({ payload: { minLength: 1 } }),
+        "/properties/payload",
+      ],
+      [
+        "allOf",
+        closedWith({
+          payload: {
+            allOf: [{ items: { type: "string" }, type: "array" }],
+            type: "array",
+          },
+        }),
+        "/properties/payload",
+      ],
+      [
+        "not",
+        closedWith({ payload: { not: { type: "object" }, type: "string" } }),
+        "/properties/payload",
+      ],
+      [
+        "if/then/else",
+        closedWith({
+          payload: JSON.parse(
+            '{"if":{"type":"string"},"then":{"type":"string"},"else":{"type":"string"},"type":"string"}'
+          ),
+        }),
+        "/properties/payload",
+      ],
+      [
+        "dependentSchemas",
+        {
+          additionalProperties: false,
+          dependentSchemas: { a: { type: "object" } },
+          type: "object",
+        },
+        "",
+      ],
+      [
+        "$dynamicRef",
+        closedWith({ payload: { $dynamicRef: "#node" } }),
+        "/properties/payload",
+      ],
+      [
+        "an encoding $ref outside the dialect definitions",
+        closedWith({ payload: { $ref: `${ENCODING_ID}#/$defs/mapEntry` } }),
+        "/properties/payload",
+      ],
+      [
+        "a local $ref outside $defs",
+        closedWith({ payload: { $ref: "#/properties/other" } }),
+        "/properties/payload",
+      ],
+      [
+        "a closed object in an open object",
+        closedWith({
+          payload: {
+            properties: { inner: { type: "string" } },
+            type: "object",
+          },
+        }),
+        "/properties/payload",
+      ],
+      [
+        "an array without a direct items schema",
+        closedWith({
+          payload: { prefixItems: [{ type: "string" }], type: "array" },
+        }),
+        "/properties/payload",
+      ],
+      [
+        "an open object behind a local $ref",
+        {
+          $defs: { open: { type: "object" } },
+          $ref: "#/$defs/open",
+        },
+        "/$defs/open",
+      ],
+    ])(
+      "rejects %s with the dialect rule and pointer",
+      (_label, schema, pointer) => {
+        expect(failuresFor(schema)).toEqual([
+          expect.stringContaining(
+            `kernel.tree.diff observation.result#${pointer} `
+          ),
+        ]);
+        expect(failuresFor(schema)[0]).toContain(
+          "use the certification observation dialect"
+        );
+      }
+    );
+
+    test("accepts an array of closed objects", () => {
+      expect(
+        failuresFor(
+          closedWith({
+            payload: {
+              items: {
+                additionalProperties: false,
+                properties: {},
+                type: "object",
+              },
+              type: "array",
+            },
+          })
+        )
+      ).toEqual([]);
+    });
+
+    test("accepts local $defs and every encoding definition", () => {
+      expect(
+        failuresFor({
+          $defs: {
+            entry: closedWith({ key: { $ref: "#/$defs/key" } }),
+            key: { type: "string" },
+          },
+          ...closedWith({
+            entries: { items: { $ref: "#/$defs/entry" }, type: "array" },
+            ...Object.fromEntries(
+              [
+                "bytes",
+                "safeInteger",
+                "hash",
+                "identifier",
+                "handle",
+                "record",
+                "map",
+              ].map((name) => [name, { $ref: `${ENCODING_ID}#/$defs/${name}` }])
+            ),
+          }),
+        })
+      ).toEqual([]);
+    });
+
+    test("accepts anyOf and oneOf of typed branches, const, and enum", () => {
+      expect(
+        failuresFor(
+          closedWith({
+            either: {
+              oneOf: [{ type: "null" }, { $ref: `${ENCODING_ID}#/$defs/hash` }],
+            },
+            kind: { const: "turn" },
+            mode: { enum: ["a", "b"] },
+            tagged: {
+              anyOf: [
+                closedWith({ tag: { const: "a" } }),
+                { items: { type: "string" }, type: ["array", "null"] },
+              ],
+            },
+          })
+        )
+      ).toEqual([]);
+    });
+
+    test("terminates on recursive and self-referencing $defs", () => {
+      expect(
+        failuresFor({
+          $defs: {
+            tree: closedWith({
+              children: { items: { $ref: "#/$defs/tree" }, type: "array" },
+            }),
+          },
+          $ref: "#/$defs/tree",
+        })
+      ).toEqual([]);
+      expect(
+        failuresFor({
+          $defs: { loop: { anyOf: [{ $ref: "#/$defs/loop" }] } },
+          $ref: "#/$defs/loop",
+        })
+      ).toEqual([
+        expect.stringContaining(
+          "kernel.tree.diff observation.result#/$defs/loop/anyOf/0 "
+        ),
+      ]);
+    });
+  });
+
   test("reports duplicate operation ids and seams naming uncatalogued operations", () => {
     const catalog = mutated(PINNED_OPERATION_CATALOG, (draft) => {
       draft.operations.push(clone(at(draft, "operations", 0)) as never);
