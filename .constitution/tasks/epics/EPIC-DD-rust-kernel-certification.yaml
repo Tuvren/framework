@@ -130,6 +130,8 @@ closeout:
     - stage: tech-spec
       item: "ADR-0078 requires explicit map nodes, but both the TypeScript and Rust adapter decoders accept untagged plain objects as maps; tighten the rule or the decoders fleet-wide."
   follow_ups:
+    - "Harness checks excluded by --capability still count as non-applicable, while --check and --shard skips use a not-run reason prefix; make the not-run category a structured selection field instead of a reason prefix and document it in docs/guides/how-conformance-works.md."
+    - "KRT-DD004 selection-inventory.json predates the removal of adapter-syscall.json; regenerate it with adapter.json when the Rust lane is next certified."
     - "For an invalid occurrence combined with an unsupported fault point or block mode, Rust returns adapter_invalid_encoding and TypeScript returns kernel_fault_point_unsupported; align TypeScript with the catalog input schema's precedence."
     - "Sanctioned-variation rules (opaque cursors, fencing tokens, bootstrap bytes, archive branch ids, error prose) live in tools/conformance/meta-conformance/observation-comparison.ts; move them into per-operation authority metadata in the kernel catalog so tooling only applies them."
     - "Every public Rust kernel method relies on a hand-written transaction guard and rust/kernel/src/memory.rs exceeds 3,800 lines; route syscalls through one dispatch wrapper so atomicity and the fault seam are structural."
@@ -151,7 +153,7 @@ closeout:
         - rust/kernel/src/testkit.rs
         - rust/kernel-conformance-adapter/adapter-mutant.json
       commit: "6180129"
-    - summary: "Rust kernel syscalls run on a draft state that publishes only on success in production as well as conformance builds."
+    - summary: "Rust kernel syscalls are atomic in production as well as conformance builds (first as a whole-state draft, superseded by the per-key undo journal decision below)."
       kind: pattern
       paths:
         - rust/kernel/src/memory/transaction.rs
