@@ -72,8 +72,17 @@ export const createKernelFaultControl = (
           { code: "kernel_fault_point_unsupported", details: { point } }
         );
       }
+      if (mode === "block") {
+        throw new TuvrenPersistenceError(
+          "blocking faults unsupported by this test seam",
+          {
+            code: "kernel_fault_point_unsupported",
+            details: { mode, point },
+          }
+        );
+      }
       if (mode !== "throw") {
-        throw new TypeError("only throw fault mode is supported");
+        throw new TypeError("invalid fault mode");
       }
       if (
         typeof occurrence !== "number" ||

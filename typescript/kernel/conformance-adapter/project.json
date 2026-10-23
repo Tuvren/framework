@@ -55,7 +55,12 @@
         "{workspaceRoot}/spec/conformance/kernel/**/*",
         "{workspaceRoot}/spec/kernel/**/*",
         "{workspaceRoot}/tools/conformance/adapter-protocol/**/*",
-        "{workspaceRoot}/tools/conformance/certification/**/*"
+        "{workspaceRoot}/tools/conformance/certification/**/*",
+        "{workspaceRoot}/tools/conformance/harness/**/*",
+        "{workspaceRoot}/tools/conformance/plan-compiler/**/*",
+        "{workspaceRoot}/tools/conformance/meta-conformance/**/*",
+        "{workspaceRoot}/tools/scripts/lib/conformance-contract.ts",
+        "{workspaceRoot}/tools/schemas/**/*"
       ],
       "dependsOn": [
         {

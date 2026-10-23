@@ -616,9 +616,14 @@ const validateTraceFaultOutcome = (
   operation: CatalogOperation | undefined,
   check: ConformancePlanCheck
 ): void => {
-  if (step.action === "armFault") {
-    const faultOutcome = operation?.faultOutcome;
-    if (operation?.kind !== "control" || faultOutcome === undefined) {
+  const faultOutcome = operation?.faultOutcome;
+  if (step.action === "armFault" && faultOutcome === undefined) {
+    throw new ArgumentResolutionError(
+      "armFault requires catalogued fault outcome metadata"
+    );
+  }
+  if (faultOutcome !== undefined) {
+    if (operation?.kind !== "control") {
       throw new ArgumentResolutionError(
         "armFault requires catalogued fault outcome metadata"
       );

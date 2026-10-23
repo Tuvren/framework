@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { createBackendInvariantRecordUtils } from "@tuvren/backend-shared";
 import type { HashString } from "@tuvren/core";
 import { decodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 import type {
@@ -438,6 +439,37 @@ const hasRunningRun = async (
   );
 };
 
+const runRecordUtils = createBackendInvariantRecordUtils({
+  errorPrefix: "testkit",
+});
+
+const listExpiredWithLeases = async (
+  tx: RuntimeBackendTx,
+  leases: ReadonlyMap<
+    string,
+    Pick<
+      Required<StoredRun>,
+      "executionOwnerId" | "fencingToken" | "leaseExpiresAtMs"
+    >
+  >,
+  nowMs: number
+): Promise<StoredRun[]> => {
+  const expired = await tx.runs.listExpired(nowMs);
+  const candidates = new Map(expired.map((record) => [record.runId, record]));
+  const restored = await Promise.all(
+    [...leases].map(async ([runId, lease]) => {
+      const record = await tx.runs.get(runId);
+      return record === null ? [] : [{ ...record, ...lease }];
+    })
+  );
+  for (const record of restored.flat()) {
+    candidates.set(record.runId, record);
+  }
+  return [...candidates.values()]
+    .filter((record) => runRecordUtils.isExpiredLeasedRunningRun(record, nowMs))
+    .toSorted((left, right) => runRecordUtils.compareStoredRun(left, right));
+};
+
 // Persist runs without leases so reclamation ignores their horizon pins;
 // restore lease metadata on reads so native run operations retain ownership.
 const sweepInsideGraceWindow = (
@@ -452,44 +484,69 @@ const sweepInsideGraceWindow = (
     >
   >();
   const innerReclaim = inner.reclaim?.bind(inner);
-  return decorateTransactions(
-    inner,
-    (tx) => ({
-      ...tx,
-      runs: {
-        ...tx.runs,
-        async get(runId) {
-          const record = await tx.runs.get(runId);
-          return record === null ? null : { ...record, ...leases.get(runId) };
-        },
-        async listByBranch(branchId) {
-          const records = await tx.runs.listByBranch(branchId);
-          return records.map((record) => ({
-            ...record,
-            ...leases.get(record.runId),
-          }));
-        },
-        async set(record) {
-          const stored = { ...record };
-          delete stored.executionOwnerId;
-          delete stored.fencingToken;
-          delete stored.leaseExpiresAtMs;
-          await tx.runs.set(stored);
-          if (
-            record.executionOwnerId !== undefined &&
-            record.fencingToken !== undefined &&
-            record.leaseExpiresAtMs !== undefined
-          ) {
-            leases.set(record.runId, {
-              executionOwnerId: record.executionOwnerId,
-              fencingToken: record.fencingToken,
-              leaseExpiresAtMs: record.leaseExpiresAtMs,
-            });
-          }
-        },
-      },
-    }),
-    innerReclaim === undefined
+  return decorateBackend(inner, {
+    transact: async <T>(
+      work: (tx: RuntimeBackendTx) => Promise<T>
+    ): Promise<T> => {
+      const committed = await inner.transact(async (tx) => {
+        const pending = new Map(leases);
+        const changed = new Set<string>();
+        const result = await work({
+          ...tx,
+          runs: {
+            ...tx.runs,
+            async get(runId) {
+              const record = await tx.runs.get(runId);
+              return record === null
+                ? null
+                : { ...record, ...pending.get(runId) };
+            },
+            async listByBranch(branchId) {
+              const records = await tx.runs.listByBranch(branchId);
+              return records.map((record) => ({
+                ...record,
+                ...pending.get(record.runId),
+              }));
+            },
+            async listExpired(nowMs) {
+              return await listExpiredWithLeases(tx, pending, nowMs);
+            },
+            async set(record) {
+              const stored = { ...record };
+              delete stored.executionOwnerId;
+              delete stored.fencingToken;
+              delete stored.leaseExpiresAtMs;
+              await tx.runs.set(stored);
+              changed.add(record.runId);
+              if (
+                record.executionOwnerId !== undefined &&
+                record.fencingToken !== undefined &&
+                record.leaseExpiresAtMs !== undefined
+              ) {
+                pending.set(record.runId, {
+                  executionOwnerId: record.executionOwnerId,
+                  fencingToken: record.fencingToken,
+                  leaseExpiresAtMs: record.leaseExpiresAtMs,
+                });
+              } else {
+                pending.delete(record.runId);
+              }
+            },
+          },
+        });
+        return { changed, pending, result };
+      });
+      for (const runId of committed.changed) {
+        const lease = committed.pending.get(runId);
+        if (lease === undefined) {
+          leases.delete(runId);
+        } else {
+          leases.set(runId, lease);
+        }
+      }
+      return committed.result;
+    },
+    ...(innerReclaim === undefined
       ? {}
       : {
           reclaim: async (options?: ReclamationOptions) => {
@@ -505,8 +562,8 @@ const sweepInsideGraceWindow = (
               nowMs: Number.MAX_SAFE_INTEGER,
             });
           },
-        }
-  );
+        }),
+  });
 };
 
 const EMPTY_RECLAMATION: ReclamationSummary = {

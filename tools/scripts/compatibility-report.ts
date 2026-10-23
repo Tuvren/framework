@@ -1812,7 +1812,7 @@ const computeCompatibilityResultStatus = (
   return evidence.status;
 };
 
-const classifyConformanceReportStatus = (
+export const classifyConformanceReportStatus = (
   runner: ConformanceRunner,
   evidence: ConformanceEvidence,
   rawStatus: CompatibilityResultStatus,
@@ -1829,14 +1829,13 @@ const classifyConformanceReportStatus = (
   }
 
   const applicableChecks =
-    evidence.summary.applicableChecks ??
-    evidence.summary.failedChecks +
-      evidence.summary.passedChecks +
-      (evidence.summary.unsupportedChecks ?? 0);
+    evidence.summary.failedChecks + evidence.summary.passedChecks;
   const nonApplicableChecks = evidence.summary.nonApplicableChecks ?? 0;
 
   if (applicableChecks === 0) {
-    return nonApplicableChecks > 0 ? "unsupported" : "not_applicable";
+    return nonApplicableChecks + (evidence.summary.unsupportedChecks ?? 0) > 0
+      ? "unsupported"
+      : "not_applicable";
   }
 
   // The expected set is derived from the topology rooted at this lane's
@@ -2794,7 +2793,9 @@ const main = async (): Promise<void> => {
   }
 };
 
-await main();
+if (import.meta.main) {
+  await main();
+}
 
 interface RunnerResults {
   hasFailure: boolean;

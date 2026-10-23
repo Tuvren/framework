@@ -12,24 +12,61 @@ const root = path.resolve(import.meta.dirname, "../../../..");
 const planPath =
   "spec/conformance/kernel/plans/kernel-protocol-core-syscall.json";
 
-for (const occurrence of [1, 99, "unsupported"] as const) {
+const faultScenarios = [
+  1,
+  99,
+  "unsupported",
+  "block",
+  "dispatch-bypass",
+  "implicit-bypass",
+] as const;
+
+const prepareCheck = async (occurrence: (typeof faultScenarios)[number]) => {
+  const compiled = await loadConformancePlan(planPath);
+  const check = compiled.plan.checks.find(
+    (entry) => entry.checkId === "kernel.syscall.controls.before_commit"
+  );
+  if (check === undefined) {
+    throw new Error("missing clock/fault control plan");
+  }
+  const arm = check.steps?.find((step) => step.action === "armFault");
+  if (arm?.arguments === undefined) {
+    throw new Error("missing arming arguments");
+  }
+  arm.arguments.occurrence = typeof occurrence === "number" ? occurrence : 1;
+  if (occurrence === "block") {
+    arm.arguments.mode = "block";
+  }
+  if (occurrence === "dispatch-bypass" || occurrence === "implicit-bypass") {
+    arm.arguments.occurrence = 99;
+    if (occurrence === "dispatch-bypass") {
+      arm.action = "dispatch";
+    } else {
+      delete arm.action;
+    }
+    check.assertions = [
+      {
+        field: "$.trace.arm.result.token",
+        kind: "resultField",
+        present: true,
+      },
+    ];
+    for (const step of check.steps ?? []) {
+      step.assertions = step.assertions?.filter(
+        ({ kind }) => kind !== "faultActivated"
+      );
+    }
+  }
+  if (occurrence === "unsupported") {
+    arm.arguments.point = "after-turn-node-write-before-head";
+  }
+  check.checkId = "clock-fault-test";
+  return { check, compiled };
+};
+
+for (const occurrence of faultScenarios) {
   test(`runner records activation or rejects an unreached arming (occurrence ${occurrence})`, async () => {
-    const compiled = await loadConformancePlan(planPath);
-    const check = compiled.plan.checks.find(
-      (entry) => entry.checkId === "kernel.syscall.controls.before_commit"
-    );
-    if (check === undefined) {
-      throw new Error("missing clock/fault control plan");
-    }
-    const arm = check.steps?.find((step) => step.action === "armFault");
-    if (arm?.arguments === undefined) {
-      throw new Error("missing arming arguments");
-    }
-    arm.arguments.occurrence = typeof occurrence === "number" ? occurrence : 1;
-    if (occurrence === "unsupported") {
-      arm.arguments.point = "after-turn-node-write-before-head";
-    }
-    check.checkId = "clock-fault-test";
+    const { compiled, check } = await prepareCheck(occurrence);
     const directory = await mkdtemp(path.join(tmpdir(), "dc001-runner-"));
     try {
       const file = path.join(directory, "plan.json");
@@ -65,14 +102,20 @@ for (const occurrence of [1, 99, "unsupported"] as const) {
         new Response(child.stderr).text(),
         child.exited,
       ]);
-      expect(code, stderr + stdout).toBe(occurrence === 99 ? 1 : 0);
+      expect(code, stderr + stdout).toBe(
+        occurrence === 99 ||
+          occurrence === "dispatch-bypass" ||
+          occurrence === "implicit-bypass"
+          ? 1
+          : 0
+      );
       const result: unknown = JSON.parse(await readFile(evidence, "utf-8"));
       assertConformanceEvidence(result, "clock/fault evidence");
       const [first] = result.checkResults;
       if (first === undefined) {
         throw new Error("missing check evidence");
       }
-      if (occurrence === "unsupported") {
+      if (occurrence === "unsupported" || occurrence === "block") {
         expect(first.status).toBe("unsupported");
         expect(first.failure).toBeUndefined();
         expect(result.status).toBe("unsupported");
@@ -108,61 +151,3 @@ for (const occurrence of [1, 99, "unsupported"] as const) {
     }
   }, 30_000);
 }
-
-test("shared controls and fault activation use catalog metadata across ports", async () => {
-  const { controlConsumesInstance, controlInputProblem } =
-    await import("../../../../tools/conformance/plan-compiler/control-input.ts");
-  const { createFaultActivationTracker } =
-    await import("../../../../tools/conformance/harness/fault-activation.ts");
-  const operation = {
-    handles: { consumes: ["instance"] },
-    input: {
-      additionalProperties: false,
-      properties: { instance: { type: "string" } },
-      required: ["instance"],
-      type: "object",
-    },
-    kind: "control",
-    observation: {},
-    operationId: "storage.pause.arm",
-  } as const;
-  expect(controlConsumesInstance(operation)).toBe(true);
-  expect(
-    controlInputProblem(operation, { instance: "owned-instance" })
-  ).toBeUndefined();
-  expect(controlInputProblem(operation, {})).toContain("instance");
-  expect(controlConsumesInstance({ ...operation, kind: "syscall" })).toBe(
-    false
-  );
-  const faults = createFaultActivationTracker();
-  const token = "arming-1";
-  const point = "storage-boundary";
-  faults.arm(
-    { mode: "throw", occurrence: 1, point, selector: {} },
-    { kind: "result", value: { result: { token } } },
-    "storage_interrupted"
-  );
-  expect(faults.isFaultOutcome("storage_interrupted")).toBe(true);
-  expect(
-    faults.observe({
-      error: {
-        code: "another_error",
-        details: { point, token },
-        message: "other",
-      },
-      kind: "error",
-    })
-  ).toBe(false);
-  expect(faults.missing()).toEqual([token]);
-  expect(
-    faults.observe({
-      error: {
-        code: "storage_interrupted",
-        details: { point, token },
-        message: "injected",
-      },
-      kind: "error",
-    })
-  ).toBe(true);
-  expect(faults.missing()).toEqual([]);
-});

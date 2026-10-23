@@ -142,7 +142,7 @@
           "arguments": {
             "schema": {
               "$literal": {
-                "schemaId": "dc002",
+                "schemaId": "scope_isolation",
                 "paths": [
                   {
                     "collection": "ordered",
@@ -172,7 +172,7 @@
           "operation": "kernel.thread.create",
           "arguments": {
             "threadId": "thread",
-            "schemaId": "dc002",
+            "schemaId": "scope_isolation",
             "initialBranchId": "branch"
           },
           "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"],

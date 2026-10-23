@@ -205,14 +205,7 @@ const createUnsupportedFaultPointError = (
     }
   );
 
-/**
- * Builds the backend-local commit hooks that fire the injected fault at
- * `plan.point` once `shouldInject()` reports the current transaction
- * matches, marking the plan consumed and throwing
- * {@link createInjectedFaultError}; a mismatched point on a matching
- * transaction throws {@link createUnsupportedFaultPointError} instead of
- * silently no-op-ing.
- */
+/** Fires faults at supported backend commit hooks after transaction matching. */
 const createFaultHooks = (
   control: BackendFaultInjectionControl,
   plan: FaultPlan,
@@ -414,18 +407,7 @@ const readOptionalFsckMethod = (
   };
 };
 
-/**
- * Wraps a `RuntimeBackend` so its next matching `transact` call (per
- * `plan`) fails at a chosen point in the commit sequence, for exercising a
- * backend's crash-recovery behavior. Only `transact` receives fault injection.
- * Other operations delegate to `inner` with its receiver preserved. `health`
- * awaits the backend result. Optional `fsck` validates the result shape and
- * returns valid results unchanged.
- *
- * @throws {TuvrenPersistenceError} `kernel_fault_point_unsupported` when the
- *   plan's point fires but the wrapped backend has no matching control
- *   surface, or `kernel_persistence_fault_injected` for the fault itself.
- */
+/** Wraps transactions with before-commit or after-commit-before-ack faults; rejects other points at construction. */
 export const createFaultInjectingBackend = (
   inner: RuntimeBackend,
   requestedPlan: FaultPlan
@@ -468,7 +450,8 @@ export const createFaultInjectingBackend = (
               inner,
               plan.concurrentWriter.branchId
             );
-      const recording = createTransactionRecording();
+      let recording = createTransactionRecording();
+      let occurrenceReached: boolean | undefined;
       let shouldRunConcurrentWriter = false;
       let shouldInject = false;
 
@@ -495,13 +478,17 @@ export const createFaultInjectingBackend = (
         outcome = {
           status: "fulfilled",
           value: await inner.transact(async (tx) => {
+            recording = createTransactionRecording();
             const result = await work(
               createRecordingTransactionProxy(tx, recording)
             );
             shouldInject = matchesFaultPlan(plan, recording, consumed);
             if (shouldInject) {
-              matches += 1;
-              shouldInject = matches >= (plan.occurrence ?? 1);
+              if (occurrenceReached === undefined) {
+                matches += 1;
+                occurrenceReached = matches >= (plan.occurrence ?? 1);
+              }
+              shouldInject = occurrenceReached;
             }
             shouldRunConcurrentWriter =
               shouldInject && concurrentWriterSnapshot !== undefined;

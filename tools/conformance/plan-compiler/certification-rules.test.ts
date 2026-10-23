@@ -1000,3 +1000,46 @@ test.each(["root", "captured", "every", "some", "operand"])(
     ).toBe(true);
   }
 );
+
+test("fault arming action and catalog metadata must agree in both directions", () => {
+  const operationId = "fixture.control.verdict";
+  const control = catalog.operations.get(operationId);
+  if (control === undefined) {
+    throw new Error("missing fixture control");
+  }
+  const faultCatalog = {
+    ...catalog,
+    operations: new Map(catalog.operations).set(operationId, {
+      ...control,
+      faultOutcome: { code: "interrupted", unsupportedCode: "unsupported" },
+    }),
+  };
+  for (const action of [undefined, "dispatch"] as const) {
+    const plan = planWith(
+      hasCheck([], {
+        steps: [
+          {
+            action,
+            arguments: { occurrence: 99 },
+            operation: operationId,
+            stepId: "arm",
+          },
+        ],
+      })
+    );
+    expect(
+      evaluateCertificationRules(plan, faultCatalog).map(({ rule }) => rule)
+    ).toContain("fault-action");
+  }
+  const plan = planWith(
+    hasCheck([], {
+      steps: [{ action: "armFault", operation: operationId, stepId: "arm" }],
+    })
+  );
+  expect(
+    evaluateCertificationRules(plan, catalog).map(({ rule }) => rule)
+  ).toContain("fault-action");
+  expect(
+    evaluateCertificationRules(plan, faultCatalog).map(({ rule }) => rule)
+  ).not.toContain("fault-action");
+});

@@ -38,6 +38,7 @@ import type {
 export const CERTIFICATION_RULE_IDS = [
   "operation-catalogued",
   "control-input",
+  "fault-action",
   "observation-path",
   "literal-boolean",
   "no-echo",
@@ -1173,6 +1174,17 @@ const checkStep = (
   }
 
   const operation = context.catalog?.operations.get(step.operation);
+  if (
+    context.catalog !== undefined &&
+    (operation?.faultOutcome !== undefined) !== (step.action === "armFault")
+  ) {
+    report(
+      context,
+      "fault-action",
+      `${subject(context)} must use action armFault exactly when the catalog operation declares faultOutcome`
+    );
+  }
+
   if (operation?.kind === "control" && step.arguments !== undefined) {
     const input = controlConsumesInstance(operation)
       ? { ...step.arguments, instance: "runner-instance" }
