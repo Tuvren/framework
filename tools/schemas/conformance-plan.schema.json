@@ -451,6 +451,7 @@
     }
   },
   "properties": {
+    "certificationRules": { "const": "enforcing" },
     "planId": { "type": "string", "minLength": 1 },
     "planVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
     "packetId": { "type": "string", "minLength": 1 },

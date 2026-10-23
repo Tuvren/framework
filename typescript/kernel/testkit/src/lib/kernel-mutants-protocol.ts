@@ -157,8 +157,8 @@ const leaseTakeoverBeforeExpiry = (
 });
 
 const FENCING_FAILURES = new Set([
-  "kernel_runtime_run_lease_owner_mismatch",
-  "kernel_runtime_run_lease_token_mismatch",
+  "run_lease_owner_mismatch",
+  "run_lease_token_mismatch",
 ]);
 
 // Fencing is not enforced: a superseded owner or token renews by borrowing
@@ -247,7 +247,22 @@ export const PROTOCOL_KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
     signal: "mutant.noncanonical-changed-paths-order.entered",
   },
   {
-    createSeams: () => ({ codec: wrongOpaqueObjectHash }),
+    createSeams: () => ({
+      codec: wrongOpaqueObjectHash,
+      kernel: (kernel, _backend, activate) => ({
+        ...kernel,
+        store: {
+          ...kernel.store,
+          async put(bytes, mediaType) {
+            activate();
+            return await kernel.store.put(
+              Uint8Array.of(...bytes, 0),
+              mediaType
+            );
+          },
+        },
+      }),
+    }),
     kind: "implementation",
     mutantId: "kernel.wrong-opaque-object-hash",
     signal: "mutant.wrong-opaque-object-hash.entered",

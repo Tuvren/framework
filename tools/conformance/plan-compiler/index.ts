@@ -169,6 +169,7 @@ export interface ConformancePlanStep {
 }
 
 export interface ConformancePlan {
+  certificationRules?: "enforcing";
   applicability: {
     capabilities: string[];
   };

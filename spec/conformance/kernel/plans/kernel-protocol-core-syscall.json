@@ -1,0 +1,884 @@
+{
+  "planId": "tuvren.kernel.protocol.core.syscall",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.kernel.protocol",
+  "certificationRules": "enforcing",
+  "applicability": {
+    "capabilities": ["kernel.syscall"]
+  },
+  "fixtures": {
+    "kernel-protocol-deterministic": "../fixtures/kernel-protocol-deterministic.bytes.json",
+    "kernel-protocol-logical": "../fixtures/kernel-protocol-logical.bytes.json"
+  },
+  "checks": [
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing",
+      "claimIds": ["kernel.syscall.protocol.deterministic_hashing"],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.protocol.deterministic_hashing"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.protocol.deterministic_hashing"],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "kernel-protocol-deterministic"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip",
+      "claimIds": ["kernel.syscall.protocol.schema_roundtrip"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.protocol.schema_roundtrip"],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.protocol.schema_roundtrip"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "kernel-protocol-deterministic"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.modify_composition",
+      "claimIds": ["kernel.syscall.protocol.modify_composition"],
+      "operation": "kernel.verdicts.compose",
+      "steps": [
+        {
+          "stepId": "compose",
+          "operation": "kernel.verdicts.compose",
+          "arguments": {
+            "verdicts": [
+              {
+                "kind": "modify",
+                "transform": {
+                  "$map": [
+                    ["extension", "first"],
+                    ["mutation", "append-prefix"]
+                  ]
+                }
+              },
+              {
+                "kind": "modify",
+                "transform": {
+                  "$map": [
+                    ["extension", "second"],
+                    ["mutation", "append-suffix"]
+                  ]
+                }
+              }
+            ]
+          },
+          "capture": [
+            {
+              "name": "compose",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.protocol.modify_composition"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.kind",
+              "equals": "modify"
+            },
+            {
+              "kind": "resultField",
+              "field": "$.transform",
+              "equals": [
+                {
+                  "$map": [
+                    ["extension", "first"],
+                    ["mutation", "append-prefix"]
+                  ]
+                },
+                {
+                  "$map": [
+                    ["extension", "second"],
+                    ["mutation", "append-suffix"]
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.compose.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.compose.result"]
+    },
+    {
+      "checkId": "kernel.syscall.logical.diff_paths",
+      "claimIds": ["kernel.syscall.logical.diff_paths"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "schemaId": "schema_main"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.diff_paths"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": "schema_main"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread_main",
+            "schemaId": "schema_main",
+            "initialBranchId": "branch_main"
+          },
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.diff_paths"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threadId",
+              "equals": "thread_main"
+            }
+          ]
+        },
+        {
+          "stepId": "change",
+          "operation": "kernel.tree.create",
+          "arguments": {
+            "schemaId": "schema_main",
+            "changes": {
+              "$ref": "fixture.input.turnTreeChangeSet"
+            },
+            "baseTurnTreeHash": {
+              "$ref": "capture.thread.rootTurnTreeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "change",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.diff_paths"],
+          "assertions": []
+        },
+        {
+          "stepId": "diff",
+          "operation": "kernel.tree.diff",
+          "arguments": {
+            "treeHashA": {
+              "$ref": "capture.thread.rootTurnTreeHash"
+            },
+            "treeHashB": {
+              "$ref": "capture.change"
+            }
+          },
+          "capture": [
+            {
+              "name": "diff",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.diff_paths"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": ["context.manifest", "messages"]
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.diff.result",
+          "equals": ["context.manifest", "messages"]
+        }
+      ],
+      "evidence": ["trace.diff.result"],
+      "fixture": "kernel-protocol-logical",
+      "capabilities": ["kernel.logical"]
+    },
+    {
+      "checkId": "kernel.syscall.logical.branch_list",
+      "claimIds": ["kernel.syscall.logical.branch_list"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "schemaId": "schema_main"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.branch_list"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": "schema_main"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread_main",
+            "schemaId": "schema_main",
+            "initialBranchId": "branch_main"
+          },
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.branch_list"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threadId",
+              "equals": "thread_main"
+            }
+          ]
+        },
+        {
+          "stepId": "list",
+          "operation": "kernel.branch.list",
+          "arguments": {
+            "threadId": "thread_main"
+          },
+          "capture": [
+            {
+              "name": "list",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.branch_list"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "length": 1
+            },
+            {
+              "kind": "resultField",
+              "field": "$.0.0",
+              "equals": "branch_main"
+            },
+            {
+              "kind": "resultField",
+              "field": "$.0.1",
+              "equalsPath": "$.capture.thread.rootTurnNodeHash"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.list.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.list.result"],
+      "capabilities": ["kernel.logical"]
+    },
+    {
+      "checkId": "kernel.syscall.logical.recovery_state",
+      "claimIds": ["kernel.syscall.logical.recovery_state"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "schemaId": "schema_main"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.recovery_state"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": "schema_main"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread_main",
+            "schemaId": "schema_main",
+            "initialBranchId": "branch_main"
+          },
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.recovery_state"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threadId",
+              "equals": "thread_main"
+            }
+          ]
+        },
+        {
+          "stepId": "turn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turn_main",
+            "threadId": "thread_main",
+            "branchId": "branch_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "turn",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.recovery_state"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.turnId",
+              "equals": "turn_main"
+            }
+          ]
+        },
+        {
+          "stepId": "run",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "run_main",
+            "turnId": "turn_main",
+            "branchId": "branch_main",
+            "schemaId": "schema_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "deterministic": false,
+                "id": "model_call",
+                "metadata": {
+                  "$map": [["phase", "reasoning"]]
+                },
+                "sideEffects": false
+              },
+              {
+                "deterministic": false,
+                "id": "tool_execution",
+                "metadata": {
+                  "$map": [["phase", "tooling"]]
+                },
+                "sideEffects": true
+              }
+            ]
+          },
+          "capture": [
+            {
+              "name": "run",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.recovery_state"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.status",
+              "equals": "running"
+            }
+          ]
+        },
+        {
+          "stepId": "beginFirst",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "model_call"
+          },
+          "capture": [
+            {
+              "name": "beginFirst",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.recovery_state"],
+          "assertions": []
+        },
+        {
+          "stepId": "completeFirst",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "model_call"
+          },
+          "capture": [
+            {
+              "name": "completeFirst",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.recovery_state"],
+          "assertions": []
+        },
+        {
+          "stepId": "beginSecond",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "tool_execution"
+          },
+          "capture": [
+            {
+              "name": "beginSecond",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.recovery_state"],
+          "assertions": []
+        },
+        {
+          "stepId": "consumed",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "run_main",
+            "blob": {
+              "$bytes": "01"
+            },
+            "taskId": "consumed",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "capture": [
+            {
+              "name": "consumed",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.recovery_state"],
+          "assertions": []
+        },
+        {
+          "stepId": "checkpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "tool_execution"
+          },
+          "capture": [
+            {
+              "name": "checkpoint",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.recovery_state"],
+          "assertions": []
+        },
+        {
+          "stepId": "uncommitted",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "run_main",
+            "blob": {
+              "$bytes": "02"
+            },
+            "taskId": "pending",
+            "objectType": "tool_result",
+            "status": "interrupted",
+            "interruptPayload": {
+              "$map": [["reason", "awaiting_approval"]]
+            }
+          },
+          "capture": [
+            {
+              "name": "uncommitted",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.recovery_state"],
+          "assertions": []
+        },
+        {
+          "stepId": "recover",
+          "operation": "kernel.run.recover",
+          "arguments": {
+            "runId": "run_main"
+          },
+          "capture": [
+            {
+              "name": "recover",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.recovery_state"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.lastCompletedStepId",
+              "equals": "tool_execution"
+            },
+            {
+              "kind": "resultField",
+              "field": "$.consumedStagedResults",
+              "length": 1
+            },
+            {
+              "kind": "resultField",
+              "field": "$.uncommittedStagedResults",
+              "length": 1
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.lastCompletedStepId",
+          "equals": "tool_execution"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.consumedStagedResults",
+          "length": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.uncommittedStagedResults",
+          "length": 1
+        }
+      ],
+      "evidence": ["trace.recover.result"],
+      "capabilities": ["kernel.logical"]
+    },
+    {
+      "checkId": "kernel.syscall.lineage.cross_thread_rejection",
+      "claimIds": ["kernel.syscall.lineage.cross_thread_rejection"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "schemaId": "schema_main"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.lineage.cross_thread_rejection"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": "schema_main"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread_main",
+            "schemaId": "schema_main",
+            "initialBranchId": "branch_main"
+          },
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.lineage.cross_thread_rejection"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threadId",
+              "equals": "thread_main"
+            }
+          ]
+        },
+        {
+          "stepId": "other",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "other",
+            "schemaId": "schema_main",
+            "initialBranchId": "other_branch"
+          },
+          "capture": [
+            {
+              "name": "other",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.lineage.cross_thread_rejection"],
+          "assertions": []
+        },
+        {
+          "stepId": "reject",
+          "operation": "kernel.branch.create",
+          "arguments": {
+            "branchId": "cross",
+            "threadId": "other",
+            "fromTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "rejection",
+              "path": "state.adapterError"
+            }
+          ],
+          "claimIds": ["kernel.syscall.lineage.cross_thread_rejection"],
+          "assertions": [
+            {
+              "kind": "stateField",
+              "field": "$.adapterError.code",
+              "equals": "turn_node_thread_mismatch"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "stateField",
+          "field": "$.trace.reject.state.adapterError.code",
+          "equals": "turn_node_thread_mismatch"
+        }
+      ],
+      "evidence": ["trace.reject.state.adapterError"],
+      "capabilities": ["kernel.logical"]
+    }
+  ]
+}

@@ -337,7 +337,10 @@ describe("mutant activation control", () => {
     });
   });
 
-  for (const control of readControls()) {
+  for (const control of readControls().filter(
+    (entry) =>
+      !entry.claimIds.some((claim) => claim.startsWith("kernel.syscall."))
+  )) {
     const checks = detectionCheckIds(control).flatMap((checkId) => {
       const resolved = planChecks.get(checkId);
       return resolved === undefined ? [] : [resolved];

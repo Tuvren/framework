@@ -30,7 +30,6 @@ import {
   conformanceCodec,
   hexToBytes,
   loadCanonicalSchema,
-  normalizeLogicalErrorCode,
   readErrorCode,
   readFixture,
   readFixtureOptional,
@@ -59,7 +58,7 @@ const captureSemanticErrorCode = async (
     await execute();
     return "unexpected_success";
   } catch (error: unknown) {
-    return normalizeLogicalErrorCode(readErrorCode(error));
+    return readErrorCode(error);
   }
 };
 
@@ -477,7 +476,7 @@ export const createProtocolLogicalScenarios = (config: KernelAdapterConfig) => {
         });
       } catch (error: unknown) {
         return createProjection({
-          errorCode: normalizeLogicalErrorCode(readErrorCode(error)),
+          errorCode: readErrorCode(error),
         });
       }
     });

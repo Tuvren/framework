@@ -205,7 +205,10 @@ const assessPlan = (
     }
   }
 
-  const mode: CertificationMode = profileIds.size > 0 ? "enforcing" : "report";
+  const mode: CertificationMode =
+    profileIds.size > 0 || plan.certificationRules === "enforcing"
+      ? "enforcing"
+      : "report";
   const violations = evaluateCertificationRules(plan, catalog);
 
   if (mode === "enforcing" && catalog === undefined) {

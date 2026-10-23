@@ -9,7 +9,8 @@
     "kernel.reclamation",
     "kernel.restart-recovery",
     "kernel.run-liveness",
-    "kernel.scope-isolation"
+    "kernel.scope-isolation",
+    "kernel.syscall"
   ],
   "checkResults": [
     {
@@ -235,6 +236,353 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.lineage.cross_thread_rejection.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.lineage.cross_thread_rejection.thread.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.lineage.cross_thread_rejection.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.lineage.cross_thread_rejection.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.lineage.cross_thread_rejection.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.lineage.cross_thread_rejection.requiredEvidence.result.trace.thread.result.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.lineage.cross_thread_rejection.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.lineage.cross_thread_rejection.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.lineage.cross_thread_rejection",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.core.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "turn_node_thread_mismatch",
+            "message": "turn node does not belong to thread"
+          }
+        },
+        "traceStepIds": ["schema", "thread", "other", "reject"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.thread.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.list.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.list.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.list.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.requiredEvidence.result.trace.list.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.requiredEvidence.result.trace.list.result.0.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.requiredEvidence.result.trace.list.result.0.1",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.requiredEvidence.result.trace.thread.result.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.requiredEvidence.trace.list.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.logical.branch_list",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.core.syscall",
+        "traceStepIds": ["schema", "thread", "list"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.logical.diff_paths.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.diff_paths.thread.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.diff_paths.diff.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.diff_paths.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.diff_paths.requiredEvidence.result.trace.diff.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.diff_paths.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.diff_paths.requiredEvidence.result.trace.thread.result.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.diff_paths.requiredEvidence.trace.diff.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.logical.diff_paths",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.core.syscall",
+        "traceStepIds": ["schema", "thread", "change", "diff"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.thread.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.run.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.recover.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.recover.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.recover.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.recover.result.consumedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.run.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.thread.result.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.turn.result.turnId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.trace.recover.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.logical.recovery_state",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.core.syscall",
+        "traceStepIds": [
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginFirst",
+          "completeFirst",
+          "beginSecond",
+          "consumed",
+          "checkpoint",
+          "uncommitted",
+          "recover"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.core.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.compose.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.compose.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.requiredEvidence.result.trace.compose.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.requiredEvidence.result.trace.compose.result.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.requiredEvidence.result.trace.compose.result.transform",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.requiredEvidence.trace.compose.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.modify_composition",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.core.syscall",
+        "traceStepIds": ["compose"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.core.syscall",
+        "traceStepIds": ["register", "get"]
       },
       "status": "pass"
     },
@@ -2097,6 +2445,1628 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.thread.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.run.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.result.trace.run.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.result.trace.thread.result.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.result.trace.turn.result.turnId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "kernel_runtime_lateral_head_movement",
+            "message": "branch.setHead cannot move laterally: \"714e6e8a17b1dc6d9579918f4eaa3c013898fc49ddb2fe0d67c20ed0d55a8af2\" and \"be3b5721a947af182eadc1dd008035063db6853b344ad51c611797a335a8e3c0\" share no lineage"
+          }
+        },
+        "traceStepIds": [
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "bootstrap",
+          "finishBootstrap",
+          "mainTurn",
+          "mainRun",
+          "mainEvent",
+          "mainCheckpoint",
+          "finish",
+          "fork",
+          "forkTurn",
+          "forkRun",
+          "forkEvent",
+          "forkCheckpoint",
+          "finishFork",
+          "reject"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.thread.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.run.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.result.trace.run.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.result.trace.thread.result.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.result.trace.turn.result.turnId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "kernel_runtime_unexpected_step",
+            "message": "unexpected step \"second\""
+          }
+        },
+        "traceStepIds": ["schema", "thread", "turn", "run", "reject"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.thread.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.run.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.result.trace.run.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.result.trace.thread.result.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.result.trace.turn.result.turnId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "kernel_runtime_missing_event_object",
+            "message": "event hash \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" does not exist in store"
+          }
+        },
+        "traceStepIds": ["schema", "thread", "turn", "run", "reject"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.thread.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.run.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.result.trace.run.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.result.trace.thread.result.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.result.trace.turn.result.turnId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "kernel_runtime_branch_already_active",
+            "message": "branch \"branch_main\" already has an active run \"run_main\""
+          }
+        },
+        "traceStepIds": ["schema", "thread", "turn", "run", "reject"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "duplicate_schema_path",
+            "details": {
+              "path": "messages"
+            },
+            "message": "schema.paths must not contain duplicate schema paths"
+          }
+        },
+        "traceStepIds": ["reject"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "kernel_runtime_missing_required_tree_path",
+            "message": "path \"context.manifest\" is required when creating a tree without a base"
+          }
+        },
+        "traceStepIds": ["schema", "reject"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch.reject.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch.1.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.trace.reject.state.adapterError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.trace.reject.state.adapterError.code",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "adapterErrors": {
+          "reject": {
+            "code": "kernel_runtime_tree_schema_mismatch_diff",
+            "message": "cannot diff trees with different schemas: \"schema_main\" vs \"other\""
+          }
+        },
+        "traceStepIds": ["schema", "otherSchema", "a", "b", "reject"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.all.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.all.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.page.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.page.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.next.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.next.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.all.result.threads",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.all.result.threads.0.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.next.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.next.result.threads",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.next.result.threads.0.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.page.result.nextCursor",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.page.result.threads",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.trace.next.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.logical.thread_list",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["schema", "a", "b", "all", "page", "next"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.put.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.get.1.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.result.trace.put.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["put", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.single-proceed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.all-proceed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.single-modify.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.multi-modify-preserves-registration-order.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.abort-dominates-pause-modify-retry.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.pause-dominates-modify-retry-proceed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.modify-dominates-retry-proceed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.retry-dominates-proceed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.abort-dominates-pause-modify-retry.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.all-proceed.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.modify-dominates-retry-proceed.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.multi-modify-preserves-registration-order.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.pause-dominates-modify-retry-proceed.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.retry-dominates-proceed.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.single-modify.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.single-proceed.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.trace.retry-dominates-proceed.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.modify_composition.f-verdict-composition",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": [
+          "single-proceed",
+          "all-proceed",
+          "single-modify",
+          "multi-modify-preserves-registration-order",
+          "abort-dominates-pause-modify-retry",
+          "pause-dominates-modify-retry-proceed",
+          "modify-dominates-retry-proceed",
+          "retry-dominates-proceed"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash.get.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.trace.get.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.extended.syscall",
+        "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction.1.resultField",
           "status": "pass"
         },
@@ -2999,9 +4969,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 68,
-    "totalChecks": 72,
-    "applicableChecks": 68,
+    "passedChecks": 118,
+    "totalChecks": 122,
+    "applicableChecks": 118,
     "nonApplicableChecks": 4
   },
   "suiteId": "tuvren.kernel.protocol",

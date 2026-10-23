@@ -530,7 +530,7 @@ export const requireTurnNode = async (
  * Walks back from `hash` toward the thread root, confirming it lies on the
  * thread's TurnNode lineage before returning the node at `hash`.
  *
- * @throws {TuvrenRuntimeError} With code `kernel_runtime_lineage_mismatch` when
+ * @throws {TuvrenRuntimeError} With code `turn_node_thread_mismatch` when
  *   the lineage walk from `hash` reaches the thread genesis without ever
  *   encountering `thread.rootTurnNodeHash`.
  */
@@ -561,7 +561,7 @@ export const requireThreadTurnNode = async (
   }
 
   throw new TuvrenRuntimeError("turn node does not belong to thread", {
-    code: "kernel_runtime_lineage_mismatch",
+    code: "turn_node_thread_mismatch",
   });
 };
 
