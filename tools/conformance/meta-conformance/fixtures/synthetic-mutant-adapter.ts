@@ -34,6 +34,8 @@ const MUTANTS: Readonly<
   "synthetic.wrong-alpha": { activateOn: ["alpha"], values: { alpha: 99 } },
 };
 
+const SYNTHETIC_PREFIX = /^synthetic\./u;
+
 const REFERENCE_VALUES: Readonly<Record<string, number>> = {
   alpha: 1,
   beta: 2,
@@ -104,7 +106,7 @@ await serveStdioAdapter({
         },
       };
     }
-    const field = operation.replace(/^synthetic\./u, "");
+    const field = operation.replace(SYNTHETIC_PREFIX, "");
     if (field in REFERENCE_VALUES) {
       return observe(field);
     }

@@ -15,7 +15,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import nodePath from "node:path";
 
@@ -41,6 +41,7 @@ const BETA = "synthetic.beta_check.1.resultField";
 const GAMMA = "synthetic.gamma_check.1.resultField";
 
 let directory = "";
+let logDirectory = "";
 
 const fieldCheck = (field: string, equals: number, capability?: string) => ({
   assertions: [{ equals, field: `$.${field}`, kind: "resultField" }],
@@ -162,8 +163,9 @@ beforeAll(async () => {
     "adapter-mutant.json",
     adapterManifest("synthetic-mutant", ["--mutant-env", MUTANT_ENV])
   );
-  report = await runNegativeControls(config(control));
-  brokenReport = await runNegativeControls(config(broken));
+  logDirectory = nodePath.join(directory, "verification-logs");
+  report = await runNegativeControls(config(control), { logDirectory });
+  brokenReport = await runNegativeControls(config(broken), { logDirectory });
 }, 120_000);
 
 afterAll(async () => {
@@ -250,6 +252,37 @@ describe("negative-control runner", () => {
       survived: 1,
       unsupported: 3,
     });
+  });
+
+  test("retains failure artifacts whose replays outlive the work directory", async () => {
+    const killed = mutant("synthetic.wrong-alpha");
+    const mutantAdapter = nodePath.join(directory, "adapter-mutant.json");
+    const artifacts = killed.artifacts ?? [];
+
+    expect(artifacts.length).toBeGreaterThan(0);
+    expect(killed.replay).toContain(`--adapter ${mutantAdapter} `);
+
+    for (const file of artifacts) {
+      expect(file.startsWith(logDirectory)).toBe(true);
+      const retained = JSON.parse(await readFile(file, "utf-8")) as {
+        checkResults: { failure?: { replay: string } }[];
+      };
+      const replays = retained.checkResults.flatMap(({ failure }) =>
+        failure === undefined ? [] : [failure.replay]
+      );
+
+      expect(replays.length).toBeGreaterThan(0);
+      for (const replay of replays) {
+        expect(replay).toStartWith(
+          `${MUTANT_ENV}=synthetic.wrong-alpha bun tools/conformance/harness/run.ts --adapter ${mutantAdapter} `
+        );
+        expect(replay).not.toContain("tuvren-negative-controls-");
+      }
+    }
+
+    const controlArtifacts = brokenReport.control.artifacts ?? [];
+    expect(controlArtifacts.length).toBeGreaterThan(0);
+    await Promise.all(controlArtifacts.map(async (file) => await access(file)));
   });
 
   test("records a failing unmutated control as a finding and counts no mutant", () => {

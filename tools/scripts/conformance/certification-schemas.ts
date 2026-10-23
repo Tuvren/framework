@@ -239,6 +239,38 @@ const closesObject = (schema: Record<string, unknown>): boolean =>
   schema.additionalProperties === false ||
   schema.unevaluatedProperties === false;
 
+const excludesType = (
+  schema: Record<string, unknown>,
+  type: "array" | "object"
+): boolean =>
+  typeof schema.type === "string"
+    ? schema.type !== type
+    : Array.isArray(schema.type) && !schema.type.includes(type);
+
+const excludesObject = (schema: Record<string, unknown>): boolean =>
+  excludesType(schema, "object") ||
+  (Object.hasOwn(schema, "const") && !isRecord(schema.const)) ||
+  (Array.isArray(schema.enum) && !schema.enum.some(isRecord));
+
+/** Whether `$ref` or a non-empty allOf, anyOf, or oneOf decides the type. */
+const delegatesInPlace = (schema: Record<string, unknown>): boolean =>
+  typeof schema.$ref === "string" ||
+  IN_PLACE_LISTS.some(
+    (key) => Array.isArray(schema[key]) && schema[key].length > 0
+  );
+
+/** An unclosed schema that can hold an object, including `{}` and type-less ones. */
+const admitsOpenObject = (schema: Record<string, unknown>): boolean =>
+  !(closesObject(schema) || excludesObject(schema)) &&
+  (declaresObject(schema) || !delegatesInPlace(schema));
+
+/** An array schema whose items no subschema constrains. */
+const admitsAnyItem = (schema: Record<string, unknown>): boolean =>
+  schema.type !== undefined &&
+  !excludesType(schema, "array") &&
+  schema.items === undefined &&
+  schema.unevaluatedItems === undefined;
+
 interface SubschemaEdge {
   readonly schema: unknown;
   readonly path: string;
@@ -287,12 +319,24 @@ const subschemaEdges = (node: Record<string, unknown>): SubschemaEdge[] => {
   return edges;
 };
 
+const schemaNodeProblems = (
+  node: Record<string, unknown>,
+  closed: boolean
+): string[] => [
+  ...(!closed && admitsOpenObject(node) ? ["admits an open object"] : []),
+  ...(admitsAnyItem(node) ? ["admits unconstrained array items"] : []),
+  ...(node.$dynamicRef === undefined
+    ? []
+    : ["uses an unsupported $dynamicRef"]),
+];
+
 /**
- * Reports every object schema reachable from an observation schema that does
- * not close its instance. Subschemas applied in place (allOf, anyOf, oneOf,
- * then/else, dependentSchemas, $ref) inherit closure from their parent;
- * subschemas for nested instances (properties, items, and similar) must close
- * themselves.
+ * Reports every schema reachable from an observation schema that can admit an
+ * object without closing it: object schemas, `true`, `{}`, and type-less
+ * schemas that neither exclude objects nor delegate to `$ref` or a
+ * composition. Subschemas applied in place (allOf, anyOf, oneOf, then/else,
+ * dependentSchemas, $ref) inherit closure from their parent; subschemas for
+ * nested instances (properties, items, and similar) must close themselves.
  */
 const collectOpenObjectSchemas = (schema: unknown, label: string): string[] => {
   const failures: string[] = [];
@@ -304,20 +348,21 @@ const collectOpenObjectSchemas = (schema: unknown, label: string): string[] => {
     path: string,
     closedInPlace: boolean
   ): void => {
+    if (node === true && !closedInPlace) {
+      failures.push(`${label}${path} admits an open object`);
+    }
+
     if (!isRecord(node) || visited.get(node)?.has(closedInPlace) === true) {
       return;
     }
 
     visited.set(node, new Set([...(visited.get(node) ?? []), closedInPlace]));
     const closed = closedInPlace || closesObject(node);
-
-    if (declaresObject(node) && !closed) {
-      failures.push(`${label}${path} admits an open object`);
-    }
-
-    if (node.$dynamicRef !== undefined) {
-      failures.push(`${label}${path} uses an unsupported $dynamicRef`);
-    }
+    failures.push(
+      ...schemaNodeProblems(node, closed).map(
+        (problem) => `${label}${path} ${problem}`
+      )
+    );
 
     if (typeof node.$ref === "string") {
       const resolved = resolveRef(node.$ref, scope);
