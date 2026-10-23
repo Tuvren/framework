@@ -123,12 +123,12 @@ for (const assertion of assertions) {
       const compiled = await loadConformancePlan(file);
       expect(compiled.plan.checks[0]?.assertions[0]).toEqual(assertion);
       expect(compiled.checks[0]?.requiredEvidence).toEqual([]);
-      const invalid = { ...assertion };
-      if (invalid.kind === "referenceWalk") {
-        delete invalid.references;
-      } else {
-        delete invalid.equalsPath;
-      }
+      const invalid = {
+        ...assertion,
+        ...(assertion.kind === "referenceWalk"
+          ? { references: undefined }
+          : { equalsPath: undefined }),
+      };
       await writeFile(file, JSON.stringify(planWith(invalid)));
       let failure: unknown;
       try {

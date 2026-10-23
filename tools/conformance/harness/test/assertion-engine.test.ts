@@ -26,8 +26,8 @@ import {
   diagnoseAssertions,
   evaluateAssertions,
   evaluateRequiredEvidence,
-  getCompiledSchemaValidator,
 } from "../assertion-engine/index.ts";
+import { getCompiledSchemaValidator } from "../assertion-engine/schema.ts";
 
 const buildCheck = (
   assertions: ConformancePlanCheck["assertions"]

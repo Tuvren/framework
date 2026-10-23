@@ -131,6 +131,7 @@ export const validateObservation = (
 
 const TOKEN =
   /"(?:[^"\\]|\\[\s\S])*"|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|[{}[\]:,]|true|false|null/gu;
+const NONZERO_DIGIT = /[1-9]/u;
 const NUMBER =
   /^-?(?<whole>\d+)(?:\.(?<fraction>\d+))?(?:[eE](?<exponent>[+-]?\d+))?$/u;
 
@@ -149,11 +150,30 @@ const assertIntegerToken = (token: string): void => {
   const fraction = groups.fraction ?? "";
   const digits = `${groups.whole}${fraction}`;
   const places = fraction.length - Number(groups.exponent ?? "0");
-  if (places > 0 && /[1-9]/u.test(digits.slice(-places))) {
+  if (places > 0 && NONZERO_DIGIT.test(digits.slice(-places))) {
     throw new ObservationEncodingError(
       `fractional integer in adapter frame: ${token}`
     );
   }
+};
+
+const recordObjectKey = (
+  keys: Set<string> | null | undefined,
+  token: string
+): void => {
+  if (keys === undefined || keys === null) {
+    return;
+  }
+  const key: unknown = JSON.parse(token);
+  if (typeof key !== "string") {
+    throw new ObservationEncodingError("invalid object key");
+  }
+  if (keys.has(key)) {
+    throw new ObservationEncodingError(
+      `duplicate object key in adapter frame: ${key}`
+    );
+  }
+  keys.add(key);
 };
 
 /** Inspect tokens before JSON.parse discards repeated keys or rounds numbers. */
@@ -172,19 +192,7 @@ export const assertLosslessFrame = (text: string): void => {
       token.startsWith('"') &&
       (previous === "{" || previous === ",")
     ) {
-      const keys = stack.at(-1);
-      if (keys !== undefined && keys !== null) {
-        const key: unknown = JSON.parse(token);
-        if (typeof key !== "string") {
-          throw new ObservationEncodingError("invalid object key");
-        }
-        if (keys.has(key)) {
-          throw new ObservationEncodingError(
-            `duplicate object key in adapter frame: ${key}`
-          );
-        }
-        keys.add(key);
-      }
+      recordObjectKey(stack.at(-1), token);
     } else if (NUMBER.test(token)) {
       assertIntegerToken(token);
     }

@@ -205,8 +205,22 @@ const assessPlan = (
     }
   }
 
+  const syscallPlan =
+    plan.applicability.capabilities.includes("kernel.syscall") ||
+    plan.checks.some((check) =>
+      (check.steps ?? []).some((step) => {
+        const operation = catalog?.operations.get(step.operation);
+        return (
+          step.arguments !== undefined &&
+          operation?.kind === "syscall" &&
+          operation.deprecated !== true
+        );
+      })
+    );
   const mode: CertificationMode =
-    profileIds.size > 0 || plan.certificationRules === "enforcing"
+    profileIds.size > 0 ||
+    plan.certificationRules === "enforcing" ||
+    syscallPlan
       ? "enforcing"
       : "report";
   const violations = evaluateCertificationRules(plan, catalog);

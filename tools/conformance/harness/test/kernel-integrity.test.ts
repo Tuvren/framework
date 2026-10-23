@@ -283,11 +283,12 @@ for (const file of fixtureFiles) {
           Object.hasOwn(object(entry), optionalField)
         );
         if (optional !== undefined) {
-          if (optionalField === "interruptPayload") {
-            delete object(optional).interruptPayload;
-          } else {
-            delete object(optional).metadata;
-          }
+          const index = optionalRecords.indexOf(optional);
+          optionalRecords[index] = Object.fromEntries(
+            Object.entries(object(optional)).filter(
+              ([field]) => field !== optionalField
+            )
+          );
           const dropped = {
             ...result,
             encoded: bytes(
@@ -363,7 +364,11 @@ test("optional-field removal and altered references invalidate content integrity
   if (!Array.isArray(staged)) {
     throw new TypeError("expected staged results");
   }
-  delete object(staged[0]).interruptPayload;
+  staged[0] = Object.fromEntries(
+    Object.entries(object(staged[0])).filter(
+      ([field]) => field !== "interruptPayload"
+    )
+  );
   const expected = object(fixture.expected);
   for (const assertion of [
     {

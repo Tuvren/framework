@@ -25,7 +25,7 @@ import {
   formatCertificationInventory,
   loadCertificationAuthority,
 } from "./certification-assessment.js";
-import { parseOperationCatalog } from "./certification-rules.js";
+import type { CertificationAuthority } from "./certification-assessment.js";
 import type { CompiledConformancePlanCheck } from "./index.js";
 import { findConformancePlans, loadConformancePlan } from "./index.js";
 
@@ -60,32 +60,13 @@ const OPERATION_LITERAL_PATTERN =
   /"(?:runtime|runner|event-stream|kernel|providers)\.[a-z0-9_.-]+"/gu;
 
 const readDeclaredOperations = async (
-  packetId: string
+  packetId: string,
+  authority: CertificationAuthority
 ): Promise<ReadonlySet<string>> => {
-  const sourcePaths = OPERATION_SOURCE_BY_PACKET.get(packetId);
-
-  if (sourcePaths === undefined) {
-    return new Set<string>();
-  }
-
-  const operations = new Set<string>();
-  if (packetId === "tuvren.kernel.protocol") {
-    const catalog = parseOperationCatalog(
-      JSON.parse(
-        await readFile(
-          nodePath.resolve(
-            REPO_ROOT,
-            "spec/conformance/kernel/operations.json"
-          ),
-          "utf-8"
-        )
-      ),
-      "kernel catalog"
-    );
-    for (const operation of catalog.operations.keys()) {
-      operations.add(operation);
-    }
-  }
+  const operations = new Set(
+    authority.packets.get(packetId)?.catalog?.operations.keys()
+  );
+  const sourcePaths = OPERATION_SOURCE_BY_PACKET.get(packetId) ?? [];
 
   const visit = async (index: number): Promise<void> => {
     const sourcePath = sourcePaths[index];
@@ -145,6 +126,7 @@ const validateChecks = async (
 const validatePlans = async (
   planPaths: readonly string[],
   operationCache: Map<string, Promise<ReadonlySet<string>>>,
+  authority: CertificationAuthority,
   index: number
 ): Promise<void> => {
   const planPath = planPaths[index];
@@ -154,14 +136,15 @@ const validatePlans = async (
   const compiledPlan = await loadConformancePlan(planPath);
   const declaredOperations =
     operationCache.get(compiledPlan.plan.packetId) ??
-    readDeclaredOperations(compiledPlan.plan.packetId);
+    readDeclaredOperations(compiledPlan.plan.packetId, authority);
   operationCache.set(compiledPlan.plan.packetId, declaredOperations);
   await validateChecks(planPath, compiledPlan.checks, declaredOperations, 0);
-  await validatePlans(planPaths, operationCache, index + 1);
+  await validatePlans(planPaths, operationCache, authority, index + 1);
 };
 
 const planPaths = await findConformancePlans();
-await validatePlans(planPaths, new Map(), 0);
+const authority = await loadCertificationAuthority();
+await validatePlans(planPaths, new Map(), authority, 0);
 
 console.log(
   `conformance plan validation passed (${planPaths.length} plan${
@@ -171,7 +154,7 @@ console.log(
 
 const certificationAssessments = await assessConformancePlans(
   planPaths,
-  await loadCertificationAuthority()
+  authority
 );
 console.log(formatCertificationInventory(certificationAssessments));
 assertCertificationEnforcement(certificationAssessments);

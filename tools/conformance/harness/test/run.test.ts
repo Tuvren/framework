@@ -1575,3 +1575,149 @@ describe("certification harness failure artifacts", () => {
     expect(evidence.checkResults[0]).not.toHaveProperty("failure");
   });
 });
+
+describe("native operation errors", () => {
+  test.each([
+    ["native_expected", "step", true],
+    ["native_expected", "final", true],
+    ["native_expected", "none", false],
+    ["native_unlisted", "step", false],
+    ["native_unlisted", "single", false],
+  ] as const)(
+    "grades %s with %s assertions",
+    async (code, assertionLocation, accepted) => {
+      const dir = await mkdtemp(
+        nodePath.join(tmpdir(), "tuvren-native-error-")
+      );
+      tempDirs.push(dir);
+      const catalogPath = nodePath.join(dir, "operations.json");
+      const packetPath = nodePath.join(dir, "packet.json");
+      const planPath = nodePath.join(dir, "plan.json");
+      const adapterPath = nodePath.join(dir, "adapter.json");
+      const errorAssertion = {
+        kind: "stateField",
+        field: "$.adapterError.code",
+        equals: code,
+      };
+      const catalog = {
+        catalogId: "probe.errors",
+        catalogVersion: "0.1.0",
+        packetId: "probe.native-errors",
+        operations: [
+          {
+            operationId: "probe.read",
+            binding: "probe.read",
+            kind: "syscall",
+            capability: "probe",
+            input: {},
+            errors: ["native_expected"],
+            observation: { result: { type: "null" } },
+          },
+        ],
+      };
+      await writeFile(catalogPath, JSON.stringify(catalog));
+      await writeFile(
+        packetPath,
+        JSON.stringify({
+          packetId: "probe.native-errors",
+          operationCatalog: catalogPath,
+          conformancePlans: [
+            { path: planPath, planId: "native-errors", planVersion: "0.1.0" },
+          ],
+        })
+      );
+      const traceCheck = {
+        checkId: "probe.errors",
+        operation: "probe.read",
+        assertions: [
+          {
+            kind: "resultField",
+            field: "$.trace.success.result",
+            equals: null,
+          },
+          ...(assertionLocation === "final"
+            ? [
+                {
+                  ...errorAssertion,
+                  field: "$.trace.reject.state.adapterError.code",
+                },
+              ]
+            : []),
+        ],
+        steps: [
+          {
+            stepId: "reject",
+            operation: "probe.read",
+            arguments: { reject: true },
+            ...(assertionLocation === "step"
+              ? { assertions: [errorAssertion] }
+              : {}),
+          },
+          { stepId: "success", operation: "probe.read", arguments: {} },
+        ],
+      };
+      await writeFile(
+        planPath,
+        JSON.stringify({
+          applicability: { capabilities: ["probe"] },
+          planId: "native-errors",
+          packetId: "probe.native-errors",
+          planVersion: "0.1.0",
+          checks: [
+            assertionLocation === "single"
+              ? {
+                  checkId: "probe.errors",
+                  operation: "probe.read",
+                  input: { reject: true },
+                  assertions: [errorAssertion],
+                }
+              : traceCheck,
+          ],
+        })
+      );
+      const host = `for await (const line of console) {
+      const request = JSON.parse(line);
+      const params = request.params ?? {};
+      const input = params.input?.checkInput ?? params.input;
+      const result = request.method === "initialize" ? { adapterId: "probe", capabilities: ["probe"], packetId: params.packetId, planVersion: params.planVersion }
+        : request.method === "dispatch" ? (input?.reject ? { kind: "error", error: { code: ${JSON.stringify(code)}, message: "native failure" } } : { kind: "result", value: { result: null } })
+        : request.method === "events" ? [] : request.method === "createInstance" ? "instance" : null;
+      process.stdout.write(JSON.stringify({ id: request.id, jsonrpc: "2.0", result }) + "\\n");
+    }`;
+      await writeFile(
+        adapterPath,
+        JSON.stringify({
+          adapterId: "probe",
+          authorityPackets: [packetPath],
+          boundary: "shared",
+          capabilities: ["probe"],
+          command: ["bun", "--eval", host],
+          implementationId: "probe",
+          language: "typescript",
+          protocol: {
+            name: "tuvren.conformance-adapter",
+            transport: "json-rpc-2.0-stdio",
+            version: "0.2.0",
+          },
+          suiteId: "probe",
+          suiteVersion: "0.1.0",
+        })
+      );
+      const result = await runCommand([
+        "bun",
+        "tools/conformance/harness/run.ts",
+        "--adapter",
+        adapterPath,
+      ]);
+      expect(result.stdout, result.stderr).not.toBe("");
+      const evidence: unknown = JSON.parse(result.stdout);
+      assertConformanceEvidence(evidence, "native error evidence");
+      expect(result.code).toBe(accepted ? 0 : 1);
+      expect(evidence.checkResults[0]).toMatchObject(
+        accepted
+          ? { status: "pass" }
+          : { status: "fail", failure: { classification: "implementation" } }
+      );
+    }
+  );
+});

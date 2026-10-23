@@ -14,7 +14,13 @@ import {
   readRecord,
   readString,
 } from "./host-support.js";
-import { encodeObservationRecord } from "./observation-encoding.js";
+import {
+  encodeObservationInteger,
+  encodeObservationRecord,
+} from "./observation-encoding.js";
+
+const HEX_BYTES = /^(?:[0-9a-f]{2})*$/u;
+const MAX_SAFE_INTEGER = BigInt(Number.MAX_SAFE_INTEGER);
 
 const parameters = {
   "kernel.branch.create": ["branchId", "threadId", "fromTurnNodeHash"],
@@ -125,7 +131,7 @@ const decode = (value: unknown): KernelRecord => {
     if (typeof value.$bytes !== "string") {
       throw new TypeError("invalid syscall byte string tag");
     }
-    if (!/^(?:[0-9a-f]{2})*$/u.test(value.$bytes)) {
+    if (!HEX_BYTES.test(value.$bytes)) {
       throw new TypeError("invalid syscall byte string");
     }
     return new Uint8Array(Buffer.from(value.$bytes, "hex"));
@@ -185,6 +191,17 @@ const decodeNativeRecord = (value: unknown): KernelRecord => {
 };
 
 const encode = (value: unknown, record = false): unknown => {
+  if (typeof value === "bigint") {
+    if (value < -MAX_SAFE_INTEGER || value > MAX_SAFE_INTEGER) {
+      throw new TypeError(
+        "native integer exceeds the observation safe-integer domain"
+      );
+    }
+    return Number(value);
+  }
+  if (typeof value === "number") {
+    return encodeObservationInteger(value);
+  }
   if (record) {
     return encodeObservationRecord(decodeNativeRecord(value));
   }
@@ -204,7 +221,14 @@ const encode = (value: unknown, record = false): unknown => {
   return value;
 };
 
-const nativeErrorEnvelope = (error: unknown): AdapterErrorEnvelope => {
+const nativeErrorEnvelope = (
+  error: unknown,
+  ancestors = new Set<unknown>()
+): AdapterErrorEnvelope => {
+  if (ancestors.has(error)) {
+    throw new TypeError("cyclic native error cause");
+  }
+  const chain = new Set([...ancestors, error]);
   const details: unknown =
     error instanceof Error || isRecord(error)
       ? Reflect.get(error, "details")
@@ -214,9 +238,11 @@ const nativeErrorEnvelope = (error: unknown): AdapterErrorEnvelope => {
       ? Reflect.get(error, "cause")
       : undefined;
   return {
-    ...(cause === undefined ? {} : { cause: nativeErrorEnvelope(cause) }),
+    ...(cause === undefined
+      ? {}
+      : { cause: nativeErrorEnvelope(cause, chain) }),
     code: readErrorCode(error),
-    ...(details === undefined ? {} : { details }),
+    ...(details === undefined ? {} : { details: encode(details) }),
     message: error instanceof Error ? error.message : String(error),
   };
 };
@@ -283,38 +309,37 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     if (typeof invoke !== "function") {
       throw new TypeError(`missing native syscall ${operation}`);
     }
+    const callArguments = names.map((name: string) => args[name]);
+    const fromHash =
+      operation === "kernel.node.walkBack"
+        ? readString(args.fromHash, "fromHash")
+        : undefined;
+    let value: unknown;
     try {
-      let value: unknown;
-      if (operation === "kernel.node.walkBack") {
+      if (fromHash === undefined) {
+        value = await Reflect.apply(invoke, target, callArguments);
+      } else {
         const nodes = [];
-        for await (const node of kernel.node.walkBack(
-          readString(args.fromHash, "fromHash")
-        )) {
+        for await (const node of kernel.node.walkBack(fromHash)) {
           nodes.push(node);
         }
         value = nodes;
-      } else {
-        value = await Reflect.apply(
-          invoke,
-          target,
-          names.map((name: string) => args[name])
-        );
       }
-      return {
-        kind: "result",
-        value: {
-          result: encode(
-            value === undefined ? {} : value,
-            operation === "kernel.tree.manifest"
-          ),
-        },
-      };
     } catch (error: unknown) {
       return {
         error: nativeErrorEnvelope(error),
         kind: "error",
       };
     }
+    return {
+      kind: "result",
+      value: {
+        result: encode(
+          value === undefined ? {} : value,
+          operation === "kernel.tree.manifest"
+        ),
+      },
+    };
   };
   return {
     createInstance,
