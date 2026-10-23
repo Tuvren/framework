@@ -1,0 +1,13 @@
+owner: KRT-DD002
+mode: contract_test
+produced:
+  date: 2026-10-23
+  commit: "4367a5b"
+  command: "bun run conformance"
+result: pass
+pass_criteria: "The Rust adapter forwards native results and errors for every protocol syscall with lossless encoding, the Rust kernel returns canonical changedPaths order and catalogued error codes, and the protocol syscall plans pass against Rust."
+files:
+  - path: triage.md
+    sha256: 8719698cc3a9761931020c8be1c60d97c282793f3b24afc28758c15c7b09cf38
+    bytes: 16098
+    role: transcript

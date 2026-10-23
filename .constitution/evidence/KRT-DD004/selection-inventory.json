@@ -1,0 +1,1296 @@
+{
+  "classification": "uncertified",
+  "capabilities": [
+    "kernel.syscall"
+  ],
+  "implementations": [
+    {
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "evidence": ".cache/conformance-comparison/ac7e6088b0b54fcf/evidence.json",
+      "implementationId": "typescript-kernel-memory",
+      "selection": [
+        {
+          "checkId": "kernel.lineage.cross_thread_rejection",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.logical.branch_list",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.logical.diff_paths",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.logical.recovery_state",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.modify_composition",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.syscall.controls.after_commit_before_ack",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.controls.before_commit",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.lineage.cross_thread_rejection",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.logical.branch_list",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.logical.diff_paths",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.logical.recovery_state",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.modify_composition",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.tree_manifest_identity",
+          "selected": true
+        },
+        {
+          "checkId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel-protocol-af.run-complete-rejects-missing-event-object",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel-protocol-af.run-create-rejects-busy-branch",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel-protocol-af.schema-register-rejects-duplicate-path",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel-protocol-af.tree-create-rejects-missing-required-path",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.logical.thread_list",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.canonical_rejection",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-all-single-paths",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-deep-path-schema",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-empty-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-large-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-many-staged-results",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-multi-path-schema",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-single-byte",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-staged-failed",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-staged-interrupted",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-with-event-hash",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-with-prev-turn",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.modify_composition.f-verdict-composition",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-all-single-paths",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-deep-path-schema",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-empty-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-large-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-many-staged-results",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-multi-path-schema",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-single-byte",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-staged-failed",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-staged-interrupted",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-with-event-hash",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-with-prev-turn",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.logical.thread_list",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.modify_composition.f-verdict-composition",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.reclamation.erasure_preserves_referencing_lineage",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.reclamation.grace_window_holds_under_active_lease",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.reclamation.reachable_from_live_root_is_retained",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.reclamation.unreachable_past_grace_is_released",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.reclamation.reachability",
+          "selected": true
+        },
+        {
+          "checkId": "kernel-restart-af.invalid-staged-result-reexecutes",
+          "selected": false,
+          "reason": "missing capabilities: kernel.persistence.durable; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.crash-recovery.concurrent_writer",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.crash-recovery.durable_fault_points",
+          "selected": false,
+          "reason": "missing capabilities: kernel.persistence.durable; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.crash-recovery.in_process_fault_points",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.restart-recovery.close_reopen_checkpoint",
+          "selected": false,
+          "reason": "missing capabilities: kernel.persistence.durable; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.syscall.crash-recovery.after_commit_before_ack",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.crash-recovery.before_commit",
+          "selected": true
+        },
+        {
+          "checkId": "kernel-restart-af.expired-running-requires-preemption",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.run-liveness.clock_skew_preemption",
+          "selected": false,
+          "reason": "missing capabilities: kernel.shared-lease-clock; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.run-liveness.expired_listing",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.run-liveness.lease_renewal",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.run-liveness.stale_preemption",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.syscall.run-liveness.expired_listing",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.run-liveness.lease_renewal",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.run-liveness.stale_preemption",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.scope-isolation.enumeration_is_scope_confined",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.scope-isolation.store_get_is_scope_confined",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.scope-isolation.store_has_is_scope_confined",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.syscall.scope-isolation.own_content",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.scope-isolation.own_enumeration",
+          "selected": true
+        }
+      ],
+      "summary": {
+        "failedChecks": 0,
+        "passedChecks": 65,
+        "totalChecks": 137,
+        "applicableChecks": 65,
+        "nonApplicableChecks": 72
+      },
+      "counts": {
+        "excluded": 72,
+        "filter": 68,
+        "selected": 65,
+        "missingCapabilityAndFilter": 4
+      }
+    },
+    {
+      "adapter": "rust/kernel-conformance-adapter/adapter-syscall.json",
+      "evidence": ".cache/conformance-comparison/4397444ebdcd805a/evidence.json",
+      "implementationId": "rust-kernel",
+      "selection": [
+        {
+          "checkId": "kernel.lineage.cross_thread_rejection",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.logical.branch_list",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.logical.diff_paths",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.logical.recovery_state",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.modify_composition",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.syscall.controls.after_commit_before_ack",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.controls.before_commit",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.lineage.cross_thread_rejection",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.logical.branch_list",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.logical.diff_paths",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.logical.recovery_state",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.modify_composition",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.tree_manifest_identity",
+          "selected": true
+        },
+        {
+          "checkId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+          "selected": false,
+          "reason": "missing capabilities: kernel.edge-validation; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+          "selected": false,
+          "reason": "missing capabilities: kernel.edge-validation; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel-protocol-af.run-complete-rejects-missing-event-object",
+          "selected": false,
+          "reason": "missing capabilities: kernel.edge-validation; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel-protocol-af.run-create-rejects-busy-branch",
+          "selected": false,
+          "reason": "missing capabilities: kernel.edge-validation; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel-protocol-af.schema-register-rejects-duplicate-path",
+          "selected": false,
+          "reason": "missing capabilities: kernel.edge-validation; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel-protocol-af.tree-create-rejects-missing-required-path",
+          "selected": false,
+          "reason": "missing capabilities: kernel.edge-validation; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+          "selected": false,
+          "reason": "missing capabilities: kernel.edge-validation; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.logical.thread_list",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.canonical_rejection",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-all-single-paths",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-deep-path-schema",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-empty-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-large-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-many-staged-results",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-multi-path-schema",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-single-byte",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-staged-failed",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-staged-interrupted",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-with-event-hash",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-with-prev-turn",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.modify_composition.f-verdict-composition",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-all-single-paths",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-deep-path-schema",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-empty-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-large-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-many-staged-results",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-multi-path-schema",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-single-byte",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-staged-failed",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-staged-interrupted",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-with-event-hash",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-with-prev-turn",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+          "selected": false,
+          "reason": "missing capabilities: kernel.edge-validation"
+        },
+        {
+          "checkId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+          "selected": false,
+          "reason": "missing capabilities: kernel.edge-validation"
+        },
+        {
+          "checkId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
+          "selected": false,
+          "reason": "missing capabilities: kernel.edge-validation"
+        },
+        {
+          "checkId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
+          "selected": false,
+          "reason": "missing capabilities: kernel.edge-validation"
+        },
+        {
+          "checkId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
+          "selected": false,
+          "reason": "missing capabilities: kernel.edge-validation"
+        },
+        {
+          "checkId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
+          "selected": false,
+          "reason": "missing capabilities: kernel.edge-validation"
+        },
+        {
+          "checkId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+          "selected": false,
+          "reason": "missing capabilities: kernel.edge-validation"
+        },
+        {
+          "checkId": "kernel.syscall.logical.thread_list",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.modify_composition.f-verdict-composition",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.reclamation.erasure_preserves_referencing_lineage",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.reclamation.grace_window_holds_under_active_lease",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.reclamation.reachable_from_live_root_is_retained",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.reclamation.unreachable_past_grace_is_released",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.reclamation.reachability",
+          "selected": true
+        },
+        {
+          "checkId": "kernel-restart-af.invalid-staged-result-reexecutes",
+          "selected": false,
+          "reason": "missing capabilities: kernel.restart-recovery, kernel.persistence.durable; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.crash-recovery.concurrent_writer",
+          "selected": false,
+          "reason": "missing capabilities: kernel.restart-recovery; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.crash-recovery.durable_fault_points",
+          "selected": false,
+          "reason": "missing capabilities: kernel.restart-recovery, kernel.persistence.durable; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.crash-recovery.in_process_fault_points",
+          "selected": false,
+          "reason": "missing capabilities: kernel.restart-recovery; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.restart-recovery.close_reopen_checkpoint",
+          "selected": false,
+          "reason": "missing capabilities: kernel.restart-recovery, kernel.persistence.durable; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.syscall.crash-recovery.after_commit_before_ack",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.crash-recovery.before_commit",
+          "selected": true
+        },
+        {
+          "checkId": "kernel-restart-af.expired-running-requires-preemption",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.run-liveness.clock_skew_preemption",
+          "selected": false,
+          "reason": "missing capabilities: kernel.shared-lease-clock; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.run-liveness.expired_listing",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.run-liveness.lease_renewal",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.run-liveness.stale_preemption",
+          "selected": false,
+          "reason": "outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.syscall.run-liveness.expired_listing",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.run-liveness.lease_renewal",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.run-liveness.stale_preemption",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.scope-isolation.enumeration_is_scope_confined",
+          "selected": false,
+          "reason": "missing capabilities: kernel.scope-isolation; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.scope-isolation.store_get_is_scope_confined",
+          "selected": false,
+          "reason": "missing capabilities: kernel.scope-isolation; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.scope-isolation.store_has_is_scope_confined",
+          "selected": false,
+          "reason": "missing capabilities: kernel.scope-isolation; outside requested capabilities: kernel.syscall"
+        },
+        {
+          "checkId": "kernel.syscall.scope-isolation.own_content",
+          "selected": true
+        },
+        {
+          "checkId": "kernel.syscall.scope-isolation.own_enumeration",
+          "selected": true
+        }
+      ],
+      "summary": {
+        "failedChecks": 0,
+        "passedChecks": 58,
+        "totalChecks": 137,
+        "applicableChecks": 58,
+        "nonApplicableChecks": 79
+      },
+      "counts": {
+        "excluded": 79,
+        "filter": 56,
+        "selected": 58,
+        "missingCapabilityAndFilter": 16,
+        "missingCapability": 7
+      }
+    }
+  ]
+}

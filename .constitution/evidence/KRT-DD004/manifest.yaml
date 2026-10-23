@@ -1,0 +1,25 @@
+owner: KRT-DD004
+mode: contract_test
+produced:
+  date: 2026-10-23
+  commit: "4367a5b"
+  command: "bun run conformance; bun run verify"
+result: pass
+pass_criteria: "Rust passes all four memory-profile syscall families with every exclusion reasoned, three Rust mutants are killed with activation proof and the rest report unsupported with reasons, and the TypeScript and Rust comparison shows no disagreement beyond authority-sanctioned variation."
+files:
+  - path: triage.md
+    sha256: 3234384df3a3a5f24f5506385a4dd7b106111e033d1595509581796f465175f2
+    bytes: 7633
+    role: transcript
+  - path: obligation-map.md
+    sha256: 252f86066840bd2eff62e8e5f8435821ac5adbcde813f1cbd480aed1c534ed85
+    bytes: 10065
+    role: transcript
+  - path: disagreement-summary.md
+    sha256: 7d350280e20a34ec0082fc9347e759d171e9bd806a06d4509cc58174a64b2395
+    bytes: 14642
+    role: transcript
+  - path: selection-inventory.json
+    sha256: b6e96c61c2b0a4bd315a259af9bc25948c2a07368a68823943ca7ad5cd0e4fc8
+    bytes: 47617
+    role: transcript
