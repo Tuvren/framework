@@ -484,3 +484,30 @@ decisions:
       date: 2026-10-19
       summary: "The owner approved the recommended supported-contract boundary for OD-14 as a copy of OD-09. The original EPIC-BY asked.in value remains the source-question history; EPIC-CW remains the proposal provenance."
       chosen: "Preserve supported contracts and apply the selected preset's internal normalizations"
+  - id: OD-15
+    question: "Where is the kernel.mutant.activation control declared before the kernel operation catalog exists?"
+    blocks: [KRT-CZ007]
+    options:
+      - name: Declare it in the kernel catalog authored by KRT-DB001
+        pros:
+          - "Keeps one authored kernel catalog; no throwaway catalog file in CZ."
+        cons:
+          - "Until DB001 lands, the activation observation is validated only by adapter tests, not by an authority-backed schema."
+      - name: Create a minimal kernel catalog in CZ with only this control
+        pros: [The control is catalogued immediately.]
+        cons:
+          - "Pre-empts KRT-DB001's catalog design and adds a partial authority artifact that DB001 must rewrite."
+    recommendation: Declare it in the kernel catalog authored by KRT-DB001
+    closure: ruling
+    status: proposed
+    asked:
+      date: 2026-10-23
+      in: EPIC-CZ
+    proposed_by: EPIC-CZ @ e68cb29
+    interim:
+      assumption: "kernel.mutant.activation stays an uncatalogued control until KRT-DB001 adds it to spec/conformance/kernel/operations.json with a closed observation schema; the negative-control runner reads it as a diagnostic signal, not as certification evidence."
+      applied_by:
+        - typescript/kernel/conformance-adapter/src/host.ts
+        - KRT-CZ007
+        - KRT-CZ009
+        - KRT-DB001

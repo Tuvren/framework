@@ -1,4 +1,23 @@
 entries:
+  - version: v0.50.1
+    date: 2026-10-23
+    changed:
+      - "EPIC-CZ Certification integrity floor, pinned contracts, and negative-control baseline archived: 10 tickets, 54 points, 16212 diff lines, 0 review rounds"
+    added:
+      - "EPIC-CZ landed the certification integrity floor: truthful statuses and certified fleet, non-vacuous assertions, the pinned catalog, encoding, plan, protocol 0.2.0, profile, control, and evidence schemas, runner argument and capture execution, report-mode certification rules with a 401-violation baseline, classified failure artifacts with replay, and a kernel negative-control baseline of 10 of 13 mutants killed."
+      - "Follow-up from EPIC-CZ: nx.json conformanceEngine inputs omit tools/schemas/** and tools/scripts/lib/verification-logs.ts, so Nx may skip conformance after a schema change."
+      - "Follow-up from EPIC-CZ: docs/guides/add-a-language.md, add-a-kernel-backend.md, and how-conformance-works.md still describe a projects-only certified-projects.json."
+      - "Follow-up from EPIC-CZ: tools/scripts/conformance.ts still reads the duplicate projects list; it can read the inventory directly and the list can go."
+      - "Follow-up from EPIC-CZ: plan-compiler/certification-rules.ts and scripts/conformance/certification-schemas.ts each carry a JSON-pointer and $ref resolver; merge them."
+      - "Follow-up from EPIC-CZ: Kernel negative-control survivors to close in later epics: kernel.noncanonical-changed-paths-order (KRT-DB003 removes the adapter sort), kernel.lease-takeover-before-expiry (shared-lease clock, KRT-DF005), kernel.fault-seam-never-fires (fault arming and rejection, KRT-DC001)."
+      - "Follow-up from EPIC-CZ: Add a package.json alias for bun tools/conformance/meta-conformance/negative-controls.ts."
+      - "Follow-up from EPIC-CZ: Compile-time rejection of bare field assertions can replace the runtime rejection now that the nine plans are explicit."
+    by: reconcile
+    fast_lane_through: e68cb29abf8febd7229d1966c18ec3d662d75148
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.48.0
   - version: v0.50.0
     date: 2026-10-22
     upstream:

@@ -1,0 +1,40 @@
+date: 2026-10-23
+commit: e68cb29
+epics: [CZ]
+routed:
+  - stage: tech-spec
+    item: "ADR-0078 says non-integer numbers keep their binding schema's domain, but the KRT-CZ003 decoder rejects negative zero and non-integer tokens that round to integers in every numeric field because it is not schema-aware; KRT-DB002 should make the runner schema-aware or Stage 3 should accept the stricter rule."
+    from: CZ
+  - stage: tech-spec
+    item: "ADR-0079 needs a runner rejection channel (for example missing_fault_activation) in run evidence before observation and instrumentation controls can be killed; KRT-DC001 is the natural owner."
+    from: CZ
+  - stage: tech-spec
+    item: "A plan is enforcing for certification rules when any of its claimIds appears in a certification profile; the profile schema has no explicit migrated field. Confirm or add one."
+    from: CZ
+  - stage: tech-spec
+    item: "code decision (contract_shape): certified-projects.json carries projects (legacy list), inventory (every project with adapter and truthful state), and certified (project and profile pairs); until profiles exist a certified profile equals the adapter suiteId. [tools/conformance/certification/certified-projects.json, tools/conformance/certification/certification-manifest.ts] at 8d897b8"
+    from: CZ
+  - stage: tech-spec
+    item: "code decision (pattern): Unresolved argument references raise ArgumentResolutionError and record details.verificationError; captures are read as $.capture.<name> from a null-prototype store with independent name tracking. [tools/conformance/harness/step-arguments.ts, tools/conformance/harness/run.ts] at 0644e5b"
+    from: CZ
+  - stage: tech-spec
+    item: "code decision (convention): Preliminary failure classification order: argument resolution is verification; connection or provisioning patterns are environment; other thrown errors are adapter_protocol; unresolved operands are verification; remaining assertion failures are implementation. Full failure evidence is retained in the verification log directory; checked-in evidence keeps classification and replay only. [tools/conformance/harness/run.ts, tools/scripts/lib/conformance-contract.ts, tools/scripts/compatibility-report.ts] at d4a4129"
+    from: CZ
+  - stage: tech-spec
+    item: "code decision (convention): Kernel mutants are selected through adapter-mutant.json with TUVREN_KERNEL_MUTANT (or --mutant), ids kernel.<slug>, signals mutant.<slug>.entered, and activation is read through the kernel.mutant.activation control (interim per OD-15). [typescript/kernel/testkit/src/lib, typescript/kernel/conformance-adapter/adapter-mutant.json, typescript/kernel/conformance-adapter/src/host.ts] at 9bcf111"
+    from: CZ
+  - stage: tech-spec
+    item: "code decision (pattern): The negative-control runner reads activation through a pass-through stdio relay and classifies mutants as killed, survived, unsupported, or invalid; any non-implementation failure in a mutant run makes it invalid. [tools/conformance/meta-conformance/negative-controls.ts, tools/conformance/meta-conformance/activation-probe.ts] at 5141dd2"
+    from: CZ
+  - stage: tech-spec
+    item: "code decision (convention): Certification tool suites run in the durable tooling acceptance lane through CERTIFICATION_TOOLING_ACCEPTANCE_TESTS. [tools/scripts/verify.ts] at 8bc234e"
+    from: CZ
+  - stage: tech-spec
+    item: "code decision (contract_shape): Observation schemas use a strict certification dialect: every reachable subschema is false, a local #/$defs ref, an encoding-schema ref, anyOf or oneOf of dialect branches, const or enum, or an explicitly typed schema whose objects are closed and whose arrays have direct items; allOf, not, conditionals, true, empty, and type-less schemas are rejected. [tools/scripts/conformance/certification-schemas.ts, tools/schemas/conformance-operation-catalog.schema.json] at fc79e5d"
+    from: CZ
+proposed_decisions: [OD-15]
+candidate_terms: []
+stale_owners:
+  - ".constitution/evidence/KRT-CZ005/manifest.yaml: KRT-CZ005"
+  - ".constitution/evidence/KRT-CZ002/manifest.yaml: KRT-CZ002"
+  - ".constitution/evidence/KRT-CZ009/manifest.yaml: KRT-CZ009"

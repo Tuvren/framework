@@ -1,13 +1,13 @@
-artifact_path: "tools/schemas/conformance-plan.schema.json"
-surface: "json"
+artifact_path: tools/schemas/conformance-plan.schema.json
+surface: json
 flows:
   - flow-authority-packet-driven-conformance
   - flow-multi-implementation-conformance-compatibility
-boundaries:
-  - BND-23
-  - BND-27
-companion: "conformance-certification.md"
+boundaries: [BND-23, BND-27]
+companion: conformance-certification.md
 pinned: true
-certainty: "assumed"
-assumption: "Conformance plans are data, validated by tools/schemas/conformance-plan.schema.json. Plans under spec/conformance/ are instances of this schema. ADR-0075 to ADR-0077 add claim ids, explicit step arguments and captures, step actions, and the non-vacuous assertion operators listed in conformance-certification.md."
-settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."
+certainty: settled
+evidence:
+  kind: repository
+  ref: tools/conformance/plan-compiler/certification-rules.test.ts
+  date: 2026-10-23

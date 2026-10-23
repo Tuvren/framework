@@ -1,5 +1,5 @@
 id: CZ
-name: Certification integrity floor, pinned contracts, and negative-control baseline
+name: "Certification integrity floor, pinned contracts, and negative-control baseline"
 kind: foundation
 capabilities: [CAP-035, CAP-036, CAP-037, CAP-038]
 depends_on: []
@@ -23,36 +23,15 @@ scope:
     - typescript/kernel/conformance-adapter
     - spec/kernel/authority-packet.json
   tech_spec_patchable:
-    - .constitution/tech-spec/contracts/conformance-certification.md
-    - .constitution/tech-spec/contracts/conformance-operation-catalog.meta.yaml
-    - .constitution/tech-spec/contracts/conformance-observation-encoding.meta.yaml
-    - .constitution/tech-spec/contracts/conformance-adapter-protocol.meta.yaml
-    - .constitution/tech-spec/contracts/certification-profile.meta.yaml
-    - .constitution/tech-spec/contracts/negative-control-manifest.meta.yaml
-    - .constitution/tech-spec/contracts/certification-evidence.meta.yaml
+    - ".constitution/tech-spec/contracts/conformance-certification.md"
+    - ".constitution/tech-spec/contracts/conformance-operation-catalog.meta.yaml"
+    - ".constitution/tech-spec/contracts/conformance-observation-encoding.meta.yaml"
+    - ".constitution/tech-spec/contracts/conformance-adapter-protocol.meta.yaml"
+    - ".constitution/tech-spec/contracts/certification-profile.meta.yaml"
+    - ".constitution/tech-spec/contracts/negative-control-manifest.meta.yaml"
+    - ".constitution/tech-spec/contracts/certification-evidence.meta.yaml"
 estimated_diff_lines: 12000
 estimate_source: planned
-decisions:
-  - id: OD-15
-    question: "Where is the kernel.mutant.activation control declared before the kernel operation catalog exists?"
-    blocks: [KRT-CZ007]
-    options:
-      - name: Declare it in the kernel catalog authored by KRT-DB001
-        pros: ["Keeps one authored kernel catalog; no throwaway catalog file in CZ."]
-        cons: ["Until DB001 lands, the activation observation is validated only by adapter tests, not by an authority-backed schema."]
-      - name: Create a minimal kernel catalog in CZ with only this control
-        pros: ["The control is catalogued immediately."]
-        cons: ["Pre-empts KRT-DB001's catalog design and adds a partial authority artifact that DB001 must rewrite."]
-    recommendation: Declare it in the kernel catalog authored by KRT-DB001
-    closure: ruling
-    status: proposed
-    asked:
-      date: 2026-10-23
-      in: EPIC-CZ
-    proposed_by: "EPIC-CZ at 9bcf111"
-    interim:
-      assumption: "kernel.mutant.activation stays an uncatalogued control until KRT-DB001 adds it to spec/conformance/kernel/operations.json with a closed observation schema; the negative-control runner reads it as a diagnostic signal, not as certification evidence."
-      applied_by: [typescript/kernel/conformance-adapter/src/host.ts, KRT-CZ007, KRT-CZ009, KRT-DB001]
 tickets:
   - id: KRT-CZ001
     title: Make certification statuses and the certified fleet truthful
@@ -103,7 +82,7 @@ tickets:
     certainty: assumed
     status: done
   - id: KRT-CZ003
-    title: Land the pinned catalog, encoding, and plan schemas
+    title: "Land the pinned catalog, encoding, and plan schemas"
     type: Feature
     effort: 8
     depends_on: [KRT-CZ002]
@@ -128,7 +107,7 @@ tickets:
     certainty: assumed
     status: done
   - id: KRT-CZ004
-    title: Land adapter protocol 0.2.0, profile, control, and evidence schemas
+    title: "Land adapter protocol 0.2.0, profile, control, and evidence schemas"
     type: Feature
     effort: 8
     depends_on: [KRT-CZ003]
@@ -199,7 +178,10 @@ tickets:
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     deviations:
-      - files: [tools/scripts/lib/conformance-contract.test.ts, tools/conformance/harness/assertion-engine/index.ts, tools/conformance/harness/adapter-client.ts]
+      - files:
+          - tools/scripts/lib/conformance-contract.test.ts
+          - tools/conformance/harness/assertion-engine/index.ts
+          - tools/conformance/harness/adapter-client.ts
         justification: "The evidence-contract tests for the failure block live in the sibling test file of tools/scripts/lib/conformance-contract.ts; operand capture needs the assertion engine and the frame log and stderr tail need the adapter client, both inside tools/conformance/harness but named explicitly here because the ticket scope listed only the harness directory generically."
     status: done
   - id: KRT-CZ007
@@ -208,11 +190,9 @@ tickets:
     effort: 5
     depends_on: [KRT-CZ004]
     scope:
-      in:
-        - typescript/kernel/testkit
-        - typescript/kernel/conformance-adapter
+      in: [typescript/kernel/testkit, typescript/kernel/conformance-adapter]
     verification:
-      command: bun run verify:kernel
+      command: "bun run verify:kernel"
       expected: "Exit 0; the certifying kernel adapter manifests are unchanged and a non-certifying mutant manifest starts and reports activation counts."
     stop_conditions:
       - "STOP if a mutant would require a flag or branch in any production package; do not improvise."
@@ -223,7 +203,11 @@ tickets:
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
     deviations:
-      - files: [tools/scripts/verify.ts, tools/conformance/certification/certification-manifest.ts, tools/conformance/certification/certification-manifest.test.ts, tools/conformance/certification/validate-certification-discovery.ts]
+      - files:
+          - tools/scripts/verify.ts
+          - tools/conformance/certification/certification-manifest.ts
+          - tools/conformance/certification/certification-manifest.test.ts
+          - tools/conformance/certification/validate-certification-discovery.ts
         justification: "The new kernel conformance adapter test target must be registered in WORKSPACE_TEST_PROJECTS for the workspace test-lane coverage gate, and certification discovery must reject mutant adapter commands; neither path was named in the ticket scope."
     status: done
   - id: KRT-CZ008
@@ -274,14 +258,12 @@ tickets:
         justification: "The certification tool suites, including this ticket's negative-control tests, join the durable tooling acceptance lane in tools/scripts/verify.ts so they run in bun run verify."
     status: done
   - id: KRT-CZ010
-    title: Execute explicit arguments, references, and captures in the runner
+    title: "Execute explicit arguments, references, and captures in the runner"
     type: Feature
     effort: 5
     depends_on: [KRT-CZ003]
     scope:
-      in:
-        - tools/conformance/harness
-        - tools/conformance/meta-conformance
+      in: [tools/conformance/harness, tools/conformance/meta-conformance]
     verification:
       command: bun run conformance
       expected: "Exit 0; steps with explicit arguments receive only their resolved projection, $ref and $literal resolve as pinned, captures are readable by later steps, and legacy plans keep their current behavior."
@@ -295,7 +277,17 @@ tickets:
     certainty: assumed
     status: done
 closeout:
-  tickets_completed: [KRT-CZ001, KRT-CZ002, KRT-CZ003, KRT-CZ004, KRT-CZ005, KRT-CZ006, KRT-CZ007, KRT-CZ008, KRT-CZ009, KRT-CZ010]
+  tickets_completed:
+    - KRT-CZ001
+    - KRT-CZ002
+    - KRT-CZ003
+    - KRT-CZ004
+    - KRT-CZ005
+    - KRT-CZ006
+    - KRT-CZ007
+    - KRT-CZ008
+    - KRT-CZ009
+    - KRT-CZ010
   tickets_deferred: []
   points_completed: 54
   spec_patches: []
@@ -317,36 +309,50 @@ closeout:
     - "tools/scripts/conformance.ts still reads the duplicate projects list; it can read the inventory directly and the list can go."
     - "plan-compiler/certification-rules.ts and scripts/conformance/certification-schemas.ts each carry a JSON-pointer and $ref resolver; merge them."
     - "Kernel negative-control survivors to close in later epics: kernel.noncanonical-changed-paths-order (KRT-DB003 removes the adapter sort), kernel.lease-takeover-before-expiry (shared-lease clock, KRT-DF005), kernel.fault-seam-never-fires (fault arming and rejection, KRT-DC001)."
-    - "Add a package.json alias for bun tools/conformance/meta-conformance/negative-controls.ts."
-    - "Compile-time rejection of bare field assertions can replace the runtime rejection now that the nine plans are explicit."
+    - Add a package.json alias for bun tools/conformance/meta-conformance/negative-controls.ts.
+    - Compile-time rejection of bare field assertions can replace the runtime rejection now that the nine plans are explicit.
   code_decisions:
     - summary: "certified-projects.json carries projects (legacy list), inventory (every project with adapter and truthful state), and certified (project and profile pairs); until profiles exist a certified profile equals the adapter suiteId."
       kind: contract_shape
-      paths: [tools/conformance/certification/certified-projects.json, tools/conformance/certification/certification-manifest.ts]
+      paths:
+        - tools/conformance/certification/certified-projects.json
+        - tools/conformance/certification/certification-manifest.ts
       commit: 8d897b8
     - summary: "Unresolved argument references raise ArgumentResolutionError and record details.verificationError; captures are read as $.capture.<name> from a null-prototype store with independent name tracking."
       kind: pattern
-      paths: [tools/conformance/harness/step-arguments.ts, tools/conformance/harness/run.ts]
+      paths:
+        - tools/conformance/harness/step-arguments.ts
+        - tools/conformance/harness/run.ts
       commit: 0644e5b
     - summary: "Preliminary failure classification order: argument resolution is verification; connection or provisioning patterns are environment; other thrown errors are adapter_protocol; unresolved operands are verification; remaining assertion failures are implementation. Full failure evidence is retained in the verification log directory; checked-in evidence keeps classification and replay only."
       kind: convention
-      paths: [tools/conformance/harness/run.ts, tools/scripts/lib/conformance-contract.ts, tools/scripts/compatibility-report.ts]
+      paths:
+        - tools/conformance/harness/run.ts
+        - tools/scripts/lib/conformance-contract.ts
+        - tools/scripts/compatibility-report.ts
       commit: d4a4129
     - summary: "Kernel mutants are selected through adapter-mutant.json with TUVREN_KERNEL_MUTANT (or --mutant), ids kernel.<slug>, signals mutant.<slug>.entered, and activation is read through the kernel.mutant.activation control (interim per OD-15)."
       kind: convention
-      paths: [typescript/kernel/testkit/src/lib, typescript/kernel/conformance-adapter/adapter-mutant.json, typescript/kernel/conformance-adapter/src/host.ts]
+      paths:
+        - typescript/kernel/testkit/src/lib
+        - typescript/kernel/conformance-adapter/adapter-mutant.json
+        - typescript/kernel/conformance-adapter/src/host.ts
       commit: 9bcf111
     - summary: "The negative-control runner reads activation through a pass-through stdio relay and classifies mutants as killed, survived, unsupported, or invalid; any non-implementation failure in a mutant run makes it invalid."
       kind: pattern
-      paths: [tools/conformance/meta-conformance/negative-controls.ts, tools/conformance/meta-conformance/activation-probe.ts]
+      paths:
+        - tools/conformance/meta-conformance/negative-controls.ts
+        - tools/conformance/meta-conformance/activation-probe.ts
       commit: 5141dd2
-    - summary: "Certification tool suites run in the durable tooling acceptance lane through CERTIFICATION_TOOLING_ACCEPTANCE_TESTS."
+    - summary: Certification tool suites run in the durable tooling acceptance lane through CERTIFICATION_TOOLING_ACCEPTANCE_TESTS.
       kind: convention
       paths: [tools/scripts/verify.ts]
       commit: 8bc234e
     - summary: "Observation schemas use a strict certification dialect: every reachable subschema is false, a local #/$defs ref, an encoding-schema ref, anyOf or oneOf of dialect branches, const or enum, or an explicitly typed schema whose objects are closed and whose arrays have direct items; allOf, not, conditionals, true, empty, and type-less schemas are rejected."
       kind: contract_shape
-      paths: [tools/scripts/conformance/certification-schemas.ts, tools/schemas/conformance-operation-catalog.schema.json]
+      paths:
+        - tools/scripts/conformance/certification-schemas.ts
+        - tools/schemas/conformance-operation-catalog.schema.json
       commit: fc79e5d
   settled:
     - record: tech-spec/contracts/conformance-plan.meta.yaml
@@ -357,5 +363,43 @@ closeout:
     - record: tech-spec/contracts/negative-control-manifest.meta.yaml
       evidence:
         kind: measurement
-        ref: .constitution/evidence/KRT-CZ009
+        ref: ".constitution/evidence/KRT-CZ009"
         date: 2026-10-23
+  actuals:
+    diff_lines: 16212
+    files_touched: 87
+    milestones: 17
+    review_rounds: 0
+    per_ticket:
+      - id: KRT-CZ001
+        diff_lines: 2580
+        review_rounds: 0
+      - id: KRT-CZ002
+        diff_lines: 184
+        review_rounds: 0
+      - id: KRT-CZ003
+        diff_lines: 4404
+        review_rounds: 0
+      - id: KRT-CZ004
+        diff_lines: 0
+        review_rounds: 0
+      - id: KRT-CZ005
+        diff_lines: 2165
+        review_rounds: 0
+      - id: KRT-CZ006
+        diff_lines: 1694
+        review_rounds: 0
+      - id: KRT-CZ007
+        diff_lines: 2745
+        review_rounds: 0
+      - id: KRT-CZ008
+        diff_lines: 0
+        review_rounds: 0
+      - id: KRT-CZ009
+        diff_lines: 1449
+        review_rounds: 0
+      - id: KRT-CZ010
+        diff_lines: 991
+        review_rounds: 0
+    merged_commit: e68cb29
+    measured_at: 2026-10-23
