@@ -499,6 +499,7 @@ decisions:
           - "Pre-empts KRT-DB001's catalog design and adds a partial authority artifact that DB001 must rewrite."
     recommendation: Declare it in the kernel catalog authored by KRT-DB001
     closure: ruling
+    ruler: "Owner, after the EPIC-CZ merge"
     status: proposed
     asked:
       date: 2026-10-23
