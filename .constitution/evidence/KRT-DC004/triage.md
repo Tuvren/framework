@@ -14,11 +14,11 @@ Table 1. Observed failures and disposition
 | `promote-staged-before-checkpoint` fails promoted before-commit progress and head assertions after proven activation. | I, intentional control | Expected detection. The unmutated control passes. |
 | `fault-seam-never-fires` yields `missing_fault_activation` on the syscall recovery trace after disabling the seam. | V, intentional instrumentation control | Expected runner rejection, distinct from a semantic implementation failure. |
 
-No production implementation defect or specification STOP condition was observed. Public `run.recover` exposes the required recovery state without an adapter-inserted reconciliation call. No services were started, stopped, or reset. No `.constitution/` file was edited.
+No production implementation defect or specification STOP condition was observed. Public `run.recover` exposes the required recovery state without an adapter-inserted reconciliation call. No services were started, stopped, or reset. The worker edited no `.constitution/` file; the lead filed this record.
 
 All required gates pass. The compatibility refresh records 133 passing applicable memory checks, including both recovery traces. The release gate also passes PostgreSQL and SQLite proving-host scenarios.
 
-The complete negative-control report is retained at `.cache/dc004/negative-control-report.json`. The unmutated baseline passes 133/133 checks. Every listed mutant activates and is killed; none survives or becomes invalid.
+The complete negative-control report is retained at a local run log (not retained). The unmutated baseline passes 133/133 checks. Every listed mutant activates and is killed; none survives or becomes invalid.
 
 Table 2. Per-mutant outcomes
 
@@ -56,4 +56,4 @@ Table 3. Verification commands
 | `bun run verify` | 0 | All release phases pass, including 813 tooling tests, interop smoke, package tests, portability, and SQLite/PostgreSQL proving hosts. |
 | `git diff --check` | 0 | No whitespace errors. |
 
-Logs are retained under `.cache/dc004/`. HEAD remains `7db47de` on `epic/dc-kernel-memory-syscall-plans`; no commit or staging operation occurred. No ENOSPC failure occurred, so no TMPDIR override was needed.
+Logs are retained under a local run log (not retained). The worker started from `7db47de` on `epic/dc-kernel-memory-syscall-plans`; no commit or staging operation occurred. No ENOSPC failure occurred, so no TMPDIR override was needed.

@@ -48,16 +48,16 @@ Backend rollback, archival movement, fault-selector, occurrence, retry, and conc
 
 No recovery reconciliation or adapter behavior change is required. No dependency, public API, observation shape, contract shape, or production pattern is introduced. Packet registration and generated compatibility evidence are necessary companion changes outside the ticket's listed implementation directories. The requested reports are written outside `.constitution/` under the worker rules; the epic lead owns any constitutional evidence reconciliation.
 
-Verification completes with exit 0 for `bun run check`, `bun run verify:kernel`, `bun run conformance`, `bun run verify`, `bun run lint`, and the authority guardrails command. `bun run compatibility:evidence` also exits 0. The full release gate checks the refreshed evidence and formatter output. All 13 negative controls activate and are killed against an unmutated 133/133 passing baseline. See `DC004-triage.md` for earlier verification failures, per-mutant outcomes, and command results.
+Verification completes with exit 0 for `bun run check`, `bun run verify:kernel`, `bun run conformance`, `bun run verify`, `bun run lint`, and the authority guardrails command. `bun run compatibility:evidence` also exits 0. The full release gate checks the refreshed evidence and formatter output. All 13 negative controls activate and are killed against an unmutated 133/133 passing baseline. See `the ticket triage.md` for earlier verification failures, per-mutant outcomes, and command results.
 
 
 ## Claim designation audit
 
 The M4 review audit covers every check and step claim in all six `*-syscall.json` kernel plans. The restored control entries are additive: recovery-state and legacy fault assertions remain designated alongside the M4 assertions. The fault-seam control retains both legacy recovery/concurrent-writer claims and both protocol control claims, plus both M4 point claims.
 
-Across 65 checks, all 72 distinct claim IDs are accounted for: 33 have a designated detector and 39 have an explicit undetected reason. The reclamation/scope claims are listed in `DC002-obligation-map.md`; the liveness claims are listed in `DC003-obligation-map.md`. The protocol claims without detectors are listed in table 5. No claim is unaccounted for. An instrumentation detector uses the expected runner rejection rather than a semantic assertion.
+Across 65 checks, all 72 distinct claim IDs are accounted for: 33 have a designated detector and 39 have an explicit undetected reason. The reclamation/scope claims are listed in `KRT-DC002/obligation-map.md`; the liveness claims are listed in `KRT-DC003/obligation-map.md`. The protocol claims without detectors are listed in table 5. No claim is unaccounted for. An instrumentation detector uses the expected runner rejection rather than a semantic assertion.
 
-The saved mutation report verifies detection for all 33 designated claims against the passing 133/133 unmutated baseline. Each detector activates and produces a designated failure for that claim, or the expected instrumentation rejection. The machine-readable audit and mutation report are retained at `.cache/dc004-review-fix/claim-audit.json` and `.cache/dc004-review-fix/negative-controls.json`.
+The saved mutation report verifies detection for all 33 designated claims against the passing 133/133 unmutated baseline. Each detector activates and produces a designated failure for that claim, or the expected instrumentation rejection. The machine-readable audit and mutation report are retained at a local run log (not retained) and a local run log (not retained).
 
 Table 4. Audit totals by syscall plan
 
