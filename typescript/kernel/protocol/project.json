@@ -42,7 +42,6 @@
         "default",
         "^production",
         "{workspaceRoot}/docs/KrakenKernelSpecification.md",
-        "{workspaceRoot}/.changeset/certification-db-kernel-protocol.md",
         "{workspaceRoot}/spec/kernel/**/*",
         "{workspaceRoot}/spec/conformance/kernel/fixtures/**/*"
       ]

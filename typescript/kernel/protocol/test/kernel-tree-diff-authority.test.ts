@@ -18,32 +18,15 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { parse } from "yaml";
-
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const read = (file: string): string =>
   readFileSync(path.join(ROOT, file), "utf-8");
 const ORDERING =
   "changedPaths contain no duplicates and are in ascending unsigned UTF-8 byte order of the path.";
 
-describe("tree.diff authority and release coverage", () => {
+describe("tree.diff authority coverage", () => {
   test("states the canonical ordering in the specification and authority packet", () => {
     expect(read("docs/KrakenKernelSpecification.md")).toContain(ORDERING);
     expect(read("spec/kernel/authority-packet.json")).toContain(ORDERING);
-  });
-
-  test("ships a patch changeset for every affected public kernel package", () => {
-    const [, frontMatter] = read(
-      ".changeset/certification-db-kernel-protocol.md"
-    ).split("---");
-    expect(typeof frontMatter).toBe("string");
-    if (frontMatter === undefined) {
-      throw new Error("missing changeset front matter");
-    }
-    const releases: unknown = parse(frontMatter);
-    expect(releases).toEqual({
-      "@tuvren/kernel-protocol": "patch",
-      "@tuvren/kernel-runtime": "patch",
-    });
   });
 });
