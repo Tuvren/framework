@@ -1,7 +1,8 @@
 ---
 id: ADR-0045
-status: accepted
+status: superseded
 date: 2026-06-12
+superseded_by: ADR-0076
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---

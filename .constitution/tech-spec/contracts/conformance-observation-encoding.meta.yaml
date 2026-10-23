@@ -1,0 +1,12 @@
+artifact_path: "tools/schemas/conformance-observation-encoding.schema.json"
+surface: "json"
+flows:
+  - flow-multi-implementation-conformance-compatibility
+boundaries:
+  - BND-28
+  - BND-29
+companion: "conformance-certification.md"
+pinned: true
+certainty: "assumed"
+assumption: "Bytes, integers, optional fields, hashes, and arbitrary kernel records cross the adapter boundary losslessly under this profile (ADR-0078)."
+settles_when: "Committed kernel vectors in $bytes form round-trip through the TypeScript and Rust adapters and the runner's digest and canonicalCbor assertions pass on them in a cited closeout."

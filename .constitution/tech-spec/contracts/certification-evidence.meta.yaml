@@ -1,0 +1,10 @@
+artifact_path: "tools/schemas/certification-evidence.schema.json"
+surface: "json"
+flows:
+  - flow-multi-implementation-conformance-compatibility
+boundaries:
+  - BND-29
+companion: "conformance-certification.md"
+certainty: "assumed"
+assumption: "Certificates and failure artifacts follow this schema, extending the evidence contract in tools/scripts/lib/conformance-contract.ts (ADR-0081)."
+settles_when: "A complete kernel.memory run emits a bundle that validates against this schema and compatibility reporting reads it in a cited closeout."

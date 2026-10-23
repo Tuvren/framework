@@ -1,0 +1,11 @@
+artifact_path: "tools/schemas/negative-control-manifest.schema.json"
+surface: "json"
+flows:
+  - flow-multi-implementation-conformance-compatibility
+boundaries:
+  - BND-23
+  - BND-29
+companion: "conformance-certification.md"
+certainty: "assumed"
+assumption: "Per-port manifests at spec/conformance/<port>/negative-controls.json declare mutants, violated claims, activation preconditions, profiles, and designated assertions (ADR-0079)."
+settles_when: "The negative-control run reports activated and killed outcomes for the initial kernel mutants against the TypeScript reference in a cited closeout."

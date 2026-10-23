@@ -1,0 +1,11 @@
+artifact_path: "spec/conformance/kernel/identity-recipes.json"
+surface: "json"
+flows:
+  - flow-multi-implementation-conformance-compatibility
+boundaries:
+  - BND-23
+  - BND-26
+companion: "conformance-certification.md"
+certainty: "assumed"
+assumption: "Machine-readable identity projections, deterministic CBOR profile, and hash algorithm per kernel record type (ADR-0078), pinned to committed vectors."
+settles_when: "The runner's identity assertions reproduce every committed kernel vector and the Rust encoder cross-validates them in a cited closeout."

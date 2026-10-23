@@ -6,7 +6,8 @@ flows:
 boundaries:
   - BND-23
   - BND-27
-companion: "README.md"
+companion: "conformance-certification.md"
+pinned: true
 certainty: "assumed"
-assumption: "Conformance plans are data, validated by tools/schemas/conformance-plan.schema.json. Plans under spec/conformance/ are instances of this schema."
+assumption: "Conformance plans are data, validated by tools/schemas/conformance-plan.schema.json. Plans under spec/conformance/ are instances of this schema. ADR-0075 to ADR-0077 add claim ids, explicit step arguments and captures, step actions, and the non-vacuous assertion operators listed in conformance-certification.md."
 settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

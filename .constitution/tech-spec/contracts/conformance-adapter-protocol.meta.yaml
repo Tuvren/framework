@@ -1,0 +1,13 @@
+artifact_path: "tools/conformance/adapter-protocol/protocol.schema.json"
+surface: "json"
+flows:
+  - flow-authority-packet-driven-conformance
+  - flow-multi-implementation-conformance-compatibility
+boundaries:
+  - BND-28
+  - BND-29
+companion: "conformance-certification.md"
+pinned: true
+certainty: "assumed"
+assumption: "Line-delimited JSON-RPC 2.0 over stdio. Version 0.1.0 exists; version 0.2.0 adds operation handles, live subscriptions, storage attachment, fault arming, and clock control (ADR-0076, ADR-0077). The adapter manifest schema beside it gains storage kind and claimed profiles."
+settles_when: "A plan using startOperation, subscribe, and a lifecycle control passes against the TypeScript kernel adapter and the protocol validator accepts the 0.2.0 frames in a cited closeout."
