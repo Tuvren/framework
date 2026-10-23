@@ -1,5 +1,5 @@
 {
-  "description": "The certification fleet: every Nx project that runs the shared semantic conformance engine (tools/conformance/harness/run.ts) against an implementation adapter. This manifest is machine-diffed both directions against tag-based discovery (projects tagged layer:certification) by tools/conformance/certification/validate-certification-discovery.ts, which hard-fails on any divergence: a project moved or retired without deliberate manifest maintenance, or a new runner added without registration, breaks the authority gate instead of silently dropping out of (or never entering) certification. The `conformance` lane runs exactly this validated set. GH issue #87 M2.9.",
+  "description": "The certification fleet (ADR-0031, ADR-0081). `projects` and `inventory` are the discovery inventory: every Nx project tagged layer:certification that runs the shared semantic conformance engine (tools/conformance/harness/run.ts), each with the adapter manifest its conformance target drives and its truthful raw status, which must equal the status in its checked-in compatibility evidence. `certified` lists the project and profile pairs that must certify; only inventory projects in state pass may appear, and the harness fails a certified run that selects zero applicable checks. Until certification profiles exist, a certified entry's profile is its adapter manifest's suiteId. tools/conformance/certification/validate-certification-discovery.ts machine-diffs the inventory both directions against tag-based discovery and hard-fails on any divergence. The `conformance` lane runs every inventory project.",
   "projects": [
     "framework-batteries-included-certification",
     "framework-rust-certification",
@@ -12,5 +12,104 @@
     "kernel-typescript-postgres-certification",
     "kernel-typescript-sqlite-certification",
     "providers-typescript-certification"
+  ],
+  "inventory": [
+    {
+      "project": "framework-batteries-included-certification",
+      "adapter": "typescript/conformance-adapter/adapter-batteries-included.json",
+      "state": "pass"
+    },
+    {
+      "project": "framework-rust-certification",
+      "adapter": "rust/conformance-adapter/adapter.json",
+      "state": "unsupported"
+    },
+    {
+      "project": "framework-typescript-certification",
+      "adapter": "typescript/conformance-adapter/adapter.json",
+      "state": "pass"
+    },
+    {
+      "project": "kernel-dart-certification",
+      "adapter": "dart/kernel-conformance-adapter/adapter.json",
+      "state": "pass"
+    },
+    {
+      "project": "kernel-go-certification",
+      "adapter": "go/kernel-conformance-adapter/adapter.json",
+      "state": "pass"
+    },
+    {
+      "project": "kernel-python-certification",
+      "adapter": "python/kernel-conformance-adapter/adapter.json",
+      "state": "pass"
+    },
+    {
+      "project": "kernel-rust-certification",
+      "adapter": "rust/kernel-conformance-adapter/adapter.json",
+      "state": "pass"
+    },
+    {
+      "project": "kernel-typescript-certification",
+      "adapter": "typescript/kernel/conformance-adapter/adapter.json",
+      "state": "pass"
+    },
+    {
+      "project": "kernel-typescript-postgres-certification",
+      "adapter": "typescript/kernel/conformance-adapter/adapter-postgres.json",
+      "state": "pass"
+    },
+    {
+      "project": "kernel-typescript-sqlite-certification",
+      "adapter": "typescript/kernel/conformance-adapter/adapter-sqlite.json",
+      "state": "pass"
+    },
+    {
+      "project": "providers-typescript-certification",
+      "adapter": "typescript/providers/conformance-adapter/adapter.json",
+      "state": "pass"
+    }
+  ],
+  "certified": [
+    {
+      "project": "framework-batteries-included-certification",
+      "profile": "tuvren.framework.runtime-api.batteries-included"
+    },
+    {
+      "project": "framework-typescript-certification",
+      "profile": "tuvren.framework.promoted-authority"
+    },
+    {
+      "project": "kernel-dart-certification",
+      "profile": "tuvren.kernel.protocol"
+    },
+    {
+      "project": "kernel-go-certification",
+      "profile": "tuvren.kernel.protocol"
+    },
+    {
+      "project": "kernel-python-certification",
+      "profile": "tuvren.kernel.protocol"
+    },
+    {
+      "project": "kernel-rust-certification",
+      "profile": "tuvren.kernel.protocol"
+    },
+    {
+      "project": "kernel-typescript-certification",
+      "profile": "tuvren.kernel.protocol"
+    },
+    {
+      "project": "kernel-typescript-postgres-certification",
+      "profile": "tuvren.kernel.protocol"
+    },
+    {
+      "project": "kernel-typescript-sqlite-certification",
+      "profile": "tuvren.kernel.protocol"
+    },
+    {
+      "project": "providers-typescript-certification",
+      "profile": "tuvren.providers.provider-api"
+    }
   ]
 }

@@ -311,3 +311,159 @@ describe("plan schema boundary", () => {
     }
   });
 });
+
+const loadSyntheticPlan = async (
+  assertions: readonly unknown[],
+  stepAssertions: readonly unknown[] = []
+) => {
+  const tempDir = await mkdtemp(nodePath.join(tmpdir(), "tuvren-plan-"));
+  const tempPath = nodePath.join(tempDir, "plan.json");
+  await writeFile(
+    tempPath,
+    `${JSON.stringify(
+      {
+        applicability: { capabilities: ["meta"] },
+        checks: [
+          {
+            assertions,
+            checkId: "meta.operators",
+            operation: "meta.operation",
+            ...(stepAssertions.length > 0
+              ? {
+                  steps: [
+                    {
+                      assertions: stepAssertions,
+                      operation: "meta.operation",
+                      stepId: "observe",
+                    },
+                  ],
+                }
+              : {}),
+          },
+        ],
+        packetId: "tuvren.meta",
+        planId: "tuvren.meta.operators",
+        planVersion: "0.1.0",
+      },
+      null,
+      2
+    )}\n`,
+    "utf-8"
+  );
+  return await loadConformancePlan(tempPath);
+};
+
+describe("assertion operators", () => {
+  const everyOperator = {
+    every: { equals: "ok", field: "$.status" },
+    field: "$.items",
+    kind: "resultField",
+    length: 2,
+  };
+
+  test("accepts every pinned operator on check and step assertions", async () => {
+    const assertions = [
+      { field: "$.a", kind: "resultField", notEquals: null },
+      { field: "$.a", kind: "resultField", notEqualsPath: "$.fixture.a" },
+      { field: "$.n", kind: "resultField", lessThan: 1 },
+      { field: "$.n", kind: "resultField", lessThanOrEqual: "$.fixture.n" },
+      { field: "$.n", greaterThan: 0, kind: "stateField" },
+      {
+        field: "$.n",
+        greaterThanOrEqual: "$.fixture.n",
+        kind: "evidenceField",
+      },
+      { field: "$.items", kind: "resultField", length: "$.fixture.count" },
+      everyOperator,
+      {
+        field: "$.items",
+        kind: "resultField",
+        length: 2,
+        some: {
+          every: { present: true },
+          field: "$.children",
+          length: 1,
+        },
+      },
+      {
+        field: "$.hash",
+        kind: "resultField",
+        present: true,
+        when: { equals: true, path: "$.result.committed" },
+      },
+      { field: "$.gone", kind: "resultField", present: false },
+    ];
+    const compiled = await loadSyntheticPlan(assertions, assertions);
+    expect(compiled.checks[0]?.check.assertions).toHaveLength(
+      assertions.length
+    );
+  });
+
+  test.each([
+    [
+      "every",
+      { every: { present: true }, field: "$.items", kind: "resultField" },
+    ],
+    [
+      "some",
+      { field: "$.items", kind: "resultField", some: { present: true } },
+    ],
+    [
+      "nested every",
+      {
+        every: { every: { present: true }, field: "$.children" },
+        field: "$.items",
+        kind: "resultField",
+        length: 1,
+      },
+    ],
+  ])(
+    "rejects %s without a length assertion at compile time",
+    async (_label, assertion) => {
+      const checkLevel = await Promise.allSettled([
+        loadSyntheticPlan([assertion]),
+      ]);
+      const stepLevel = await Promise.allSettled([
+        loadSyntheticPlan([everyOperator], [assertion]),
+      ]);
+
+      for (const [outcome] of [checkLevel, stepLevel]) {
+        expect(outcome?.status).toBe("rejected");
+        if (outcome?.status === "rejected") {
+          const reason: unknown = outcome.reason;
+          expect(reason).toBeInstanceOf(Error);
+          if (reason instanceof Error) {
+            expect(reason.message).toContain("length");
+          }
+        }
+      }
+    }
+  );
+
+  test.each([
+    ["when without equals", { when: { path: "$.result.a" } }],
+    ["comparison with a non-path string", { lessThan: "five" }],
+    ["negative length", { length: -1 }],
+    ["non-boolean present", { present: "yes" }],
+    ["unknown nested key", { every: { kind: "resultField" }, length: 1 }],
+  ])("rejects %s", async (_label, operators) => {
+    const [outcome] = await Promise.allSettled([
+      loadSyntheticPlan([{ field: "$.a", kind: "resultField", ...operators }]),
+    ]);
+    expect(outcome?.status).toBe("rejected");
+  });
+
+  test("absence and conditional assertions do not demand their field as evidence", async () => {
+    const compiled = await loadSyntheticPlan([
+      { field: "$.gone", kind: "resultField", present: false },
+      {
+        field: "$.maybe",
+        kind: "resultField",
+        present: true,
+        when: { equals: true, path: "$.result.committed" },
+      },
+      { field: "$.kept", kind: "resultField", present: true },
+    ]);
+    expect(compiled.checks[0]?.requiredEvidence).toEqual(["result.kept"]);
+  });
+});

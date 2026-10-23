@@ -30,6 +30,7 @@ import {
 import type { AssertionContext } from "../harness/assertion-engine/index.js";
 import type {
   CompiledConformancePlanCheck,
+  ConformancePlanAssertion,
   ConformancePlanCheck,
 } from "../plan-compiler/index.js";
 import { loadConformancePlan } from "../plan-compiler/index.js";
@@ -203,6 +204,45 @@ const runPlanCompilerCases = async (failures: string[]): Promise<void> => {
         "step evidence-only plan unexpectedly passed the decisive-assertion guardrail"
       );
     }
+
+    const quantifierPlanPath = nodePath.join(directory, "quantifier.json");
+    await writeFile(
+      quantifierPlanPath,
+      `${JSON.stringify(
+        {
+          applicability: { capabilities: ["meta"] },
+          checks: [
+            {
+              assertions: [
+                {
+                  every: { present: true },
+                  field: "$.items",
+                  kind: "resultField",
+                },
+              ],
+              checkId: "meta.quantifier-without-length",
+              operation: "meta.operation",
+            },
+          ],
+          packetId: "tuvren.meta",
+          planId: "tuvren.meta.quantifier",
+          planVersion: "0.1.0",
+        },
+        null,
+        2
+      )}\n`
+    );
+
+    try {
+      await loadConformancePlan(quantifierPlanPath);
+      failures.push("every without length unexpectedly passed compilation");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      if (!message.includes("length")) {
+        failures.push(`every without length produced wrong error: ${message}`);
+      }
+    }
   } finally {
     await rm(directory, { force: true, recursive: true });
   }
@@ -258,6 +298,103 @@ const runEvidenceContractCases = (failures: string[]): void => {
     failures.push("malformed applicability counts unexpectedly validated");
   } catch {
     // Expected: nonApplicableChecks must match nonApplicableCheckIds exactly.
+  }
+
+  const zeroApplicable = {
+    ...evidence,
+    checkResults: [],
+    summary: {
+      applicableChecks: 0,
+      failedChecks: 0,
+      nonApplicableChecks: 1,
+      passedChecks: 0,
+      totalChecks: 1,
+    },
+  };
+  const zeroTotal = {
+    ...zeroApplicable,
+    nonApplicableCheckIds: [],
+    summary: {
+      ...zeroApplicable.summary,
+      nonApplicableChecks: 0,
+      totalChecks: 0,
+    },
+  };
+  const statusCases: readonly {
+    evidence: Record<string, unknown>;
+    expected: "accept" | "reject";
+    id: string;
+  }[] = [
+    {
+      evidence: { ...zeroApplicable, status: "pass" },
+      expected: "reject",
+      id: "zero applicable reported as pass",
+    },
+    {
+      evidence: { ...zeroApplicable, status: "unsupported" },
+      expected: "accept",
+      id: "zero applicable reported as unsupported",
+    },
+    {
+      evidence: { ...zeroApplicable, status: "not_applicable" },
+      expected: "reject",
+      id: "capability exclusions reported as not_applicable",
+    },
+    {
+      evidence: { ...zeroTotal, status: "pass" },
+      expected: "reject",
+      id: "zero total reported as pass",
+    },
+    {
+      evidence: { ...zeroTotal, status: "not_applicable" },
+      expected: "accept",
+      id: "zero total reported as not_applicable",
+    },
+    {
+      evidence: { ...evidence, status: "unsupported" },
+      expected: "reject",
+      id: "applicable checks reported as unsupported",
+    },
+  ];
+
+  for (const statusCase of statusCases) {
+    let accepted = true;
+    try {
+      assertConformanceEvidence(statusCase.evidence, statusCase.id);
+    } catch {
+      accepted = false;
+    }
+
+    if (accepted !== (statusCase.expected === "accept")) {
+      failures.push(
+        `evidence contract ${statusCase.id}: expected ${statusCase.expected}`
+      );
+    }
+  }
+};
+
+const runWhenReportingCases = (failures: string[]): void => {
+  const conditional = check("when-reporting", [
+    {
+      field: "$.hash",
+      kind: "resultField",
+      present: true,
+      when: { equals: true, path: "$.result.committed" },
+    },
+  ]);
+  const [notApplied] = evaluateAssertions(conditional, {
+    result: { committed: false },
+  });
+  const [applied] = evaluateAssertions(conditional, {
+    result: { committed: true, hash: "abc" },
+  });
+
+  if (notApplied?.when !== "not_applied" || notApplied.status !== "pass") {
+    failures.push("when branch that never applies was not reported");
+  }
+
+  if (applied?.when !== "applied" || applied.status !== "pass") {
+    failures.push("applied when branch was not reported as applied");
   }
 };
 
@@ -472,9 +609,217 @@ const cases: readonly MetaCase[] = [
   },
 ];
 
+const operatorCase = (
+  id: string,
+  operators: Omit<ConformancePlanAssertion, "field" | "kind">,
+  context: AssertionContext,
+  expected: "fail" | "pass"
+): MetaCase => ({
+  check: check(id.replaceAll(" ", "-"), [
+    { field: "$.value", kind: "resultField", ...operators },
+  ]),
+  context,
+  expected,
+  id,
+});
+
+const items = { value: [{ status: "ok" }, { status: "ok" }] };
+
+const operatorCases: readonly MetaCase[] = [
+  operatorCase(
+    "unresolved operands",
+    { equalsPath: "$.fixture.missing" },
+    { fixture: {}, result: {} },
+    "fail"
+  ),
+  operatorCase(
+    "unresolved expected operand",
+    { equalsPath: "$.fixture.missing" },
+    { fixture: {}, result: { value: 1 } },
+    "fail"
+  ),
+  operatorCase(
+    "null equals null",
+    { equals: null },
+    { result: { value: null } },
+    "pass"
+  ),
+  operatorCase(
+    "null does not equal absence",
+    { equals: null },
+    { result: {} },
+    "fail"
+  ),
+  operatorCase("bare assertion", {}, { result: { value: 1 } }, "fail"),
+  operatorCase(
+    "present true",
+    { present: true },
+    { result: { value: null } },
+    "pass"
+  ),
+  operatorCase(
+    "present true on absence",
+    { present: true },
+    { result: {} },
+    "fail"
+  ),
+  operatorCase("present false", { present: false }, { result: {} }, "pass"),
+  operatorCase(
+    "present false on null",
+    { present: false },
+    { result: { value: null } },
+    "fail"
+  ),
+  operatorCase(
+    "notEquals",
+    { notEquals: "a" },
+    { result: { value: "b" } },
+    "pass"
+  ),
+  operatorCase(
+    "notEquals negative control",
+    { notEquals: "a" },
+    { result: { value: "a" } },
+    "fail"
+  ),
+  operatorCase(
+    "notEqualsPath",
+    { notEqualsPath: "$.fixture.other" },
+    { fixture: { other: 2 }, result: { value: 1 } },
+    "pass"
+  ),
+  operatorCase(
+    "notEqualsPath negative control",
+    { notEqualsPath: "$.fixture.other" },
+    { fixture: { other: 1 }, result: { value: 1 } },
+    "fail"
+  ),
+  operatorCase(
+    "notEqualsPath unresolved",
+    { notEqualsPath: "$.fixture.missing" },
+    { fixture: {}, result: { value: 1 } },
+    "fail"
+  ),
+  operatorCase(
+    "lessThan literal",
+    { lessThan: 2 },
+    { result: { value: 1 } },
+    "pass"
+  ),
+  operatorCase(
+    "lessThan negative control",
+    { lessThan: 2 },
+    { result: { value: 2 } },
+    "fail"
+  ),
+  operatorCase(
+    "lessThanOrEqual path",
+    { lessThanOrEqual: "$.fixture.bound" },
+    { fixture: { bound: 2 }, result: { value: 2 } },
+    "pass"
+  ),
+  operatorCase(
+    "lessThanOrEqual negative control",
+    { lessThanOrEqual: "$.fixture.bound" },
+    { fixture: { bound: 2 }, result: { value: 3 } },
+    "fail"
+  ),
+  operatorCase(
+    "greaterThan literal",
+    { greaterThan: 2 },
+    { result: { value: 3 } },
+    "pass"
+  ),
+  operatorCase(
+    "greaterThan negative control",
+    { greaterThan: 2 },
+    { result: { value: 2 } },
+    "fail"
+  ),
+  operatorCase(
+    "greaterThanOrEqual path",
+    { greaterThanOrEqual: "$.fixture.bound" },
+    { fixture: { bound: 2 }, result: { value: 2 } },
+    "pass"
+  ),
+  operatorCase(
+    "greaterThanOrEqual negative control",
+    { greaterThanOrEqual: "$.fixture.bound" },
+    { fixture: { bound: 2 }, result: { value: 1 } },
+    "fail"
+  ),
+  operatorCase(
+    "comparison unresolved path",
+    { greaterThan: "$.fixture.missing" },
+    { fixture: {}, result: { value: 1 } },
+    "fail"
+  ),
+  operatorCase("length", { length: 2 }, { result: items }, "pass"),
+  operatorCase(
+    "length negative control",
+    { length: 3 },
+    { result: items },
+    "fail"
+  ),
+  operatorCase(
+    "every",
+    { every: { equals: "ok", field: "$.status" }, length: 2 },
+    { result: items },
+    "pass"
+  ),
+  operatorCase(
+    "every negative control",
+    { every: { equals: "bad", field: "$.status" }, length: 2 },
+    { result: items },
+    "fail"
+  ),
+  operatorCase(
+    "every without length",
+    { every: { equals: "ok", field: "$.status" } },
+    { result: items },
+    "fail"
+  ),
+  operatorCase(
+    "some",
+    { length: 2, some: { equals: "ok", field: "$.status" } },
+    { result: items },
+    "pass"
+  ),
+  operatorCase(
+    "some negative control",
+    { length: 2, some: { equals: "bad", field: "$.status" } },
+    { result: items },
+    "fail"
+  ),
+  operatorCase(
+    "some without length",
+    { some: { equals: "ok", field: "$.status" } },
+    { result: items },
+    "fail"
+  ),
+  operatorCase(
+    "when applied",
+    { equals: 1, when: { equals: true, path: "$.result.flag" } },
+    { result: { flag: true, value: 1 } },
+    "pass"
+  ),
+  operatorCase(
+    "when applied negative control",
+    { equals: 1, when: { equals: true, path: "$.result.flag" } },
+    { result: { flag: true, value: 2 } },
+    "fail"
+  ),
+  operatorCase(
+    "when unresolved",
+    { equals: 1, when: { equals: true, path: "$.result.flag" } },
+    { result: { value: 1 } },
+    "fail"
+  ),
+];
+
 const failures: string[] = [];
 
-for (const testCase of cases) {
+for (const testCase of [...cases, ...operatorCases]) {
   const compiled: CompiledConformancePlanCheck = {
     check: testCase.check,
     requiredEvidence: testCase.requiredEvidence ?? [],
@@ -496,6 +841,7 @@ for (const testCase of cases) {
 
 await runPlanCompilerCases(failures);
 runEvidenceContractCases(failures);
+runWhenReportingCases(failures);
 
 for (let index = 0; index < 1000; index += 1) {
   const syntheticCheck = check(`scale-${index}`, [
@@ -523,6 +869,6 @@ if (failures.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(
-    `meta-conformance passed ${cases.length} cases plus 1000 scale checks`
+    `meta-conformance passed ${cases.length + operatorCases.length} cases plus 1000 scale checks`
   );
 }

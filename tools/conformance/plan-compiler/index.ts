@@ -33,15 +33,41 @@ export type AssertionKind =
   | "secretAbsence"
   | "secretPatternAbsence";
 
-export interface ConformancePlanAssertion {
+/** A JSON number literal, or a `$`-rooted path read from the assertion context. */
+export type ConformancePlanNumericOperand = number | string;
+
+export interface ConformancePlanValueOperators {
   contains?: unknown;
   containsPath?: string;
   equals?: unknown;
   equalsPath?: string;
+  every?: ConformancePlanElementAssertion;
+  greaterThan?: ConformancePlanNumericOperand;
+  greaterThanOrEqual?: ConformancePlanNumericOperand;
+  length?: ConformancePlanNumericOperand;
+  lessThan?: ConformancePlanNumericOperand;
+  lessThanOrEqual?: ConformancePlanNumericOperand;
+  matches?: string;
+  notEquals?: unknown;
+  notEqualsPath?: string;
+  present?: boolean;
+  some?: ConformancePlanElementAssertion;
+}
+
+/** Applied to each array element; `field` is read from the element. */
+export interface ConformancePlanElementAssertion extends ConformancePlanValueOperators {
+  field?: string;
+}
+
+export interface ConformancePlanWhen {
+  equals: unknown;
+  path: string;
+}
+
+export interface ConformancePlanAssertion extends ConformancePlanValueOperators {
   eventType?: string;
   field?: string;
   kind: AssertionKind;
-  matches?: string;
   path?: string;
   schema?: string;
   /**
@@ -54,6 +80,7 @@ export interface ConformancePlanAssertion {
    * value-equality against a configured list.
    */
   secretsPath?: string;
+  when?: ConformancePlanWhen;
 }
 
 export interface ConformancePlanCheck {
@@ -261,6 +288,10 @@ const resultFieldRequiredEvidencePath = (field: string): string => {
 const assertionRequiredEvidencePath = (
   assertion: ConformancePlanAssertion
 ): string | undefined => {
+  if (assertion.present === false || assertion.when !== undefined) {
+    return undefined;
+  }
+
   switch (assertion.kind) {
     case "evidenceField":
     case "stateField": {

@@ -29,16 +29,22 @@ import process from "node:process";
 import type { Schema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
+import {
+  CERTIFICATION_MANIFEST_PATH,
+  parseCertificationManifest,
+} from "../conformance/certification/certification-manifest.js";
 import { runCommand } from "./lib/command-runner.js";
 import {
   assertConformanceEvidence,
   createAssertionResult,
   createCheckResult,
   createConformanceEvidenceSummary,
+  deriveConformanceRunStatus,
 } from "./lib/conformance-contract.js";
 import type {
   ConformanceCheckResult,
   ConformanceEvidence,
+  ConformanceRunStatus,
   ConformanceSuiteManifest,
 } from "./lib/conformance-contract.js";
 import { readConformanceSuiteManifest } from "./lib/conformance-suite-manifest.js";
@@ -66,11 +72,7 @@ type CompatibilityReportStatus =
   | "unexpected_fail"
   | "unsupported";
 
-type CompatibilityResultStatus =
-  | "fail"
-  | "not_applicable"
-  | "pass"
-  | "unsupported";
+type CompatibilityResultStatus = ConformanceRunStatus;
 
 interface CompatibilityImplementationResult {
   checkIds: string[];
@@ -525,25 +527,14 @@ const formatEvidenceJson = (evidence: object): string => {
  * pairs are not certification-fleet members.
  */
 const assertConformanceRunnerParity = async (): Promise<void> => {
-  const manifestPath = path.resolve(
-    REPO_ROOT,
-    "tools/conformance/certification/certified-projects.json"
-  );
-  const manifest: unknown = JSON.parse(await readFile(manifestPath, "utf-8"));
-
-  if (
-    !(
-      isRecord(manifest) &&
-      Array.isArray(manifest.projects) &&
-      manifest.projects.every(
-        (project): project is string => typeof project === "string"
+  const manifest = parseCertificationManifest(
+    JSON.parse(
+      await readFile(
+        path.resolve(REPO_ROOT, CERTIFICATION_MANIFEST_PATH),
+        "utf-8"
       )
     )
-  ) {
-    throw new Error(
-      "certification manifest must contain a projects string array"
-    );
-  }
+  );
 
   const manifestProjects = new Set(manifest.projects);
   const runnerProjects = new Set(
@@ -555,11 +546,25 @@ const assertConformanceRunnerParity = async (): Promise<void> => {
   const missingInManifest = [...runnerProjects].filter(
     (name) => !manifestProjects.has(name)
   );
-  if (missingHere.length > 0 || missingInManifest.length > 0) {
+  const adapterMismatches = CONFORMANCE_RUNNERS.filter((runner) => {
+    const entry = manifest.inventory.find(
+      (candidate) => candidate.project === runner.project
+    );
+    return entry !== undefined && entry.adapter !== runner.adapterManifestPath;
+  });
+  if (
+    missingHere.length > 0 ||
+    missingInManifest.length > 0 ||
+    adapterMismatches.length > 0
+  ) {
     const problems = [
+      ...adapterMismatches.map(
+        (runner) =>
+          `CONFORMANCE_RUNNERS entry ${runner.project} drives ${runner.adapterManifestPath}, which differs from its certification inventory adapter`
+      ),
       ...missingHere.map(
         (name) =>
-          `certified project ${name} is in the certification manifest but has no CONFORMANCE_RUNNERS entry — it would never appear in compatibility evidence`
+          `inventory project ${name} is in the certification manifest but has no CONFORMANCE_RUNNERS entry — it would never appear in compatibility evidence`
       ),
       ...missingInManifest.map(
         (name) =>
@@ -1770,7 +1775,11 @@ const createFallbackEvidence = (
     checkResults: [...checkResults],
     implementationId,
     language,
-    status: summary.failedChecks === 0 ? "pass" : "fail",
+    status: deriveConformanceRunStatus({
+      applicableChecks: checkResults.length,
+      failedChecks: summary.failedChecks,
+      nonApplicableChecks: 0,
+    }),
     suiteId: suiteManifest.suiteId,
     suiteVersion: suiteManifest.suiteVersion,
     summary,
@@ -1781,20 +1790,11 @@ const computeCompatibilityResultStatus = (
   commandExitCode: number,
   evidence: ConformanceEvidence
 ): CompatibilityResultStatus => {
-  if (commandExitCode !== 0 || evidence.status !== "pass") {
+  if (commandExitCode !== 0) {
     return "fail";
   }
 
-  const applicableChecks =
-    evidence.summary.applicableChecks ??
-    evidence.summary.failedChecks + evidence.summary.passedChecks;
-  const nonApplicableChecks = evidence.summary.nonApplicableChecks ?? 0;
-
-  if (applicableChecks === 0) {
-    return nonApplicableChecks > 0 ? "unsupported" : "not_applicable";
-  }
-
-  return "pass";
+  return evidence.status;
 };
 
 const classifyConformanceReportStatus = (

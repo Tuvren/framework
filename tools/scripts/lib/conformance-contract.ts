@@ -16,6 +16,13 @@
 
 export type ConformanceStatus = "fail" | "pass";
 
+/** Raw run status (ADR-0031); `pass` requires at least one applicable check. */
+export type ConformanceRunStatus =
+  | "fail"
+  | "not_applicable"
+  | "pass"
+  | "unsupported";
+
 export interface SuiteFixture {
   id: string;
   path: string;
@@ -51,6 +58,7 @@ export interface ConformanceAssertionResult {
   assertionId: string;
   message?: string;
   status: ConformanceStatus;
+  when?: "applied" | "not_applied";
 }
 
 export interface ConformanceCheckResult {
@@ -76,7 +84,7 @@ export interface ConformanceEvidence {
   implementationId: string;
   language: string;
   nonApplicableCheckIds?: readonly string[];
-  status: ConformanceStatus;
+  status: ConformanceRunStatus;
   suiteId: string;
   suiteVersion: string;
   summary: ConformanceEvidenceSummary;
@@ -374,10 +382,25 @@ const readAssertionResult = (
     throw new Error(`${label}.message must be a string when present`);
   }
 
+  if (
+    value.when !== undefined &&
+    value.when !== "applied" &&
+    value.when !== "not_applied"
+  ) {
+    throw new Error(`${label}.when must be "applied" or "not_applied"`);
+  }
+
+  if (value.when === "not_applied" && value.status !== "pass") {
+    throw new Error(
+      `${label}.status must be pass when the branch did not apply`
+    );
+  }
+
   return {
     assertionId: value.assertionId,
     message: value.message,
     status: value.status,
+    ...(value.when === undefined ? {} : { when: value.when }),
   };
 };
 
@@ -477,6 +500,22 @@ export const createConformanceEvidenceSummary = (
   };
 };
 
+export const deriveConformanceRunStatus = (summary: {
+  applicableChecks: number;
+  failedChecks: number;
+  nonApplicableChecks: number;
+}): ConformanceRunStatus => {
+  if (summary.failedChecks > 0) {
+    return "fail";
+  }
+
+  if (summary.applicableChecks === 0) {
+    return summary.nonApplicableChecks > 0 ? "unsupported" : "not_applicable";
+  }
+
+  return "pass";
+};
+
 const assertSafeInteger = (
   value: unknown,
   label: string,
@@ -503,7 +542,6 @@ export const assertConformanceEvidence: (
   assertNonEmptyString(value.language, `${label}.language`);
   assertNonEmptyString(value.suiteId, `${label}.suiteId`);
   assertNonEmptyString(value.suiteVersion, `${label}.suiteVersion`);
-  assertConformanceStatus(value.status, `${label}.status`);
 
   const checkResults = readCheckResults(
     value.checkResults,
@@ -547,7 +585,11 @@ export const assertConformanceEvidence: (
     nonApplicableCheckIds.length
   );
 
-  const expectedStatus = expectedSummary.failedChecks === 0 ? "pass" : "fail";
+  const expectedStatus = deriveConformanceRunStatus({
+    applicableChecks: checkResults.length,
+    failedChecks: expectedSummary.failedChecks,
+    nonApplicableChecks: nonApplicableCheckIds.length,
+  });
 
   if (value.status !== expectedStatus) {
     throw new Error(

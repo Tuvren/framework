@@ -261,7 +261,8 @@
       "assertions": [
         {
           "field": "$.events.0.payload.threadId",
-          "kind": "resultField"
+          "kind": "resultField",
+          "present": true
         }
       ],
       "checkId": "event-stream-ext.sse.resumed-approval-turn-thread-id-present",
@@ -275,7 +276,8 @@
       "assertions": [
         {
           "field": "$.events.0.payload.source.threadId",
-          "kind": "resultField"
+          "kind": "resultField",
+          "present": true
         }
       ],
       "checkId": "event-stream-ext.sse.resumed-approval-turn-source-thread-id-present",

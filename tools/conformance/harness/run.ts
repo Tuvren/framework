@@ -21,6 +21,7 @@ import process from "node:process";
 import {
   createCheckResult,
   createConformanceEvidenceSummary,
+  deriveConformanceRunStatus,
 } from "../../scripts/lib/conformance-contract.js";
 import type {
   ConformanceCheckResult,
@@ -30,6 +31,11 @@ import type {
   AdapterCapabilities,
   AdapterControls,
 } from "../adapter-protocol/index.js";
+import {
+  CERTIFICATION_MANIFEST_PATH,
+  findCertifiedEntriesForAdapter,
+  readCertificationManifest,
+} from "../certification/certification-manifest.js";
 import type {
   CompiledConformancePlan,
   CompiledConformancePlanCheck,
@@ -52,6 +58,7 @@ interface CliOptions {
   adapter: string;
   allowFailingEvidence: boolean;
   capabilities: string[];
+  certificationManifest: string;
   checks: string[];
   concurrency: number;
   evidenceOut?: string;
@@ -114,6 +121,7 @@ const parseArgs = (args: readonly string[]): CliOptions => {
     adapter: "",
     allowFailingEvidence: false,
     capabilities: [],
+    certificationManifest: CERTIFICATION_MANIFEST_PATH,
     checks: [],
     concurrency: 1,
     packets: [],
@@ -158,6 +166,11 @@ const parseArgs = (args: readonly string[]): CliOptions => {
       }
       case "--concurrency": {
         options.concurrency = parsePositiveInteger(requireValue(next, arg));
+        index += 1;
+        break;
+      }
+      case "--certification-manifest": {
+        options.certificationManifest = requireValue(next, arg);
         index += 1;
         break;
       }
@@ -839,6 +852,13 @@ const applyShard = (
 const main = async (): Promise<void> => {
   const options = parseArgs(process.argv.slice(2));
   const adapterManifest = await readAdapterManifest(options.adapter);
+  const certifiedEntries = findCertifiedEntriesForAdapter(
+    await readCertificationManifest(
+      nodePath.resolve(REPO_ROOT, options.certificationManifest)
+    ),
+    options.adapter,
+    REPO_ROOT
+  );
   const plans = await readPlans(adapterManifest, options);
   const selected = selectChecks(plans, adapterManifest, options);
   await validateHandshakeForSelectedPlans(
@@ -878,7 +898,7 @@ const main = async (): Promise<void> => {
     implementationId: adapterManifest.implementationId,
     language: adapterManifest.language,
     nonApplicableCheckIds,
-    status: summary.failedChecks === 0 ? "pass" : "fail",
+    status: deriveConformanceRunStatus(summary),
     suiteId: adapterManifest.suiteId,
     suiteVersion: adapterManifest.suiteVersion,
     summary,
@@ -911,6 +931,15 @@ const main = async (): Promise<void> => {
   }
 
   if (evidence.status === "fail" && !options.allowFailingEvidence) {
+    process.exitCode = 1;
+  }
+
+  if (certifiedEntries.length > 0 && selected.applicable.length === 0) {
+    for (const entry of certifiedEntries) {
+      process.stderr.write(
+        `certified project ${entry.project} (profile ${entry.profile}) selected zero applicable checks; a certified run must exercise its profile\n`
+      );
+    }
     process.exitCode = 1;
   }
 };
