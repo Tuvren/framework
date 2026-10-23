@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 
 import type { KernelRecord } from "@tuvren/core";
+import {
+  createKernelTestClock,
+  createKernelFaultControl,
+  createFaultInjectingBackend,
+} from "@tuvren/kernel-testkit";
 
 import type {
   AdapterErrorEnvelope,
@@ -29,6 +34,16 @@ const parameters = {
   "kernel.branch.get": { arguments: ["branchId"] },
   "kernel.branch.list": { arguments: ["threadId"] },
   "kernel.branch.setHead": { arguments: ["branchId", "turnNodeHash"] },
+  "kernel.clock.set": {
+    arguments: ["domain", "nowMs"],
+    method: "set",
+    target: "clock",
+  },
+  "kernel.fault.arm": {
+    arguments: ["point", "selector", "occurrence", "mode"],
+    method: "arm",
+    target: "fault",
+  },
   "kernel.maintenance.reclaim": { arguments: ["options"] },
   "kernel.node.get": { arguments: ["hash"] },
   "kernel.node.walkBack": { arguments: [{ name: "fromHash", type: "string" }] },
@@ -263,6 +278,8 @@ const nativeErrorEnvelope = (
 interface Instance {
   cleanup: () => Promise<void>;
   kernel: ReturnType<typeof createConformanceRuntimeKernel>;
+  clock: ReturnType<typeof createKernelTestClock>;
+  fault: ReturnType<typeof createKernelFaultControl>;
 }
 
 export const createSyscallBindings = (config: KernelAdapterConfig) => {
@@ -296,12 +313,22 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     let pending = instances.get(handle);
     if (pending === undefined) {
       pending = (async () => {
-        const backend = await createConfiguredBackend(config);
+        const clock = createKernelTestClock();
+        const backend = await createConfiguredBackend(config, {
+          now: clock.backendNow,
+        });
+        const fault = createKernelFaultControl(
+          backend.backend,
+          config.mutant?.wrapFaultInjection(createFaultInjectingBackend)
+        );
         try {
           return {
             cleanup: backend.cleanup,
+            clock,
+            fault,
             kernel: createConformanceRuntimeKernel(config, {
-              backend: backend.backend,
+              backend: fault.backend,
+              now: clock.workerNow,
             }),
           };
         } catch (error: unknown) {
@@ -330,11 +357,15 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     if (group === undefined || method === undefined) {
       throw new Error("invalid syscall operation");
     }
-    const target: unknown = Reflect.get(kernel, group);
+    const target: unknown =
+      typeof binding.target === "string"
+        ? Reflect.get(opened, binding.target)
+        : Reflect.get(kernel, group);
     if (!isRecord(target)) {
       throw new TypeError(`missing native syscall group ${group}`);
     }
-    const invoke: unknown = target[method];
+    const invoke: unknown =
+      target[typeof binding.method === "string" ? binding.method : method];
     if (typeof invoke !== "function") {
       throw new TypeError(`missing native syscall ${operation}`);
     }

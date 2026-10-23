@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { randomUUID } from "node:crypto";
+
 import { TuvrenPersistenceError } from "@tuvren/core";
 import type { TuvrenError } from "@tuvren/core";
 import type {
@@ -29,25 +31,20 @@ import {
   createStoredTurnNodeRecord,
 } from "./kernel-test-fixtures.js";
 
-/**
- * A point in a backend transaction's commit sequence where a fault can be
- * injected: `before-commit` (durable write not yet attempted),
- * `mid-commit` (the durable write itself, wrapped so the fault fires after
- * the write completes but before the transaction is acknowledged
- * successful — simulating a crash after a partial commit), or
- * `after-commit-before-ack` (the write fully committed, fault fires before
- * the caller observes success).
- */
 export type FaultPoint =
   | "before-commit"
-  | "mid-commit"
-  | "after-commit-before-ack";
+  | "after-turn-node-write-before-head"
+  | "after-head-move-before-staging-clear"
+  | "after-commit-before-ack"
+  | "commit-outcome-unknown";
 
 /**
  * Describes when and how {@link createFaultInjectingBackend} should inject a
  * fault.
  */
 export interface FaultPlan {
+  token?: string;
+  occurrence?: number;
   /**
    * When set, runs a second, independent transaction that moves the named
    * branch's head to a sibling turn node immediately after the faulted
@@ -91,7 +88,6 @@ type FaultOperation = "checkpoint" | "unknown";
 interface BackendFaultHooks {
   afterCommitBeforeAck?: () => Promise<void>;
   beforeCommit?: () => Promise<void>;
-  midCommit?: (commit: () => Promise<void>) => Promise<void>;
 }
 
 /** The hidden per-backend seam {@link readFaultInjectionControl} looks for. */
@@ -186,13 +182,14 @@ const createTransactionRecording = (): TransactionRecording => ({
 /** Builds the error thrown when a planned fault fires. */
 const createInjectedFaultError = (
   _operation: FaultOperation,
-  point: FaultPoint
+  point: FaultPoint,
+  token?: string
 ): TuvrenError =>
   new TuvrenPersistenceError(
     `injected ${point} persistence fault interrupted verification`,
     {
       code: "kernel_persistence_fault_injected",
-      details: { point },
+      details: { point, token },
     }
   );
 
@@ -233,7 +230,9 @@ const createFaultHooks = (
     }
 
     markConsumed();
-    await Promise.reject(createInjectedFaultError(getOperation(), plan.point));
+    await Promise.reject(
+      createInjectedFaultError(getOperation(), plan.point, plan.token)
+    );
   },
   beforeCommit: async () => {
     if (!shouldInject()) {
@@ -249,26 +248,9 @@ const createFaultHooks = (
     }
 
     markConsumed();
-    await Promise.reject(createInjectedFaultError(getOperation(), plan.point));
-  },
-  midCommit: async (commit) => {
-    if (!shouldInject()) {
-      await commit();
-      return;
-    }
-
-    if (plan.point !== "mid-commit") {
-      await commit();
-      return;
-    }
-
-    if (!control.supportsFaultPoint(plan.point)) {
-      throw createUnsupportedFaultPointError(plan.point);
-    }
-
-    markConsumed();
-    await commit();
-    throw createInjectedFaultError(getOperation(), plan.point);
+    await Promise.reject(
+      createInjectedFaultError(getOperation(), plan.point, plan.token)
+    );
   },
 });
 
@@ -440,21 +422,22 @@ const readOptionalFsckMethod = (
  * awaits the backend result. Optional `fsck` validates the result shape and
  * returns valid results unchanged.
  *
- * Requires the wrapped backend to expose a hidden fault-injection control
- * surface (found by shape via `Object.getOwnPropertySymbols`, not a public
- * API) for `mid-commit` and `after-commit-before-ack` points; backends that do not
- * expose it can still use `before-commit` by throwing before the real
- * commit is attempted, but `mid-commit` and `after-commit-before-ack`
- * always require the control surface.
- *
  * @throws {TuvrenPersistenceError} `kernel_fault_point_unsupported` when the
  *   plan's point fires but the wrapped backend has no matching control
  *   surface, or `kernel_persistence_fault_injected` for the fault itself.
  */
 export const createFaultInjectingBackend = (
   inner: RuntimeBackend,
-  plan: FaultPlan
+  requestedPlan: FaultPlan
 ): RuntimeBackend => {
+  const plan = { ...requestedPlan, token: requestedPlan.token ?? randomUUID() };
+  if (
+    plan.point !== "before-commit" &&
+    plan.point !== "after-commit-before-ack"
+  ) {
+    throw createUnsupportedFaultPointError(plan.point);
+  }
+  let matches = 0;
   const control = readFaultInjectionControl(inner);
   const innerReclaim = inner.reclaim?.bind(inner);
   const innerPurgeScope = inner.purgeScope?.bind(inner);
@@ -516,6 +499,10 @@ export const createFaultInjectingBackend = (
               createRecordingTransactionProxy(tx, recording)
             );
             shouldInject = matchesFaultPlan(plan, recording, consumed);
+            if (shouldInject) {
+              matches += 1;
+              shouldInject = matches >= (plan.occurrence ?? 1);
+            }
             shouldRunConcurrentWriter =
               shouldInject && concurrentWriterSnapshot !== undefined;
 
@@ -525,7 +512,11 @@ export const createFaultInjectingBackend = (
               plan.point === "before-commit"
             ) {
               consumed = true;
-              throw createInjectedFaultError(recording.operation, plan.point);
+              throw createInjectedFaultError(
+                recording.operation,
+                plan.point,
+                plan.token
+              );
             }
 
             if (shouldInject && control === undefined) {

@@ -33,6 +33,8 @@ import { assertSchemaValid } from "./schema.js";
 import { valuesAreEqual } from "./value-comparison.js";
 
 export interface AssertionContext {
+  capture?: Readonly<Record<string, unknown>>;
+  faultActivations?: readonly string[];
   events?: readonly unknown[];
   evidence?: Record<string, unknown>;
   fixture?: unknown;
@@ -512,6 +514,20 @@ const evaluateAssertion = (
   context: AssertionContext
 ): boolean => {
   switch (assertion.kind) {
+    case "faultActivated": {
+      if (assertion.path === undefined) {
+        throw new Error("faultActivated requires the armed token path");
+      }
+      const token = resolveOperandPath(
+        context,
+        assertion.path,
+        "faultActivated"
+      );
+      return (
+        typeof token === "string" &&
+        context.faultActivations?.includes(token) === true
+      );
+    }
     case "digest":
     case "canonicalCbor":
     case "identity":

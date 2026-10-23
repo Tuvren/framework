@@ -23,6 +23,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 import type { OperationCatalog } from "./certification-rules.js";
 
 export type AssertionKind =
+  | "faultActivated"
   | "digest"
   | "canonicalCbor"
   | "identity"
@@ -355,6 +356,7 @@ const assertionRequiredEvidencePath = (
 ): string | undefined => {
   if (
     isIntegrityKind(assertion.kind) ||
+    assertion.kind === "faultActivated" ||
     assertion.present === false ||
     assertion.when !== undefined
   ) {
@@ -396,7 +398,7 @@ const stepAssertionRequiredEvidencePath = (
   stepId: string,
   assertion: ConformancePlanAssertion
 ): string | undefined => {
-  if (isIntegrityKind(assertion.kind)) {
+  if (isIntegrityKind(assertion.kind) || assertion.kind === "faultActivated") {
     return undefined;
   }
   const path = assertionRequiredEvidencePath(assertion);

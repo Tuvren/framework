@@ -249,8 +249,8 @@ describe("negative-control runner", () => {
       equivalent: 0,
       invalid: 2,
       killed: 2,
-      survived: 1,
-      unsupported: 3,
+      survived: 2,
+      unsupported: 2,
     });
   });
 
@@ -377,5 +377,45 @@ describe("mutant run classification", () => {
       designatedFailures: [ALPHA],
       outcome: "killed",
     });
+  });
+  test.each(["missing_fault_activation", "unexpected_rejection"])(
+    "instrumentation requires its designated rejection: %s",
+    (code) => {
+      const check = {
+        ...failedCheck("alpha", "verification"),
+        details: { experimentStatus: "invalid", rejection: { code } },
+      };
+      const instrumentation = {
+        ...control,
+        kind: "instrumentation",
+        expectedRejection: "missing_fault_activation",
+      };
+      expect(
+        classifyMutantRun(instrumentation, activatedRun([check])).outcome
+      ).toBe(code === "missing_fault_activation" ? "killed" : "invalid");
+    }
+  );
+  test("instrumentation rejection is not a kill without mutant activation", () => {
+    const run = activatedRun([
+      {
+        ...failedCheck("alpha", "verification"),
+        details: { rejection: { code: "missing_fault_activation" } },
+      },
+    ]);
+    run.activations = run.activations.map((activation) => ({
+      ...activation,
+      activated: false,
+      activationCount: 0,
+    }));
+    expect(
+      classifyMutantRun(
+        {
+          ...control,
+          kind: "instrumentation",
+          expectedRejection: "missing_fault_activation",
+        },
+        run
+      ).outcome
+    ).toBe("unsupported");
   });
 });

@@ -595,6 +595,8 @@
             "kernel.protocol.deterministic_hashing",
             "kernel.protocol.modify_composition",
             "kernel.protocol.schema_roundtrip",
+            "kernel.syscall.controls.after_commit_before_ack",
+            "kernel.syscall.controls.before_commit",
             "kernel.syscall.lineage.cross_thread_rejection",
             "kernel.syscall.logical.branch_list",
             "kernel.syscall.logical.diff_paths",
@@ -710,14 +712,15 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 119,
-            "totalChecks": 123,
-            "applicableChecks": 119,
+            "passedChecks": 121,
+            "totalChecks": 125,
+            "applicableChecks": 121,
             "nonApplicableChecks": 4
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
             "kernel.edge-validation",
+            "kernel.fault-injection",
             "kernel.logical",
             "kernel.protocol",
             "kernel.reclamation",
@@ -868,9 +871,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 122,
-            "totalChecks": 123,
+            "totalChecks": 125,
             "applicableChecks": 122,
-            "nonApplicableChecks": 1
+            "nonApplicableChecks": 3
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1027,9 +1030,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 123,
-            "totalChecks": 123,
+            "totalChecks": 125,
             "applicableChecks": 123,
-            "nonApplicableChecks": 0
+            "nonApplicableChecks": 2
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1046,7 +1049,7 @@
           ],
           "evidencePath": "reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json",
           "reportLabel": "TypeScript PostgreSQL durable kernel",
-          "reportStatus": "full_pass",
+          "reportStatus": "capability_subset_pass",
           "status": "pass",
           "suiteId": "tuvren.kernel.protocol",
           "suiteVersion": "0.1.0"
@@ -1215,9 +1218,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 56,
-            "totalChecks": 123,
+            "totalChecks": 125,
             "applicableChecks": 56,
-            "nonApplicableChecks": 67
+            "nonApplicableChecks": 69
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1314,9 +1317,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 123,
+            "totalChecks": 125,
             "applicableChecks": 68,
-            "nonApplicableChecks": 55
+            "nonApplicableChecks": 57
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1416,9 +1419,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 123,
+            "totalChecks": 125,
             "applicableChecks": 68,
-            "nonApplicableChecks": 55
+            "nonApplicableChecks": 57
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1518,9 +1521,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 123,
+            "totalChecks": 125,
             "applicableChecks": 68,
-            "nonApplicableChecks": 55
+            "nonApplicableChecks": 57
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",

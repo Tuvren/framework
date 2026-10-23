@@ -1243,6 +1243,532 @@
         }
       ],
       "evidence": ["trace.tree.result", "trace.manifest.result"]
+    },
+    {
+      "checkId": "kernel.syscall.controls.before_commit",
+      "claimIds": ["kernel.syscall.controls.before_commit"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 100
+          },
+          "claimIds": ["kernel.syscall.controls.before_commit"],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 200
+          },
+          "claimIds": ["kernel.syscall.controls.before_commit"],
+          "assertions": []
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "schemaId": "schema_main"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.before_commit"],
+          "assertions": []
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread_main",
+            "schemaId": "schema_main",
+            "initialBranchId": "branch_main"
+          },
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.before_commit"],
+          "assertions": []
+        },
+        {
+          "stepId": "turn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turn_main",
+            "threadId": "thread_main",
+            "branchId": "branch_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "turn",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.before_commit"],
+          "assertions": []
+        },
+        {
+          "stepId": "run",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "run_main",
+            "turnId": "turn_main",
+            "branchId": "branch_main",
+            "schemaId": "schema_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "deterministic": false,
+                "id": "model_call",
+                "metadata": {
+                  "$map": [["phase", "reasoning"]]
+                },
+                "sideEffects": false
+              },
+              {
+                "deterministic": false,
+                "id": "tool_execution",
+                "metadata": {
+                  "$map": [["phase", "tooling"]]
+                },
+                "sideEffects": true
+              }
+            ]
+          },
+          "capture": [
+            {
+              "name": "run",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.before_commit"],
+          "assertions": []
+        },
+        {
+          "stepId": "beginFirst",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "model_call"
+          },
+          "capture": [
+            {
+              "name": "beginFirst",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.before_commit"],
+          "assertions": []
+        },
+        {
+          "stepId": "completeFirst",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "model_call"
+          },
+          "capture": [
+            {
+              "name": "completeFirst",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.before_commit"],
+          "assertions": []
+        },
+        {
+          "stepId": "beginSecond",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "tool_execution"
+          },
+          "capture": [
+            {
+              "name": "beginSecond",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.before_commit"],
+          "assertions": []
+        },
+        {
+          "stepId": "consumed",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "run_main",
+            "blob": {
+              "$bytes": "01"
+            },
+            "taskId": "consumed",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "capture": [
+            {
+              "name": "consumed",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.before_commit"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.stagedResult.timestamp",
+              "equals": 200
+            }
+          ]
+        },
+        {
+          "stepId": "arm",
+          "action": "armFault",
+          "operation": "kernel.fault.arm",
+          "arguments": {
+            "point": "before-commit",
+            "selector": {
+              "operation": "checkpoint",
+              "branchId": "branch_main"
+            },
+            "occurrence": 1,
+            "mode": "throw"
+          },
+          "capture": [
+            {
+              "name": "faultToken",
+              "path": "result.token"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.before_commit"],
+          "assertions": []
+        },
+        {
+          "stepId": "faultedCheckpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "tool_execution"
+          },
+          "claimIds": ["kernel.syscall.controls.before_commit"],
+          "assertions": [
+            {
+              "kind": "faultActivated",
+              "path": "$.capture.faultToken"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "faultActivated",
+          "path": "$.capture.faultToken"
+        }
+      ],
+      "capabilities": ["kernel.fault-injection"]
+    },
+    {
+      "checkId": "kernel.syscall.controls.after_commit_before_ack",
+      "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 100
+          },
+          "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 200
+          },
+          "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+          "assertions": []
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "schemaId": "schema_main"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+          "assertions": []
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread_main",
+            "schemaId": "schema_main",
+            "initialBranchId": "branch_main"
+          },
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+          "assertions": []
+        },
+        {
+          "stepId": "turn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turn_main",
+            "threadId": "thread_main",
+            "branchId": "branch_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "turn",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+          "assertions": []
+        },
+        {
+          "stepId": "run",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "run_main",
+            "turnId": "turn_main",
+            "branchId": "branch_main",
+            "schemaId": "schema_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "deterministic": false,
+                "id": "model_call",
+                "metadata": {
+                  "$map": [["phase", "reasoning"]]
+                },
+                "sideEffects": false
+              },
+              {
+                "deterministic": false,
+                "id": "tool_execution",
+                "metadata": {
+                  "$map": [["phase", "tooling"]]
+                },
+                "sideEffects": true
+              }
+            ]
+          },
+          "capture": [
+            {
+              "name": "run",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+          "assertions": []
+        },
+        {
+          "stepId": "beginFirst",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "model_call"
+          },
+          "capture": [
+            {
+              "name": "beginFirst",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+          "assertions": []
+        },
+        {
+          "stepId": "completeFirst",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "model_call"
+          },
+          "capture": [
+            {
+              "name": "completeFirst",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+          "assertions": []
+        },
+        {
+          "stepId": "beginSecond",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "tool_execution"
+          },
+          "capture": [
+            {
+              "name": "beginSecond",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+          "assertions": []
+        },
+        {
+          "stepId": "consumed",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "run_main",
+            "blob": {
+              "$bytes": "01"
+            },
+            "taskId": "consumed",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "capture": [
+            {
+              "name": "consumed",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.stagedResult.timestamp",
+              "equals": 200
+            }
+          ]
+        },
+        {
+          "stepId": "arm",
+          "action": "armFault",
+          "operation": "kernel.fault.arm",
+          "arguments": {
+            "point": "after-commit-before-ack",
+            "selector": {
+              "operation": "checkpoint",
+              "branchId": "branch_main"
+            },
+            "occurrence": 1,
+            "mode": "throw"
+          },
+          "capture": [
+            {
+              "name": "faultToken",
+              "path": "result.token"
+            }
+          ],
+          "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+          "assertions": []
+        },
+        {
+          "stepId": "faultedCheckpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "tool_execution"
+          },
+          "claimIds": ["kernel.syscall.controls.after_commit_before_ack"],
+          "assertions": [
+            {
+              "kind": "faultActivated",
+              "path": "$.capture.faultToken"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "faultActivated",
+          "path": "$.capture.faultToken"
+        }
+      ],
+      "capabilities": ["kernel.fault-injection"]
     }
   ]
 }

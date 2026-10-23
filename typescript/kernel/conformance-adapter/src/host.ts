@@ -80,6 +80,7 @@ const defaultCapabilities = (
   }
 
   return [
+    "kernel.fault-injection",
     "kernel.syscall",
     "kernel.protocol",
     "kernel.edge-validation",

@@ -767,3 +767,23 @@ test.each([false, true])(
     ).toBe("pass");
   }
 );
+
+test("faultActivated requires the exact armed token in runner activation evidence", () => {
+  const check = {
+    checkId: "fault",
+    operation: "fault",
+    assertions: [{ kind: "faultActivated" as const, path: "$.capture.token" }],
+  };
+  expect(
+    diagnoseAssertions(check, {
+      capture: { token: "armed" },
+      faultActivations: ["armed"],
+    }).map(({ evaluation }) => evaluation.status)
+  ).toEqual(["pass"]);
+  expect(
+    diagnoseAssertions(check, {
+      capture: { token: "armed" },
+      faultActivations: ["other"],
+    }).map(({ evaluation }) => evaluation.status)
+  ).toEqual(["fail"]);
+});
