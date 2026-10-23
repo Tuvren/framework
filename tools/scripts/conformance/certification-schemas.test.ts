@@ -393,6 +393,25 @@ describe("operation catalog schema", () => {
         "/properties/payload",
       ],
       [
+        "a percent-encoded local $ref that Ajv resolves to another definition",
+        {
+          $defs: {
+            "%61": { type: "string" },
+            a: { additionalProperties: false },
+          },
+          $ref: "#/$defs/%61",
+        },
+        "",
+      ],
+      [
+        "a tilde-escaped local $ref",
+        {
+          $defs: { "a~0b": { type: "string" } },
+          $ref: "#/$defs/a~0b",
+        },
+        "",
+      ],
+      [
         "a closed object in an open object",
         closedWith({
           payload: {
@@ -445,6 +464,15 @@ describe("operation catalog schema", () => {
             },
           })
         )
+      ).toEqual([]);
+    });
+
+    test("accepts a local $ref with a plain definition name", () => {
+      expect(
+        failuresFor({
+          $defs: { "a_B-1": { type: "string" } },
+          $ref: "#/$defs/a_B-1",
+        })
       ).toEqual([]);
     });
 
