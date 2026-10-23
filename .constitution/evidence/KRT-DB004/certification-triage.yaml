@@ -1,8 +1,8 @@
 ticket: KRT-DB004
 verified_at: 9b4e623
 entries:
-  - check: "lineage rejections (syscall plans) and lease fencing (legacy kernel-run-liveness plan)"
-    plan: "tuvren.kernel.protocol.extended.syscall; kernel-run-liveness"
+  - check: "kernel.syscall.lineage.cross_thread_rejection and legacy run-liveness lease fencing"
+    plan: "tuvren.kernel.protocol.core.syscall; tuvren.kernel.run-liveness"
     class: I
     finding: "The TypeScript kernel emitted kernel_runtime_lineage_mismatch, kernel_runtime_run_lease_owner_mismatch, and kernel_runtime_run_lease_token_mismatch, and the adapter's normalizeLogicalErrorCode masked them as the plan codes."
     resolution: "The kernel emits turn_node_thread_mismatch, run_lease_owner_mismatch, and run_lease_token_mismatch; normalization is removed; @tuvren/runtime's lease-fence detection follows; changeset records a minor bump for @tuvren/kernel-runtime."
@@ -25,7 +25,7 @@ entries:
     plan: tuvren.kernel.protocol.extended.syscall
     class: V
     finding: "Initial traces referenced an unresolved capture and wrong verdict paths, and integrity assertions compared echoed records with fixture digests."
-    resolution: "Traces corrected; the integrity-observation compiler rule now requires kernel-reported hashes; 50 of 50 syscall checks pass on memory, SQLite, and PostgreSQL."
+    resolution: "Traces corrected; the integrity-observation compiler rule now requires kernel-reported hashes; 51 of 51 syscall checks pass on memory, SQLite, and PostgreSQL."
   - check: kernel.fault-seam-never-fires
     plan: negative-controls
     class: V

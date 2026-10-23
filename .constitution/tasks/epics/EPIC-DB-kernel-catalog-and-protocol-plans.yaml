@@ -274,7 +274,7 @@ closeout:
   changelog_entries:
     - directory: tasks
       type: added
-      text: "EPIC-DB landed the kernel operation catalog (35 syscalls, 3 controls, 21 deprecated composites) and identity recipes, lossless $bytes observation encoding with runner-side digest, canonicalCbor, identity, and referenceWalk assertions, canonical UTF-8 changedPaths order in the TypeScript kernel, syscall-trace protocol plans (50 checks) enforcing the certification rules on the TypeScript memory, SQLite, and PostgreSQL kernels, canonical kernel error codes, and Rust cross-validation of every committed kernel vector; the kernel negative-control baseline rose to 11 of 13 mutants killed."
+      text: "EPIC-DB landed the kernel operation catalog (35 syscalls, 3 controls, 21 deprecated composites) and identity recipes, lossless $bytes observation encoding with runner-side digest, canonicalCbor, identity, and referenceWalk assertions, canonical UTF-8 changedPaths order in the TypeScript kernel, syscall-trace protocol plans (51 checks) enforcing the certification rules on the TypeScript memory, SQLite, and PostgreSQL kernels, canonical kernel error codes, and Rust cross-validation of every committed kernel vector; the kernel negative-control baseline rose to 11 of 13 mutants killed."
   candidate_terms: []
   routed_upstream:
     - stage: tech-spec
@@ -342,6 +342,7 @@ closeout:
       kind: convention
       paths:
         - tools/conformance/harness/run.ts
+        - tools/conformance/harness/assertion-engine/index.ts
       commit: 9b4e623
   settled:
     - record: tech-spec/contracts/conformance-operation-catalog.meta.yaml

@@ -8,7 +8,7 @@ result: pass
 pass_criteria: "The syscall plans pass on the TypeScript memory, SQLite, and PostgreSQL kernels with certification rules enforcing; every legacy assertion maps to a claimId or an explicit reason; designated mutants are killed with activation proof; no adapter path compares, sorts, or normalizes."
 files:
   - path: certification-triage.yaml
-    sha256: 726499e7356b4c8e4a553339140d9ed215afac113c8acd34b5d73bfd9d5c7de1
+    sha256: c25aa3d043a188d06af7ed0e62c346dbf82f8fb5a202ace689195bd48b26a280
     bytes: 3365
     role: transcript
   - path: obligation-map.md
