@@ -72,4 +72,17 @@ const run = spawnSync(
   ],
   { cwd: ROOT, stdio: "inherit" }
 );
+
+// ADR-0079 negative controls run in report mode: they never change the lane's
+// exit status until a migrated profile makes them enforcing.
+const negativeControls = spawnSync(
+  "bun",
+  ["tools/conformance/meta-conformance/negative-controls.ts"],
+  { cwd: ROOT, stdio: "inherit" }
+);
+if (negativeControls.status !== 0) {
+  process.stderr.write(
+    "negative-control report did not complete; report mode leaves the conformance status unchanged\n"
+  );
+}
 process.exit(run.status ?? 1);
