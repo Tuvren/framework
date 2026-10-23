@@ -86,3 +86,8 @@ export {
   createStoredTurnTreeRecord,
   delay,
 } from "./lib/kernel-test-fixtures.js";
+
+export {
+  createKernelTestClock,
+  createKernelFaultControl,
+} from "./lib/kernel-test-controls.js";

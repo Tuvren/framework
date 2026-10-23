@@ -4,6 +4,7 @@
   "capabilities": [
     "kernel-protocol.thread.enumeration",
     "kernel.edge-validation",
+    "kernel.fault-injection",
     "kernel.logical",
     "kernel.protocol",
     "kernel.reclamation",
@@ -236,6 +237,136 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.controls.after_commit_before_ack.consumed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.after_commit_before_ack.faultedCheckpoint.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.after_commit_before_ack.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.after_commit_before_ack.requiredEvidence.result.trace.consumed.result.stagedResult.timestamp",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.controls.after_commit_before_ack",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.core.syscall",
+        "adapterErrors": {
+          "faultedCheckpoint": {
+            "code": "kernel_persistence_fault_injected",
+            "details": {
+              "point": "after-commit-before-ack",
+              "token": "c5a86978-53e3-4266-8407-5ed66178d562"
+            },
+            "message": "injected after-commit-before-ack persistence fault interrupted verification"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginFirst",
+          "completeFirst",
+          "beginSecond",
+          "consumed",
+          "arm",
+          "faultedCheckpoint"
+        ],
+        "fault": {
+          "armed": [
+            {
+              "token": "c5a86978-53e3-4266-8407-5ed66178d562",
+              "point": "after-commit-before-ack",
+              "occurrence": 1,
+              "mode": "throw",
+              "selector": {
+                "operation": "checkpoint",
+                "branchId": "branch_main"
+              }
+            }
+          ],
+          "activations": ["c5a86978-53e3-4266-8407-5ed66178d562"]
+        }
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.controls.before_commit.consumed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.before_commit.faultedCheckpoint.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.before_commit.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.controls.before_commit.requiredEvidence.result.trace.consumed.result.stagedResult.timestamp",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.controls.before_commit",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.core.syscall",
+        "adapterErrors": {
+          "faultedCheckpoint": {
+            "code": "kernel_persistence_fault_injected",
+            "details": {
+              "point": "before-commit",
+              "token": "91e6dda1-a492-48ea-b43d-20f77ccba66d"
+            },
+            "message": "injected before-commit persistence fault interrupted verification"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginFirst",
+          "completeFirst",
+          "beginSecond",
+          "consumed",
+          "arm",
+          "faultedCheckpoint"
+        ],
+        "fault": {
+          "armed": [
+            {
+              "token": "91e6dda1-a492-48ea-b43d-20f77ccba66d",
+              "point": "before-commit",
+              "occurrence": 1,
+              "mode": "throw",
+              "selector": {
+                "operation": "checkpoint",
+                "branchId": "branch_main"
+              }
+            }
+          ],
+          "activations": ["91e6dda1-a492-48ea-b43d-20f77ccba66d"]
+        }
       },
       "status": "pass"
     },
@@ -5012,9 +5143,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 119,
-    "totalChecks": 123,
-    "applicableChecks": 119,
+    "passedChecks": 121,
+    "totalChecks": 125,
+    "applicableChecks": 121,
     "nonApplicableChecks": 4
   },
   "suiteId": "tuvren.kernel.protocol",

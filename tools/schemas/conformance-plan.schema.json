@@ -258,7 +258,8 @@
             "digest",
             "canonicalCbor",
             "identity",
-            "referenceWalk"
+            "referenceWalk",
+            "faultActivated"
           ]
         },
         "path": { "type": "string", "minLength": 1 },
@@ -279,6 +280,18 @@
         "when": { "$ref": "#/$defs/when" }
       },
       "allOf": [
+        {
+          "if": {
+            "properties": { "kind": { "const": "faultActivated" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["path"],
+            "properties": {
+              "path": { "pattern": "^\\$\\.capture\\.[^.]+(?:\\.[^.]+)*$" }
+            }
+          }
+        },
         {
           "if": {
             "properties": {

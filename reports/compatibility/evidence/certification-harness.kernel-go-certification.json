@@ -2986,6 +2986,8 @@
   "exitCode": 0,
   "implementationId": "go-kernel",
   "nonApplicableCheckIds": [
+    "kernel.syscall.controls.after_commit_before_ack",
+    "kernel.syscall.controls.before_commit",
     "kernel.syscall.lineage.cross_thread_rejection",
     "kernel.syscall.logical.branch_list",
     "kernel.syscall.logical.diff_paths",
@@ -3049,9 +3051,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 68,
-    "totalChecks": 123,
+    "totalChecks": 125,
     "applicableChecks": 68,
-    "nonApplicableChecks": 55
+    "nonApplicableChecks": 57
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

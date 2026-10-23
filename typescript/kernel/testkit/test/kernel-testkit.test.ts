@@ -782,7 +782,7 @@ describe("@tuvren/kernel-testkit fixtures", () => {
         branchId: seeded.branch.branchId,
         operation: "checkpoint",
       },
-      point: "mid-commit",
+      point: "after-commit-before-ack",
       policy: "once",
     });
 

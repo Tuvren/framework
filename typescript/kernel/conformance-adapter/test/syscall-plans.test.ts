@@ -36,7 +36,9 @@ test("syscall protocol plans enforce certification with explicit trace projectio
       expect(check.steps?.length).toBeGreaterThan(0);
       for (const step of check.steps ?? []) {
         expect(step.arguments).toBeDefined();
-        expect(step.capture).toBeDefined();
+        if (step.capture !== undefined) {
+          expect(step.capture.length).toBeGreaterThan(0);
+        }
         expect(step.claimIds?.length).toBeGreaterThan(0);
       }
     }

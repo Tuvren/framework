@@ -84,7 +84,9 @@
       "rule": "ADR-0076",
       "claimIds": [
         "kernel.crash-recovery.in_process_fault_points",
-        "kernel.crash-recovery.concurrent_writer"
+        "kernel.crash-recovery.concurrent_writer",
+        "kernel.syscall.controls.before_commit",
+        "kernel.syscall.controls.after_commit_before_ack"
       ],
       "activation": {
         "precondition": "a fault plan is armed on the in-process fault-injecting backend",

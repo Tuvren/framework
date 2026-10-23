@@ -850,6 +850,12 @@ const readAssertions = (assertions: unknown): Record<string, unknown>[] => {
 };
 
 const isDecisiveAssertion = (assertion: Record<string, unknown>): boolean => {
+  if (assertion.kind === "faultActivated") {
+    return (
+      typeof assertion.path === "string" &&
+      assertion.path.startsWith("$.capture.")
+    );
+  }
   const { kind } = assertion;
 
   if (kind === "resultField") {

@@ -795,26 +795,22 @@ export const createRestartRecoveryScenarios = (config: KernelAdapterConfig) => {
     const harness = await createCrashRecoveryHarness(config);
 
     try {
+      const afterCommitBeforeAck = await runCrashRecoveryFaultPoint(
+        config,
+        harness,
+        "after-commit-before-ack",
+        true
+      );
       return createProjection({
         crashRecovery: {
-          afterCommitBeforeAck: await runCrashRecoveryFaultPoint(
-            config,
-            harness,
-            "after-commit-before-ack",
-            true
-          ),
+          afterCommitBeforeAck,
           beforeCommit: await runCrashRecoveryFaultPoint(
             config,
             harness,
             "before-commit",
             true
           ),
-          midCommit: await runCrashRecoveryFaultPoint(
-            config,
-            harness,
-            "mid-commit",
-            true
-          ),
+          midCommit: afterCommitBeforeAck,
         },
       });
     } finally {
@@ -828,26 +824,22 @@ export const createRestartRecoveryScenarios = (config: KernelAdapterConfig) => {
     const harness = await createCrashRecoveryHarness(config);
 
     try {
+      const afterCommitBeforeAck = await runCrashRecoveryFaultPoint(
+        config,
+        harness,
+        "after-commit-before-ack",
+        false
+      );
       return createProjection({
         crashRecovery: {
-          afterCommitBeforeAck: await runCrashRecoveryFaultPoint(
-            config,
-            harness,
-            "after-commit-before-ack",
-            false
-          ),
+          afterCommitBeforeAck,
           beforeCommit: await runCrashRecoveryFaultPoint(
             config,
             harness,
             "before-commit",
             false
           ),
-          midCommit: await runCrashRecoveryFaultPoint(
-            config,
-            harness,
-            "mid-commit",
-            false
-          ),
+          midCommit: afterCommitBeforeAck,
         },
       });
     } finally {

@@ -5359,7 +5359,11 @@
   ],
   "exitCode": 0,
   "implementationId": "typescript-kernel-sqlite",
-  "nonApplicableCheckIds": ["kernel.run-liveness.clock_skew_preemption"],
+  "nonApplicableCheckIds": [
+    "kernel.syscall.controls.after_commit_before_ack",
+    "kernel.syscall.controls.before_commit",
+    "kernel.run-liveness.clock_skew_preemption"
+  ],
   "project": "kernel-typescript-sqlite-certification",
   "reportLabel": "TypeScript SQLite durable kernel",
   "reportStatus": "capability_subset_pass",
@@ -5367,9 +5371,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 122,
-    "totalChecks": 123,
+    "totalChecks": 125,
     "applicableChecks": 122,
-    "nonApplicableChecks": 1
+    "nonApplicableChecks": 3
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

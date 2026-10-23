@@ -63,6 +63,10 @@ import type {
 } from "./assertion-engine/index.js";
 import { readPath } from "./assertion-engine/path.js";
 import {
+  createFaultActivationTracker,
+  MissingFaultActivationError,
+} from "./fault-activation.js";
+import {
   ObservationEncodingError,
   validateObservation,
 } from "./observation-encoding.js";
@@ -117,6 +121,7 @@ interface StepObservationRecord {
 
 /** What one check sent and observed, kept for its failure artifact. */
 interface CheckRecorder {
+  faults: ReturnType<typeof createFaultActivationTracker>;
   arguments: {
     input: unknown;
     inspectQuery?: unknown;
@@ -575,6 +580,51 @@ const validateNativeError = (
   }
 };
 
+const bindControlInstance = (
+  operation: string,
+  input: unknown,
+  instance: unknown
+): unknown => {
+  if (operation !== "kernel.clock.set" && operation !== "kernel.fault.arm") {
+    return input;
+  }
+  if (!isRecord(input)) {
+    throw new ArgumentResolutionError(
+      "clock and fault control arguments must be an object"
+    );
+  }
+  return { ...input, instance };
+};
+
+const validateTraceFaultOutcome = (
+  recorder: CheckRecorder,
+  step: ConformancePlanStep,
+  input: unknown,
+  outcome: Awaited<ReturnType<JsonRpcAdapterClient["dispatch"]>>,
+  operation: CatalogOperation | undefined,
+  check: ConformancePlanCheck
+): void => {
+  if (step.action === "armFault" || step.operation === "kernel.fault.arm") {
+    recorder.faults.arm(input, outcome);
+  }
+  const activated = recorder.faults.observe(outcome);
+  if (outcome.kind === "error" && !activated) {
+    if (
+      outcome.error.code === "kernel_persistence_fault_injected" &&
+      recorder.faults.armed.length > 0
+    ) {
+      throw new MissingFaultActivationError(
+        "typed fault has no matching armed token and storage boundary"
+      );
+    }
+    validateNativeError(
+      outcome.error,
+      operation,
+      nativeErrorAsserted(check, step)
+    );
+  }
+};
+
 const runTraceCheck = async (
   client: JsonRpcAdapterClient,
   manifest: AdapterManifest,
@@ -611,12 +661,15 @@ const runTraceCheck = async (
       if (step === undefined) {
         return;
       }
-      const { contextInput, input, inspectQuery } = createTraceStepRequest(
-        step,
-        check,
-        baseInput,
-        trace,
-        argumentRoots
+      const {
+        contextInput,
+        input: projectedInput,
+        inspectQuery,
+      } = createTraceStepRequest(step, check, baseInput, trace, argumentRoots);
+      const input = bindControlInstance(
+        step.operation,
+        projectedInput,
+        instance
       );
       const controls = {
         ...createAdapterControls(compiledCheck),
@@ -644,6 +697,14 @@ const runTraceCheck = async (
         timeoutMs
       );
       observed.outcome = outcome;
+      validateTraceFaultOutcome(
+        recorder,
+        step,
+        input,
+        outcome,
+        catalogOperation,
+        check
+      );
       const context = createAssertionContext(
         outcome,
         contextInput,
@@ -657,11 +718,6 @@ const runTraceCheck = async (
       if (outcome.kind === "error") {
         traceAdapterErrors[step.stepId] = outcome.error;
         recorder.operationErrors.push(outcome.error);
-        validateNativeError(
-          outcome.error,
-          catalogOperation,
-          nativeErrorAsserted(check, step)
-        );
       }
 
       const extraEvents = await client.events(
@@ -699,6 +755,7 @@ const runTraceCheck = async (
       if (step.assertions !== undefined) {
         const stepContext: RunnerContext = {
           ...context,
+          faultActivations: recorder.faults.activations,
           capture: { ...captures },
         };
         recorder.diagnoses.push(
@@ -721,6 +778,7 @@ const runTraceCheck = async (
   }
 
   const finalContext: RunnerContext = {
+    faultActivations: recorder.faults.activations,
     capture: captures,
     evidence: { trace },
     fixture: baseInput.fixture,
@@ -897,7 +955,10 @@ const classifyFailure = (
 ): ConformanceFailureClassification => {
   const { thrown } = recorder;
 
-  if (thrown instanceof ArgumentResolutionError) {
+  if (
+    thrown instanceof ArgumentResolutionError ||
+    thrown instanceof MissingFaultActivationError
+  ) {
     return "verification";
   }
 
@@ -946,6 +1007,14 @@ const createFailure = async (
   return {
     ...(recorder.arguments.length > 0 ? { arguments: recorder.arguments } : {}),
     classification: classifyFailure(recorder, client.stderrSince(mark)),
+    ...(recorder.faults.armed.length === 0
+      ? {}
+      : {
+          fault: {
+            armed: recorder.faults.armed,
+            activations: recorder.faults.activations,
+          },
+        }),
     ...(exit === undefined ? {} : { exit }),
     frameLog: client.framesSince(mark),
     ...(recorder.observation.length > 0
@@ -966,12 +1035,13 @@ const runCheck = async (
 ): Promise<ConformanceCheckResult> => {
   const mark = client.markTranscript();
   const recorder: CheckRecorder = {
+    faults: createFaultActivationTracker(),
     arguments: [],
     diagnoses: [],
     observation: [],
     operationErrors: [],
   };
-  const checkResult = await executeCheck(
+  let checkResult = await executeCheck(
     client,
     manifest,
     plan,
@@ -979,6 +1049,45 @@ const runCheck = async (
     recorder
   );
 
+  const missing = recorder.faults.missing();
+  if (
+    missing.length > 0 &&
+    (recorder.thrown === undefined ||
+      recorder.thrown instanceof MissingFaultActivationError)
+  ) {
+    const rejection = new MissingFaultActivationError(
+      `armed faults never activated: ${missing.join(", ")}`
+    );
+    recorder.thrown = rejection;
+    checkResult = createCheckResult(
+      checkResult.checkId,
+      [
+        ...checkResult.assertionResults,
+        {
+          assertionId: `${checkResult.checkId}.faultActivation`,
+          status: "fail",
+          message: rejection.message,
+        },
+      ],
+      {
+        ...checkResult.details,
+        experimentStatus: "invalid",
+        rejection: { code: rejection.code, tokens: missing },
+      }
+    );
+  }
+  if (recorder.faults.armed.length > 0) {
+    checkResult = {
+      ...checkResult,
+      details: {
+        ...checkResult.details,
+        fault: {
+          armed: recorder.faults.armed,
+          activations: recorder.faults.activations,
+        },
+      },
+    };
+  }
   if (checkResult.status === "pass") {
     return checkResult;
   }

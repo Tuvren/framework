@@ -604,9 +604,32 @@ export const classifyMutantRun = (
     if (!base.activated) {
       return result("unsupported", "never activated; not counted");
     }
+    const rejections = evidence.checkResults.filter((check) => {
+      const rejection = check.details?.rejection;
+      return (
+        check.status === "fail" &&
+        isRecord(rejection) &&
+        rejection.code === control.expectedRejection
+      );
+    });
+    const infrastructure = evidence.checkResults.filter(
+      (check) =>
+        check.status === "fail" &&
+        check.failure?.classification !== "implementation" &&
+        !rejections.includes(check)
+    );
+    if (infrastructure.length > 0) {
+      return result(
+        "invalid",
+        `unexpected runner failure: ${infrastructure.map((check) => check.checkId).join(", ")}`
+      );
+    }
+    if (rejections.length > 0) {
+      return result("killed");
+    }
     return result(
-      "unsupported",
-      `the harness has no runner rejection channel, so the expected rejection ${control.expectedRejection ?? ""} cannot occur; not counted as killed`
+      "survived",
+      `expected runner rejection ${control.expectedRejection ?? ""} did not occur`
     );
   }
 

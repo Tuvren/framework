@@ -502,6 +502,7 @@ const assertionActualPath = (
     case "errorEnvelope": {
       return splitContextPath(assertion.path ?? "$.result.error");
     }
+    case "faultActivated":
     case "digest":
     case "canonicalCbor":
     case "identity":
@@ -985,7 +986,7 @@ const checkAssertion = (
         scope,
         node.actual,
         node.label,
-        false,
+        assertion.kind === "faultActivated",
         node.operators.equals
       );
     }
