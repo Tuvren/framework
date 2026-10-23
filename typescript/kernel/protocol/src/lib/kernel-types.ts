@@ -1198,6 +1198,7 @@ export interface RuntimeKernel {
       baseTurnTreeHash: HashString,
       stagedResults: StagedResult[]
     ) => Promise<HashString>;
+    /** Returns unique changed paths in ascending unsigned UTF-8 byte order. */
     diff: (treeHashA: HashString, treeHashB: HashString) => Promise<string[]>;
     resolve: (treeHash: HashString, path: string) => Promise<PathValue>;
     manifest: (treeHash: HashString) => Promise<TurnTreeManifest>;

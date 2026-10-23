@@ -622,11 +622,17 @@ export const createRuntimeKernel = (
 
           const left = await requireTreeManifest(tx, treeHashA);
           const right = await requireTreeManifest(tx, treeHashB);
-          return Object.keys({ ...left, ...right }).filter(
+          const changedPaths = Object.keys({ ...left, ...right }).filter(
             (path) =>
               JSON.stringify(left[path] ?? null) !==
               JSON.stringify(right[path] ?? null)
           );
+          return changedPaths
+            .map((path) => ({ bytes: Buffer.from(path, "utf-8"), path }))
+            .toSorted((leftPath, rightPath) =>
+              Buffer.compare(leftPath.bytes, rightPath.bytes)
+            )
+            .map(({ path }) => path);
         });
       },
 

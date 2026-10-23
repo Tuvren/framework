@@ -1,9 +1,11 @@
 # Kraken Kernel Specification
 
-**Version**: v0.12
+**Version**: v0.13
 **Status**: Frozen human semantic authority; machine portability classified by Epic AD. v0.12 adds the SaaS-readiness target semantics (within-scope object identity §2.3, backend-authoritative lease clock §5.2, and the capability-gated reachability reclamation primitive §9.4); their portable machine authority is classified as deferred until the SaaS-readiness epics promote them through the authority packet, conformance, and evidence cascade.
 
 Read this before the framework specification. This document freezes the human semantic model for the kernel primitives only.
+
+v0.13 specifies the canonical order of `tree.diff` changed paths (ADR-0080).
 
 Kraken is the execution engine inside Tuvren. This specification is therefore an engine-layer document, not the public product definition.
 
@@ -847,7 +849,7 @@ Backend choice is an implementation concern. Correctness semantics are not.
 
 **`tree.incorporate(baseTurnTreeHash, stagedResults)`** — Base must exist. Each StagedResult's `objectType` must have a matching incorporation rule.
 
-**`tree.diff(treeHashA, treeHashB)`** — Both must exist. Both must share the same `schemaId`.
+**`tree.diff(treeHashA, treeHashB)`** — Both must exist. Both must share the same `schemaId`. changedPaths contain no duplicates and are in ascending unsigned UTF-8 byte order of the path.
 
 **`tree.resolve(treeHash, path)`** — Tree must exist. Path must exist in schema.
 
@@ -969,4 +971,4 @@ Reclamation operates within a Scope (§2.3), so under isolation-by-construction 
 
 ---
 
-_v0.12. The current syscall surface is 30 operations across 10 groups, 18 invariants. v0.12 specifies the capability-gated reachability reclamation primitive (`maintenance.reclamation`, §9.4) — the forthcoming 31st operation, intentionally outside the §7 enumeration during the deferral window — alongside scope-resolved object identity (§2.3) and the backend-authoritative lease clock (§5.2) as SaaS-readiness target semantics whose portable machine authority is deferred until the SaaS-readiness epics promote them. Companion rationale is explanatory only and non-contract._
+_v0.13. The current syscall surface is 30 operations across 10 groups, 18 invariants. v0.12 specifies the capability-gated reachability reclamation primitive (`maintenance.reclamation`, §9.4) — the forthcoming 31st operation, intentionally outside the §7 enumeration during the deferral window — alongside scope-resolved object identity (§2.3) and the backend-authoritative lease clock (§5.2) as SaaS-readiness target semantics whose portable machine authority is deferred until the SaaS-readiness epics promote them. v0.13 specifies the canonical UTF-8 byte order of `tree.diff` changed paths. Companion rationale is explanatory only and non-contract._

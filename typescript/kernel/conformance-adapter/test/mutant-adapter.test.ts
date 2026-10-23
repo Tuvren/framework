@@ -39,9 +39,6 @@ const ACTIVATION_OPERATION = "kernel.mutant.activation";
 // Controls whose designated checks need a capability the memory adapter does
 // not advertise, so the memory baseline cannot reach their mutated branch.
 const UNREACHABLE_ON_MEMORY = new Set(["kernel.lease-takeover-before-expiry"]);
-// Controls whose mutated observation the adapter still masks (ADR-0080: the
-// TypeScript adapter sorts changedPaths until the diff family migrates).
-const MASKED_BY_ADAPTER = new Set(["kernel.noncanonical-changed-paths-order"]);
 
 interface AdapterManifest {
   adapterId: string;
@@ -406,9 +403,7 @@ describe("mutant activation control", () => {
             )
         );
 
-        expect(changed.length > 0).toBe(
-          !MASKED_BY_ADAPTER.has(control.mutantId)
-        );
+        expect(changed.length > 0).toBe(true);
       });
     }
   }
