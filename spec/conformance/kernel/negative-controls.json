@@ -67,6 +67,7 @@
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#57-recovery-protocol",
       "claimIds": [
+        "kernel.syscall.logical.recovery_state",
         "kernel.crash-recovery.in_process_fault_points",
         "kernel.syscall.crash-recovery.before_commit"
       ],
@@ -76,6 +77,8 @@
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
+        "kernel.syscall.logical.recovery_state.3.resultField",
+        "kernel.crash-recovery.in_process_fault_points.5.resultField",
         "kernel.syscall.crash-recovery.before_commit.6.resultField",
         "kernel.syscall.crash-recovery.before_commit.12.resultField"
       ]
@@ -85,6 +88,10 @@
       "kind": "instrumentation",
       "rule": "ADR-0076",
       "claimIds": [
+        "kernel.crash-recovery.in_process_fault_points",
+        "kernel.crash-recovery.concurrent_writer",
+        "kernel.syscall.controls.before_commit",
+        "kernel.syscall.controls.after_commit_before_ack",
         "kernel.syscall.crash-recovery.before_commit",
         "kernel.syscall.crash-recovery.after_commit_before_ack"
       ],
@@ -162,6 +169,11 @@
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
+        "kernel.crash-recovery.in_process_fault_points.2.resultField",
+        "kernel.crash-recovery.in_process_fault_points.3.resultField",
+        "kernel.crash-recovery.in_process_fault_points.4.resultField",
+        "kernel.crash-recovery.in_process_fault_points.5.resultField",
+        "kernel.crash-recovery.in_process_fault_points.6.resultField",
         "kernel.syscall.crash-recovery.before_commit.8.resultField",
         "kernel.syscall.crash-recovery.before_commit.9.resultField"
       ]

@@ -461,10 +461,7 @@
           "operation": "kernel.run.completeStep",
           "arguments": {
             "runId": "run",
-            "stepId": "pending",
-            "treeHash": {
-              "$ref": "capture.pendingTree"
-            }
+            "stepId": "pending"
           },
           "claimIds": [
             "kernel.crash-recovery.in_process_fault_points",
@@ -1296,10 +1293,7 @@
           "operation": "kernel.run.completeStep",
           "arguments": {
             "runId": "run",
-            "stepId": "pending",
-            "treeHash": {
-              "$ref": "capture.pendingTree"
-            }
+            "stepId": "pending"
           },
           "claimIds": [
             "kernel.crash-recovery.in_process_fault_points",
