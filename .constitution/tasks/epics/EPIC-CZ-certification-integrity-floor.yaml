@@ -347,7 +347,7 @@ closeout:
     - summary: "Observation schemas use a strict certification dialect: every reachable subschema is false, a local #/$defs ref, an encoding-schema ref, anyOf or oneOf of dialect branches, const or enum, or an explicitly typed schema whose objects are closed and whose arrays have direct items; allOf, not, conditionals, true, empty, and type-less schemas are rejected."
       kind: contract_shape
       paths: [tools/scripts/conformance/certification-schemas.ts, tools/schemas/conformance-operation-catalog.schema.json]
-      commit: PENDING
+      commit: fc79e5d
   settled:
     - record: tech-spec/contracts/conformance-plan.meta.yaml
       evidence:
