@@ -23,6 +23,7 @@ import type {
   ConformancePlanCheck,
 } from "../../plan-compiler/index.ts";
 import {
+  diagnoseAssertions,
   evaluateAssertions,
   evaluateRequiredEvidence,
   getCompiledSchemaValidator,
@@ -533,5 +534,107 @@ describe("assertion sources and failure ordering", () => {
       },
       { assertionId: "ck.terminal-event.3.terminalEvent", status: "pass" },
     ]);
+  });
+});
+
+const diagnoseOne = (
+  assertion: ConformancePlanCheck["assertions"][number],
+  context: Parameters<typeof diagnoseAssertions>[1]
+) => {
+  const [diagnosis] = diagnoseAssertions(buildCheck([assertion]), context);
+  if (diagnosis === undefined) {
+    throw new Error("expected one diagnosis");
+  }
+  expect(diagnosis.evaluation.status).toBe("fail");
+  return diagnosis.operands;
+};
+
+describe("quantified assertion operands", () => {
+  test("every records the failing element's evaluated operand at its element path", () => {
+    const operands = diagnoseOne(
+      {
+        every: { equalsPath: "$.fixture.expectedId", field: "$.id" },
+        field: "$.items",
+        kind: "resultField",
+        length: 2,
+      },
+      { fixture: { expectedId: 5 }, result: { items: [{ id: 5 }, { id: 7 }] } }
+    );
+
+    expect(operands).toContainEqual({
+      actual: 7,
+      expected: 5,
+      expectedSource: "equalsPath: fixture $.fixture.expectedId",
+      path: "$.result.items.1.id",
+    });
+    expect(operands.map((operand) => operand.path)).not.toContain(
+      "$.result.items.0.id"
+    );
+    expect(
+      operands.some((operand) => operand.expectedSource.startsWith("every:"))
+    ).toBe(false);
+  });
+
+  test("some records every element's operand when no element holds", () => {
+    const operands = diagnoseOne(
+      {
+        field: "$.items",
+        kind: "resultField",
+        length: 2,
+        some: { equals: 9, field: "$.id" },
+      },
+      { result: { items: [{ id: 5 }, { id: 7 }] } }
+    );
+
+    expect(operands).toContainEqual({
+      actual: 5,
+      expected: 9,
+      expectedSource: "equals: plan literal",
+      path: "$.result.items.0.id",
+    });
+    expect(operands).toContainEqual({
+      actual: 7,
+      expected: 9,
+      expectedSource: "equals: plan literal",
+      path: "$.result.items.1.id",
+    });
+  });
+
+  test("nested quantifiers record the innermost failing element path", () => {
+    const operands = diagnoseOne(
+      {
+        every: { every: { equals: "ok" }, field: "$.tags", length: 1 },
+        field: "$.items",
+        kind: "resultField",
+        length: 2,
+      },
+      { result: { items: [{ tags: ["ok"] }, { tags: ["bad"] }] } }
+    );
+
+    expect(operands).toContainEqual({
+      actual: "bad",
+      expected: "ok",
+      expectedSource: "equals: plan literal",
+      path: "$.result.items.1.tags.0",
+    });
+  });
+
+  test("event projections record the failing event's element path", () => {
+    const operands = diagnoseOne(
+      {
+        every: { equals: 1, field: "$.n" },
+        kind: "eventSequence",
+        length: 2,
+        path: "$.payload",
+      },
+      { events: [{ payload: { n: 1 } }, { payload: { n: 2 } }] }
+    );
+
+    expect(operands).toContainEqual({
+      actual: 2,
+      expected: 1,
+      expectedSource: "equals: plan literal",
+      path: "$.events.1.payload.n",
+    });
   });
 });

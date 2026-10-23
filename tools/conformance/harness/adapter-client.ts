@@ -91,8 +91,8 @@ interface RecordedFrame {
   sequence: number;
 }
 
-const MAX_RETAINED_FRAMES = 256;
-const MAX_FRAME_CHARS = 4096;
+const MAX_PREVIEW_FRAMES = 256;
+const MAX_PREVIEW_FRAME_CHARS = 4096;
 const MAX_RETAINED_STDERR_CHARS = 65_536;
 
 const truncate = (text: string, limit: number): string =>
@@ -102,6 +102,19 @@ const truncate = (text: string, limit: number): string =>
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
+
+/** A bounded preview of a frame log; the complete log is retained elsewhere. */
+export const previewFrames = (frames: readonly unknown[]): unknown[] => {
+  const kept = frames
+    .slice(-MAX_PREVIEW_FRAMES)
+    .map((entry) =>
+      isRecord(entry) && typeof entry.frame === "string"
+        ? { ...entry, frame: truncate(entry.frame, MAX_PREVIEW_FRAME_CHARS) }
+        : entry
+    );
+  const omittedFrames = frames.length - kept.length;
+  return omittedFrames > 0 ? [{ omittedFrames }, ...kept] : kept;
+};
 
 const isAdapterErrorEnvelope = (
   value: unknown
@@ -334,7 +347,9 @@ export class JsonRpcAdapterClient {
     }
   }
 
+  /** Starts a check's transcript and releases frames of earlier checks. */
   markTranscript(): AdapterTranscriptMark {
+    this.frames.length = 0;
     return {
       frameSequence: this.frameSequence,
       startedAt: performance.now(),
@@ -389,14 +404,10 @@ export class JsonRpcAdapterClient {
     this.frames.push({
       at: performance.now(),
       direction,
-      frame: truncate(line, MAX_FRAME_CHARS),
+      frame: line,
       sequence: this.frameSequence,
     });
     this.frameSequence += 1;
-
-    if (this.frames.length > MAX_RETAINED_FRAMES) {
-      this.frames.shift();
-    }
   }
 
   private async request(

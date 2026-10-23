@@ -158,6 +158,15 @@ export const failureProbeAdapterScript = `
       process.stdout.write("{not a json-rpc frame\\n");
       continue;
     }
+    if (request.method === "dispatch" && params.operation === "transcript") {
+      for (let index = 0; index < 300; index += 1) {
+        process.stdout.write(JSON.stringify({
+          id: 900000 + index,
+          jsonrpc: "2.0",
+          result: "n".repeat(5000)
+        }) + "\\n");
+      }
+    }
     if (request.method === "dispatch" && params.operation === "provision") {
       await new Promise((resolve) => {
         process.stderr.write(
