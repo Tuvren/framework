@@ -1,0 +1,52 @@
+certification rule inventory: plans=35 enforcing=0 uncatalogued=35 violations=401
+by port:
+  engine: plans=7 uncatalogued=7 enforcing=0 violations=110 (literal-boolean=110)
+  kernel: plans=6 uncatalogued=6 enforcing=0 violations=175 (literal-boolean=76 no-echo=99)
+  providers: plans=5 uncatalogued=5 enforcing=0 violations=22 (literal-boolean=22)
+  runners: plans=4 uncatalogued=4 enforcing=0 violations=1 (literal-boolean=1)
+  streaming: plans=5 uncatalogued=5 enforcing=0 violations=12 (literal-boolean=12)
+  telemetry: plans=2 uncatalogued=2 enforcing=0 violations=17 (literal-boolean=12 no-echo=5)
+  tools: plans=6 uncatalogued=6 enforcing=0 violations=64 (literal-boolean=64)
+by rule:
+  operation-catalogued=0
+  observation-path=0
+  literal-boolean=297
+  no-echo=104
+  expected-root-reference=0
+  evidence-only-proof=0
+by plan:
+  spec/conformance/engine/plans/host-session.json [engine uncatalogued report] violations=13 (literal-boolean=13)
+  spec/conformance/engine/plans/runtime-api-batteries-included.json [engine uncatalogued report] violations=12 (literal-boolean=12)
+  spec/conformance/engine/plans/runtime-api-callables-extended.json [engine uncatalogued report] violations=55 (literal-boolean=55)
+  spec/conformance/engine/plans/runtime-api-callables.json [engine uncatalogued report] violations=3 (literal-boolean=3)
+  spec/conformance/engine/plans/runtime-api-lifecycle-extended.json [engine uncatalogued report] violations=9 (literal-boolean=9)
+  spec/conformance/engine/plans/runtime-api-lifecycle.json [engine uncatalogued report] violations=0
+  spec/conformance/engine/plans/runtime-api-orchestration.json [engine uncatalogued report] violations=18 (literal-boolean=18)
+  spec/conformance/kernel/plans/kernel-protocol-core.json [kernel uncatalogued report] violations=6 (no-echo=6)
+  spec/conformance/kernel/plans/kernel-protocol-extended.json [kernel uncatalogued report] violations=108 (literal-boolean=15 no-echo=93)
+  spec/conformance/kernel/plans/kernel-reclamation.json [kernel uncatalogued report] violations=10 (literal-boolean=10)
+  spec/conformance/kernel/plans/kernel-restart-recovery.json [kernel uncatalogued report] violations=35 (literal-boolean=35)
+  spec/conformance/kernel/plans/kernel-run-liveness.json [kernel uncatalogued report] violations=10 (literal-boolean=10)
+  spec/conformance/kernel/plans/kernel-scope-isolation.json [kernel uncatalogued report] violations=6 (literal-boolean=6)
+  spec/conformance/providers/plans/provider-api-bridge-extended.json [providers uncatalogued report] violations=0
+  spec/conformance/providers/plans/provider-api-bridge.json [providers uncatalogued report] violations=1 (literal-boolean=1)
+  spec/conformance/providers/plans/provider-api-conversation-state.json [providers uncatalogued report] violations=11 (literal-boolean=11)
+  spec/conformance/providers/plans/provider-mediated-execution-class.json [providers uncatalogued report] violations=5 (literal-boolean=5)
+  spec/conformance/providers/plans/provider-native-execution-class.json [providers uncatalogued report] violations=5 (literal-boolean=5)
+  spec/conformance/runners/plans/react-runner-callables.json [runners uncatalogued report] violations=0
+  spec/conformance/runners/plans/react-runner-extended.json [runners uncatalogued report] violations=1 (literal-boolean=1)
+  spec/conformance/runners/plans/runner-api-core.json [runners uncatalogued report] violations=0
+  spec/conformance/runners/plans/runner-api-extended.json [runners uncatalogued report] violations=0
+  spec/conformance/streaming/plans/event-stream-core.json [streaming uncatalogued report] violations=0
+  spec/conformance/streaming/plans/event-stream-extended.json [streaming uncatalogued report] violations=0
+  spec/conformance/streaming/plans/event-stream-resume.json [streaming uncatalogued report] violations=0
+  spec/conformance/streaming/plans/event-stream-sse.json [streaming uncatalogued report] violations=7 (literal-boolean=7)
+  spec/conformance/streaming/plans/event-stream-ws.json [streaming uncatalogued report] violations=5 (literal-boolean=5)
+  spec/conformance/telemetry/plans/framework-operational-telemetry.json [telemetry uncatalogued report] violations=7 (literal-boolean=2 no-echo=5)
+  spec/conformance/telemetry/plans/invocation-lifecycle-observation.json [telemetry uncatalogued report] violations=10 (literal-boolean=10)
+  spec/conformance/tools/plans/capability-orchestration-integration.json [tools uncatalogued report] violations=10 (literal-boolean=10)
+  spec/conformance/tools/plans/capability-policy.json [tools uncatalogued report] violations=14 (literal-boolean=14)
+  spec/conformance/tools/plans/providers-mcp-client.json [tools uncatalogued report] violations=9 (literal-boolean=9)
+  spec/conformance/tools/plans/tool-contracts-extended.json [tools uncatalogued report] violations=4 (literal-boolean=4)
+  spec/conformance/tools/plans/tuvren-client-execution-class.json [tools uncatalogued report] violations=10 (literal-boolean=10)
+  spec/conformance/tools/plans/tuvren-server-execution-class.json [tools uncatalogued report] violations=17 (literal-boolean=17)
