@@ -74,6 +74,10 @@ import {
   ObservationEncodingError,
   validateObservation,
 } from "./observation-encoding.js";
+import {
+  isOperationHandleStep,
+  runOperationHandleStep,
+} from "./operation-steps.js";
 import { readAdapterManifest, readPlans } from "./run-plans.js";
 import {
   ArgumentResolutionError,
@@ -658,6 +662,114 @@ const validateTraceFaultOutcome = (
   }
 };
 
+interface TraceStepExecution {
+  catalogOperation: CatalogOperation | undefined;
+  check: ConformancePlanCheck;
+  client: JsonRpcAdapterClient;
+  contextInput: Record<string, unknown>;
+  controls: AdapterControls;
+  input: unknown;
+  inspectQuery: unknown;
+  instance: unknown;
+  observed: StepObservationRecord;
+  recorder: CheckRecorder;
+  startedOperations: Map<string, string>;
+  step: ConformancePlanStep;
+}
+
+const observeTraceStep = async ({
+  catalogOperation,
+  check,
+  client,
+  contextInput,
+  controls,
+  input,
+  inspectQuery,
+  instance,
+  observed,
+  recorder,
+  startedOperations,
+  step,
+}: TraceStepExecution) => {
+  const timeoutMs = controls.deadlineMs;
+  const handleStep = isOperationHandleStep(step);
+  const nativeOutcome = !handleStep || step.action === "await";
+  const inputProblem = handleStep
+    ? undefined
+    : controlInputProblem(catalogOperation, input);
+  if (inputProblem !== undefined) {
+    throw new ArgumentResolutionError(inputProblem);
+  }
+  client.setLosslessObservations(catalogOperation !== undefined);
+  const outcome = handleStep
+    ? await runOperationHandleStep(
+        client,
+        step,
+        input,
+        instance,
+        startedOperations,
+        timeoutMs
+      )
+    : await client.dispatch(
+        step.operation,
+        input,
+        controls,
+        instance,
+        timeoutMs
+      );
+  observed.outcome = outcome;
+  if (nativeOutcome) {
+    validateTraceFaultOutcome(
+      recorder,
+      step,
+      input,
+      outcome,
+      catalogOperation,
+      check
+    );
+  }
+  const context = createAssertionContext(
+    outcome,
+    contextInput,
+    catalogOperation !== undefined
+  );
+  if (nativeOutcome) {
+    validateObservation(
+      catalogOperation,
+      outcome.kind === "result" ? context : {},
+      outcome.kind === "result"
+    );
+  }
+  if (outcome.kind === "error") {
+    recorder.operationErrors.push(outcome.error);
+  }
+
+  const extraEvents = handleStep
+    ? []
+    : await client.events(step.operation, input, controls, instance, timeoutMs);
+  observed.events = extraEvents;
+  if (!handleStep) {
+    validateObservation(catalogOperation, { events: extraEvents });
+  }
+
+  if (context.events === undefined && extraEvents.length > 0) {
+    context.events = extraEvents;
+  }
+
+  const inspectedState =
+    step.inspectState === undefined
+      ? undefined
+      : await client.inspectState(inspectQuery, instance, timeoutMs);
+  if (step.inspectState !== undefined) {
+    observed.inspectedState = inspectedState;
+    validateObservation(catalogOperation, { state: inspectedState });
+  }
+
+  mergeInspectedState(context, inspectedState, outcome);
+
+  return { context, extraEvents, outcome };
+};
+
 const runTraceCheck = async (
   client: JsonRpcAdapterClient,
   manifest: AdapterManifest,
@@ -677,6 +789,7 @@ const runTraceCheck = async (
   );
   const trace: Record<string, AssertionContext> = {};
   const traceAdapterErrors: Record<string, unknown> = {};
+  const startedOperations = new Map<string, string>();
   const captureStore = createCaptureStore();
   const captures = captureStore.values;
   const argumentRoots: ArgumentRoots = {
@@ -709,7 +822,6 @@ const runTraceCheck = async (
         ...createAdapterControls(compiledCheck),
         ...step.controls,
       };
-      const timeoutMs = controls.deadlineMs;
       recorder.arguments.push({
         input,
         ...(inspectQuery === undefined ? {} : { inspectQuery }),
@@ -721,66 +833,23 @@ const runTraceCheck = async (
         stepId: step.stepId,
       };
       recorder.observation.push(observed);
-      const inputProblem = controlInputProblem(catalogOperation, input);
-      if (inputProblem !== undefined) {
-        throw new ArgumentResolutionError(inputProblem);
-      }
-      client.setLosslessObservations(catalogOperation !== undefined);
-      const outcome = await client.dispatch(
-        step.operation,
-        input,
-        controls,
-        instance,
-        timeoutMs
-      );
-      observed.outcome = outcome;
-      validateTraceFaultOutcome(
-        recorder,
-        step,
-        input,
-        outcome,
+      const { context, extraEvents, outcome } = await observeTraceStep({
         catalogOperation,
-        check
-      );
-      const context = createAssertionContext(
-        outcome,
+        check,
+        client,
         contextInput,
-        catalogOperation !== undefined
-      );
-      validateObservation(
-        catalogOperation,
-        outcome.kind === "result" ? context : {},
-        outcome.kind === "result"
-      );
+        controls,
+        input,
+        inspectQuery,
+        instance,
+        observed,
+        recorder,
+        startedOperations,
+        step,
+      });
       if (outcome.kind === "error") {
         traceAdapterErrors[step.stepId] = outcome.error;
-        recorder.operationErrors.push(outcome.error);
       }
-
-      const extraEvents = await client.events(
-        step.operation,
-        input,
-        controls,
-        instance,
-        timeoutMs
-      );
-      observed.events = extraEvents;
-      validateObservation(catalogOperation, { events: extraEvents });
-
-      if (context.events === undefined && extraEvents.length > 0) {
-        context.events = extraEvents;
-      }
-
-      const inspectedState =
-        step.inspectState === undefined
-          ? undefined
-          : await client.inspectState(inspectQuery, instance, timeoutMs);
-      if (step.inspectState !== undefined) {
-        observed.inspectedState = inspectedState;
-        validateObservation(catalogOperation, { state: inspectedState });
-      }
-
-      mergeInspectedState(context, inspectedState, outcome);
 
       trace[step.stepId] = context;
       recordStepCaptures(

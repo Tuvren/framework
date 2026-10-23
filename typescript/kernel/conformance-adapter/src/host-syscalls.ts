@@ -11,6 +11,7 @@ import type {
   AdapterErrorEnvelope,
   OperationOutcome,
 } from "../../../../tools/conformance/adapter-protocol/index.js";
+import { createOperationHandles } from "./host-operation-handles.js";
 import type { KernelAdapterConfig } from "./host-scenario-support.js";
 import {
   createConfiguredBackend,
@@ -354,6 +355,7 @@ interface Instance {
 interface InstanceState {
   clock: ReturnType<typeof createKernelTestClock>;
   opened?: Promise<Instance>;
+  destroying?: Promise<void>;
 }
 
 export const createSyscallBindings = (config: KernelAdapterConfig) => {
@@ -379,11 +381,12 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
   const dispatch = async (
     operation: string,
     input: unknown,
-    handle: unknown
+    handle: unknown,
+    signal?: AbortSignal
   ): Promise<OperationOutcome> => {
     const state =
       typeof handle === "string" ? instances.get(handle) : undefined;
-    if (state === undefined) {
+    if (state === undefined || state.destroying !== undefined) {
       throw new Error("syscall requires a live adapter instance");
     }
     const binding: unknown = Reflect.get(parameters, operation);
@@ -394,6 +397,7 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     if (group === undefined || method === undefined) {
       throw new Error("invalid syscall operation");
     }
+    signal?.throwIfAborted();
     const eagerTarget: unknown =
       typeof binding.target === "string"
         ? Reflect.get(state, binding.target)
@@ -438,16 +442,43 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
       }
       throw error;
     }
+    signal?.throwIfAborted();
     const target: unknown =
       typeof binding.target === "string"
         ? Reflect.get(opened, binding.target)
         : Reflect.get(opened.kernel, group);
     return await invokeBinding(target, binding, input, method);
   };
+  const handles = createOperationHandles(dispatch, destroyInstance);
   return {
+    awaitOperation: handles.awaitOperation,
+    cancelOperation: handles.cancelOperation,
     createInstance,
-    destroyInstance,
+    destroyInstance: async (handle: unknown): Promise<void> => {
+      const state =
+        typeof handle === "string" ? instances.get(handle) : undefined;
+      if (state === undefined) {
+        return;
+      }
+      state.destroying ??= handles.destroyInstance(handle);
+      await state.destroying;
+    },
     dispatch,
     has: (operation: string): boolean => Object.hasOwn(parameters, operation),
+    startOperation: async (
+      operation: string,
+      input: unknown,
+      instance: unknown
+    ) => {
+      if (!Object.hasOwn(parameters, operation)) {
+        throw new Error(`unsupported syscall ${operation}`);
+      }
+      const state =
+        typeof instance === "string" ? instances.get(instance) : undefined;
+      if (state === undefined || state.destroying !== undefined) {
+        throw new Error("syscall requires a live adapter instance");
+      }
+      return await handles.startOperation(operation, input, instance);
+    },
   };
 };

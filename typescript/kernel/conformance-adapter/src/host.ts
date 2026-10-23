@@ -237,6 +237,7 @@ const initialize = (
   capabilities: ADAPTER_CONFIG.capabilities,
   packetId,
   planVersion,
+  protocolVersion: "0.2.0",
 });
 
 const dispatch = async (
@@ -271,8 +272,11 @@ const dispatch = async (
 };
 
 await serveStdioAdapter({
+  awaitOperation: syscallBindings.awaitOperation,
+  cancelOperation: syscallBindings.cancelOperation,
   createInstance: syscallBindings.createInstance,
   destroyInstance: syscallBindings.destroyInstance,
   dispatch,
   initialize,
+  startOperation: syscallBindings.startOperation,
 } satisfies StdioConformanceAdapter);

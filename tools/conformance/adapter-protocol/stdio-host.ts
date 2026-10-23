@@ -24,6 +24,13 @@ import type {
 } from "./index.js";
 
 export interface StdioConformanceAdapter {
+  startOperation?: (
+    operation: string,
+    argumentsValue: unknown,
+    instance: unknown
+  ) => Promise<{ operationHandle: string }>;
+  awaitOperation?: (operationHandle: string) => Promise<OperationOutcome>;
+  cancelOperation?: (operationHandle: string, reason: string) => Promise<void>;
   createInstance?: (input: unknown) => Promise<unknown>;
   destroyInstance?: (instance: unknown) => Promise<void>;
   dispatch: (
@@ -186,6 +193,34 @@ const dispatchMethod = async (
         paramObject.instance
       );
     }
+    case "startOperation": {
+      if (adapter.startOperation === undefined) {
+        throw new Error("adapter does not support startOperation");
+      }
+      return await adapter.startOperation(
+        readString(paramObject.operation, "operation"),
+        paramObject.arguments,
+        paramObject.instance
+      );
+    }
+    case "awaitOperation": {
+      if (adapter.awaitOperation === undefined) {
+        throw new Error("adapter does not support awaitOperation");
+      }
+      return await adapter.awaitOperation(
+        readString(paramObject.operationHandle, "operationHandle")
+      );
+    }
+    case "cancelOperation": {
+      if (adapter.cancelOperation === undefined) {
+        throw new Error("adapter does not support cancelOperation");
+      }
+      await adapter.cancelOperation(
+        readString(paramObject.operationHandle, "operationHandle"),
+        readString(paramObject.reason, "reason")
+      );
+      return null;
+    }
     case "events": {
       return await collectEvents(
         adapter.events === undefined
@@ -258,6 +293,79 @@ export const handleStdioAdapterLine = async (
 export const serveStdioAdapter = async (
   adapter: StdioConformanceAdapter
 ): Promise<void> => {
+  const inFlight = new Map<symbol, Promise<void>>();
+  let writeFailure: Error | undefined;
+  let blockingDispatch = Promise.resolve();
+  const respond = async (line: string): Promise<void> => {
+    const response = await handleStdioAdapterLine(adapter, line);
+    let serialized: string;
+    try {
+      serialized = JSON.stringify(response, (_key, value: unknown) => {
+        if (
+          typeof value === "bigint" ||
+          typeof value === "function" ||
+          typeof value === "symbol" ||
+          (typeof value === "number" &&
+            (!Number.isFinite(value) || Object.is(value, -0)))
+        ) {
+          throw new TypeError("response contains a non-JSON value");
+        }
+        return value;
+      });
+    } catch (error: unknown) {
+      process.stderr.write(
+        `adapter response serialization failed: ${error instanceof Error ? error.message : String(error)}\n`
+      );
+      serialized = JSON.stringify(
+        errorResponse(
+          isRecord(response) &&
+            (typeof response.id === "number" || typeof response.id === "string")
+            ? response.id
+            : null,
+          {
+            code: "adapter_response_serialization_failed",
+            message: "adapter response is not JSON-encodable",
+          }
+        )
+      );
+    }
+    const written = Promise.withResolvers<undefined>();
+    process.stdout.write(`${serialized}\n`, (error) => {
+      if (error === undefined || error === null) {
+        written.resolve();
+      } else {
+        written.reject(error);
+      }
+    });
+    await written.promise;
+  };
+  const launchResponse = (line: string): void => {
+    let predecessor = Promise.resolve();
+    const completed = Promise.withResolvers<undefined>();
+    try {
+      const request: unknown = JSON.parse(line);
+      if (isRecord(request) && request.method === "dispatch") {
+        predecessor = blockingDispatch;
+        blockingDispatch = completed.promise;
+      }
+    } catch {
+      // Invalid frames are answered by handleStdioAdapterLine.
+    }
+    const taskId = Symbol("adapter response");
+    const task = (async () => {
+      try {
+        await predecessor;
+        await respond(line);
+      } catch (error: unknown) {
+        writeFailure =
+          error instanceof Error ? error : new Error(String(error));
+      } finally {
+        completed.resolve();
+        inFlight.delete(taskId);
+      }
+    })();
+    inFlight.set(taskId, task);
+  };
   for await (const line of readStdioLines()) {
     // Bun's console iterator can surface a final empty line for piped EOF; it is
     // transport noise, not a JSON-RPC frame, so adapters must stay silent.
@@ -265,7 +373,10 @@ export const serveStdioAdapter = async (
       continue;
     }
 
-    const response = await handleStdioAdapterLine(adapter, line);
-    process.stdout.write(`${JSON.stringify(response)}\n`);
+    launchResponse(line);
+  }
+  await Promise.all(inFlight.values());
+  if (writeFailure !== undefined) {
+    throw writeFailure;
   }
 };

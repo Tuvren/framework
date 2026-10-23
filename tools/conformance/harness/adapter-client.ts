@@ -293,6 +293,59 @@ export class JsonRpcAdapterClient {
     return value;
   }
 
+  async startOperation(
+    operation: string,
+    argumentsValue: unknown,
+    instance: unknown,
+    timeoutMs?: number
+  ): Promise<{ operationHandle: string }> {
+    const value = await this.request(
+      "startOperation",
+      { arguments: argumentsValue, instance, operation },
+      timeoutMs
+    );
+    if (
+      !isRecord(value) ||
+      typeof value.operationHandle !== "string" ||
+      value.operationHandle.length === 0 ||
+      Object.keys(value).length !== 1
+    ) {
+      throw new Error(
+        "adapter startOperation returned invalid operation handle"
+      );
+    }
+    return { operationHandle: value.operationHandle };
+  }
+
+  async awaitOperation(
+    operationHandle: string,
+    timeoutMs?: number
+  ): Promise<OperationOutcome> {
+    const value = await this.request(
+      "awaitOperation",
+      { operationHandle },
+      timeoutMs
+    );
+    if (!isOperationOutcome(value)) {
+      throw new Error(
+        "adapter awaitOperation returned invalid OperationOutcome"
+      );
+    }
+    return value;
+  }
+
+  async cancelOperation(
+    operationHandle: string,
+    reason: string,
+    timeoutMs?: number
+  ): Promise<void> {
+    await this.request(
+      "cancelOperation",
+      { operationHandle, reason },
+      timeoutMs
+    );
+  }
+
   async events(
     operation: string,
     input: unknown,
