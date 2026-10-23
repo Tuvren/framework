@@ -420,6 +420,16 @@ export class JsonRpcAdapterClient {
     };
   }
 
+  latestArrivalSequence(): number {
+    const frame = this.frames.findLast(
+      (entry) => entry.direction === "receive"
+    );
+    if (frame === undefined) {
+      throw new Error("no received adapter frame");
+    }
+    return frame.sequence;
+  }
+
   framesSince(mark: AdapterTranscriptMark): AdapterFrame[] {
     return this.frames
       .filter((entry) => entry.sequence >= mark.frameSequence)

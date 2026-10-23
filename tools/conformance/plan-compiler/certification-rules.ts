@@ -23,6 +23,10 @@ import {
   validateCertificationDocument,
 } from "../../scripts/conformance/certification-schemas.js";
 import {
+  barrierControlArguments,
+  checkBarrierSchedule,
+} from "./barrier-rules.js";
+import {
   controlConsumesInstance,
   controlInputProblem,
 } from "./control-input.js";
@@ -39,6 +43,7 @@ export const CERTIFICATION_RULE_IDS = [
   "operation-catalogued",
   "control-input",
   "fault-action",
+  "barrier-schedule",
   "observation-path",
   "literal-boolean",
   "no-echo",
@@ -75,6 +80,7 @@ export interface OperationCatalog {
   catalogId: string;
   operations: ReadonlyMap<string, CatalogOperation>;
   packetId: string;
+  seams?: ReadonlyMap<string, readonly string[]>;
 }
 
 const REPO_ROOT = nodePath.resolve(import.meta.dirname, "../../..");
@@ -88,6 +94,7 @@ const EXTERNAL_ROOTS = new Set(["capture", "fixture", "input", "scenario"]);
 const EXPECTED_SOURCE_ROOTS = new Set(["fixture", "input", "scenario"]);
 const ARGUMENT_REFERENCE_PATTERN =
   /^(?:input|fixture\.input|capture)(?:\.[^.]+)+$/u;
+const ARRIVAL_PATH_PATTERN = /^\$\.arrivals\.[^.]+$/u;
 const ARRAY_INDEX_PATTERN = /^\d+$/u;
 const EVIDENCE_ONLY_GUARDRAIL_CHECKS = new Set([
   "plan-decisive-assertion",
@@ -209,6 +216,16 @@ export const parseOperationCatalog = (
     catalogId: String(value.catalogId),
     operations,
     packetId: String(value.packetId),
+    seams: new Map(
+      (Array.isArray(value.seams) ? value.seams : [])
+        .filter(isRecord)
+        .map((entry) => [
+          String(entry.seamId),
+          Array.isArray(entry.operationIds)
+            ? entry.operationIds.map(String)
+            : [],
+        ])
+    ),
   };
 };
 
@@ -400,7 +417,7 @@ const childSchemas = (node: SchemaNode, segment: PathSegment): SchemaNode[] => {
   return children
     .filter((child) => isJsonSchema(child) && child !== false)
     .flatMap((child) =>
-      expandSchema({ document: node.document, schema: child as JsonSchema })
+      expandSchema({ document: node.document, schema: child })
     );
 };
 
@@ -525,6 +542,7 @@ const assertionActualPath = (
     case "errorEnvelope": {
       return splitContextPath(assertion.path ?? "$.result.error");
     }
+    case "arrival":
     case "faultActivated":
     case "digest":
     case "canonicalCbor":
@@ -989,6 +1007,31 @@ const checkAssertion = (
   forwarded: readonly (readonly PathSegment[])[]
 ): void => {
   const label = `assertion ${index} (${assertion.kind})`;
+  if (assertion.kind === "arrival") {
+    for (const node of operatorNodes(
+      assertion,
+      splitContextPath(assertion.path ?? "$"),
+      label
+    )) {
+      checkLiteralBooleans(context, scope, node);
+    }
+    const paths = [assertion.path, ...operandPaths(assertion)];
+    for (const path of paths) {
+      if (
+        path === undefined ||
+        !ARRIVAL_PATH_PATTERN.test(path) ||
+        scope.kind !== "trace" ||
+        !scope.stepOperations.has(path.slice("$.arrivals.".length))
+      ) {
+        report(
+          context,
+          "observation-path",
+          "arrival requires a runner-recorded step arrival"
+        );
+      }
+    }
+    return;
+  }
   if (assertion.kind === "identity" || assertion.kind === "digest") {
     checkIntegrityObservation(
       context,
@@ -1186,9 +1229,10 @@ const checkStep = (
   }
 
   if (operation?.kind === "control" && step.arguments !== undefined) {
+    const argumentsValue = barrierControlArguments(step);
     const input = controlConsumesInstance(operation)
-      ? { ...step.arguments, instance: "runner-instance" }
-      : step.arguments;
+      ? { ...argumentsValue, instance: "runner-instance" }
+      : argumentsValue;
     const problem = controlInputProblem(operation, input, true);
     if (problem !== undefined) {
       report(context, "control-input", `${subject(context)} ${problem}`);
@@ -1302,6 +1346,7 @@ export const evaluateCertificationRules = (
 
   for (const check of plan.checks) {
     checkCheck(plan, check, catalog, violations);
+    violations.push(...checkBarrierSchedule(check, catalog));
   }
 
   return violations;

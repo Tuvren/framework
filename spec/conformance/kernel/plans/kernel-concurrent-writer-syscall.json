@@ -1,0 +1,1588 @@
+{
+  "planId": "tuvren.kernel.concurrent-writer.syscall",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.kernel.protocol",
+  "certificationRules": "enforcing",
+  "applicability": {
+    "capabilities": ["kernel.syscall"]
+  },
+  "checks": [
+    {
+      "checkId": "kernel.syscall.concurrent_writer.a_first",
+      "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+      "operation": "kernel.branch.setHead",
+      "capabilities": ["kernel.protocol", "kernel.barrier"],
+      "controls": {
+        "deadlineMs": 5000
+      },
+      "steps": [
+        {
+          "stepId": "backendClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 100
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "workerClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 100
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "writer_schema",
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ]
+              }
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread",
+            "schemaId": {
+              "$ref": "capture.schema"
+            },
+            "initialBranchId": "common"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baseTurn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "baseTurn",
+            "threadId": "thread",
+            "branchId": "common",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baseTurn",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baseRun",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "baseRun",
+            "turnId": "baseTurn",
+            "branchId": "common",
+            "schemaId": {
+              "$ref": "capture.schema"
+            },
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "step",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baseRun",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baseBegin",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "baseRun",
+            "stepId": "step"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baseBegin",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baseStage",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "baseRun",
+            "blob": {
+              "$bytes": "00"
+            },
+            "taskId": "baseTask",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baseStage",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baseCheckpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "baseRun",
+            "stepId": "step"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baseCheckpoint",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baseComplete",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "baseRun",
+            "status": "completed"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baseComplete",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aBranch",
+          "operation": "kernel.branch.create",
+          "arguments": {
+            "branchId": "a",
+            "threadId": "thread",
+            "fromTurnNodeHash": {
+              "$ref": "capture.baseCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aBranch",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aTurn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "aTurn",
+            "threadId": "thread",
+            "branchId": "a",
+            "parentTurnId": "baseTurn",
+            "startTurnNodeHash": {
+              "$ref": "capture.baseCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aTurn",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aRun",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "aRun",
+            "turnId": "aTurn",
+            "branchId": "a",
+            "schemaId": {
+              "$ref": "capture.schema"
+            },
+            "startTurnNodeHash": {
+              "$ref": "capture.baseCheckpoint.turnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "step",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aRun",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aBegin",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "aRun",
+            "stepId": "step"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aBegin",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aStage",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "aRun",
+            "blob": {
+              "$bytes": "01"
+            },
+            "taskId": "aTask",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aStage",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aCheckpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "aRun",
+            "stepId": "step"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aCheckpoint",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aComplete",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "aRun",
+            "status": "completed"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aComplete",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.aCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aNode",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bBranch",
+          "operation": "kernel.branch.create",
+          "arguments": {
+            "branchId": "b",
+            "threadId": "thread",
+            "fromTurnNodeHash": {
+              "$ref": "capture.baseCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bBranch",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bTurn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "bTurn",
+            "threadId": "thread",
+            "branchId": "b",
+            "parentTurnId": "baseTurn",
+            "startTurnNodeHash": {
+              "$ref": "capture.baseCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bTurn",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bRun",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "bRun",
+            "turnId": "bTurn",
+            "branchId": "b",
+            "schemaId": {
+              "$ref": "capture.schema"
+            },
+            "startTurnNodeHash": {
+              "$ref": "capture.baseCheckpoint.turnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "step",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bRun",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bBegin",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "bRun",
+            "stepId": "step"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bBegin",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bStage",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "bRun",
+            "blob": {
+              "$bytes": "02"
+            },
+            "taskId": "bTask",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bStage",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bCheckpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "bRun",
+            "stepId": "step"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bCheckpoint",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bComplete",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "bRun",
+            "status": "completed"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bComplete",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.bCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bNode",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "commonHead",
+          "operation": "kernel.branch.get",
+          "arguments": {
+            "branchId": "common"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "commonHead",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "arm",
+          "operation": "kernel.barrier.arm",
+          "arguments": {},
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "action": "barrier",
+          "capture": [
+            {
+              "name": "arm",
+              "path": "result"
+            }
+          ],
+          "barrierId": "writers",
+          "seam": "kernel.persistence.before-transact",
+          "participants": ["firstStart", "secondStart"]
+        },
+        {
+          "stepId": "firstStart",
+          "operation": "kernel.branch.setHead",
+          "arguments": {
+            "branchId": "common",
+            "turnNodeHash": {
+              "$ref": "capture.aCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "action": "start",
+          "capture": [
+            {
+              "name": "firstStart",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "secondStart",
+          "operation": "kernel.branch.setHead",
+          "arguments": {
+            "branchId": "common",
+            "turnNodeHash": {
+              "$ref": "capture.bCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "action": "start",
+          "capture": [
+            {
+              "name": "secondStart",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "firstReceipt",
+          "operation": "kernel.barrier.wait",
+          "arguments": {
+            "barrierId": "writers",
+            "operationHandle": {
+              "$ref": "capture.firstStart.operationHandle"
+            },
+            "timeoutMs": 1000
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "firstReceipt",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "secondReceipt",
+          "operation": "kernel.barrier.wait",
+          "arguments": {
+            "barrierId": "writers",
+            "operationHandle": {
+              "$ref": "capture.secondStart.operationHandle"
+            },
+            "timeoutMs": 1000
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "secondReceipt",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "release",
+          "operation": "kernel.barrier.release",
+          "arguments": {},
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "action": "release",
+          "capture": [
+            {
+              "name": "release",
+              "path": "result"
+            }
+          ],
+          "barrierId": "writers",
+          "participants": ["firstStart"]
+        },
+        {
+          "stepId": "winner",
+          "operation": "kernel.branch.setHead",
+          "arguments": {
+            "operationHandle": {
+              "$ref": "capture.firstStart.operationHandle"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "action": "await",
+          "capture": [
+            {
+              "name": "winner",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "releaseSecond",
+          "operation": "kernel.barrier.release",
+          "arguments": {},
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "action": "release",
+          "capture": [
+            {
+              "name": "releaseSecond",
+              "path": "result"
+            }
+          ],
+          "barrierId": "writers",
+          "participants": ["secondStart"]
+        },
+        {
+          "stepId": "loser",
+          "operation": "kernel.branch.setHead",
+          "arguments": {
+            "operationHandle": {
+              "$ref": "capture.secondStart.operationHandle"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "action": "await"
+        },
+        {
+          "stepId": "head",
+          "operation": "kernel.branch.get",
+          "arguments": {
+            "branchId": "common"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.a_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "head",
+              "path": "result"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.commonHead.result.headTurnNodeHash",
+          "equalsPath": "$.result.trace.baseCheckpoint.result.turnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.aNode.result.previousTurnNodeHash",
+          "equalsPath": "$.result.trace.baseCheckpoint.result.turnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.bNode.result.previousTurnNodeHash",
+          "equalsPath": "$.result.trace.baseCheckpoint.result.turnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.aCheckpoint.result.turnNodeHash",
+          "notEqualsPath": "$.result.trace.bCheckpoint.result.turnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.firstReceipt.result.operationHandle",
+          "equalsPath": "$.capture.firstStart.operationHandle"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.firstReceipt.result.barrierId",
+          "equals": "writers"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.firstReceipt.result.seam",
+          "equals": "kernel.persistence.before-transact"
+        },
+        {
+          "kind": "arrival",
+          "path": "$.arrivals.firstReceipt",
+          "lessThan": "$.arrivals.release"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.secondReceipt.result.operationHandle",
+          "equalsPath": "$.capture.secondStart.operationHandle"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.secondReceipt.result.barrierId",
+          "equals": "writers"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.secondReceipt.result.seam",
+          "equals": "kernel.persistence.before-transact"
+        },
+        {
+          "kind": "arrival",
+          "path": "$.arrivals.secondReceipt",
+          "lessThan": "$.arrivals.release"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.winner.result.branch.headTurnNodeHash",
+          "equalsPath": "$.result.trace.aCheckpoint.result.turnNodeHash"
+        },
+        {
+          "kind": "schemaValid",
+          "path": "$.state.trace.loser.state.adapterError",
+          "schema": "$.fixture.expected.lateralConflict"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.head.result.headTurnNodeHash",
+          "equalsPath": "$.result.trace.winner.result.branch.headTurnNodeHash"
+        },
+        {
+          "kind": "arrival",
+          "path": "$.arrivals.release",
+          "lessThan": "$.arrivals.winner"
+        }
+      ],
+      "evidence": [
+        "trace.firstReceipt.result",
+        "trace.secondReceipt.result",
+        "trace.head.result"
+      ],
+      "fixture": "errors"
+    },
+    {
+      "checkId": "kernel.syscall.concurrent_writer.b_first",
+      "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+      "operation": "kernel.branch.setHead",
+      "capabilities": ["kernel.protocol", "kernel.barrier"],
+      "controls": {
+        "deadlineMs": 5000
+      },
+      "steps": [
+        {
+          "stepId": "backendClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 100
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "workerClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 100
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "writer_schema",
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ]
+              }
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread",
+            "schemaId": {
+              "$ref": "capture.schema"
+            },
+            "initialBranchId": "common"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baseTurn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "baseTurn",
+            "threadId": "thread",
+            "branchId": "common",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baseTurn",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baseRun",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "baseRun",
+            "turnId": "baseTurn",
+            "branchId": "common",
+            "schemaId": {
+              "$ref": "capture.schema"
+            },
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "step",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baseRun",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baseBegin",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "baseRun",
+            "stepId": "step"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baseBegin",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baseStage",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "baseRun",
+            "blob": {
+              "$bytes": "00"
+            },
+            "taskId": "baseTask",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baseStage",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baseCheckpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "baseRun",
+            "stepId": "step"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baseCheckpoint",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baseComplete",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "baseRun",
+            "status": "completed"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baseComplete",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aBranch",
+          "operation": "kernel.branch.create",
+          "arguments": {
+            "branchId": "a",
+            "threadId": "thread",
+            "fromTurnNodeHash": {
+              "$ref": "capture.baseCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aBranch",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aTurn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "aTurn",
+            "threadId": "thread",
+            "branchId": "a",
+            "parentTurnId": "baseTurn",
+            "startTurnNodeHash": {
+              "$ref": "capture.baseCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aTurn",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aRun",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "aRun",
+            "turnId": "aTurn",
+            "branchId": "a",
+            "schemaId": {
+              "$ref": "capture.schema"
+            },
+            "startTurnNodeHash": {
+              "$ref": "capture.baseCheckpoint.turnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "step",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aRun",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aBegin",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "aRun",
+            "stepId": "step"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aBegin",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aStage",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "aRun",
+            "blob": {
+              "$bytes": "01"
+            },
+            "taskId": "aTask",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aStage",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aCheckpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "aRun",
+            "stepId": "step"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aCheckpoint",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aComplete",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "aRun",
+            "status": "completed"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aComplete",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "aNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.aCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "aNode",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bBranch",
+          "operation": "kernel.branch.create",
+          "arguments": {
+            "branchId": "b",
+            "threadId": "thread",
+            "fromTurnNodeHash": {
+              "$ref": "capture.baseCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bBranch",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bTurn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "bTurn",
+            "threadId": "thread",
+            "branchId": "b",
+            "parentTurnId": "baseTurn",
+            "startTurnNodeHash": {
+              "$ref": "capture.baseCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bTurn",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bRun",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "bRun",
+            "turnId": "bTurn",
+            "branchId": "b",
+            "schemaId": {
+              "$ref": "capture.schema"
+            },
+            "startTurnNodeHash": {
+              "$ref": "capture.baseCheckpoint.turnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "step",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bRun",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bBegin",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "bRun",
+            "stepId": "step"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bBegin",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bStage",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "bRun",
+            "blob": {
+              "$bytes": "02"
+            },
+            "taskId": "bTask",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bStage",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bCheckpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "bRun",
+            "stepId": "step"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bCheckpoint",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bComplete",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "bRun",
+            "status": "completed"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bComplete",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "bNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.bCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "bNode",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "commonHead",
+          "operation": "kernel.branch.get",
+          "arguments": {
+            "branchId": "common"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "commonHead",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "arm",
+          "operation": "kernel.barrier.arm",
+          "arguments": {},
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "action": "barrier",
+          "capture": [
+            {
+              "name": "arm",
+              "path": "result"
+            }
+          ],
+          "barrierId": "writers",
+          "seam": "kernel.persistence.before-transact",
+          "participants": ["firstStart", "secondStart"]
+        },
+        {
+          "stepId": "firstStart",
+          "operation": "kernel.branch.setHead",
+          "arguments": {
+            "branchId": "common",
+            "turnNodeHash": {
+              "$ref": "capture.bCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "action": "start",
+          "capture": [
+            {
+              "name": "firstStart",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "secondStart",
+          "operation": "kernel.branch.setHead",
+          "arguments": {
+            "branchId": "common",
+            "turnNodeHash": {
+              "$ref": "capture.aCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "action": "start",
+          "capture": [
+            {
+              "name": "secondStart",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "firstReceipt",
+          "operation": "kernel.barrier.wait",
+          "arguments": {
+            "barrierId": "writers",
+            "operationHandle": {
+              "$ref": "capture.firstStart.operationHandle"
+            },
+            "timeoutMs": 1000
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "firstReceipt",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "secondReceipt",
+          "operation": "kernel.barrier.wait",
+          "arguments": {
+            "barrierId": "writers",
+            "operationHandle": {
+              "$ref": "capture.secondStart.operationHandle"
+            },
+            "timeoutMs": 1000
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "secondReceipt",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "release",
+          "operation": "kernel.barrier.release",
+          "arguments": {},
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "action": "release",
+          "capture": [
+            {
+              "name": "release",
+              "path": "result"
+            }
+          ],
+          "barrierId": "writers",
+          "participants": ["firstStart"]
+        },
+        {
+          "stepId": "winner",
+          "operation": "kernel.branch.setHead",
+          "arguments": {
+            "operationHandle": {
+              "$ref": "capture.firstStart.operationHandle"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "action": "await",
+          "capture": [
+            {
+              "name": "winner",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "releaseSecond",
+          "operation": "kernel.barrier.release",
+          "arguments": {},
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "action": "release",
+          "capture": [
+            {
+              "name": "releaseSecond",
+              "path": "result"
+            }
+          ],
+          "barrierId": "writers",
+          "participants": ["secondStart"]
+        },
+        {
+          "stepId": "loser",
+          "operation": "kernel.branch.setHead",
+          "arguments": {
+            "operationHandle": {
+              "$ref": "capture.secondStart.operationHandle"
+            }
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "action": "await"
+        },
+        {
+          "stepId": "head",
+          "operation": "kernel.branch.get",
+          "arguments": {
+            "branchId": "common"
+          },
+          "claimIds": ["kernel.syscall.concurrent_writer.b_first"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "head",
+              "path": "result"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.commonHead.result.headTurnNodeHash",
+          "equalsPath": "$.result.trace.baseCheckpoint.result.turnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.aNode.result.previousTurnNodeHash",
+          "equalsPath": "$.result.trace.baseCheckpoint.result.turnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.bNode.result.previousTurnNodeHash",
+          "equalsPath": "$.result.trace.baseCheckpoint.result.turnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.aCheckpoint.result.turnNodeHash",
+          "notEqualsPath": "$.result.trace.bCheckpoint.result.turnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.firstReceipt.result.operationHandle",
+          "equalsPath": "$.capture.firstStart.operationHandle"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.firstReceipt.result.barrierId",
+          "equals": "writers"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.firstReceipt.result.seam",
+          "equals": "kernel.persistence.before-transact"
+        },
+        {
+          "kind": "arrival",
+          "path": "$.arrivals.firstReceipt",
+          "lessThan": "$.arrivals.release"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.secondReceipt.result.operationHandle",
+          "equalsPath": "$.capture.secondStart.operationHandle"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.secondReceipt.result.barrierId",
+          "equals": "writers"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.secondReceipt.result.seam",
+          "equals": "kernel.persistence.before-transact"
+        },
+        {
+          "kind": "arrival",
+          "path": "$.arrivals.secondReceipt",
+          "lessThan": "$.arrivals.release"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.winner.result.branch.headTurnNodeHash",
+          "equalsPath": "$.result.trace.bCheckpoint.result.turnNodeHash"
+        },
+        {
+          "kind": "schemaValid",
+          "path": "$.state.trace.loser.state.adapterError",
+          "schema": "$.fixture.expected.lateralConflict"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.head.result.headTurnNodeHash",
+          "equalsPath": "$.result.trace.winner.result.branch.headTurnNodeHash"
+        },
+        {
+          "kind": "arrival",
+          "path": "$.arrivals.release",
+          "lessThan": "$.arrivals.winner"
+        }
+      ],
+      "evidence": [
+        "trace.firstReceipt.result",
+        "trace.secondReceipt.result",
+        "trace.head.result"
+      ],
+      "fixture": "errors"
+    }
+  ],
+  "fixtures": {
+    "errors": "../fixtures/concurrent-writer/errors.json"
+  }
+}

@@ -35,7 +35,9 @@
     "--capability",
     "kernel.syscall",
     "--capability",
-    "kernel.fault-injection"
+    "kernel.fault-injection",
+    "--capability",
+    "kernel.barrier"
   ],
   "capabilities": [
     "kernel.protocol",
@@ -47,7 +49,8 @@
     "kernel.reclamation",
     "kernel-protocol.thread.enumeration",
     "kernel.syscall",
-    "kernel.fault-injection"
+    "kernel.fault-injection",
+    "kernel.barrier"
   ],
   "authorityPackets": ["spec/kernel/authority-packet.json"],
   "suiteId": "tuvren.kernel.protocol",

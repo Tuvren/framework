@@ -285,6 +285,7 @@
           "faultedCheckpoint"
         ],
         "fault": {
+          "activations": ["fault-1"],
           "armed": [
             {
               "outcomeCode": "kernel_persistence_fault_injected",
@@ -297,8 +298,7 @@
                 "branchId": "branch_main"
               }
             }
-          ],
-          "activations": ["fault-1"]
+          ]
         }
       },
       "status": "pass"
@@ -351,6 +351,7 @@
           "faultedCheckpoint"
         ],
         "fault": {
+          "activations": ["fault-1"],
           "armed": [
             {
               "outcomeCode": "kernel_persistence_fault_injected",
@@ -363,8 +364,7 @@
                 "branchId": "branch_main"
               }
             }
-          ],
-          "activations": ["fault-1"]
+          ]
         }
       },
       "status": "pass"
@@ -4941,6 +4941,7 @@
           "visibleMessages"
         ],
         "fault": {
+          "activations": ["fault-1"],
           "armed": [
             {
               "outcomeCode": "kernel_persistence_fault_injected",
@@ -4953,8 +4954,7 @@
                 "operation": "checkpoint"
               }
             }
-          ],
-          "activations": ["fault-1"]
+          ]
         }
       },
       "status": "pass"
@@ -5275,6 +5275,7 @@
           "visibleMessages"
         ],
         "fault": {
+          "activations": ["fault-1"],
           "armed": [
             {
               "outcomeCode": "kernel_persistence_fault_injected",
@@ -5287,8 +5288,7 @@
                 "operation": "checkpoint"
               }
             }
-          ],
-          "activations": ["fault-1"]
+          ]
         }
       },
       "status": "pass"
@@ -6045,6 +6045,8 @@
   "exitCode": 0,
   "implementationId": "rust-kernel",
   "nonApplicableCheckIds": [
+    "kernel.syscall.concurrent_writer.a_first",
+    "kernel.syscall.concurrent_writer.b_first",
     "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
     "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
     "kernel-protocol-af.run-complete-rejects-missing-event-object",
@@ -6076,9 +6078,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 114,
-    "totalChecks": 137,
+    "totalChecks": 139,
     "applicableChecks": 114,
-    "nonApplicableChecks": 23
+    "nonApplicableChecks": 25
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

@@ -7,7 +7,8 @@ export const createOperationHandles = (
     operation: string,
     input: unknown,
     instance: unknown,
-    signal: AbortSignal
+    signal: AbortSignal,
+    operationHandle: string
   ) => Promise<OperationOutcome>,
   destroy: (instance: unknown) => Promise<void>
 ) => {
@@ -43,7 +44,8 @@ export const createOperationHandles = (
             operation,
             argumentsValue,
             instance,
-            controller.signal
+            controller.signal,
+            operationHandle
           ),
         };
       } catch (error: unknown) {

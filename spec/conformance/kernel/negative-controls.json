@@ -18,16 +18,24 @@
       "mutantId": "kernel.accept-stale-head-update",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#branch-head-movement",
-      "claimIds": ["kernel.crash-recovery.concurrent_writer"],
+      "claimIds": [
+        "kernel.crash-recovery.concurrent_writer",
+        "kernel.syscall.concurrent_writer.a_first",
+        "kernel.syscall.concurrent_writer.b_first"
+      ],
       "activation": {
-        "precondition": "a backend transaction sets a branch head from a stale read and the reference backend rejects it as a lateral move",
+        "precondition": "a backend transaction sets a branch head from a stale read and the reference backend rejects it as a lateral move; or a barrier-entered public branch.setHead syscall rejects the lateral move before the backend write",
         "signal": "mutant.accept-stale-head-update.entered"
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
         "kernel.crash-recovery.concurrent_writer.1.resultField",
         "kernel.crash-recovery.concurrent_writer.3.resultField",
-        "kernel.crash-recovery.concurrent_writer.4.resultField"
+        "kernel.crash-recovery.concurrent_writer.4.resultField",
+        "kernel.syscall.concurrent_writer.a_first.14.schemaValid",
+        "kernel.syscall.concurrent_writer.a_first.15.resultField",
+        "kernel.syscall.concurrent_writer.b_first.14.schemaValid",
+        "kernel.syscall.concurrent_writer.b_first.15.resultField"
       ]
     },
     {

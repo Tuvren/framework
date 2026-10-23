@@ -1,0 +1,18 @@
+{
+  "input": {},
+  "expected": {
+    "lateralConflict": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "const": "kernel_runtime_lateral_head_movement"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

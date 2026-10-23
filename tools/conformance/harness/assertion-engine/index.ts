@@ -33,6 +33,7 @@ import { assertSchemaValid } from "./schema.js";
 import { valuesAreEqual } from "./value-comparison.js";
 
 export interface AssertionContext {
+  arrivals?: Readonly<Record<string, number>>;
   capture?: Readonly<Record<string, unknown>>;
   faultActivations?: readonly string[];
   events?: readonly unknown[];
@@ -514,6 +515,19 @@ const evaluateAssertion = (
   context: AssertionContext
 ): boolean => {
   switch (assertion.kind) {
+    case "arrival": {
+      if (
+        assertion.path === undefined ||
+        !assertion.path.startsWith("$.arrivals.")
+      ) {
+        throw new Error("arrival requires a runner arrival path");
+      }
+      return assertField(
+        { ...assertion, field: assertion.path },
+        context,
+        context
+      );
+    }
     case "faultActivated": {
       if (assertion.path === undefined) {
         throw new Error("faultActivated requires the armed token path");
