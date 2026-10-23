@@ -36,10 +36,6 @@ const PLANS_DIRECTORY = "spec/conformance/kernel/plans";
 const MUTANT_ENV = "TUVREN_KERNEL_MUTANT";
 const ACTIVATION_OPERATION = "kernel.mutant.activation";
 
-// Controls whose designated checks need a capability the memory adapter does
-// not advertise, so the memory baseline cannot reach their mutated branch.
-const UNREACHABLE_ON_MEMORY = new Set(["kernel.lease-takeover-before-expiry"]);
-
 interface AdapterManifest {
   adapterId: string;
   capabilities: string[];
@@ -352,9 +348,7 @@ describe("mutant activation control", () => {
     );
 
     test(`${control.mutantId} activates through its detecting checks on memory`, async () => {
-      expect(reachable.length === 0).toBe(
-        UNREACHABLE_ON_MEMORY.has(control.mutantId)
-      );
+      expect(reachable.length).toBeGreaterThan(0);
       const requests = [
         ...reachable.map(checkRequest),
         dispatchRequest(ACTIVATION_OPERATION, {}),
@@ -367,13 +361,10 @@ describe("mutant activation control", () => {
         "activation.activated"
       );
 
-      expect(activation).toBe(!UNREACHABLE_ON_MEMORY.has(control.mutantId));
+      expect(activation).toBe(true);
     });
 
-    if (
-      control.kind === "implementation" &&
-      !UNREACHABLE_ON_MEMORY.has(control.mutantId)
-    ) {
+    if (control.kind === "implementation") {
       test(`${control.mutantId} alters a designated observation before the adapter reports it`, async () => {
         const fields = designatedFields(control, planChecks).filter(
           ({ checkId }) =>

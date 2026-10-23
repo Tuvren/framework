@@ -34,15 +34,15 @@
       "mutantId": "kernel.accept-stale-owner-after-takeover",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#run-execution-leases",
-      "claimIds": ["kernel.run-liveness.lease_renewal"],
+      "claimIds": ["kernel.syscall.run-liveness.lease_renewal"],
       "activation": {
         "precondition": "a lease renewal presents a superseded owner or fencing token and the reference kernel rejects it",
         "signal": "mutant.accept-stale-owner-after-takeover.entered"
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
-        "kernel.run-liveness.lease_renewal.2.resultField",
-        "kernel.run-liveness.lease_renewal.3.resultField"
+        "kernel.syscall.run-liveness.lease_renewal.2.schemaValid",
+        "kernel.syscall.run-liveness.lease_renewal.3.schemaValid"
       ]
     },
     {
@@ -101,15 +101,17 @@
       "mutantId": "kernel.lease-takeover-before-expiry",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#stale-running-preemption",
-      "claimIds": ["kernel.run-liveness.clock_skew_preemption"],
+      "claimIds": [
+        "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+      ],
       "activation": {
         "precondition": "an expiry listing or preemption targets a running run whose lease has not expired at the caller's clock",
         "signal": "mutant.lease-takeover-before-expiry.entered"
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
-        "kernel.run-liveness.clock_skew_preemption.1.resultField",
-        "kernel.run-liveness.clock_skew_preemption.3.resultField"
+        "kernel.syscall.run-liveness.expired_listing.1.resultField",
+        "kernel.syscall.run-liveness.lease_renewal.7.resultField"
       ]
     },
     {
