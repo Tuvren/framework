@@ -62,7 +62,7 @@ tickets:
       expected: "Exit 0; restart, kill, and respawn steps run against the built adapter executable, evidence records PIDs, epochs, signals, and exits, and the close-reopen checks pass on SQLite and PostgreSQL."
     stop_conditions:
       - "STOP if the supervised executable is a launcher whose child survives a kill; do not improvise."
-    description: "ADR-0076 decision 3. Add the process supervisor that runs the built adapter executable, records executable digest, PID, process epoch, signal, and exit, and serves restart, kill, and respawn steps. Rewrite the close-reopen-checkpoint checks as traces that write, restart the process, reattach to the same storage, and observe through syscalls, replacing the adapter's sqlite child processes and derived booleans."
+    description: "ADR-0076 decision 3. Add the process supervisor that runs the built adapter executable, records executable digest, PID, process epoch, signal, and exit, and serves restart, kill, and respawn steps. Write syscall versions of the close-reopen-checkpoint checks, beside the unchanged legacy plan, as traces that write, restart the process, reattach to the same storage, and observe through syscalls, replacing the adapter's sqlite child processes and derived booleans."
     acceptance:
       mode: contract_test
       evidence: "Assert a respawned process has a new PID and epoch on the same storageRef, the reopen checks pass on SQLite and PostgreSQL, and no adapter code spawns its own kernel processes."
@@ -109,7 +109,7 @@ tickets:
       expected: "Exit 0; each crash check arms a point, receives the receipt, kills the process, respawns on the same storage, and passes recovery assertions; the incomplete-checkpoint mutant is killed."
     stop_conditions:
       - "STOP if a backend shows partial checkpoint state after a kill; record the implementation finding and keep the check red; do not improvise."
-    description: "ADR-0076. Rewrite crash-recovery-durable as process-crash traces: baseline checkpoint, arm with mode block, attempt, wait for the receipt, kill, respawn, reattach, recover through the public surface, and assert the all-or-nothing invariant with when-branches only for the uncertain-commit point. Add the durable mutant that exposes a new head with an incomplete checkpoint. Triage every failure."
+    description: "ADR-0076. Write a syscall version of crash-recovery-durable, beside the unchanged legacy plan, as process-crash traces: baseline checkpoint, arm with mode block, attempt, wait for the receipt, kill, respawn, reattach, recover through the public surface, and assert the all-or-nothing invariant with when-branches only for the uncertain-commit point. Add the durable mutant that exposes a new head with an incomplete checkpoint. Triage every failure."
     acceptance:
       mode: contract_test
       evidence: "Assert every supported point has a receipt followed by a forced death of the same epoch, recovery assertions pass or are triaged red, a missing receipt invalidates the run, and the incomplete-checkpoint mutant is killed."
@@ -135,7 +135,7 @@ tickets:
       expected: "Exit 0; two adapter processes race on one PostgreSQL storageRef with entry receipts, clock-skew preemption follows the backend clock, and the persistent-reopen, process-crash, and shared-backend profiles produce certificates."
     stop_conditions:
       - "STOP if PostgreSQL cannot provide a backend-authoritative clock observation; record a specification finding; do not improvise."
-    description: "ADR-0076 and ADR-0077. Run the concurrent-writer check from two processes on one PostgreSQL storageRef, rewrite clock-skew preemption with setClock on the worker domain against the backend clock, add the worker-clock expiry mutant, write the kernel.persistent-reopen, kernel.process-crash, and kernel.shared-backend profiles, claim them for SQLite and PostgreSQL as applicable, and emit their certificates."
+    description: "ADR-0076 and ADR-0077. Run the concurrent-writer check from two processes on one PostgreSQL storageRef, write a syscall version of clock-skew preemption with setClock on the worker domain against the backend clock, add the worker-clock expiry mutant, write the kernel.persistent-reopen, kernel.process-crash, and kernel.shared-backend profiles, claim them for SQLite and PostgreSQL as applicable, and emit their certificates."
     acceptance:
       mode: contract_test
       evidence: "Assert the two-process race needs both receipts before release, the worker-clock mutant is killed, and SQLite and PostgreSQL certificates validate with matching control runs."
