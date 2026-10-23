@@ -134,8 +134,8 @@ tickets:
         - spec/conformance/kernel/fixtures
         - spec/conformance/kernel/identity-recipes.json
     verification:
-      command: bun run conformance
-      expected: "Exit 0; a Rust test reproduces every committed kernel vector and identity recipe digest byte for byte."
+      command: bun run check
+      expected: "Exit 0; the workspace cargo test gate runs because Rust sources changed, and the Rust test reproduces every committed kernel vector and identity recipe digest byte for byte."
     stop_conditions:
       - "STOP if the Rust encoder disagrees with a committed vector; record it as a specification or implementation finding with both encodings and do not change the vector; do not improvise."
     description: "ADR-0078 decision 4. Before any identity recipe is promoted into a certificate, a Rust test in rust/kernel recomputes canonical CBOR and digests for every committed vector and identity recipe, so the runner's verifier and the TypeScript production encoder are cross-checked by an independent implementation."

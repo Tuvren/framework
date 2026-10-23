@@ -32,7 +32,7 @@ tickets:
       expected: "Exit 0; the rewritten protocol plans pass against the Rust kernel adapter with no composite operations for those claims."
     stop_conditions:
       - "STOP if a protocol syscall has no public Rust kernel API; record it as an implementation finding; do not improvise."
-    description: "ADR-0075, ADR-0078, and ADR-0080. Add the Rust observation encoding helpers ($bytes, safe integers, tagged records, duplicate-key rejection), claim kernel.syscall, and replace the Rust adapter's protocol composites (including recovery-state, which echoes its fixture) with syscall bindings that forward native results and errors unchanged, and make the Rust kernel return canonical changedPaths order. Triage every failure in this ticket's certification-triage.yaml."
+    description: "ADR-0075, ADR-0078, and ADR-0080. Add the Rust observation encoding helpers ($bytes, safe integers, tagged records, duplicate-key rejection), claim kernel.syscall, and add syscall bindings that forward native results and errors unchanged beside the Rust adapter's protocol composites (including recovery-state, which echoes its fixture), which stay only for the legacy plans until DJ retires them, and make the Rust kernel return canonical changedPaths order. Triage every failure in this ticket's certification-triage.yaml."
     acceptance:
       mode: contract_test
       evidence: "Assert the protocol plans pass on the Rust kernel, recovery-state observations come from the kernel rather than the fixture, and the Rust adapter performs no comparison, sorting, or normalization for these operations."
