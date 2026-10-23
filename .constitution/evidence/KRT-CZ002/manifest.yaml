@@ -1,0 +1,13 @@
+owner: KRT-CZ002
+mode: contract_test
+produced:
+  date: 2026-10-23
+  commit: 8d897b8
+  command: "bun run check; bun run conformance"
+result: pass
+pass_criteria: "Every operator has passing and failing cases; no check passes on an unresolved operand or a bare presence assertion; conformance lanes keep their status."
+files:
+  - path: certification-triage.yaml
+    sha256: ffa8b90129fac8573baf9bb9c279477aad12f82cfd82e532a25b2b7f4e1967dc
+    bytes: 1387
+    role: transcript

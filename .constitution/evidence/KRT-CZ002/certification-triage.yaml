@@ -1,0 +1,28 @@
+ticket: KRT-CZ002
+verified_at: 8d897b8
+entries:
+  - check: runtime-callable-ext.provider-generate.call-count-positive
+    plan: tuvren.framework.runtime-api.callables-extended
+    class: V
+    finding: "The assertion only required callCount to exist, weaker than the check name claims."
+    resolution: "Asserts greaterThan 0; the TypeScript framework passes."
+  - check: runtime-callable-ext.provider-generate.response-parts-first-present
+    plan: tuvren.framework.runtime-api.callables-extended
+    class: V
+    finding: "Bare presence assertion with no operator."
+    resolution: "Explicit present: true."
+  - check: providers-ext.generate.response-part-types-shape-array
+    plan: tuvren.providers.provider-api.bridge-extended
+    class: V
+    finding: "Bare presence assertion with no operator."
+    resolution: "Explicit present: true."
+  - check: "react-runner-ext.hook-field-present.{before-iteration,after-iteration,around-model,around-tool}-present"
+    plan: tuvren.framework.react-runner.extended
+    class: V
+    finding: "Four bare presence assertions with no operator."
+    resolution: "Explicit present: true."
+  - check: "event-stream-ext.sse.resumed-approval-turn-{thread-id,source-thread-id}-present"
+    plan: tuvren.framework.event-stream.extended
+    class: V
+    finding: "Two bare presence assertions with no operator."
+    resolution: "Explicit present: true."
