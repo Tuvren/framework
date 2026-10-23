@@ -1,0 +1,17 @@
+owner: KRT-DC002
+mode: contract_test
+produced:
+  date: 2026-10-23
+  commit: "5581522"
+  command: "bun run verify:kernel; bun run conformance"
+result: pass
+pass_criteria: "The reclamation and own-scope syscall plans pass on memory, SQLite, and PostgreSQL; every legacy assertion maps to a claimId or a reason; the reachable-delete, grace-sweep, and never-sweep mutants are killed with activation proof; no erasure check depends on adapter-owned keys; cross-scope obligations stay on the legacy plan (DC002-S01)."
+files:
+  - path: obligation-map.md
+    sha256: 481272a924be91f8ea3f5255505f0dad57d3ee4808a5660e2a4b2c1c390581f3
+    bytes: 13031
+    role: transcript
+  - path: triage.md
+    sha256: 0b42942f6659e1061198bd49ff513f7e277bf65031c3487c4bf5a19a0935d413
+    bytes: 9685
+    role: transcript

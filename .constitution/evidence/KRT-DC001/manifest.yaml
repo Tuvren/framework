@@ -1,0 +1,13 @@
+owner: KRT-DC001
+mode: contract_test
+produced:
+  date: 2026-10-23
+  commit: "5581522"
+  command: "bun run verify:kernel; bun run conformance"
+result: pass
+pass_criteria: "Faults armed at each supported memory point produce typed outcomes and activation evidence for their tokens, unreachable points report unsupported, unreached armings are invalid with missing_fault_activation, and setClock values are the only clock the kernel observes."
+files:
+  - path: obligation-map.md
+    sha256: 8333bdf618f094d1daf02f1df1e17a94767c8f944fdb61a3495554a84b61f0d7
+    bytes: 7911
+    role: transcript

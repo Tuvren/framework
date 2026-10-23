@@ -46,7 +46,31 @@ tickets:
       evidence: "Assert a fault armed at each supported point produces a typed fault outcome and activation evidence for its token, an unreached arming is reported as invalid rather than pass, and setClock values are the only clock the kernel observes in these runs."
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
-    status: planned
+    deviations:
+      - files:
+          - tools/conformance/meta-conformance/negative-controls.ts
+          - tools/conformance/meta-conformance/negative-controls.test.ts
+          - spec/conformance/kernel/negative-controls.json
+        justification: "The missing-activation rejection channel routed to this ticket must reach the negative-control runner so instrumentation controls can be killed."
+      - files:
+          - tools/conformance/plan-compiler/index.ts
+          - tools/conformance/plan-compiler/certification-rules.ts
+          - tools/schemas/conformance-plan.schema.json
+          - tools/scripts/authority-guardrails/authority-guardrails.ts
+        justification: "The pinned faultActivated assertion kind and catalog-derived control inputs need the plan schema, compiler, and guardrail to know them; the schema change implements the pinned contract's assertion list."
+      - files:
+          - spec/conformance/kernel/operations.json
+          - spec/conformance/kernel/plans/kernel-protocol-core-syscall.json
+          - spec/conformance/kernel/plans/kernel-protocol-extended-syscall.json
+          - spec/conformance/kernel/plans/kernel-restart-recovery.json
+          - typescript/kernel/backends/memory
+          - reports/compatibility/compatibility-matrix.schema.json
+        justification: "Review moved fault outcome codes, the ADR-0076 point enum, and the closed selector into the catalog, added control checks to the syscall plans, removed the retired midCommit assertions from the legacy recovery plan and the memory backend, and let evidence count unsupported checks."
+      - files:
+          - spec/kernel/authority-packet.json
+          - reports/compatibility
+        justification: "New syscall plans are registered in the kernel authority packet (authority validation rejects unregistered plans), and generated compatibility evidence is refreshed with bun run compatibility:evidence because verify:kernel checks its freshness."
+    status: done
   - id: KRT-DC002
     title: Rewrite scope-isolation and reclamation plans as syscall traces
     type: Feature
@@ -69,7 +93,15 @@ tickets:
       evidence: "Assert the rewritten plans pass, every old obligation maps to a claimId or removal reason, the cross-scope, reachable-delete, grace-sweep, and never-sweep mutants are killed with activation proof, and no erasure check depends on adapter-owned keys."
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
-    status: planned
+    deviations:
+      - files:
+          - spec/kernel/authority-packet.json
+          - reports/compatibility
+        justification: "New syscall plans are registered in the kernel authority packet (authority validation rejects unregistered plans), and generated compatibility evidence is refreshed with bun run compatibility:evidence because verify:kernel checks its freshness."
+      - files:
+          - typescript/kernel/testkit/test/kernel-mutants.test.ts
+        justification: "Testkit control validation had to accept grouped claimIds on syscall traces."
+    status: done
   - id: KRT-DC003
     title: Rewrite run-liveness plans with runner-owned clocks
     type: Feature
@@ -91,7 +123,16 @@ tickets:
       evidence: "Assert the rewritten checks pass, the lease-before-expiry and stale-owner mutants are killed, and no plan asserts a value computed from two plan constants."
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
-    status: planned
+    deviations:
+      - files:
+          - spec/kernel/authority-packet.json
+          - reports/compatibility
+        justification: "New syscall plans are registered in the kernel authority packet (authority validation rejects unregistered plans), and generated compatibility evidence is refreshed with bun run compatibility:evidence because verify:kernel checks its freshness."
+      - files:
+          - spec/conformance/kernel/fixtures/run-liveness/errors.json
+          - typescript/kernel/runtime/test/runtime-kernel-run-liveness.test.ts
+        justification: "A runner-only expectation fixture for canonical native errors lives apart from the pinned codec vectors so vector inventories stay intact, and runtime liveness tests made redundant by the syscall plan are removed as the ticket asks."
+    status: done
   - id: KRT-DC004
     title: Rewrite in-process recovery checks with armed faults and conditional outcomes
     type: Feature
@@ -114,4 +155,57 @@ tickets:
       evidence: "Assert every supported fault point yields activation evidence and a passing recovery trace, both when-branches are exercised across points, the drop-staged and promote-staged mutants are killed, and the fault-never-fires mutant is detected by the runner's missing-activation rejection."
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
-    status: planned
+    deviations:
+      - files:
+          - spec/kernel/authority-packet.json
+          - reports/compatibility
+        justification: "New syscall plans are registered in the kernel authority packet (authority validation rejects unregistered plans), and generated compatibility evidence is refreshed with bun run compatibility:evidence because verify:kernel checks its freshness."
+    status: done
+closeout:
+  tickets_completed:
+    - KRT-DC001
+    - KRT-DC002
+    - KRT-DC003
+    - KRT-DC004
+  tickets_deferred: []
+  points_completed: 18
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: added
+      text: "EPIC-DC landed runner-owned clock and fault controls (storage-boundary fault points with activation tokens, unsupported-point reporting, and a missing_fault_activation rejection channel) and syscall-trace plans for reclamation, own-scope isolation, run liveness, and in-process crash recovery on the TypeScript memory kernel, killing all 13 kernel negative-control mutants with activation proof; every one of the 72 syscall claimIds is designated by a mutant or listed undetected with a reason."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tech-spec
+      item: "DC002-S01: cross-scope isolation needs two scoped instances over one retained substrate; the catalog has no lifecycle control for it and the trace runner drives one instance per trace. The resolve-object-across-scopes obligations stay on the legacy plan; the multi-instance work in EPIC-DE or EPIC-DF should migrate them before EPIC-DJ retires the legacy plans."
+    - stage: tech-spec
+      item: "SPEC-DC003-01: no catalogued syscall exposes run status, preemptionReason, or cleared-lease fields, so eight legacy run-metadata assertions stay on the legacy run-liveness plan; decide whether the catalog gains a run read operation."
+    - stage: tech-spec
+      item: "SPEC-DC003-02: the catalog lists no canonical code for premature preemption (the TypeScript kernel emits kernel_runtime_run_lease_not_expired), so direct premature-preemption rejection is unclaimed; KRT-DF005's remaining scope is this code plus the shared-backend clock-skew obligations."
+    - stage: tech-spec
+      item: "ADR-0076 limits when-branches to points with open outcomes, but on kernel.memory only before-commit and after-commit-before-ack are reachable; the recovery syscall plan pins each point unconditionally and uses a shared all-or-nothing when-block, so the open-outcome branch is first genuinely exercised at commit-outcome-unknown on a durable backend."
+  follow_ups:
+    - "The SQLite and PostgreSQL backends still advertise mid-commit and keep unused midCommit hooks, and docs/guides/add-a-kernel-backend.md and .constitution/tech-spec/data-models/README.md still name mid-commit; retire them in EPIC-DF."
+    - "Native error expectations use schemaValid on state.adapterError to avoid the absent-operand rule; add a first-class expected-native-error assertion to the harness so later families do not copy the workaround."
+    - "kernel.memory compatibility evidence does not record the three unsupported fault points; only isolated harness tests arm them."
+    - "The scope-isolation syscall plan covers own-scope observations only; its matrix status should not be read as isolation coverage until the cross-scope claims migrate."
+    - "Testkit control validation accepts any overlap between a grouped check's claimIds and a control's claimIds; tighten it if more grouped checks appear."
+  code_decisions:
+    - summary: "kernel.fault.arm declares a faultOutcome {code, unsupportedCode}, a closed enum of the ADR-0076 fault points, and a closed selector; the runner binds controls from catalog kind, handles, and required inputs plus plan actions, and reports unsupported checks with summary.unsupportedChecks."
+      kind: contract_shape
+      paths:
+        - spec/conformance/kernel/operations.json
+        - tools/conformance/harness/run.ts
+        - tools/conformance/harness/fault-activation.ts
+      commit: 3ab5297
+    - summary: "Fault arming tokens are deterministic per instance (fault-N), and syscall runs require explicit clocks configured before backend initialization."
+      kind: convention
+      paths:
+        - typescript/kernel/testkit/src/lib/kernel-test-controls.ts
+      commit: 3ab5297
+    - summary: "Runner-only expectation fixtures that are not codec vectors live in per-family subdirectories such as spec/conformance/kernel/fixtures/run-liveness/."
+      kind: convention
+      paths:
+        - spec/conformance/kernel/fixtures/run-liveness/errors.json
+      commit: 7db47de
+  settled: []
