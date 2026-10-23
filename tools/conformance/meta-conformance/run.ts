@@ -17,6 +17,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import nodePath from "node:path";
+import { isDeepStrictEqual } from "node:util";
 
 import { collectPlanEvidenceOracleShapeFailures } from "../../scripts/authority-guardrails/authority-guardrails.ts";
 import {
@@ -28,6 +29,11 @@ import {
   evaluateRequiredEvidence,
 } from "../harness/assertion-engine/index.js";
 import type { AssertionContext } from "../harness/assertion-engine/index.js";
+import {
+  ArgumentResolutionError,
+  recordStepCaptures,
+  resolveStepArguments,
+} from "../harness/step-arguments.js";
 import type {
   CompiledConformancePlanCheck,
   ConformancePlanAssertion,
@@ -395,6 +401,106 @@ const runWhenReportingCases = (failures: string[]): void => {
 
   if (applied?.when !== "applied" || applied.status !== "pass") {
     failures.push("applied when branch was not reported as applied");
+  }
+};
+
+const runArgumentProjectionCases = (failures: string[]): void => {
+  const captures: Record<string, unknown> = {};
+  const roots = {
+    capture: captures,
+    fixture: {
+      expected: { answer: "expected-only" },
+      input: { request: { id: "req-1", items: [10, 20] } },
+    },
+    input: { mode: "strict" },
+  };
+  recordStepCaptures(
+    [
+      { name: "token", path: "result.token" },
+      { name: "firstEvent", path: "events.0.type" },
+      { name: "absent", path: "result.missing" },
+    ],
+    { events: [{ type: "opened" }], result: { token: "tok-1" } },
+    captures
+  );
+
+  if (!isDeepStrictEqual(captures, { firstEvent: "opened", token: "tok-1" })) {
+    failures.push(
+      `captures recorded unexpected values: ${JSON.stringify(captures)}`
+    );
+  }
+
+  const projection = resolveStepArguments(
+    {
+      escaped: { $literal: { $ref: "fixture.input.request" } },
+      item: { $ref: "fixture.input.request.items.1" },
+      list: [{ $ref: "capture.token" }, null, 3],
+      mode: { $ref: "input.mode" },
+      plain: "$.fixture.expected.answer",
+    },
+    roots
+  );
+  const expectedProjection = {
+    escaped: { $ref: "fixture.input.request" },
+    item: 20,
+    list: ["tok-1", null, 3],
+    mode: "strict",
+    plain: "$.fixture.expected.answer",
+  };
+
+  if (!isDeepStrictEqual(projection, expectedProjection)) {
+    failures.push(
+      `argument projection resolved to ${JSON.stringify(projection)}`
+    );
+  }
+
+  const rejected: readonly [string, () => unknown][] = [
+    [
+      "fixture.expected root",
+      () =>
+        resolveStepArguments(
+          { value: { $ref: "fixture.expected.answer" } },
+          roots
+        ),
+    ],
+    [
+      "missing fixture input path",
+      () =>
+        resolveStepArguments({ $ref: "fixture.input.request.absent" }, roots),
+    ],
+    [
+      "unrecorded capture",
+      () => resolveStepArguments([{ $ref: "capture.absent" }], roots),
+    ],
+    [
+      "inherited property",
+      () => resolveStepArguments({ $ref: "input.toString" }, roots),
+    ],
+    [
+      "out-of-range index",
+      () =>
+        resolveStepArguments({ $ref: "fixture.input.request.items.2" }, roots),
+    ],
+    [
+      "duplicate capture name",
+      () =>
+        recordStepCaptures(
+          [{ name: "token", path: "result.token" }],
+          { result: { token: "tok-2" } },
+          captures
+        ),
+    ],
+  ];
+
+  for (const [label, attempt] of rejected) {
+    try {
+      attempt();
+      failures.push(`argument projection accepted ${label}`);
+    } catch (error: unknown) {
+      if (!(error instanceof ArgumentResolutionError)) {
+        failures.push(`argument projection ${label} threw the wrong error`);
+      }
+    }
   }
 };
 
@@ -864,6 +970,7 @@ for (const testCase of [...cases, ...operatorCases]) {
 await runPlanCompilerCases(failures);
 runEvidenceContractCases(failures);
 runWhenReportingCases(failures);
+runArgumentProjectionCases(failures);
 
 for (let index = 0; index < 1000; index += 1) {
   const syntheticCheck = check(`scale-${index}`, [
