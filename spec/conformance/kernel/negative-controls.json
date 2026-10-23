@@ -1,0 +1,249 @@
+{
+  "controls": [
+    {
+      "mutantId": "kernel.accept-noncanonical-cbor",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": ["kernel.protocol.canonical_rejection"],
+      "activation": {
+        "precondition": "the deterministic decoder rejects a top-level unsigned integer whose one-byte argument head carries a value below 24",
+        "signal": "mutant.accept-noncanonical-cbor.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.protocol.canonical_rejection.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.accept-stale-head-update",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#branch-head-movement",
+      "claimIds": ["kernel.crash-recovery.concurrent_writer"],
+      "activation": {
+        "precondition": "a backend transaction sets a branch head from a stale read and the reference backend rejects it as a lateral move",
+        "signal": "mutant.accept-stale-head-update.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.crash-recovery.concurrent_writer.1.resultField",
+        "kernel.crash-recovery.concurrent_writer.3.resultField",
+        "kernel.crash-recovery.concurrent_writer.4.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.accept-stale-owner-after-takeover",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#run-execution-leases",
+      "claimIds": ["kernel.run-liveness.lease_renewal"],
+      "activation": {
+        "precondition": "a lease renewal presents a superseded owner or fencing token and the reference kernel rejects it",
+        "signal": "mutant.accept-stale-owner-after-takeover.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.run-liveness.lease_renewal.2.resultField",
+        "kernel.run-liveness.lease_renewal.3.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.delete-object-reachable-through-live-root",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012",
+      "claimIds": ["kernel.reclamation.reachable_from_live_root_is_retained"],
+      "activation": {
+        "precondition": "reclamation releases an archived branch whose fork point consumed an object that a live branch head still reaches",
+        "signal": "mutant.delete-object-reachable-through-live-root.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.reclamation.reachable_from_live_root_is_retained.1.resultField",
+        "kernel.reclamation.reachable_from_live_root_is_retained.2.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.drop-uncommitted-staged-result-on-recovery",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#57-recovery-protocol",
+      "claimIds": [
+        "kernel.logical.recovery_state",
+        "kernel.crash-recovery.in_process_fault_points"
+      ],
+      "activation": {
+        "precondition": "run.recover returns at least one uncommitted staged result",
+        "signal": "mutant.drop-uncommitted-staged-result-on-recovery.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.logical.recovery_state.3.resultField",
+        "kernel.crash-recovery.in_process_fault_points.5.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.fault-seam-never-fires",
+      "kind": "instrumentation",
+      "rule": "ADR-0076",
+      "claimIds": [
+        "kernel.crash-recovery.in_process_fault_points",
+        "kernel.crash-recovery.concurrent_writer"
+      ],
+      "activation": {
+        "precondition": "a fault plan is armed on the in-process fault-injecting backend",
+        "signal": "mutant.fault-seam-never-fires.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "expectedRejection": "missing_fault_activation"
+    },
+    {
+      "mutantId": "kernel.lease-takeover-before-expiry",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#stale-running-preemption",
+      "claimIds": ["kernel.run-liveness.clock_skew_preemption"],
+      "activation": {
+        "precondition": "an expiry listing or preemption targets a running run whose lease has not expired at the caller's clock",
+        "signal": "mutant.lease-takeover-before-expiry.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.run-liveness.clock_skew_preemption.1.resultField",
+        "kernel.run-liveness.clock_skew_preemption.3.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.never-sweep-eligible-objects",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012",
+      "claimIds": [
+        "kernel.reclamation.unreachable_past_grace_is_released",
+        "kernel.reclamation.grace_window_holds_under_active_lease",
+        "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+      ],
+      "activation": {
+        "precondition": "maintenance.reclaim is invoked on a reclamation-capable backend",
+        "signal": "mutant.never-sweep-eligible-objects.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.reclamation.unreachable_past_grace_is_released.1.resultField",
+        "kernel.reclamation.unreachable_past_grace_is_released.2.resultField",
+        "kernel.reclamation.grace_window_holds_under_active_lease.1.resultField",
+        "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.noncanonical-changed-paths-order",
+      "kind": "implementation",
+      "rule": "ADR-0080",
+      "claimIds": ["kernel.logical.diff_paths"],
+      "activation": {
+        "precondition": "tree.diff returns at least two changed paths",
+        "signal": "mutant.noncanonical-changed-paths-order.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": ["kernel.logical.diff_paths.1.resultField"]
+    },
+    {
+      "mutantId": "kernel.promote-staged-before-checkpoint",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#55-checkpoint-transaction",
+      "claimIds": ["kernel.crash-recovery.in_process_fault_points"],
+      "activation": {
+        "precondition": "a checkpoint transaction that writes a TurnNode and clears staging fails to commit",
+        "signal": "mutant.promote-staged-before-checkpoint.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.crash-recovery.in_process_fault_points.2.resultField",
+        "kernel.crash-recovery.in_process_fault_points.3.resultField",
+        "kernel.crash-recovery.in_process_fault_points.4.resultField",
+        "kernel.crash-recovery.in_process_fault_points.5.resultField",
+        "kernel.crash-recovery.in_process_fault_points.6.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.resolve-object-across-scopes",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": [
+        "kernel.scope-isolation.store_has_is_scope_confined",
+        "kernel.scope-isolation.store_get_is_scope_confined"
+      ],
+      "activation": {
+        "precondition": "store.has or store.get misses in the constructing Scope for content another Scope on the same substrate holds",
+        "signal": "mutant.resolve-object-across-scopes.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.scope-isolation.store_has_is_scope_confined.2.resultField",
+        "kernel.scope-isolation.store_get_is_scope_confined.2.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.sweep-inside-grace-window",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012",
+      "claimIds": [
+        "kernel.reclamation.grace_window_holds_under_active_lease",
+        "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+      ],
+      "activation": {
+        "precondition": "maintenance.reclaim runs while a running run pins the grace horizon",
+        "signal": "mutant.sweep-inside-grace-window.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.reclamation.grace_window_holds_under_active_lease.1.resultField",
+        "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.1.resultField"
+      ]
+    },
+    {
+      "mutantId": "kernel.wrong-opaque-object-hash",
+      "kind": "implementation",
+      "rule": "docs/KrakenKernelSpecification.md#23-hash",
+      "claimIds": [
+        "kernel.protocol.deterministic_hashing",
+        "kernel.protocol.deterministic_hashing.f-empty-bytes",
+        "kernel.protocol.deterministic_hashing.f-single-byte",
+        "kernel.protocol.deterministic_hashing.f-all-zero-bytes",
+        "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
+        "kernel.protocol.deterministic_hashing.f-large-bytes",
+        "kernel.protocol.deterministic_hashing.f-multi-path-schema",
+        "kernel.protocol.deterministic_hashing.f-all-single-paths",
+        "kernel.protocol.deterministic_hashing.f-all-ordered-paths",
+        "kernel.protocol.deterministic_hashing.f-with-prev-turn",
+        "kernel.protocol.deterministic_hashing.f-with-event-hash",
+        "kernel.protocol.deterministic_hashing.f-staged-failed",
+        "kernel.protocol.deterministic_hashing.f-staged-interrupted",
+        "kernel.protocol.deterministic_hashing.f-many-staged-results",
+        "kernel.protocol.deterministic_hashing.f-deep-path-schema",
+        "kernel.protocol.deterministic_hashing.f-non-utf8-bytes",
+        "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash",
+        "kernel.protocol.deterministic_hashing.f-mixed-status-staged"
+      ],
+      "activation": {
+        "precondition": "an opaque object's bytes are hashed",
+        "signal": "mutant.wrong-opaque-object-hash.entered"
+      },
+      "profiles": ["kernel.memory"],
+      "designatedAssertions": [
+        "kernel.protocol.deterministic_hashing.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-empty-bytes.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-single-byte.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-all-zero-bytes.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-all-ones-bytes.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-large-bytes.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-multi-path-schema.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-all-single-paths.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-all-ordered-paths.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-with-prev-turn.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-with-event-hash.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-staged-failed.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-staged-interrupted.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-many-staged-results.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-deep-path-schema.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.1.resultField",
+        "kernel.protocol.deterministic_hashing.f-mixed-status-staged.1.resultField"
+      ]
+    }
+  ]
+}

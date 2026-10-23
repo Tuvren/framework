@@ -79,6 +79,7 @@
       "path": "spec/conformance/kernel/plans/kernel-reclamation.json"
     }
   ],
+  "negativeControlManifest": "spec/conformance/kernel/negative-controls.json",
   "bindingProjections": {
     "typescript": "typescript/kernel/protocol",
     "rust": "rust/kernel",

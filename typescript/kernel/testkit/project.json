@@ -66,6 +66,17 @@
     },
     "test": {
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
+        "{workspaceRoot}/spec/kernel/**/*",
+        "{workspaceRoot}/tools/schemas/negative-control-manifest.schema.json",
+        "{workspaceRoot}/docs/KrakenKernelSpecification.md",
+        "{workspaceRoot}/.constitution/tech-spec/adrs/**/*",
+        "{workspaceRoot}/typescript/**/package.json",
+        "{workspaceRoot}/typescript/**/src/**/*"
+      ],
       "options": {
         "cwd": "typescript/kernel/testkit",
         "command": "bun test"

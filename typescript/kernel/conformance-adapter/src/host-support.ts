@@ -32,6 +32,8 @@ import {
   assertRecoveryState,
   assertTurnTreeChangeSet,
   assertTurnTreeSchema,
+  decodeDeterministicKernelRecord,
+  hashOpaqueObjectBytes,
 } from "@tuvren/kernel-protocol";
 import type {
   RecoveryState,
@@ -41,8 +43,13 @@ import type {
   TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+import type {
+  KernelMutantBackendContext,
+  KernelMutantCodec,
+} from "@tuvren/kernel-testkit";
 
 import type { OperationOutcome } from "../../../../tools/conformance/adapter-protocol/index.js";
+import type { KernelAdapterConfig } from "./host-scenario-support.js";
 
 const CANONICAL_SCHEMA_URL = new URL(
   "../../../../spec/conformance/kernel/fixtures/canonical-turn-tree-schema.json",
@@ -53,6 +60,35 @@ const SQLITE_RESTART_SCENARIO_URL = new URL(
   "sqlite-restart-recovery-scenario.mjs",
   import.meta.url
 );
+
+type ConformanceConfig = Pick<
+  KernelAdapterConfig,
+  "adapterId" | "backend" | "mutant"
+>;
+
+const REFERENCE_CODEC: KernelMutantCodec = {
+  decodeDeterministicKernelRecord,
+  hashOpaqueObjectBytes,
+};
+
+export const conformanceCodec = (
+  config: Pick<KernelAdapterConfig, "mutant">
+): KernelMutantCodec =>
+  config.mutant?.wrapCodec(REFERENCE_CODEC) ?? REFERENCE_CODEC;
+
+export const conformanceBackend = (
+  config: Pick<KernelAdapterConfig, "mutant">,
+  backend: RuntimeBackend,
+  context?: KernelMutantBackendContext
+): RuntimeBackend => config.mutant?.wrapBackend(backend, context) ?? backend;
+
+export const createConformanceRuntimeKernel = (
+  config: Pick<KernelAdapterConfig, "mutant">,
+  options: Parameters<typeof createRuntimeKernel>[0]
+): ReturnType<typeof createRuntimeKernel> => {
+  const kernel = createRuntimeKernel(options);
+  return config.mutant?.wrapKernel(kernel, options.backend) ?? kernel;
+};
 
 export interface AdapterInput {
   fixture?: unknown;
@@ -281,10 +317,7 @@ export const readLogicalFixture = (
 };
 
 const createConfiguredBackend = async (
-  config: {
-    adapterId: string;
-    backend: "memory" | "postgres" | "sqlite";
-  },
+  config: ConformanceConfig,
   options?: BackendClockOptions
 ): Promise<ConfiguredBackendHandle> => {
   const clock = options?.now === undefined ? {} : { now: options.now };
@@ -352,7 +385,7 @@ const createConfiguredBackend = async (
   }
   const { createMemoryBackend } = memoryBackendModule;
   return {
-    backend: createMemoryBackend({ ...clock }),
+    backend: conformanceBackend(config, createMemoryBackend({ ...clock })),
     cleanup: async () => {
       // Memory backends have no external resources to release.
     },
@@ -361,13 +394,13 @@ const createConfiguredBackend = async (
 
 const createConformanceKernel = async (
   schema: TurnTreeSchema,
-  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" }
+  config: ConformanceConfig
 ): Promise<{
   cleanup: () => Promise<void>;
   kernel: ReturnType<typeof createRuntimeKernel>;
 }> => {
   const configuredBackend = await createConfiguredBackend(config);
-  const kernel = createRuntimeKernel({
+  const kernel = createConformanceRuntimeKernel(config, {
     backend: configuredBackend.backend,
   });
   await kernel.schema.register(schema);
@@ -377,10 +410,9 @@ const createConformanceKernel = async (
   };
 };
 
-const createScopedBackendPair = async (config: {
-  adapterId: string;
-  backend: "memory" | "postgres" | "sqlite";
-}): Promise<{ cleanup: () => Promise<void>; pair: ScopedBackendPair }> => {
+const createScopedBackendPair = async (
+  config: ConformanceConfig
+): Promise<{ cleanup: () => Promise<void>; pair: ScopedBackendPair }> => {
   if (config.backend === "postgres") {
     const postgresBackendModuleUrl = new URL(
       "../../backends/postgres/dist/index.js",
@@ -471,15 +503,23 @@ const createScopedBackendPair = async (config: {
       // Memory backends have no external resources to release.
     },
     pair: {
-      backendA: createMemoryBackend({ scope: CONFORMANCE_SCOPE_A, store }),
-      backendB: createMemoryBackend({ scope: CONFORMANCE_SCOPE_B, store }),
+      backendA: conformanceBackend(
+        config,
+        createMemoryBackend({ scope: CONFORMANCE_SCOPE_A, store }),
+        { substrate: store }
+      ),
+      backendB: conformanceBackend(
+        config,
+        createMemoryBackend({ scope: CONFORMANCE_SCOPE_B, store }),
+        { substrate: store }
+      ),
     },
   };
 };
 
 export const withConformanceKernel = async <T>(
   schema: TurnTreeSchema,
-  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" },
+  config: ConformanceConfig,
   execute: (kernel: ReturnType<typeof createRuntimeKernel>) => Promise<T>
 ): Promise<T> => {
   const configuredKernel = await createConformanceKernel(schema, config);
@@ -492,7 +532,7 @@ export const withConformanceKernel = async <T>(
 };
 
 export const withConfiguredBackend = async <T>(
-  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" },
+  config: ConformanceConfig,
   execute: (backend: RuntimeBackend) => Promise<T>,
   options?: BackendClockOptions
 ): Promise<T> => {
@@ -506,7 +546,7 @@ export const withConfiguredBackend = async <T>(
 };
 
 export const withScopedBackendPair = async <T>(
-  config: { adapterId: string; backend: "memory" | "postgres" | "sqlite" },
+  config: ConformanceConfig,
   execute: (pair: ScopedBackendPair) => Promise<T>
 ): Promise<T> => {
   const handle = await createScopedBackendPair(config);

@@ -148,6 +148,7 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "kernel-testkit",
   "backend-postgres",
   "kernel-typescript-certification",
+  "kernel-typescript-conformance-adapter",
   "framework-typescript-certification",
   "framework-typescript-conformance-adapter",
   "providers-typescript-certification",

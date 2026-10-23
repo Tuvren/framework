@@ -16,12 +16,13 @@
 
 import { randomBytes } from "node:crypto";
 
-import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+import type { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { createAesGcmPayloadCodec } from "@tuvren/sdk";
 
 import { createProjection } from "./host-scenario-support.js";
 import type { KernelAdapterConfig } from "./host-scenario-support.js";
 import {
+  createConformanceRuntimeKernel,
   loadCanonicalSchema,
   withConfiguredBackend,
   withConformanceKernel,
@@ -121,8 +122,12 @@ export const createReclamationScenarios = (config: KernelAdapterConfig) => {
     return await withScopedBackendPair(
       config,
       async ({ backendA, backendB }) => {
-        const kernelA = createRuntimeKernel({ backend: backendA });
-        const kernelB = createRuntimeKernel({ backend: backendB });
+        const kernelA = createConformanceRuntimeKernel(config, {
+          backend: backendA,
+        });
+        const kernelB = createConformanceRuntimeKernel(config, {
+          backend: backendB,
+        });
         await kernelA.schema.register(schema);
 
         const objectHash = await kernelA.store.put(
@@ -276,7 +281,10 @@ export const createReclamationScenarios = (config: KernelAdapterConfig) => {
     const graceObservations = await withConfiguredBackend(
       config,
       async (backend) => {
-        const kernel = createRuntimeKernel({ backend, now: () => clock });
+        const kernel = createConformanceRuntimeKernel(config, {
+          backend,
+          now: () => clock,
+        });
         await kernel.schema.register(schema);
 
         clock = 10;
@@ -337,7 +345,7 @@ export const createReclamationScenarios = (config: KernelAdapterConfig) => {
     const leaselessExpiredObservations = await withConfiguredBackend(
       config,
       async (backend) => {
-        const kernel = createRuntimeKernel({
+        const kernel = createConformanceRuntimeKernel(config, {
           backend,
           now: () => leaselessExpiredClock,
         });
@@ -391,7 +399,7 @@ export const createReclamationScenarios = (config: KernelAdapterConfig) => {
     const leaselessActiveObservations = await withConfiguredBackend(
       config,
       async (backend) => {
-        const kernel = createRuntimeKernel({
+        const kernel = createConformanceRuntimeKernel(config, {
           backend,
           now: () => leaselessActiveClock,
         });

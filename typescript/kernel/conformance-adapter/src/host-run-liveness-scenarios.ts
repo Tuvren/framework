@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-import { createRuntimeKernel } from "@tuvren/kernel-runtime";
-
 import { createProjection } from "./host-scenario-support.js";
 import type { KernelAdapterConfig } from "./host-scenario-support.js";
 import {
+  createConformanceRuntimeKernel,
   loadCanonicalSchema,
   normalizeLogicalErrorCode,
   readErrorCode,
@@ -31,7 +30,7 @@ export const createRunLivenessScenarios = (config: KernelAdapterConfig) => {
     return await withConfiguredBackend(
       config,
       async (backend) => {
-        const kernel = createRuntimeKernel({
+        const kernel = createConformanceRuntimeKernel(config, {
           backend,
           now: () => 10,
         });
@@ -110,7 +109,10 @@ export const createRunLivenessScenarios = (config: KernelAdapterConfig) => {
     return await withConfiguredBackend(
       config,
       async (backend) => {
-        const kernel = createRuntimeKernel({ backend, now: () => 10 });
+        const kernel = createConformanceRuntimeKernel(config, {
+          backend,
+          now: () => 10,
+        });
         await kernel.schema.register(schema);
         const expiredThread = await kernel.thread.create(
           "thread_liveness_listing_expired",
@@ -213,7 +215,10 @@ export const createRunLivenessScenarios = (config: KernelAdapterConfig) => {
     return await withConfiguredBackend(
       config,
       async (backend) => {
-        const storageKernel = createRuntimeKernel({ backend, now: () => 10 });
+        const storageKernel = createConformanceRuntimeKernel(config, {
+          backend,
+          now: () => 10,
+        });
         await storageKernel.schema.register(schema);
         const thread = await storageKernel.thread.create(
           "thread_liveness_preemption",
@@ -333,7 +338,10 @@ export const createRunLivenessScenarios = (config: KernelAdapterConfig) => {
         // owner-primary's wall clock is aligned with the backend at grant time, so
         // the ADR-0050 re-base is a no-op and the stored expiry is 1100 in backend
         // time (supplied 1100 - primary now 1000 = 100ms duration; 1000 + 100).
-        const primaryKernel = createRuntimeKernel({ backend, now: () => 1000 });
+        const primaryKernel = createConformanceRuntimeKernel(config, {
+          backend,
+          now: () => 1000,
+        });
         await primaryKernel.schema.register(schema);
         const thread = await primaryKernel.thread.create(
           "thread_clock_skew",
@@ -373,7 +381,7 @@ export const createRunLivenessScenarios = (config: KernelAdapterConfig) => {
           "completed"
         );
 
-        const secondaryKernel = createRuntimeKernel({
+        const secondaryKernel = createConformanceRuntimeKernel(config, {
           backend,
           now: () => secondaryNowMs,
         });

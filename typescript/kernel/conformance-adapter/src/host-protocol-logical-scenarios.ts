@@ -17,17 +17,17 @@
 import {
   assertStagedResult,
   assertVerdict,
-  decodeDeterministicKernelRecord,
   hashKernelRecord,
-  hashOpaqueObjectBytes,
   hashTurnNodeIdentity,
 } from "@tuvren/kernel-protocol";
 import type { StagedResult, Verdict } from "@tuvren/kernel-protocol";
 import type { createRuntimeKernel } from "@tuvren/kernel-runtime";
+import type { KernelMutantCodec } from "@tuvren/kernel-testkit";
 
 import { createProjection } from "./host-scenario-support.js";
 import type { KernelAdapterConfig } from "./host-scenario-support.js";
 import {
+  conformanceCodec,
   hexToBytes,
   loadCanonicalSchema,
   normalizeLogicalErrorCode,
@@ -64,11 +64,12 @@ const captureSemanticErrorCode = async (
 };
 
 const schemaRoundtrip = (
+  codec: KernelMutantCodec,
   fixture: Record<string, unknown>
 ): Record<string, unknown> =>
   createProjection({
     roundtrip: {
-      turnNodeIdentityRecord: decodeDeterministicKernelRecord(
+      turnNodeIdentityRecord: codec.decodeDeterministicKernelRecord(
         hexToBytes(
           readString(
             fixture.turnNodeIdentityRecordCborHex,
@@ -76,7 +77,7 @@ const schemaRoundtrip = (
           )
         )
       ),
-      turnTreeSchemaRecord: decodeDeterministicKernelRecord(
+      turnTreeSchemaRecord: codec.decodeDeterministicKernelRecord(
         hexToBytes(
           readString(
             fixture.turnTreeSchemaRecordCborHex,
@@ -152,6 +153,7 @@ const readNumberArray = (value: unknown, label: string): number[] => {
 };
 
 const runCanonicalRejection = (
+  codec: KernelMutantCodec,
   fixture: Record<string, unknown>
 ): Record<string, unknown> => {
   const cases = readRecord(fixture.cases, "cases");
@@ -166,7 +168,7 @@ const runCanonicalRejection = (
 
     let rejected: boolean;
     try {
-      decodeDeterministicKernelRecord(Uint8Array.from(cborBytes));
+      codec.decodeDeterministicKernelRecord(Uint8Array.from(cborBytes));
       rejected = false;
     } catch {
       rejected = true;
@@ -191,6 +193,7 @@ const readNullableString = (value: unknown, label: string): string | null => {
 };
 
 const deterministicHashing = async (
+  codec: KernelMutantCodec,
   input: unknown
 ): Promise<Record<string, unknown>> => {
   const fixture = readFixture(input);
@@ -198,7 +201,7 @@ const deterministicHashing = async (
     fixture.rawOpaqueBytes,
     "rawOpaqueBytes"
   );
-  const schemaRecord = decodeDeterministicKernelRecord(
+  const schemaRecord = codec.decodeDeterministicKernelRecord(
     hexToBytes(readString(fixture.turnTreeSchemaRecordCborHex, "schema cbor"))
   );
   const turnNodeIdentityRecord = readRecord(
@@ -227,7 +230,7 @@ const deterministicHashing = async (
 
   return createProjection({
     hashes: {
-      rawOpaqueBytes: await hashOpaqueObjectBytes(
+      rawOpaqueBytes: await codec.hashOpaqueObjectBytes(
         Uint8Array.from(rawOpaqueBytes)
       ),
       turnNodeIdentity: turnNodeHash,
@@ -240,6 +243,8 @@ const readProtocolFixture = (input: unknown): Record<string, unknown> =>
   readFixture(input);
 
 export const createProtocolLogicalScenarios = (config: KernelAdapterConfig) => {
+  const codec = conformanceCodec(config);
+
   const runModifyComposition = async (
     input: unknown
   ): Promise<Record<string, unknown>> => {
@@ -728,16 +733,19 @@ export const createProtocolLogicalScenarios = (config: KernelAdapterConfig) => {
   };
 
   return Object.freeze({
-    deterministicHashing,
+    deterministicHashing: async (input: unknown) =>
+      await deterministicHashing(codec, input),
     readProtocolFixture,
     runBranchList,
-    runCanonicalRejection,
+    runCanonicalRejection: (fixture: Record<string, unknown>) =>
+      runCanonicalRejection(codec, fixture),
     runCrossThreadLineage,
     runLogicalDiff,
     runModifyComposition,
     runProtocolEdgeValidation,
     runRecoveryState,
     runThreadList,
-    schemaRoundtrip,
+    schemaRoundtrip: (fixture: Record<string, unknown>) =>
+      schemaRoundtrip(codec, fixture),
   });
 };

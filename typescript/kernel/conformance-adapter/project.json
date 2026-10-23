@@ -47,6 +47,28 @@
         "parallel": false
       }
     },
+    "test": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
+        "{workspaceRoot}/spec/kernel/**/*",
+        "{workspaceRoot}/tools/conformance/adapter-protocol/**/*",
+        "{workspaceRoot}/tools/conformance/certification/**/*"
+      ],
+      "dependsOn": [
+        {
+          "projects": ["backend-memory"],
+          "target": "build",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": "typescript/kernel/conformance-adapter",
+        "command": "bun test"
+      }
+    },
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
