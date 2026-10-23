@@ -1,0 +1,17 @@
+owner: KRT-DB004
+mode: contract_test
+produced:
+  date: 2026-10-23
+  commit: a61be5d
+  command: "bun run verify:kernel; bun run conformance"
+result: pass
+pass_criteria: "The syscall plans pass on the TypeScript memory, SQLite, and PostgreSQL kernels with certification rules enforcing; every legacy assertion maps to a claimId or an explicit reason; designated mutants are killed with activation proof; no adapter path compares, sorts, or normalizes."
+files:
+  - path: certification-triage.yaml
+    sha256: 884e1b6bd1057af70527ff6666a5d1a7699fa81c0b6eace881e62686f9171b31
+    bytes: 3303
+    role: transcript
+  - path: obligation-map.md
+    sha256: 5e9f214d591d2c72ba8f369af7c92d3195a571225a3e4f3395658e43fdaf1910
+    bytes: 34140
+    role: transcript

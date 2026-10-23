@@ -1,0 +1,43 @@
+ticket: KRT-DB004
+verified_at: a61be5d
+entries:
+  - check: "kernel.syscall.* (lease and lineage rejections)"
+    plan: tuvren.kernel.protocol.extended.syscall
+    class: I
+    finding: "The TypeScript kernel emitted kernel_runtime_lineage_mismatch, kernel_runtime_run_lease_owner_mismatch, and kernel_runtime_run_lease_token_mismatch, and the adapter's normalizeLogicalErrorCode masked them as the plan codes."
+    resolution: "The kernel emits turn_node_thread_mismatch, run_lease_owner_mismatch, and run_lease_token_mismatch; normalization is removed; @tuvren/runtime's lease-fence detection follows; changeset records a minor bump for @tuvren/kernel-runtime."
+  - check: kernel.syscall.logical.diff_paths
+    plan: tuvren.kernel.protocol.core.syscall
+    class: I
+    finding: "The TypeScript kernel returned changedPaths in insertion order and the adapter sorted them (UTF-16 order), masking the noncanonical-changed-paths-order mutant."
+    resolution: "KRT-DB003: the kernel returns ascending UTF-8 byte order natively and the adapter sort is gone; the mutant is killed by this check."
+  - check: "kernel.protocol.canonical_rejection, kernel.protocol.deterministic_hashing (assertions 2-3), kernel.protocol.schema_roundtrip"
+    plan: tuvren.kernel.protocol.extended
+    class: S
+    finding: "The catalog has no deterministic codec operation (arbitrary-record encode, decode, identity hash, canonical rejection), so 68 legacy assertions cannot be expressed as syscall traces."
+    resolution: "Open: retained on the legacy plans under the ticket's stop condition and proposed as OD-16; the obligation map gives each assertion its reason."
+  - check: kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage
+    plan: tuvren.kernel.protocol.extended.syscall
+    class: S
+    finding: "turn_head_lateral_move has no authority; the TypeScript adapter mapped the native lateral-move error onto it. The Rust kernel and gRPC service still emit and map it."
+    resolution: "Mapping removed; the code is neither catalogued nor emitted by TypeScript; Rust alignment is routed to the Rust kernel epic."
+  - check: "kernel.syscall.* (first authoring run)"
+    plan: tuvren.kernel.protocol.extended.syscall
+    class: V
+    finding: "Initial traces referenced an unresolved capture and wrong verdict paths, and integrity assertions compared echoed records with fixture digests."
+    resolution: "Traces corrected; the integrity-observation compiler rule now requires kernel-reported hashes; 50 of 50 syscall checks pass on memory, SQLite, and PostgreSQL."
+  - check: kernel.fault-seam-never-fires
+    plan: negative-controls
+    class: V
+    finding: "Unsupported: the runner has no missing_fault_activation rejection channel."
+    resolution: "Open, owned by KRT-DC001."
+  - check: kernel.lease-takeover-before-expiry
+    plan: negative-controls
+    class: V
+    finding: "Invalid on the memory kernel: the designated shared-lease-clock checks are not applicable."
+    resolution: "Open, owned by KRT-DF005."
+  - check: "bun run check (concurrent worktrees)"
+    plan: none
+    class: E
+    finding: "Two unrelated process-deadline timeouts (framework-runtime SQLite child, host-repl replay) while two worktrees verified concurrently."
+    resolution: "Serial retry passed; not a defect."

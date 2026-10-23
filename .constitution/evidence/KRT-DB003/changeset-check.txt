@@ -1,0 +1,3 @@
+command: bun run changeset:check --base=master
+exit: 0 at a61be5d
+changeset-check: OK — direct changeset coverage for 3 publishable package(s)
