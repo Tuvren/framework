@@ -699,6 +699,11 @@
             "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
             "kernel.reclamation.reachable_from_live_root_is_retained",
             "kernel.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage",
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+            "kernel.syscall.reclamation.reachability",
             "kernel.crash-recovery.concurrent_writer",
             "kernel.crash-recovery.in_process_fault_points",
             "kernel-restart-af.expired-running-requires-preemption",
@@ -708,13 +713,15 @@
             "kernel.run-liveness.stale_preemption",
             "kernel.scope-isolation.enumeration_is_scope_confined",
             "kernel.scope-isolation.store_get_is_scope_confined",
-            "kernel.scope-isolation.store_has_is_scope_confined"
+            "kernel.scope-isolation.store_has_is_scope_confined",
+            "kernel.syscall.scope-isolation.own_content",
+            "kernel.syscall.scope-isolation.own_enumeration"
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 121,
-            "totalChecks": 125,
-            "applicableChecks": 121,
+            "passedChecks": 128,
+            "totalChecks": 132,
+            "applicableChecks": 128,
             "nonApplicableChecks": 4
           },
           "declaredCapabilities": [
@@ -854,6 +861,11 @@
             "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
             "kernel.reclamation.reachable_from_live_root_is_retained",
             "kernel.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage",
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+            "kernel.syscall.reclamation.reachability",
             "kernel-restart-af.invalid-staged-result-reexecutes",
             "kernel.crash-recovery.concurrent_writer",
             "kernel.crash-recovery.durable_fault_points",
@@ -866,13 +878,15 @@
             "kernel.run-liveness.stale_preemption",
             "kernel.scope-isolation.enumeration_is_scope_confined",
             "kernel.scope-isolation.store_get_is_scope_confined",
-            "kernel.scope-isolation.store_has_is_scope_confined"
+            "kernel.scope-isolation.store_has_is_scope_confined",
+            "kernel.syscall.scope-isolation.own_content",
+            "kernel.syscall.scope-isolation.own_enumeration"
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 122,
-            "totalChecks": 125,
-            "applicableChecks": 122,
+            "passedChecks": 129,
+            "totalChecks": 132,
+            "applicableChecks": 129,
             "nonApplicableChecks": 3
           },
           "declaredCapabilities": [
@@ -1012,6 +1026,11 @@
             "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
             "kernel.reclamation.reachable_from_live_root_is_retained",
             "kernel.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage",
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+            "kernel.syscall.reclamation.reachability",
             "kernel-restart-af.invalid-staged-result-reexecutes",
             "kernel.crash-recovery.concurrent_writer",
             "kernel.crash-recovery.durable_fault_points",
@@ -1025,13 +1044,15 @@
             "kernel.run-liveness.stale_preemption",
             "kernel.scope-isolation.enumeration_is_scope_confined",
             "kernel.scope-isolation.store_get_is_scope_confined",
-            "kernel.scope-isolation.store_has_is_scope_confined"
+            "kernel.scope-isolation.store_has_is_scope_confined",
+            "kernel.syscall.scope-isolation.own_content",
+            "kernel.syscall.scope-isolation.own_enumeration"
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 123,
-            "totalChecks": 125,
-            "applicableChecks": 123,
+            "passedChecks": 130,
+            "totalChecks": 132,
+            "applicableChecks": 130,
             "nonApplicableChecks": 2
           },
           "declaredCapabilities": [
@@ -1218,9 +1239,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 56,
-            "totalChecks": 125,
+            "totalChecks": 132,
             "applicableChecks": 56,
-            "nonApplicableChecks": 69
+            "nonApplicableChecks": 76
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1317,9 +1338,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 125,
+            "totalChecks": 132,
             "applicableChecks": 68,
-            "nonApplicableChecks": 57
+            "nonApplicableChecks": 64
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1419,9 +1440,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 125,
+            "totalChecks": 132,
             "applicableChecks": 68,
-            "nonApplicableChecks": 57
+            "nonApplicableChecks": 64
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1521,9 +1542,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 125,
+            "totalChecks": 132,
             "applicableChecks": 68,
-            "nonApplicableChecks": 57
+            "nonApplicableChecks": 64
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",

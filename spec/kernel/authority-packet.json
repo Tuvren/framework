@@ -53,6 +53,14 @@
     {
       "path": "spec/conformance/kernel/plans/kernel-protocol-extended-syscall.json",
       "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/plans/kernel-scope-isolation-syscall.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/plans/kernel-reclamation-syscall.json",
+      "format": "conformance-plan"
     }
   ],
   "conformancePlans": [
@@ -95,6 +103,16 @@
       "planId": "tuvren.kernel.protocol.extended.syscall",
       "planVersion": "0.1.0",
       "path": "spec/conformance/kernel/plans/kernel-protocol-extended-syscall.json"
+    },
+    {
+      "planId": "tuvren.kernel.scope-isolation.syscall",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/kernel/plans/kernel-scope-isolation-syscall.json"
+    },
+    {
+      "planId": "tuvren.kernel.reclamation.syscall",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/kernel/plans/kernel-reclamation-syscall.json"
     }
   ],
   "negativeControlManifest": "spec/conformance/kernel/negative-controls.json",
@@ -174,6 +192,14 @@
     {
       "kind": "conformance-plan",
       "target": "spec/conformance/kernel/plans/kernel-protocol-extended-syscall.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/kernel/plans/kernel-scope-isolation-syscall.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/kernel/plans/kernel-reclamation-syscall.json"
     }
   ],
   "operationCatalog": "spec/conformance/kernel/operations.json",

@@ -49,15 +49,17 @@
       "mutantId": "kernel.delete-object-reachable-through-live-root",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012",
-      "claimIds": ["kernel.reclamation.reachable_from_live_root_is_retained"],
+      "claimIds": [
+        "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+        "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+      ],
       "activation": {
         "precondition": "reclamation releases an archived branch whose fork point consumed an object that a live branch head still reaches",
         "signal": "mutant.delete-object-reachable-through-live-root.entered"
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
-        "kernel.reclamation.reachable_from_live_root_is_retained.1.resultField",
-        "kernel.reclamation.reachable_from_live_root_is_retained.2.resultField"
+        "kernel.syscall.reclamation.reachability.8.resultField"
       ]
     },
     {
@@ -115,9 +117,9 @@
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012",
       "claimIds": [
-        "kernel.reclamation.unreachable_past_grace_is_released",
-        "kernel.reclamation.grace_window_holds_under_active_lease",
-        "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+        "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+        "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
+        "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
       ],
       "activation": {
         "precondition": "maintenance.reclaim is invoked on a reclamation-capable backend",
@@ -125,10 +127,11 @@
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
-        "kernel.reclamation.unreachable_past_grace_is_released.1.resultField",
-        "kernel.reclamation.unreachable_past_grace_is_released.2.resultField",
-        "kernel.reclamation.grace_window_holds_under_active_lease.1.resultField",
-        "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.1.resultField"
+        "kernel.syscall.reclamation.reachability.1.resultField",
+        "kernel.syscall.reclamation.reachability.2.resultField",
+        "kernel.syscall.reclamation.reachability.4.resultField",
+        "kernel.syscall.reclamation.grace_window_holds_under_active_lease.1.resultField",
+        "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.1.resultField"
       ]
     },
     {
@@ -186,8 +189,8 @@
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012",
       "claimIds": [
-        "kernel.reclamation.grace_window_holds_under_active_lease",
-        "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+        "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
+        "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
       ],
       "activation": {
         "precondition": "maintenance.reclaim runs while a running run pins the grace horizon",
@@ -195,8 +198,8 @@
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
-        "kernel.reclamation.grace_window_holds_under_active_lease.1.resultField",
-        "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.1.resultField"
+        "kernel.syscall.reclamation.grace_window_holds_under_active_lease.2.resultField",
+        "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.1.resultField"
       ]
     },
     {
