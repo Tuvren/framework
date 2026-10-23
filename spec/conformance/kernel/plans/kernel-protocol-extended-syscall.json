@@ -113,7 +113,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-empty-bytes"
+      "fixture": "f-empty-bytes",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes",
@@ -199,7 +200,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-empty-bytes"
+      "fixture": "f-empty-bytes",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte",
@@ -287,7 +289,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-single-byte"
+      "fixture": "f-single-byte",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte",
@@ -373,7 +376,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-single-byte"
+      "fixture": "f-single-byte",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes",
@@ -461,7 +465,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-all-zero-bytes"
+      "fixture": "f-all-zero-bytes",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes",
@@ -547,7 +552,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-all-zero-bytes"
+      "fixture": "f-all-zero-bytes",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes",
@@ -635,7 +641,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-all-ones-bytes"
+      "fixture": "f-all-ones-bytes",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes",
@@ -721,7 +728,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-all-ones-bytes"
+      "fixture": "f-all-ones-bytes",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes",
@@ -809,7 +817,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-large-bytes"
+      "fixture": "f-large-bytes",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes",
@@ -895,7 +904,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-large-bytes"
+      "fixture": "f-large-bytes",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema",
@@ -983,7 +993,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-multi-path-schema"
+      "fixture": "f-multi-path-schema",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema",
@@ -1071,7 +1082,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-multi-path-schema"
+      "fixture": "f-multi-path-schema",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths",
@@ -1159,7 +1171,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-all-single-paths"
+      "fixture": "f-all-single-paths",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths",
@@ -1247,7 +1260,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-all-single-paths"
+      "fixture": "f-all-single-paths",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths",
@@ -1335,7 +1349,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-all-ordered-paths"
+      "fixture": "f-all-ordered-paths",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths",
@@ -1423,7 +1438,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-all-ordered-paths"
+      "fixture": "f-all-ordered-paths",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn",
@@ -1511,7 +1527,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-with-prev-turn"
+      "fixture": "f-with-prev-turn",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn",
@@ -1597,7 +1614,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-with-prev-turn"
+      "fixture": "f-with-prev-turn",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash",
@@ -1685,7 +1703,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-with-event-hash"
+      "fixture": "f-with-event-hash",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash",
@@ -1773,7 +1792,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-with-event-hash"
+      "fixture": "f-with-event-hash",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed",
@@ -1861,7 +1881,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-staged-failed"
+      "fixture": "f-staged-failed",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed",
@@ -1947,7 +1968,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-staged-failed"
+      "fixture": "f-staged-failed",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted",
@@ -2035,7 +2057,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-staged-interrupted"
+      "fixture": "f-staged-interrupted",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted",
@@ -2123,7 +2146,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-staged-interrupted"
+      "fixture": "f-staged-interrupted",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results",
@@ -2211,7 +2235,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-many-staged-results"
+      "fixture": "f-many-staged-results",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results",
@@ -2299,7 +2324,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-many-staged-results"
+      "fixture": "f-many-staged-results",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema",
@@ -2387,7 +2413,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-deep-path-schema"
+      "fixture": "f-deep-path-schema",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema",
@@ -2475,7 +2502,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-deep-path-schema"
+      "fixture": "f-deep-path-schema",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes",
@@ -2563,7 +2591,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-non-utf8-bytes"
+      "fixture": "f-non-utf8-bytes",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes",
@@ -2649,7 +2678,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-non-utf8-bytes"
+      "fixture": "f-non-utf8-bytes",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash",
@@ -2737,7 +2767,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-zero-turn-tree-hash"
+      "fixture": "f-zero-turn-tree-hash",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash",
@@ -2825,7 +2856,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-zero-turn-tree-hash"
+      "fixture": "f-zero-turn-tree-hash",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged",
@@ -2913,7 +2945,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-mixed-status-staged"
+      "fixture": "f-mixed-status-staged",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged",
@@ -3001,7 +3034,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "f-mixed-status-staged"
+      "fixture": "f-mixed-status-staged",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
@@ -3096,7 +3130,7 @@
         }
       ],
       "evidence": ["trace.reject.state.adapterError"],
-      "capabilities": ["kernel.edge-validation"]
+      "capabilities": ["kernel.edge-validation", "kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
@@ -3213,7 +3247,7 @@
         }
       ],
       "evidence": ["trace.reject.state.adapterError"],
-      "capabilities": ["kernel.edge-validation"]
+      "capabilities": ["kernel.edge-validation", "kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
@@ -3419,7 +3453,7 @@
         }
       ],
       "evidence": ["trace.reject.state.adapterError"],
-      "capabilities": ["kernel.edge-validation"]
+      "capabilities": ["kernel.edge-validation", "kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
@@ -3640,7 +3674,7 @@
         }
       ],
       "evidence": ["trace.reject.state.adapterError"],
-      "capabilities": ["kernel.edge-validation"]
+      "capabilities": ["kernel.edge-validation", "kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
@@ -3849,7 +3883,7 @@
         }
       ],
       "evidence": ["trace.reject.state.adapterError"],
-      "capabilities": ["kernel.edge-validation"]
+      "capabilities": ["kernel.edge-validation", "kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
@@ -4059,7 +4093,7 @@
         }
       ],
       "evidence": ["trace.reject.state.adapterError"],
-      "capabilities": ["kernel.edge-validation"]
+      "capabilities": ["kernel.edge-validation", "kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
@@ -4549,7 +4583,7 @@
         }
       ],
       "evidence": ["trace.reject.state.adapterError"],
-      "capabilities": ["kernel.edge-validation"]
+      "capabilities": ["kernel.edge-validation", "kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.logical.thread_list",
@@ -4750,7 +4784,7 @@
         }
       ],
       "evidence": ["trace.next.result"],
-      "capabilities": ["kernel-protocol.thread.enumeration"]
+      "capabilities": ["kernel-protocol.thread.enumeration", "kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.modify_composition.f-verdict-composition",
@@ -4994,7 +5028,8 @@
         }
       ],
       "evidence": ["trace.retry-dominates-proceed.result"],
-      "fixture": "f-verdict-composition"
+      "fixture": "f-verdict-composition",
+      "capabilities": ["kernel.protocol"]
     }
   ]
 }

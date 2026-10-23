@@ -1121,7 +1121,8 @@
         "trace.walkAfter.result",
         "trace.manifestAfter.result",
         "trace.reclaim.result"
-      ]
+      ],
+      "capabilities": ["kernel.protocol", "kernel.reclamation"]
     },
     {
       "checkId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
@@ -1584,6 +1585,11 @@
         "trace.newerAfter.result",
         "trace.stagedAfter.result",
         "trace.recover.result"
+      ],
+      "capabilities": [
+        "kernel.protocol",
+        "kernel.run-liveness",
+        "kernel.reclamation"
       ]
     },
     {
@@ -1907,7 +1913,8 @@
         "trace.reclaim.result",
         "trace.after.result",
         "trace.root.result"
-      ]
+      ],
+      "capabilities": ["kernel.protocol", "kernel.reclamation"]
     },
     {
       "checkId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
@@ -2223,7 +2230,8 @@
         "trace.reclaim.result",
         "trace.after.result",
         "trace.root.result"
-      ]
+      ],
+      "capabilities": ["kernel.protocol", "kernel.reclamation"]
     },
     {
       "checkId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage",
@@ -2812,7 +2820,8 @@
         "trace.walkAfter.result",
         "trace.manifestAfter.result",
         "trace.branchAfter.result"
-      ]
+      ],
+      "capabilities": ["kernel.protocol", "kernel.reclamation"]
     }
   ]
 }

@@ -10,6 +10,61 @@ const plans = ["scope-isolation", "reclamation"].map(
   (name) => `spec/conformance/kernel/plans/kernel-${name}-syscall.json`
 );
 
+test("DC syscall checks declare every catalogued operation capability", async () => {
+  const catalog: unknown = await Bun.file(
+    new URL(
+      "../../../../spec/conformance/kernel/operations.json",
+      import.meta.url
+    )
+  ).json();
+  if (
+    typeof catalog !== "object" ||
+    catalog === null ||
+    !("operations" in catalog) ||
+    !Array.isArray(catalog.operations)
+  ) {
+    throw new Error("missing kernel operation catalog");
+  }
+  const capabilities = new Map<string, string>();
+  for (const value of catalog.operations) {
+    const entry: unknown = value;
+    if (
+      typeof entry !== "object" ||
+      entry === null ||
+      !("operationId" in entry) ||
+      !("capability" in entry) ||
+      typeof entry.operationId !== "string" ||
+      typeof entry.capability !== "string"
+    ) {
+      throw new Error("operation must declare an id and capability");
+    }
+    capabilities.set(entry.operationId, entry.capability);
+  }
+  const syscallPlans = [
+    "protocol-core",
+    "protocol-extended",
+    "reclamation",
+    "scope-isolation",
+  ];
+  const compiled = await Promise.all(
+    syscallPlans.map(
+      async (name) =>
+        await loadConformancePlan(
+          `spec/conformance/kernel/plans/kernel-${name}-syscall.json`
+        )
+    )
+  );
+  for (const { plan } of compiled) {
+    for (const check of plan.checks) {
+      for (const step of [check, ...(check.steps ?? [])]) {
+        const capability = capabilities.get(step.operation);
+        expect(capability, step.operation).toBeDefined();
+        expect(check.capabilities, check.checkId).toContain(capability);
+      }
+    }
+  }
+});
+
 test("memory lifecycle traces enforce certification through catalogued observations", async () => {
   const assessments = await assessConformancePlans(
     plans,
@@ -62,6 +117,14 @@ test("reclamation controls activate and fail designated syscall assertions", asy
     });
     expect(mutant.activationCount).toBeGreaterThan(0);
     expect(mutant.designatedFailures.length).toBeGreaterThan(0);
+    if (mutant.mutantId === "kernel.sweep-inside-grace-window") {
+      expect(mutant.designatedFailures).toContain(
+        "kernel.syscall.reclamation.grace_window_holds_under_active_lease.2.resultField"
+      );
+      expect(mutant.designatedFailures).toContain(
+        "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.1.resultField"
+      );
+    }
     if (mutant.mutantId !== recoveryMutant) {
       expect(
         mutant.designatedFailures.every((id) =>

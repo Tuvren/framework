@@ -88,7 +88,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "kernel-protocol-deterministic"
+      "fixture": "kernel-protocol-deterministic",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip",
@@ -184,7 +185,8 @@
         }
       ],
       "evidence": ["trace.get.result"],
-      "fixture": "kernel-protocol-deterministic"
+      "fixture": "kernel-protocol-deterministic",
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.modify_composition",
@@ -279,7 +281,8 @@
           "present": true
         }
       ],
-      "evidence": ["trace.compose.result"]
+      "evidence": ["trace.compose.result"],
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.logical.diff_paths",
@@ -433,7 +436,7 @@
       ],
       "evidence": ["trace.diff.result"],
       "fixture": "kernel-protocol-logical",
-      "capabilities": ["kernel.logical"]
+      "capabilities": ["kernel.logical", "kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.logical.branch_list",
@@ -570,7 +573,7 @@
         }
       ],
       "evidence": ["trace.list.result"],
-      "capabilities": ["kernel.logical"]
+      "capabilities": ["kernel.logical", "kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.logical.recovery_state",
@@ -1111,7 +1114,7 @@
         "trace.manifest.result",
         "trace.object.result"
       ],
-      "capabilities": ["kernel.logical"]
+      "capabilities": ["kernel.logical", "kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.lineage.cross_thread_rejection",
@@ -1259,7 +1262,7 @@
         }
       ],
       "evidence": ["trace.reject.state.adapterError"],
-      "capabilities": ["kernel.logical"]
+      "capabilities": ["kernel.logical", "kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.protocol.tree_manifest_identity",
@@ -1430,7 +1433,8 @@
           "length": 2
         }
       ],
-      "evidence": ["trace.tree.result", "trace.manifest.result"]
+      "evidence": ["trace.tree.result", "trace.manifest.result"],
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.controls.before_commit",
@@ -1693,7 +1697,7 @@
           "path": "$.capture.faultToken"
         }
       ],
-      "capabilities": ["kernel.fault-injection"]
+      "capabilities": ["kernel.fault-injection", "kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.controls.after_commit_before_ack",
@@ -1956,7 +1960,7 @@
           "path": "$.capture.faultToken"
         }
       ],
-      "capabilities": ["kernel.fault-injection"]
+      "capabilities": ["kernel.fault-injection", "kernel.protocol"]
     }
   ]
 }

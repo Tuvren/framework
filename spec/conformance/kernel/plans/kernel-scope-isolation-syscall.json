@@ -106,7 +106,8 @@
           "equalsPath": "$.result.trace.put.result"
         }
       ],
-      "evidence": ["trace.has.result", "trace.get.result"]
+      "evidence": ["trace.has.result", "trace.get.result"],
+      "capabilities": ["kernel.protocol"]
     },
     {
       "checkId": "kernel.syscall.scope-isolation.own_enumeration",
@@ -216,7 +217,7 @@
         }
       ],
       "evidence": ["trace.list.result"],
-      "capabilities": ["kernel-protocol.thread.enumeration"]
+      "capabilities": ["kernel-protocol.thread.enumeration", "kernel.protocol"]
     }
   ]
 }
