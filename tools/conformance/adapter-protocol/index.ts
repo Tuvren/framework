@@ -117,3 +117,15 @@ export const assertOperationOutcome: (
     throw new Error(`${label} must match the adapter OperationOutcome schema`);
   }
 };
+
+export class AdapterProtocolError extends Error {
+  readonly code: "operation_cancelled_before_entry" | "adapter_instance_busy";
+
+  constructor(
+    code: "operation_cancelled_before_entry" | "adapter_instance_busy",
+    message: string
+  ) {
+    super(message);
+    this.code = code;
+  }
+}

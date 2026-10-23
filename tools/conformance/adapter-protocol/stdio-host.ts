@@ -16,6 +16,7 @@
 
 import { createInterface } from "node:readline";
 
+import { AdapterProtocolError } from "./index.js";
 import type {
   AdapterCapabilities,
   AdapterControls,
@@ -24,6 +25,7 @@ import type {
 } from "./index.js";
 
 export interface StdioConformanceAdapter {
+  isLosslessRequest?: (method: string, params: unknown) => boolean;
   startOperation?: (
     operation: string,
     argumentsValue: unknown,
@@ -141,7 +143,10 @@ const errorResponse = (
 const createAdapterErrorEnvelope = (error: unknown): AdapterErrorEnvelope => {
   if (error instanceof Error) {
     return {
-      code: "adapter_host_error",
+      code:
+        error instanceof AdapterProtocolError
+          ? error.code
+          : "adapter_host_error",
       message: error.message,
     };
   }
@@ -297,6 +302,16 @@ export const serveStdioAdapter = async (
   let writeFailure: Error | undefined;
   let blockingDispatch = Promise.resolve();
   const respond = async (line: string): Promise<void> => {
+    let request: unknown;
+    try {
+      request = JSON.parse(line);
+    } catch {
+      request = undefined;
+    }
+    const lossless =
+      isRecord(request) &&
+      typeof request.method === "string" &&
+      adapter.isLosslessRequest?.(request.method, request.params) === true;
     const response = await handleStdioAdapterLine(adapter, line);
     let serialized: string;
     try {
@@ -306,7 +321,7 @@ export const serveStdioAdapter = async (
           typeof value === "function" ||
           typeof value === "symbol" ||
           (typeof value === "number" &&
-            (!Number.isFinite(value) || Object.is(value, -0)))
+            (!Number.isFinite(value) || (lossless && Object.is(value, -0))))
         ) {
           throw new TypeError("response contains a non-JSON value");
         }
@@ -341,12 +356,28 @@ export const serveStdioAdapter = async (
   };
   const launchResponse = (line: string): void => {
     let predecessor = Promise.resolve();
+    let bounded = false;
     const completed = Promise.withResolvers<undefined>();
     try {
       const request: unknown = JSON.parse(line);
-      if (isRecord(request) && request.method === "dispatch") {
+      bounded =
+        isRecord(request) &&
+        (request.method === "destroyInstance" || request.method === "shutdown");
+      if (
+        isRecord(request) &&
+        [
+          "dispatch",
+          "createInstance",
+          "events",
+          "inspectState",
+          "destroyInstance",
+          "shutdown",
+        ].includes(String(request.method))
+      ) {
         predecessor = blockingDispatch;
-        blockingDispatch = completed.promise;
+        blockingDispatch = Promise.all([predecessor, completed.promise]).then(
+          () => undefined
+        );
       }
     } catch {
       // Invalid frames are answered by handleStdioAdapterLine.
@@ -354,7 +385,41 @@ export const serveStdioAdapter = async (
     const taskId = Symbol("adapter response");
     const task = (async () => {
       try {
-        await predecessor;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+          if (bounded) {
+            await Promise.race([
+              predecessor,
+              new Promise<never>((_resolve, reject) => {
+                timer = setTimeout(
+                  () =>
+                    reject(
+                      new AdapterProtocolError(
+                        "adapter_instance_busy",
+                        "pending blocking dispatch exceeded lifecycle deadline"
+                      )
+                    ),
+                  1000
+                );
+              }),
+            ]);
+          } else {
+            await predecessor;
+          }
+        } catch (error: unknown) {
+          let request: unknown;
+          try {
+            request = JSON.parse(line);
+          } catch {
+            request = undefined;
+          }
+          process.stdout.write(
+            `${JSON.stringify(errorResponse(isJsonRpcRequest(request) ? request.id : null, createAdapterErrorEnvelope(error)))}\n`
+          );
+          return;
+        } finally {
+          clearTimeout(timer);
+        }
         await respond(line);
       } catch (error: unknown) {
         writeFailure =

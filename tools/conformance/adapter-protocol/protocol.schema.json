@@ -51,6 +51,10 @@
       },
       "required": ["adapterId", "capabilities", "packetId", "planVersion"]
     },
+    "ProtocolErrorCode": {
+      "enum": ["operation_cancelled_before_entry", "adapter_instance_busy"],
+      "description": "Protocol failures outside OperationOutcome: cancellation before native entry, or refusal to destroy an instance with in-flight work past its deadline."
+    },
     "ProtocolVersion": { "enum": ["0.1.0", "0.2.0"] },
     "StorageKind": {
       "enum": ["none", "sqlite-directory", "postgres-database"]

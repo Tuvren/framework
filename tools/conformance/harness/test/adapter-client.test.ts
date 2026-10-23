@@ -551,3 +551,66 @@ describe("JsonRpcAdapterClient transcript", () => {
     expect(frames[0]?.frame).toHaveLength(NOISE_CHARS);
   });
 });
+
+test.each(["rpc", "encoding"])(
+  "malformed %s response rejects only its correlated request",
+  async (kind) => {
+    const client = createClient(`
+    let first;
+    for await (const line of console) {
+      const request = JSON.parse(line);
+      if (request.method !== "inspectState") { process.stdout.write(JSON.stringify({id:request.id,jsonrpc:"2.0",result:null})+"\\n"); continue; }
+      if (!first) { first = request; continue; }
+      process.stdout.write(${JSON.stringify(kind)} === "rpc"
+        ? JSON.stringify({ id: first.id, jsonrpc: "wrong", result: null }) + "\\n"
+        : '{"id":' + first.id + ',"jsonrpc":"2.0","result":-0}\\n');
+      process.stdout.write(JSON.stringify({ id:request.id,jsonrpc:"2.0",result:"second" })+"\\n");
+    }
+  `);
+    client.setLosslessObservations(kind === "encoding");
+    const outcomes = await Promise.allSettled([
+      client.inspectState("first"),
+      client.inspectState("second"),
+    ]);
+    expect(outcomes[0]?.status).toBe("rejected");
+    expect(outcomes[1]).toEqual({ status: "fulfilled", value: "second" });
+  }
+);
+
+test("uncorrelatable malformed frames fail the session and future requests explicitly", async () => {
+  const client = createClient(
+    'for await (const _line of console) { process.stdout.write("bad frame\\n"); }'
+  );
+  await expect(client.inspectState("first")).rejects.toThrow("malformed JSON");
+  await expect(client.inspectState("next")).rejects.toThrow("malformed JSON");
+});
+
+test("lossless validation uses the correlated request's mode", async () => {
+  const client = createClient(`
+    let first;
+    for await (const line of console) {
+      const request=JSON.parse(line);
+      if (request.method !== "inspectState") { process.stdout.write(JSON.stringify({id:request.id,jsonrpc:"2.0",result:null})+"\\n");continue; }
+      if (!first) {first=request;continue;}
+      process.stdout.write('{"id":'+first.id+',"jsonrpc":"2.0","result":-0}\\n');
+      process.stdout.write(JSON.stringify({id:request.id,jsonrpc:"2.0",result:1})+"\\n");
+    }
+  `);
+  const legacy = client.inspectState("legacy");
+  client.setLosslessObservations(true);
+  const catalogued = client.inspectState("catalogued");
+  expect(await Promise.all([legacy, catalogued])).toEqual([-0, 1]);
+});
+
+test.each([
+  { operationHandle: "" },
+  { operationHandle: "h", result: true },
+  "h",
+])("start receipts must match StartOperationResult: %p", async (receipt) => {
+  const client = createClient(
+    `for await (const line of console) {const request=JSON.parse(line); process.stdout.write(JSON.stringify({id:request.id,jsonrpc:"2.0",result:request.method==="startOperation"?${JSON.stringify(receipt)}:null})+"\\n");}`
+  );
+  await expect(client.startOperation("probe", {}, "instance")).rejects.toThrow(
+    "invalid operation handle"
+  );
+});

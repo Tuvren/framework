@@ -8,6 +8,7 @@ import {
   createFaultInjectingBackend,
 } from "@tuvren/kernel-testkit";
 
+import { AdapterProtocolError } from "../../../../tools/conformance/adapter-protocol/index.js";
 import type {
   AdapterErrorEnvelope,
   OperationOutcome,
@@ -377,6 +378,17 @@ const invokeBinding = async (
   };
 };
 
+const requireOperationEntry = (signal: AbortSignal | undefined): void => {
+  if (signal?.aborted === true) {
+    throw new AdapterProtocolError(
+      "operation_cancelled_before_entry",
+      signal.reason instanceof Error
+        ? signal.reason.message
+        : String(signal.reason)
+    );
+  }
+};
+
 interface Instance {
   cleanup: () => Promise<void>;
   kernel: ReturnType<typeof createConformanceRuntimeKernel>;
@@ -390,21 +402,51 @@ interface InstanceState {
   clock: ReturnType<typeof createKernelTestClock>;
   opened?: Promise<Instance>;
   destroying?: Promise<void>;
+  inFlight: Set<Promise<OperationOutcome>>;
 }
 
 export const createSyscallBindings = (config: KernelAdapterConfig) => {
   const instances = new Map<string, InstanceState>();
   const createInstance = async (): Promise<string> => {
     const handle = randomUUID();
-    instances.set(handle, { clock: createKernelTestClock() });
+    instances.set(handle, {
+      clock: createKernelTestClock(),
+      inFlight: new Set(),
+    });
     return await Promise.resolve(handle);
   };
   const destroyInstance = async (handle: unknown): Promise<void> => {
     if (typeof handle !== "string") {
       return;
     }
-    const instance = instances.get(handle)?.opened;
-    instances.delete(handle);
+    const state = instances.get(handle);
+    if (state === undefined) {
+      return;
+    }
+    const instance = state.opened;
+    const drain = async (): Promise<void> => {
+      if (instance !== undefined) {
+        const [opened] = await Promise.allSettled([instance]);
+        if (opened?.status === "fulfilled") {
+          opened.value.barrier.close();
+        }
+      }
+      await Promise.allSettled(state.inFlight);
+    };
+    const expired = Promise.withResolvers<never>();
+    const timer = setTimeout(() => {
+      expired.reject(
+        new AdapterProtocolError(
+          "adapter_instance_busy",
+          "in-flight dispatch exceeded destruction deadline"
+        )
+      );
+    }, 1000);
+    try {
+      await Promise.race([drain(), expired.promise]);
+    } finally {
+      clearTimeout(timer);
+    }
     if (instance !== undefined) {
       const [settled] = await Promise.allSettled([instance]);
       if (settled?.status === "fulfilled") {
@@ -412,6 +454,7 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
         await settled.value.cleanup();
       }
     }
+    instances.delete(handle);
   };
   const dispatch = async (
     operation: string,
@@ -433,7 +476,7 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     if (group === undefined || method === undefined) {
       throw new Error("invalid syscall operation");
     }
-    signal?.throwIfAborted();
+    requireOperationEntry(signal);
     const eagerTarget: unknown =
       typeof binding.target === "string"
         ? Reflect.get(state, binding.target)
@@ -483,7 +526,7 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
       }
       throw error;
     }
-    signal?.throwIfAborted();
+    requireOperationEntry(signal);
     const target: unknown =
       typeof binding.target === "string"
         ? Reflect.get(opened, binding.target)
@@ -499,22 +542,52 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
       ? await invoke()
       : await opened.barrier.run(operationHandle, signal, invoke);
   };
-  const handles = createOperationHandles(dispatch, destroyInstance);
+  const trackedDispatch = async (
+    operation: string,
+    input: unknown,
+    handle: unknown,
+    signal?: AbortSignal,
+    operationHandle?: string
+  ): Promise<OperationOutcome> => {
+    const state =
+      typeof handle === "string" ? instances.get(handle) : undefined;
+    const pending = dispatch(operation, input, handle, signal, operationHandle);
+    state?.inFlight.add(pending);
+    try {
+      return await pending;
+    } finally {
+      state?.inFlight.delete(pending);
+    }
+  };
+  const handles = createOperationHandles(trackedDispatch, destroyInstance);
+  const closeInstance = async (handle: unknown): Promise<void> => {
+    const state =
+      typeof handle === "string" ? instances.get(handle) : undefined;
+    if (state === undefined) {
+      return;
+    }
+    state.destroying ??= handles.destroyInstance(handle);
+    try {
+      await state.destroying;
+    } catch (error: unknown) {
+      delete state.destroying;
+      throw error;
+    }
+  };
   return {
     awaitOperation: handles.awaitOperation,
     cancelOperation: handles.cancelOperation,
     createInstance,
-    destroyInstance: async (handle: unknown): Promise<void> => {
-      const state =
-        typeof handle === "string" ? instances.get(handle) : undefined;
-      if (state === undefined) {
-        return;
-      }
-      state.destroying ??= handles.destroyInstance(handle);
-      await state.destroying;
-    },
-    dispatch,
+    destroyInstance: closeInstance,
+    dispatch: trackedDispatch,
     has: (operation: string): boolean => Object.hasOwn(parameters, operation),
+    shutdown: async (): Promise<void> => {
+      await Promise.all(
+        [...instances.keys()].map(async (handle) => {
+          await closeInstance(handle);
+        })
+      );
+    },
     startOperation: async (
       operation: string,
       input: unknown,

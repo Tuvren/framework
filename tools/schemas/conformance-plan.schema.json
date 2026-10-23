@@ -91,6 +91,12 @@
         "claimIds": { "$ref": "#/$defs/claimIds" },
         "input": {},
         "arguments": { "type": "object", "$ref": "#/$defs/argumentValue" },
+        "handleCapture": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^.]+$",
+          "description": "StartOperationResult.operationHandle; available only to later argument projections as capture.<name>."
+        },
         "capture": {
           "type": "array",
           "minItems": 1,
@@ -116,6 +122,30 @@
         "arguments": { "not": { "required": ["input"] } }
       },
       "allOf": [
+        {
+          "if": {
+            "required": ["action"],
+            "properties": { "action": { "enum": ["start", "cancel"] } }
+          },
+          "then": {
+            "properties": { "assertions": { "maxItems": 0 } },
+            "not": {
+              "anyOf": [
+                { "required": ["capture"] },
+                { "required": ["inspectState"] }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "not": {
+              "required": ["action"],
+              "properties": { "action": { "const": "start" } }
+            }
+          },
+          "then": { "not": { "required": ["handleCapture"] } }
+        },
         {
           "if": {
             "required": ["action"],

@@ -21,6 +21,7 @@ import type { ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
 import type { OperationCatalog } from "./certification-rules.js";
+import { validateHandleSchedule } from "./handle-rules.js";
 
 export type AssertionKind =
   | "arrival"
@@ -158,6 +159,7 @@ export interface ConformancePlanStep {
   assertions?: ConformancePlanAssertion[];
   barrierId?: string;
   capture?: ConformancePlanCapture[];
+  handleCapture?: string;
   claimIds?: string[];
   controls?: {
     cancelAfterEvent?: string;
@@ -329,6 +331,7 @@ const validatePlanIntegrity = (plan: ConformancePlan, label: string): void => {
   for (const check of plan.checks) {
     assertUniqueCheckId(checkIds, check.checkId, label);
     validateCheckAssertions(check, label);
+    validateHandleSchedule(check);
     validateCheckReferences(check, fixtureIds, scenarioIds, label);
   }
 };

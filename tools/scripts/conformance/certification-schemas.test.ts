@@ -774,20 +774,26 @@ describe("conformance plan schema", () => {
     [
       "undeclared capture field",
       (draft: typeof plan) => {
-        at(stepOf(draft, "start-a"), "capture", 0).from = "result";
+        at(stepOf(draft, "await-a"), "capture", 0).from = "result";
       },
     ],
     [
       "capture path outside the observation",
       (draft: typeof plan) => {
-        at(stepOf(draft, "start-a"), "capture", 0).path =
+        at(stepOf(draft, "await-a"), "capture", 0).path =
           "fixture.expected.head";
       },
     ],
     [
       "capture name containing a dot",
       (draft: typeof plan) => {
-        at(stepOf(draft, "start-a"), "capture", 0).name = "op.a";
+        at(stepOf(draft, "await-a"), "capture", 0).name = "op.a";
+      },
+    ],
+    [
+      "handle capture name containing a dot",
+      (draft: typeof plan) => {
+        stepOf(draft, "start-a").handleCapture = "op.a";
       },
     ],
     [
