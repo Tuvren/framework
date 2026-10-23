@@ -882,6 +882,11 @@ const executeCheck = async (
     const observed: StepObservationRecord = { operation: check.operation };
     recorder.observation.push(observed);
     const catalogOperation = plan.catalog?.operations.get(check.operation);
+    if (catalogOperation?.faultOutcome !== undefined) {
+      throw new ArgumentResolutionError(
+        "fault arming requires an armFault trace step"
+      );
+    }
     client.setLosslessObservations(catalogOperation !== undefined);
     const outcome = await client.dispatch(
       check.operation,
