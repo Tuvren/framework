@@ -50,7 +50,7 @@ Additions to `tools/schemas/conformance-plan.schema.json`:
 - `steps[].action`: `dispatch` (default), `start`, `await`, `cancel`, `subscribe`, `pull`, `barrier`, `release`, `restart`, `kill`, `respawn`, `openInstance`, `armFault`, `setClock`.
 - `steps[].arguments`: an explicit projection. Any value in it is a literal or a reference `{"$ref": "<root>.<path>"}`. Allowed roots are `input` (the check's `input`), `fixture.input` (the input section of the check's fixture; migrated fixtures split into `input` and `expected` sections), and `capture` (a named capture from an earlier step of the same check). Any other root, including `fixture.expected`, is a compile error, and the no-echo rule still applies. `{"$literal": <value>}` passes a value verbatim where it would otherwise parse as a reference. Whole fixtures are no longer forwarded.
 - `steps[].capture[]`: `{name, path}` entries. `path` reads the step's observation (`result`, `events`, or `state`) and must lie inside the catalog's observation schema; `name` is unique within the check and is read later as `capture.<name>`.
-- `barrier` steps: `{barrierId, seam, participants[]}`. `seam` is a `seamId` from the catalog. `participants[]` are `stepId`s of earlier `start` steps or `$ref`s to captured operation handles. The runner holds each participant at the seam and records its implementation-entry receipt; it releases none until every participant has arrived.
+- `barrier` steps: `{barrierId, seam, participants[]}`. A barrier step arms the gate and must come before the `start` steps of its participants; the runner waits for the adapter's arming acknowledgement before starting any participant, and the compiler rejects a barrier that follows a participant's `start`. `seam` is a `seamId` from the catalog. `participants[]` are `stepId`s of later `start` steps. The runner holds each participant at the seam and records its implementation-entry receipt; it releases none until every participant has arrived.
 - `release` steps: `{barrierId, participants[]?}`, releasing all held participants or only those listed, in list order.
 - New assertion fields:
   - `notEquals` and `notEqualsPath`;
@@ -80,10 +80,10 @@ Run outcomes per mutant are `activated`, `killed`, `survived`, `equivalent`, `un
 The existing evidence fields, plus:
 
 - `certificate {status, profile, complete}`;
-- `digests {implementation, adapterManifest, harness, packet, plans, catalogs, fixtures, profiles, controls}`;
+- `digests {implementation, adapterManifest, harness, packet, plans, catalogs, fixtures, profiles, controls, verifierAuthority}`, where `verifierAuthority` is one aggregate digest over every authority input the runner reads, including identity recipes, generated record schemas, and encoding schemas;
 - `environment`;
 - `selection[]`, with a reason for every exclusion;
-- `negativeControlRunId`: a passing control run whose `harness`, `plans`, `catalogs`, `fixtures`, `profiles`, and `controls` digests equal the certificate's.
+- `negativeControlRunId`: a passing control run whose `harness`, `packet`, `plans`, `catalogs`, `fixtures`, `profiles`, `controls`, and `verifierAuthority` digests equal the certificate's.
 
 Each failed check adds `failure`:
 

@@ -17,7 +17,7 @@ assumption: "Synthesized from two independent designs after the owner asked that
      - toolchain and backend versions and an environment fingerprint;
      - the selection inventory, with a reason for every exclusion;
      - per-check results with process exits, schedules, and storage identity;
-     - the id of a passing negative-control run whose harness, plan, catalog, fixture, profile, and control-manifest digests match the certificate's.
+     - the id of a passing negative-control run whose harness, authority packet, plan, catalog, fixture, profile, control-manifest, and aggregate verifier-authority digests match the certificate's. The aggregate covers every authority input the runner reads, including identity recipes, generated record schemas, and encoding schemas.
 
      A filtered or exploratory run, or one without such a matching passing control run, is `uncertified`. The bundle schema is `tools/schemas/certification-evidence.schema.json`. It extends the existing evidence contract, and compatibility reporting reads it.
   4. **Failure artifacts.** Every failed check records:
