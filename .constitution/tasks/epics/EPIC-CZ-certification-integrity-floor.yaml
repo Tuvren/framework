@@ -1,0 +1,240 @@
+id: CZ
+name: Certification integrity floor, pinned contracts, and negative-control baseline
+kind: foundation
+capabilities: [CAP-035, CAP-036, CAP-037, CAP-038]
+depends_on: []
+priority: 1
+scope:
+  paths:
+    - tools/conformance/harness
+    - tools/conformance/plan-compiler
+    - tools/conformance/meta-conformance
+    - tools/conformance/adapter-protocol
+    - tools/conformance/certification
+    - tools/schemas
+    - tools/scripts/lib/conformance-contract.ts
+    - tools/scripts/compatibility-report.ts
+    - tools/scripts/authority-guardrails
+    - tools/scripts/conformance
+    - reports/compatibility
+    - spec/conformance
+    - typescript/kernel/testkit
+    - typescript/kernel/conformance-adapter
+    - spec/kernel/authority-packet.json
+  tech_spec_patchable:
+    - .constitution/tech-spec/contracts/conformance-certification.md
+    - .constitution/tech-spec/contracts/conformance-operation-catalog.meta.yaml
+    - .constitution/tech-spec/contracts/conformance-observation-encoding.meta.yaml
+    - .constitution/tech-spec/contracts/conformance-adapter-protocol.meta.yaml
+    - .constitution/tech-spec/contracts/certification-profile.meta.yaml
+    - .constitution/tech-spec/contracts/negative-control-manifest.meta.yaml
+    - .constitution/tech-spec/contracts/certification-evidence.meta.yaml
+estimated_diff_lines: 12000
+estimate_source: planned
+tickets:
+  - id: KRT-CZ001
+    title: Make certification statuses and the certified fleet truthful
+    type: Feature
+    effort: 3
+    depends_on: []
+    scope:
+      in:
+        - tools/conformance/harness
+        - tools/scripts/lib/conformance-contract.ts
+        - tools/scripts/compatibility-report.ts
+        - tools/conformance/certification
+        - reports/compatibility
+    verification:
+      command: bun run check
+      expected: "Exit 0; harness and evidence-contract tests prove zero applicable checks never yields pass and the certified list holds only certifiable projects."
+    stop_conditions:
+      - "STOP if a currently certified project other than framework-rust-certification would lose certification; do not improvise."
+    description: "ADR-0081 and ADR-0031. The harness sets raw status to pass whenever no check fails, including zero applicable checks (tools/conformance/harness/run.ts:881), and evidence validation in tools/scripts/lib/conformance-contract.ts accepts the same. Make zero applicable checks unsupported or not_applicable in both, and fail a run whose applicable set is empty for a project on the certified list. Split tools/conformance/certification/certified-projects.json into a discovery inventory with truthful states and a certified list of project and profile pairs; move framework-rust-certification to the inventory as unsupported. Refresh checked-in compatibility evidence for the changed status only."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert a run with zero applicable checks reports unsupported or not_applicable in the harness and is rejected as pass by the evidence contract; assert framework-rust-certification is listed in the inventory as unsupported and absent from the certified list; assert every other previously certified project keeps its status."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: settled
+    status: planned
+  - id: KRT-CZ002
+    title: Make assertions non-vacuous and add the pinned operators
+    type: Feature
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - tools/conformance/harness
+        - tools/conformance/meta-conformance
+        - tools/conformance/plan-compiler
+        - tools/schemas/conformance-plan.schema.json
+        - spec/conformance
+    verification:
+      command: bun run conformance
+      expected: "Exit 0 for every lane that passed before, except checks whose pass depended on an unresolved operand, which are listed as verification findings."
+    stop_conditions:
+      - "STOP if more than five existing checks depended on unresolved operands; report the list instead of rewriting plans; do not improvise."
+    description: "ADR-0075 decision 6. Unresolved operands currently compare equal (tools/conformance/harness/assertion-engine/index.ts:101) and a bare assertion passes on any defined value. Make an unresolved operand a failure, require explicit present assertions, distinguish null from absence, and add the pinned operators from contracts/conformance-certification.md: notEquals and notEqualsPath, the four numeric comparisons with literal or path, length, every and some with a nested assertion and a required length assertion, when, and present. Add meta-conformance cases with negative controls for each operator. Correct any existing plan that relied on vacuous equality and record each as a verification finding in this ticket's evidence triage file."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert each new operator passes and fails on hand-built contexts, that two unresolved operands fail, that every and some without a length assertion are rejected at compile time, and that a when branch that never applies is reported; list any plan corrected with its verification finding."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: settled
+    status: planned
+  - id: KRT-CZ003
+    title: Land the pinned catalog, encoding, and plan schemas
+    type: Feature
+    effort: 5
+    depends_on: [KRT-CZ002]
+    scope:
+      in:
+        - tools/schemas/conformance-operation-catalog.schema.json
+        - tools/schemas/conformance-observation-encoding.schema.json
+        - tools/schemas/conformance-plan.schema.json
+        - tools/schemas/authority-packet.schema.json
+        - tools/conformance/plan-compiler
+        - tools/scripts/conformance
+    verification:
+      command: bun run check
+      expected: "Exit 0; schema tests accept the pinned shapes and reject undeclared fields, duplicate keys, and non-integer values in integer-typed fields."
+    stop_conditions:
+      - "STOP if a pinned field in contracts/conformance-certification.md cannot be expressed in JSON Schema 2020-12 as written; report a drift note; do not improvise."
+    description: "ADR-0075, ADR-0078 and the pinned companion. Create tools/schemas/conformance-operation-catalog.schema.json and tools/schemas/conformance-observation-encoding.schema.json; extend tools/schemas/conformance-plan.schema.json with claimIds, step actions, arguments with reference and literal forms, captures, and barrier fields; extend tools/schemas/authority-packet.schema.json so a packet can reference its operation catalog, profiles, and negative-control manifest. Existing plans keep validating; the new fields are optional until a family migrates."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the four schemas validate the companion's example shapes, reject additional properties, reject expected-root references inside arguments, and keep every existing plan and packet valid."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: settled
+    status: planned
+  - id: KRT-CZ004
+    title: Land adapter protocol 0.2.0, profile, control, and evidence schemas
+    type: Feature
+    effort: 5
+    depends_on: [KRT-CZ003]
+    scope:
+      in:
+        - tools/conformance/adapter-protocol
+        - tools/schemas/certification-profile.schema.json
+        - tools/schemas/negative-control-manifest.schema.json
+        - tools/schemas/certification-evidence.schema.json
+        - tools/scripts/lib/conformance-contract.ts
+    verification:
+      command: bun run check
+      expected: "Exit 0; adapter protocol validation accepts 0.1.0 and 0.2.0 frames and the new schemas validate their companion examples."
+    stop_conditions:
+      - "STOP if an existing adapter would fail protocol validation under the extended schema; do not improvise."
+    description: "ADR-0076, ADR-0077, ADR-0079, ADR-0081. Extend tools/conformance/adapter-protocol/protocol.schema.json and adapter-manifest.schema.json to 0.2.0 (operation handles, subscribe and pull, event notifications, openInstance, armFault returning a token, faultReached, setClock; manifest storage, profiles, executable) while still accepting 0.1.0 adapters. Create tools/schemas/certification-profile.schema.json, tools/schemas/negative-control-manifest.schema.json, and tools/schemas/certification-evidence.schema.json, and make the evidence contract validate against the latter. Update protocol.md concisely. No runtime behavior in this ticket."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the protocol validator accepts every pinned 0.2.0 message, rejects mismatched parameter names, and still accepts all checked-in 0.1.0 adapters; assert the profile, control, and evidence schemas validate the companion examples and reject unknown fields."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: settled
+    status: planned
+  - id: KRT-CZ005
+    title: Enforce certification plan rules in report mode with a baseline inventory
+    type: Feature
+    effort: 5
+    depends_on: [KRT-CZ003]
+    scope:
+      in:
+        - tools/conformance/plan-compiler
+        - tools/scripts/authority-guardrails
+        - tools/conformance/meta-conformance
+        - spec/conformance
+    verification:
+      command: bun run check
+      expected: "Exit 0; the compiler prints the per-plan inventory of rule violations in report mode and fails only for plans whose profile is marked migrated."
+    stop_conditions:
+      - "STOP if report mode would fail any currently passing lane; do not improvise."
+    description: "ADR-0075 decisions 4 and 5. Add compiler rules: operation must be catalogued, assertion paths must resolve inside the operation's observation schema, literal boolean comparisons only on catalog-declared native booleans of syscall operations, no-echo between expected fixture nodes and step arguments, no expected-root references in arguments, and no evidence-only proof. Rules run in report mode for every plan and become enforcing for plans whose port profile lists them as migrated. Emit a reproducible inventory command output summarizing violations by plan and rule; the inventory is a run artifact, not a checked-in file."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert each rule fires on a minimal violating plan and stays silent on a compliant one; assert report mode does not fail current lanes; assert enforcing mode fails a migrated plan with a violation; record the baseline violation counts per port in this ticket's evidence manifest."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: settled
+    status: planned
+  - id: KRT-CZ006
+    title: Emit failure artifacts with preliminary classification
+    type: Feature
+    effort: 5
+    depends_on: [KRT-CZ001, KRT-CZ004]
+    scope:
+      in:
+        - tools/conformance/harness
+        - tools/scripts/lib/conformance-contract.ts
+        - tools/scripts/compatibility-report.ts
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; a forced failing check in the harness tests produces a failure block that validates against tools/schemas/certification-evidence.schema.json."
+    stop_conditions:
+      - "STOP if retaining raw observations would put secrets into checked-in evidence; keep them in the run directory only; do not improvise."
+    description: "ADR-0081 decisions 4 and 5. Every failed check records the resolved arguments, raw observation, operands with path, expected, actual, and expected source, the adapter stderr tail, exit code or signal, and a replay command, plus a preliminary classification: adapter_protocol, verification, implementation, or environment. Checked-in evidence keeps the summary and classification; full transcripts stay in the run log directory. Compatibility reporting reads the new fields."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert a malformed frame, an unresolved operand, a valid observation failing an assertion, and a provisioning failure each produce the matching classification and a replay command that reproduces the failure."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-CZ007
+    title: Add a test-only mutant seam with activation proof
+    type: Feature
+    effort: 5
+    depends_on: [KRT-CZ004]
+    scope:
+      in:
+        - typescript/kernel/testkit
+        - typescript/kernel/conformance-adapter
+    verification:
+      command: bun run verify:kernel
+      expected: "Exit 0; the certifying kernel adapter manifests are unchanged and a non-certifying mutant manifest starts and reports activation counts."
+    stop_conditions:
+      - "STOP if a mutant would require a flag or branch in any production package; do not improvise."
+    description: "ADR-0079 decision 1. In @tuvren/kernel-testkit add a mutant registry that wraps the reference memory backend or kernel and alters behavior before observation, recording when the mutated branch executes. Add non-certifying adapter manifests in typescript/kernel/conformance-adapter that select one mutant by id and expose activation through a catalogued control observation. Mutants never ship in production packages and certification discovery ignores mutant manifests."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the registry activates exactly the selected mutant, activation is observable through the control, certification discovery excludes mutant manifests, and no production package imports the registry."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: settled
+    status: planned
+  - id: KRT-CZ008
+    title: Implement the initial kernel mutant set and control manifest
+    type: Feature
+    effort: 5
+    depends_on: [KRT-CZ007]
+    scope:
+      in:
+        - typescript/kernel/testkit
+        - spec/conformance/kernel/negative-controls.json
+        - spec/kernel/authority-packet.json
+    verification:
+      command: bun run check
+      expected: "Exit 0; spec/conformance/kernel/negative-controls.json validates against tools/schemas/negative-control-manifest.schema.json and every listed mutant exists in the registry."
+    stop_conditions:
+      - "STOP if a mutant cannot be expressed without editing the reference kernel's source; do not improvise."
+    description: "ADR-0079 decision 6, memory-applicable subset: wrong opaque-object hash, accept one noncanonical CBOR encoding, non-canonical changedPaths order, drop an uncommitted staged result on recovery, promote staged work before a checkpoint, accept a stale competing head update, permit lease takeover before expiry, accept a stale owner after takeover, resolve an object across scopes on a shared substrate, delete an object reachable through another live root, sweep inside the active-lease grace window, never sweep eligible objects, and fault seam never fires (instrumentation kind). Durable-only and shared-backend mutants belong to the durable lifecycle epic. Write the manifest with rule, claimIds, activation, profiles, and designated assertions against the current plans, and reference it from the kernel authority packet."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert every manifest entry maps to a registered mutant with an authority rule reference and at least one designated assertion, and that the packet references the manifest."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: settled
+    status: planned
+  - id: KRT-CZ009
+    title: Run negative controls and record the baseline
+    type: Feature
+    effort: 5
+    depends_on: [KRT-CZ008]
+    scope:
+      in:
+        - tools/conformance/meta-conformance
+        - tools/scripts/conformance
+    verification:
+      command: bun run conformance
+      expected: "Exit 0 in report mode; the negative-control report lists activated, killed, survived, equivalent, unsupported, and invalid outcomes for each kernel mutant against the current plans."
+    stop_conditions:
+      - "STOP if the unmutated control run fails on the current plans; record the failure as a finding and do not count any mutant; do not improvise."
+    description: "ADR-0079 decisions 3 to 5. Add the negative-control runner to meta-conformance: run the unmutated control, then each mutant through the unchanged plans, require activation proof and a failing designated assertion for a kill, classify infrastructure failures as invalid, and treat an instrumentation mutant as detected only when the runner rejects the run for missing fault activation. Wire it into bun run conformance in report mode. Record the baseline (which mutants survive the current composite plans) in this ticket's evidence manifest; that list is the worklist for the kernel plan rewrites."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert a synthetic mutant that crashes at startup is classified invalid, a mutant whose designated assertion fails is killed, a non-activated mutant is not counted, and the baseline report for the current plans is captured in the evidence manifest."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned

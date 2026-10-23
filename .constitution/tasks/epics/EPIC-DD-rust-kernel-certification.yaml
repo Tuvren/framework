@@ -1,0 +1,111 @@
+id: DD
+name: Certify the Rust kernel on the kernel catalog
+kind: product
+capabilities: [CAP-035, CAP-036, CAP-037, CAP-038]
+depends_on: [DC]
+priority: 5
+scope:
+  paths:
+    - rust/kernel
+    - rust/kernel-conformance-adapter
+    - rust/kernel-certification
+    - spec/conformance/kernel
+    - tools/conformance/meta-conformance
+    - tools/conformance/certification
+    - reports/compatibility
+  tech_spec_patchable:
+    - .constitution/tech-spec/contracts/kernel-identity-recipes.meta.yaml
+estimated_diff_lines: 10000
+estimate_source: planned
+tickets:
+  - id: KRT-DD001
+    title: Cross-validate kernel vectors and identity recipes with the Rust encoder
+    type: Feature
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - rust/kernel
+        - rust/kernel-conformance-adapter
+        - spec/conformance/kernel/fixtures
+        - spec/conformance/kernel/identity-recipes.json
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the Rust adapter encodes observations per the encoding profile and a Rust test reproduces every committed kernel vector and identity recipe digest."
+    stop_conditions:
+      - "STOP if the Rust encoder disagrees with a committed vector; record it as a specification or implementation finding with both encodings and do not change the vector; do not improvise."
+    description: "ADR-0078 decision 4. Add the Rust observation encoding helpers ($bytes, safe integers, tagged records, duplicate-key rejection) to the Rust kernel adapter, and a Rust test that recomputes canonical CBOR and digests for every committed vector and identity recipe, so the verifier and the TypeScript production encoder are cross-checked by an independent implementation."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the Rust test reproduces every committed vector byte for byte and digest for digest, and a deliberately altered vector fails it."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DD002
+    title: Bind the Rust kernel to the protocol syscalls and canonical diff order
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DD001]
+    scope:
+      in:
+        - rust/kernel
+        - rust/kernel-conformance-adapter
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the rewritten protocol plans pass against the Rust kernel adapter with no composite operations for those claims."
+    stop_conditions:
+      - "STOP if a protocol syscall has no public Rust kernel API; record it as an implementation finding; do not improvise."
+    description: "ADR-0075 and ADR-0080. Replace the Rust adapter's protocol composites (including recovery-state, which echoes its fixture) with syscall bindings that forward native results and errors unchanged, and make the Rust kernel return canonical changedPaths order. Triage every failure in this ticket's certification-triage.yaml."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the protocol plans pass on the Rust kernel, recovery-state observations come from the kernel rather than the fixture, and the Rust adapter performs no comparison, sorting, or normalization for these operations."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
+  - id: KRT-DD003
+    title: Add a Rust test-only fault seam and clock injection
+    type: Feature
+    effort: 5
+    depends_on: [KRT-DD002]
+    scope:
+      in:
+        - rust/kernel
+        - rust/kernel-conformance-adapter
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; armFault with mode throw and setClock work against the Rust kernel and produce activation evidence."
+    stop_conditions:
+      - "STOP if the seam would be reachable from the production gRPC service path; do not improvise."
+    description: "ADR-0076 decision 7. Add a test-only fault seam to the Rust kernel at the storage-boundary points that its in-memory backend can express, and inject backend and worker clocks, both reachable only from the conformance adapter. Bind armFault (throw) and setClock."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert each supported point produces a typed fault and activation evidence, unsupported points report unsupported, and the gRPC service binary cannot reach the seam."
+    flows: [flow-authority-packet-driven-conformance]
+    certainty: assumed
+    status: planned
+  - id: KRT-DD004
+    title: Certify the Rust kernel under kernel.memory
+    type: Feature
+    effort: 8
+    depends_on: [KRT-DD003]
+    scope:
+      in:
+        - rust/kernel
+        - rust/kernel-conformance-adapter
+        - rust/kernel-certification
+        - spec/conformance/kernel/negative-controls.json
+        - tools/conformance/meta-conformance
+        - tools/conformance/certification
+        - reports/compatibility
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the Rust kernel claims kernel.memory, every required check is applicable and passes or is triaged red, and representative Rust mutants are killed."
+    stop_conditions:
+      - "STOP if certifying requires weakening a plan to make Rust pass; record the implementation or specification finding instead; do not improvise."
+    description: "ADR-0075, ADR-0079, ADR-0081. Bind the isolation, reclamation, liveness, and in-process recovery syscalls in the Rust adapter, remove the tautological erasure and remaining composites, claim kernel.memory, reproduce representative mutants in Rust (wrong hash, drop staged, cross-scope resolve, reachable delete), and emit the Rust certificate bundle. Fix Rust implementation findings that are small and local; file the rest as issues with replay commands. Every finding is classified in this ticket's certification-triage.yaml, and a cross-implementation disagreement report compares TypeScript and Rust observations."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the Rust kernel's kernel.memory run is complete with all required checks applicable, each failure has a triage entry, the Rust mutants are killed, and the TypeScript and Rust disagreement report is captured in the evidence manifest."
+    flows: [flow-multi-implementation-conformance-compatibility]
+    certainty: assumed
+    status: planned
