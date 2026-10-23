@@ -537,14 +537,14 @@ export const createRuntimeKernelRunLivenessApi = (
         if (lease.executionOwnerId !== executionOwnerId) {
           throw new TuvrenRuntimeError(
             `run "${runId}" lease owner does not match`,
-            { code: "kernel_runtime_run_lease_owner_mismatch" }
+            { code: "run_lease_owner_mismatch" }
           );
         }
 
         if (lease.fencingToken !== fencingToken) {
           throw new TuvrenRuntimeError(
             `run "${runId}" lease fencing token is stale`,
-            { code: "kernel_runtime_run_lease_token_mismatch" }
+            { code: "run_lease_token_mismatch" }
           );
         }
 

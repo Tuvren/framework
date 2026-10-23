@@ -35,6 +35,7 @@ import type {
 } from "./host-scenario-support.js";
 import { createProjection } from "./host-scenario-support.js";
 import { result } from "./host-support.js";
+import { createSyscallBindings } from "./host-syscalls.js";
 
 const MUTANT_ENV = "TUVREN_KERNEL_MUTANT";
 const MUTANT_ACTIVATION_OPERATION = "kernel.mutant.activation";
@@ -44,6 +45,7 @@ const defaultCapabilities = (
 ): readonly string[] => {
   if (backend === "postgres") {
     return [
+      "kernel.syscall",
       "kernel.protocol",
       "kernel.edge-validation",
       "kernel.logical",
@@ -64,6 +66,7 @@ const defaultCapabilities = (
 
   if (backend === "sqlite") {
     return [
+      "kernel.syscall",
       "kernel.protocol",
       "kernel.edge-validation",
       "kernel.logical",
@@ -77,6 +80,7 @@ const defaultCapabilities = (
   }
 
   return [
+    "kernel.syscall",
     "kernel.protocol",
     "kernel.edge-validation",
     "kernel.logical",
@@ -165,6 +169,8 @@ const createMutantActivationOperation =
 
 const ADAPTER_CONFIG = readAdapterConfig(process.argv.slice(2));
 
+const syscallBindings = createSyscallBindings(ADAPTER_CONFIG);
+
 const protocolLogicalScenarios = createProtocolLogicalScenarios(ADAPTER_CONFIG);
 const reclamationScenarios = createReclamationScenarios(ADAPTER_CONFIG);
 const restartRecoveryScenarios = createRestartRecoveryScenarios(ADAPTER_CONFIG);
@@ -235,8 +241,12 @@ const initialize = (
 const dispatch = async (
   operation: string,
   input: unknown,
-  _controls: AdapterControls
+  _controls: AdapterControls,
+  instance?: unknown
 ): Promise<OperationOutcome> => {
+  if (syscallBindings.has(operation)) {
+    return await syscallBindings.dispatch(operation, input, instance);
+  }
   const operationHandler = kernelOperations.get(operation);
   if (operationHandler === undefined) {
     return {
@@ -260,6 +270,8 @@ const dispatch = async (
 };
 
 await serveStdioAdapter({
+  createInstance: syscallBindings.createInstance,
+  destroyInstance: syscallBindings.destroyInstance,
   dispatch,
   initialize,
 } satisfies StdioConformanceAdapter);

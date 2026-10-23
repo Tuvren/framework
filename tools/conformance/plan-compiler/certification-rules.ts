@@ -54,6 +54,7 @@ type JsonSchema = boolean | Record<string, unknown>;
 type ObservationDomain = "events" | "result" | "state";
 
 export interface CatalogOperation {
+  errors?: readonly string[];
   kind: "control" | "double" | "syscall";
   observation: Partial<Record<ObservationDomain, JsonSchema>>;
   operationId: string;
@@ -145,6 +146,7 @@ const readOperation = (value: Record<string, unknown>): CatalogOperation => {
   }
 
   return {
+    errors: Array.isArray(value.errors) ? value.errors.map(String) : [],
     kind: value.kind as CatalogOperation["kind"],
     observation,
     operationId: String(value.operationId),
@@ -594,6 +596,17 @@ const observationProblem = (
 
   if (operation === undefined) {
     return `reads ${target.domain} of uncatalogued operation ${target.operationId}`;
+  }
+
+  if (
+    target.domain === "state" &&
+    target.segments[0] === "adapterError" &&
+    (target.segments.length === 1 ||
+      (target.segments.length === 2 &&
+        ["code", "message"].includes(String(target.segments[1])))) &&
+    (operation.errors?.length ?? 0) > 0
+  ) {
+    return undefined;
   }
 
   const schema = operation.observation[target.domain];

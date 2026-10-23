@@ -25,6 +25,7 @@ import {
   formatCertificationInventory,
   loadCertificationAuthority,
 } from "./certification-assessment.js";
+import { parseOperationCatalog } from "./certification-rules.js";
 import type { CompiledConformancePlanCheck } from "./index.js";
 import { findConformancePlans, loadConformancePlan } from "./index.js";
 
@@ -68,6 +69,23 @@ const readDeclaredOperations = async (
   }
 
   const operations = new Set<string>();
+  if (packetId === "tuvren.kernel.protocol") {
+    const catalog = parseOperationCatalog(
+      JSON.parse(
+        await readFile(
+          nodePath.resolve(
+            REPO_ROOT,
+            "spec/conformance/kernel/operations.json"
+          ),
+          "utf-8"
+        )
+      ),
+      "kernel catalog"
+    );
+    for (const operation of catalog.operations.keys()) {
+      operations.add(operation);
+    }
+  }
 
   const visit = async (index: number): Promise<void> => {
     const sourcePath = sourcePaths[index];

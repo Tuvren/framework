@@ -19,7 +19,6 @@ import type { KernelAdapterConfig } from "./host-scenario-support.js";
 import {
   createConformanceRuntimeKernel,
   loadCanonicalSchema,
-  normalizeLogicalErrorCode,
   readErrorCode,
   withConfiguredBackend,
 } from "./host-support.js";
@@ -74,7 +73,7 @@ export const createRunLivenessScenarios = (config: KernelAdapterConfig) => {
             50
           );
         } catch (error: unknown) {
-          ownerMismatchCode = normalizeLogicalErrorCode(readErrorCode(error));
+          ownerMismatchCode = readErrorCode(error);
         }
 
         let staleTokenCode = "unexpected_success";
@@ -86,7 +85,7 @@ export const createRunLivenessScenarios = (config: KernelAdapterConfig) => {
             50
           );
         } catch (error: unknown) {
-          staleTokenCode = normalizeLogicalErrorCode(readErrorCode(error));
+          staleTokenCode = readErrorCode(error);
         }
 
         return createProjection({

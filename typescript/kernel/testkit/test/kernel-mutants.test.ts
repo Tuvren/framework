@@ -124,6 +124,14 @@ const readPlanChecks = (): Map<string, PlanCheck> => {
   for (const file of readdirSync(path.join(REPO_ROOT, PLANS_DIRECTORY))) {
     const plan = readJson(path.join(PLANS_DIRECTORY, file));
     for (const check of readRecords(isRecord(plan) ? plan.checks : [])) {
+      for (const step of readRecords(check.steps)) {
+        checks.set(`${String(check.checkId)}.${String(step.stepId)}`, {
+          assertions: readRecords(step.assertions).map((assertion) => ({
+            kind: String(assertion.kind),
+          })),
+          checkId: String(check.checkId),
+        });
+      }
       checks.set(String(check.checkId), {
         assertions: readRecords(check.assertions).map((assertion) => ({
           kind: String(assertion.kind),
@@ -359,6 +367,9 @@ describe("kernel negative-control manifest", () => {
       for (const assertionId of control.designatedAssertions ?? []) {
         const { checkId, index, kind } = parseAssertionId(assertionId);
         const check = checks.get(checkId);
+        if (check === undefined) {
+          throw new Error(`unknown designated assertion ${assertionId}`);
+        }
         expect({
           assertionId,
           kind: check?.assertions[index - 1]?.kind,
@@ -366,7 +377,7 @@ describe("kernel negative-control manifest", () => {
           assertionId,
           kind,
         });
-        expect(control.claimIds).toContain(checkId);
+        expect(control.claimIds).toContain(check.checkId);
       }
       for (const claimId of control.claimIds) {
         expect(checks.has(claimId)).toBe(true);

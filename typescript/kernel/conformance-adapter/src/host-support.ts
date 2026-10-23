@@ -182,26 +182,6 @@ export const stageFixtureResult = async (
   );
 };
 
-export const normalizeLogicalErrorCode = (code: string): string => {
-  switch (code) {
-    case "kernel_runtime_lineage_mismatch": {
-      return "turn_node_thread_mismatch";
-    }
-    case "kernel_runtime_run_lease_owner_mismatch": {
-      return "run_lease_owner_mismatch";
-    }
-    case "kernel_runtime_run_lease_token_mismatch": {
-      return "run_lease_token_mismatch";
-    }
-    case "kernel_runtime_turn_head_lineage_mismatch": {
-      return "turn_head_lateral_move";
-    }
-    default: {
-      return code;
-    }
-  }
-};
-
 export const readErrorCode = (error: unknown): string => {
   if (typeof error === "object" && error !== null && "code" in error) {
     const code = Reflect.get(error, "code");
@@ -316,7 +296,7 @@ export const readLogicalFixture = (
   };
 };
 
-const createConfiguredBackend = async (
+export const createConfiguredBackend = async (
   config: ConformanceConfig,
   options?: BackendClockOptions
 ): Promise<ConfiguredBackendHandle> => {

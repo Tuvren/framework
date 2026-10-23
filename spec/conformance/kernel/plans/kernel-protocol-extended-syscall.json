@@ -1,0 +1,3988 @@
+{
+  "planId": "tuvren.kernel.protocol.extended.syscall",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.kernel.protocol",
+  "certificationRules": "enforcing",
+  "applicability": {
+    "capabilities": ["kernel.syscall"]
+  },
+  "fixtures": {
+    "f-empty-bytes": "../fixtures/kernel-protocol-empty-bytes.bytes.json",
+    "f-single-byte": "../fixtures/kernel-protocol-single-byte.bytes.json",
+    "f-all-zero-bytes": "../fixtures/kernel-protocol-all-zero-bytes.bytes.json",
+    "f-all-ones-bytes": "../fixtures/kernel-protocol-all-ones-bytes.bytes.json",
+    "f-large-bytes": "../fixtures/kernel-protocol-large-bytes.bytes.json",
+    "f-multi-path-schema": "../fixtures/kernel-protocol-multi-path-schema.bytes.json",
+    "f-all-single-paths": "../fixtures/kernel-protocol-all-single-paths-schema.bytes.json",
+    "f-all-ordered-paths": "../fixtures/kernel-protocol-all-ordered-paths-schema.bytes.json",
+    "f-with-prev-turn": "../fixtures/kernel-protocol-with-prev-turn.bytes.json",
+    "f-with-event-hash": "../fixtures/kernel-protocol-with-event-hash.bytes.json",
+    "f-staged-failed": "../fixtures/kernel-protocol-staged-result-failed.bytes.json",
+    "f-staged-interrupted": "../fixtures/kernel-protocol-staged-result-interrupted.bytes.json",
+    "f-many-staged-results": "../fixtures/kernel-protocol-many-staged-results.bytes.json",
+    "f-deep-path-schema": "../fixtures/kernel-protocol-deep-path-schema.bytes.json",
+    "f-non-utf8-bytes": "../fixtures/kernel-protocol-non-utf8-bytes.bytes.json",
+    "f-zero-turn-tree-hash": "../fixtures/kernel-protocol-zero-turn-tree-hash.bytes.json",
+    "f-mixed-status-staged": "../fixtures/kernel-protocol-mixed-status-staged-results.bytes.json",
+    "f-verdict-composition": "../fixtures/kernel-protocol-verdict-composition.bytes.json"
+  },
+  "checks": [
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-empty-bytes"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes",
+      "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-empty-bytes"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-empty-bytes"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-single-byte"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-single-byte"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-single-byte"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-single-byte"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte",
+      "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-single-byte"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-single-byte"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-single-byte"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-single-byte"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-all-zero-bytes"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes",
+      "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-all-zero-bytes"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-all-ones-bytes"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes",
+      "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-all-ones-bytes"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-large-bytes"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-large-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-large-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-large-bytes"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes",
+      "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-large-bytes"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-large-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-large-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-large-bytes"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-multi-path-schema"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema",
+      "claimIds": [
+        "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-multi-path-schema"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-all-single-paths"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths",
+      "claimIds": [
+        "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-all-single-paths"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-all-ordered-paths"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths",
+      "claimIds": [
+        "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-all-ordered-paths"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-with-prev-turn"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn",
+      "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-with-prev-turn"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-with-event-hash"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash",
+      "claimIds": [
+        "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-with-event-hash"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-staged-failed"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-staged-failed"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-staged-failed"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-staged-failed"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed",
+      "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-staged-failed"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-staged-failed"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-staged-failed"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-staged-failed"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-staged-interrupted"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted",
+      "claimIds": [
+        "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-staged-interrupted"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-many-staged-results"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results",
+      "claimIds": [
+        "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-many-staged-results"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-deep-path-schema"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema",
+      "claimIds": [
+        "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-deep-path-schema"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-non-utf8-bytes"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes",
+      "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-non-utf8-bytes"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-zero-turn-tree-hash"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+      "claimIds": [
+        "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-zero-turn-tree-hash"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged",
+      "claimIds": [
+        "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged"
+      ],
+      "operation": "kernel.store.put",
+      "steps": [
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$ref": "fixture.input.rawOpaqueBytes"
+            }
+          },
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged"
+          ],
+          "assertions": [
+            {
+              "kind": "digest",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-mixed-status-staged"
+    },
+    {
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged",
+      "claimIds": [
+        "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "register",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$ref": "fixture.input.turnTreeSchemaRecord"
+            }
+          },
+          "capture": [
+            {
+              "name": "register",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.schema.get",
+          "arguments": {
+            "schemaId": {
+              "$ref": "capture.register"
+            }
+          },
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.get.result"],
+      "fixture": "f-mixed-status-staged"
+    },
+    {
+      "checkId": "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
+      "claimIds": [
+        "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "reject",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  },
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ],
+                "schemaId": "schema_main"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "rejection",
+              "path": "state.adapterError"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path"
+          ],
+          "assertions": [
+            {
+              "kind": "stateField",
+              "field": "$.adapterError.code",
+              "equals": "duplicate_schema_path"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "stateField",
+          "field": "$.trace.reject.state.adapterError.code",
+          "equals": "duplicate_schema_path"
+        }
+      ],
+      "evidence": ["trace.reject.state.adapterError"],
+      "capabilities": ["kernel.edge-validation"]
+    },
+    {
+      "checkId": "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
+      "claimIds": [
+        "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "schemaId": "schema_main"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": "schema_main"
+            }
+          ]
+        },
+        {
+          "stepId": "reject",
+          "operation": "kernel.tree.create",
+          "arguments": {
+            "schemaId": "schema_main",
+            "changes": {
+              "$map": [["messages", []]]
+            }
+          },
+          "capture": [
+            {
+              "name": "rejection",
+              "path": "state.adapterError"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path"
+          ],
+          "assertions": [
+            {
+              "kind": "stateField",
+              "field": "$.adapterError.code",
+              "equals": "kernel_runtime_missing_required_tree_path"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "stateField",
+          "field": "$.trace.reject.state.adapterError.code",
+          "equals": "kernel_runtime_missing_required_tree_path"
+        }
+      ],
+      "evidence": ["trace.reject.state.adapterError"],
+      "capabilities": ["kernel.edge-validation"]
+    },
+    {
+      "checkId": "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+      "claimIds": [
+        "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "schemaId": "schema_main"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": "schema_main"
+            }
+          ]
+        },
+        {
+          "stepId": "otherSchema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "schemaId": "other"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "otherSchema",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "a",
+          "operation": "kernel.tree.create",
+          "arguments": {
+            "schemaId": "schema_main",
+            "changes": {
+              "$map": [
+                ["messages", []],
+                ["context.manifest", null]
+              ]
+            }
+          },
+          "capture": [
+            {
+              "name": "a",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "b",
+          "operation": "kernel.tree.create",
+          "arguments": {
+            "schemaId": "other",
+            "changes": {
+              "$map": [
+                ["messages", []],
+                ["context.manifest", null]
+              ]
+            }
+          },
+          "capture": [
+            {
+              "name": "b",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "reject",
+          "operation": "kernel.tree.diff",
+          "arguments": {
+            "treeHashA": {
+              "$ref": "capture.a"
+            },
+            "treeHashB": {
+              "$ref": "capture.b"
+            }
+          },
+          "capture": [
+            {
+              "name": "rejection",
+              "path": "state.adapterError"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch"
+          ],
+          "assertions": [
+            {
+              "kind": "stateField",
+              "field": "$.adapterError.code",
+              "equals": "kernel_runtime_tree_schema_mismatch_diff"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "stateField",
+          "field": "$.trace.reject.state.adapterError.code",
+          "equals": "kernel_runtime_tree_schema_mismatch_diff"
+        }
+      ],
+      "evidence": ["trace.reject.state.adapterError"],
+      "capabilities": ["kernel.edge-validation"]
+    },
+    {
+      "checkId": "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch",
+      "claimIds": [
+        "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "schemaId": "schema_main"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": "schema_main"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread_main",
+            "schemaId": "schema_main",
+            "initialBranchId": "branch_main"
+          },
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threadId",
+              "equals": "thread_main"
+            }
+          ]
+        },
+        {
+          "stepId": "turn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turn_main",
+            "threadId": "thread_main",
+            "branchId": "branch_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "turn",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.turnId",
+              "equals": "turn_main"
+            }
+          ]
+        },
+        {
+          "stepId": "run",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "run_main",
+            "turnId": "turn_main",
+            "branchId": "branch_main",
+            "schemaId": "schema_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "first",
+                "deterministic": false,
+                "sideEffects": false
+              },
+              {
+                "id": "second",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "capture": [
+            {
+              "name": "run",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.status",
+              "equals": "running"
+            }
+          ]
+        },
+        {
+          "stepId": "reject",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "busy",
+            "turnId": "turn_main",
+            "branchId": "branch_main",
+            "schemaId": "schema_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "next",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "capture": [
+            {
+              "name": "rejection",
+              "path": "state.adapterError"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch"
+          ],
+          "assertions": [
+            {
+              "kind": "stateField",
+              "field": "$.adapterError.code",
+              "equals": "kernel_runtime_branch_already_active"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "stateField",
+          "field": "$.trace.reject.state.adapterError.code",
+          "equals": "kernel_runtime_branch_already_active"
+        }
+      ],
+      "evidence": ["trace.reject.state.adapterError"],
+      "capabilities": ["kernel.edge-validation"]
+    },
+    {
+      "checkId": "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+      "claimIds": [
+        "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "schemaId": "schema_main"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": "schema_main"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread_main",
+            "schemaId": "schema_main",
+            "initialBranchId": "branch_main"
+          },
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threadId",
+              "equals": "thread_main"
+            }
+          ]
+        },
+        {
+          "stepId": "turn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turn_main",
+            "threadId": "thread_main",
+            "branchId": "branch_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "turn",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.turnId",
+              "equals": "turn_main"
+            }
+          ]
+        },
+        {
+          "stepId": "run",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "run_main",
+            "turnId": "turn_main",
+            "branchId": "branch_main",
+            "schemaId": "schema_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "first",
+                "deterministic": false,
+                "sideEffects": false
+              },
+              {
+                "id": "second",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "capture": [
+            {
+              "name": "run",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.status",
+              "equals": "running"
+            }
+          ]
+        },
+        {
+          "stepId": "reject",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "second"
+          },
+          "capture": [
+            {
+              "name": "rejection",
+              "path": "state.adapterError"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step"
+          ],
+          "assertions": [
+            {
+              "kind": "stateField",
+              "field": "$.adapterError.code",
+              "equals": "kernel_runtime_unexpected_step"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "stateField",
+          "field": "$.trace.reject.state.adapterError.code",
+          "equals": "kernel_runtime_unexpected_step"
+        }
+      ],
+      "evidence": ["trace.reject.state.adapterError"],
+      "capabilities": ["kernel.edge-validation"]
+    },
+    {
+      "checkId": "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
+      "claimIds": [
+        "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "schemaId": "schema_main"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": "schema_main"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread_main",
+            "schemaId": "schema_main",
+            "initialBranchId": "branch_main"
+          },
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threadId",
+              "equals": "thread_main"
+            }
+          ]
+        },
+        {
+          "stepId": "turn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turn_main",
+            "threadId": "thread_main",
+            "branchId": "branch_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "turn",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.turnId",
+              "equals": "turn_main"
+            }
+          ]
+        },
+        {
+          "stepId": "run",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "run_main",
+            "turnId": "turn_main",
+            "branchId": "branch_main",
+            "schemaId": "schema_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "first",
+                "deterministic": false,
+                "sideEffects": false
+              },
+              {
+                "id": "second",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "capture": [
+            {
+              "name": "run",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.status",
+              "equals": "running"
+            }
+          ]
+        },
+        {
+          "stepId": "reject",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "first",
+            "eventHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "capture": [
+            {
+              "name": "rejection",
+              "path": "state.adapterError"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object"
+          ],
+          "assertions": [
+            {
+              "kind": "stateField",
+              "field": "$.adapterError.code",
+              "equals": "kernel_runtime_missing_event_object"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "stateField",
+          "field": "$.trace.reject.state.adapterError.code",
+          "equals": "kernel_runtime_missing_event_object"
+        }
+      ],
+      "evidence": ["trace.reject.state.adapterError"],
+      "capabilities": ["kernel.edge-validation"]
+    },
+    {
+      "checkId": "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+      "claimIds": [
+        "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "schemaId": "schema_main"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": "schema_main"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread_main",
+            "schemaId": "schema_main",
+            "initialBranchId": "branch_main"
+          },
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threadId",
+              "equals": "thread_main"
+            }
+          ]
+        },
+        {
+          "stepId": "turn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turn_main",
+            "threadId": "thread_main",
+            "branchId": "branch_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "turn",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.turnId",
+              "equals": "turn_main"
+            }
+          ]
+        },
+        {
+          "stepId": "run",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "run_main",
+            "turnId": "turn_main",
+            "branchId": "branch_main",
+            "schemaId": "schema_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "first",
+                "deterministic": false,
+                "sideEffects": false
+              },
+              {
+                "id": "second",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "capture": [
+            {
+              "name": "run",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.status",
+              "equals": "running"
+            }
+          ]
+        },
+        {
+          "stepId": "bootstrap",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "run_main",
+            "stepId": "first"
+          },
+          "capture": [
+            {
+              "name": "bootstrap",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "finishBootstrap",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "run_main",
+            "status": "completed"
+          },
+          "capture": [
+            {
+              "name": "finishBootstrap",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "mainTurn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "main",
+            "threadId": "thread_main",
+            "branchId": "branch_main",
+            "parentTurnId": "turn_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.bootstrap.turnNodeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "mainTurn",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "mainRun",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "main",
+            "turnId": "main",
+            "branchId": "branch_main",
+            "schemaId": "schema_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.bootstrap.turnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "main",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "capture": [
+            {
+              "name": "mainRun",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "mainEvent",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$bytes": "01"
+            }
+          },
+          "capture": [
+            {
+              "name": "mainEvent",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "mainCheckpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "main",
+            "stepId": "main",
+            "eventHash": {
+              "$ref": "capture.mainEvent"
+            }
+          },
+          "capture": [
+            {
+              "name": "mainCheckpoint",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "finish",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "main",
+            "status": "completed"
+          },
+          "capture": [
+            {
+              "name": "finish",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "fork",
+          "operation": "kernel.branch.create",
+          "arguments": {
+            "branchId": "fork",
+            "threadId": "thread_main",
+            "fromTurnNodeHash": {
+              "$ref": "capture.bootstrap.turnNodeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "fork",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "forkTurn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "fork",
+            "threadId": "thread_main",
+            "branchId": "fork",
+            "parentTurnId": "turn_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.bootstrap.turnNodeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "forkTurn",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "forkRun",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "fork",
+            "turnId": "fork",
+            "branchId": "fork",
+            "schemaId": "schema_main",
+            "startTurnNodeHash": {
+              "$ref": "capture.bootstrap.turnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "fork",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "capture": [
+            {
+              "name": "forkRun",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "forkEvent",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$bytes": "02"
+            }
+          },
+          "capture": [
+            {
+              "name": "forkEvent",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "forkCheckpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "fork",
+            "stepId": "fork",
+            "eventHash": {
+              "$ref": "capture.forkEvent"
+            }
+          },
+          "capture": [
+            {
+              "name": "forkCheckpoint",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "finishFork",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "fork",
+            "status": "completed"
+          },
+          "capture": [
+            {
+              "name": "finishFork",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "reject",
+          "operation": "kernel.branch.setHead",
+          "arguments": {
+            "branchId": "branch_main",
+            "turnNodeHash": {
+              "$ref": "capture.forkCheckpoint.turnNodeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "rejection",
+              "path": "state.adapterError"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": [
+            {
+              "kind": "stateField",
+              "field": "$.adapterError.code",
+              "equals": "kernel_runtime_lateral_head_movement"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "stateField",
+          "field": "$.trace.reject.state.adapterError.code",
+          "equals": "kernel_runtime_lateral_head_movement"
+        }
+      ],
+      "evidence": ["trace.reject.state.adapterError"],
+      "capabilities": ["kernel.edge-validation"]
+    },
+    {
+      "checkId": "kernel.syscall.logical.thread_list",
+      "claimIds": ["kernel.syscall.logical.thread_list"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  },
+                  {
+                    "objectType": "context_manifest",
+                    "targetPath": "context.manifest"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "schemaId": "schema_main"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.thread_list"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": "schema_main"
+            }
+          ]
+        },
+        {
+          "stepId": "a",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread_enum_a",
+            "schemaId": "schema_main",
+            "initialBranchId": "a"
+          },
+          "capture": [
+            {
+              "name": "a",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.thread_list"],
+          "assertions": []
+        },
+        {
+          "stepId": "b",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread_enum_b",
+            "schemaId": "schema_main",
+            "initialBranchId": "b"
+          },
+          "capture": [
+            {
+              "name": "b",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.thread_list"],
+          "assertions": []
+        },
+        {
+          "stepId": "all",
+          "operation": "kernel.thread.list",
+          "arguments": {},
+          "capture": [
+            {
+              "name": "all",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.thread_list"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threads",
+              "length": 2
+            },
+            {
+              "kind": "resultField",
+              "field": "$.threads.0.threadId",
+              "equals": "thread_enum_a"
+            }
+          ]
+        },
+        {
+          "stepId": "page",
+          "operation": "kernel.thread.list",
+          "arguments": {
+            "options": {
+              "limit": 1
+            }
+          },
+          "capture": [
+            {
+              "name": "page",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.thread_list"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threads",
+              "length": 1
+            },
+            {
+              "kind": "resultField",
+              "field": "$.nextCursor",
+              "present": true,
+              "matches": ".+"
+            }
+          ]
+        },
+        {
+          "stepId": "next",
+          "operation": "kernel.thread.list",
+          "arguments": {
+            "options": {
+              "limit": 1,
+              "cursor": {
+                "$ref": "capture.page.nextCursor"
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "next",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.logical.thread_list"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threads",
+              "length": 1
+            },
+            {
+              "kind": "resultField",
+              "field": "$.threads.0.threadId",
+              "equals": "thread_enum_b"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.next.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.next.result"],
+      "capabilities": ["kernel-protocol.thread.enumeration"]
+    },
+    {
+      "checkId": "kernel.syscall.protocol.modify_composition.f-verdict-composition",
+      "claimIds": [
+        "kernel.syscall.protocol.modify_composition.f-verdict-composition"
+      ],
+      "operation": "kernel.verdicts.compose",
+      "steps": [
+        {
+          "stepId": "single-proceed",
+          "operation": "kernel.verdicts.compose",
+          "arguments": {
+            "verdicts": {
+              "$ref": "fixture.input.cases.single-proceed.verdicts"
+            }
+          },
+          "capture": [
+            {
+              "name": "single-proceed",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.modify_composition.f-verdict-composition"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.cases.single-proceed"
+            }
+          ]
+        },
+        {
+          "stepId": "all-proceed",
+          "operation": "kernel.verdicts.compose",
+          "arguments": {
+            "verdicts": {
+              "$ref": "fixture.input.cases.all-proceed.verdicts"
+            }
+          },
+          "capture": [
+            {
+              "name": "all-proceed",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.modify_composition.f-verdict-composition"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.cases.all-proceed"
+            }
+          ]
+        },
+        {
+          "stepId": "single-modify",
+          "operation": "kernel.verdicts.compose",
+          "arguments": {
+            "verdicts": {
+              "$ref": "fixture.input.cases.single-modify.verdicts"
+            }
+          },
+          "capture": [
+            {
+              "name": "single-modify",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.modify_composition.f-verdict-composition"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.cases.single-modify"
+            }
+          ]
+        },
+        {
+          "stepId": "multi-modify-preserves-registration-order",
+          "operation": "kernel.verdicts.compose",
+          "arguments": {
+            "verdicts": {
+              "$ref": "fixture.input.cases.multi-modify-preserves-registration-order.verdicts"
+            }
+          },
+          "capture": [
+            {
+              "name": "multi-modify-preserves-registration-order",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.modify_composition.f-verdict-composition"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.cases.multi-modify-preserves-registration-order"
+            }
+          ]
+        },
+        {
+          "stepId": "abort-dominates-pause-modify-retry",
+          "operation": "kernel.verdicts.compose",
+          "arguments": {
+            "verdicts": {
+              "$ref": "fixture.input.cases.abort-dominates-pause-modify-retry.verdicts"
+            }
+          },
+          "capture": [
+            {
+              "name": "abort-dominates-pause-modify-retry",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.modify_composition.f-verdict-composition"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.cases.abort-dominates-pause-modify-retry"
+            }
+          ]
+        },
+        {
+          "stepId": "pause-dominates-modify-retry-proceed",
+          "operation": "kernel.verdicts.compose",
+          "arguments": {
+            "verdicts": {
+              "$ref": "fixture.input.cases.pause-dominates-modify-retry-proceed.verdicts"
+            }
+          },
+          "capture": [
+            {
+              "name": "pause-dominates-modify-retry-proceed",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.modify_composition.f-verdict-composition"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.cases.pause-dominates-modify-retry-proceed"
+            }
+          ]
+        },
+        {
+          "stepId": "modify-dominates-retry-proceed",
+          "operation": "kernel.verdicts.compose",
+          "arguments": {
+            "verdicts": {
+              "$ref": "fixture.input.cases.modify-dominates-retry-proceed.verdicts"
+            }
+          },
+          "capture": [
+            {
+              "name": "modify-dominates-retry-proceed",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.modify_composition.f-verdict-composition"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.cases.modify-dominates-retry-proceed"
+            }
+          ]
+        },
+        {
+          "stepId": "retry-dominates-proceed",
+          "operation": "kernel.verdicts.compose",
+          "arguments": {
+            "verdicts": {
+              "$ref": "fixture.input.cases.retry-dominates-proceed.verdicts"
+            }
+          },
+          "capture": [
+            {
+              "name": "retry-dominates-proceed",
+              "path": "result"
+            }
+          ],
+          "claimIds": [
+            "kernel.syscall.protocol.modify_composition.f-verdict-composition"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.cases.retry-dominates-proceed"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.retry-dominates-proceed.result",
+          "present": true
+        }
+      ],
+      "evidence": ["trace.retry-dominates-proceed.result"],
+      "fixture": "f-verdict-composition"
+    }
+  ]
+}
