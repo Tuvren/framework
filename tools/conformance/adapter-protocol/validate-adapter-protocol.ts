@@ -14,50 +14,20 @@
  * limitations under the License.
  */
 
-import { readdir, readFile } from "node:fs/promises";
-import nodePath from "node:path";
-
-import Ajv2020 from "ajv/dist/2020.js";
+import { readFile } from "node:fs/promises";
 
 import { assertOperationOutcome } from "./index.js";
 import type { AdapterControls } from "./index.js";
+import {
+  assertAdapterProtocolContracts,
+  findAdapterManifests,
+  validateAdapterDefinition,
+  validateAdapterManifest,
+} from "./protocol-contract.js";
 import { handleStdioAdapterLine } from "./stdio-host.js";
-
-const PROTOCOL_DIR = import.meta.dirname;
-const REPO_ROOT = nodePath.resolve(PROTOCOL_DIR, "../../..");
-const SCHEMA_PATH = nodePath.resolve(PROTOCOL_DIR, "protocol.schema.json");
-const MANIFEST_SCHEMA_PATH = nodePath.resolve(
-  PROTOCOL_DIR,
-  "adapter-manifest.schema.json"
-);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
-
-const readProtocolSchema = (
-  value: unknown,
-  label: string
-): Record<string, unknown> => {
-  if (isRecord(value)) {
-    return value;
-  }
-
-  throw new Error(`${label} must contain a JSON Schema object`);
-};
-
-const readStringProperty = (
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): string => {
-  const value = source[key];
-
-  if (typeof value !== "string") {
-    throw new TypeError(`${label} must be a string`);
-  }
-
-  return value;
-};
 
 const createSample = (definitionName: string): unknown => {
   switch (definitionName) {
@@ -143,67 +113,20 @@ const assertStdioHostControlRoundtrip = async (): Promise<void> => {
   }
 };
 
-const findAdapterManifests = async (directory: string): Promise<string[]> => {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const manifests: string[] = [];
-
-  const visit = async (index: number): Promise<void> => {
-    const entry = entries[index];
-    if (entry === undefined) {
-      return;
-    }
-    const entryPath = nodePath.resolve(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      const nestedManifests = await findAdapterManifests(entryPath);
-      manifests.push(...nestedManifests);
-      await visit(index + 1);
-      return;
-    }
-
-    if (
-      entry.isFile() &&
-      entry.name.startsWith("adapter") &&
-      entry.name.endsWith(".json")
-    ) {
-      manifests.push(entryPath);
-    }
-    await visit(index + 1);
-  };
-  await visit(0);
-
-  return manifests.toSorted();
-};
-
-const protocolSchema: unknown = JSON.parse(
-  await readFile(SCHEMA_PATH, "utf-8")
-);
-const schema = readProtocolSchema(protocolSchema, SCHEMA_PATH);
-const ajv = new Ajv2020({ allErrors: true, strict: false });
-
-ajv.addSchema(schema);
-
 for (const definitionName of [
   "AdapterCapabilities",
   "AdapterControls",
   "AdapterErrorEnvelope",
   "OperationOutcome",
 ]) {
-  const schemaId = readStringProperty(schema, "$id", "protocol schema $id");
-  const schemaPath = `${schemaId}#/$defs/${definitionName}`;
-  const validate = ajv.getSchema(schemaPath);
+  const violations = validateAdapterDefinition(
+    definitionName,
+    createSample(definitionName)
+  );
 
-  if (validate === undefined) {
-    throw new Error(`${definitionName} validator was not registered`);
-  }
-
-  const sample = createSample(definitionName);
-
-  if (validate(sample) !== true) {
+  if (violations.length > 0) {
     throw new Error(
-      `${definitionName} sample failed adapter protocol validation: ${ajv.errorsText(
-        validate.errors
-      )}`
+      `${definitionName} sample failed adapter protocol validation: ${violations.join("; ")}`
     );
   }
 }
@@ -227,46 +150,31 @@ assertOperationOutcome(
 );
 await assertStdioHostControlRoundtrip();
 
-console.log("adapter protocol validation passed");
+assertAdapterProtocolContracts();
 
-const manifestSchema = readProtocolSchema(
-  JSON.parse(await readFile(MANIFEST_SCHEMA_PATH, "utf-8")) as unknown,
-  MANIFEST_SCHEMA_PATH
+console.log("adapter protocol validation passed (0.1.0 and 0.2.0)");
+
+const manifestPaths = await findAdapterManifests();
+const manifestFailures = (
+  await Promise.all(
+    manifestPaths.map(async (manifestPath) => {
+      const manifest: unknown = JSON.parse(
+        await readFile(manifestPath, "utf-8")
+      );
+      const violations = validateAdapterManifest(manifest);
+      return violations.length === 0
+        ? []
+        : [
+            `${manifestPath} failed adapter manifest validation: ${violations.join("; ")}`,
+          ];
+    })
+  )
+).flat();
+
+if (manifestFailures.length > 0) {
+  throw new Error(manifestFailures.join("\n"));
+}
+
+console.log(
+  `adapter manifest validation passed (${manifestPaths.length} manifests)`
 );
-const validateManifest = ajv.compile(manifestSchema);
-
-const ADAPTER_MANIFEST_ROOTS = [
-  "typescript",
-  "rust",
-  "go",
-  "python",
-  "dart",
-].map((root) => nodePath.resolve(REPO_ROOT, root));
-
-const validateManifests = async (
-  paths: readonly string[],
-  index: number
-): Promise<void> => {
-  const manifestPath = paths[index];
-  if (manifestPath === undefined) {
-    return;
-  }
-  const manifest: unknown = JSON.parse(await readFile(manifestPath, "utf-8"));
-  if (!validateManifest(manifest)) {
-    throw new Error(
-      `${manifestPath} failed adapter manifest validation: ${ajv.errorsText(validateManifest.errors)}`
-    );
-  }
-  await validateManifests(paths, index + 1);
-};
-const validateRoots = async (index: number): Promise<void> => {
-  const manifestRoot = ADAPTER_MANIFEST_ROOTS[index];
-  if (manifestRoot === undefined) {
-    return;
-  }
-  await validateManifests(await findAdapterManifests(manifestRoot), 0);
-  await validateRoots(index + 1);
-};
-await validateRoots(0);
-
-console.log("adapter manifest validation passed");

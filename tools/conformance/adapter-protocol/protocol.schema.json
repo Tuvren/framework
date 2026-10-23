@@ -1,13 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tuvren.dev/schemas/conformance/adapter-protocol.schema.json",
-  "description": "Tuvren conformance adapter frames use JSON-RPC 2.0 request/response framing over stdio. The error member intentionally carries AdapterErrorEnvelope diagnostics, not third-party JSON-RPC numeric error objects.",
+  "description": "Tuvren conformance adapter frames use JSON-RPC 2.0 request/response framing over stdio, protocol versions 0.1.0 and 0.2.0. Version 0.2.0 adds operation handles, subscriptions with pull credit, event, eventsEnd, and faultReached notifications, openInstance, armFault, and setClock. The error member intentionally carries AdapterErrorEnvelope diagnostics, not third-party JSON-RPC numeric error objects.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "AdapterCapabilities": { "$ref": "#/$defs/AdapterCapabilities" },
     "JsonRpcRequest": { "$ref": "#/$defs/JsonRpcRequest" },
     "JsonRpcResponse": { "$ref": "#/$defs/JsonRpcResponse" },
+    "JsonRpcNotification": { "$ref": "#/$defs/JsonRpcNotification" },
     "AdapterControls": { "$ref": "#/$defs/AdapterControls" },
     "AdapterErrorEnvelope": { "$ref": "#/$defs/AdapterErrorEnvelope" },
     "OperationOutcome": { "$ref": "#/$defs/OperationOutcome" }
@@ -18,7 +19,8 @@
     "AdapterErrorEnvelope",
     "OperationOutcome",
     "JsonRpcRequest",
-    "JsonRpcResponse"
+    "JsonRpcResponse",
+    "JsonRpcNotification"
   ],
   "$defs": {
     "AdapterCapabilities": {
@@ -34,9 +36,257 @@
         "planVersion": {
           "type": "string",
           "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "protocolVersion": { "$ref": "#/$defs/ProtocolVersion" },
+        "profiles": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "storageKinds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/StorageKind" },
+          "uniqueItems": true
         }
       },
       "required": ["adapterId", "capabilities", "packetId", "planVersion"]
+    },
+    "ProtocolVersion": { "enum": ["0.1.0", "0.2.0"] },
+    "StorageKind": {
+      "enum": ["none", "sqlite-directory", "postgres-database"]
+    },
+    "Handle": { "type": "string", "minLength": 1 },
+    "InstanceHandle": {},
+    "SafeCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "InitializeParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "packetId": { "type": "string", "minLength": 1 },
+        "planVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" }
+      },
+      "required": ["packetId", "planVersion"]
+    },
+    "CreateInstanceParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "input": {},
+        "storageRef": { "$ref": "#/$defs/Handle" },
+        "scope": { "type": "string", "minLength": 1 },
+        "clock": { "type": "object" }
+      },
+      "required": ["input"]
+    },
+    "OpenInstanceParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "storageRef": { "$ref": "#/$defs/Handle" },
+        "scope": { "type": "string", "minLength": 1 }
+      },
+      "required": ["storageRef"]
+    },
+    "DispatchParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operation": { "type": "string", "minLength": 1 },
+        "input": {},
+        "controls": { "$ref": "#/$defs/AdapterControls" },
+        "instance": { "$ref": "#/$defs/InstanceHandle" }
+      },
+      "required": ["operation", "input", "controls"]
+    },
+    "InspectStateParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "query": {},
+        "instance": { "$ref": "#/$defs/InstanceHandle" }
+      },
+      "required": ["query"]
+    },
+    "DestroyInstanceParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "instance": { "$ref": "#/$defs/InstanceHandle" }
+      },
+      "required": ["instance"]
+    },
+    "ShutdownParams": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "StartOperationParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operation": { "type": "string", "minLength": 1 },
+        "arguments": {},
+        "instance": { "$ref": "#/$defs/InstanceHandle" }
+      },
+      "required": ["operation", "arguments", "instance"]
+    },
+    "StartOperationResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationHandle": { "$ref": "#/$defs/Handle" }
+      },
+      "required": ["operationHandle"]
+    },
+    "AwaitOperationParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationHandle": { "$ref": "#/$defs/Handle" }
+      },
+      "required": ["operationHandle"]
+    },
+    "CancelOperationParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationHandle": { "$ref": "#/$defs/Handle" },
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "required": ["operationHandle", "reason"]
+    },
+    "SubscribeParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "instance": { "$ref": "#/$defs/InstanceHandle" },
+        "channel": { "type": "string", "minLength": 1 },
+        "operationHandle": { "$ref": "#/$defs/Handle" }
+      },
+      "required": ["instance", "channel"]
+    },
+    "SubscribeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subscription": { "$ref": "#/$defs/Handle" }
+      },
+      "required": ["subscription"]
+    },
+    "PullParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subscription": { "$ref": "#/$defs/Handle" },
+        "credit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["subscription", "credit"]
+    },
+    "ArmFaultParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "instance": { "$ref": "#/$defs/InstanceHandle" },
+        "point": { "type": "string", "minLength": 1 },
+        "selector": {},
+        "occurrence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "mode": { "enum": ["throw", "block"] }
+      },
+      "required": ["instance", "point", "selector", "occurrence", "mode"]
+    },
+    "ArmFaultResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "token": { "$ref": "#/$defs/Handle" }
+      },
+      "required": ["token"]
+    },
+    "SetClockParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "instance": { "$ref": "#/$defs/InstanceHandle" },
+        "domain": { "enum": ["backend", "worker"] },
+        "nowMs": { "$ref": "#/$defs/SafeCount" }
+      },
+      "required": ["instance", "domain", "nowMs"]
+    },
+    "EventNotificationParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subscription": { "$ref": "#/$defs/Handle" },
+        "sequence": { "$ref": "#/$defs/SafeCount" },
+        "event": {}
+      },
+      "required": ["subscription", "sequence", "event"]
+    },
+    "EventsEndNotificationParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subscription": { "$ref": "#/$defs/Handle" },
+        "terminal": {}
+      },
+      "required": ["subscription", "terminal"]
+    },
+    "FaultReachedNotificationParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "token": { "$ref": "#/$defs/Handle" },
+        "processEpoch": { "$ref": "#/$defs/SafeCount" },
+        "phase": { "type": "string", "minLength": 1 }
+      },
+      "required": ["token", "processEpoch", "phase"]
+    },
+    "JsonRpcNotification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "method": { "enum": ["event", "eventsEnd", "faultReached"] },
+        "params": {}
+      },
+      "required": ["jsonrpc", "method", "params"],
+      "allOf": [
+        {
+          "if": { "properties": { "method": { "const": "event" } } },
+          "then": {
+            "properties": {
+              "params": { "$ref": "#/$defs/EventNotificationParams" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "method": { "const": "eventsEnd" } } },
+          "then": {
+            "properties": {
+              "params": { "$ref": "#/$defs/EventsEndNotificationParams" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "method": { "const": "faultReached" } } },
+          "then": {
+            "properties": {
+              "params": { "$ref": "#/$defs/FaultReachedNotificationParams" }
+            }
+          }
+        }
+      ]
     },
     "AdapterCancelControl": {
       "type": "object",
@@ -105,12 +355,135 @@
             "events",
             "inspectState",
             "destroyInstance",
-            "shutdown"
+            "shutdown",
+            "openInstance",
+            "startOperation",
+            "awaitOperation",
+            "cancelOperation",
+            "subscribe",
+            "pull",
+            "armFault",
+            "setClock"
           ]
         },
         "params": {}
       },
-      "required": ["jsonrpc", "id", "method"]
+      "required": ["jsonrpc", "id", "method"],
+      "allOf": [
+        {
+          "if": { "properties": { "method": { "const": "initialize" } } },
+          "then": {
+            "required": ["params"],
+            "properties": { "params": { "$ref": "#/$defs/InitializeParams" } }
+          }
+        },
+        {
+          "if": { "properties": { "method": { "const": "createInstance" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": { "$ref": "#/$defs/CreateInstanceParams" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "method": { "enum": ["dispatch", "events"] } }
+          },
+          "then": {
+            "required": ["params"],
+            "properties": { "params": { "$ref": "#/$defs/DispatchParams" } }
+          }
+        },
+        {
+          "if": { "properties": { "method": { "const": "inspectState" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": { "$ref": "#/$defs/InspectStateParams" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "method": { "const": "destroyInstance" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": { "$ref": "#/$defs/DestroyInstanceParams" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "method": { "const": "shutdown" } } },
+          "then": {
+            "properties": { "params": { "$ref": "#/$defs/ShutdownParams" } }
+          }
+        },
+        {
+          "if": { "properties": { "method": { "const": "openInstance" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": { "$ref": "#/$defs/OpenInstanceParams" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "method": { "const": "startOperation" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": { "$ref": "#/$defs/StartOperationParams" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "method": { "const": "awaitOperation" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": { "$ref": "#/$defs/AwaitOperationParams" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "method": { "const": "cancelOperation" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": { "$ref": "#/$defs/CancelOperationParams" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "method": { "const": "subscribe" } } },
+          "then": {
+            "required": ["params"],
+            "properties": { "params": { "$ref": "#/$defs/SubscribeParams" } }
+          }
+        },
+        {
+          "if": { "properties": { "method": { "const": "pull" } } },
+          "then": {
+            "required": ["params"],
+            "properties": { "params": { "$ref": "#/$defs/PullParams" } }
+          }
+        },
+        {
+          "if": { "properties": { "method": { "const": "armFault" } } },
+          "then": {
+            "required": ["params"],
+            "properties": { "params": { "$ref": "#/$defs/ArmFaultParams" } }
+          }
+        },
+        {
+          "if": { "properties": { "method": { "const": "setClock" } } },
+          "then": {
+            "required": ["params"],
+            "properties": { "params": { "$ref": "#/$defs/SetClockParams" } }
+          }
+        }
+      ]
     },
     "JsonRpcResponse": {
       "type": "object",

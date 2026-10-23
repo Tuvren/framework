@@ -29,6 +29,13 @@ export interface AdapterCapabilities {
   readonly capabilities: readonly string[];
   readonly packetId: string;
   readonly planVersion: string;
+  readonly profiles?: readonly string[];
+  readonly protocolVersion?: "0.1.0" | "0.2.0";
+  readonly storageKinds?: readonly (
+    | "none"
+    | "postgres-database"
+    | "sqlite-directory"
+  )[];
 }
 
 export interface AdapterErrorEnvelope {

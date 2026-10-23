@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/certification-evidence.schema.json",
+  "description": "Conformance evidence and certification bundle (ADR-0081). The existing runner evidence fields plus the compatibility-report envelope fields stay valid (the envelope omits language, which runner evidence always carries); certificate, digests, environment, selection, negativeControlRunId, and per-check failure are the certification additions. Count and status consistency is checked by tools/scripts/lib/conformance-contract.ts.",
+  "type": "object",
+  "required": [
+    "boundary",
+    "checkResults",
+    "implementationId",
+    "status",
+    "suiteId",
+    "suiteVersion",
+    "summary"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "idList": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "assertionResult": {
+      "type": "object",
+      "required": ["assertionId", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "assertionId": { "$ref": "#/$defs/nonEmptyString" },
+        "message": { "type": "string" },
+        "status": { "enum": ["pass", "fail"] },
+        "when": { "enum": ["applied", "not_applied"] }
+      }
+    },
+    "operand": {
+      "type": "object",
+      "required": ["path", "expectedSource"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "$ref": "#/$defs/nonEmptyString" },
+        "expected": {},
+        "actual": {},
+        "expectedSource": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "failure": {
+      "type": "object",
+      "required": ["classification", "replay"],
+      "additionalProperties": false,
+      "properties": {
+        "arguments": {},
+        "observation": {},
+        "operands": { "type": "array", "items": { "$ref": "#/$defs/operand" } },
+        "frameLog": { "type": "array" },
+        "stderrTail": { "type": "string" },
+        "exit": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "code": { "type": ["integer", "null"] },
+            "signal": { "type": ["string", "null"] }
+          }
+        },
+        "fault": {},
+        "storageRef": { "$ref": "#/$defs/nonEmptyString" },
+        "replay": { "$ref": "#/$defs/nonEmptyString" },
+        "classification": {
+          "enum": [
+            "adapter_protocol",
+            "verification",
+            "implementation",
+            "environment"
+          ]
+        }
+      }
+    },
+    "checkResult": {
+      "type": "object",
+      "required": ["assertionResults", "checkId", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "assertionResults": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/assertionResult" }
+        },
+        "checkId": { "$ref": "#/$defs/nonEmptyString" },
+        "details": { "type": "object" },
+        "failure": { "$ref": "#/$defs/failure" },
+        "status": { "enum": ["pass", "fail"] }
+      },
+      "if": {
+        "required": ["status"],
+        "properties": { "status": { "const": "pass" } }
+      },
+      "then": { "not": { "required": ["failure"] } }
+    },
+    "selectionEntry": {
+      "type": "object",
+      "required": ["checkId", "selected"],
+      "additionalProperties": false,
+      "properties": {
+        "checkId": { "$ref": "#/$defs/nonEmptyString" },
+        "selected": { "type": "boolean" },
+        "reason": { "$ref": "#/$defs/nonEmptyString" }
+      },
+      "if": {
+        "required": ["selected"],
+        "properties": { "selected": { "const": false } }
+      },
+      "then": { "required": ["reason"] }
+    }
+  },
+  "properties": {
+    "adapterId": { "$ref": "#/$defs/nonEmptyString" },
+    "boundary": { "$ref": "#/$defs/nonEmptyString" },
+    "capabilities": { "$ref": "#/$defs/idList" },
+    "checkResults": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/checkResult" }
+    },
+    "implementationId": { "$ref": "#/$defs/nonEmptyString" },
+    "language": { "$ref": "#/$defs/nonEmptyString" },
+    "nonApplicableCheckIds": { "$ref": "#/$defs/idList" },
+    "status": { "enum": ["pass", "fail", "unsupported", "not_applicable"] },
+    "suiteId": { "$ref": "#/$defs/nonEmptyString" },
+    "suiteVersion": { "$ref": "#/$defs/nonEmptyString" },
+    "summary": {
+      "type": "object",
+      "required": [
+        "applicableChecks",
+        "failedChecks",
+        "nonApplicableChecks",
+        "passedChecks",
+        "totalChecks"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "applicableChecks": { "$ref": "#/$defs/count" },
+        "failedChecks": { "$ref": "#/$defs/count" },
+        "nonApplicableChecks": { "$ref": "#/$defs/count" },
+        "passedChecks": { "$ref": "#/$defs/count" },
+        "totalChecks": { "$ref": "#/$defs/count" }
+      }
+    },
+    "command": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" }
+    },
+    "exitCode": { "type": "integer" },
+    "project": { "$ref": "#/$defs/nonEmptyString" },
+    "reportLabel": { "$ref": "#/$defs/nonEmptyString" },
+    "reportStatus": {
+      "enum": [
+        "capability_subset_pass",
+        "expected_fail",
+        "full_pass",
+        "not_applicable",
+        "unexpected_fail",
+        "unsupported"
+      ]
+    },
+    "certificate": {
+      "type": "object",
+      "required": ["status", "profile", "complete"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "enum": ["certified", "uncertified"] },
+        "profile": { "$ref": "#/$defs/nonEmptyString" },
+        "complete": { "type": "boolean" }
+      }
+    },
+    "digests": {
+      "type": "object",
+      "required": [
+        "implementation",
+        "adapterManifest",
+        "harness",
+        "packet",
+        "plans",
+        "catalogs",
+        "fixtures",
+        "profiles",
+        "controls",
+        "verifierAuthority"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "implementation": { "$ref": "#/$defs/hash" },
+        "adapterManifest": { "$ref": "#/$defs/hash" },
+        "harness": { "$ref": "#/$defs/hash" },
+        "packet": { "$ref": "#/$defs/hash" },
+        "plans": { "$ref": "#/$defs/hash" },
+        "catalogs": { "$ref": "#/$defs/hash" },
+        "fixtures": { "$ref": "#/$defs/hash" },
+        "profiles": { "$ref": "#/$defs/hash" },
+        "controls": { "$ref": "#/$defs/hash" },
+        "verifierAuthority": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "environment": { "type": "object" },
+    "selection": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/selectionEntry" }
+    },
+    "negativeControlRunId": { "$ref": "#/$defs/nonEmptyString" }
+  }
+}

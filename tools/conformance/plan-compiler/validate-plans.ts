@@ -17,6 +17,7 @@
 import { readFile } from "node:fs/promises";
 import nodePath from "node:path";
 
+import { assertCertificationSchemaContracts } from "../../scripts/conformance/certification-schema-examples.js";
 import type { CompiledConformancePlanCheck } from "./index.js";
 import { findConformancePlans, loadConformancePlan } from "./index.js";
 
@@ -139,3 +140,6 @@ console.log(
     planPaths.length === 1 ? "" : "s"
   })`
 );
+
+assertCertificationSchemaContracts();
+console.log("certification schema contracts passed");
