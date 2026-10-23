@@ -1,5 +1,10 @@
 import { expect, test, spyOn } from "bun:test";
 
+import { decodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type { RuntimeBackend } from "@tuvren/kernel-protocol";
+import { createKernelTestClock } from "@tuvren/kernel-testkit";
+
+import * as hostSupport from "../src/host-support.ts";
 import { createSyscallBindings } from "../src/host-syscalls.ts";
 
 const config = {
@@ -145,5 +150,190 @@ test("backend and worker timestamps follow only their setClock domain", async ()
   } finally {
     wallClock.mockRestore();
     await bridge.destroyInstance(handle);
+  }
+});
+
+test("runner clocks require explicit initialization of both domains", () => {
+  const clock = createKernelTestClock();
+  expect(() => clock.backendNow()).toThrow("setClock required for backend");
+  expect(() => clock.workerNow()).toThrow("setClock required for worker");
+  clock.set("backend", 123);
+  expect(clock.backendNow()).toBe(123);
+  expect(() => clock.workerNow()).toThrow("setClock required for worker");
+});
+
+test("arming tokens are deterministic and unique within an instance", async () => {
+  const bridge = createSyscallBindings(config);
+  const first = await bridge.createInstance();
+  const second = await bridge.createInstance();
+  const input = {
+    mode: "throw",
+    occurrence: 1,
+    point: "before-commit",
+    selector: {},
+  };
+  try {
+    const one = await bridge.dispatch("kernel.fault.arm", input, first);
+    const two = await bridge.dispatch("kernel.fault.arm", input, first);
+    const fresh = await bridge.dispatch("kernel.fault.arm", input, second);
+    expect(one).toEqual(fresh);
+    expect(one).not.toEqual(two);
+  } finally {
+    await bridge.destroyInstance(first);
+    await bridge.destroyInstance(second);
+  }
+});
+
+for (const [backendMs, workerMs] of [
+  [100, 200],
+  [200, 100],
+]) {
+  test(`backend stamps ordered chunks at ${backendMs} while worker uses ${workerMs}`, async () => {
+    let backend: RuntimeBackend | undefined;
+    const original = hostSupport.createConfiguredBackend;
+    const factory = spyOn(
+      hostSupport,
+      "createConfiguredBackend"
+    ).mockImplementation(async (adapterConfig, options) => {
+      const opened = await original(adapterConfig, options);
+      ({ backend } = opened);
+      return opened;
+    });
+    const bridge = createSyscallBindings(config);
+    const instance = await bridge.createInstance();
+    const wallClock = spyOn(Date, "now").mockImplementation(() => {
+      throw new Error("unexpected wall clock");
+    });
+    try {
+      await bridge.dispatch(
+        "kernel.clock.set",
+        { domain: "backend", nowMs: backendMs },
+        instance
+      );
+      await bridge.dispatch(
+        "kernel.clock.set",
+        { domain: "worker", nowMs: workerMs },
+        instance
+      );
+      await bridge.dispatch(
+        "kernel.schema.register",
+        {
+          schema: {
+            incorporationRules: [],
+            paths: [{ collection: "ordered", path: "messages" }],
+            schemaId: "chunks",
+          },
+        },
+        instance
+      );
+      const object = await bridge.dispatch(
+        "kernel.store.put",
+        { blob: { $bytes: "01" } },
+        instance
+      );
+      if (
+        object.kind !== "result" ||
+        typeof object.value !== "object" ||
+        object.value === null ||
+        !("result" in object.value) ||
+        typeof object.value.result !== "string"
+      ) {
+        throw new Error("missing object hash");
+      }
+      const objectHash = object.value.result;
+      const tree = await bridge.dispatch(
+        "kernel.tree.create",
+        {
+          changes: {
+            messages: Array.from({ length: 33 }, () => objectHash),
+          },
+          schemaId: "chunks",
+        },
+        instance
+      );
+      if (
+        tree.kind !== "result" ||
+        typeof tree.value !== "object" ||
+        tree.value === null ||
+        !("result" in tree.value) ||
+        typeof tree.value.result !== "string" ||
+        backend === undefined
+      ) {
+        throw new Error("missing tree hash or backend");
+      }
+      const hash = tree.value.result;
+      await backend.transact(async (tx) => {
+        const record = await tx.turnTrees.get(hash);
+        expect(record?.createdAtMs).toBe(workerMs);
+        const [path] = await tx.turnTreePaths.listByTurnTree(hash);
+        if (
+          path?.collectionKind !== "ordered" ||
+          path.orderedEncoding !== "chunked"
+        ) {
+          throw new Error("missing chunked path");
+        }
+        const hashes = decodeDeterministicKernelRecord(
+          path.orderedChunkListCbor
+        );
+        if (!Array.isArray(hashes) || hashes.length === 0) {
+          throw new Error("missing chunks");
+        }
+        await Promise.all(
+          hashes.map(async (chunkHash) => {
+            if (typeof chunkHash !== "string") {
+              throw new TypeError("invalid chunk hash");
+            }
+            const chunk = await tx.orderedPathChunks.get(chunkHash);
+            expect(chunk?.createdAtMs).toBe(backendMs);
+            expect(chunk?.createdAtMs).not.toBe(workerMs);
+          })
+        );
+      });
+    } finally {
+      wallClock.mockRestore();
+      factory.mockRestore();
+      await bridge.destroyInstance(instance);
+    }
+  });
+}
+
+test("clock controls configure domains before backend initialization reads its clock", async () => {
+  const original = hostSupport.createConfiguredBackend;
+  const factory = spyOn(
+    hostSupport,
+    "createConfiguredBackend"
+  ).mockImplementation(async (adapterConfig, options) => {
+    expect(options?.now?.()).toBe(123);
+    return await original(adapterConfig, options);
+  });
+  const bridge = createSyscallBindings(config);
+  const instance = await bridge.createInstance();
+  try {
+    expect(
+      await bridge.dispatch(
+        "kernel.clock.set",
+        { domain: "worker", nowMs: 456 },
+        instance
+      )
+    ).toMatchObject({ kind: "result" });
+    expect(
+      await bridge.dispatch(
+        "kernel.clock.set",
+        { domain: "backend", nowMs: 123 },
+        instance
+      )
+    ).toMatchObject({ kind: "result" });
+    expect(factory).not.toHaveBeenCalled();
+    expect(
+      await bridge.dispatch(
+        "kernel.store.put",
+        { blob: { $bytes: "01" } },
+        instance
+      )
+    ).toMatchObject({ kind: "result" });
+    expect(factory).toHaveBeenCalledTimes(1);
+  } finally {
+    await bridge.destroyInstance(instance);
+    factory.mockRestore();
   }
 });

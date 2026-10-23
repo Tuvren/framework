@@ -106,6 +106,7 @@ interface CompatibilityCheckSummary {
   nonApplicableChecks?: number;
   passedChecks: number;
   totalChecks: number;
+  unsupportedChecks?: number;
 }
 
 interface CompatibilityConformanceEvidence {
@@ -599,8 +600,10 @@ const assertCompatibilityReportStatus: (
 const assertCompatibilityCheckSummary = (
   value: CompatibilityCheckSummary
 ): void => {
+  const unsupportedChecks = value.unsupportedChecks ?? 0;
   const applicableChecks =
-    value.applicableChecks ?? value.failedChecks + value.passedChecks;
+    value.applicableChecks ??
+    value.failedChecks + value.passedChecks + unsupportedChecks;
   const nonApplicableChecks = value.nonApplicableChecks ?? 0;
 
   if (
@@ -609,14 +612,17 @@ const assertCompatibilityCheckSummary = (
       Number.isSafeInteger(value.failedChecks) &&
       Number.isSafeInteger(value.passedChecks) &&
       Number.isSafeInteger(value.totalChecks) &&
-      Number.isSafeInteger(nonApplicableChecks)
+      Number.isSafeInteger(nonApplicableChecks) &&
+      Number.isSafeInteger(unsupportedChecks)
     ) ||
     applicableChecks < 0 ||
     value.failedChecks < 0 ||
     value.passedChecks < 0 ||
     nonApplicableChecks < 0 ||
+    unsupportedChecks < 0 ||
     value.totalChecks <= 0 ||
-    applicableChecks !== value.failedChecks + value.passedChecks ||
+    applicableChecks !==
+      value.failedChecks + value.passedChecks + unsupportedChecks ||
     applicableChecks + nonApplicableChecks !== value.totalChecks
   ) {
     throw new Error(
@@ -1089,6 +1095,7 @@ const compareCheckSummary = (
     "nonApplicableChecks",
     "passedChecks",
     "totalChecks",
+    "unsupportedChecks",
   ] as const) {
     if (summary[fieldName] !== expectedSummary[fieldName]) {
       failures.push(
@@ -1785,6 +1792,7 @@ const createFallbackEvidence = (
     status: deriveConformanceRunStatus({
       applicableChecks: checkResults.length,
       failedChecks: summary.failedChecks,
+      unsupportedChecks: summary.unsupportedChecks,
       nonApplicableChecks: 0,
     }),
     suiteId: suiteManifest.suiteId,
@@ -1822,7 +1830,9 @@ const classifyConformanceReportStatus = (
 
   const applicableChecks =
     evidence.summary.applicableChecks ??
-    evidence.summary.failedChecks + evidence.summary.passedChecks;
+    evidence.summary.failedChecks +
+      evidence.summary.passedChecks +
+      (evidence.summary.unsupportedChecks ?? 0);
   const nonApplicableChecks = evidence.summary.nonApplicableChecks ?? 0;
 
   if (applicableChecks === 0) {

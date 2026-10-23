@@ -201,3 +201,39 @@ describe("conformance evidence contract", () => {
     ]);
   });
 });
+
+test("compatibility summaries accept a catalogued unsupported check", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const Ajv2020 = (await import("ajv/dist/2020.js")).default;
+  const schema: unknown = JSON.parse(
+    await readFile(
+      new URL(
+        "../../../reports/compatibility/compatibility-matrix.schema.json",
+        import.meta.url
+      ),
+      "utf-8"
+    )
+  );
+  if (typeof schema !== "object" || schema === null || Array.isArray(schema)) {
+    throw new TypeError("invalid compatibility schema");
+  }
+  const ajv = new Ajv2020({ strict: false });
+  ajv.addSchema(schema, "compatibility");
+  for (const pointer of [
+    "/properties/implementations/items/properties/results/items/properties/checkSummary",
+    "/properties/interop/items/properties/checkSummary",
+  ]) {
+    const validate = ajv.compile({ $ref: `compatibility#${pointer}` });
+    expect(
+      validate({
+        applicableChecks: 1,
+        failedChecks: 0,
+        nonApplicableChecks: 0,
+        passedChecks: 0,
+        totalChecks: 1,
+        unsupportedChecks: 1,
+      }),
+      JSON.stringify(validate.errors)
+    ).toBe(true);
+  }
+});

@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import { TuvrenPersistenceError } from "@tuvren/core";
 import type { RuntimeBackend } from "@tuvren/kernel-protocol";
 
@@ -15,9 +13,6 @@ export const createKernelTestClock = () => {
   const read = (domain: "backend" | "worker"): number => {
     const value = values.get(domain);
     if (value === undefined) {
-      if (values.size === 0) {
-        return Date.now();
-      }
       throw new Error(`setClock required for ${domain} domain`);
     }
     return value;
@@ -52,6 +47,7 @@ export const createKernelFaultControl = (
   factory: FaultInjectingBackendFactory = createFaultInjectingBackend
 ) => {
   let current = inner;
+  let armingCount = 0;
   const backend: RuntimeBackend = {
     capabilities: () => inner.capabilities(),
     health: async () => await inner.health(),
@@ -98,7 +94,8 @@ export const createKernelFaultControl = (
       ) {
         throw new TypeError("invalid fault selector");
       }
-      const token = randomUUID();
+      armingCount += 1;
+      const token = `fault-${armingCount}`;
       const boundary: FaultPoint =
         point === "before-commit" ? "before-commit" : "after-commit-before-ack";
       current = factory(inner, {

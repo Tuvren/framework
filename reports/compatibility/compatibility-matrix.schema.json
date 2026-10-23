@@ -93,7 +93,8 @@
                       "minimum": 0
                     },
                     "passedChecks": { "type": "integer", "minimum": 0 },
-                    "totalChecks": { "type": "integer", "minimum": 1 }
+                    "totalChecks": { "type": "integer", "minimum": 1 },
+                    "unsupportedChecks": { "type": "integer", "minimum": 0 }
                   },
                   "additionalProperties": false
                 }
@@ -153,7 +154,8 @@
               "failedChecks": { "type": "integer", "minimum": 0 },
               "nonApplicableChecks": { "type": "integer", "minimum": 0 },
               "passedChecks": { "type": "integer", "minimum": 0 },
-              "totalChecks": { "type": "integer", "minimum": 1 }
+              "totalChecks": { "type": "integer", "minimum": 1 },
+              "unsupportedChecks": { "type": "integer", "minimum": 0 }
             },
             "additionalProperties": false
           }

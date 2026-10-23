@@ -34,6 +34,14 @@ test("syscall protocol plans enforce certification with explicit trace projectio
     expect(plan.applicability.capabilities).toContain("kernel.syscall");
     for (const check of plan.checks) {
       expect(check.steps?.length).toBeGreaterThan(0);
+      for (const domain of ["backend", "worker"]) {
+        expect(
+          check.steps?.some(
+            (step) =>
+              step.action === "setClock" && step.arguments?.domain === domain
+          )
+        ).toBe(true);
+      }
       for (const step of check.steps ?? []) {
         expect(step.arguments).toBeDefined();
         if (step.capture !== undefined) {
@@ -55,6 +63,16 @@ test("syscall bindings preserve native bytes, null, error codes, and instance is
   const first = await bridge.createInstance();
   const second = await bridge.createInstance();
   try {
+    await bridge.dispatch(
+      "kernel.clock.set",
+      { domain: "backend", nowMs: 100 },
+      first
+    );
+    await bridge.dispatch(
+      "kernel.clock.set",
+      { domain: "worker", nowMs: 200 },
+      first
+    );
     const bytes = { $bytes: "00ff80" };
     const put = await bridge.dispatch(
       "kernel.store.put",
@@ -498,4 +516,53 @@ test("failed kernel construction cleans the backend before retrying the instance
     kernelFactory.mockRestore();
     backendFactory.mockRestore();
   }
+});
+
+test("plan validation rejects unknown fault points and closed selector violations", async () => {
+  const authority = await loadCertificationAuthority([
+    "spec/kernel/authority-packet.json",
+  ]);
+  const compiled = await loadConformancePlan(plans[0] ?? "");
+  const check = compiled.plan.checks.find(
+    (entry) => entry.checkId === "kernel.syscall.controls.before_commit"
+  );
+  if (check === undefined) {
+    throw new Error("missing fault check");
+  }
+  await Promise.all(
+    [
+      { point: "mid-commit" },
+      { selector: { extra: "invalid" } },
+      { selector: { operation: "unknown" } },
+      { selector: { branchId: 123 } },
+    ].map(async (invalid) => {
+      const changed = structuredClone(check);
+      const arm = changed.steps?.find((step) => step.action === "armFault");
+      if (arm?.arguments === undefined) {
+        throw new Error("missing fault arguments");
+      }
+      Object.assign(arm.arguments, invalid);
+      const directory = await mkdtemp(path.join(tmpdir(), "dc001-input-"));
+      try {
+        const file = path.join(directory, "plan.json");
+        await writeFile(
+          file,
+          JSON.stringify({ ...compiled.plan, checks: [changed], fixtures: {} })
+        );
+        const assessments = await assessConformancePlans([file], authority);
+        expect(() => {
+          assertCertificationEnforcement(assessments);
+        }).toThrow();
+      } finally {
+        await rm(directory, { force: true, recursive: true });
+      }
+    })
+  );
+});
+
+test("legacy restart plan retires all midCommit claims", async () => {
+  const { plan } = await loadConformancePlan(
+    "spec/conformance/kernel/plans/kernel-restart-recovery.json"
+  );
+  expect(JSON.stringify(plan.checks)).not.toContain("midCommit");
 });

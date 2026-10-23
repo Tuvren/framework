@@ -2437,30 +2437,6 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.13.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.14.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.15.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.16.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.17.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.18.resultField",
-          "status": "pass"
-        },
-        {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
           "status": "pass"
         },
@@ -2509,30 +2485,6 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.injectedErrorCode",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.lineageConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.pendingMessageCommitted",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.recoveryStateConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.visibleCommittedMessageCount",
-          "status": "pass"
-        },
-        {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
           "status": "pass"
         },
@@ -2578,30 +2530,6 @@
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.visibleCommittedMessageCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.injectedErrorCode",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.lineageConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.pendingMessageCommitted",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.recoveryStateConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.visibleCommittedMessageCount",
           "status": "pass"
         }
       ],

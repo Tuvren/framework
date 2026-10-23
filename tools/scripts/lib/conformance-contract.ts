@@ -20,7 +20,7 @@ import nodePath from "node:path";
 import type { ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
-export type ConformanceStatus = "fail" | "pass";
+export type ConformanceStatus = "fail" | "pass" | "unsupported";
 
 /** Raw run status (ADR-0031); `pass` requires at least one applicable check. */
 export type ConformanceRunStatus =
@@ -109,6 +109,7 @@ export interface ConformanceEvidenceSummary {
   nonApplicableChecks?: number;
   passedChecks: number;
   totalChecks: number;
+  unsupportedChecks?: number;
 }
 
 export interface ConformanceEvidence {
@@ -437,8 +438,8 @@ const assertConformanceStatus: (
   value: unknown,
   label: string
 ): asserts value is ConformanceStatus => {
-  if (value !== "fail" && value !== "pass") {
-    throw new Error(`${label} must be "pass" or "fail"`);
+  if (value !== "fail" && value !== "pass" && value !== "unsupported") {
+    throw new Error(`${label} must be "pass", "fail", or "unsupported"`);
   }
 };
 
@@ -516,11 +517,7 @@ const readCheckResult = (
     value.assertionResults,
     `${label}.assertionResults`
   );
-  const expectedStatus = assertionResults.every(
-    (assertionResult) => assertionResult.status === "pass"
-  )
-    ? "pass"
-    : "fail";
+  const expectedStatus = deriveAssertionStatus(assertionResults);
 
   if (value.status !== expectedStatus) {
     throw new Error(
@@ -559,16 +556,20 @@ export const createConformanceEvidenceSummary = (
 ): ConformanceEvidenceSummary => {
   let passedChecks = 0;
   let failedChecks = 0;
+  let unsupportedChecks = 0;
 
   for (const checkResult of checkResults) {
     if (checkResult.status === "pass") {
       passedChecks += 1;
+    } else if (checkResult.status === "unsupported") {
+      unsupportedChecks += 1;
     } else {
       failedChecks += 1;
     }
   }
 
   return {
+    ...(unsupportedChecks === 0 ? {} : { unsupportedChecks }),
     failedChecks,
     passedChecks,
     totalChecks: checkResults.length,
@@ -579,9 +580,14 @@ export const deriveConformanceRunStatus = (summary: {
   applicableChecks: number;
   failedChecks: number;
   nonApplicableChecks: number;
+  unsupportedChecks?: number;
 }): ConformanceRunStatus => {
   if (summary.failedChecks > 0) {
     return "fail";
+  }
+
+  if ((summary.unsupportedChecks ?? 0) > 0) {
+    return "unsupported";
   }
 
   if (summary.applicableChecks === 0) {
@@ -660,7 +666,13 @@ export const assertConformanceEvidence: (
     nonApplicableCheckIds.length
   );
 
+  assertSafeInteger(
+    value.summary.unsupportedChecks ?? 0,
+    `${label}.summary.unsupportedChecks`,
+    expectedSummary.unsupportedChecks ?? 0
+  );
   const expectedStatus = deriveConformanceRunStatus({
+    unsupportedChecks: expectedSummary.unsupportedChecks,
     applicableChecks: checkResults.length,
     failedChecks: expectedSummary.failedChecks,
     nonApplicableChecks: nonApplicableCheckIds.length,
@@ -675,16 +687,23 @@ export const assertConformanceEvidence: (
   assertCertificationEvidenceSchema(value, label);
 };
 
+const deriveAssertionStatus = (
+  assertionResults: readonly ConformanceAssertionResult[]
+): ConformanceStatus => {
+  if (assertionResults.some((result) => result.status === "fail")) {
+    return "fail";
+  }
+  return assertionResults.some((result) => result.status === "unsupported")
+    ? "unsupported"
+    : "pass";
+};
+
 export const createCheckResult = (
   checkId: string,
   assertionResults: readonly ConformanceAssertionResult[],
   details?: Record<string, unknown>
 ): ConformanceCheckResult => {
-  const status = assertionResults.every(
-    (assertionResult) => assertionResult.status === "pass"
-  )
-    ? "pass"
-    : "fail";
+  const status = deriveAssertionStatus(assertionResults);
 
   return {
     assertionResults: [...assertionResults],

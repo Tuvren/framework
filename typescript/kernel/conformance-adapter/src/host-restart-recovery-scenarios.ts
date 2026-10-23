@@ -810,7 +810,6 @@ export const createRestartRecoveryScenarios = (config: KernelAdapterConfig) => {
             "before-commit",
             true
           ),
-          midCommit: afterCommitBeforeAck,
         },
       });
     } finally {
@@ -839,7 +838,6 @@ export const createRestartRecoveryScenarios = (config: KernelAdapterConfig) => {
             "before-commit",
             false
           ),
-          midCommit: afterCommitBeforeAck,
         },
       });
     } finally {

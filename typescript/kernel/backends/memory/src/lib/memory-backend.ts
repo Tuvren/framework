@@ -124,17 +124,9 @@ interface MutableRepositories extends KrakenBackendTx {
   readonly now: () => number;
 }
 
-/**
- * Commit-boundary hooks installed by the kernel testkit's fault-injecting
- * wrapper. Each hook maps to a `FaultPoint`: `beforeCommit` runs after draft
- * validation but before any state is published, `midCommit` receives the
- * commit thunk and must invoke it exactly once, and `afterCommitBeforeAck`
- * runs after publication but before the transaction resolves.
- */
 interface BackendFaultHooks {
   afterCommitBeforeAck?: () => Promise<void>;
   beforeCommit?: () => Promise<void>;
-  midCommit?: (commit: () => Promise<void>) => Promise<void>;
 }
 
 /**
@@ -994,9 +986,7 @@ class MemoryBackend implements KrakenBackend {
       this.faultState.hooks = hooks;
     },
     supportsFaultPoint: (point) =>
-      point === "before-commit" ||
-      point === "mid-commit" ||
-      point === "after-commit-before-ack",
+      point === "before-commit" || point === "after-commit-before-ack",
   };
 
   private readonly faultState: { hooks: BackendFaultHooks | null } = {
@@ -1113,28 +1103,7 @@ class MemoryBackend implements KrakenBackend {
       validateCommittedState(draftState, baseState);
       await this.faultState.hooks?.beforeCommit?.();
 
-      let committed = false;
-      const commit = async (): Promise<void> => {
-        if (committed) {
-          throw new Error("memory backend commit hook attempted double commit");
-        }
-
-        this.store.setState(this.scope, draftState);
-        committed = true;
-        await Promise.resolve();
-      };
-
-      if (this.faultState.hooks?.midCommit === undefined) {
-        await commit();
-      } else {
-        await this.faultState.hooks.midCommit(commit);
-
-        if (!committed) {
-          throw new Error(
-            "memory backend mid-commit hook must call commit exactly once"
-          );
-        }
-      }
+      this.store.setState(this.scope, draftState);
 
       await this.faultState.hooks?.afterCommitBeforeAck?.();
       return result;

@@ -41,6 +41,10 @@ import {
 } from "../certification/certification-manifest.js";
 import { nativeErrorAsserted } from "../plan-compiler/certification-rules.js";
 import type { CatalogOperation } from "../plan-compiler/certification-rules.js";
+import {
+  controlConsumesInstance,
+  controlInputProblem,
+} from "../plan-compiler/control-input.js";
 import type {
   CompiledConformancePlan,
   CompiledConformancePlanCheck,
@@ -559,6 +563,14 @@ const rejectLegacySelectors = (input: unknown): void => {
 };
 
 class NativeOperationError extends Error {}
+class UnsupportedFaultPointError extends Error {
+  readonly code: string;
+
+  constructor(code: string, message: string) {
+    super(message);
+    this.code = code;
+  }
+}
 
 const validateNativeError = (
   error: { code: string },
@@ -581,16 +593,16 @@ const validateNativeError = (
 };
 
 const bindControlInstance = (
-  operation: string,
+  operation: CatalogOperation | undefined,
   input: unknown,
   instance: unknown
 ): unknown => {
-  if (operation !== "kernel.clock.set" && operation !== "kernel.fault.arm") {
+  if (!controlConsumesInstance(operation)) {
     return input;
   }
   if (!isRecord(input)) {
     throw new ArgumentResolutionError(
-      "clock and fault control arguments must be an object"
+      "instance control arguments must be an object"
     );
   }
   return { ...input, instance };
@@ -604,13 +616,29 @@ const validateTraceFaultOutcome = (
   operation: CatalogOperation | undefined,
   check: ConformancePlanCheck
 ): void => {
-  if (step.action === "armFault" || step.operation === "kernel.fault.arm") {
-    recorder.faults.arm(input, outcome);
+  if (step.action === "armFault") {
+    const faultOutcome = operation?.faultOutcome;
+    if (operation?.kind !== "control" || faultOutcome === undefined) {
+      throw new ArgumentResolutionError(
+        "armFault requires catalogued fault outcome metadata"
+      );
+    }
+    if (
+      outcome.kind === "error" &&
+      outcome.error.code === faultOutcome.unsupportedCode &&
+      operation.errors?.includes(outcome.error.code)
+    ) {
+      throw new UnsupportedFaultPointError(
+        outcome.error.code,
+        outcome.error.message
+      );
+    }
+    recorder.faults.arm(input, outcome, faultOutcome.code);
   }
   const activated = recorder.faults.observe(outcome);
   if (outcome.kind === "error" && !activated) {
     if (
-      outcome.error.code === "kernel_persistence_fault_injected" &&
+      recorder.faults.isFaultOutcome(outcome.error.code) &&
       recorder.faults.armed.length > 0
     ) {
       throw new MissingFaultActivationError(
@@ -666,8 +694,9 @@ const runTraceCheck = async (
         input: projectedInput,
         inspectQuery,
       } = createTraceStepRequest(step, check, baseInput, trace, argumentRoots);
+      const catalogOperation = plan.catalog?.operations.get(step.operation);
       const input = bindControlInstance(
-        step.operation,
+        catalogOperation,
         projectedInput,
         instance
       );
@@ -687,7 +716,10 @@ const runTraceCheck = async (
         stepId: step.stepId,
       };
       recorder.observation.push(observed);
-      const catalogOperation = plan.catalog?.operations.get(step.operation);
+      const inputProblem = controlInputProblem(catalogOperation, input);
+      if (inputProblem !== undefined) {
+        throw new ArgumentResolutionError(inputProblem);
+      }
       client.setLosslessObservations(catalogOperation !== undefined);
       const outcome = await client.dispatch(
         step.operation,
@@ -917,6 +949,24 @@ const executeCheck = async (
   } catch (error: unknown) {
     recorder.thrown = error;
     const message = readErrorMessage(error);
+    if (error instanceof UnsupportedFaultPointError) {
+      return createCheckResult(
+        check.checkId,
+        [
+          ...readEvaluations(recorder),
+          {
+            assertionId: `${check.checkId}.faultSupport`,
+            status: "unsupported",
+            message,
+          },
+        ],
+        {
+          adapterId: manifest.adapterId,
+          planId: plan.plan.planId,
+          unsupported: { code: error.code, message },
+        }
+      );
+    }
     const assertionResults = [
       ...(error instanceof NativeOperationError
         ? [
@@ -1088,7 +1138,7 @@ const runCheck = async (
       },
     };
   }
-  if (checkResult.status === "pass") {
+  if (checkResult.status !== "fail") {
     return checkResult;
   }
 

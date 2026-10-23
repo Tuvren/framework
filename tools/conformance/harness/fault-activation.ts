@@ -9,6 +9,7 @@ interface Arming {
   selector: unknown;
   occurrence: number;
   mode: "throw";
+  outcomeCode: string;
 }
 
 export class MissingFaultActivationError extends Error {
@@ -21,7 +22,11 @@ export const createFaultActivationTracker = () => {
   return {
     armed,
     activations,
-    arm: (input: unknown, outcome: OperationOutcome): void => {
+    arm: (
+      input: unknown,
+      outcome: OperationOutcome,
+      outcomeCode: string
+    ): void => {
       if (outcome.kind !== "result") {
         return;
       }
@@ -43,6 +48,7 @@ export const createFaultActivationTracker = () => {
         );
       }
       armed.push({
+        outcomeCode,
         token: value.token,
         point: input.point,
         occurrence: input.occurrence,
@@ -50,11 +56,10 @@ export const createFaultActivationTracker = () => {
         selector: input.selector,
       });
     },
+    isFaultOutcome: (code: string): boolean =>
+      armed.some((entry) => entry.outcomeCode === code),
     observe: (outcome: OperationOutcome): boolean => {
-      if (
-        outcome.kind !== "error" ||
-        outcome.error.code !== "kernel_persistence_fault_injected"
-      ) {
+      if (outcome.kind !== "error") {
         return false;
       }
       const { details } = outcome.error;
@@ -63,7 +68,9 @@ export const createFaultActivationTracker = () => {
         typeof details.token !== "string" ||
         !armed.some(
           (entry) =>
-            entry.token === details.token && entry.point === details.point
+            entry.outcomeCode === outcome.error.code &&
+            entry.token === details.token &&
+            entry.point === details.point
         )
       ) {
         return false;

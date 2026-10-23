@@ -22,6 +22,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 
 import {
   assessConformancePlan,
+  assertCertificationEnforcement,
   loadCertificationAuthority,
 } from "../plan-compiler/certification-assessment.js";
 import { loadConformancePlan } from "../plan-compiler/index.js";
@@ -161,6 +162,19 @@ export const readPlans = async (
         );
       }
     }
+    const assessment = assessConformancePlan(
+      compiled.plan,
+      planPath,
+      authority
+    );
+    assertCertificationEnforcement([
+      {
+        ...assessment,
+        violations: assessment.violations.filter(
+          (violation) => violation.rule === "control-input"
+        ),
+      },
+    ]);
     plans.push({ ...compiled, catalog });
     await visitPlan(index + 1);
   };
