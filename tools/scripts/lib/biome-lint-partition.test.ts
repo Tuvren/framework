@@ -34,6 +34,8 @@ import {
 } from "./biome-inventory.js";
 import { runCommand } from "./command-runner.js";
 import {
+  isCodeFile,
+  isJsonFile,
   JSON_SOURCE_INTEGRITY_EXCLUSIONS,
   selectJsonInventory,
 } from "./json-source-integrity.js";
@@ -267,8 +269,12 @@ describe("biome coverage partition", () => {
         nativeFiles.jsonValidatedFiles
       );
       expectCompletePartition(inventory, resolution);
-      expect(resolution.oxlintFiles.filter(isBqFile)).toHaveLength(42);
-      expect(resolution.jsonValidatedFiles.filter(isBqFile)).toHaveLength(14);
+      expect(resolution.oxlintFiles.filter(isBqFile)).toEqual(
+        inventory.filter((file) => isBqFile(file) && isCodeFile(file))
+      );
+      expect(resolution.jsonValidatedFiles.filter(isBqFile)).toEqual(
+        inventory.filter((file) => isBqFile(file) && isJsonFile(file))
+      );
       expect(resolution.perList.get("bq")).toEqual([]);
       if (additionalAdmissions) {
         expect(discoverNativeLintProjects(projects).oxcProjects).toContainEqual(
@@ -332,12 +338,13 @@ describe("biome coverage partition", () => {
       const nativeFiles = await actualNativeFiles(inventory, switchedFiles);
       const resolution = resolveCoverage(inventory, entries, nativeFiles);
 
-      expect(resolution.oxlintFiles.filter(isBqFile)).toHaveLength(42);
+      expect(resolution.oxlintFiles.filter(isBqFile)).toEqual(
+        inventory.filter((file) => isBqFile(file) && isCodeFile(file))
+      );
       expect(resolution.jsonValidatedFiles.filter(isBqFile)).toEqual([]);
       expect(resolution.duplicates).toEqual([]);
-      expect(resolution.missing).toHaveLength(14);
       expect(resolution.missing).toEqual(
-        inventory.filter((file) => isBqFile(file) && file.endsWith(".json"))
+        inventory.filter((file) => isBqFile(file) && isJsonFile(file))
       );
       if (additionalAdmissions) {
         expect(resolution.oxlintFiles).toContain(

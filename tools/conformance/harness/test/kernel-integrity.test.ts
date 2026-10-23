@@ -60,6 +60,9 @@ test("TurnTree encoder reproduces the committed vector independently of manifest
   );
   const value = object(fixture.turnTreeIdentityRecord);
   const expected = fixture.turnTreeIdentityRecordCborHex;
+  if (typeof expected !== "string") {
+    throw new TypeError("expected TurnTree CBOR hex string");
+  }
   expect(Buffer.from(encodeIdentity("turn-tree", value)).toString("hex")).toBe(
     expected
   );

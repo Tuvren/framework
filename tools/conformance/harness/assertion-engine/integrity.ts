@@ -148,7 +148,7 @@ export const evaluateIntegrity = (
     );
     return (
       outcomes.every((outcome) => outcome !== false) &&
-      outcomes.some((outcome) => outcome !== false && outcome > 0)
+      outcomes.some((outcome) => outcome > 0)
     );
   }
   if (assertion.equalsPath === undefined) {
