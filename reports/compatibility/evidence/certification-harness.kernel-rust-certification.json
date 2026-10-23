@@ -6,7 +6,8 @@
     "kernel.logical",
     "kernel.protocol",
     "kernel.reclamation",
-    "kernel.run-liveness"
+    "kernel.run-liveness",
+    "kernel.syscall"
   ],
   "checkResults": [
     {
@@ -234,6 +235,455 @@
         "planId": "tuvren.kernel.protocol.core"
       },
       "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.lineage.cross_thread_rejection.1.stateField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.lineage.cross_thread_rejection.requiredEvidence.result.trace.schema.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.lineage.cross_thread_rejection.requiredEvidence.result.trace.thread.result.threadId",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.lineage.cross_thread_rejection.requiredEvidence.trace.reject.state.adapterError",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.lineage.cross_thread_rejection.requiredEvidence.trace.reject.state.adapterError.code",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.lineage.cross_thread_rejection",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.lineage.cross_thread_rejection"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.requiredEvidence.result.trace.list.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.requiredEvidence.result.trace.list.result.0.0",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.requiredEvidence.result.trace.list.result.0.1",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.requiredEvidence.result.trace.schema.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.requiredEvidence.result.trace.thread.result.threadId",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.branch_list.requiredEvidence.trace.list.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.logical.branch_list",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.logical.branch_list"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.logical.diff_paths.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.diff_paths.requiredEvidence.result.trace.diff.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.diff_paths.requiredEvidence.result.trace.schema.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.diff_paths.requiredEvidence.result.trace.thread.result.threadId",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.diff_paths.requiredEvidence.trace.diff.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.logical.diff_paths",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.logical.diff_paths"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.2.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.3.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.4.identity",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.5.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.6.referenceWalk",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.manifest.result.$map",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.recover.result.consumedStagedResults",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.run.result.status",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.schema.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.thread.result.threadId",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.turn.result.turnId",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.walk.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.walk.result.0.hash",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.walk.result.1.hash",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.walk.result.2.hash",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.walk.result.2.previousTurnNodeHash",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.trace.manifest.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.trace.node.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.trace.object.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.trace.recover.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.trace.walk.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.logical.recovery_state",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.logical.recovery_state"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.requiredEvidence.result.trace.compose.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.requiredEvidence.result.trace.compose.result.kind",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.requiredEvidence.result.trace.compose.result.transform",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.requiredEvidence.trace.compose.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.modify_composition",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.modify_composition"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.2.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.requiredEvidence.result.trace.manifest.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.requiredEvidence.result.trace.manifest.result.$map",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.requiredEvidence.result.trace.messages.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.requiredEvidence.result.trace.schema.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.requiredEvidence.result.trace.tree.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.requiredEvidence.trace.manifest.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.requiredEvidence.trace.tree.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.tree_manifest_identity",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.core.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.tree_manifest_identity"
+      }
     },
     {
       "assertionResults": [
@@ -1940,6 +2390,1264 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel.syscall.logical.thread_list.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.all.result.threads",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.all.result.threads.0.threadId",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.next.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.next.result.threads",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.next.result.threads.0.threadId",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.page.result.nextCursor",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.page.result.threads",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.result.trace.schema.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.thread_list.requiredEvidence.trace.next.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.logical.thread_list",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.logical.thread_list"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-all-single-paths"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-empty-bytes"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-large-bytes"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-many-staged-results"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-single-byte"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-staged-failed"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-with-event-hash"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.1.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.result.trace.put.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.abort-dominates-pause-modify-retry.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.all-proceed.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.modify-dominates-retry-proceed.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.multi-modify-preserves-registration-order.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.pause-dominates-modify-retry-proceed.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.retry-dominates-proceed.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.single-modify.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.trace.single-proceed.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.modify_composition.f-verdict-composition.requiredEvidence.trace.retry-dominates-proceed.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.modify_composition.f-verdict-composition",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.modify_composition.f-verdict-composition"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-all-single-paths"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-empty-bytes"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-large-bytes",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-large-bytes"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-many-staged-results"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-single-byte",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-single-byte"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-staged-failed",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-staged-failed"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-with-event-hash"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.result.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.trace.get.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.protocol.extended.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash"
+      }
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction.1.resultField",
           "status": "pass"
         },
@@ -2126,6 +3834,586 @@
         "planId": "tuvren.kernel.reclamation"
       },
       "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.2.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.3.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.4.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.5.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.6.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.7.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.8.referenceWalk",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.result.trace.branchAfter.result.headTurnNodeHash",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.result.trace.cipherAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.result.trace.cipherBefore.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.result.trace.manifestAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.result.trace.nodeAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.result.trace.walkAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.result.trace.walkBefore.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.trace.branchAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.trace.cipherAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.trace.cipherBefore.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.trace.manifestAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.trace.walkAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.reclamation.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.2.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.3.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.4.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.5.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.trace.newerAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.trace.olderAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.trace.run.result.executionOwnerId",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.trace.run.result.leaseExpiresAtMs",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.trace.run.result.status",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.trace.stagedAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.trace.newerAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.trace.olderAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.trace.reclaim.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.trace.recover.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.trace.run.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.trace.stagedAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.reclamation.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.result.trace.after.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.result.trace.before.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.result.trace.run.result.status",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.trace.after.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.trace.before.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.trace.reclaim.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.trace.root.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.trace.run.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.reclamation.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.2.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.result.trace.after.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.result.trace.before.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.result.trace.run.result.status",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.trace.after.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.trace.before.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.trace.reclaim.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.trace.root.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.trace.run.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.reclamation.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.2.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.3.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.4.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.5.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.6.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.7.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.8.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.9.digest",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.10.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.11.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.12.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.13.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.14.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.15.referenceWalk",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.archiveBranchAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.archivedAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.archivedObject.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.archivedRefs.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.archivedRefs.result.0",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.archivedRefs.result.1",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.branchAfter.result.headTurnNodeHash",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.branchesAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.manifestAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.orphanAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.orphanBefore.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.reclaim.result.releasedArchivedBranchCount",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.reclaim.result.releasedObjectCount",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.sharedAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.sharedObject.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.threadAfter.result.rootTurnNodeHash",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.walkAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.walkBefore.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.archiveBranchAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.archivedAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.archivedObject.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.manifestAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.orphanAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.reclaim.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.sharedObject.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.walkAfter.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.reclamation.reachability",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.reclamation.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.reclamation.reachability"
+      }
     },
     {
       "assertionResults": [
@@ -2388,6 +4676,405 @@
         "planId": "tuvren.kernel.run-liveness"
       },
       "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.2.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.3.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.4.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.5.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.6.stateField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.7.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.requiredEvidence.result.trace.beforeExpiry.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.requiredEvidence.result.trace.expired.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.requiredEvidence.result.trace.runexpired.result.leaseExpiresAtMs",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.requiredEvidence.trace.beforeExpiry.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.requiredEvidence.trace.expired.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.requiredEvidence.trace.pausedStillBlocks.state.adapterError.code",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.run-liveness.expired_listing",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.run-liveness.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.run-liveness.expired_listing"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.2.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.3.schemaValid",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.4.schemaValid",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.5.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.6.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.7.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.8.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.9.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.afterOriginalExpiry.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.afterRenewedExpiry.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.renew.result.fencingToken",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.renew.result.leaseExpiresAtMs",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.runrenewal.result.executionOwnerId",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.runrenewal.result.leaseExpiresAtMs",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.runrenewal.result.status",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.trace.afterOriginalExpiry.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.trace.afterRenewedExpiry.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.trace.renew.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.run-liveness.lease_renewal",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.run-liveness.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.run-liveness.lease_renewal"
+      }
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.1.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.2.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.3.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.4.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.5.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.6.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.7.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.8.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.9.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.10.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.11.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.12.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.13.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.14.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.15.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.16.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.17.resultField",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.after.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.before.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.expired.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.node.result.consumedStagedResults",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.node.result.previousTurnNodeHash",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.preempt.result.consumedStagedResults",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.preempt.result.lastTurnNodeHash",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.preempt.result.uncommittedStagedResults",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.recovery.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.replacement.result.executionOwnerId",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.replacement.result.startTurnNodeHash",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.replacement.result.status",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.staging.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.trace.after.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.trace.branch.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.trace.node.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.trace.preempt.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.trace.recovery.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.trace.replacement.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.trace.staging.result",
+          "message": "adapter_clock_unsupported: Rust kernel has no separate public backend clock seam",
+          "status": "fail"
+        }
+      ],
+      "checkId": "kernel.syscall.run-liveness.stale_preemption",
+      "details": {
+        "adapterError": {
+          "code": "adapter_clock_unsupported",
+          "message": "Rust kernel has no separate public backend clock seam"
+        },
+        "adapterId": "rust-kernel",
+        "planId": "tuvren.kernel.run-liveness.syscall"
+      },
+      "status": "fail",
+      "failure": {
+        "classification": "adapter_protocol",
+        "replay": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --check kernel.syscall.run-liveness.stale_preemption"
+      }
     }
   ],
   "command": [
@@ -2396,19 +5083,11 @@
     "--adapter",
     "[adapter-manifest]"
   ],
-  "exitCode": 0,
+  "exitCode": 1,
   "implementationId": "rust-kernel",
   "nonApplicableCheckIds": [
     "kernel.syscall.controls.after_commit_before_ack",
     "kernel.syscall.controls.before_commit",
-    "kernel.syscall.lineage.cross_thread_rejection",
-    "kernel.syscall.logical.branch_list",
-    "kernel.syscall.logical.diff_paths",
-    "kernel.syscall.logical.recovery_state",
-    "kernel.syscall.protocol.deterministic_hashing",
-    "kernel.syscall.protocol.modify_composition",
-    "kernel.syscall.protocol.schema_roundtrip",
-    "kernel.syscall.protocol.tree_manifest_identity",
     "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
     "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
     "kernel-protocol-af.run-complete-rejects-missing-event-object",
@@ -2423,47 +5102,6 @@
     "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path",
     "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path",
     "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch",
-    "kernel.syscall.logical.thread_list",
-    "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes",
-    "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths",
-    "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths",
-    "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes",
-    "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema",
-    "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes",
-    "kernel.syscall.protocol.deterministic_hashing.f-large-bytes",
-    "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results",
-    "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged",
-    "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema",
-    "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes",
-    "kernel.syscall.protocol.deterministic_hashing.f-single-byte",
-    "kernel.syscall.protocol.deterministic_hashing.f-staged-failed",
-    "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted",
-    "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash",
-    "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn",
-    "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash",
-    "kernel.syscall.protocol.modify_composition.f-verdict-composition",
-    "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes",
-    "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths",
-    "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths",
-    "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes",
-    "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema",
-    "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes",
-    "kernel.syscall.protocol.schema_roundtrip.f-large-bytes",
-    "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results",
-    "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged",
-    "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema",
-    "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes",
-    "kernel.syscall.protocol.schema_roundtrip.f-single-byte",
-    "kernel.syscall.protocol.schema_roundtrip.f-staged-failed",
-    "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted",
-    "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash",
-    "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn",
-    "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash",
-    "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage",
-    "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
-    "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
-    "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
-    "kernel.syscall.reclamation.reachability",
     "kernel-restart-af.invalid-staged-result-reexecutes",
     "kernel.crash-recovery.concurrent_writer",
     "kernel.crash-recovery.durable_fault_points",
@@ -2472,9 +5110,6 @@
     "kernel.syscall.crash-recovery.after_commit_before_ack",
     "kernel.syscall.crash-recovery.before_commit",
     "kernel.run-liveness.clock_skew_preemption",
-    "kernel.syscall.run-liveness.expired_listing",
-    "kernel.syscall.run-liveness.lease_renewal",
-    "kernel.syscall.run-liveness.stale_preemption",
     "kernel.scope-isolation.enumeration_is_scope_confined",
     "kernel.scope-isolation.store_get_is_scope_confined",
     "kernel.scope-isolation.store_has_is_scope_confined",
@@ -2483,14 +5118,14 @@
   ],
   "project": "kernel-rust-certification",
   "reportLabel": "Rust process-local kernel baseline",
-  "reportStatus": "capability_subset_pass",
-  "status": "pass",
+  "reportStatus": "unexpected_fail",
+  "status": "fail",
   "summary": {
-    "failedChecks": 0,
+    "failedChecks": 52,
     "passedChecks": 56,
     "totalChecks": 137,
-    "applicableChecks": 56,
-    "nonApplicableChecks": 81
+    "applicableChecks": 108,
+    "nonApplicableChecks": 29
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

@@ -10,6 +10,7 @@
   },
   "command": ["cargo", "run", "-p", "tuvren-kernel-rust-conformance-adapter"],
   "capabilities": [
+    "kernel.syscall",
     "kernel.protocol",
     "kernel.logical",
     "kernel-protocol.thread.enumeration",
