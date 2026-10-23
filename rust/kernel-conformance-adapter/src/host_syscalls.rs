@@ -9,7 +9,7 @@ use tuvren_kernel_rust::{
 use tuvren_kernel_rust::testkit::mutants::KernelMutant;
 use tuvren_kernel_rust::testkit::{ClockDomain, FaultRequest, KernelTestControls};
 
-use crate::observation_encoding::{self as encoding, EncodingResult, invalid};
+use crate::observation_encoding::{self as encoding, EncodingResult, MAX_SAFE_INTEGER, invalid};
 use crate::syscall_values::{
     self as values, Observation, field, list, number, optional_record, optional_text, text,
 };
@@ -437,7 +437,7 @@ const CONTROLS: &[(&str, ControlBinding)] = routing![
         request.remove("instance");
         let request: FaultRequest = serde_json::from_value(Value::Object(request))
             .map_err(|_| invalid("invalid fault request"))?;
-        if request.occurrence == 0 || request.occurrence > 9_007_199_254_740_991 {
+        if request.occurrence == 0 || request.occurrence > MAX_SAFE_INTEGER.cast_unsigned() {
             return Err(invalid("fault occurrence requires a positive safe integer").into());
         }
         Ok(json!({"token":instance.controls.arm_fault(request)?}))

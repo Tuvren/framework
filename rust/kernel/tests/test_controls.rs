@@ -274,7 +274,7 @@ fn read_only_syscalls_do_not_clone_state_but_still_select_faults() {
     );
     assert_eq!(kernel.state_clone_count().unwrap(), clones);
     kernel.store_put(vec![8], None).unwrap();
-    assert_eq!(kernel.state_clone_count().unwrap(), clones + 1);
+    assert_eq!(kernel.state_clone_count().unwrap(), clones);
 }
 
 #[test]
@@ -370,4 +370,23 @@ fn reachable_delete_mutant_targets_only_fork_point_consumed_objects() {
     assert!(kernel.store_has(&objects[0]).unwrap());
     assert!(!kernel.store_has(&objects[1]).unwrap());
     assert_eq!(mutant.activation_count(), 1);
+}
+
+#[test]
+fn writes_do_not_clone_untouched_objects_manifests_or_nodes() {
+    let (kernel, _) = initialized();
+    schema(&kernel);
+    for index in 0_u64..128 {
+        kernel
+            .store_put(index.to_le_bytes().to_vec(), None)
+            .unwrap();
+        kernel
+            .thread_create(&format!("t-{index}"), "s", &format!("b-{index}"))
+            .unwrap();
+    }
+    let clones = kernel.state_clone_count().unwrap();
+    let entries = kernel.journal_entry_count().unwrap();
+    kernel.store_put(vec![255], None).unwrap();
+    assert_eq!(kernel.journal_entry_count().unwrap(), entries + 1);
+    assert_eq!(kernel.state_clone_count().unwrap(), clones);
 }

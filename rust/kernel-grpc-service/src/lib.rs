@@ -75,10 +75,10 @@ pub struct KernelGrpcServiceImpl {
     // KRT-BK006: test-only hook proving the `Server::builder()` `.timeout(..)`
     // and `.concurrency_limit_per_connection(..)` ceilings (see
     // `configured_server_builder` below) actually fire. The artificial delay
-    // holds a concurrency slot for a predictable duration; `store_put` sleeps for this duration (when set)
-    // before calling into the kernel. `KernelGrpcServiceImpl::new` always
-    // leaves this `None` (a no-op in production); only the `#[cfg(test)]`
-    // tests below construct an instance with this set.
+    // holds a concurrency slot for a predictable duration; `store_put` sleeps
+    // for this duration (when set) before calling into the kernel.
+    // `KernelGrpcServiceImpl::new` always leaves this `None` (a no-op in
+    // production); only the `#[cfg(test)]` tests below set it.
     artificial_delay: Option<std::time::Duration>,
 }
 

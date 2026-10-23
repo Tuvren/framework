@@ -91,7 +91,20 @@ test("Rust syscall evidence covers every check in all four memory families", asy
     expect(await child.exited).toBe(0);
     const evidence: unknown = JSON.parse(await readFile(evidencePath, "utf-8"));
     assertConformanceEvidence(evidence, "Rust memory family evidence");
-    expect(evidence.selection).toHaveLength(evidence.summary.totalChecks);
+    expect(evidence.selection).toHaveLength(
+      evidence.summary.totalChecks +
+        (evidence.selection ?? []).filter(({ reason }) =>
+          reason?.startsWith("not run:")
+        ).length
+    );
+    expect(evidence.nonApplicableCheckIds).toEqual(
+      (evidence.selection ?? [])
+        .filter(
+          ({ selected, reason }) =>
+            !(selected || reason?.startsWith("not run:"))
+        )
+        .map(({ checkId }) => checkId)
+    );
     for (const entry of evidence.selection ?? []) {
       if (!entry.selected) {
         expect(entry.reason).toBeTruthy();

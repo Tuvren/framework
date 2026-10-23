@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -37,7 +37,10 @@ const LEASELESS_RUN_EXPIRY_MS: EpochMs = 86_400_000;
 
 #[cfg(feature = "conformance")]
 mod conformance;
+mod journal;
 mod transaction;
+
+use journal::JournalMap;
 
 #[derive(Clone)]
 pub struct InMemoryKernel {
@@ -112,20 +115,22 @@ struct KernelState {
     clone_count: conformance::StateCloneCount,
     #[cfg(feature = "conformance")]
     checkpoint_writes: u64,
+    #[cfg(feature = "conformance")]
+    journal_entry_count: u64,
     archive_counter: u64,
-    branches: HashMap<String, BranchRecord>,
+    branches: JournalMap<BranchRecord>,
     fencing_token_counter: u64,
-    objects: HashMap<HashString, ObjectRecord>,
-    runs: HashMap<String, RunRecord>,
-    run_signals: HashMap<String, Vec<KernelRecord>>,
-    schemas: HashMap<String, TurnTreeSchema>,
-    staged_results: HashMap<String, Vec<StagedResult>>,
-    threads: HashMap<String, ThreadRecord>,
-    thread_created_at: HashMap<String, EpochMs>,
-    turn_nodes: HashMap<HashString, TurnNode>,
+    objects: JournalMap<ObjectRecord>,
+    runs: JournalMap<RunRecord>,
+    run_signals: JournalMap<Vec<KernelRecord>>,
+    schemas: JournalMap<TurnTreeSchema>,
+    staged_results: JournalMap<Vec<StagedResult>>,
+    threads: JournalMap<ThreadRecord>,
+    thread_created_at: JournalMap<EpochMs>,
+    turn_nodes: JournalMap<TurnNode>,
     turn_order: Vec<String>,
-    turns: HashMap<String, TurnRecord>,
-    turn_trees: HashMap<HashString, StoredTurnTree>,
+    turns: JournalMap<TurnRecord>,
+    turn_trees: JournalMap<StoredTurnTree>,
 }
 
 impl Default for InMemoryKernel {
@@ -971,7 +976,9 @@ impl InMemoryKernel {
                 created_at_ms: timestamp_ms,
             },
         );
-        let staged_results = state.staged_results.entry(run_id.to_string()).or_default();
+        let staged_results = state
+            .staged_results
+            .get_or_insert_default(run_id.to_string());
         staged_results.push(staged_result.clone());
         Ok((object_hash, staged_result))
     }
@@ -1880,13 +1887,15 @@ fn set_run_head_refs(
 
 fn fail_active_runs_on_branch(state: &mut KernelState, branch_id: &str) {
     let mut failed_run_ids = Vec::new();
-    for run in state.runs.values_mut().filter(|run| {
+    for run in state.runs.values().filter(|run| {
         run.branch_id == branch_id && matches!(run.status, RunStatus::Running | RunStatus::Paused)
     }) {
-        run.status = RunStatus::Failed;
         failed_run_ids.push(run.run_id.clone());
     }
     for run_id in failed_run_ids {
+        if let Some(run) = state.runs.get_mut(&run_id) {
+            run.status = RunStatus::Failed;
+        }
         state.staged_results.remove(&run_id);
         state.run_signals.remove(&run_id);
     }
@@ -2117,7 +2126,7 @@ fn seed_active_run_roots(
             }
         }
     }
-    for (run_id, results) in &state.staged_results {
+    for (run_id, results) in state.staged_results.iter() {
         if let Some(run) = state.runs.get(run_id)
             && is_active_run(&run.status)
         {
@@ -2137,17 +2146,17 @@ fn seed_grace_roots(
     turn_tree_stack: &mut Vec<HashString>,
     keep: &mut KeepClosure,
 ) {
-    for (hash, turn_node) in &state.turn_nodes {
+    for (hash, turn_node) in state.turn_nodes.iter() {
         if turn_node.created_at_ms >= grace_horizon_ms {
             turn_node_stack.push(hash.clone());
         }
     }
-    for (hash, turn_tree) in &state.turn_trees {
+    for (hash, turn_tree) in state.turn_trees.iter() {
         if turn_tree.created_at_ms >= grace_horizon_ms {
             turn_tree_stack.push(hash.clone());
         }
     }
-    for (hash, object) in &state.objects {
+    for (hash, object) in state.objects.iter() {
         if object.created_at_ms >= grace_horizon_ms {
             keep.objects.insert(hash.clone());
         }
