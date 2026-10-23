@@ -62,7 +62,7 @@ tickets:
       expected: "Exit 0; restart, kill, and respawn steps run against the built adapter executable, evidence records PIDs, epochs, signals, and exits, and the close-reopen checks pass on SQLite and PostgreSQL."
     stop_conditions:
       - "STOP if the supervised executable is a launcher whose child survives a kill; do not improvise."
-    description: "ADR-0076 decision 3. Add the process supervisor that runs the built adapter executable, records executable digest, PID, process epoch, signal, and exit, and serves restart, kill, and respawn steps. Write syscall versions of the close-reopen-checkpoint checks, beside the unchanged legacy plan, as traces that write, restart the process, reattach to the same storage, and observe through syscalls, replacing the adapter's sqlite child processes and derived booleans."
+    description: "ADR-0076 decision 3. Add the process supervisor that runs the built adapter executable, records executable digest, PID, process epoch, signal, and exit, and serves restart, kill, and respawn steps. Write syscall versions of the close-reopen-checkpoint checks, beside the unchanged legacy plan, as traces that write, restart the process, reattach to the same storage, and observe through syscalls, so the syscall plans need neither the adapter's sqlite child processes nor derived booleans; those stay only for the legacy plan until DJ retires it."
     acceptance:
       mode: contract_test
       evidence: "Assert a respawned process has a new PID and epoch on the same storageRef, the reopen checks pass on SQLite and PostgreSQL, and no adapter code spawns its own kernel processes."
