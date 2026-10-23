@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tuvren.dev/schemas/conformance-operation-catalog.schema.json",
-  "description": "Per-port operation catalog (ADR-0075), one file per port at spec/conformance/<port>/operations.json. Uniqueness of operationId and seamId is checked by the catalog validator because JSON Schema cannot compare keys across array items; the same validator requires every object schema reachable from an observation schema (through applicators, nested instances, and $ref) to be closed.",
+  "description": "Per-port operation catalog (ADR-0075), one file per port at spec/conformance/<port>/operations.json. Uniqueness of operationId and seamId is checked by the catalog validator because JSON Schema cannot compare keys across array items; the same validator enforces the certification observation dialect on every observation schema: each reachable subschema is false, a $ref to a local #/$defs entry or an encoding definition (bytes, safeInteger, hash, identifier, handle, record, map), an anyOf or oneOf of dialect branches, a const or enum, or an explicitly typed schema whose object types set additionalProperties or unevaluatedProperties to false and whose array types carry a direct items schema. allOf, not, if/then/else, dependentSchemas, $dynamicRef, embedded $id, true, and other type-less schemas are rejected.",
   "type": "object",
   "required": ["catalogId", "catalogVersion", "packetId", "operations"],
   "additionalProperties": false,
