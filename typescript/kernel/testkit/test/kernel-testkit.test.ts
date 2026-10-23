@@ -180,7 +180,6 @@ const createTestBackend = (): FocusedTestBackend => {
   let hooks: {
     afterCommitBeforeAck?: () => Promise<void>;
     beforeCommit?: () => Promise<void>;
-    midCommit?: (commit: () => void) => Promise<void>;
   } | null = null;
   const readCommittedHead = (
     branch: StoredBranch | null
@@ -407,26 +406,9 @@ const createTestBackend = (): FocusedTestBackend => {
         "focused fixture supports one branch"
       );
       await hooks?.beforeCommit?.();
-      let committed = false;
-      const commit = (): void => {
-        strictEqual(
-          committed,
-          false,
-          "test backend commit hook attempted double commit"
-        );
-        state.branches = draft.branches;
-        state.objects = draft.objects;
-        state.turnNodes = draft.turnNodes;
-        committed = true;
-      };
-      if (hooks?.midCommit === undefined) {
-        commit();
-      } else {
-        await hooks.midCommit(commit);
-        if (!committed) {
-          throw new Error("test backend mid-commit hook must commit once");
-        }
-      }
+      state.branches = draft.branches;
+      state.objects = draft.objects;
+      state.turnNodes = draft.turnNodes;
       await hooks?.afterCommitBeforeAck?.();
       return result;
     },
@@ -801,7 +783,7 @@ describe("@tuvren/kernel-testkit fixtures", () => {
     const finalBranch = await readBranch(backend, seeded.branch.branchId);
 
     if (finalBranch === null) {
-      throw new Error("expected branch after preserved mid-commit fault");
+      throw new Error("expected branch after preserved before-commit fault");
     }
 
     expect(finalBranch.headTurnNodeHash).toBe(seeded.childNode.hash);
@@ -974,3 +956,33 @@ describe("@tuvren/kernel-testkit fixtures", () => {
     deepStrictEqual(backend.inspect(), before);
   });
 });
+
+for (const point of ["before-commit", "after-commit-before-ack"] as const) {
+  test(`fault occurrence counts logical transactions across callback retries at ${point}`, async () => {
+    const inner = createTestBackend();
+    const transact = inner.transact.bind(inner);
+    let attempts = 0;
+    const retrying = Object.assign(inner, {
+      transact: async <T>(
+        work: (tx: RuntimeBackendTx) => Promise<T>
+      ): Promise<T> =>
+        await transact(async (tx) => {
+          await work(tx);
+          attempts += 1;
+          return await work(tx);
+        }),
+    });
+    const wrapped = createFaultInjectingBackend(retrying, {
+      occurrence: 2,
+      point,
+      policy: "once",
+    });
+    await wrapped.transact(async () => await Promise.resolve("first"));
+    await rejects(
+      wrapped.transact(async () => await Promise.resolve("second")),
+      { code: "kernel_persistence_fault_injected" }
+    );
+    await wrapped.transact(async () => await Promise.resolve("third"));
+    strictEqual(attempts, 3);
+  });
+}

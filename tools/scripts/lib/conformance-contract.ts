@@ -586,12 +586,11 @@ export const deriveConformanceRunStatus = (summary: {
     return "fail";
   }
 
-  if ((summary.unsupportedChecks ?? 0) > 0) {
-    return "unsupported";
-  }
-
-  if (summary.applicableChecks === 0) {
-    return summary.nonApplicableChecks > 0 ? "unsupported" : "not_applicable";
+  const unsupportedChecks = summary.unsupportedChecks ?? 0;
+  if (summary.applicableChecks - unsupportedChecks === 0) {
+    return summary.nonApplicableChecks + unsupportedChecks > 0
+      ? "unsupported"
+      : "not_applicable";
   }
 
   return "pass";

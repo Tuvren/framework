@@ -49,7 +49,7 @@
           "arguments": {
             "schema": {
               "$literal": {
-                "schemaId": "dc003",
+                "schemaId": "run_liveness",
                 "paths": [
                   {
                     "collection": "ordered",
@@ -82,7 +82,7 @@
           "operation": "kernel.thread.create",
           "arguments": {
             "threadId": "threadrenewal",
-            "schemaId": "dc003",
+            "schemaId": "run_liveness",
             "initialBranchId": "branchrenewal"
           },
           "claimIds": [
@@ -129,7 +129,7 @@
               "runId": "runrenewal",
               "turnId": "turnrenewal",
               "branchId": "branchrenewal",
-              "schemaId": "dc003",
+              "schemaId": "run_liveness",
               "startTurnNodeHash": {
                 "$ref": "capture.threadrenewal.rootTurnNodeHash"
               },
@@ -418,7 +418,7 @@
           "arguments": {
             "schema": {
               "$literal": {
-                "schemaId": "dc003",
+                "schemaId": "run_liveness",
                 "paths": [
                   {
                     "collection": "ordered",
@@ -452,7 +452,7 @@
           "operation": "kernel.thread.create",
           "arguments": {
             "threadId": "threadexpired",
-            "schemaId": "dc003",
+            "schemaId": "run_liveness",
             "initialBranchId": "branchexpired"
           },
           "claimIds": [
@@ -501,7 +501,7 @@
               "runId": "runexpired",
               "turnId": "turnexpired",
               "branchId": "branchexpired",
-              "schemaId": "dc003",
+              "schemaId": "run_liveness",
               "startTurnNodeHash": {
                 "$ref": "capture.threadexpired.rootTurnNodeHash"
               },
@@ -534,7 +534,7 @@
           "operation": "kernel.thread.create",
           "arguments": {
             "threadId": "threadfresh",
-            "schemaId": "dc003",
+            "schemaId": "run_liveness",
             "initialBranchId": "branchfresh"
           },
           "claimIds": [
@@ -583,7 +583,7 @@
               "runId": "runfresh",
               "turnId": "turnfresh",
               "branchId": "branchfresh",
-              "schemaId": "dc003",
+              "schemaId": "run_liveness",
               "startTurnNodeHash": {
                 "$ref": "capture.threadfresh.rootTurnNodeHash"
               },
@@ -616,7 +616,7 @@
           "operation": "kernel.thread.create",
           "arguments": {
             "threadId": "threadpaused",
-            "schemaId": "dc003",
+            "schemaId": "run_liveness",
             "initialBranchId": "branchpaused"
           },
           "claimIds": [
@@ -665,7 +665,7 @@
               "runId": "runpaused",
               "turnId": "turnpaused",
               "branchId": "branchpaused",
-              "schemaId": "dc003",
+              "schemaId": "run_liveness",
               "startTurnNodeHash": {
                 "$ref": "capture.threadpaused.rootTurnNodeHash"
               },
@@ -718,7 +718,7 @@
           "operation": "kernel.thread.create",
           "arguments": {
             "threadId": "threadfailed",
-            "schemaId": "dc003",
+            "schemaId": "run_liveness",
             "initialBranchId": "branchfailed"
           },
           "claimIds": [
@@ -767,7 +767,7 @@
               "runId": "runfailed",
               "turnId": "turnfailed",
               "branchId": "branchfailed",
-              "schemaId": "dc003",
+              "schemaId": "run_liveness",
               "startTurnNodeHash": {
                 "$ref": "capture.threadfailed.rootTurnNodeHash"
               },
@@ -820,7 +820,7 @@
           "operation": "kernel.thread.create",
           "arguments": {
             "threadId": "threadcompleted",
-            "schemaId": "dc003",
+            "schemaId": "run_liveness",
             "initialBranchId": "branchcompleted"
           },
           "claimIds": [
@@ -869,7 +869,7 @@
               "runId": "runcompleted",
               "turnId": "turncompleted",
               "branchId": "branchcompleted",
-              "schemaId": "dc003",
+              "schemaId": "run_liveness",
               "startTurnNodeHash": {
                 "$ref": "capture.threadcompleted.rootTurnNodeHash"
               },
@@ -1023,7 +1023,7 @@
               "runId": "runblocked",
               "turnId": "turnpaused",
               "branchId": "branchpaused",
-              "schemaId": "dc003",
+              "schemaId": "run_liveness",
               "startTurnNodeHash": {
                 "$ref": "capture.threadpaused.rootTurnNodeHash"
               },
@@ -1141,7 +1141,7 @@
           "arguments": {
             "schema": {
               "$literal": {
-                "schemaId": "dc003",
+                "schemaId": "run_liveness",
                 "paths": [
                   {
                     "collection": "ordered",
@@ -1171,7 +1171,7 @@
           "operation": "kernel.thread.create",
           "arguments": {
             "threadId": "threadpreemption",
-            "schemaId": "dc003",
+            "schemaId": "run_liveness",
             "initialBranchId": "branchpreemption"
           },
           "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
@@ -1212,7 +1212,7 @@
               "runId": "runpreemption",
               "turnId": "turnpreemption",
               "branchId": "branchpreemption",
-              "schemaId": "dc003",
+              "schemaId": "run_liveness",
               "startTurnNodeHash": {
                 "$ref": "capture.threadpreemption.rootTurnNodeHash"
               },
@@ -1428,7 +1428,7 @@
               "runId": "replacement",
               "turnId": "turnpreemption",
               "branchId": "branchpreemption",
-              "schemaId": "dc003",
+              "schemaId": "run_liveness",
               "startTurnNodeHash": {
                 "$ref": "capture.preempt.lastTurnNodeHash"
               },

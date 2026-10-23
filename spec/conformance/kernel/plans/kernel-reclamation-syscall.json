@@ -52,7 +52,7 @@
           "arguments": {
             "schema": {
               "$literal": {
-                "schemaId": "dc002",
+                "schemaId": "reclamation",
                 "paths": [
                   {
                     "collection": "ordered",
@@ -86,7 +86,7 @@
           "operation": "kernel.thread.create",
           "arguments": {
             "threadId": "thread",
-            "schemaId": "dc002",
+            "schemaId": "reclamation",
             "initialBranchId": "branch"
           },
           "claimIds": [
@@ -164,7 +164,7 @@
             "runId": "runshared",
             "turnId": "turnshared",
             "branchId": "branch",
-            "schemaId": "dc002",
+            "schemaId": "reclamation",
             "startTurnNodeHash": {
               "$ref": "capture.thread.rootTurnNodeHash"
             },
@@ -438,7 +438,7 @@
             "runId": "runarchived",
             "turnId": "turnarchived",
             "branchId": "branch",
-            "schemaId": "dc002",
+            "schemaId": "reclamation",
             "startTurnNodeHash": {
               "$ref": "capture.shared.turnNodeHash"
             },
@@ -1163,7 +1163,7 @@
           "arguments": {
             "schema": {
               "$literal": {
-                "schemaId": "dc002",
+                "schemaId": "reclamation",
                 "paths": [
                   {
                     "collection": "ordered",
@@ -1195,7 +1195,7 @@
           "operation": "kernel.thread.create",
           "arguments": {
             "threadId": "thread",
-            "schemaId": "dc002",
+            "schemaId": "reclamation",
             "initialBranchId": "branch"
           },
           "claimIds": [
@@ -1311,7 +1311,7 @@
               "runId": "run",
               "turnId": "turn",
               "branchId": "branch",
-              "schemaId": "dc002",
+              "schemaId": "reclamation",
               "startTurnNodeHash": {
                 "$ref": "capture.thread.rootTurnNodeHash"
               },
@@ -1631,7 +1631,7 @@
           "arguments": {
             "schema": {
               "$literal": {
-                "schemaId": "dc002",
+                "schemaId": "reclamation",
                 "paths": [
                   {
                     "collection": "ordered",
@@ -1663,7 +1663,7 @@
           "operation": "kernel.thread.create",
           "arguments": {
             "threadId": "thread",
-            "schemaId": "dc002",
+            "schemaId": "reclamation",
             "initialBranchId": "branch"
           },
           "claimIds": [
@@ -1707,7 +1707,7 @@
             "runId": "run",
             "turnId": "turn",
             "branchId": "branch",
-            "schemaId": "dc002",
+            "schemaId": "reclamation",
             "startTurnNodeHash": {
               "$ref": "capture.thread.rootTurnNodeHash"
             },
@@ -1955,7 +1955,7 @@
           "arguments": {
             "schema": {
               "$literal": {
-                "schemaId": "dc002",
+                "schemaId": "reclamation",
                 "paths": [
                   {
                     "collection": "ordered",
@@ -1987,7 +1987,7 @@
           "operation": "kernel.thread.create",
           "arguments": {
             "threadId": "thread",
-            "schemaId": "dc002",
+            "schemaId": "reclamation",
             "initialBranchId": "branch"
           },
           "claimIds": [
@@ -2031,7 +2031,7 @@
             "runId": "run",
             "turnId": "turn",
             "branchId": "branch",
-            "schemaId": "dc002",
+            "schemaId": "reclamation",
             "startTurnNodeHash": {
               "$ref": "capture.thread.rootTurnNodeHash"
             },
@@ -2272,7 +2272,7 @@
           "arguments": {
             "schema": {
               "$literal": {
-                "schemaId": "dc002",
+                "schemaId": "reclamation",
                 "paths": [
                   {
                     "collection": "ordered",
@@ -2304,7 +2304,7 @@
           "operation": "kernel.thread.create",
           "arguments": {
             "threadId": "thread",
-            "schemaId": "dc002",
+            "schemaId": "reclamation",
             "initialBranchId": "branch"
           },
           "claimIds": [
@@ -2374,7 +2374,7 @@
             "runId": "runcipher",
             "turnId": "turncipher",
             "branchId": "branch",
-            "schemaId": "dc002",
+            "schemaId": "reclamation",
             "startTurnNodeHash": {
               "$ref": "capture.thread.rootTurnNodeHash"
             },

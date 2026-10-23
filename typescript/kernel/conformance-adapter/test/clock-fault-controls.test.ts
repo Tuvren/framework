@@ -337,3 +337,22 @@ test("clock controls configure domains before backend initialization reads its c
     factory.mockRestore();
   }
 });
+
+test("memory reports block fault mode as catalogued unsupported", async () => {
+  const bridge = createSyscallBindings(config);
+  const handle = await bridge.createInstance();
+  try {
+    expect(
+      await bridge.dispatch(
+        "kernel.fault.arm",
+        { mode: "block", occurrence: 1, point: "before-commit", selector: {} },
+        handle
+      )
+    ).toMatchObject({
+      error: { code: "kernel_fault_point_unsupported" },
+      kind: "error",
+    });
+  } finally {
+    await bridge.destroyInstance(handle);
+  }
+});

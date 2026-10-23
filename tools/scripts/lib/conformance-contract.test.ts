@@ -15,12 +15,18 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { readFile } from "node:fs/promises";
 
+import Ajv2020 from "ajv/dist/2020.js";
+
+import { classifyConformanceReportStatus } from "../compatibility-report.ts";
 import { PINNED_CERTIFICATION_EVIDENCE } from "../conformance/certification-schema-examples.ts";
 import {
   assertConformanceEvidence,
   createAssertionResult,
   createCheckResult,
+  createConformanceEvidenceSummary,
+  deriveConformanceRunStatus,
   findCheckedInFailureViolations,
   toCheckedInCheckResult,
 } from "./conformance-contract.ts";
@@ -203,8 +209,6 @@ describe("conformance evidence contract", () => {
 });
 
 test("compatibility summaries accept a catalogued unsupported check", async () => {
-  const { readFile } = await import("node:fs/promises");
-  const Ajv2020 = (await import("ajv/dist/2020.js")).default;
   const schema: unknown = JSON.parse(
     await readFile(
       new URL(
@@ -236,4 +240,95 @@ test("compatibility summaries accept a catalogued unsupported check", async () =
       JSON.stringify(validate.errors)
     ).toBe(true);
   }
+});
+
+for (const [passedChecks, failedChecks, unsupportedChecks, expected] of [
+  [1, 0, 1, "pass"],
+  [0, 1, 1, "fail"],
+  [0, 0, 1, "unsupported"],
+] as const) {
+  test(`run status ${expected} counts unsupported checks without demoting applicable checks`, () => {
+    const checkResults = [
+      ...Array.from({ length: passedChecks }, (_, index) =>
+        createCheckResult(`pass-${index}`, [
+          createAssertionResult("pass", true),
+        ])
+      ),
+      ...Array.from({ length: failedChecks }, (_, index) =>
+        createCheckResult(`fail-${index}`, [
+          createAssertionResult("fail", false),
+        ])
+      ),
+      ...Array.from({ length: unsupportedChecks }, (_, index) => ({
+        assertionResults: [
+          { assertionId: "unsupported", status: "unsupported" as const },
+        ],
+        checkId: `unsupported-${index}`,
+        status: "unsupported" as const,
+      })),
+    ];
+    const summary = {
+      ...createConformanceEvidenceSummary(checkResults),
+      applicableChecks: checkResults.length,
+      nonApplicableChecks: 0,
+    };
+    expect(summary).toMatchObject({
+      failedChecks,
+      passedChecks,
+      unsupportedChecks,
+    });
+    expect(deriveConformanceRunStatus(summary)).toBe(expected);
+    expect(() => {
+      assertConformanceEvidence(
+        { ...runnerEvidence(), checkResults, status: expected, summary },
+        "mixed evidence"
+      );
+    }).not.toThrow();
+  });
+}
+
+test("compatibility classification keeps passing lanes with unsupported checks", () => {
+  const runner = {
+    adapterManifestPath: "adapter.json",
+    implementationId: "sample",
+    language: "typescript",
+    project: "sample",
+    reportLabel: "sample",
+  };
+  const evidence = {
+    ...runnerEvidence(),
+    status: "pass" as const,
+    summary: {
+      applicableChecks: 2,
+      failedChecks: 0,
+      nonApplicableChecks: 0,
+      passedChecks: 1,
+      totalChecks: 2,
+      unsupportedChecks: 1,
+    },
+  };
+  expect(
+    classifyConformanceReportStatus(
+      runner,
+      evidence,
+      "pass",
+      new Set(["kernel.store"])
+    )
+  ).toBe("full_pass");
+  expect(
+    classifyConformanceReportStatus(
+      runner,
+      evidence,
+      "pass",
+      new Set(["kernel.tree"])
+    )
+  ).toBe("capability_subset_pass");
+  expect(
+    classifyConformanceReportStatus(
+      runner,
+      { ...evidence, summary: { ...evidence.summary, passedChecks: 0 } },
+      "pass",
+      new Set()
+    )
+  ).toBe("unsupported");
 });

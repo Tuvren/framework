@@ -15,11 +15,16 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { deepStrictEqual, rejects } from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { RuntimeBackend } from "@tuvren/kernel-protocol";
+import type {
+  RuntimeBackend,
+  RuntimeBackendTx,
+  StoredRun,
+} from "@tuvren/kernel-protocol";
 import {
   decodeDeterministicKernelRecord,
   hashOpaqueObjectBytes,
@@ -30,7 +35,11 @@ import type {
   FaultInjectingBackendFactory,
   KernelMutantCodec,
 } from "../src/index.ts";
-import { listKernelMutants, selectKernelMutant } from "../src/index.ts";
+import {
+  createHashFromIndex,
+  listKernelMutants,
+  selectKernelMutant,
+} from "../src/index.ts";
 
 const REPO_ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 const MANIFEST_PATH = "spec/conformance/kernel/negative-controls.json";
@@ -459,3 +468,135 @@ describe("mutant containment", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+const transactionWithRuns = (
+  runs: RuntimeBackendTx["runs"]
+): RuntimeBackendTx => ({
+  branches: { get: unreachable, listByThread: unreachable, set: unreachable },
+  objects: { get: unreachable, has: unreachable, put: unreachable },
+  observeAnnotations: { listByRun: unreachable, set: unreachable },
+  orderedPathChunks: { get: unreachable, put: unreachable },
+  runs,
+  schemas: { get: unreachable, put: unreachable },
+  stagedResults: {
+    clearRun: unreachable,
+    get: unreachable,
+    listByRun: unreachable,
+    set: unreachable,
+  },
+  threads: { get: unreachable, put: unreachable },
+  turnNodes: { get: unreachable, put: unreachable },
+  turnTreePaths: {
+    get: unreachable,
+    listByTurnTree: unreachable,
+    putMany: unreachable,
+  },
+  turnTrees: { get: unreachable, put: unreachable },
+  turns: { get: unreachable, listByThread: unreachable, set: unreachable },
+});
+
+for (const change of ["finish", "rollback", "retry"] as const) {
+  test(`grace-window mutant preserves native lease state across ${change}`, async () => {
+    let records = new Map<string, StoredRun>();
+    let retry = false;
+    const backend: RuntimeBackend = {
+      ...fakeBackend,
+      transact: async <T>(
+        work: (tx: RuntimeBackendTx) => Promise<T>
+      ): Promise<T> => {
+        let draft = new Map(records);
+        const result = await (async () => {
+          const runs = {
+            get: async (runId: string) =>
+              await Promise.resolve(draft.get(runId) ?? null),
+            listByBranch: async (branchId: string) =>
+              await Promise.resolve(
+                [...draft.values()].filter(
+                  (record) => record.branchId === branchId
+                )
+              ),
+            listExpired: async () => await Promise.resolve([]),
+            set: async (record: StoredRun) => {
+              draft.set(record.runId, structuredClone(record));
+              await Promise.resolve();
+            },
+          };
+          if (retry) {
+            try {
+              await work(transactionWithRuns(runs));
+            } catch {
+              /* Retry the aborted attempt. */
+            }
+            draft = new Map(records);
+            retry = false;
+          }
+          return await work(transactionWithRuns(runs));
+        })();
+        records = draft;
+        return result;
+      },
+    };
+    const wrapped = selectKernelMutant(
+      "kernel.sweep-inside-grace-window"
+    ).wrapBackend(backend);
+    const original: StoredRun = {
+      branchId: "branch",
+      createdAtMs: 1,
+      createdTurnNodesCbor: new Uint8Array([128]),
+      currentStepIndex: 0,
+      executionOwnerId: "owner",
+      fencingToken: "fence",
+      leaseExpiresAtMs: 100,
+      runId: "run",
+      schemaId: "schema",
+      startTurnNodeHash: createHashFromIndex(1),
+      status: "running",
+      stepSequenceCbor: new Uint8Array([128]),
+      turnId: "turn",
+      updatedAtMs: 1,
+    };
+    await wrapped.transact(async (tx) => {
+      await tx.runs.set(original);
+    });
+    let expected = original;
+    if (change === "finish") {
+      const finished = { ...original, status: "completed" as const };
+      delete finished.executionOwnerId;
+      delete finished.fencingToken;
+      delete finished.leaseExpiresAtMs;
+      await wrapped.transact(async (tx) => {
+        await tx.runs.set(finished);
+      });
+      expected = finished;
+    } else if (change === "rollback") {
+      await rejects(
+        wrapped.transact(async (tx) => {
+          await tx.runs.set({ ...original, executionOwnerId: "aborted-owner" });
+          throw new Error("rollback");
+        }),
+        { message: "rollback" }
+      );
+    } else {
+      retry = true;
+      let attempt = 0;
+      await wrapped.transact(async (tx) => {
+        attempt += 1;
+        if (attempt === 1) {
+          await tx.runs.set({ ...original, executionOwnerId: "aborted-owner" });
+          throw new Error("retry");
+        }
+        deepStrictEqual(await tx.runs.get(original.runId), original);
+      });
+    }
+    await wrapped.transact(async (tx) => {
+      deepStrictEqual(
+        await tx.runs.listExpired(101),
+        expected.status === "running" ? [expected] : []
+      );
+      deepStrictEqual(await tx.runs.get(original.runId), expected);
+      deepStrictEqual(await tx.runs.listByBranch(original.branchId), [
+        expected,
+      ]);
+    });
+  });
+}
