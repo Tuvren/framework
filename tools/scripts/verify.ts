@@ -377,12 +377,27 @@ export const FOLLOWUP_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/scripts/verification-lifecycle.test.ts",
 ];
 
+export const CERTIFICATION_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
+  "tools/conformance/adapter-protocol/protocol-contract.test.ts",
+  "tools/conformance/certification/certification-manifest.test.ts",
+  "tools/conformance/harness/test/adapter-client.test.ts",
+  "tools/conformance/harness/test/assertion-engine.test.ts",
+  "tools/conformance/harness/test/assertion-operators.test.ts",
+  "tools/conformance/harness/test/step-arguments.test.ts",
+  "tools/conformance/meta-conformance/negative-controls.test.ts",
+  "tools/conformance/plan-compiler/certification-rules.test.ts",
+  "tools/conformance/plan-compiler/index.test.ts",
+  "tools/scripts/conformance/certification-schemas.test.ts",
+  "tools/scripts/lib/conformance-contract.test.ts",
+];
+
 // This remains an explicit inventory rather than a glob. A new follow-up suite
 // must be registered above to join the durable lane, and the existence check
 // below fails loudly if any registered file is renamed or removed.
 export const TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   ...ORIGINAL_BP_TOOLING_ACCEPTANCE_TESTS,
   ...FOLLOWUP_TOOLING_ACCEPTANCE_TESTS,
+  ...CERTIFICATION_TOOLING_ACCEPTANCE_TESTS,
 ];
 
 export const TOOLING_ACCEPTANCE_STEP: VerificationStep = {
