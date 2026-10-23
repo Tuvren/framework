@@ -41,8 +41,8 @@
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
-        "kernel.syscall.run-liveness.lease_renewal.2.schemaValid",
-        "kernel.syscall.run-liveness.lease_renewal.3.schemaValid"
+        "kernel.syscall.run-liveness.lease_renewal.3.schemaValid",
+        "kernel.syscall.run-liveness.lease_renewal.4.schemaValid"
       ]
     },
     {
@@ -108,8 +108,8 @@
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
-        "kernel.syscall.run-liveness.expired_listing.1.resultField",
-        "kernel.syscall.run-liveness.lease_renewal.7.resultField"
+        "kernel.syscall.run-liveness.expired_listing.2.resultField",
+        "kernel.syscall.run-liveness.lease_renewal.8.resultField"
       ]
     },
     {

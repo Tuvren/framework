@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 
+import { diagnoseAssertions } from "../../../../tools/conformance/harness/assertion-engine/index.ts";
 import {
   assessConformancePlans,
   loadCertificationAuthority,
@@ -12,6 +13,90 @@ const plans = [
   "run-liveness",
   "restart-recovery",
 ].map((name) => `spec/conformance/kernel/plans/kernel-${name}-syscall.json`);
+
+test("liveness syscall claims keep incomplete legacy obligations separate", async () => {
+  const { plan } = await loadConformancePlan(
+    "spec/conformance/kernel/plans/kernel-run-liveness-syscall.json"
+  );
+  for (const check of plan.checks) {
+    for (const entry of [check, ...(check.steps ?? [])]) {
+      expect(entry.claimIds?.length).toBeGreaterThan(0);
+      for (const claim of entry.claimIds ?? []) {
+        expect(claim).toStartWith("kernel.syscall.run-liveness.");
+        expect(claim).not.toContain("expired-running-requires-preemption");
+      }
+    }
+  }
+});
+
+test("expired listing probes adjacent lease boundaries and checks native expiry", async () => {
+  const { plan } = await loadConformancePlan(
+    "spec/conformance/kernel/plans/kernel-run-liveness-syscall.json"
+  );
+  const check = plan.checks.find((entry) =>
+    entry.checkId.endsWith(".expired_listing")
+  );
+  if (check === undefined) {
+    throw new Error("missing expired-listing check");
+  }
+  expect(
+    check.steps?.find((step) => step.stepId === "beforeExpiry")?.arguments
+  ).toEqual({ nowMs: 19 });
+  expect(
+    check.steps?.find((step) => step.stepId === "expired")?.arguments
+  ).toEqual({ nowMs: 21 });
+  const expiry = check.assertions.find(
+    (assertion) =>
+      assertion.field === "$.trace.runexpired.result.leaseExpiresAtMs"
+  );
+  if (expiry === undefined) {
+    throw new Error("missing native creation expiry assertion");
+  }
+  for (const leaseExpiresAtMs of [19, 20, 21]) {
+    const [diagnosis] = diagnoseAssertions(
+      { ...check, assertions: [expiry] },
+      { result: { trace: { runexpired: { result: { leaseExpiresAtMs } } } } }
+    );
+    expect(diagnosis).toMatchObject({
+      evaluation: { status: leaseExpiresAtMs === 20 ? "pass" : "fail" },
+      unresolved: false,
+    });
+  }
+});
+
+test("preemption task assertion rejects dropped results with resolved operands", async () => {
+  const { plan } = await loadConformancePlan(
+    "spec/conformance/kernel/plans/kernel-run-liveness-syscall.json"
+  );
+  const check = plan.checks.find((entry) =>
+    entry.checkId.endsWith(".stale_preemption")
+  );
+  const assertion = check?.assertions[7];
+  if (check === undefined || assertion === undefined) {
+    throw new Error("missing preemption task assertion");
+  }
+  for (const consumedStagedResults of [
+    [],
+    [{ taskId: "assistant_message" }],
+    [{ taskId: "wrong_task" }],
+    [{ taskId: "assistant_message" }, { taskId: "assistant_message" }],
+  ]) {
+    const [diagnosis] = diagnoseAssertions(
+      { ...check, assertions: [assertion] },
+      { result: { trace: { preempt: { result: { consumedStagedResults } } } } }
+    );
+    expect(diagnosis).toMatchObject({
+      evaluation: {
+        status:
+          consumedStagedResults.length === 1 &&
+          consumedStagedResults[0]?.taskId === "assistant_message"
+            ? "pass"
+            : "fail",
+      },
+      unresolved: false,
+    });
+  }
+});
 
 test("DC syscall checks declare every catalogued operation capability", async () => {
   const catalog: unknown = await Bun.file(
@@ -120,12 +205,17 @@ test("lease controls activate and fail designated run-liveness syscall assertion
       outcome: "killed",
     });
     expect(mutant.activationCount).toBeGreaterThan(0);
-    expect(mutant.designatedFailures.length).toBeGreaterThan(0);
-    expect(
-      mutant.designatedFailures.every((id) =>
-        id.startsWith("kernel.syscall.run-liveness.")
-      )
-    ).toBe(true);
+    expect(mutant.designatedFailures.toSorted()).toEqual(
+      mutant.mutantId === "kernel.lease-takeover-before-expiry"
+        ? [
+            "kernel.syscall.run-liveness.expired_listing.2.resultField",
+            "kernel.syscall.run-liveness.lease_renewal.8.resultField",
+          ]
+        : [
+            "kernel.syscall.run-liveness.lease_renewal.3.schemaValid",
+            "kernel.syscall.run-liveness.lease_renewal.4.schemaValid",
+          ]
+    );
   }
 }, 60_000);
 
