@@ -70,10 +70,10 @@ fn schema(kernel: &InMemoryKernel) {
 }
 
 #[test]
-fn backend_clock_controls_lease_expiry_independently_of_worker_record_time() {
+fn worker_clock_controls_embedded_lease_expiry_and_record_time() {
     let (kernel, controls) = initialized();
     schema(&kernel);
-    controls.set_clock(ClockDomain::Worker, 700).unwrap();
+    controls.set_clock(ClockDomain::Worker, 50).unwrap();
     seed(&kernel, "b", "r", true);
     let (_, staged) = kernel
         .staging_stage(
@@ -85,15 +85,17 @@ fn backend_clock_controls_lease_expiry_independently_of_worker_record_time() {
             None,
         )
         .unwrap();
-    assert_eq!(staged.timestamp_ms, 700);
+    assert_eq!(staged.timestamp_ms, 50);
     let run = kernel.run_get("r").unwrap().unwrap();
-    controls.set_clock(ClockDomain::Worker, 9000).unwrap();
-    controls.set_clock(ClockDomain::Backend, 50).unwrap();
+    assert_eq!(run.created_at_ms, 50);
+    controls.set_clock(ClockDomain::Worker, 99).unwrap();
+    controls.set_clock(ClockDomain::Backend, 9000).unwrap();
     let renewed = kernel
         .run_liveness_renew_lease("r", "owner", run.fencing_token.as_deref().unwrap(), 200)
         .unwrap();
-    controls.set_clock(ClockDomain::Worker, 0).unwrap();
-    controls.set_clock(ClockDomain::Backend, 200).unwrap();
+    assert_eq!(renewed.updated_at_ms, 99);
+    controls.set_clock(ClockDomain::Worker, 200).unwrap();
+    controls.set_clock(ClockDomain::Backend, 0).unwrap();
     let error = kernel
         .run_liveness_renew_lease("r", "owner", renewed.fencing_token.as_deref().unwrap(), 300)
         .unwrap_err();

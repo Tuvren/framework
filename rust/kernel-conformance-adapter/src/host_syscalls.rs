@@ -433,7 +433,8 @@ const CONTROLS: &[(&str, ControlBinding)] = routing![
     "kernel.clock.set" => |instance, a| {
         let domain: ClockDomain = serde_json::from_value(field(a, "domain")?.clone())
             .map_err(|_| invalid("invalid clock domain"))?;
-        instance.controls.set_clock(domain, number(a, "nowMs")?)?;
+        instance.controls.set_clock(domain, number(a, "nowMs")?)
+            .map_err(|error| adapter_error(&error.payload.code, &error.payload.message, None))?;
         Ok(json!({}))
     },
     "kernel.fault.arm" => |instance, a| {

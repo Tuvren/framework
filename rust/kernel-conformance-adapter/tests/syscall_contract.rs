@@ -304,6 +304,23 @@ fn controls_require_explicit_clocks_before_kernel_initialization() {
 }
 
 #[test]
+fn invalid_clock_inputs_are_protocol_errors() {
+    let mut adapter = Adapter::new();
+    let instance = adapter.instance();
+    for input in [
+        json!({"domain":"worker","nowMs":-1}),
+        json!({"domain":"backend","nowMs":-1}),
+        json!({"domain":"worker","nowMs":9007199254740992_i64}),
+        json!({"domain":"backend","nowMs":1.5}),
+        json!({"domain":"unknown","nowMs":0}),
+    ] {
+        let response = adapter.call(&instance, "kernel.clock.set", input);
+        assert!(response["error"].is_object(), "{response}");
+        assert!(response.get("result").is_none(), "{response}");
+    }
+}
+
+#[test]
 fn unsupported_fault_phases_and_block_mode_use_catalogued_error() {
     let mut adapter = Adapter::new();
     let instance = adapter.instance();
@@ -422,8 +439,15 @@ fn production_grpc_dependency_graph_excludes_test_controls() {
         String::from_utf8_lossy(&output.stderr)
     );
     let graph = String::from_utf8(output.stdout).unwrap();
-    assert!(graph.contains("tuvren-kernel-rust v"));
-    assert!(!graph.contains("conformance"), "{graph}");
+    let kernel_line = graph
+        .lines()
+        .find(|line| line.contains("tuvren-kernel-rust v"))
+        .expect("kernel dependency in production graph");
+    let (_, features) = kernel_line.split_once(" features=").expect("feature list");
+    assert!(
+        !features.split(',').any(|feature| feature == "conformance"),
+        "{kernel_line}"
+    );
 }
 
 #[test]

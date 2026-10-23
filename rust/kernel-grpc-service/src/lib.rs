@@ -940,7 +940,6 @@ fn kernel_error_code_to_status(code: &str) -> Code {
         | "run_schema_mismatch"
         | "run_start_head_mismatch"
         | "kernel_runtime_unexpected_step"
-        | "run_steps_incomplete"
         | "run_turn_branch_mismatch"
         | "run_turn_span_mismatch"
         | "turn_branch_thread_mismatch"
