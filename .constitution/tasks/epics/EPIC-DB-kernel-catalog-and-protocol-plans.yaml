@@ -291,6 +291,7 @@ closeout:
     - "Harness-owned storageRef provisioning is deferred; persistent syscall instances reuse existing backend provisioning."
     - "The runner does not validate step arguments against the catalog's closed input schemas, and the syscall bridge drops argument names the catalog does not declare."
     - "Schema-aware float handling in the observation decoder is deferred; the stricter safe-integer rule applies to every number in catalogued frames."
+    - "In the TypeScript syscall bridge, a backend cleanup failure after kernel construction fails replaces the original construction error; preserve it as the cause."
     - "Kernel negative-control survivors: kernel.fault-seam-never-fires (runner rejection channel, KRT-DC001) and kernel.lease-takeover-before-expiry (shared-lease clock, KRT-DF005)."
   code_decisions:
     - summary: "The kernel catalog binds syscalls as projection-path#Symbol or projection-path#/json/pointer through packet bindingProjections, including non-language projections adapter-protocol and typescript-testkit; void results are closed empty records; deprecated legacy composites are kind control with permissive dialect-valid schemas."
@@ -338,12 +339,12 @@ closeout:
       paths:
         - typescript/kernel/conformance-adapter/src/host-syscalls.ts
       commit: 1af11c3
-    - summary: "Unprefixed required-evidence paths resolve inside validated result observations, while explicit result.* requirements stay result-only; catalogued operations may not return adapter evidence."
+    - summary: "For catalogued operations only, unprefixed required-evidence paths resolve inside validated result observations while explicit result.* requirements stay result-only, and adapters may not return their own evidence."
       kind: convention
       paths:
         - tools/conformance/harness/run.ts
         - tools/conformance/harness/assertion-engine/index.ts
-      commit: 9b4e623
+      commit: 4e6c4af
   settled:
     - record: tech-spec/contracts/conformance-operation-catalog.meta.yaml
       evidence:
