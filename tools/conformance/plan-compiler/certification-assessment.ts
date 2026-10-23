@@ -190,7 +190,7 @@ const collectPlanClaimIds = (plan: ConformancePlan): Set<string> =>
     ])
   );
 
-const assessPlan = (
+export const assessConformancePlan = (
   plan: ConformancePlan,
   planPath: string,
   authority: CertificationAuthority
@@ -250,7 +250,7 @@ export const assessConformancePlans = async (
   await Promise.all(
     planPaths.map(async (planPath) => {
       const compiled = await loadConformancePlan(planPath);
-      return assessPlan(compiled.plan, planPath, authority);
+      return assessConformancePlan(compiled.plan, planPath, authority);
     })
   );
 

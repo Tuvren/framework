@@ -301,6 +301,18 @@ test("invalid syscall arguments become JSON-RPC adapter_host_error", async () =>
   });
   try {
     await client.initialize("tuvren.kernel.protocol", "0.1.0");
+    const legacy = await client.dispatch(
+      "kernel.lineage.cross-thread-rejection",
+      {},
+      {}
+    );
+    expect(legacy).toMatchObject({
+      kind: "result",
+      value: { result: { errorCode: "turn_node_thread_mismatch" } },
+    });
+    if (legacy.kind === "result") {
+      expect(legacy.value).not.toHaveProperty("evidence");
+    }
     const handle = await client.createInstance({});
     try {
       let failure: unknown;
@@ -364,5 +376,75 @@ test("successful native results with invalid encoding throw adapter errors", asy
   } finally {
     factory.mockRestore();
     await bridge.destroyInstance(handle);
+  }
+});
+
+test("failed backend setup can be retried and destroyed without repeating the setup error", async () => {
+  const { createSyscallBindings } = await import("../src/host-syscalls.ts");
+  const original = hostSupport.createConfiguredBackend;
+  const factory = spyOn(
+    hostSupport,
+    "createConfiguredBackend"
+  ).mockRejectedValueOnce(new Error("setup failed"));
+  const bridge = createSyscallBindings({
+    adapterId: "setup-test",
+    backend: "memory",
+    capabilities: ["kernel.syscall"],
+  });
+  const handle = await bridge.createInstance();
+  const failedHandle = await bridge.createInstance();
+  try {
+    const [firstFailure] = await Promise.allSettled([
+      bridge.dispatch("kernel.store.has", { hash: "0".repeat(64) }, handle),
+    ]);
+    expect(firstFailure?.status).toBe("rejected");
+    if (firstFailure?.status === "rejected") {
+      expect(firstFailure.reason).toEqual(new Error("setup failed"));
+    }
+    factory.mockImplementation(original);
+    expect(
+      await bridge.dispatch(
+        "kernel.store.has",
+        { hash: "0".repeat(64) },
+        handle
+      )
+    ).toEqual({ kind: "result", value: { result: false } });
+    factory.mockRejectedValueOnce(new Error("setup failed again"));
+    const [secondFailure] = await Promise.allSettled([
+      bridge.dispatch(
+        "kernel.store.has",
+        { hash: "0".repeat(64) },
+        failedHandle
+      ),
+    ]);
+    expect(secondFailure?.status).toBe("rejected");
+    if (secondFailure?.status === "rejected") {
+      expect(secondFailure.reason).toEqual(new Error("setup failed again"));
+    }
+    await bridge.destroyInstance(failedHandle);
+  } finally {
+    factory.mockRestore();
+    await bridge.destroyInstance(handle);
+  }
+});
+
+test("promoted syscall plans read node chains and manifests and exercise integrity assertions", async () => {
+  const compiled = await Promise.all(plans.map(loadConformancePlan));
+  const checks = compiled.flatMap(({ plan }) => plan.checks);
+  const steps = checks.flatMap((check) => check.steps ?? []);
+  const operations = new Set(steps.map((step) => step.operation));
+  for (const operation of [
+    "kernel.node.get",
+    "kernel.node.walkBack",
+    "kernel.tree.manifest",
+  ]) {
+    expect(operations.has(operation)).toBe(true);
+  }
+  const assertions = [
+    ...checks.flatMap((check) => check.assertions),
+    ...steps.flatMap((step) => step.assertions ?? []),
+  ];
+  for (const kind of ["identity", "canonicalCbor", "referenceWalk"]) {
+    expect(assertions.some((assertion) => assertion.kind === kind)).toBe(true);
   }
 });

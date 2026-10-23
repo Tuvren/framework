@@ -594,3 +594,40 @@ describe("operators compose conjunctively", () => {
     ).toBe("fail");
   });
 });
+
+test("map equality consumes each entry once while ignoring entry order", () => {
+  const duplicated = {
+    $map: [
+      ["a", 1],
+      ["a", 1],
+    ],
+  };
+  const distinct = {
+    $map: [
+      ["a", 1],
+      ["b", 2],
+    ],
+  };
+  expect(
+    evaluate(field("$", { equals: distinct }), { result: duplicated }).status
+  ).toBe("fail");
+  expect(
+    evaluate(field("$", { equals: duplicated }), { result: distinct }).status
+  ).toBe("fail");
+  expect(
+    evaluate(
+      field("$", {
+        equals: {
+          $map: [
+            ["b", 2],
+            ["a", 1],
+          ],
+        },
+      }),
+      { result: distinct }
+    ).status
+  ).toBe("pass");
+  expect(
+    evaluate(field("$", { equals: duplicated }), { result: duplicated }).status
+  ).toBe("pass");
+});

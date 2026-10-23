@@ -20,8 +20,10 @@ import nodePath from "node:path";
 import type { AnySchema, ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
-import { parseOperationCatalog } from "../plan-compiler/certification-rules.js";
-import type { OperationCatalog } from "../plan-compiler/certification-rules.js";
+import {
+  assessConformancePlan,
+  loadCertificationAuthority,
+} from "../plan-compiler/certification-assessment.js";
 import { loadConformancePlan } from "../plan-compiler/index.js";
 import type { CompiledConformancePlan } from "../plan-compiler/index.js";
 import type { AdapterManifest } from "./adapter-client.js";
@@ -116,7 +118,6 @@ export const readPlans = async (
   options: { packets: readonly string[]; plans: readonly string[] }
 ): Promise<CompiledConformancePlan[]> => {
   const planPaths = new Set(options.plans);
-  const catalogs = new Map<string, OperationCatalog>();
   const packetPaths =
     options.packets.length > 0
       ? options.packets
@@ -128,21 +129,6 @@ export const readPlans = async (
       return;
     }
     const packet = await readAuthorityPacket(packetPath);
-    if (typeof packet.operationCatalog === "string") {
-      const catalog = parseOperationCatalog(
-        JSON.parse(
-          await readFile(
-            nodePath.resolve(REPO_ROOT, packet.operationCatalog),
-            "utf-8"
-          )
-        ),
-        packet.operationCatalog
-      );
-      if (catalog.packetId !== packet.packetId) {
-        throw new Error(`${packetPath}: catalog packet mismatch`);
-      }
-      catalogs.set(packet.packetId, catalog);
-    }
 
     for (const plan of packet.conformancePlans ?? []) {
       planPaths.add(plan.path);
@@ -150,6 +136,7 @@ export const readPlans = async (
     await visitPacket(index + 1);
   };
   await visitPacket(0);
+  const authority = await loadCertificationAuthority(packetPaths);
 
   const plans: CompiledConformancePlan[] = [];
 
@@ -160,7 +147,21 @@ export const readPlans = async (
       return;
     }
     const compiled = await loadConformancePlan(planPath);
-    plans.push({ ...compiled, catalog: catalogs.get(compiled.plan.packetId) });
+    const catalog = authority.packets.get(compiled.plan.packetId)?.catalog;
+    if (catalog === undefined) {
+      const enforcementAuthority = authority.packets.has(compiled.plan.packetId)
+        ? authority
+        : await loadCertificationAuthority();
+      if (
+        assessConformancePlan(compiled.plan, planPath, enforcementAuthority)
+          .mode === "enforcing"
+      ) {
+        throw new Error(
+          `verification: enforcing plan ${compiled.plan.planId} requires the operation catalog for packet ${compiled.plan.packetId}; load its authority packet`
+        );
+      }
+    }
+    plans.push({ ...compiled, catalog });
     await visitPlan(index + 1);
   };
   await visitPlan(0);

@@ -562,6 +562,87 @@ const operandPaths = (operators: ConformancePlanValueOperators): string[] =>
     ...NUMERIC_OPERAND_KEYS.map((key) => operators[key]),
   ].filter((operand): operand is string => typeof operand === "string");
 
+/** Uses the compiler's assertion paths and capture provenance to identify native-error proof. */
+export const nativeErrorAsserted = (
+  check: ConformancePlanCheck,
+  step?: ConformancePlanStep
+): boolean => {
+  const targetId = step?.stepId ?? check.operation;
+  const captures = new Map<string, { path: PathSegment[]; stepId: string }>();
+  const observesError = (
+    segments: PathSegment[] | undefined,
+    scope: AssertionScope
+  ): boolean => {
+    if (segments === undefined) {
+      return false;
+    }
+    let target: PathTarget;
+    if (segments[0] === "capture" && typeof segments[1] === "string") {
+      const captured = captures.get(segments[1]);
+      if (captured === undefined) {
+        return false;
+      }
+      target = locatePath([...captured.path, ...segments.slice(2)], {
+        kind: "operation",
+        operationId: captured.stepId,
+      });
+    } else {
+      target = locatePath(segments, scope);
+    }
+    return (
+      target.kind === "observation" &&
+      target.operationId === targetId &&
+      target.domain === "state" &&
+      target.segments[0] === "adapterError"
+    );
+  };
+  const asserted = (
+    assertions: readonly ConformancePlanAssertion[],
+    scope: AssertionScope
+  ): boolean =>
+    assertions.some((assertion) =>
+      operatorNodes(
+        assertion,
+        assertionActualPath(assertion),
+        "native error"
+      ).some(
+        (node) =>
+          observesError(node.actual, scope) ||
+          operandPaths(node.operators).some((path) =>
+            observesError(splitContextPath(path), scope)
+          )
+      )
+    );
+  const steps = check.steps ?? [];
+  for (const current of steps) {
+    for (const capture of current.capture ?? []) {
+      captures.set(capture.name, {
+        path: capture.path.split("."),
+        stepId: current.stepId,
+      });
+    }
+    if (
+      asserted(current.assertions ?? [], {
+        kind: "operation",
+        operationId: current.stepId,
+      })
+    ) {
+      return true;
+    }
+  }
+  return asserted(
+    check.assertions,
+    steps.length === 0
+      ? { kind: "operation", operationId: check.operation }
+      : {
+          kind: "trace",
+          stepOperations: new Map(
+            steps.map((current) => [current.stepId, current.stepId])
+          ),
+        }
+  );
+};
+
 interface RuleContext {
   catalog: OperationCatalog | undefined;
   checkId: string;

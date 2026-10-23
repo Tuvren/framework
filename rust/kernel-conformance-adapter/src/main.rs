@@ -1298,7 +1298,6 @@ fn decrypt_envelope(key: &Key<Aes256Gcm>, envelope: &[u8]) -> Option<Vec<u8>> {
 
 fn projection(evidence: Value) -> Value {
     json!({
-        "evidence": evidence.clone(),
         "result": evidence,
     })
 }

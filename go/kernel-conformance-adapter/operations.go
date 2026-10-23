@@ -165,13 +165,10 @@ func decodeCanonicalHexField(fixture map[string]any, field string) (kernel.Recor
 	return record, nil
 }
 
-// projection mirrors rust/kernel-conformance-adapter/src/main.rs's
-// projection(): the same observation object is both the operation result
-// ($.result in plan assertions) and the persisted evidence ($.evidence).
+// projection wraps the operation result for the shared harness.
 func projection(observation map[string]any) map[string]any {
 	return map[string]any{
-		"evidence": observation,
-		"result":   observation,
+		"result": observation,
 	}
 }
 

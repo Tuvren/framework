@@ -39,6 +39,5 @@ export type KernelOperation = (
 export const createProjection = (
   evidence: Record<string, unknown>
 ): Record<string, unknown> => ({
-  evidence,
   result: evidence,
 });

@@ -41,12 +41,8 @@ func erasureFieldsFromOutcome(t *testing.T, outcome operationOutcome) map[string
 	if !ok {
 		t.Fatalf("expected value[\"result\"] to be a map[string]any, got %T", value["result"])
 	}
-	evidence, ok := value["evidence"].(map[string]any)
-	if !ok {
-		t.Fatalf("expected value[\"evidence\"] to be a map[string]any, got %T", value["evidence"])
-	}
-	if !reflect.DeepEqual(result, evidence) {
-		t.Fatalf("expected projection's evidence and result to be identical, got result=%+v evidence=%+v", result, evidence)
+	if _, exists := value["evidence"]; exists {
+		t.Fatal("adapter observations must not contain evidence")
 	}
 
 	erasure, ok := result["erasure"].(map[string]any)
