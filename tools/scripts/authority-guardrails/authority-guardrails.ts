@@ -872,7 +872,15 @@ const isDecisiveAssertion = (assertion: Record<string, unknown>): boolean => {
     return true;
   }
 
-  if (kind !== "schemaValid") {
+  if (
+    ![
+      "schemaValid",
+      "digest",
+      "canonicalCbor",
+      "identity",
+      "referenceWalk",
+    ].includes(String(kind))
+  ) {
     return false;
   }
 

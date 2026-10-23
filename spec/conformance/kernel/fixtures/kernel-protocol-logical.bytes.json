@@ -1,0 +1,67 @@
+{
+  "input": {
+    "branchHeadListEntry": [
+      "branch_main",
+      "80003ce4d0adf81da829321c0381eab1aa7603fd21f2d311aa730caa2671d6aa"
+    ],
+    "recoveryState": {
+      "consumedStagedResults": [
+        {
+          "objectHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "objectType": "message",
+          "status": "completed",
+          "taskId": "msg_assistant",
+          "timestamp": 1717171717171
+        }
+      ],
+      "lastCompletedStepId": "tool_execution",
+      "lastTurnNodeHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "stepSequence": [
+        {
+          "deterministic": false,
+          "id": "model_call",
+          "metadata": {
+            "$map": [["phase", "reasoning"]]
+          },
+          "sideEffects": false
+        },
+        {
+          "deterministic": false,
+          "id": "tool_execution",
+          "metadata": {
+            "$map": [["phase", "tooling"]]
+          },
+          "sideEffects": true
+        }
+      ],
+      "uncommittedStagedResults": [
+        {
+          "interruptPayload": {
+            "$map": [["reason", "awaiting_approval"]]
+          },
+          "objectHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "objectType": "tool_result",
+          "status": "interrupted",
+          "taskId": "tool_call_pending",
+          "timestamp": 1717171717272
+        }
+      ]
+    },
+    "turnTreeChangeSet": {
+      "$map": [
+        [
+          "context.manifest",
+          "1111111111111111111111111111111111111111111111111111111111111111"
+        ],
+        [
+          "messages",
+          [
+            "2222222222222222222222222222222222222222222222222222222222222222",
+            "2323232323232323232323232323232323232323232323232323232323232323"
+          ]
+        ]
+      ]
+    }
+  },
+  "expected": {}
+}

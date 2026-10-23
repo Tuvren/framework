@@ -60,6 +60,10 @@ import type {
   AssertionContext,
   AssertionDiagnosis,
 } from "./assertion-engine/index.js";
+import {
+  ObservationEncodingError,
+  validateObservation,
+} from "./observation-encoding.js";
 import { readAdapterManifest, readPlans } from "./run-plans.js";
 import {
   ArgumentResolutionError,
@@ -367,7 +371,8 @@ const createAdapterControls = (
 
 const createAssertionContext = (
   outcome: Awaited<ReturnType<JsonRpcAdapterClient["dispatch"]>>,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  catalogued = false
 ): AssertionContext => {
   if (outcome.kind === "error") {
     return {
@@ -389,6 +394,16 @@ const createAssertionContext = (
     };
   }
 
+  if (
+    catalogued &&
+    Object.keys(outcome.value).some(
+      (key) => !["result", "events", "state", "evidence"].includes(key)
+    )
+  ) {
+    throw new ObservationEncodingError(
+      "catalogued operation returned undeclared observation domains"
+    );
+  }
   const evidence = readOptionalRecord(outcome.value.evidence);
   return {
     events: readOptionalArray(outcome.value.events),
@@ -595,6 +610,8 @@ const runTraceCheck = async (
         stepId: step.stepId,
       };
       recorder.observation.push(observed);
+      const catalogOperation = plan.catalog?.operations.get(step.operation);
+      client.setLosslessObservations(catalogOperation !== undefined);
       const outcome = await client.dispatch(
         step.operation,
         input,
@@ -603,7 +620,16 @@ const runTraceCheck = async (
         timeoutMs
       );
       observed.outcome = outcome;
-      const context = createAssertionContext(outcome, contextInput);
+      const context = createAssertionContext(
+        outcome,
+        contextInput,
+        catalogOperation !== undefined
+      );
+      validateObservation(
+        catalogOperation,
+        outcome.kind === "result" ? context : {},
+        outcome.kind === "result"
+      );
       if (outcome.kind === "error") {
         // Trace-step adapter errors are diagnostic evidence only; plan
         // assertions still decide pass/fail through runner-owned context.
@@ -619,6 +645,7 @@ const runTraceCheck = async (
         timeoutMs
       );
       observed.events = extraEvents;
+      validateObservation(catalogOperation, { events: extraEvents });
 
       if (context.events === undefined && extraEvents.length > 0) {
         context.events = extraEvents;
@@ -630,6 +657,7 @@ const runTraceCheck = async (
           : await client.inspectState(inspectQuery, instance, timeoutMs);
       if (step.inspectState !== undefined) {
         observed.inspectedState = inspectedState;
+        validateObservation(catalogOperation, { state: inspectedState });
       }
 
       if (inspectedState !== undefined && inspectedState !== null) {
@@ -701,6 +729,7 @@ const executeCheck = async (
   const { check } = compiledCheck;
 
   try {
+    client.setLosslessObservations(false);
     const capabilities = await client.initialize(
       plan.plan.packetId,
       plan.plan.planVersion
@@ -728,6 +757,8 @@ const executeCheck = async (
     recorder.arguments.push({ input, operation: check.operation });
     const observed: StepObservationRecord = { operation: check.operation };
     recorder.observation.push(observed);
+    const catalogOperation = plan.catalog?.operations.get(check.operation);
+    client.setLosslessObservations(catalogOperation !== undefined);
     const outcome = await client.dispatch(
       check.operation,
       input,
@@ -739,7 +770,16 @@ const executeCheck = async (
     if (outcome.kind === "error") {
       recorder.operationErrors.push(outcome.error);
     }
-    const context = createAssertionContext(outcome, input);
+    const context = createAssertionContext(
+      outcome,
+      input,
+      catalogOperation !== undefined
+    );
+    validateObservation(
+      catalogOperation,
+      outcome.kind === "result" ? context : {},
+      outcome.kind === "result"
+    );
     const extraEvents = await client.events(
       check.operation,
       input,
@@ -748,6 +788,7 @@ const executeCheck = async (
       timeoutMs
     );
     observed.events = extraEvents;
+    validateObservation(catalogOperation, { events: extraEvents });
 
     if (context.events === undefined && extraEvents.length > 0) {
       context.events = extraEvents;
@@ -761,6 +802,7 @@ const executeCheck = async (
       timeoutMs
     );
     observed.inspectedState = inspectedState;
+    validateObservation(catalogOperation, { state: inspectedState });
 
     mergeInspectedState(context, inspectedState, outcome);
 
@@ -811,6 +853,8 @@ const classifyFailure = (
   if (thrown instanceof ArgumentResolutionError) {
     return "verification";
   }
+
+  if (thrown instanceof ObservationEncodingError) return "adapter_protocol";
 
   const signals = [
     checkStderr,
@@ -1025,6 +1069,7 @@ const validateHandshakeForSelectedPlans = async (
       if (packet === undefined) {
         return;
       }
+      client.setLosslessObservations(false);
       const capabilities = await client.initialize(
         packet.packetId,
         packet.planVersion

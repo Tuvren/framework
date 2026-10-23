@@ -20,7 +20,13 @@ import nodePath from "node:path";
 import type { ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
+import type { OperationCatalog } from "./certification-rules.js";
+
 export type AssertionKind =
+  | "digest"
+  | "canonicalCbor"
+  | "identity"
+  | "referenceWalk"
   | "eventSequence"
   | "terminalEvent"
   | "schemaValid"
@@ -64,7 +70,18 @@ export interface ConformancePlanWhen {
   path: string;
 }
 
+export interface ConformancePlanReference {
+  length?: ConformancePlanNumericOperand;
+  path: string;
+  targetPath: string;
+  recordType: string;
+  hashPath?: string;
+  valuePath?: string;
+}
+
 export interface ConformancePlanAssertion extends ConformancePlanValueOperators {
+  recordType?: string;
+  references?: ConformancePlanReference[];
   eventType?: string;
   field?: string;
   kind: AssertionKind;
@@ -169,6 +186,7 @@ export interface CompiledConformancePlanCheck {
 }
 
 export interface CompiledConformancePlan {
+  catalog?: OperationCatalog;
   checks: readonly CompiledConformancePlanCheck[];
   fixtures: ReadonlyMap<string, unknown>;
   path: string;
@@ -325,10 +343,19 @@ const resultFieldRequiredEvidencePath = (field: string): string => {
   return `result.${normalizeEvidencePath(field)}`;
 };
 
+const isIntegrityKind = (
+  kind: AssertionKind
+): kind is "digest" | "canonicalCbor" | "identity" | "referenceWalk" =>
+  ["digest", "canonicalCbor", "identity", "referenceWalk"].includes(kind);
+
 const assertionRequiredEvidencePath = (
   assertion: ConformancePlanAssertion
 ): string | undefined => {
-  if (assertion.present === false || assertion.when !== undefined) {
+  if (
+    isIntegrityKind(assertion.kind) ||
+    assertion.present === false ||
+    assertion.when !== undefined
+  ) {
     return undefined;
   }
 
@@ -367,6 +394,9 @@ const stepAssertionRequiredEvidencePath = (
   stepId: string,
   assertion: ConformancePlanAssertion
 ): string | undefined => {
+  if (isIntegrityKind(assertion.kind)) {
+    return undefined;
+  }
   const path = assertionRequiredEvidencePath(assertion);
 
   if (path === undefined) {

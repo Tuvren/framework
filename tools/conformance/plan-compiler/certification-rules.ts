@@ -351,7 +351,19 @@ const childSchemas = (node: SchemaNode, segment: PathSegment): SchemaNode[] => {
 
   const children = [
     ...arrayChildSchemas(node.schema, segment),
-    ...(segment === EACH ? [] : objectChildSchemas(node.schema, segment)),
+    ...(segment === EACH
+      ? [
+          ...Object.values(
+            isRecord(node.schema.properties) ? node.schema.properties : {}
+          ),
+          ...Object.values(
+            isRecord(node.schema.patternProperties)
+              ? node.schema.patternProperties
+              : {}
+          ),
+          node.schema.additionalProperties,
+        ]
+      : objectChildSchemas(node.schema, segment)),
   ];
 
   return children
@@ -482,6 +494,10 @@ const assertionActualPath = (
     case "errorEnvelope": {
       return splitContextPath(assertion.path ?? "$.result.error");
     }
+    case "digest":
+    case "canonicalCbor":
+    case "identity":
+    case "referenceWalk":
     case "schemaValid": {
       return splitContextPath(assertion.path ?? "$.result");
     }
@@ -732,7 +748,54 @@ const checkAssertion = (
   forwarded: readonly (readonly PathSegment[])[]
 ): void => {
   const label = `assertion ${index} (${assertion.kind})`;
-  const nodes = operatorNodes(assertion, assertionActualPath(assertion), label);
+  const actual = assertionActualPath(assertion);
+  const nodes = operatorNodes(assertion, actual, label);
+  for (const reference of assertion.references ?? []) {
+    const relative = splitContextPath(reference.path)?.map((segment) =>
+      segment === "*" ? EACH : segment
+    );
+    nodes.push({
+      actual:
+        actual === undefined || relative === undefined
+          ? undefined
+          : [...actual, ...relative],
+      label: `${label} reference ${reference.path}`,
+      operators: {
+        equalsPath: reference.targetPath,
+        ...(reference.length === undefined ? {} : { length: reference.length }),
+      },
+    });
+    for (const targetField of [
+      ...(reference.hashPath === undefined ? [] : [reference.hashPath]),
+      reference.valuePath ?? "$",
+    ]) {
+      const target = splitContextPath(reference.targetPath);
+      const field = splitContextPath(targetField);
+      const candidates: PathSegment[][] =
+        target === undefined || field === undefined
+          ? []
+          : [
+              [...target, EACH, ...field],
+              [...target, ...field],
+            ];
+      const resolved = candidates.find((segments) => {
+        const location = locatePath(segments, scope);
+        return (
+          location.kind === "external" ||
+          (location.kind === "observation" &&
+            context.catalog !== undefined &&
+            observationProblem(context.catalog, location) === undefined)
+        );
+      });
+      checkObservationPath(
+        context,
+        scope,
+        resolved ?? candidates[0],
+        `${label} reference target ${targetField}`,
+        true
+      );
+    }
+  }
   let actualResolves = true;
 
   for (const node of nodes) {

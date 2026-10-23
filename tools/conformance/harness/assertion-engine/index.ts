@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-import type { AnySchema, ValidateFunction } from "ajv";
-import Ajv2020 from "ajv/dist/2020.js";
-
 import type {
   CompiledConformancePlanCheck,
   ConformancePlanAssertion,
@@ -29,6 +26,14 @@ import {
   findSecretLeaks,
   findSecretPatternLeaks,
 } from "../secret-absence/index.js";
+import { evaluateIntegrity } from "./integrity.js";
+import { UnresolvedOperandError } from "./operand-error.js";
+import { readPath } from "./path.js";
+import { assertSchemaValid } from "./schema.js";
+import { valuesAreEqual } from "./value-comparison.js";
+
+export { readPath } from "./path.js";
+export { getCompiledSchemaValidator } from "./schema.js";
 
 export interface AssertionContext {
   events?: readonly unknown[];
@@ -47,18 +52,6 @@ export interface AssertionEvaluation {
   when?: "applied" | "not_applied";
 }
 
-// Compile each distinct schema once per process instead of once per
-// schemaValid assertion (KRT-BM004; audit finding [C-02]). Schemas arrive as
-// fixture-embedded values without a reliable `$id`, and the same logical
-// schema is re-read as a fresh object per plan/fixture load — so reference
-// identity is NOT a safe cache key. Key by content (stable JSON) instead:
-// two structurally identical schemas share a compiled validator, and two
-// distinct schemas can never collide. Mirrors the memoization pattern in
-// typescript/runtime/src/lib/tool-execution-helpers.ts.
-const schemaValidatorCache = new Map<string, ValidateFunction>();
-
-class UnresolvedOperandError extends Error {}
-
 const readEvents = (context: AssertionContext): readonly unknown[] => {
   if (context.events === undefined) {
     throw new Error("assertion requires events");
@@ -69,76 +62,6 @@ const readEvents = (context: AssertionContext): readonly unknown[] => {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
-
-export const readPath = (source: unknown, path: string): unknown => {
-  if (path === "$") {
-    return source;
-  }
-
-  if (!path.startsWith("$.")) {
-    throw new Error(`unsupported path ${path}`);
-  }
-
-  let current = source;
-  const segments = path.slice(2).split(".");
-
-  for (const segment of segments) {
-    if (Array.isArray(current)) {
-      const index = Number(segment);
-
-      if (!Number.isInteger(index)) {
-        return undefined;
-      }
-
-      current = current[index];
-      continue;
-    }
-
-    if (!isRecord(current)) {
-      return undefined;
-    }
-
-    current = current[segment];
-  }
-
-  return current;
-};
-
-const valuesAreEqual = (left: unknown, right: unknown): boolean => {
-  if (Object.is(left, right)) {
-    return true;
-  }
-
-  if (Array.isArray(left) || Array.isArray(right)) {
-    return (
-      Array.isArray(left) &&
-      Array.isArray(right) &&
-      left.length === right.length &&
-      left.every((entry, index) => valuesAreEqual(entry, right[index]))
-    );
-  }
-
-  if (isRecord(left) || isRecord(right)) {
-    if (!(isRecord(left) && isRecord(right))) {
-      return false;
-    }
-
-    const leftKeys = Object.keys(left).toSorted();
-    const rightKeys = Object.keys(right).toSorted();
-
-    // JSON object field order is language-specific, so equality is structural
-    // and key-order independent across TypeScript/Rust adapter observations.
-    return (
-      leftKeys.length === rightKeys.length &&
-      leftKeys.every(
-        (key, index) =>
-          key === rightKeys[index] && valuesAreEqual(left[key], right[key])
-      )
-    );
-  }
-
-  return false;
-};
 
 const valueContains = (value: unknown, expected: unknown): boolean => {
   if (Array.isArray(value)) {
@@ -423,78 +346,6 @@ const assertTerminalEvent = (
     : value === assertion.eventType;
 };
 
-// JSON.stringify is key-order sensitive, so serialize with sorted object
-// keys: the same schema loaded from differently-ordered JSON still hits one
-// cache entry, while any semantic difference changes the key. The rebuilt
-// object uses own data properties so a literal "__proto__" property name lands as
-// an own property instead of vanishing through the inherited setter — with
-// a plain {} two schemas differing only in a "__proto__" member would
-// serialize identically and collide.
-const canonicalSchemaKey = (value: unknown): string =>
-  JSON.stringify(value, (_key, node: unknown) => {
-    if (isRecord(node)) {
-      return Object.fromEntries(
-        Object.keys(node)
-          .toSorted()
-          .map((key) => [key, node[key]])
-      );
-    }
-    return node;
-  });
-
-// Exported for the assertion-engine unit tests (memoization identity and
-// collision-safety assertions); production callers go through
-// assertSchemaValid.
-export const getCompiledSchemaValidator = (
-  schema: AnySchema
-): ValidateFunction => {
-  const key = canonicalSchemaKey(schema);
-  const cached = schemaValidatorCache.get(key);
-
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  const ajv = new Ajv2020({ allErrors: true, strict: false });
-  const validate = ajv.compile(schema);
-  // schemaValid is synchronous; reject Ajv's async validators before caching.
-  if ("$async" in validate && validate.$async) {
-    throw new Error(
-      "schemaValid assertion does not support asynchronous schemas"
-    );
-  }
-
-  schemaValidatorCache.set(key, validate);
-  return validate;
-};
-
-const readJsonSchema = (
-  value: unknown,
-  label: string
-): boolean | Record<string, unknown> => {
-  if (typeof value === "boolean" || isRecord(value)) {
-    return value;
-  }
-
-  throw new Error(`${label} must contain a JSON Schema object or boolean`);
-};
-
-const assertSchemaValid = (
-  assertion: ConformancePlanAssertion,
-  context: AssertionContext
-): boolean => {
-  if (assertion.schema === undefined) {
-    throw new Error("schemaValid assertion requires schema");
-  }
-
-  const value = readPath(context, assertion.path ?? "$.result");
-  const schema = readPath(context, assertion.schema);
-  const validate = getCompiledSchemaValidator(
-    readJsonSchema(schema, assertion.schema)
-  );
-  return validate(value);
-};
-
 const assertErrorEnvelope = (
   assertion: ConformancePlanAssertion,
   context: AssertionContext
@@ -664,6 +515,14 @@ const evaluateAssertion = (
   context: AssertionContext
 ): boolean => {
   switch (assertion.kind) {
+    case "digest":
+    case "canonicalCbor":
+    case "identity":
+    case "referenceWalk": {
+      return evaluateIntegrity(assertion, (path) =>
+        resolveOperandPath(context, path, assertion.kind)
+      );
+    }
     case "eventSequence": {
       return assertEventSequence(assertion, context);
     }
@@ -929,6 +788,20 @@ const describeOperands = (
     ];
   }
 
+  if (["digest", "canonicalCbor", "identity"].includes(assertion.kind)) {
+    return [
+      {
+        ...subject,
+        ...describeExpected("equalsPath", assertion.equalsPath, context),
+      },
+    ];
+  }
+  if (assertion.kind === "referenceWalk") {
+    return (assertion.references ?? []).map((reference) => ({
+      ...subject,
+      ...describeExpected("equalsPath", reference.targetPath, context),
+    }));
+  }
   const operands = describeValueOperands(assertion, subject, context);
 
   return operands.length > 0
