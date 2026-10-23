@@ -12,6 +12,10 @@ impl Clone for StateCloneCount {
 }
 
 impl InMemoryKernel {
+    pub fn journal_entry_count(&self) -> KernelResult<u64> {
+        Ok(self.lock_state()?.journal_entry_count)
+    }
+
     pub fn state_clone_count(&self) -> KernelResult<u64> {
         Ok(self
             .lock_state()?

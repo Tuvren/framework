@@ -1366,7 +1366,7 @@ const selectChecks = (
         selection.push({
           checkId: check.checkId,
           selected: false,
-          reason: "outside requested checks",
+          reason: "not run: outside requested checks",
         });
         continue;
       }
@@ -1468,7 +1468,7 @@ const main = async (): Promise<void> => {
       ? {
           checkId: entry.checkId,
           selected: false,
-          reason: "assigned to another shard",
+          reason: "not run: assigned to another shard",
         }
       : entry
   );
@@ -1484,13 +1484,15 @@ const main = async (): Promise<void> => {
     .map((result) => result.checkResult);
   const baseSummary = createConformanceEvidenceSummary(checkResults);
   const nonApplicableCheckIds = selection
-    .filter((entry) => !entry.selected)
+    .filter(
+      (entry) => !(entry.selected || entry.reason?.startsWith("not run:"))
+    )
     .map((entry) => entry.checkId);
   const summary = {
     ...baseSummary,
     applicableChecks: checkResults.length,
     nonApplicableChecks: nonApplicableCheckIds.length,
-    totalChecks: selection.length,
+    totalChecks: checkResults.length + nonApplicableCheckIds.length,
   };
   const evidence: ConformanceEvidence = {
     adapterId: adapterManifest.adapterId,
