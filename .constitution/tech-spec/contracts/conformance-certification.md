@@ -17,11 +17,13 @@ One file per port, `spec/conformance/<port>/operations.json`, referenced from th
   - `errors`: canonical error codes the operation may raise.
   - `handles`: handle types the operation creates or consumes (instance, operation, subscription).
   - `deprecated`: true for legacy composite operations kept only until every adapter has migrated.
+- `seams[]`: reviewed test seams that barriers may hold, each with `seamId` and the `operationIds[]` whose native path contains it.
 
 ## Observation encoding (pinned)
 
 - Bytes: `{"$bytes": "<lowercase hex>"}`.
-- Integers: JSON numbers inside the safe-integer range. Fractions, non-finite values, negative zero, and out-of-range values are rejected.
+- Integers: kernel record numbers and every field a binding schema types as an integer are JSON numbers inside the safe-integer range; for these, fractions, non-finite values, negative zero, and out-of-range values are rejected.
+- Other numbers: keep the domain their binding schema admits. A `float64` field such as `TelemetryAttributeValue.number` crosses as a finite JSON number, with non-finite values and negative zero handled as that schema specifies.
 - Optional fields: absent when absent. `null` only where the CDDL or catalog allows it.
 - Hashes: lowercase 64-hex strings. Identifiers and handles are distinct string types.
 - Arbitrary records: a recursive tagged union of `{"$map": [[key, value], ...]}`, `{"$bytes": ...}`, arrays, strings, safe integers, booleans, and `null`.
@@ -35,8 +37,8 @@ Line-delimited JSON-RPC 2.0 over stdio. An error member carries an `ErrorEnvelop
 - `initialize` result adds `protocolVersion`, `profiles`, `storageKinds`.
 - `createInstance {input, storageRef?, scope?, clock?}`, and `openInstance {storageRef, scope?}` to reattach to retained durable state.
 - `startOperation {operation, arguments, instance} -> {operationHandle}`, `awaitOperation {operationHandle} -> OperationOutcome`, `cancelOperation {operationHandle, reason}`.
-- `subscribe {handle, channel} -> {subscription}`, `pull {subscription, credit}`. Notifications `event {subscription, sequence, event}` and `eventsEnd {subscription, terminal}`.
-- `armFault {instance, point, selector, occurrence, mode}`, where `mode` is `throw` or `block`. Notification `faultReached {token, processEpoch, phase}`.
+- `subscribe {instance, channel, operationHandle?} -> {subscription}`, where `operationHandle` scopes the channel to one started operation, and `pull {subscription, credit}`. Notifications `event {subscription, sequence, event}` and `eventsEnd {subscription, terminal}`.
+- `armFault {instance, point, selector, occurrence, mode} -> {token}`, where `mode` is `throw` or `block`. Notification `faultReached {token, processEpoch, phase}`; a `throw` fault outcome carries the same `token`.
 - `setClock {instance, domain, nowMs}`, where `domain` is `backend` or `worker` as the authority distinguishes them.
 - Adapter manifest adds `storage` (`none`, `sqlite-directory`, `postgres-database`), `profiles[]`, and an `executable` launched directly by the supervisor.
 
@@ -46,8 +48,10 @@ Additions to `tools/schemas/conformance-plan.schema.json`:
 
 - `checks[].claimIds[]` and `steps[].claimIds[]`: stable obligation ids.
 - `steps[].action`: `dispatch` (default), `start`, `await`, `cancel`, `subscribe`, `pull`, `barrier`, `release`, `restart`, `kill`, `respawn`, `openInstance`, `armFault`, `setClock`.
-- `steps[].arguments`: an explicit projection from input roots and earlier trace captures. Whole fixtures are no longer forwarded.
-- `steps[].capture`: a named capture of an observation path.
+- `steps[].arguments`: an explicit projection. Any value in it is a literal or a reference `{"$ref": "<root>.<path>"}`. Allowed roots are `input` (the check's `input`), `fixture.input` (the input section of the check's fixture; migrated fixtures split into `input` and `expected` sections), and `capture` (a named capture from an earlier step of the same check). Any other root, including `fixture.expected`, is a compile error, and the no-echo rule still applies. `{"$literal": <value>}` passes a value verbatim where it would otherwise parse as a reference. Whole fixtures are no longer forwarded.
+- `steps[].capture[]`: `{name, path}` entries. `path` reads the step's observation (`result`, `events`, or `state`) and must lie inside the catalog's observation schema; `name` is unique within the check and is read later as `capture.<name>`.
+- `barrier` steps: `{barrierId, seam, participants[]}`. `seam` is a `seamId` from the catalog. `participants[]` are `stepId`s of earlier `start` steps or `$ref`s to captured operation handles. The runner holds each participant at the seam and records its implementation-entry receipt; it releases none until every participant has arrived.
+- `release` steps: `{barrierId, participants[]?}`, releasing all held participants or only those listed, in list order.
 - New assertion fields:
   - `notEquals` and `notEqualsPath`;
   - `lessThan`, `lessThanOrEqual`, `greaterThan`, `greaterThanOrEqual`, each with a literal or path;
@@ -67,7 +71,7 @@ Additions to `tools/schemas/conformance-plan.schema.json`:
 
 ## Negative-control manifest
 
-`spec/conformance/<port>/negative-controls.json`: `controls[]`, each with `mutantId`, `rule` (an authority reference), `claimIds[]`, `activation` (the precondition and the proof signal), `profiles[]`, `designatedAssertions[]`, and `kind` (`implementation` or `observation`).
+`spec/conformance/<port>/negative-controls.json`: `controls[]`, each with `mutantId`, `rule` (an authority reference), `claimIds[]`, `activation` (the precondition and the signal proving the mutant executed, which is distinct from fault-activation evidence), `profiles[]`, and `kind`: `implementation` (a behavioral mutant, detected by `designatedAssertions[]`), `observation` (a corrupted observation path, detected by the runner's rejection named in `expectedRejection`), or `instrumentation` (a fault seam that never fires, detected by the runner's rejection for missing fault-activation evidence, also named in `expectedRejection`).
 
 Run outcomes per mutant are `activated`, `killed`, `survived`, `equivalent`, `unsupported`, and `invalid`.
 
@@ -79,7 +83,7 @@ The existing evidence fields, plus:
 - `digests {implementation, adapterManifest, harness, packet, plans, catalogs, fixtures, profiles, controls}`;
 - `environment`;
 - `selection[]`, with a reason for every exclusion;
-- `negativeControlRunId`.
+- `negativeControlRunId`: a passing control run whose `harness`, `plans`, `catalogs`, `fixtures`, `profiles`, and `controls` digests equal the certificate's.
 
 Each failed check adds `failure`:
 
@@ -98,5 +102,5 @@ Each failed check adds `failure`:
 - No adapter computes a comparison, chooses an expectation, scripts a scenario, owns a clock, or simulates restart.
 - Every observation is schema-validated before any assertion runs.
 - Expected values reach only the runner.
-- A certificate requires a complete run, a passing negative-control run at the same plan versions, and proven fault activation for every claimed fault point.
+- A certificate requires a complete run, a passing negative-control run with matching harness, plan, catalog, fixture, profile, and control digests, and proven fault activation for every claimed fault point.
 - `tree.diff` returns `changedPaths` in canonical UTF-8 byte order (ADR-0080).

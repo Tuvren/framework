@@ -591,6 +591,7 @@ export interface ExecutionBoundExceededDetails {
   - Injection points are defined relative to the durable commit so atomicity can be probed on both atomic and non-atomic substrates.
   - `mid-commit` injection requires backend-specific test-only commit-phase hooks; it must not be inferred from the generic `RuntimeBackend.transact` wrapper alone.
   - A fault is reproducible: the same `FaultPlan` against the same scenario produces the same interruption.
+  - ADR-0076 retires `mid-commit` and redefines certification fault points by storage boundary; the testkit names below remain until that migration lands.
 - **Shape:**
 
 ```ts

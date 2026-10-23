@@ -8,11 +8,12 @@ assumption: "Synthesized from two independent designs that converged on hexadeci
 ### ADR-0078 Lossless Observation Encoding and Kernel Content Integrity
 
 - **Status:** accepted.
-- **Context:** Kernel records carry byte strings and safe integers (`spec/kernel/cddl/kernel-records.cddl:6-16`). The reference encoder distinguishes `Uint8Array` from arrays and rejects unsafe or noncanonical numbers (`typescript/kernel/protocol/src/lib/kernel-record-identity.ts:99,198`). Identity is type-specific: opaque objects hash raw bytes, TurnNodes hash an identity projection that excludes `hash`, and TurnTrees hash `{manifest, schemaId}` (`kernel-record-identity.ts:473`; `kernel-identity.ts:47,952`). Fixtures currently carry bytes as integer arrays (`spec/conformance/kernel/fixtures/kernel-protocol-deterministic.json`). Nothing in the runner checks that observed records are canonical or that they hash to their identities.
+- **Context:** Kernel records carry byte strings and safe integers (`spec/kernel/cddl/kernel-records.cddl:6-16`). The reference encoder distinguishes `Uint8Array` from arrays and rejects unsafe or noncanonical numbers (`typescript/kernel/protocol/src/lib/kernel-record-identity.ts:99,198`). Identity is type-specific: opaque objects hash raw bytes, TurnNodes hash an identity projection that excludes `hash`, and TurnTrees hash `{manifest, schemaId}` (`kernel-record-identity.ts:473`; `kernel-identity.ts:52,952`). Fixtures currently carry bytes as integer arrays (`spec/conformance/kernel/fixtures/kernel-protocol-deterministic.json`). Nothing in the runner checks that observed records are canonical or that they hash to their identities.
 - **Decision:**
   1. **Encoding profile.** `tools/schemas/conformance-observation-encoding.schema.json` is referenced by every catalog.
      - Bytes are `{"$bytes": "<lowercase hex>"}`, with exact-length validation where the schema fixes a length.
-     - Integers are JSON numbers within the safe-integer domain. Fractions, non-finite values, negative zero, and out-of-range values are rejected before any lossy conversion.
+     - Kernel record numbers, and every field a binding schema types as an integer, are JSON numbers within the safe-integer domain. For these fields, fractions, non-finite values, negative zero, and out-of-range values are rejected before any lossy conversion.
+     - Other numeric fields keep the domain their binding schema admits. A `float64` field such as `TelemetryAttributeValue.number` (`spec/core/typespec/main.tsp`) crosses as a finite JSON number, and non-finite values and negative zero are handled as that schema specifies.
      - Absent optional fields are omitted, and `null` appears only where the CDDL allows it.
      - Hashes are lowercase 64-character hex. Handles and identifiers are separate string types.
      - Duplicate keys are rejected before ordinary JSON parsing.
