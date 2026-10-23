@@ -28,6 +28,10 @@ import type {
   OperationOutcome,
 } from "../adapter-protocol/index.js";
 import { JsonRpcAdapterError } from "./adapter-error.js";
+import {
+  assertLosslessFrame,
+  ObservationEncodingError,
+} from "./observation-encoding.js";
 
 export interface AdapterManifest {
   adapterId: string;
@@ -167,10 +171,12 @@ export class JsonRpcAdapterClient {
   private readonly lines: Interface;
   private readonly writer: WritableStreamDefaultWriter<unknown>;
   private nextId = 1;
+  private losslessObservations = false;
   private exited = false;
   private readonly pending = new Map<
     number,
     {
+      lossless: boolean;
       reject: (error: Error) => void;
       resolve: (value: unknown) => void;
       timer: ReturnType<typeof setTimeout>;
@@ -227,6 +233,10 @@ export class JsonRpcAdapterClient {
 
       this.pending.clear();
     });
+  }
+
+  setLosslessObservations(enabled: boolean): void {
+    this.losslessObservations = enabled;
   }
 
   async initialize(
@@ -427,6 +437,7 @@ export class JsonRpcAdapterClient {
       response.reject(new Error(`adapter request timed out: ${method}`));
     }, timeoutMs);
     this.pending.set(id, {
+      lossless: this.losslessObservations,
       reject: response.reject,
       resolve: (value: unknown) => {
         response.resolve(value);
@@ -451,14 +462,19 @@ export class JsonRpcAdapterClient {
     let parsed: unknown;
 
     try {
+      if ([...this.pending.values()].some((entry) => entry.lossless)) {
+        assertLosslessFrame(line);
+      }
       parsed = JSON.parse(line) as unknown;
     } catch (error: unknown) {
       this.rejectAll(
-        new Error(
-          `adapter stdout contained malformed JSON: ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        )
+        error instanceof ObservationEncodingError
+          ? error
+          : new Error(
+              `adapter stdout contained malformed JSON: ${
+                error instanceof Error ? error.message : String(error)
+              }`
+            )
       );
       return;
     }

@@ -196,6 +196,45 @@
       },
       "unevaluatedProperties": false
     },
+    "integrityReference": {
+      "type": "object",
+      "required": ["path", "targetPath", "recordType"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/contextPath"
+        },
+        "targetPath": {
+          "$ref": "#/$defs/contextPath"
+        },
+        "recordType": {
+          "enum": ["opaque-object", "turn-node", "turn-tree", "schema"]
+        },
+        "hashPath": {
+          "$ref": "#/$defs/contextPath"
+        },
+        "valuePath": {
+          "$ref": "#/$defs/contextPath"
+        },
+        "length": {
+          "$ref": "#/$defs/lengthOperand"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "path": {
+                "pattern": "\\.\\*"
+              }
+            }
+          },
+          "then": {
+            "required": ["length"]
+          }
+        }
+      ]
+    },
     "assertion": {
       "$ref": "#/$defs/valueOperators",
       "type": "object",
@@ -214,7 +253,11 @@
             "ordering",
             "noEvent",
             "secretAbsence",
-            "secretPatternAbsence"
+            "secretPatternAbsence",
+            "digest",
+            "canonicalCbor",
+            "identity",
+            "referenceWalk"
           ]
         },
         "path": { "type": "string", "minLength": 1 },
@@ -222,6 +265,16 @@
         "field": { "type": "string", "minLength": 1 },
         "secretsPath": { "type": "string", "minLength": 1 },
         "eventType": { "type": "string", "minLength": 1 },
+        "recordType": {
+          "enum": ["opaque-object", "turn-node", "turn-tree", "schema"]
+        },
+        "references": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/integrityReference"
+          }
+        },
         "when": { "$ref": "#/$defs/when" }
       },
       "allOf": [
@@ -269,6 +322,128 @@
           },
           "then": {
             "required": ["field"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": ["digest", "canonicalCbor", "identity"]
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["path", "equalsPath"],
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/contextPath"
+              },
+              "equalsPath": {
+                "$ref": "#/$defs/contextPath"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": ["canonicalCbor", "identity"]
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["recordType"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "referenceWalk"
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["path", "references"],
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/contextPath"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": ["digest", "canonicalCbor", "identity", "referenceWalk"]
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": ["equals"]
+                },
+                {
+                  "required": ["notEquals"]
+                },
+                {
+                  "required": ["notEqualsPath"]
+                },
+                {
+                  "required": ["contains"]
+                },
+                {
+                  "required": ["containsPath"]
+                },
+                {
+                  "required": ["matches"]
+                },
+                {
+                  "required": ["every"]
+                },
+                {
+                  "required": ["some"]
+                },
+                {
+                  "required": ["length"]
+                },
+                {
+                  "required": ["present"]
+                },
+                {
+                  "required": ["greaterThan"]
+                },
+                {
+                  "required": ["greaterThanOrEqual"]
+                },
+                {
+                  "required": ["lessThan"]
+                },
+                {
+                  "required": ["lessThanOrEqual"]
+                },
+                {
+                  "required": ["field"]
+                },
+                {
+                  "required": ["schema"]
+                },
+                {
+                  "required": ["secretsPath"]
+                },
+                {
+                  "required": ["eventType"]
+                }
+              ]
+            }
           }
         }
       ],
