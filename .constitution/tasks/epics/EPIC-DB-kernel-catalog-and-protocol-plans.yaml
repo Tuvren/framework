@@ -248,3 +248,94 @@ decisions:
         - spec/conformance/kernel/plans/kernel-protocol-extended.json
         - spec/conformance/kernel/negative-controls.json
         - KRT-DB004
+closeout:
+  tickets_completed:
+    - KRT-DB001
+    - KRT-DB002
+    - KRT-DB003
+    - KRT-DB004
+    - KRT-DB005
+  tickets_deferred: []
+  points_completed: 29
+  spec_patches:
+    - path: .constitution/tech-spec/adrs/ADR-0078-lossless-observation-encoding-and-kernel-content-integrity.md
+      summary: "Safe-integer rule applies to every number in catalogued frames until the decoder is schema-aware; $map keys are unique text with no entry order; identity and digest compare against kernel-reported observations and referenceWalk nulls need nullable; record shapes are the catalogs' closed observation schemas and the CDDL-derived generator is deferred."
+      commit: 42916a9
+  changelog_entries:
+    - directory: tasks
+      type: added
+      text: "EPIC-DB landed the kernel operation catalog (35 syscalls, 3 controls, 21 deprecated composites) and identity recipes, lossless $bytes observation encoding with runner-side digest, canonicalCbor, identity, and referenceWalk assertions, canonical UTF-8 changedPaths order in the TypeScript kernel, syscall-trace protocol plans (50 checks) enforcing the certification rules on the TypeScript memory, SQLite, and PostgreSQL kernels, canonical kernel error codes, and Rust cross-validation of every committed kernel vector; the kernel negative-control baseline rose to 11 of 13 mutants killed."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tech-spec
+      item: "OD-16: the operation catalog has no deterministic codec operation, so canonical rejection and arbitrary-record encode, decode, and identity-hash obligations (68 legacy assertions) cannot become syscall traces; they stay on the legacy plans until a ruling."
+    - stage: tech-spec
+      item: "ADR-0075 decision 8 says migrated obligations keep stable claimIds, but the legacy kernel plans had none, so the syscall plans mint kernel.syscall.* claimIds and the obligation map carries continuity; confirm this reading before ADR-0081 profiles reference claimIds."
+    - stage: tech-spec
+      item: "ADR-0080 compares changedPaths as UTF-8 bytes, which is undefined for paths with lone surrogates that schema registration accepts; either require well-formed paths at registration or accept the gap."
+    - stage: tech-spec
+      item: "The kernel catalog carries TypeScript-only surface into cross-language authority: kernel.store.put accepts an optional mediaType that spec section 7 and the Python kernel do not have, and kernel.mutant.activation is gated on kernel.protocol although only the mutant adapter answers it."
+  follow_ups:
+    - "The Rust kernel and kernel gRPC service still emit and map turn_head_lateral_move (rust/kernel/src/memory.rs, rust/kernel-grpc-service/src/lib.rs), which has no authority; align with the TypeScript kernel in the Rust kernel epic."
+    - "kernel.clock.set and kernel.fault.arm are catalogued but the TypeScript syscall bridge does not bind them; they need the runner-owned lifecycle and fault mechanisms (KRT-DC001)."
+    - "Harness-owned storageRef provisioning is deferred; persistent syscall instances reuse existing backend provisioning."
+    - "The runner does not validate step arguments against the catalog's closed input schemas, and the syscall bridge drops argument names the catalog does not declare."
+    - "Schema-aware float handling in the observation decoder is deferred; the stricter safe-integer rule applies to every number in catalogued frames."
+    - "Kernel negative-control survivors: kernel.fault-seam-never-fires (runner rejection channel, KRT-DC001) and kernel.lease-takeover-before-expiry (shared-lease clock, KRT-DF005)."
+  code_decisions:
+    - summary: "The kernel catalog binds syscalls as projection-path#Symbol or projection-path#/json/pointer through packet bindingProjections, including non-language projections adapter-protocol and typescript-testkit; void results are closed empty records; deprecated legacy composites are kind control with permissive dialect-valid schemas."
+      kind: contract_shape
+      paths:
+        - spec/conformance/kernel/operations.json
+        - spec/kernel/authority-packet.json
+      commit: a461859
+    - summary: "Identity recipes use an envelope of recipeId, recipeVersion, and recipes with explicit CBOR profile descriptors, referenced from the packet's new identityRecipes field."
+      kind: contract_shape
+      paths:
+        - spec/conformance/kernel/identity-recipes.json
+        - tools/schemas/authority-packet.schema.json
+      commit: a461859
+    - summary: "Lossless fixture copies use the .bytes.json suffix with input and expected sections and expose canonical bytes as *CborBytes beside *CborHex."
+      kind: convention
+      paths:
+        - spec/conformance/kernel/fixtures
+      commit: 41f963f
+    - summary: "Integrity assertions take recordType, and referenceWalk takes references with path, targetPath, recordType, optional hashPath, valuePath, length, and nullable; collection references require length."
+      kind: contract_shape
+      paths:
+        - tools/schemas/conformance-plan.schema.json
+        - tools/conformance/harness/assertion-engine/integrity.ts
+      commit: 2a4bea0
+    - summary: "The runner's verifier encoder lives in tools/conformance/harness/kernel-integrity.ts and follows identity-recipes.json without importing the production kernel encoder."
+      kind: pattern
+      paths:
+        - tools/conformance/harness/kernel-integrity.ts
+      commit: 41f963f
+    - summary: "Plans opt into enforcing certification rules with certificationRules: enforcing, and every plan gated on kernel.syscall is enforced regardless; an integrity-observation rule requires identity and digest operands to be kernel-reported observations."
+      kind: convention
+      paths:
+        - tools/conformance/plan-compiler/certification-assessment.ts
+        - tools/conformance/plan-compiler/certification-rules.ts
+      commit: 1af11c3
+    - summary: "Catalogued native errors reach the runner as state.adapterError observations; an uncatalogued code or an unasserted native error on a trace step fails the check through a synthetic <checkId>.nativeError implementation assertion."
+      kind: pattern
+      paths:
+        - tools/conformance/harness/run.ts
+        - typescript/kernel/conformance-adapter/src/host-syscalls.ts
+      commit: 1af11c3
+    - summary: "The TypeScript kernel adapter dispatches syscalls through an argument-order registry derived from the catalog's input property names, with try scope limited to the native call."
+      kind: pattern
+      paths:
+        - typescript/kernel/conformance-adapter/src/host-syscalls.ts
+      commit: 1af11c3
+  settled:
+    - record: tech-spec/contracts/conformance-operation-catalog.meta.yaml
+      evidence:
+        kind: repository
+        ref: typescript/kernel/protocol/test/kernel-certification-authority.test.ts
+        date: 2026-10-23
+    - record: tech-spec/contracts/kernel-identity-recipes.meta.yaml
+      evidence:
+        kind: repository
+        ref: rust/kernel/tests/identity_vectors.rs
+        date: 2026-10-23
