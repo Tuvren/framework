@@ -18,10 +18,20 @@ import { readFile } from "node:fs/promises";
 import nodePath from "node:path";
 
 import { assertCertificationSchemaContracts } from "../../scripts/conformance/certification-schema-examples.js";
+import {
+  assertCertificationEnforcement,
+  assessConformancePlans,
+  collectEnforcedViolations,
+  formatCertificationInventory,
+  loadCertificationAuthority,
+} from "./certification-assessment.js";
 import type { CompiledConformancePlanCheck } from "./index.js";
 import { findConformancePlans, loadConformancePlan } from "./index.js";
 
 const REPO_ROOT = nodePath.resolve(import.meta.dirname, "../../..");
+const ENFORCEMENT_FIXTURE_DIR =
+  "tools/conformance/plan-compiler/__fixtures__/certification";
+const ENFORCEMENT_FIXTURE_VIOLATING = `${ENFORCEMENT_FIXTURE_DIR}/migrated-violating-plan.json`;
 const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
   ["tuvren.framework.react-runner", ["spec/runners/typespec/main.tsp"]],
   [
@@ -140,6 +150,38 @@ console.log(
     planPaths.length === 1 ? "" : "s"
   })`
 );
+
+const certificationAssessments = await assessConformancePlans(
+  planPaths,
+  await loadCertificationAuthority()
+);
+console.log(formatCertificationInventory(certificationAssessments));
+assertCertificationEnforcement(certificationAssessments);
+
+const enforcementFixtureAssessments = await assessConformancePlans(
+  [
+    ENFORCEMENT_FIXTURE_VIOLATING,
+    `${ENFORCEMENT_FIXTURE_DIR}/migrated-compliant-plan.json`,
+    `${ENFORCEMENT_FIXTURE_DIR}/unmigrated-violating-plan.json`,
+  ],
+  await loadCertificationAuthority([`${ENFORCEMENT_FIXTURE_DIR}/packet.json`])
+);
+const enforcedFixturePlans = new Set(
+  collectEnforcedViolations(enforcementFixtureAssessments).map(
+    (entry) => entry.planPath
+  )
+);
+
+if (
+  enforcedFixturePlans.size !== 1 ||
+  !enforcedFixturePlans.has(ENFORCEMENT_FIXTURE_VIOLATING)
+) {
+  throw new Error(
+    `certification enforcement fixture expected failures only in ${ENFORCEMENT_FIXTURE_VIOLATING}, got [${[...enforcedFixturePlans].join(", ")}]`
+  );
+}
+
+console.log("certification rule enforcement fixture passed");
 
 assertCertificationSchemaContracts();
 console.log("certification schema contracts passed");

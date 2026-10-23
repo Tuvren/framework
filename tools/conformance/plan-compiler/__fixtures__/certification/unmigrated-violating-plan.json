@@ -1,0 +1,16 @@
+{
+  "planId": "tuvren.fixture.unmigrated-violating",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.fixture.certification",
+  "applicability": { "capabilities": ["fixture.store"] },
+  "checks": [
+    {
+      "checkId": "fixture.store.has.unmigrated-verdict",
+      "operation": "fixture.store.has",
+      "input": { "key": "a" },
+      "assertions": [
+        { "kind": "resultField", "field": "$.verdict", "equals": true }
+      ]
+    }
+  ]
+}
