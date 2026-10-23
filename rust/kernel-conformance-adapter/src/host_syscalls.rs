@@ -1,14 +1,12 @@
 use std::collections::BTreeMap;
-use std::sync::{
-    Arc,
-    atomic::{AtomicI64, Ordering},
-};
 
 use serde_json::{Value, json};
 use tuvren_kernel_rust::{
-    InMemoryKernel, InMemoryKernelOptions, KernelError, ObserveResult, RunCompletionStatus,
+    InMemoryKernel, KernelError, LeasedRunCreateInput, ObserveResult, RunCompletionStatus,
     ThreadListOptions,
 };
+
+use tuvren_kernel_rust::testkit::{ClockDomain, FaultRequest, KernelTestControls};
 
 use crate::observation_encoding::{self as encoding, EncodingResult, invalid};
 use crate::syscall_values::{
@@ -174,7 +172,7 @@ const BINDINGS: &[(&str, Binding)] = routing![
             text(a, "turnId")?,
             text(a, "threadId")?,
             text(a, "branchId")?,
-            optional_text(a, "parentTurnId")?,
+            a.get("parentTurnId").filter(|v| !v.is_null()).map(|_| text(a, "parentTurnId").map(str::to_owned)).transpose()?,
             text(a, "startTurnNodeHash")?,
         )?
         .encode()?)
@@ -269,6 +267,33 @@ const BINDINGS: &[(&str, Binding)] = routing![
     "kernel.run.recover" => |k, a| {
         Ok(k.run_recover(text(a, "runId")?)?.encode()?)
     },
+    "kernel.runLiveness.createLeasedRun" => |k, a| {
+        let input = field(a, "input")?;
+        Ok(k.run_liveness_create_leased_run(LeasedRunCreateInput {
+            run_id: text(input, "runId")?.into(),
+            turn_id: text(input, "turnId")?.into(),
+            branch_id: text(input, "branchId")?.into(),
+            schema_id: text(input, "schemaId")?.into(),
+            start_turn_node_hash: text(input, "startTurnNodeHash")?.into(),
+            execution_owner_id: text(input, "executionOwnerId")?.into(),
+            lease_expires_at_ms: number(input, "leaseExpiresAtMs")?,
+            steps: list(input, "steps")?.iter().map(values::step).collect::<EncodingResult<_>>()?,
+        })?.encode()?)
+    },
+    "kernel.runLiveness.renewLease" => |k, a| {
+        let lease = k.run_liveness_renew_lease(text(a, "runId")?, text(a, "executionOwnerId")?, text(a, "fencingToken")?, number(a, "nextLeaseExpiresAtMs")?)?;
+        Ok(json!({"fencingToken":lease.fencing_token.encode()?,"leaseExpiresAtMs":lease.lease_expires_at_ms.encode()?}))
+    },
+    "kernel.runLiveness.listExpired" => |k, a| {
+        Ok(k.run_liveness_list_expired(number(a, "nowMs")?)?.encode()?)
+    },
+    "kernel.runLiveness.preemptExpired" => |k, a| {
+        Ok(k.run_liveness_preempt_expired(text(a, "runId")?, text(a, "preemptingOwnerId")?, number(a, "nowMs")?, text(a, "reason")?)?.encode()?)
+    },
+    "kernel.maintenance.reclaim" => |k, a| {
+        let now = a.get("options").and_then(|options| options.get("nowMs").map(|_| number(options, "nowMs"))).transpose()?;
+        Ok(k.maintenance_reclaim_at(now)?.encode()?)
+    },
     "kernel.verdicts.compose" => |k, a| {
         Ok(k.verdicts_compose(
             list(a, "verdicts")?
@@ -281,8 +306,8 @@ const BINDINGS: &[(&str, Binding)] = routing![
 ];
 
 struct Instance {
-    kernel: InMemoryKernel,
-    clock: Arc<AtomicI64>,
+    kernel: Option<InMemoryKernel>,
+    controls: KernelTestControls,
 }
 #[derive(Default)]
 pub(crate) struct Syscalls {
@@ -293,13 +318,13 @@ impl Syscalls {
     pub(crate) fn create(&mut self) -> String {
         self.next_handle += 1;
         let handle = format!("rust-kernel-{}", self.next_handle);
-        let clock = Arc::new(AtomicI64::new(0));
-        let now = Arc::clone(&clock);
-        let kernel = InMemoryKernel::with_options(InMemoryKernelOptions {
-            now: Some(Arc::new(move || now.load(Ordering::SeqCst))),
-        });
-        self.instances
-            .insert(handle.clone(), Instance { kernel, clock });
+        self.instances.insert(
+            handle.clone(),
+            Instance {
+                kernel: None,
+                controls: KernelTestControls::default(),
+            },
+        );
         handle
     }
     pub(crate) fn destroy(&mut self, handle: &Value) {
@@ -312,14 +337,14 @@ impl Syscalls {
             || CONTROLS.iter().any(|(name, _)| *name == operation)
     }
     pub(crate) fn dispatch(
-        &self,
+        &mut self,
         operation: &str,
         input: &Value,
         handle: &Value,
     ) -> Result<OperationOutcome, AdapterErrorEnvelope> {
         let instance = handle
             .as_str()
-            .and_then(|h| self.instances.get(h))
+            .and_then(|h| self.instances.get_mut(h))
             .ok_or_else(|| {
                 adapter_error(
                     "adapter_invalid_instance",
@@ -330,9 +355,20 @@ impl Syscalls {
         let result = if let Some((_, binding)) =
             BINDINGS.iter().find(|(name, _)| *name == operation)
         {
-            binding(&instance.kernel, input)
+            if instance.kernel.is_none() {
+                instance.kernel = Some(
+                    InMemoryKernel::with_test_controls(instance.controls.clone()).map_err(
+                        |error| adapter_error(&error.payload.code, &error.payload.message, None),
+                    )?,
+                );
+            }
+            let kernel = instance
+                .kernel
+                .as_ref()
+                .ok_or_else(|| invalid("kernel initialization failed"))?;
+            binding(kernel, input)
         } else if let Some((_, binding)) = CONTROLS.iter().find(|(name, _)| *name == operation) {
-            binding(instance, input).map_err(BridgeError::Adapter)
+            binding(instance, input)
         } else {
             return Err(adapter_error(
                 "adapter_operation_not_implemented",
@@ -353,7 +389,7 @@ impl Syscalls {
                         .payload
                         .details
                         .as_ref()
-                        .map(encoding::encode_record)
+                        .map(encoding::encode_error_details)
                         .transpose()?,
                 },
             }),
@@ -361,25 +397,19 @@ impl Syscalls {
     }
 }
 
-type ControlBinding = fn(&Instance, &Value) -> EncodingResult<Value>;
+type ControlBinding = fn(&Instance, &Value) -> CallResult;
 const CONTROLS: &[(&str, ControlBinding)] = routing![
-    "kernel.clock.set" => |instance, a| match text(a, "domain")? {
-        "worker" => {
-            instance.clock.store(number(a, "nowMs")?, Ordering::SeqCst);
-            Ok(json!({}))
-        }
-        "backend" => Err(adapter_error(
-            "adapter_clock_unsupported",
-            "Rust kernel has no separate public backend clock seam",
-            None,
-        )),
-        _ => Err(invalid("invalid clock domain")),
+    "kernel.clock.set" => |instance, a| {
+        let domain: ClockDomain = serde_json::from_value(field(a, "domain")?.clone())
+            .map_err(|_| invalid("invalid clock domain"))?;
+        instance.controls.set_clock(domain, number(a, "nowMs")?)?;
+        Ok(json!({}))
     },
-    "kernel.fault.arm" => |_, _| {
-        Err(adapter_error(
-            "adapter_fault_unsupported",
-            "Rust kernel has no public fault arming seam",
-            None,
-        ))
+    "kernel.fault.arm" => |instance, a| {
+        let mut request = a.as_object().cloned().ok_or_else(|| invalid("expected fault request"))?;
+        request.remove("instance");
+        let request: FaultRequest = serde_json::from_value(Value::Object(request))
+            .map_err(|_| invalid("invalid fault request"))?;
+        Ok(json!({"token":instance.controls.arm_fault(request)?}))
     },
 ];

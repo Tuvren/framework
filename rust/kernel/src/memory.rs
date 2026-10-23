@@ -35,12 +35,19 @@ const MAX_SAFE_EPOCH_MS: EpochMs = 9_007_199_254_740_991;
 /// grace horizon. Mirrors the TypeScript `LEASELESS_RUN_EXPIRY_MS` (24h).
 const LEASELESS_RUN_EXPIRY_MS: EpochMs = 86_400_000;
 
+#[cfg(feature = "conformance")]
+mod conformance;
+
 #[derive(Clone)]
 pub struct InMemoryKernel {
     // Epic U deliberately keeps the Rust baseline process-local. Durable
     // storage and TS runtime switching are Epic V+ concerns.
     state: Arc<Mutex<KernelState>>,
     now: Arc<dyn Fn() -> EpochMs + Send + Sync>,
+    #[cfg(feature = "conformance")]
+    test_controls: Option<crate::testkit::KernelTestControls>,
+    #[cfg(feature = "conformance")]
+    worker_clock: Option<Arc<dyn Fn() -> EpochMs + Send + Sync>>,
 }
 
 pub struct InMemoryKernelOptions {
@@ -95,8 +102,10 @@ pub struct StoredThreadEntry {
     pub created_at_ms: EpochMs,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 struct KernelState {
+    #[cfg(feature = "conformance")]
+    checkpoint_writes: u64,
     archive_counter: u64,
     branches: HashMap<String, BranchRecord>,
     fencing_token_counter: u64,
@@ -128,6 +137,10 @@ impl InMemoryKernel {
         Self {
             state: Arc::new(Mutex::new(KernelState::default())),
             now: options.now.unwrap_or_else(|| Arc::new(default_now_ms)),
+            #[cfg(feature = "conformance")]
+            test_controls: None,
+            #[cfg(feature = "conformance")]
+            worker_clock: None,
         }
     }
 
@@ -136,8 +149,13 @@ impl InMemoryKernel {
         blob: Vec<u8>,
         _media_type: Option<String>,
     ) -> KernelResult<HashString> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| kernel.store_put(blob, _media_type));
+        }
+
         let object_hash = hash_bytes_to_hex(&blob);
-        let created_at_ms = (self.now)();
+        let created_at_ms = self.worker_now();
         let mut state = self.lock_state()?;
         state.objects.insert(
             object_hash.clone(),
@@ -150,16 +168,31 @@ impl InMemoryKernel {
     }
 
     pub fn store_get(&self, hash: &str) -> KernelResult<Option<Vec<u8>>> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| kernel.store_get(hash));
+        }
+
         let state = self.lock_state()?;
         Ok(state.objects.get(hash).map(|record| record.blob.clone()))
     }
 
     pub fn store_has(&self, hash: &str) -> KernelResult<bool> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| kernel.store_has(hash));
+        }
+
         let state = self.lock_state()?;
         Ok(state.objects.contains_key(hash))
     }
 
     pub fn schema_register(&self, schema: TurnTreeSchema) -> KernelResult<String> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| kernel.schema_register(schema));
+        }
+
         validate_schema(&schema)?;
         let schema_id = schema.schema_id.clone();
         let mut state = self.lock_state()?;
@@ -171,6 +204,11 @@ impl InMemoryKernel {
     }
 
     pub fn schema_get(&self, schema_id: &str) -> KernelResult<Option<TurnTreeSchema>> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| kernel.schema_get(schema_id));
+        }
+
         let state = self.lock_state()?;
         Ok(state.schemas.get(schema_id).cloned())
     }
@@ -181,6 +219,13 @@ impl InMemoryKernel {
         changes: TurnTreeManifest,
         base_turn_tree_hash: Option<&str>,
     ) -> KernelResult<HashString> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| {
+                kernel.tree_create(schema_id, changes, base_turn_tree_hash)
+            });
+        }
+
         let mut state = self.lock_state()?;
         let schema = state
             .schemas
@@ -214,7 +259,7 @@ impl InMemoryKernel {
         state.turn_trees.insert(
             tree_hash.clone(),
             StoredTurnTree {
-                created_at_ms: (self.now)(),
+                created_at_ms: self.worker_now(),
                 manifest,
                 schema_id: schema_id.to_string(),
             },
@@ -227,6 +272,13 @@ impl InMemoryKernel {
         base_turn_tree_hash: &str,
         staged_results: &[StagedResult],
     ) -> KernelResult<HashString> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| {
+                kernel.tree_incorporate(base_turn_tree_hash, staged_results)
+            });
+        }
+
         let mut state = self.lock_state()?;
         let base_tree = state
             .turn_trees
@@ -260,7 +312,7 @@ impl InMemoryKernel {
         state.turn_trees.insert(
             tree_hash.clone(),
             StoredTurnTree {
-                created_at_ms: (self.now)(),
+                created_at_ms: self.worker_now(),
                 manifest,
                 schema_id: schema.schema_id,
             },
@@ -269,6 +321,13 @@ impl InMemoryKernel {
     }
 
     pub fn tree_diff(&self, tree_hash_a: &str, tree_hash_b: &str) -> KernelResult<Vec<String>> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| {
+                kernel.tree_diff(tree_hash_a, tree_hash_b)
+            });
+        }
+
         let state = self.lock_state()?;
         let tree_a = state
             .turn_trees
@@ -295,6 +354,12 @@ impl InMemoryKernel {
     }
 
     pub fn tree_resolve(&self, tree_hash: &str, path: &str) -> KernelResult<PathValue> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self
+                .test_transaction(None, None, |kernel| kernel.tree_resolve(tree_hash, path));
+        }
+
         let state = self.lock_state()?;
         let tree = state
             .turn_trees
@@ -307,6 +372,11 @@ impl InMemoryKernel {
     }
 
     pub fn tree_manifest(&self, tree_hash: &str) -> KernelResult<TurnTreeManifest> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| kernel.tree_manifest(tree_hash));
+        }
+
         let state = self.lock_state()?;
         Ok(state
             .turn_trees
@@ -317,11 +387,21 @@ impl InMemoryKernel {
     }
 
     pub fn node_get(&self, hash: &str) -> KernelResult<Option<TurnNode>> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| kernel.node_get(hash));
+        }
+
         let state = self.lock_state()?;
         Ok(state.turn_nodes.get(hash).cloned())
     }
 
     pub fn node_walk_back(&self, from_hash: &str) -> KernelResult<Vec<TurnNode>> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| kernel.node_walk_back(from_hash));
+        }
+
         let state = self.lock_state()?;
         let mut nodes = Vec::new();
         let mut next_hash = Some(from_hash.to_string());
@@ -345,6 +425,13 @@ impl InMemoryKernel {
         schema_id: &str,
         initial_branch_id: &str,
     ) -> KernelResult<ThreadCreateResult> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(Some(initial_branch_id), None, |kernel| {
+                kernel.thread_create(thread_id, schema_id, initial_branch_id)
+            });
+        }
+
         validate_id(
             thread_id,
             "invalid_thread_id",
@@ -367,7 +454,7 @@ impl InMemoryKernel {
             .get(schema_id)
             .cloned()
             .ok_or_else(|| missing("schema_not_found", "schema does not exist"))?;
-        let created_at_ms = (self.now)();
+        let created_at_ms = self.worker_now();
         let manifest = empty_manifest(&schema);
         let root_turn_tree_hash = hash_turn_tree_identity(schema_id, &manifest)?;
         state.turn_trees.insert(
@@ -399,9 +486,7 @@ impl InMemoryKernel {
             turn_tree_hash: root_turn_tree_hash.clone(),
         };
         root_node.hash = hash_turn_node_identity(&root_node)?;
-        state
-            .turn_nodes
-            .insert(root_node.hash.clone(), root_node.clone());
+        put_turn_node(&mut state, &root_node);
         state.threads.insert(
             thread_id.to_string(),
             ThreadRecord {
@@ -440,6 +525,11 @@ impl InMemoryKernel {
     /// ADR-0034: list threads sorted by (created_at_ms ASC, thread_id ASC).
     /// Supports cursor-based pagination and optional schemaId filter.
     pub fn thread_list(&self, options: ThreadListOptions) -> ThreadListResult {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| kernel.thread_list(options));
+        }
+
         let state = self.lock_state()?;
         let mut entries: Vec<StoredThreadEntry> = state
             .threads
@@ -492,6 +582,11 @@ impl InMemoryKernel {
     }
 
     pub fn thread_get(&self, thread_id: &str) -> KernelResult<Option<ThreadRecord>> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| kernel.thread_get(thread_id));
+        }
+
         validate_id(
             thread_id,
             "invalid_thread_id",
@@ -507,6 +602,13 @@ impl InMemoryKernel {
         thread_id: &str,
         from_turn_node_hash: &str,
     ) -> KernelResult<BranchRecord> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(Some(branch_id), None, |kernel| {
+                kernel.branch_create(branch_id, thread_id, from_turn_node_hash)
+            });
+        }
+
         validate_id(
             branch_id,
             "invalid_branch_id",
@@ -533,6 +635,12 @@ impl InMemoryKernel {
     }
 
     pub fn branch_get(&self, branch_id: &str) -> KernelResult<Option<BranchRecord>> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self
+                .test_transaction(Some(branch_id), None, |kernel| kernel.branch_get(branch_id));
+        }
+
         validate_id(
             branch_id,
             "invalid_branch_id",
@@ -547,6 +655,13 @@ impl InMemoryKernel {
         branch_id: &str,
         turn_node_hash: &str,
     ) -> KernelResult<SetHeadResult> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(Some(branch_id), None, |kernel| {
+                kernel.branch_set_head(branch_id, turn_node_hash)
+            });
+        }
+
         validate_id(
             branch_id,
             "invalid_branch_id",
@@ -573,8 +688,11 @@ impl InMemoryKernel {
         let archive_branch = if moves_forward {
             None
         } else if is_ancestor(&state, turn_node_hash, &prior_head)? {
-            let archive_head =
-                reactively_checkpoint_active_runs_on_branch(&mut state, branch_id, (self.now)())?;
+            let archive_head = reactively_checkpoint_active_runs_on_branch(
+                &mut state,
+                branch_id,
+                self.worker_now(),
+            )?;
             // Backward moves preserve the abandoned head under an archive
             // branch. Any active run staging is first checkpointed onto that
             // abandoned lineage so rollback does not erase durable work.
@@ -607,6 +725,11 @@ impl InMemoryKernel {
     }
 
     pub fn branch_list(&self, thread_id: &str) -> KernelResult<Vec<(String, HashString)>> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| kernel.branch_list(thread_id));
+        }
+
         validate_id(
             thread_id,
             "invalid_thread_id",
@@ -634,6 +757,19 @@ impl InMemoryKernel {
         parent_turn_id: Option<String>,
         start_turn_node_hash: &str,
     ) -> KernelResult<TurnRecord> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(Some(branch_id), None, |kernel| {
+                kernel.turn_create(
+                    turn_id,
+                    thread_id,
+                    branch_id,
+                    parent_turn_id,
+                    start_turn_node_hash,
+                )
+            });
+        }
+
         validate_id(turn_id, "invalid_turn_id", "turn id must not be empty")?;
         validate_id(
             thread_id,
@@ -728,12 +864,29 @@ impl InMemoryKernel {
     }
 
     pub fn turn_get(&self, turn_id: &str) -> KernelResult<Option<TurnRecord>> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| kernel.turn_get(turn_id));
+        }
+
         validate_id(turn_id, "invalid_turn_id", "turn id must not be empty")?;
         let state = self.lock_state()?;
         Ok(state.turns.get(turn_id).cloned())
     }
 
     pub fn turn_update_head(&self, turn_id: &str, head_turn_node_hash: &str) -> KernelResult<()> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            let branch_id = self
+                .lock_state()?
+                .turns
+                .get(turn_id)
+                .map(|turn| turn.branch_id.clone());
+            return self.test_transaction(branch_id.as_deref(), None, |kernel| {
+                kernel.turn_update_head(turn_id, head_turn_node_hash)
+            });
+        }
+
         validate_id(turn_id, "invalid_turn_id", "turn id must not be empty")?;
         let mut state = self.lock_state()?;
         let mut turn = state
@@ -763,9 +916,23 @@ impl InMemoryKernel {
         status: StagedResultStatus,
         interrupt_payload: Option<KernelRecord>,
     ) -> KernelResult<(HashString, StagedResult)> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, Some(run_id), |kernel| {
+                kernel.staging_stage(
+                    run_id,
+                    blob,
+                    task_id,
+                    object_type,
+                    status,
+                    interrupt_payload,
+                )
+            });
+        }
+
         validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
         let object_hash = hash_bytes_to_hex(&blob);
-        let timestamp_ms = (self.now)();
+        let timestamp_ms = self.worker_now();
         let staged_result = StagedResult {
             interrupt_payload,
             object_hash: object_hash.clone(),
@@ -816,6 +983,12 @@ impl InMemoryKernel {
     }
 
     pub fn staging_current(&self, run_id: &str) -> KernelResult<Vec<StagedResult>> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self
+                .test_transaction(None, Some(run_id), |kernel| kernel.staging_current(run_id));
+        }
+
         validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
         let state = self.lock_state()?;
         if !state.runs.contains_key(run_id) {
@@ -837,6 +1010,20 @@ impl InMemoryKernel {
         start_turn_node_hash: &str,
         steps: Vec<StepDeclaration>,
     ) -> KernelResult<RunRecord> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(Some(branch_id), None, |kernel| {
+                kernel.run_create(
+                    run_id,
+                    turn_id,
+                    branch_id,
+                    schema_id,
+                    start_turn_node_hash,
+                    steps,
+                )
+            });
+        }
+
         validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
         validate_id(turn_id, "invalid_turn_id", "turn id must not be empty")?;
         validate_id(
@@ -850,7 +1037,7 @@ impl InMemoryKernel {
             return Err(duplicate("run_already_exists", "run already exists"));
         }
         validate_run_creation(&state, branch_id, turn_id, schema_id, start_turn_node_hash)?;
-        let now_ms = (self.now)();
+        let now_ms = self.worker_now();
         let run = RunRecord {
             branch_id: branch_id.to_string(),
             created_at_ms: now_ms,
@@ -882,6 +1069,14 @@ impl InMemoryKernel {
         &self,
         input: LeasedRunCreateInput,
     ) -> KernelResult<RunRecord> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            let branch_id = input.branch_id.clone();
+            return self.test_transaction(Some(branch_id.as_str()), None, |kernel| {
+                kernel.run_liveness_create_leased_run(input)
+            });
+        }
+
         validate_id(&input.run_id, "invalid_run_id", "run id must not be empty")?;
         validate_id(
             &input.turn_id,
@@ -905,7 +1100,7 @@ impl InMemoryKernel {
             &input.schema_id,
             &input.start_turn_node_hash,
         )?;
-        let now_ms = (self.now)();
+        let now_ms = self.worker_now();
         let fencing_token = generate_fencing_token(&mut state, &input.run_id, now_ms);
         let run = RunRecord {
             branch_id: input.branch_id,
@@ -939,6 +1134,18 @@ impl InMemoryKernel {
         fencing_token: &str,
         next_lease_expires_at_ms: EpochMs,
     ) -> KernelResult<RunRecord> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, Some(run_id), |kernel| {
+                kernel.run_liveness_renew_lease(
+                    run_id,
+                    execution_owner_id,
+                    fencing_token,
+                    next_lease_expires_at_ms,
+                )
+            });
+        }
+
         validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
         let mut state = self.lock_state()?;
         let mut run = state
@@ -1000,6 +1207,13 @@ impl InMemoryKernel {
     /// are never included: a leaseless run has no `lease_expires_at_ms` to
     /// compare, and a paused run is an orderly, intentional state.
     pub fn run_liveness_list_expired(&self, now_ms: EpochMs) -> KernelResult<Vec<RunRecord>> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, None, |kernel| {
+                kernel.run_liveness_list_expired(now_ms)
+            });
+        }
+
         let state = self.lock_state()?;
         Ok(state
             .runs
@@ -1026,6 +1240,13 @@ impl InMemoryKernel {
         now_ms: EpochMs,
         reason: &str,
     ) -> KernelResult<RecoveryState> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, Some(run_id), |kernel| {
+                kernel.run_liveness_preempt_expired(run_id, preempting_owner_id, now_ms, reason)
+            });
+        }
+
         validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
         let mut state = self.lock_state()?;
         let mut run = state
@@ -1100,7 +1321,7 @@ impl InMemoryKernel {
             turn_tree_hash: next_tree_hash,
         };
         node.hash = hash_turn_node_identity(&node)?;
-        state.turn_nodes.insert(node.hash.clone(), node.clone());
+        put_turn_node(&mut state, &node);
         run.created_turn_nodes.push(node.hash.clone());
         set_run_head_refs(&mut state, &run, &node.hash)?;
         state.staged_results.remove(run_id);
@@ -1131,6 +1352,11 @@ impl InMemoryKernel {
 
     /// ADR-0034/KRT-BK010: fetches a run by id without altering its state.
     pub fn run_get(&self, run_id: &str) -> KernelResult<Option<RunRecord>> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, Some(run_id), |kernel| kernel.run_get(run_id));
+        }
+
         validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
         let state = self.lock_state()?;
         Ok(state.runs.get(run_id).cloned())
@@ -1140,12 +1366,31 @@ impl InMemoryKernel {
     /// `reclaimBackendState` (shared TS backend-invariant module) onto this
     /// backend's own maps; see the free functions below for the algorithm.
     pub fn maintenance_reclaim(&self) -> KernelResult<ReclamationSummary> {
-        let now_ms = (self.now)();
+        self.maintenance_reclaim_at(None)
+    }
+
+    pub fn maintenance_reclaim_at(
+        &self,
+        now_ms: Option<EpochMs>,
+    ) -> KernelResult<ReclamationSummary> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self
+                .test_transaction(None, None, |kernel| kernel.maintenance_reclaim_at(now_ms));
+        }
+        let now_ms = now_ms.unwrap_or_else(|| (self.now)());
         let mut state = self.lock_state()?;
         Ok(reclaim_state(&mut state, now_ms))
     }
 
     pub fn run_begin_step(&self, run_id: &str, step_id: &str) -> KernelResult<StepContext> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, Some(run_id), |kernel| {
+                kernel.run_begin_step(run_id, step_id)
+            });
+        }
+
         validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
         let mut state = self.lock_state()?;
         let (current_turn_node_hash, schema_id, step) = {
@@ -1201,6 +1446,13 @@ impl InMemoryKernel {
         observe_results: Vec<ObserveResult>,
         tree_hash: Option<String>,
     ) -> KernelResult<(bool, Option<HashString>)> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, Some(run_id), |kernel| {
+                kernel.run_complete_step(run_id, step_id, event_hash, observe_results, tree_hash)
+            });
+        }
+
         validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
         let mut state = self.lock_state()?;
         let mut run = state
@@ -1227,7 +1479,7 @@ impl InMemoryKernel {
                 None,
             ));
         }
-        let now_ms = (self.now)();
+        let now_ms = self.worker_now();
         for annotation in observe_results
             .iter()
             .flat_map(|observe_result| observe_result.annotations.iter())
@@ -1293,7 +1545,7 @@ impl InMemoryKernel {
             turn_tree_hash: next_tree_hash,
         };
         node.hash = hash_turn_node_identity(&node)?;
-        state.turn_nodes.insert(node.hash.clone(), node.clone());
+        put_turn_node(&mut state, &node);
         run.created_turn_nodes.push(node.hash.clone());
         run.current_step_index += 1;
         set_run_head_refs(&mut state, &run, &node.hash)?;
@@ -1312,6 +1564,13 @@ impl InMemoryKernel {
         status: RunCompletionStatus,
         event_hash: Option<String>,
     ) -> KernelResult<Option<HashString>> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, Some(run_id), |kernel| {
+                kernel.run_complete(run_id, status, event_hash)
+            });
+        }
+
         validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
         let mut state = self.lock_state()?;
         let mut run = state
@@ -1325,15 +1584,6 @@ impl InMemoryKernel {
             RunCompletionStatus::Failed => RunStatus::Failed,
         };
         validate_run_completion_transition(&run.status, &terminal_status)?;
-        if terminal_status == RunStatus::Completed
-            && run.current_step_index != run.step_sequence.len()
-        {
-            return Err(KernelError::new(
-                "run_steps_incomplete",
-                "completed runs must exhaust their declared step sequence",
-                None,
-            ));
-        }
         let staged_results = state
             .staged_results
             .get(run_id)
@@ -1341,7 +1591,7 @@ impl InMemoryKernel {
             .unwrap_or_default();
         ensure_event_hash_exists(&state, event_hash.as_deref())?;
         let checkpoint_required = event_hash.is_some() || !staged_results.is_empty();
-        let now_ms = (self.now)();
+        let now_ms = self.worker_now();
         let terminal_hash = if checkpoint_required {
             let prior_node = state
                 .turn_nodes
@@ -1370,7 +1620,7 @@ impl InMemoryKernel {
                 turn_tree_hash: next_tree_hash,
             };
             node.hash = hash_turn_node_identity(&node)?;
-            state.turn_nodes.insert(node.hash.clone(), node.clone());
+            put_turn_node(&mut state, &node);
             run.created_turn_nodes.push(node.hash.clone());
             set_run_head_refs(&mut state, &run, &node.hash)?;
             // Terminal checkpointing consumes unanchored staged work before the
@@ -1388,6 +1638,11 @@ impl InMemoryKernel {
     }
 
     pub fn run_recover(&self, run_id: &str) -> KernelResult<RecoveryState> {
+        #[cfg(feature = "conformance")]
+        if self.test_controls.is_some() {
+            return self.test_transaction(None, Some(run_id), |kernel| kernel.run_recover(run_id));
+        }
+
         validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
         let state = self.lock_state()?;
         let run = state
@@ -1458,6 +1713,14 @@ impl InMemoryKernel {
             .unwrap_or(Verdict::Proceed))
     }
 
+    fn worker_now(&self) -> EpochMs {
+        #[cfg(feature = "conformance")]
+        if let Some(clock) = &self.worker_clock {
+            return clock();
+        }
+        (self.now)()
+    }
+
     fn lock_state(&self) -> KernelResult<std::sync::MutexGuard<'_, KernelState>> {
         self.state.lock().map_err(|_| {
             KernelError::new(
@@ -1513,6 +1776,14 @@ fn incorporate_locked(
     Ok(tree_hash)
 }
 
+fn put_turn_node(state: &mut KernelState, node: &TurnNode) {
+    state.turn_nodes.insert(node.hash.clone(), node.clone());
+    #[cfg(feature = "conformance")]
+    {
+        state.checkpoint_writes += 1;
+    }
+}
+
 fn reactively_checkpoint_active_runs_on_branch(
     state: &mut KernelState,
     branch_id: &str,
@@ -1565,7 +1836,7 @@ fn reactively_checkpoint_active_runs_on_branch(
             turn_tree_hash: next_tree_hash,
         };
         node.hash = hash_turn_node_identity(&node)?;
-        state.turn_nodes.insert(node.hash.clone(), node.clone());
+        put_turn_node(state, &node);
         if let Some(run) = state.runs.get_mut(&run_id) {
             run.created_turn_nodes.push(node.hash.clone());
         }
@@ -1958,6 +2229,7 @@ fn sweep(
     grace_horizon_ms: EpochMs,
 ) -> ReclamationSummary {
     ReclamationSummary {
+        released_ordered_path_chunk_count: 0,
         released_archived_branch_count: sweep_archived_branches(state, &keep.turn_nodes),
         released_object_count: sweep_objects(state, &keep.objects, grace_horizon_ms),
         released_run_count: sweep_runs(state, &keep.turn_nodes, keep_turn_ids),

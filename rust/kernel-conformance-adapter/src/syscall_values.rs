@@ -92,6 +92,7 @@ record!(TurnTreeSchema,"schemaId"=>schema_id,"paths"=>paths,"incorporationRules"
 record!(RecoveryState,"lastTurnNodeHash"=>last_turn_node_hash,"lastCompletedStepId"=>last_completed_step_id,"stepSequence"=>step_sequence,"consumedStagedResults"=>consumed_staged_results,"uncommittedStagedResults"=>uncommitted_staged_results);
 record!(StepContext,"step"=>step,"schema"=>schema,"currentTurnNodeHash"=>current_turn_node_hash,"signals"=>signals);
 record!(TurnNode,"hash"=>hash,"schemaId"=>schema_id,"turnTreeHash"=>turn_tree_hash,"previousTurnNodeHash"=>previous_turn_node_hash,"eventHash"=>event_hash,"consumedStagedResults"=>consumed_staged_results);
+record!(ReclamationSummary,"releasedArchivedBranchCount"=>released_archived_branch_count,"releasedObjectCount"=>released_object_count,"releasedOrderedPathChunkCount"=>released_ordered_path_chunk_count,"releasedRunCount"=>released_run_count,"releasedTurnCount"=>released_turn_count,"releasedTurnNodeCount"=>released_turn_node_count,"releasedTurnTreeCount"=>released_turn_tree_count,"retainedObjectCount"=>retained_object_count);
 impl Observation for PathCollectionKind {
     fn encode(&self) -> EncodingResult<Value> {
         Ok(json!(match self {
@@ -117,8 +118,7 @@ impl Observation for StepDeclaration {
 }
 impl Observation for BranchRecord {
     fn encode(&self) -> EncodingResult<Value> {
-        let mut o = fields!(self,"branchId"=>branch_id,"threadId"=>thread_id,"headTurnNodeHash"=>head_turn_node_hash);
-        optional!(o,self,"archivedFromBranchId"=>archived_from_branch_id);
+        let o = fields!(self,"branchId"=>branch_id,"threadId"=>thread_id,"headTurnNodeHash"=>head_turn_node_hash);
         Ok(Value::Object(o))
     }
 }
@@ -131,8 +131,7 @@ impl Observation for SetHeadResult {
 }
 impl Observation for TurnRecord {
     fn encode(&self) -> EncodingResult<Value> {
-        let mut o = fields!(self,"turnId"=>turn_id,"threadId"=>thread_id,"branchId"=>branch_id,"startTurnNodeHash"=>start_turn_node_hash,"headTurnNodeHash"=>head_turn_node_hash);
-        optional!(o,self,"parentTurnId"=>parent_turn_id);
+        let o = fields!(self,"turnId"=>turn_id,"threadId"=>thread_id,"branchId"=>branch_id,"parentTurnId"=>parent_turn_id,"startTurnNodeHash"=>start_turn_node_hash,"headTurnNodeHash"=>head_turn_node_hash);
         Ok(Value::Object(o))
     }
 }

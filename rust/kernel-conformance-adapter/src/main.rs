@@ -127,6 +127,7 @@ fn dispatch_request(
             adapter_id: "rust-kernel",
             capabilities: vec![
                 "kernel.syscall",
+                "kernel.fault-injection",
                 "kernel.protocol",
                 "kernel.logical",
                 "kernel-protocol.thread.enumeration",
