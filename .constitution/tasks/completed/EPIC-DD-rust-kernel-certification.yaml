@@ -14,7 +14,7 @@ scope:
     - tools/conformance/certification
     - reports/compatibility
   tech_spec_patchable:
-    - .constitution/tech-spec/contracts/kernel-identity-recipes.meta.yaml
+    - ".constitution/tech-spec/contracts/kernel-identity-recipes.meta.yaml"
 estimated_diff_lines: 8000
 estimate_source: planned
 tickets:
@@ -24,9 +24,7 @@ tickets:
     effort: 5
     depends_on: []
     scope:
-      in:
-        - rust/kernel
-        - rust/kernel-conformance-adapter
+      in: [rust/kernel, rust/kernel-conformance-adapter]
     verification:
       command: bun run conformance
       expected: "Exit 0; the rewritten protocol plans pass against the Rust kernel adapter with no composite operations for those claims."
@@ -43,8 +41,7 @@ tickets:
           - rust/kernel-grpc-service/src/lib.rs
           - rust/kernel-grpc-service/tests/interop_smoke.rs
         justification: "Aligning Rust kernel error codes with the catalog (the EPIC-DB turn_head_lateral_move follow-up the plan routed here) requires the gRPC service's status mapping to follow."
-      - files:
-          - reports/compatibility
+      - files: [reports/compatibility]
         justification: "Generated Rust compatibility evidence is refreshed with bun run compatibility:evidence because verify:kernel and certification parity check its freshness."
     status: done
   - id: KRT-DD003
@@ -53,9 +50,7 @@ tickets:
     effort: 5
     depends_on: [KRT-DD002]
     scope:
-      in:
-        - rust/kernel
-        - rust/kernel-conformance-adapter
+      in: [rust/kernel, rust/kernel-conformance-adapter]
     verification:
       command: bun run conformance
       expected: "Exit 0; armFault with mode throw and setClock work against the Rust kernel and produce activation evidence."
@@ -68,8 +63,7 @@ tickets:
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
     deviations:
-      - files:
-          - reports/compatibility
+      - files: [reports/compatibility]
         justification: "Generated Rust compatibility evidence is refreshed with bun run compatibility:evidence because verify:kernel and certification parity check its freshness."
     status: done
   - id: KRT-DD004
@@ -105,13 +99,10 @@ tickets:
       - files:
           - tools/conformance/harness/run.ts
           - tools/scripts/lib/conformance-contract.ts
-        justification: "The harness records every selected or excluded check with a reason in the pinned selection shape so no obligation is dropped silently (ADR-0081)."
+        justification: The harness records every selected or excluded check with a reason in the pinned selection shape so no obligation is dropped silently (ADR-0081).
     status: done
 closeout:
-  tickets_completed:
-    - KRT-DD002
-    - KRT-DD003
-    - KRT-DD004
+  tickets_completed: [KRT-DD002, KRT-DD003, KRT-DD004]
   tickets_deferred: []
   points_completed: 18
   spec_patches: []
@@ -136,7 +127,7 @@ closeout:
     - "Sanctioned-variation rules (opaque cursors, fencing tokens, bootstrap bytes, archive branch ids, error prose) live in tools/conformance/meta-conformance/observation-comparison.ts; move them into per-operation authority metadata in the kernel catalog so tooling only applies them."
     - "Every public Rust kernel method relies on a hand-written transaction guard and rust/kernel/src/memory.rs exceeds 3,800 lines; route syscalls through one dispatch wrapper so atomicity and the fault seam are structural."
     - "Issue #205: kernel.edge-validation selects both the seven syscall edge checks Rust passes and deprecated composite checks it does not implement; claim it for Rust once EPIC-DJ retires the composites."
-    - "The Rust legacy lane still grades the tautological erasure probes and the fixture-echo recovery_state composite until EPIC-DJ."
+    - The Rust legacy lane still grades the tautological erasure probes and the fixture-echo recovery_state composite until EPIC-DJ.
     - "Ten kernel mutants have no Rust reproduction yet, and cross-scope resolve needs a shared-substrate construction seam in the Rust kernel."
     - "The Rust kernel-certification test target now runs harness, control, and mutant runs through cargo with 60-second timeouts; watch it for slowness on cold caches."
   code_decisions:
@@ -145,7 +136,7 @@ closeout:
       paths:
         - rust/kernel/src/memory/journal.rs
         - rust/kernel/src/memory/transaction.rs
-      commit: "30edc68"
+      commit: 30edc68
     - summary: "Rust kernel test controls (fault seam, clocks, mutants) live behind a conformance Cargo feature reached only from the conformance adapter; mutants are selected with --mutant-from-env plus TUVREN_KERNEL_MUTANT through a noncertifying manifest."
       kind: pattern
       paths:
@@ -155,13 +146,11 @@ closeout:
       commit: "6180129"
     - summary: "Rust kernel syscalls are atomic in production as well as conformance builds (first as a whole-state draft, superseded by the per-key undo journal decision below)."
       kind: pattern
-      paths:
-        - rust/kernel/src/memory/transaction.rs
+      paths: [rust/kernel/src/memory/transaction.rs]
       commit: ab72b06
     - summary: "The Rust adapter routes syscalls through a routing! data table with record-field macros and opaque instance handles."
       kind: convention
-      paths:
-        - rust/kernel-conformance-adapter/src/host_syscalls.rs
+      paths: [rust/kernel-conformance-adapter/src/host_syscalls.rs]
       commit: fadec4e
     - summary: "tools/conformance/meta-conformance/disagreements.ts compares N implementations from adapter manifests, normalizes $map entries, pseudonymizes fencing tokens deterministically, and classifies differences as sanctioned (with citation), coverage, or disagreement."
       kind: pattern
@@ -169,9 +158,25 @@ closeout:
         - tools/conformance/meta-conformance/disagreements.ts
         - tools/conformance/meta-conformance/observation-comparison.ts
       commit: 4367a5b
-    - summary: "Harness evidence records the selection inventory with an exclusion reason for every check not run."
+    - summary: Harness evidence records the selection inventory with an exclusion reason for every check not run.
       kind: contract_shape
-      paths:
-        - tools/conformance/harness/run.ts
+      paths: [tools/conformance/harness/run.ts]
       commit: 4367a5b
   settled: []
+  actuals:
+    diff_lines: 13492
+    files_touched: 45
+    milestones: 6
+    review_rounds: 0
+    per_ticket:
+      - id: KRT-DD002
+        diff_lines: 9961
+        review_rounds: 0
+      - id: KRT-DD003
+        diff_lines: 439
+        review_rounds: 0
+      - id: KRT-DD004
+        diff_lines: 3092
+        review_rounds: 0
+    merged_commit: 2f47887
+    measured_at: 2026-10-23

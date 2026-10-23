@@ -1,0 +1,40 @@
+date: 2026-10-23
+commit: 2f47887
+epics: [DD]
+routed:
+  - stage: tech-spec
+    item: "When a run completes, TypeScript sets currentStepIndex to the step sequence length and Rust leaves it unchanged, which changes run.recover lastCompletedStepId; the kernel specification does not decide which is correct."
+    from: DD
+  - stage: tech-spec
+    item: "TypeScript rejects turn head rewrites that would orphan active runs or dependent turns (assertTurnHeadRewritePreservesDependents); Rust enforces only the descendant rule in the specification. Decide whether the dependents guard is normative."
+    from: DD
+  - stage: tech-spec
+    item: "branch.setHead with an active run emits branch_has_active_run in Rust and kernel_runtime_branch_has_active_run in TypeScript, Go, and Dart, and the catalog lists neither for kernel.branch.setHead; add a canonical code."
+    from: DD
+  - stage: tech-spec
+    item: "ADR-0078 requires explicit map nodes, but both the TypeScript and Rust adapter decoders accept untagged plain objects as maps; tighten the rule or the decoders fleet-wide."
+    from: DD
+  - stage: tech-spec
+    item: "code decision (pattern): Rust kernel write atomicity uses a per-key undo journal with counter and turn-order snapshots, rolled back on errors and before-commit faults. [rust/kernel/src/memory/journal.rs, rust/kernel/src/memory/transaction.rs] at 30edc68"
+    from: DD
+  - stage: tech-spec
+    item: "code decision (pattern): Rust kernel test controls (fault seam, clocks, mutants) live behind a conformance Cargo feature reached only from the conformance adapter; mutants are selected with --mutant-from-env plus TUVREN_KERNEL_MUTANT through a noncertifying manifest. [rust/kernel/src/memory/conformance.rs, rust/kernel/src/testkit.rs, rust/kernel-conformance-adapter/adapter-mutant.json] at 6180129"
+    from: DD
+  - stage: tech-spec
+    item: "code decision (pattern): Rust kernel syscalls are atomic in production as well as conformance builds (first as a whole-state draft, superseded by the per-key undo journal decision below). [rust/kernel/src/memory/transaction.rs] at ab72b06"
+    from: DD
+  - stage: tech-spec
+    item: "code decision (convention): The Rust adapter routes syscalls through a routing! data table with record-field macros and opaque instance handles. [rust/kernel-conformance-adapter/src/host_syscalls.rs] at fadec4e"
+    from: DD
+  - stage: tech-spec
+    item: "code decision (pattern): tools/conformance/meta-conformance/disagreements.ts compares N implementations from adapter manifests, normalizes $map entries, pseudonymizes fencing tokens deterministically, and classifies differences as sanctioned (with citation), coverage, or disagreement. [tools/conformance/meta-conformance/disagreements.ts, tools/conformance/meta-conformance/observation-comparison.ts] at 4367a5b"
+    from: DD
+  - stage: tech-spec
+    item: "code decision (contract_shape): Harness evidence records the selection inventory with an exclusion reason for every check not run. [tools/conformance/harness/run.ts] at 4367a5b"
+    from: DD
+proposed_decisions: []
+candidate_terms: []
+stale_owners:
+  - ".constitution/evidence/KRT-DD002/manifest.yaml: KRT-DD002"
+  - ".constitution/evidence/KRT-DD003/manifest.yaml: KRT-DD003"
+  - ".constitution/evidence/KRT-DD004/manifest.yaml: KRT-DD004"
