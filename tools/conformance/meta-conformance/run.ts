@@ -532,6 +532,22 @@ const cases: readonly MetaCase[] = [
     id: "noEvent",
   },
   {
+    check: check("event-sequence-unresolved", [
+      { kind: "eventSequence", notEquals: ["ready"], path: "$.missing" },
+    ]),
+    context: { events: [{ type: "ready" }] },
+    expected: "fail",
+    id: "eventSequence unresolved projection",
+  },
+  {
+    check: check("no-event-unresolved", [
+      { eventType: "error", kind: "noEvent", path: "$.missing" },
+    ]),
+    context: { events: [{ type: "ready" }] },
+    expected: "fail",
+    id: "noEvent unresolved projection",
+  },
+  {
     check: check("terminal", [
       { eventType: "turn.end", kind: "terminalEvent", path: "$.type" },
     ]),
@@ -789,6 +805,12 @@ const operatorCases: readonly MetaCase[] = [
     "some negative control",
     { length: 2, some: { equals: "bad", field: "$.status" } },
     { result: items },
+    "fail"
+  ),
+  operatorCase(
+    "some with unresolved element field",
+    { length: 2, some: { equals: "ok", field: "$.status" } },
+    { result: { value: [{}, { status: "ok" }] } },
     "fail"
   ),
   operatorCase(

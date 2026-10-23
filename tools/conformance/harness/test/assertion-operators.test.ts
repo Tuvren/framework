@@ -398,12 +398,94 @@ describe("every and some", () => {
     ).toBe("fail");
   });
 
+  test("some fails when an element field is unresolved even if another element matches", () => {
+    const evaluation = evaluate(
+      field("$.items", {
+        length: 2,
+        some: { equals: "ok", field: "$.status" },
+      }),
+      { result: { items: [{}, { status: "ok" }] } }
+    );
+    expect(evaluation.status).toBe("fail");
+    expect(evaluation.message).toContain("unresolved");
+  });
+
+  test("every reports an unresolved element field as unresolved", () => {
+    const evaluation = evaluate(
+      field("$.items", {
+        every: { field: "$.status", notEquals: "bad" },
+        length: 2,
+      }),
+      { result: { items: [{ status: "ok" }, {}] } }
+    );
+    expect(evaluation.status).toBe("fail");
+    expect(evaluation.message).toContain("unresolved");
+  });
+
+  test("an unresolved nested operand path inside some fails", () => {
+    const evaluation = evaluate(
+      field("$.items", {
+        length: 2,
+        some: { equalsPath: "$.fixture.missing", field: "$.status" },
+      }),
+      { fixture: {}, result: { items } }
+    );
+    expect(evaluation.status).toBe("fail");
+    expect(evaluation.message).toContain("unresolved");
+  });
+
   test("every fails on a non-array actual", () => {
     expect(
       evaluate(field("$.items", { every: { present: true }, length: 0 }), {
         result: { items: {} },
       }).status
     ).toBe("fail");
+  });
+});
+
+describe("unresolved event projections fail", () => {
+  const events = [{ type: "ready" }];
+
+  test("eventSequence fails when the projected path is unresolved", () => {
+    const evaluation = evaluate(
+      { kind: "eventSequence", notEquals: ["ready"], path: "$.missing" },
+      { events }
+    );
+    expect(evaluation.status).toBe("fail");
+    expect(evaluation.message).toContain("unresolved");
+  });
+
+  test("eventSequence fails when any event leaves the projection unresolved", () => {
+    expect(
+      evaluate(
+        { contains: "ready", kind: "eventSequence" },
+        { events: [{ type: "ready" }, { kind: "untyped" }] }
+      ).status
+    ).toBe("fail");
+  });
+
+  test("eventSequence over a resolved projection still passes", () => {
+    expect(
+      evaluate({ equals: ["ready"], kind: "eventSequence" }, { events }).status
+    ).toBe("pass");
+  });
+
+  test("noEvent fails when the projected path is unresolved", () => {
+    const evaluation = evaluate(
+      { eventType: "error", kind: "noEvent", path: "$.missing" },
+      { events }
+    );
+    expect(evaluation.status).toBe("fail");
+    expect(evaluation.message).toContain("unresolved");
+  });
+
+  test("ordering fails when an event leaves the projection unresolved", () => {
+    const evaluation = evaluate(
+      { contains: ["start", "end"], kind: "ordering" },
+      { events: [{ type: "start" }, { kind: "untyped" }, { type: "end" }] }
+    );
+    expect(evaluation.status).toBe("fail");
+    expect(evaluation.message).toContain("unresolved");
   });
 });
 
