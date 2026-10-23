@@ -8,5 +8,5 @@ version.workspace = true
 [dependencies]
 aes-gcm = "0.11"
 serde.workspace = true
-serde_json.workspace = true
+serde_json = { workspace = true, features = ["raw_value"] }
 tuvren-kernel-rust.workspace = true

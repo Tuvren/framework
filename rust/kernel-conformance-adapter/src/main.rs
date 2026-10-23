@@ -32,6 +32,10 @@ use tuvren_kernel_rust::{
     hash_turn_node_identity, kernel_record_from_json,
 };
 
+mod host_syscalls;
+mod observation_encoding;
+mod syscall_values;
+
 const CANONICAL_SCHEMA_PATH: &str =
     "spec/conformance/kernel/fixtures/canonical-turn-tree-schema.json";
 
@@ -72,9 +76,10 @@ enum OperationOutcome {
 }
 
 fn main() {
+    let mut syscalls = host_syscalls::Syscalls::default();
     for line in io::stdin().lock().lines() {
         let response = match line {
-            Ok(text) => handle_line(&text),
+            Ok(text) => handle_line(&text, &mut syscalls),
             Err(source) => error_response(
                 Value::Null,
                 "adapter_stdin_failed",
@@ -85,8 +90,10 @@ fn main() {
     }
 }
 
-fn handle_line(line: &str) -> Value {
-    let request = match serde_json::from_str::<JsonRpcRequest>(line) {
+fn handle_line(line: &str, syscalls: &mut host_syscalls::Syscalls) -> Value {
+    let request = match observation_encoding::parse_frame(line)
+        .and_then(serde_json::from_value::<JsonRpcRequest>)
+    {
         Ok(request) => request,
         Err(source) => {
             return error_response(
@@ -105,17 +112,21 @@ fn handle_line(line: &str) -> Value {
     }
     let id = request.id.clone();
 
-    match dispatch_request(request) {
+    match dispatch_request(request, syscalls) {
         Ok(result) => json!({ "jsonrpc": "2.0", "id": id, "result": result }),
         Err(error) => json!({ "jsonrpc": "2.0", "id": id, "error": error }),
     }
 }
 
-fn dispatch_request(request: JsonRpcRequest) -> Result<Value, AdapterErrorEnvelope> {
+fn dispatch_request(
+    request: JsonRpcRequest,
+    syscalls: &mut host_syscalls::Syscalls,
+) -> Result<Value, AdapterErrorEnvelope> {
     match request.method.as_str() {
         "initialize" => Ok(json!(AdapterCapabilities {
             adapter_id: "rust-kernel",
             capabilities: vec![
+                "kernel.syscall",
                 "kernel.protocol",
                 "kernel.logical",
                 "kernel-protocol.thread.enumeration",
@@ -128,10 +139,23 @@ fn dispatch_request(request: JsonRpcRequest) -> Result<Value, AdapterErrorEnvelo
         "dispatch" => {
             let operation = read_param_string(&request.params, "operation")?;
             let input = request.params.get("input").cloned().unwrap_or(Value::Null);
-            Ok(json!(dispatch_operation(&operation, &input)))
+            if host_syscalls::Syscalls::has(&operation) {
+                let handle = request
+                    .params
+                    .get("instance")
+                    .or_else(|| input.get("instance"))
+                    .unwrap_or(&Value::Null);
+                return Ok(json!(syscalls.dispatch(&operation, &input, handle)?));
+            }
+            Ok(json!(dispatch_operation(&operation, &input)?))
         }
         "events" => Ok(json!([])),
-        "inspectState" | "createInstance" | "destroyInstance" | "shutdown" => Ok(Value::Null),
+        "createInstance" => Ok(json!(syscalls.create())),
+        "destroyInstance" => {
+            syscalls.destroy(request.params.get("instance").unwrap_or(&Value::Null));
+            Ok(Value::Null)
+        }
+        "inspectState" | "shutdown" => Ok(Value::Null),
         method => Err(adapter_error(
             "adapter_method_not_implemented",
             &format!("unsupported adapter method {method}"),
@@ -140,7 +164,10 @@ fn dispatch_request(request: JsonRpcRequest) -> Result<Value, AdapterErrorEnvelo
     }
 }
 
-fn dispatch_operation(operation: &str, input: &Value) -> OperationOutcome {
+fn dispatch_operation(
+    operation: &str,
+    input: &Value,
+) -> Result<OperationOutcome, AdapterErrorEnvelope> {
     let result = match operation {
         "kernel.protocol.deterministic-hashing" => run_deterministic_hashing(input),
         "kernel.protocol.schema-roundtrip" => run_schema_roundtrip(input),
@@ -157,13 +184,16 @@ fn dispatch_operation(operation: &str, input: &Value) -> OperationOutcome {
         "kernel.run-liveness.stale-preemption" => run_stale_preemption(),
         "kernel.reclamation.reclaim-probe" => run_reclamation_probe(),
         "kernel.reclamation.erasure-probe" => run_erasure_probe(),
-        _ => Err(error(
-            "adapter_operation_not_implemented",
-            &format!("rust kernel adapter does not implement {operation}"),
-        )),
+        _ => {
+            return Err(adapter_error(
+                "adapter_operation_not_implemented",
+                &format!("rust kernel adapter does not implement {operation}"),
+                None,
+            ));
+        }
     };
 
-    match result {
+    Ok(match result {
         Ok(value) => OperationOutcome::Result { value },
         Err(source) => OperationOutcome::Error {
             error: AdapterErrorEnvelope {
@@ -172,7 +202,7 @@ fn dispatch_operation(operation: &str, input: &Value) -> OperationOutcome {
                 details: None,
             },
         },
-    }
+    })
 }
 
 fn run_deterministic_hashing(input: &Value) -> Result<Value, KernelError> {

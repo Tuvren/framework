@@ -280,7 +280,7 @@ impl InMemoryKernel {
             .ok_or_else(|| missing("turn_tree_not_found", "right turn tree does not exist"))?;
         if tree_a.schema_id != tree_b.schema_id {
             return Err(KernelError::new(
-                "turn_tree_schema_mismatch",
+                "kernel_runtime_tree_schema_mismatch_diff",
                 "turn trees with different schemas cannot be diffed",
                 None,
             ));
@@ -593,7 +593,7 @@ impl InMemoryKernel {
             Some(archive)
         } else {
             return Err(KernelError::new(
-                "branch_head_lateral_move",
+                "kernel_runtime_lateral_head_movement",
                 "branch head can only move along one lineage",
                 None,
             ));
@@ -746,13 +746,6 @@ impl InMemoryKernel {
             return Err(KernelError::new(
                 "turn_head_not_descendant",
                 "turn head must remain on or after the turn start node",
-                None,
-            ));
-        }
-        if !is_ancestor(&state, &turn.head_turn_node_hash, head_turn_node_hash)? {
-            return Err(KernelError::new(
-                "turn_head_lateral_move",
-                "turn head must advance from the current turn head",
                 None,
             ));
         }
@@ -1173,7 +1166,7 @@ impl InMemoryKernel {
                 .ok_or_else(|| missing("run_step_not_found", "run has no current step"))?;
             if step.id != step_id {
                 return Err(KernelError::new(
-                    "run_step_mismatch",
+                    "kernel_runtime_unexpected_step",
                     "requested step id must match the current run step",
                     None,
                 ));
@@ -1229,7 +1222,7 @@ impl InMemoryKernel {
             .ok_or_else(|| missing("run_step_not_found", "run has no current step"))?;
         if step.id != step_id {
             return Err(KernelError::new(
-                "run_step_mismatch",
+                "kernel_runtime_unexpected_step",
                 "completed step id must match the current run step",
                 None,
             ));
@@ -1728,7 +1721,7 @@ fn validate_run_creation(
         run.branch_id == branch_id && matches!(run.status, RunStatus::Running | RunStatus::Paused)
     }) {
         return Err(KernelError::new(
-            "branch_has_active_run",
+            "kernel_runtime_branch_already_active",
             "branch already has a running or paused run",
             None,
         ));
@@ -2141,7 +2134,7 @@ fn ensure_event_hash_exists(state: &KernelState, event_hash: Option<&str>) -> Ke
         && !state.objects.contains_key(event_hash)
     {
         return Err(missing(
-            "event_object_not_found",
+            "kernel_runtime_missing_event_object",
             "event hash must reference an existing object",
         ));
     }
@@ -2229,7 +2222,7 @@ fn ensure_complete_tree_create_changes(
     for definition in &schema.paths {
         let value = changes.get(&definition.path).ok_or_else(|| {
             KernelError::new(
-                "incomplete_turn_tree_manifest",
+                "kernel_runtime_missing_required_tree_path",
                 "tree create without a base must provide every schema path",
                 None,
             )

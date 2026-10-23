@@ -472,3 +472,72 @@ async fn spawn_kernel_server() -> (String, tokio::task::JoinHandle<()>) {
 
     (format!("http://{address}"), handle)
 }
+
+#[tokio::test]
+async fn syscall_error_codes_survive_grpc_transport_unchanged() {
+    let kernel = InMemoryKernel::new();
+    kernel
+        .schema_register(RustTurnTreeSchema {
+            schema_id: "s".into(),
+            paths: vec![RustPathDefinition {
+                path: "messages".into(),
+                collection: RustPathCollectionKind::Ordered,
+                metadata: None,
+            }],
+            incorporation_rules: vec![],
+        })
+        .unwrap();
+    let thread = kernel.thread_create("t", "s", "b").unwrap();
+    kernel
+        .turn_create("t", "t", "b", None, &thread.root_turn_node_hash)
+        .unwrap();
+    kernel
+        .run_create(
+            "r",
+            "t",
+            "b",
+            "s",
+            &thread.root_turn_node_hash,
+            vec![RustStepDeclaration {
+                id: "first".into(),
+                deterministic: false,
+                side_effects: false,
+                metadata: None,
+            }],
+        )
+        .unwrap();
+    let expected = kernel.run_begin_step("r", "other").unwrap_err().payload;
+    let service = KernelGrpcServiceImpl::new(kernel);
+    let error = KernelRunService::run_begin_step(
+        &service,
+        Request::new(proto::RunBeginStepRequest {
+            run_id: "r".into(),
+            step_id: "other".into(),
+        }),
+    )
+    .await
+    .unwrap_err();
+    assert_eq!(error.code(), tonic::Code::FailedPrecondition);
+    let payload = decode_kernel_error_payload(&error);
+    assert_eq!(payload.code, "kernel_runtime_unexpected_step");
+    assert_eq!(payload.code, expected.code);
+    assert_eq!(payload.message, expected.message);
+
+    let error = KernelRunService::run_complete_step(
+        &service,
+        Request::new(proto::RunCompleteStepRequest {
+            run_id: "r".into(),
+            step_id: "first".into(),
+            event_hash: Some("11".repeat(32)),
+            observe_results: vec![],
+            tree_hash: None,
+        }),
+    )
+    .await
+    .unwrap_err();
+    assert_eq!(error.code(), tonic::Code::NotFound);
+    assert_eq!(
+        decode_kernel_error_payload(&error).code,
+        "kernel_runtime_missing_event_object"
+    );
+}

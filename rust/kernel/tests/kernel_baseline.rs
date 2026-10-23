@@ -391,7 +391,7 @@ fn event_hash_must_reference_stored_object() {
         )
         .expect_err("missing event object is rejected");
 
-    assert_eq!(error.payload.code, "event_object_not_found");
+    assert_eq!(error.payload.code, "kernel_runtime_missing_event_object");
 }
 
 #[test]
@@ -410,7 +410,7 @@ fn terminal_event_hash_must_reference_stored_object() {
         )
         .expect_err("missing terminal event object is rejected");
 
-    assert_eq!(error.payload.code, "event_object_not_found");
+    assert_eq!(error.payload.code, "kernel_runtime_missing_event_object");
 }
 
 #[test]
@@ -925,7 +925,7 @@ fn turn_update_head_requires_descendant_of_turn_start() {
 }
 
 #[test]
-fn turn_update_head_rejects_lateral_descendant() {
+fn turn_update_head_accepts_lateral_descendant() {
     let kernel = InMemoryKernel::new();
     kernel
         .schema_register(canonical_schema())
@@ -1005,11 +1005,26 @@ fn turn_update_head_rejects_lateral_descendant() {
         .run_complete_step("run_alt", "alt_step", None, Vec::new(), None)
         .expect("alt step checkpoints");
     assert_ne!(main_node, alt_node.clone().expect("alt node"));
-    let error = kernel
-        .turn_update_head("turn_main", &alt_node.expect("alt node"))
-        .expect_err("turn head cannot jump to a lateral descendant");
-
-    assert_eq!(error.payload.code, "turn_head_lateral_move");
+    let alt_node = alt_node.expect("alt node");
+    assert_eq!(
+        kernel
+            .branch_set_head("branch_main", &alt_node)
+            .unwrap_err()
+            .payload
+            .code,
+        "kernel_runtime_lateral_head_movement"
+    );
+    kernel
+        .turn_update_head("turn_main", &alt_node)
+        .expect("a descendant of the turn start is legal even across lateral heads");
+    assert_eq!(
+        kernel
+            .turn_get("turn_main")
+            .unwrap()
+            .unwrap()
+            .head_turn_node_hash,
+        alt_node
+    );
 }
 
 #[test]
@@ -1228,7 +1243,10 @@ fn tree_create_without_base_requires_all_paths() {
         .tree_create("schema_main", changes, None)
         .expect_err("partial base-less tree create is rejected");
 
-    assert_eq!(error.payload.code, "incomplete_turn_tree_manifest");
+    assert_eq!(
+        error.payload.code,
+        "kernel_runtime_missing_required_tree_path"
+    );
 }
 
 #[test]
@@ -1544,4 +1562,77 @@ fn canonical_schema_with_metadata() -> TurnTreeSchema {
 
 fn hex_to_bytes(value: &str) -> Vec<u8> {
     hex::decode(value).expect("valid hex fixture")
+}
+
+#[test]
+fn tree_diff_paths_are_unique_and_in_unsigned_utf8_order() {
+    let kernel = InMemoryKernel::new();
+    let paths = ["é", "z", "a", "😀", "Z", "e\u{301}"];
+    kernel
+        .schema_register(TurnTreeSchema {
+            schema_id: "utf8".into(),
+            paths: paths
+                .iter()
+                .map(|path| PathDefinition {
+                    collection: PathCollectionKind::Single,
+                    metadata: None,
+                    path: (*path).into(),
+                })
+                .collect(),
+            incorporation_rules: vec![],
+        })
+        .unwrap();
+    let a = kernel
+        .tree_create(
+            "utf8",
+            paths
+                .iter()
+                .map(|p| ((*p).into(), PathValue::Null))
+                .collect(),
+            None,
+        )
+        .unwrap();
+    let b = kernel
+        .tree_create(
+            "utf8",
+            paths
+                .iter()
+                .map(|p| ((*p).into(), PathValue::Single("11".repeat(32))))
+                .collect(),
+            None,
+        )
+        .unwrap();
+    let diff = kernel.tree_diff(&a, &b).unwrap();
+    assert_eq!(diff, ["Z", "a", "e\u{301}", "z", "é", "😀"]);
+    assert!(
+        diff.windows(2)
+            .all(|pair| pair[0].as_bytes() < pair[1].as_bytes())
+    );
+    assert_eq!(kernel.tree_diff(&a, &a).unwrap(), Vec::<String>::new());
+    assert_eq!(kernel.tree_diff(&b, &a).unwrap(), diff);
+}
+
+#[test]
+fn protocol_diff_and_step_errors_use_catalog_codes() {
+    let (kernel, _) = kernel_with_run(StepDeclaration {
+        deterministic: false,
+        id: "first".into(),
+        metadata: None,
+        side_effects: false,
+    });
+    let error = kernel.run_begin_step("run_main", "other").unwrap_err();
+    assert_eq!(error.payload.code, "kernel_runtime_unexpected_step");
+    let mut schema = canonical_schema();
+    schema.schema_id = "other".into();
+    kernel.schema_register(schema).unwrap();
+    let a = kernel
+        .tree_create("schema_main", empty_canonical_manifest(), None)
+        .unwrap();
+    let b = kernel
+        .tree_create("other", empty_canonical_manifest(), None)
+        .unwrap();
+    assert_eq!(
+        kernel.tree_diff(&a, &b).unwrap_err().payload.code,
+        "kernel_runtime_tree_schema_mismatch_diff"
+    );
 }

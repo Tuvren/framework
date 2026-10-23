@@ -881,7 +881,7 @@ fn status_from_kernel_error(error: KernelError) -> Status {
 fn kernel_error_code_to_status(code: &str) -> Code {
     match code {
         "branch_not_found"
-        | "event_object_not_found"
+        | "kernel_runtime_missing_event_object"
         | "incorporation_rule_not_found"
         | "parent_turn_not_found"
         | "run_not_found"
@@ -902,7 +902,7 @@ fn kernel_error_code_to_status(code: &str) -> Code {
         "duplicate_incorporation_rule_object_type"
         | "duplicate_schema_path"
         | "duplicate_step_id"
-        | "incomplete_turn_tree_manifest"
+        | "kernel_runtime_missing_required_tree_path"
         | "invalid_annotation_record"
         | "invalid_decoded_kernel_record"
         | "invalid_epoch_ms"
@@ -928,8 +928,9 @@ fn kernel_error_code_to_status(code: &str) -> Code {
         | "invalid_parent_turn_id"
         | "non_canonical_kernel_record_encoding"
         | "unsupported_kernel_record_value" => Code::InvalidArgument,
-        "branch_has_active_run"
-        | "branch_head_lateral_move"
+        "kernel_runtime_branch_already_active"
+        | "branch_has_active_run"
+        | "kernel_runtime_lateral_head_movement"
         | "invalid_ordered_path_state"
         | "invalid_run_completion_transition"
         | "parent_turn_head_mismatch"
@@ -938,17 +939,19 @@ fn kernel_error_code_to_status(code: &str) -> Code {
         | "run_not_running"
         | "run_schema_mismatch"
         | "run_start_head_mismatch"
-        | "run_step_mismatch"
+        | "kernel_runtime_unexpected_step"
         | "run_steps_incomplete"
         | "run_turn_branch_mismatch"
         | "run_turn_span_mismatch"
         | "turn_branch_thread_mismatch"
-        | "turn_head_lateral_move"
         | "turn_head_not_descendant"
         | "turn_node_thread_mismatch"
         | "turn_parent_not_immediate"
         | "turn_parent_required"
-        | "turn_tree_schema_mismatch" => Code::FailedPrecondition,
+        | "turn_tree_schema_mismatch"
+        | "kernel_runtime_tree_schema_mismatch_diff"
+        | "run_lease_owner_mismatch"
+        | "run_lease_token_mismatch" => Code::FailedPrecondition,
         // KRT-BK006: node_walk_back's hop-count ceiling is a resource guard,
         // not a data-shape or state-machine violation, so it maps to
         // ResourceExhausted rather than falling into the FailedPrecondition
