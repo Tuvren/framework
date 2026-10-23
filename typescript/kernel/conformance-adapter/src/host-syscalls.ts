@@ -23,81 +23,94 @@ const HEX_BYTES = /^(?:[0-9a-f]{2})*$/u;
 const MAX_SAFE_INTEGER = BigInt(Number.MAX_SAFE_INTEGER);
 
 const parameters = {
-  "kernel.branch.create": ["branchId", "threadId", "fromTurnNodeHash"],
-  "kernel.branch.get": ["branchId"],
-  "kernel.branch.list": ["threadId"],
-  "kernel.branch.setHead": ["branchId", "turnNodeHash"],
-  "kernel.maintenance.reclaim": ["options"],
-  "kernel.node.get": ["hash"],
-  "kernel.node.walkBack": ["fromHash"],
-  "kernel.run.beginStep": ["runId", "stepId"],
-  "kernel.run.complete": ["runId", "status", "eventHash"],
-  "kernel.run.completeStep": [
-    "runId",
-    "stepId",
-    "eventHash",
-    "observeResults",
-    "treeHash",
-  ],
-  "kernel.run.create": [
-    "runId",
-    "turnId",
-    "branchId",
-    "schemaId",
-    "startTurnNodeHash",
-    "steps",
-  ],
-  "kernel.run.recover": ["runId"],
-  "kernel.runLiveness.createLeasedRun": ["input"],
-  "kernel.runLiveness.listExpired": ["nowMs"],
-  "kernel.runLiveness.preemptExpired": [
-    "runId",
-    "preemptingOwnerId",
-    "nowMs",
-    "reason",
-  ],
-  "kernel.runLiveness.renewLease": [
-    "runId",
-    "executionOwnerId",
-    "fencingToken",
-    "nextLeaseExpiresAtMs",
-  ],
-  "kernel.schema.get": ["schemaId"],
-  "kernel.schema.register": ["schema"],
-  "kernel.staging.current": ["runId"],
-  "kernel.staging.stage": [
-    "runId",
-    "blob",
-    "taskId",
-    "objectType",
-    "status",
-    "interruptPayload",
-  ],
-  "kernel.store.get": ["hash"],
-  "kernel.store.has": ["hash"],
-  "kernel.store.put": ["blob", "mediaType"],
-  "kernel.thread.create": ["threadId", "schemaId", "initialBranchId"],
-  "kernel.thread.get": ["threadId"],
-  "kernel.thread.list": ["options"],
-  "kernel.tree.create": ["schemaId", "changes", "baseTurnTreeHash"],
-  "kernel.tree.diff": ["treeHashA", "treeHashB"],
-  "kernel.tree.incorporate": ["baseTurnTreeHash", "stagedResults"],
-  "kernel.tree.manifest": ["treeHash"],
-  "kernel.tree.resolve": ["treeHash", "path"],
-  "kernel.turn.create": [
-    "turnId",
-    "threadId",
-    "branchId",
-    "parentTurnId",
-    "startTurnNodeHash",
-  ],
-  "kernel.turn.get": ["turnId"],
-  "kernel.turn.updateHead": ["turnId", "headTurnNodeHash"],
-  "kernel.verdicts.compose": ["verdicts"],
+  "kernel.branch.create": {
+    arguments: ["branchId", "threadId", "fromTurnNodeHash"],
+  },
+  "kernel.branch.get": { arguments: ["branchId"] },
+  "kernel.branch.list": { arguments: ["threadId"] },
+  "kernel.branch.setHead": { arguments: ["branchId", "turnNodeHash"] },
+  "kernel.maintenance.reclaim": { arguments: ["options"] },
+  "kernel.node.get": { arguments: ["hash"] },
+  "kernel.node.walkBack": { arguments: [{ name: "fromHash", type: "string" }] },
+  "kernel.run.beginStep": { arguments: ["runId", "stepId"] },
+  "kernel.run.complete": { arguments: ["runId", "status", "eventHash"] },
+  "kernel.run.completeStep": {
+    arguments: ["runId", "stepId", "eventHash", "observeResults", "treeHash"],
+  },
+  "kernel.run.create": {
+    arguments: [
+      "runId",
+      "turnId",
+      "branchId",
+      "schemaId",
+      "startTurnNodeHash",
+      "steps",
+    ],
+  },
+  "kernel.run.recover": { arguments: ["runId"] },
+  "kernel.runLiveness.createLeasedRun": { arguments: ["input"] },
+  "kernel.runLiveness.listExpired": { arguments: ["nowMs"] },
+  "kernel.runLiveness.preemptExpired": {
+    arguments: ["runId", "preemptingOwnerId", "nowMs", "reason"],
+  },
+  "kernel.runLiveness.renewLease": {
+    arguments: [
+      "runId",
+      "executionOwnerId",
+      "fencingToken",
+      "nextLeaseExpiresAtMs",
+    ],
+  },
+  "kernel.schema.get": { arguments: ["schemaId"] },
+  "kernel.schema.register": { arguments: ["schema"] },
+  "kernel.staging.current": { arguments: ["runId"] },
+  "kernel.staging.stage": {
+    arguments: [
+      "runId",
+      "blob",
+      "taskId",
+      "objectType",
+      "status",
+      "interruptPayload",
+    ],
+  },
+  "kernel.store.get": { arguments: ["hash"] },
+  "kernel.store.has": { arguments: ["hash"] },
+  "kernel.store.put": { arguments: ["blob", "mediaType"] },
+  "kernel.thread.create": {
+    arguments: ["threadId", "schemaId", "initialBranchId"],
+  },
+  "kernel.thread.get": { arguments: ["threadId"] },
+  "kernel.thread.list": { arguments: ["options"] },
+  "kernel.tree.create": {
+    arguments: ["schemaId", "changes", "baseTurnTreeHash"],
+  },
+  "kernel.tree.diff": { arguments: ["treeHashA", "treeHashB"] },
+  "kernel.tree.incorporate": {
+    arguments: ["baseTurnTreeHash", "stagedResults"],
+  },
+  "kernel.tree.manifest": { arguments: ["treeHash"], recordResult: true },
+  "kernel.tree.resolve": { arguments: ["treeHash", "path"] },
+  "kernel.turn.create": {
+    arguments: [
+      "turnId",
+      "threadId",
+      "branchId",
+      "parentTurnId",
+      "startTurnNodeHash",
+    ],
+  },
+  "kernel.turn.get": { arguments: ["turnId"] },
+  "kernel.turn.updateHead": { arguments: ["turnId", "headTurnNodeHash"] },
+  "kernel.verdicts.compose": { arguments: ["verdicts"] },
 } as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> =>
+  isRecord(value) &&
+  typeof Reflect.get(value, Symbol.asyncIterator) === "function";
 
 const requireSingleTag = (value: Record<string, unknown>): void => {
   if (Object.keys(value).length !== 1) {
@@ -284,12 +297,17 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     if (pending === undefined) {
       pending = (async () => {
         const backend = await createConfiguredBackend(config);
-        return {
-          cleanup: backend.cleanup,
-          kernel: createConformanceRuntimeKernel(config, {
-            backend: backend.backend,
-          }),
-        };
+        try {
+          return {
+            cleanup: backend.cleanup,
+            kernel: createConformanceRuntimeKernel(config, {
+              backend: backend.backend,
+            }),
+          };
+        } catch (error: unknown) {
+          await backend.cleanup();
+          throw error;
+        }
       })();
       instances.set(handle, pending);
     }
@@ -303,8 +321,8 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
       throw error;
     }
     const { kernel } = opened;
-    const names: unknown = Reflect.get(parameters, operation);
-    if (!Array.isArray(names)) {
+    const binding: unknown = Reflect.get(parameters, operation);
+    if (!isRecord(binding) || !Array.isArray(binding.arguments)) {
       throw new TypeError(`unsupported syscall ${operation}`);
     }
     const args = readRecord(decode(input), "syscall arguments");
@@ -320,21 +338,28 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     if (typeof invoke !== "function") {
       throw new TypeError(`missing native syscall ${operation}`);
     }
-    const callArguments = names.map((name: string) => args[name]);
-    const fromHash =
-      operation === "kernel.node.walkBack"
-        ? readString(args.fromHash, "fromHash")
-        : undefined;
+    const callArguments = binding.arguments.map((parameter: unknown) => {
+      if (typeof parameter === "string") {
+        return args[parameter];
+      }
+      if (
+        isRecord(parameter) &&
+        parameter.type === "string" &&
+        typeof parameter.name === "string"
+      ) {
+        return readString(args[parameter.name], parameter.name);
+      }
+      throw new TypeError("invalid syscall parameter binding");
+    });
     let value: unknown;
     try {
-      if (fromHash === undefined) {
-        value = await Reflect.apply(invoke, target, callArguments);
-      } else {
-        const nodes = [];
-        for await (const node of kernel.node.walkBack(fromHash)) {
-          nodes.push(node);
+      value = await Reflect.apply(invoke, target, callArguments);
+      if (isAsyncIterable(value)) {
+        const entries: unknown[] = [];
+        for await (const entry of value) {
+          entries.push(entry);
         }
-        value = nodes;
+        value = entries;
       }
     } catch (error: unknown) {
       return {
@@ -347,7 +372,7 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
       value: {
         result: encode(
           value === undefined ? {} : value,
-          operation === "kernel.tree.manifest"
+          binding.recordResult === true
         ),
       },
     };

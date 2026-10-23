@@ -886,7 +886,8 @@ export const evaluateAssertions = (
 
 const hasRequiredEvidence = (
   context: AssertionContext,
-  path: string
+  path: string,
+  catalogued: boolean
 ): boolean => {
   if (path === "result") {
     return context.result !== undefined;
@@ -925,6 +926,7 @@ const hasRequiredEvidence = (
   }
 
   return (
+    catalogued &&
     context.result !== undefined &&
     (readPath(context.result, jsonPath) !== undefined ||
       readPath({ result: context.result }, jsonPath) !== undefined)
@@ -933,10 +935,11 @@ const hasRequiredEvidence = (
 
 export const evaluateRequiredEvidence = (
   compiledCheck: CompiledConformancePlanCheck,
-  context: AssertionContext
+  context: AssertionContext,
+  catalogued = false
 ): AssertionEvaluation[] =>
   compiledCheck.requiredEvidence.map((path) => {
-    const present = hasRequiredEvidence(context, path);
+    const present = hasRequiredEvidence(context, path, catalogued);
 
     return {
       assertionId: `${compiledCheck.check.checkId}.requiredEvidence.${path}`,
@@ -947,19 +950,22 @@ export const evaluateRequiredEvidence = (
 
 export const diagnoseRequiredEvidence = (
   compiledCheck: CompiledConformancePlanCheck,
-  context: AssertionContext
+  context: AssertionContext,
+  catalogued = false
 ): AssertionDiagnosis[] =>
-  evaluateRequiredEvidence(compiledCheck, context).map((evaluation, index) => ({
-    evaluation,
-    operands:
-      evaluation.status === "pass"
-        ? []
-        : [
-            {
-              expected: true,
-              expectedSource: "evidence: plan literal",
-              path: `$.${compiledCheck.requiredEvidence[index] ?? ""}`,
-            },
-          ],
-    unresolved: false,
-  }));
+  evaluateRequiredEvidence(compiledCheck, context, catalogued).map(
+    (evaluation, index) => ({
+      evaluation,
+      operands:
+        evaluation.status === "pass"
+          ? []
+          : [
+              {
+                expected: true,
+                expectedSource: "evidence: plan literal",
+                path: `$.${compiledCheck.requiredEvidence[index] ?? ""}`,
+              },
+            ],
+      unresolved: false,
+    })
+  );

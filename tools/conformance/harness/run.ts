@@ -731,7 +731,11 @@ const runTraceCheck = async (
   };
   recorder.diagnoses.push(
     ...diagnoseAssertions(check, finalContext),
-    ...diagnoseRequiredEvidence(compiledCheck, finalContext)
+    ...diagnoseRequiredEvidence(
+      compiledCheck,
+      finalContext,
+      plan.catalog?.operations.has(check.operation) === true
+    )
   );
 
   return createCheckResult(check.checkId, readEvaluations(recorder), {
@@ -838,7 +842,11 @@ const executeCheck = async (
 
     recorder.diagnoses.push(
       ...diagnoseAssertions(check, context),
-      ...diagnoseRequiredEvidence(compiledCheck, context)
+      ...diagnoseRequiredEvidence(
+        compiledCheck,
+        context,
+        catalogOperation !== undefined
+      )
     );
 
     return createCheckResult(check.checkId, readEvaluations(recorder), {
