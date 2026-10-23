@@ -43,6 +43,24 @@ const assertSchema = (
   }
 };
 
+const validateMapKeys = (entries: unknown, label: string): void => {
+  if (Array.isArray(entries)) {
+    const keys = new Set<string>();
+    for (const entry of entries) {
+      if (
+        !Array.isArray(entry) ||
+        typeof entry[0] !== "string" ||
+        keys.has(entry[0])
+      ) {
+        throw new ObservationEncodingError(
+          `${label}: map keys must be unique strings`
+        );
+      }
+      keys.add(entry[0]);
+    }
+  }
+};
+
 const validateEncoding = (value: unknown, label: string): void => {
   if (
     typeof value === "number" &&
@@ -62,6 +80,7 @@ const validateEncoding = (value: unknown, label: string): void => {
     if (Object.hasOwn(value, "$bytes") || Object.hasOwn(value, "$map")) {
       assertSchema(validateRecord, value, label);
     }
+    validateMapKeys(value.$map, label);
     for (const [key, entry] of Object.entries(value)) {
       validateEncoding(entry, `${label}.${key}`);
     }

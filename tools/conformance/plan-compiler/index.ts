@@ -71,6 +71,7 @@ export interface ConformancePlanWhen {
 }
 
 export interface ConformancePlanReference {
+  nullable?: boolean;
   length?: ConformancePlanNumericOperand;
   path: string;
   targetPath: string;

@@ -20,6 +20,23 @@ export const valuesAreEqual = (left: unknown, right: unknown): boolean => {
       return false;
     }
 
+    if (Array.isArray(left.$map) && Array.isArray(right.$map)) {
+      const rightEntries = right.$map;
+      return (
+        left.$map.length === rightEntries.length &&
+        left.$map.every(
+          (entry: unknown) =>
+            Array.isArray(entry) &&
+            rightEntries.some(
+              (candidate: unknown) =>
+                Array.isArray(candidate) &&
+                entry[0] === candidate[0] &&
+                valuesAreEqual(entry[1], candidate[1])
+            )
+        )
+      );
+    }
+
     const leftKeys = Object.keys(left).toSorted();
     const rightKeys = Object.keys(right).toSorted();
 

@@ -663,3 +663,61 @@ describe("quantified assertion operands", () => {
     });
   });
 });
+
+test("tagged map equality ignores entry order and preserves array value order", () => {
+  const assertions: ConformancePlanCheck["assertions"] = [
+    {
+      kind: "resultField",
+      field: "$",
+      equals: {
+        $map: [
+          ["a", [1, 2]],
+          [
+            "b",
+            {
+              $map: [
+                ["x", 1],
+                ["y", 2],
+              ],
+            },
+          ],
+        ],
+      },
+    },
+  ];
+  const result = {
+    $map: [
+      [
+        "b",
+        {
+          $map: [
+            ["y", 2],
+            ["x", 1],
+          ],
+        },
+      ],
+      ["a", [1, 2]],
+    ],
+  };
+  expect(
+    evaluateAssertions(buildCheck(assertions), { result })[0]?.status
+  ).toBe("pass");
+  expect(
+    evaluateAssertions(buildCheck(assertions), {
+      result: {
+        $map: [
+          [
+            "b",
+            {
+              $map: [
+                ["y", 2],
+                ["x", 1],
+              ],
+            },
+          ],
+          ["a", [2, 1]],
+        ],
+      },
+    })[0]?.status
+  ).toBe("fail");
+});
