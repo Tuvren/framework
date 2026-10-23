@@ -56,7 +56,7 @@ tickets:
       evidence: "Assert a run with zero applicable checks reports unsupported or not_applicable in the harness and is rejected as pass by the evidence contract; assert framework-rust-certification is listed in the inventory as unsupported and absent from the certified list; assert every other previously certified project keeps its status."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: settled
-    status: planned
+    status: done
   - id: KRT-CZ002
     title: Make assertions non-vacuous and add the pinned operators
     type: Feature
@@ -80,7 +80,7 @@ tickets:
       evidence: "Assert each new operator passes and fails on hand-built contexts, that two unresolved operands fail, that every and some without a length assertion are rejected at compile time, and that a when branch that never applies is reported; list any plan corrected with its verification finding."
     flows: [flow-authority-packet-driven-conformance]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-CZ003
     title: Land the pinned catalog, encoding, and plan schemas
     type: Feature
