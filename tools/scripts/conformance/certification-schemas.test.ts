@@ -214,6 +214,32 @@ describe("operation catalog schema", () => {
       "an open object in a oneOf branch of allOf",
       { allOf: [{ oneOf: [{ type: "string" }, { properties: {} }] }] },
     ],
+    [
+      "an empty property schema",
+      {
+        additionalProperties: false,
+        properties: { payload: {} },
+        type: "object",
+      },
+    ],
+    [
+      "a true property schema",
+      {
+        additionalProperties: false,
+        properties: { payload: true },
+        type: "object",
+      },
+    ],
+    [
+      "a type-less property schema",
+      {
+        additionalProperties: false,
+        properties: { payload: { description: "anything", minLength: 1 } },
+        type: "object",
+      },
+    ],
+    ["an array of anything", { items: true, type: "array" }],
+    ["an array without items", { type: "array" }],
   ])("reports %s reachable from an observation schema", (_label, schema) => {
     const catalog = mutated(PINNED_OPERATION_CATALOG, (draft) => {
       at(draft, "operations", 1, "observation").result = schema;
@@ -252,6 +278,26 @@ describe("operation catalog schema", () => {
     });
 
     expectValid("operationCatalog", catalog);
+    expect(
+      collectCertificationIntegrityFailures("operationCatalog", catalog)
+    ).toEqual([]);
+  });
+
+  test("accepts property schemas that exclude objects", () => {
+    const catalog = mutated(PINNED_OPERATION_CATALOG, (draft) => {
+      at(draft, "operations", 1, "observation").result = {
+        additionalProperties: false,
+        properties: {
+          constant: { const: 1 },
+          enumerated: { enum: ["a", 1, null] },
+          never: false,
+          nullable: { type: ["string", "null"] },
+          text: { type: "string" },
+        },
+        type: "object",
+      };
+    });
+
     expect(
       collectCertificationIntegrityFailures("operationCatalog", catalog)
     ).toEqual([]);

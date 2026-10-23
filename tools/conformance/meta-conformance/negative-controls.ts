@@ -39,6 +39,7 @@ import type {
   ConformanceRunStatus,
 } from "../../scripts/lib/conformance-contract.ts";
 import { createVerificationLogs } from "../../scripts/lib/verification-logs.ts";
+import type { VerificationLogs } from "../../scripts/lib/verification-logs.ts";
 
 /** One port's negative-control wiring (ADR-0079 decisions 1 to 3). */
 export interface NegativeControlPortConfig {
@@ -80,6 +81,8 @@ export interface CollateralFailure {
 export interface MutantReport {
   activated: boolean;
   activationCount: number;
+  /** Retained harness failure artifacts, with replays against the real manifest. */
+  artifacts?: string[];
   collateral: { assertions: CollateralFailure[]; count: number };
   designatedFailures: string[];
   expectedRejection?: string;
@@ -94,6 +97,7 @@ export interface MutantReport {
 export interface NegativeControlReport {
   control: {
     adapter: string;
+    artifacts?: string[];
     failedChecks?: string[];
     reason?: string;
     status: ConformanceRunStatus | "error";
@@ -114,6 +118,8 @@ export interface NegativeControlReport {
 
 export interface NegativeControlRunOptions {
   concurrency?: number;
+  /** Verification log root for retained artifacts; defaults to VERIFY_LOG_DIR. */
+  logDirectory?: string;
   mutants?: readonly string[];
   timeoutMs?: number;
 }
@@ -136,6 +142,7 @@ export interface Activation {
 
 export interface HarnessRun {
   activations: Activation[];
+  artifacts?: string[];
   evidence?: ConformanceEvidence;
   failure?: string;
   unanswered: string[];
@@ -298,17 +305,102 @@ const runProcess = async (
   return { code, stderr, timedOut };
 };
 
+const inSequence = async <T, R>(
+  items: readonly T[],
+  run: (item: T) => Promise<R>,
+  index = 0,
+  done: readonly R[] = []
+): Promise<R[]> => {
+  const item = items[index];
+  if (item === undefined) {
+    return [...done];
+  }
+  const next = await run(item);
+  return await inSequence(items, run, index + 1, [...done, next]);
+};
+
+const replayCommand = (
+  config: NegativeControlPortConfig,
+  mutantId: string
+): string =>
+  `${config.mutantEnv}=${mutantId} bun ${HARNESS} --adapter ${display(config.mutantAdapter)} --packet ${display(config.packet)} --allow-failing-evidence`;
+
+/** Points harness replays at the real manifest instead of the probe wrapper. */
+const rewriteReplays = (
+  text: string,
+  rewrite: (replay: string) => string
+): string => {
+  let artifact: unknown;
+  try {
+    artifact = JSON.parse(text);
+  } catch {
+    return text;
+  }
+  if (!(isRecord(artifact) && Array.isArray(artifact.checkResults))) {
+    return text;
+  }
+  const checkResults = artifact.checkResults.map((checkResult: unknown) =>
+    isRecord(checkResult) &&
+    isRecord(checkResult.failure) &&
+    typeof checkResult.failure.replay === "string"
+      ? {
+          ...checkResult,
+          failure: {
+            ...checkResult.failure,
+            replay: rewrite(checkResult.failure.replay),
+          },
+        }
+      : checkResult
+  );
+  return `${JSON.stringify({ ...artifact, checkResults }, null, 2)}\n`;
+};
+
+const readHarnessArtifacts = async (logRoot: string): Promise<string[]> => {
+  const runs = await readdir(logRoot, { withFileTypes: true });
+  const files = await Promise.all(
+    runs
+      .filter((entry) => entry.isDirectory())
+      .map(async ({ name }) => {
+        const directory = nodePath.join(logRoot, name);
+        return (await readdir(directory))
+          .filter((file) => file.endsWith(".log"))
+          .map((file) => nodePath.join(directory, file));
+      })
+  );
+  return files.flat().toSorted();
+};
+
+const retainHarnessArtifacts = async (
+  logRoot: string,
+  wrappedPath: string,
+  replayPrefix: string,
+  adapterPath: string,
+  retain: (text: string) => Promise<string>
+): Promise<string[]> =>
+  await inSequence(
+    await readHarnessArtifacts(logRoot),
+    async (file) =>
+      await retain(
+        rewriteReplays(
+          await readFile(file, "utf-8"),
+          (replay) =>
+            `${replayPrefix}${replay.split(wrappedPath).join(display(adapterPath))}`
+        )
+      )
+  );
+
 const runHarness = async (
   config: NegativeControlPortConfig,
   adapterPath: string,
   mutantId: string | undefined,
   workDirectory: string,
-  options: NegativeControlRunOptions
+  options: NegativeControlRunOptions,
+  retain: (text: string) => Promise<string>
 ): Promise<HarnessRun> => {
   const label = mutantId ?? "control";
   const runDirectory = nodePath.join(workDirectory, label);
   const probeDirectory = nodePath.join(runDirectory, "probes");
-  const harnessLogs = nodePath.join(workDirectory, "harness-logs");
+  const harnessLogs = nodePath.join(runDirectory, "harness-logs");
   await mkdir(probeDirectory, { recursive: true });
   await mkdir(harnessLogs, { recursive: true });
   const manifest = await readAdapterManifest(adapterPath);
@@ -369,38 +461,38 @@ const runHarness = async (
   const unanswered = probes.flatMap(({ problem }) =>
     problem === undefined ? [] : [problem]
   );
+  const retained = await retainHarnessArtifacts(
+    harnessLogs,
+    wrappedPath,
+    mutantId === undefined ? "" : `${config.mutantEnv}=${mutantId} `,
+    adapterPath,
+    retain
+  );
+  const observed = {
+    activations,
+    ...(retained.length === 0 ? {} : { artifacts: retained }),
+    unanswered,
+  };
   if (run.timedOut) {
-    return {
-      activations,
-      failure: `harness timed out after ${timeoutMs}ms`,
-      unanswered,
-    };
+    return { ...observed, failure: `harness timed out after ${timeoutMs}ms` };
   }
   if (run.code !== 0) {
     return {
-      activations,
+      ...observed,
       failure: `harness exited ${String(run.code)}: ${run.stderr.trim()}`,
-      unanswered,
     };
   }
   try {
     const evidence: unknown = JSON.parse(await readFile(evidencePath, "utf-8"));
     assertConformanceEvidence(evidence, `${label} evidence`);
-    return { activations, evidence, unanswered };
+    return { ...observed, evidence };
   } catch (error: unknown) {
     return {
-      activations,
+      ...observed,
       failure: `harness evidence unusable: ${error instanceof Error ? error.message : String(error)}`,
-      unanswered,
     };
   }
 };
-
-const replayCommand = (
-  config: NegativeControlPortConfig,
-  mutantId: string
-): string =>
-  `${config.mutantEnv}=${mutantId} bun ${HARNESS} --adapter ${display(config.mutantAdapter)} --packet ${display(config.packet)} --allow-failing-evidence`;
 
 const failingAssertions = (
   evidence: ConformanceEvidence
@@ -558,20 +650,6 @@ export const classifyMutantRun = (
   return result("survived", "activated, but no designated assertion failed");
 };
 
-const inSequence = async <T, R>(
-  items: readonly T[],
-  run: (item: T) => Promise<R>,
-  index = 0,
-  done: readonly R[] = []
-): Promise<R[]> => {
-  const item = items[index];
-  if (item === undefined) {
-    return [...done];
-  }
-  const next = await run(item);
-  return await inSequence(items, run, index + 1, [...done, next]);
-};
-
 const emptyTotals = (): NegativeControlReport["totals"] => ({
   activated: 0,
   equivalent: 0,
@@ -626,17 +704,32 @@ export const runNegativeControls = async (
   const workDirectory = await mkdtemp(
     nodePath.join(tmpdir(), "tuvren-negative-controls-")
   );
+  let logs: VerificationLogs | undefined;
+  const retain = async (text: string): Promise<string> => {
+    logs ??= await createVerificationLogs(
+      fromRoot(
+        options.logDirectory ??
+          process.env.VERIFY_LOG_DIR ??
+          ".cache/verification"
+      )
+    );
+    return await logs.create(text);
+  };
   try {
     const controlRun = await runHarness(
       config,
       config.controlAdapter,
       undefined,
       workDirectory,
-      options
+      options,
+      retain
     );
     const { evidence } = controlRun;
     report.control = {
       adapter: report.control.adapter,
+      ...(controlRun.artifacts === undefined
+        ? {}
+        : { artifacts: controlRun.artifacts }),
       status: evidence?.status ?? "error",
       ...(evidence === undefined
         ? {}
@@ -680,16 +773,19 @@ export const runNegativeControls = async (
           config.mutantAdapter,
           control.mutantId,
           workDirectory,
-          options
+          options,
+          retain
         );
         return {
           ...classifyMutantRun(control, run),
+          ...(run.artifacts === undefined ? {} : { artifacts: run.artifacts }),
           replay: replayCommand(config, control.mutantId),
         };
       }
     );
   } finally {
     await rm(workDirectory, { force: true, recursive: true });
+    await logs?.finish(false);
   }
 
   for (const mutant of report.mutants) {

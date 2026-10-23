@@ -61,8 +61,6 @@ export interface CatalogOperation {
 
 export interface OperationCatalog {
   catalogId: string;
-  /** The whole catalog file; local `$ref`s in observation schemas resolve against it. */
-  document: unknown;
   operations: ReadonlyMap<string, CatalogOperation>;
   packetId: string;
 }
@@ -180,7 +178,6 @@ export const parseOperationCatalog = (
 
   return {
     catalogId: String(value.catalogId),
-    document: value,
     operations,
     packetId: String(value.packetId),
   };
@@ -245,7 +242,10 @@ const dereference = (
   const hashIndex = reference.indexOf("#");
   const base = hashIndex === -1 ? reference : reference.slice(0, hashIndex);
   const fragment = hashIndex === -1 ? "" : reference.slice(hashIndex + 1);
-  const document = base === "" ? node.document : loadSchemaRegistry().get(base);
+  const document =
+    base === "" || (isRecord(node.document) && node.document.$id === base)
+      ? node.document
+      : loadSchemaRegistry().get(base);
   const target = readPointer(document, fragment);
 
   return document !== undefined && isJsonSchema(target)
@@ -563,6 +563,12 @@ const subject = (context: RuleContext): string =>
     ? `check ${context.checkId}`
     : `check ${context.checkId} step ${context.stepId}`;
 
+/** Local `$ref`s resolve within the observation schema, as integrity validation does. */
+const observationRoot = (schema: JsonSchema): SchemaNode => ({
+  document: schema,
+  schema,
+});
+
 /** The schema problem with an observation target, or undefined when it resolves. */
 const observationProblem = (
   catalog: OperationCatalog,
@@ -580,10 +586,7 @@ const observationProblem = (
     return `reads ${target.domain}, which ${target.operationId} does not observe`;
   }
 
-  const leaves = resolveSchemaPath(
-    { document: catalog.document, schema },
-    target.segments
-  );
+  const leaves = resolveSchemaPath(observationRoot(schema), target.segments);
 
   return leaves.length === 0
     ? `reads ${target.domain}.${renderPath(target.segments)}, which the ${target.operationId} observation schema does not declare`
@@ -657,10 +660,7 @@ const literalBooleanProblem = (
     return `${target.operationId} is a ${operation.kind} operation, not a syscall`;
   }
 
-  const leaves = resolveSchemaPath(
-    { document: catalog.document, schema },
-    target.segments
-  );
+  const leaves = resolveSchemaPath(observationRoot(schema), target.segments);
 
   return isBooleanLeaf(leaves)
     ? undefined
@@ -801,15 +801,25 @@ const collectLegacyReferences = (value: unknown): string[] => {
     : [];
 };
 
+/** `$ref`s the runner resolves for a projected step's dispatch and inspection. */
+const projectedReferences = (step: ConformancePlanStep): string[] =>
+  step.arguments === undefined
+    ? []
+    : [step.arguments, step.inspectState].flatMap(collectArgumentReferences);
+
 /** Context paths of everything a step hands to the adapter. */
 const forwardedPaths = (
   check: ConformancePlanCheck,
   step?: ConformancePlanStep
 ): PathSegment[][] => {
   if (step?.arguments !== undefined) {
-    return collectArgumentReferences(step.arguments)
-      .map((reference) => reference.split("."))
-      .filter((segments) => segments[0] !== "capture");
+    // A projected check still hands its whole input to createInstance.
+    return [
+      ...(check.input === undefined ? [] : [["input"]]),
+      ...projectedReferences(step)
+        .map((reference) => reference.split("."))
+        .filter((segments) => segments[0] !== "capture"),
+    ];
   }
 
   return [
@@ -823,12 +833,12 @@ const checkExpectedRootReferences = (
   context: RuleContext,
   step: ConformancePlanStep
 ): void => {
-  for (const reference of collectArgumentReferences(step.arguments)) {
+  for (const reference of projectedReferences(step)) {
     if (!ARGUMENT_REFERENCE_PATTERN.test(reference)) {
       report(
         context,
         "expected-root-reference",
-        `${subject(context)} arguments reference ${reference}; only input, fixture.input, and capture roots may reach the adapter`
+        `${subject(context)} arguments or inspectState reference ${reference}; only input, fixture.input, and capture roots may reach the adapter`
       );
     }
   }
@@ -844,6 +854,31 @@ const checkExpectedRootReferences = (
         context,
         "expected-root-reference",
         `${subject(context)} input references ${reference}, an expected fixture root`
+      );
+    }
+  }
+};
+
+/** A projected check forwards its input verbatim to createInstance. */
+const checkInstanceInputReferences = (
+  context: RuleContext,
+  check: ConformancePlanCheck
+): void => {
+  const references = [
+    ...collectArgumentReferences(check.input),
+    ...collectLegacyReferences(check.input).map((reference) =>
+      reference.slice(2)
+    ),
+  ];
+
+  for (const reference of references) {
+    const [root, section] = reference.split(".");
+
+    if (root === "fixture" && section === "expected") {
+      report(
+        context,
+        "expected-root-reference",
+        `${subject(context)} input, which createInstance receives, references ${reference}, an expected fixture root`
       );
     }
   }
@@ -922,6 +957,10 @@ const checkCheck = (
 
   for (const step of steps) {
     checkStep({ ...context, stepId: step.stepId }, check, step);
+  }
+
+  if (steps.some((step) => step.arguments !== undefined)) {
+    checkInstanceInputReferences(context, check);
   }
 
   const scope: AssertionScope =

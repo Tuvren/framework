@@ -43,15 +43,14 @@ const FIXTURE_PACKET = `${FIXTURE_DIR}/packet.json`;
 const MIGRATED_VIOLATING_PATTERN = /migrated-violating-plan\.json/u;
 const REPO_ROOT = nodePath.resolve(import.meta.dirname, "../../..");
 
-const catalog = parseOperationCatalog(
-  JSON.parse(
-    await readFile(
-      nodePath.resolve(REPO_ROOT, FIXTURE_DIR, "operations.json"),
-      "utf-8"
-    )
-  ) as unknown,
-  "fixture catalog"
-);
+const CATALOG_JSON = JSON.parse(
+  await readFile(
+    nodePath.resolve(REPO_ROOT, FIXTURE_DIR, "operations.json"),
+    "utf-8"
+  )
+) as { operations: unknown[] };
+
+const catalog = parseOperationCatalog(CATALOG_JSON, "fixture catalog");
 
 const planWith = (...checks: ConformancePlanCheck[]): ConformancePlan => ({
   applicability: { capabilities: ["fixture.store"] },
@@ -315,6 +314,54 @@ describe("literal-boolean", () => {
   });
 });
 
+describe("observation-local references", () => {
+  const localCatalog = parseOperationCatalog(
+    {
+      ...CATALOG_JSON,
+      operations: [
+        ...CATALOG_JSON.operations,
+        {
+          binding: "fixture.store",
+          capability: "fixture.store",
+          input: { type: "object" },
+          kind: "syscall",
+          observation: {
+            result: {
+              $defs: {
+                entry: {
+                  additionalProperties: false,
+                  properties: { done: { $ref: "#/$defs/flag" } },
+                  type: "object",
+                },
+                flag: { type: "boolean" },
+              },
+              additionalProperties: false,
+              properties: { entry: { $ref: "#/$defs/entry" } },
+              type: "object",
+            },
+          },
+          operationId: "fixture.store.local",
+        },
+      ],
+    },
+    "local $defs catalog"
+  );
+
+  test("resolve against the observation schema like the integrity validator", () => {
+    expect(
+      evaluateCertificationRules(
+        planWith(
+          hasCheck(
+            [{ equals: true, field: "$.entry.done", kind: "resultField" }],
+            { operation: "fixture.store.local" }
+          )
+        ),
+        localCatalog
+      )
+    ).toEqual([]);
+  });
+});
+
 describe("no-echo", () => {
   test("fires when an argument reference reaches the expected fixture node", () => {
     expect(
@@ -387,6 +434,75 @@ describe("no-echo", () => {
     ).toContain("no-echo");
   });
 
+  test("fires when an inspection query forwards the expected node", () => {
+    expect(
+      rulesFired(
+        planWith(
+          hasCheck([], {
+            fixture: "store",
+            steps: [
+              {
+                arguments: { key: "a" },
+                assertions: [
+                  {
+                    equalsPath: "$.fixture.input.expectedCount",
+                    field: "$.count",
+                    kind: "stateField",
+                  },
+                ],
+                inspectState: {
+                  count: { $ref: "fixture.input.expectedCount" },
+                },
+                operation: "fixture.store.has",
+                stepId: "lookup",
+              },
+            ],
+          })
+        )
+      )
+    ).toContain("no-echo");
+  });
+
+  test("fires when a projected check expects a node of its instance input", () => {
+    const steps = [
+      {
+        arguments: { key: { $literal: "a" } },
+        assertions: [
+          {
+            equalsPath: "$.input.expectedCount",
+            field: "$.count",
+            kind: "stateField" as const,
+          },
+        ],
+        operation: "fixture.store.has",
+        stepId: "lookup",
+      },
+    ];
+
+    expect(
+      rulesFired(planWith(hasCheck([], { input: { expectedCount: 1 }, steps })))
+    ).toContain("no-echo");
+    expect(
+      rulesFired(
+        planWith(
+          hasCheck(
+            [
+              {
+                equalsPath: "$.input.expectedCount",
+                field: "$.trace.lookup.state.count",
+                kind: "stateField",
+              },
+            ],
+            {
+              input: { expectedCount: 1 },
+              steps: [{ ...steps[0], assertions: [] }],
+            }
+          )
+        )
+      )
+    ).toContain("no-echo");
+  });
+
   test("stays silent when the expected node is not forwarded", () => {
     expect(
       rulesFired(
@@ -434,6 +550,54 @@ describe("expected-root-reference", () => {
       )
     ).toContain("expected-root-reference");
   });
+
+  test("fires on an inspection query reference into fixture.expected", () => {
+    expect(
+      rulesFired(
+        planWith(
+          hasCheck([], {
+            fixture: "store",
+            steps: [
+              {
+                arguments: { key: "a" },
+                assertions: [PRESENT_IS_TRUE],
+                inspectState: { count: { $ref: "fixture.expected.count" } },
+                operation: "fixture.store.has",
+                stepId: "lookup",
+              },
+            ],
+          })
+        )
+      )
+    ).toContain("expected-root-reference");
+  });
+
+  test.each([
+    ["a $ref", { hash: { $ref: "fixture.expected.hash" } }],
+    ["a legacy path", { hash: "$.fixture.expected.hash" }],
+  ])(
+    "fires on %s into fixture.expected in a projected check's instance input",
+    (_label, input) => {
+      expect(
+        rulesFired(
+          planWith(
+            hasCheck([], {
+              fixture: "store",
+              input,
+              steps: [
+                {
+                  arguments: { key: "a" },
+                  assertions: [PRESENT_IS_TRUE],
+                  operation: "fixture.store.has",
+                  stepId: "lookup",
+                },
+              ],
+            })
+          )
+        )
+      ).toContain("expected-root-reference");
+    }
+  );
 
   test("fires on a legacy step input reference into fixture.expected", () => {
     expect(
