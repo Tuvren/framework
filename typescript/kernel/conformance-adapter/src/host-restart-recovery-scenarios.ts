@@ -41,14 +41,22 @@ import {
   createStoredTurnNodeRecord,
   createStoredTurnTreeRecord,
 } from "@tuvren/kernel-testkit";
-import type { FaultPoint } from "@tuvren/kernel-testkit";
+import type {
+  FaultInjectingBackendFactory,
+  FaultPoint,
+} from "@tuvren/kernel-testkit";
 
 import { createProjection } from "./host-scenario-support.js";
 import type {
   KernelAdapterConfig,
   ManagedRuntimeBackend,
 } from "./host-scenario-support.js";
-import { readErrorCode, runRestartRecoveryPhase } from "./host-support.js";
+import {
+  conformanceBackend,
+  createConformanceRuntimeKernel,
+  readErrorCode,
+  runRestartRecoveryPhase,
+} from "./host-support.js";
 
 interface CrashRecoveryBackendHarness {
   cleanup: () => void | Promise<void>;
@@ -220,8 +228,15 @@ const runConcurrentWriterConflictOnBackends = async (
   };
 };
 
+const conformanceFaultInjection = (
+  config: Pick<KernelAdapterConfig, "mutant">
+): FaultInjectingBackendFactory =>
+  config.mutant?.wrapFaultInjection(createFaultInjectingBackend) ??
+  createFaultInjectingBackend;
+
 const runFaultPlanConcurrentWriterExercise = async (
-  baseBackend: RuntimeBackend
+  baseBackend: RuntimeBackend,
+  faultInjection: FaultInjectingBackendFactory
 ): Promise<Record<string, unknown>> => {
   const schema = {
     ...createCanonicalKernelTestSchema(),
@@ -280,20 +295,17 @@ const runFaultPlanConcurrentWriterExercise = async (
     await tx.branches.set(branch);
   });
 
-  const faultBackend: ManagedRuntimeBackend = createFaultInjectingBackend(
-    baseBackend,
-    {
-      concurrentWriter: {
-        branchId: branch.branchId,
-      },
-      match: {
-        branchId: branch.branchId,
-        operation: "checkpoint",
-      },
-      point: "before-commit",
-      policy: "once",
-    }
-  );
+  const faultBackend: ManagedRuntimeBackend = faultInjection(baseBackend, {
+    concurrentWriter: {
+      branchId: branch.branchId,
+    },
+    match: {
+      branchId: branch.branchId,
+      operation: "checkpoint",
+    },
+    point: "before-commit",
+    policy: "once",
+  });
 
   let injectedErrorCode = "no_error";
 
@@ -366,12 +378,15 @@ const closeManagedBackends = async (
 };
 
 const runCrashRecoveryFaultPoint = async (
+  config: Pick<KernelAdapterConfig, "mutant">,
   harness: CrashRecoveryBackendHarness,
   point: FaultPoint,
   reopenDurably: boolean
 ): Promise<Record<string, unknown>> => {
   const baseBackend = await harness.createBackend();
-  const kernel = createRuntimeKernel({ backend: baseBackend });
+  const kernel = createConformanceRuntimeKernel(config, {
+    backend: baseBackend,
+  });
   const schema = {
     ...createCanonicalKernelTestSchema(),
     schemaId: `schema_fault_${point.replaceAll("-", "_")}`,
@@ -417,12 +432,14 @@ const runCrashRecoveryFaultPoint = async (
     throw new Error(`expected baseline checkpoint for ${point}`);
   }
 
-  const faultBackend = createFaultInjectingBackend(baseBackend, {
+  const faultBackend = conformanceFaultInjection(config)(baseBackend, {
     match: { operation: "checkpoint" },
     point,
     policy: "once",
   });
-  const faultKernel = createRuntimeKernel({ backend: faultBackend });
+  const faultKernel = createConformanceRuntimeKernel(config, {
+    backend: faultBackend,
+  });
 
   await faultKernel.run.beginStep(runId, "tool_execution");
   const pending = await faultKernel.staging.stage(
@@ -449,7 +466,7 @@ const runCrashRecoveryFaultPoint = async (
   }
 
   try {
-    const inspectionKernel = createRuntimeKernel({
+    const inspectionKernel = createConformanceRuntimeKernel(config, {
       backend: inspectionBackend,
     });
     const branch = await inspectionKernel.branch.get(thread.branchId);
@@ -517,8 +534,9 @@ const runCrashRecoveryFaultPoint = async (
 };
 
 const createCrashRecoveryHarness = async (
-  backend: KernelAdapterConfig["backend"]
+  config: Pick<KernelAdapterConfig, "backend" | "mutant">
 ): Promise<CrashRecoveryBackendHarness> => {
+  const { backend } = config;
   if (backend === "memory") {
     const memoryBackendModule: unknown = await import(
       new URL("../../backends/memory/dist/index.js", import.meta.url).href
@@ -532,7 +550,7 @@ const createCrashRecoveryHarness = async (
       cleanup: () => {
         // Memory harnesses have no external resources to release.
       },
-      createBackend: () => createMemoryBackend(),
+      createBackend: () => conformanceBackend(config, createMemoryBackend()),
     };
   }
 
@@ -774,22 +792,25 @@ export const createRestartRecoveryScenarios = (config: KernelAdapterConfig) => {
   const runDurableCrashRecovery = async (): Promise<
     Record<string, unknown>
   > => {
-    const harness = await createCrashRecoveryHarness(config.backend);
+    const harness = await createCrashRecoveryHarness(config);
 
     try {
       return createProjection({
         crashRecovery: {
           afterCommitBeforeAck: await runCrashRecoveryFaultPoint(
+            config,
             harness,
             "after-commit-before-ack",
             true
           ),
           beforeCommit: await runCrashRecoveryFaultPoint(
+            config,
             harness,
             "before-commit",
             true
           ),
           midCommit: await runCrashRecoveryFaultPoint(
+            config,
             harness,
             "mid-commit",
             true
@@ -804,22 +825,25 @@ export const createRestartRecoveryScenarios = (config: KernelAdapterConfig) => {
   const runInProcessCrashRecovery = async (): Promise<
     Record<string, unknown>
   > => {
-    const harness = await createCrashRecoveryHarness(config.backend);
+    const harness = await createCrashRecoveryHarness(config);
 
     try {
       return createProjection({
         crashRecovery: {
           afterCommitBeforeAck: await runCrashRecoveryFaultPoint(
+            config,
             harness,
             "after-commit-before-ack",
             false
           ),
           beforeCommit: await runCrashRecoveryFaultPoint(
+            config,
             harness,
             "before-commit",
             false
           ),
           midCommit: await runCrashRecoveryFaultPoint(
+            config,
             harness,
             "mid-commit",
             false
@@ -842,20 +866,22 @@ export const createRestartRecoveryScenarios = (config: KernelAdapterConfig) => {
         throw new Error("memory backend module is missing its factory");
       }
       const { createMemoryBackend } = memoryBackendModule;
-      const seamBackend = createMemoryBackend();
-      const raceBackend = createMemoryBackend();
+      const seamBackend = conformanceBackend(config, createMemoryBackend());
+      const raceBackend = conformanceBackend(config, createMemoryBackend());
 
       return createProjection({
         crashRecoveryConcurrency: await runConcurrentWriterConflictOnBackends(
           raceBackend,
           raceBackend
         ),
-        faultPlanConcurrentWriter:
-          await runFaultPlanConcurrentWriterExercise(seamBackend),
+        faultPlanConcurrentWriter: await runFaultPlanConcurrentWriterExercise(
+          seamBackend,
+          conformanceFaultInjection(config)
+        ),
       });
     }
 
-    const harness = await createCrashRecoveryHarness(config.backend);
+    const harness = await createCrashRecoveryHarness(config);
 
     try {
       const [seamBackend, firstBackend, secondBackend] = await Promise.all([
@@ -870,8 +896,10 @@ export const createRestartRecoveryScenarios = (config: KernelAdapterConfig) => {
             firstBackend,
             secondBackend
           ),
-          faultPlanConcurrentWriter:
-            await runFaultPlanConcurrentWriterExercise(seamBackend),
+          faultPlanConcurrentWriter: await runFaultPlanConcurrentWriterExercise(
+            seamBackend,
+            conformanceFaultInjection(config)
+          ),
         });
       } finally {
         await Promise.all([

@@ -177,6 +177,9 @@ tickets:
       evidence: "Assert a malformed frame, an unresolved operand, a valid observation failing an assertion, and a provisioning failure each produce the matching classification and a replay command that reproduces the failure."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
+    deviations:
+      - files: [tools/scripts/lib/conformance-contract.test.ts, tools/conformance/harness/assertion-engine/index.ts, tools/conformance/harness/adapter-client.ts]
+        justification: "The evidence-contract tests for the failure block live in the sibling test file of tools/scripts/lib/conformance-contract.ts; operand capture needs the assertion engine and the frame log and stderr tail need the adapter client, both inside tools/conformance/harness but named explicitly here because the ticket scope listed only the harness directory generically."
     status: planned
   - id: KRT-CZ007
     title: Add a test-only mutant seam with activation proof
@@ -198,7 +201,10 @@ tickets:
       evidence: "Assert the registry activates exactly the selected mutant, activation is observable through the control, certification discovery excludes mutant manifests, and no production package imports the registry."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
-    status: planned
+    deviations:
+      - files: [tools/scripts/verify.ts, tools/conformance/certification/certification-manifest.ts, tools/conformance/certification/certification-manifest.test.ts, tools/conformance/certification/validate-certification-discovery.ts]
+        justification: "The new kernel conformance adapter test target must be registered in WORKSPACE_TEST_PROJECTS for the workspace test-lane coverage gate, and certification discovery must reject mutant adapter commands; neither path was named in the ticket scope."
+    status: done
   - id: KRT-CZ008
     title: Implement the initial kernel mutant set and control manifest
     type: Feature
@@ -220,7 +226,7 @@ tickets:
       evidence: "Assert every manifest entry maps to a registered mutant with an authority rule reference; implementation controls name at least one designated assertion, while observation and instrumentation controls name their expected runner rejection (for the fault-never-fires control, missing fault-activation evidence); assert the packet references the manifest."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-CZ009
     title: Run negative controls and record the baseline
     type: Feature

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import { selectKernelMutant } from "@tuvren/kernel-testkit";
+import type { SelectedKernelMutant } from "@tuvren/kernel-testkit";
+
 import type {
   AdapterCapabilities,
   AdapterControls,
@@ -30,7 +33,11 @@ import type {
   KernelAdapterConfig,
   KernelOperation,
 } from "./host-scenario-support.js";
+import { createProjection } from "./host-scenario-support.js";
 import { result } from "./host-support.js";
+
+const MUTANT_ENV = "TUVREN_KERNEL_MUTANT";
+const MUTANT_ACTIVATION_OPERATION = "kernel.mutant.activation";
 
 const defaultCapabilities = (
   backend: KernelAdapterConfig["backend"]
@@ -85,6 +92,7 @@ const readAdapterConfig = (args: readonly string[]): KernelAdapterConfig => {
   const capabilities: string[] = [];
   let adapterId = "typescript-kernel-memory";
   let backend: KernelAdapterConfig["backend"] = "memory";
+  let mutantId: string | undefined;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -109,6 +117,23 @@ const readAdapterConfig = (args: readonly string[]): KernelAdapterConfig => {
       continue;
     }
 
+    if (arg === "--mutant") {
+      mutantId = args[index + 1];
+      if (mutantId === undefined) {
+        throw new Error("--mutant requires a value");
+      }
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--mutant-from-env") {
+      mutantId = process.env[MUTANT_ENV];
+      if (mutantId === undefined || mutantId.length === 0) {
+        throw new Error(`--mutant-from-env requires ${MUTANT_ENV}`);
+      }
+      continue;
+    }
+
     if (arg === "--capability") {
       const value = args[index + 1];
       if (value === undefined) {
@@ -119,14 +144,24 @@ const readAdapterConfig = (args: readonly string[]): KernelAdapterConfig => {
     }
   }
 
+  if (mutantId !== undefined && backend !== "memory") {
+    throw new Error("kernel mutants wrap the reference memory backend only");
+  }
+
   return Object.freeze({
     adapterId,
     backend,
     capabilities: Object.freeze(
       capabilities.length > 0 ? capabilities : defaultCapabilities(backend)
     ),
+    ...(mutantId === undefined ? {} : { mutant: selectKernelMutant(mutantId) }),
   });
 };
+
+const createMutantActivationOperation =
+  (mutant: SelectedKernelMutant): KernelOperation =>
+  () =>
+    createProjection({ activation: mutant.readActivation() });
 
 const ADAPTER_CONFIG = readAdapterConfig(process.argv.slice(2));
 
@@ -177,6 +212,13 @@ const kernelOperations = new Map<string, KernelOperation>(
       runLivenessScenarios.runStalePreemption,
     "kernel.scope-isolation.cross-scope-probe":
       reclamationScenarios.runCrossScopeProbe,
+    ...(ADAPTER_CONFIG.mutant === undefined
+      ? {}
+      : {
+          [MUTANT_ACTIVATION_OPERATION]: createMutantActivationOperation(
+            ADAPTER_CONFIG.mutant
+          ),
+        }),
   } satisfies Record<string, KernelOperation>)
 );
 

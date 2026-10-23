@@ -15,6 +15,7 @@
  */
 
 import type { RuntimeBackend } from "@tuvren/kernel-protocol";
+import type { SelectedKernelMutant } from "@tuvren/kernel-testkit";
 
 export type KernelBackend = "memory" | "postgres" | "sqlite";
 
@@ -22,6 +23,8 @@ export interface KernelAdapterConfig {
   readonly adapterId: string;
   readonly backend: KernelBackend;
   readonly capabilities: readonly string[];
+  /** Test-only negative control (ADR-0079); never set by certifying manifests. */
+  readonly mutant?: SelectedKernelMutant;
 }
 
 export interface ManagedRuntimeBackend extends RuntimeBackend {

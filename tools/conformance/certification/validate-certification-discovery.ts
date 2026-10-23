@@ -34,7 +34,9 @@
  *  - a runner project moved/retired without deliberate manifest maintenance
  *    (discovered ⊂ manifest, or manifest ⊂ discovered);
  *  - a new runner wired to the shared engine but never registered;
- *  - a `conformance` target added without declaring whether it certifies.
+ *  - a `conformance` target added without declaring whether it certifies;
+ *  - a mutant adapter manifest (ADR-0079 negative control) wired into the
+ *    certification fleet.
  *
  * Known residual sliver: the engine back-check matches the engine path as a
  * command-text substring, so a target that reaches the engine INDIRECTLY
@@ -61,6 +63,7 @@ import {
 } from "../../scripts/lib/nx-projects.js";
 import {
   CERTIFICATION_MANIFEST_PATH,
+  isMutantAdapterCommand,
   parseCertificationManifest,
 } from "./certification-manifest.js";
 import type { CertificationManifest } from "./certification-manifest.js";
@@ -110,6 +113,19 @@ const drivesAdapter = (command: string, adapter: string): boolean => {
   return tokens.some(
     (token, index) => token === "--adapter" && tokens[index + 1] === adapter
   );
+};
+
+const drivenAdapters = (command: string): string[] => {
+  const tokens = command.split(WHITESPACE);
+  return tokens.flatMap((token, index) => {
+    const adapter = tokens[index + 1];
+    return token === "--adapter" && adapter !== undefined ? [adapter] : [];
+  });
+};
+
+const launchesMutant = (adapter: string): boolean => {
+  const command = readJsonRecord(nodePath.join(ROOT, adapter))?.command;
+  return Array.isArray(command) && isMutantAdapterCommand(command.map(String));
 };
 
 const loadProjects = (): ProjectRecord[] =>
@@ -227,7 +243,22 @@ for (const project of projects) {
   }
 }
 
+for (const project of discovered) {
+  for (const adapter of project.engineCommands.flatMap(drivenAdapters)) {
+    if (launchesMutant(adapter)) {
+      problems.push(
+        `${project.name} (${project.path}) drives mutant adapter manifest ${adapter}; negative controls never certify (ADR-0079)`
+      );
+    }
+  }
+}
+
 for (const entry of manifest.inventory) {
+  if (launchesMutant(entry.adapter)) {
+    problems.push(
+      `inventory lists mutant adapter manifest ${entry.adapter} for ${entry.project}; negative controls never certify (ADR-0079)`
+    );
+  }
   const project = byName.get(entry.project);
   if (
     project !== undefined &&

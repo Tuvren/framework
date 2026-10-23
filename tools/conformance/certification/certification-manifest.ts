@@ -168,6 +168,18 @@ export const parseCertificationManifest = (
   return { certified, inventory, projects };
 };
 
+const MUTANT_FLAGS: ReadonlySet<string> = new Set([
+  "--mutant",
+  "--mutant-from-env",
+]);
+
+/**
+ * A mutant adapter manifest launches a test-only defective implementation
+ * (ADR-0079); it is a negative control and never a certification target.
+ */
+export const isMutantAdapterCommand = (command: readonly string[]): boolean =>
+  command.some((token) => MUTANT_FLAGS.has(token));
+
 export const readCertificationManifest = async (
   path: string
 ): Promise<CertificationManifest> =>

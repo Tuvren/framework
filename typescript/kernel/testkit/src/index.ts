@@ -30,6 +30,10 @@
  * matching transaction fails at a chosen {@link FaultPoint} per a
  * {@link FaultPlan}, for exercising crash-recovery behavior.
  *
+ * {@link selectKernelMutant} selects one test-only negative-control mutant
+ * (ADR-0079) that wraps the reference backend, kernel, codec, or fault seam
+ * and records its activation. Production packages must never import it.
+ *
  * The `create*` and `delay` exports from `kernel-test-fixtures.js` build
  * canonical `Stored*` records and small deterministic helpers (hash
  * sequences, incrementing clocks) shared across the suites and available to
@@ -54,6 +58,21 @@ export {
 } from "./lib/bench-phase-stats.js";
 export type { FaultPlan, FaultPoint } from "./lib/fault-injecting-backend.js";
 export { createFaultInjectingBackend } from "./lib/fault-injecting-backend.js";
+export {
+  listKernelMutants,
+  selectKernelMutant,
+} from "./lib/kernel-mutant-registry.js";
+export type {
+  FaultInjectingBackendFactory,
+  KernelMutantActivation,
+  KernelMutantBackendContext,
+  KernelMutantCodec,
+  KernelMutantKernel,
+  KernelMutantKind,
+  KernelMutantSeamName,
+  KernelMutantSummary,
+  SelectedKernelMutant,
+} from "./lib/kernel-mutant-types.js";
 export {
   createCanonicalKernelTestSchema,
   createCanonicalTurnTreePaths,

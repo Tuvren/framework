@@ -21,6 +21,7 @@ import nodePath from "node:path";
 import {
   CERTIFICATION_MANIFEST_PATH,
   findCertifiedEntriesForAdapter,
+  isMutantAdapterCommand,
   parseCertificationManifest,
   readCertificationManifest,
 } from "./certification-manifest.ts";
@@ -183,5 +184,40 @@ describe("certification manifest contract", () => {
         ROOT
       )
     ).toEqual([]);
+  });
+});
+
+describe("mutant adapter manifests", () => {
+  test.each([
+    [["bun", "host.ts", "--mutant", "kernel.example"], true],
+    [["bun", "host.ts", "--mutant-from-env"], true],
+    [["bun", "host.ts", "--backend", "memory"], false],
+    [["bun", "host.ts", "--adapter-id", "--mutant-like"], false],
+  ])("classifies %j as mutant=%p", (command, expected) => {
+    expect(isMutantAdapterCommand(command)).toBe(expected);
+  });
+
+  test("no inventory adapter manifest launches a mutant", async () => {
+    const manifest = await readCertificationManifest(
+      nodePath.join(ROOT, CERTIFICATION_MANIFEST_PATH)
+    );
+
+    const mutantAdapters = await Promise.all(
+      manifest.inventory.map(async (entry) => {
+        const adapter: unknown = JSON.parse(
+          await readFile(nodePath.join(ROOT, entry.adapter), "utf-8")
+        );
+        const command =
+          typeof adapter === "object" &&
+          adapter !== null &&
+          "command" in adapter &&
+          Array.isArray(adapter.command)
+            ? adapter.command.map(String)
+            : [];
+        return isMutantAdapterCommand(command) ? [entry.adapter] : [];
+      })
+    );
+
+    expect(mutantAdapters.flat()).toEqual([]);
   });
 });
