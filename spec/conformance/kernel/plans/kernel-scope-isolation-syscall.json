@@ -4,7 +4,7 @@
   "packetId": "tuvren.kernel.protocol",
   "certificationRules": "enforcing",
   "applicability": {
-    "capabilities": ["kernel.syscall", "kernel.scope-isolation"]
+    "capabilities": ["kernel.syscall", "kernel.protocol"]
   },
   "checks": [
     {

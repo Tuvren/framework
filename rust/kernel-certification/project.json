@@ -15,6 +15,9 @@
     },
     "conformance": {
       "executor": "nx:run-commands",
+      "outputs": [
+        "{workspaceRoot}/.cache/conformance/rust-kernel-syscall.json"
+      ],
       "inputs": [
         "default",
         "^production",
@@ -29,7 +32,7 @@
       ],
       "options": {
         "cwd": ".",
-        "command": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --summary-only && bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter-syscall.json --capability kernel.syscall --summary-only"
+        "command": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --summary-only && bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter-syscall.json --capability kernel.syscall --evidence-out .cache/conformance/rust-kernel-syscall.json --summary-only"
       }
     },
     "lint": {

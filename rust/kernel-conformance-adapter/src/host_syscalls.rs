@@ -315,7 +315,6 @@ pub(crate) struct Syscalls {
     instances: BTreeMap<String, Instance>,
     next_handle: u64,
     mutant: Option<KernelMutant>,
-    pub(crate) syscall_families: bool,
 }
 impl Syscalls {
     pub(crate) fn configured() -> Result<Self, String> {
@@ -335,7 +334,6 @@ impl Syscalls {
         };
         Ok(Self {
             mutant,
-            syscall_families: args.iter().any(|arg| arg == "--syscall-families"),
             ..Self::default()
         })
     }

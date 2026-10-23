@@ -711,11 +711,9 @@ export const runNegativeControls = async (
   const manifest = await readControlManifest(config.packet);
   const selected = manifest.controls.filter(
     (control) =>
-      (config.mutants === undefined ||
-        config.mutants.includes(control.mutantId)) &&
-      (options.mutants === undefined ||
-        options.mutants.length === 0 ||
-        options.mutants.includes(control.mutantId))
+      options.mutants === undefined ||
+      options.mutants.length === 0 ||
+      options.mutants.includes(control.mutantId)
   );
   const report: NegativeControlReport = {
     control: { adapter: display(config.controlAdapter), status: "error" },
@@ -807,6 +805,19 @@ export const runNegativeControls = async (
     report.mutants = await inSequence(
       selected,
       async (control): Promise<MutantReport> => {
+        if (
+          config.mutants !== undefined &&
+          !config.mutants.includes(control.mutantId)
+        ) {
+          return {
+            ...describeControl(control),
+            outcome: "unsupported",
+            reason:
+              control.mutantId === "kernel.resolve-object-across-scopes"
+                ? "no shared-substrate construction seam in the Rust kernel; not run"
+                : "no Rust reproduction yet; not run",
+          };
+        }
         if (!control.profiles.includes(config.profile)) {
           return {
             ...describeControl(control),

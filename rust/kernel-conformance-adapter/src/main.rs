@@ -128,23 +128,15 @@ fn dispatch_request(
     match request.method.as_str() {
         "initialize" => Ok(json!(AdapterCapabilities {
             adapter_id: "rust-kernel",
-            capabilities: [
-                vec![
-                    "kernel.syscall",
-                    "kernel.fault-injection",
-                    "kernel.protocol",
-                    "kernel.logical",
-                    "kernel-protocol.thread.enumeration",
-                    "kernel.run-liveness",
-                    "kernel.reclamation",
-                ],
-                if syscalls.syscall_families {
-                    vec!["kernel.scope-isolation", "kernel.restart-recovery"]
-                } else {
-                    vec![]
-                }
-            ]
-            .concat(),
+            capabilities: vec![
+                "kernel.syscall",
+                "kernel.fault-injection",
+                "kernel.protocol",
+                "kernel.logical",
+                "kernel-protocol.thread.enumeration",
+                "kernel.run-liveness",
+                "kernel.reclamation",
+            ],
             packet_id: read_param_string(&request.params, "packetId")?,
             plan_version: read_param_string(&request.params, "planVersion")?,
         })),

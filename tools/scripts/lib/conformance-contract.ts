@@ -120,6 +120,11 @@ export interface ConformanceEvidence {
   implementationId: string;
   language: string;
   nonApplicableCheckIds?: readonly string[];
+  selection?: readonly {
+    checkId: string;
+    selected: boolean;
+    reason?: string;
+  }[];
   status: ConformanceRunStatus;
   suiteId: string;
   suiteVersion: string;
