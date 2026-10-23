@@ -335,9 +335,11 @@ const applyOperator = (
         throw new Error(`${key} requires an explicit length assertion`);
       }
       const entries = readArrayActual(value, key);
-      return key === "every"
-        ? entries.every((entry) => elementSatisfies(element, entry, context))
-        : entries.some((entry) => elementSatisfies(element, entry, context));
+      // Evaluate every element so no unresolved operand is short-circuited.
+      const results = entries.map((entry) =>
+        elementSatisfies(element, entry, context)
+      );
+      return key === "every" ? results.every(Boolean) : results.some(Boolean);
     }
     default: {
       const unsupported: never = key;

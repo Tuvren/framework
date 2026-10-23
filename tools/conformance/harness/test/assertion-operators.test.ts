@@ -410,6 +410,30 @@ describe("every and some", () => {
     expect(evaluation.message).toContain("unresolved");
   });
 
+  test("some fails on a later unresolved element even when the first matches", () => {
+    const evaluation = evaluate(
+      field("$.items", {
+        length: 2,
+        some: { equals: "ok", field: "$.status" },
+      }),
+      { result: { items: [{ status: "ok" }, {}] } }
+    );
+    expect(evaluation.status).toBe("fail");
+    expect(evaluation.message).toContain("unresolved");
+  });
+
+  test("every reports a later unresolved element after an earlier violation", () => {
+    const evaluation = evaluate(
+      field("$.items", {
+        every: { equals: "ok", field: "$.status" },
+        length: 2,
+      }),
+      { result: { items: [{ status: "bad" }, {}] } }
+    );
+    expect(evaluation.status).toBe("fail");
+    expect(evaluation.message).toContain("unresolved");
+  });
+
   test("every reports an unresolved element field as unresolved", () => {
     const evaluation = evaluate(
       field("$.items", {
