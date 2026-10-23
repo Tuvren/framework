@@ -1,0 +1,222 @@
+{
+  "planId": "tuvren.kernel.scope-isolation.syscall",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.kernel.protocol",
+  "certificationRules": "enforcing",
+  "applicability": {
+    "capabilities": ["kernel.syscall", "kernel.scope-isolation"]
+  },
+  "checks": [
+    {
+      "checkId": "kernel.syscall.scope-isolation.own_content",
+      "claimIds": ["kernel.syscall.scope-isolation.own_content"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "backend0",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_content"],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker0",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_content"],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "put",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$bytes": "00ff8073636f7065"
+            }
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_content"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "put",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "has",
+          "operation": "kernel.store.has",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_content"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": true
+            }
+          ],
+          "capture": [
+            {
+              "name": "has",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "get",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.put"
+            }
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_content"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "get",
+              "path": "result"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.get.result",
+          "equals": {
+            "$bytes": "00ff8073636f7065"
+          }
+        },
+        {
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
+        }
+      ],
+      "evidence": ["trace.has.result", "trace.get.result"]
+    },
+    {
+      "checkId": "kernel.syscall.scope-isolation.own_enumeration",
+      "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "backend0",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker0",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "dc002",
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ],
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  }
+                ]
+              }
+            }
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread",
+            "schemaId": "dc002",
+            "initialBranchId": "branch"
+          },
+          "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "list",
+          "operation": "kernel.thread.list",
+          "arguments": {},
+          "claimIds": ["kernel.syscall.scope-isolation.own_enumeration"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.threads",
+              "length": 1
+            },
+            {
+              "kind": "resultField",
+              "field": "$.threads.0.threadId",
+              "equals": "thread"
+            }
+          ],
+          "capture": [
+            {
+              "name": "list",
+              "path": "result"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.list.result.threads.0.rootTurnNodeHash",
+          "equalsPath": "$.result.trace.thread.result.rootTurnNodeHash"
+        }
+      ],
+      "evidence": ["trace.list.result"],
+      "capabilities": ["kernel-protocol.thread.enumeration"]
+    }
+  ]
+}

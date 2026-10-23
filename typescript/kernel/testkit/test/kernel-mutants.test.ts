@@ -70,6 +70,7 @@ interface ManifestControl {
 interface PlanCheck {
   assertions: { kind: string }[];
   checkId: string;
+  claimIds: string[];
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -124,12 +125,18 @@ const readPlanChecks = (): Map<string, PlanCheck> => {
   for (const file of readdirSync(path.join(REPO_ROOT, PLANS_DIRECTORY))) {
     const plan = readJson(path.join(PLANS_DIRECTORY, file));
     for (const check of readRecords(isRecord(plan) ? plan.checks : [])) {
+      const claimIds =
+        check.claimIds === undefined
+          ? [String(check.checkId)]
+          : readStrings(check.claimIds);
       for (const step of readRecords(check.steps)) {
         checks.set(`${String(check.checkId)}.${String(step.stepId)}`, {
           assertions: readRecords(step.assertions).map((assertion) => ({
             kind: String(assertion.kind),
           })),
           checkId: String(check.checkId),
+          claimIds:
+            step.claimIds === undefined ? claimIds : readStrings(step.claimIds),
         });
       }
       checks.set(String(check.checkId), {
@@ -137,6 +144,7 @@ const readPlanChecks = (): Map<string, PlanCheck> => {
           kind: String(assertion.kind),
         })),
         checkId: String(check.checkId),
+        claimIds,
       });
     }
   }
@@ -359,6 +367,9 @@ describe("kernel negative-control manifest", () => {
 
   test("implementation controls designate current plan assertions that their claims cover", () => {
     const checks = readPlanChecks();
+    const claims = new Set(
+      [...checks.values()].flatMap((check) => check.claimIds)
+    );
     for (const control of readControls().filter(
       (entry) => entry.kind === "implementation"
     )) {
@@ -377,10 +388,12 @@ describe("kernel negative-control manifest", () => {
           assertionId,
           kind,
         });
-        expect(control.claimIds).toContain(check.checkId);
+        expect(
+          check.claimIds.some((claim) => control.claimIds.includes(claim))
+        ).toBe(true);
       }
       for (const claimId of control.claimIds) {
-        expect(checks.has(claimId)).toBe(true);
+        expect(claims.has(claimId)).toBe(true);
       }
     }
   });

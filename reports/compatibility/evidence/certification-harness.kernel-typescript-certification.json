@@ -268,7 +268,7 @@
             "code": "kernel_persistence_fault_injected",
             "details": {
               "point": "after-commit-before-ack",
-              "token": "c5a86978-53e3-4266-8407-5ed66178d562"
+              "token": "d4f6da34-8698-41fb-b2d5-5ee8ba4dd991"
             },
             "message": "injected after-commit-before-ack persistence fault interrupted verification"
           }
@@ -290,7 +290,7 @@
         "fault": {
           "armed": [
             {
-              "token": "c5a86978-53e3-4266-8407-5ed66178d562",
+              "token": "d4f6da34-8698-41fb-b2d5-5ee8ba4dd991",
               "point": "after-commit-before-ack",
               "occurrence": 1,
               "mode": "throw",
@@ -300,7 +300,7 @@
               }
             }
           ],
-          "activations": ["c5a86978-53e3-4266-8407-5ed66178d562"]
+          "activations": ["d4f6da34-8698-41fb-b2d5-5ee8ba4dd991"]
         }
       },
       "status": "pass"
@@ -333,7 +333,7 @@
             "code": "kernel_persistence_fault_injected",
             "details": {
               "point": "before-commit",
-              "token": "91e6dda1-a492-48ea-b43d-20f77ccba66d"
+              "token": "d5f53685-7d32-4614-a7d5-e3b1e3aebce0"
             },
             "message": "injected before-commit persistence fault interrupted verification"
           }
@@ -355,7 +355,7 @@
         "fault": {
           "armed": [
             {
-              "token": "91e6dda1-a492-48ea-b43d-20f77ccba66d",
+              "token": "d5f53685-7d32-4614-a7d5-e3b1e3aebce0",
               "point": "before-commit",
               "occurrence": 1,
               "mode": "throw",
@@ -365,7 +365,7 @@
               }
             }
           ],
-          "activations": ["91e6dda1-a492-48ea-b43d-20f77ccba66d"]
+          "activations": ["d5f53685-7d32-4614-a7d5-e3b1e3aebce0"]
         }
       },
       "status": "pass"
@@ -4431,6 +4431,718 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.nodeBefore.1.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.walkBefore.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.walkBefore.2.referenceWalk",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.walkBefore.3.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.walkBefore.4.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.nodeAfter.1.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.walkAfter.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.walkAfter.2.referenceWalk",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.walkAfter.3.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.walkAfter.4.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.3.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.8.referenceWalk",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.result.trace.branchAfter.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.result.trace.cipherAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.result.trace.cipherBefore.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.result.trace.manifestAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.result.trace.nodeAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.result.trace.walkAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.result.trace.walkBefore.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.trace.branchAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.trace.cipherAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.trace.cipherBefore.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.trace.manifestAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage.requiredEvidence.trace.walkAfter.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.reclamation.syscall",
+        "traceStepIds": [
+          "backend0",
+          "worker0",
+          "schema",
+          "thread",
+          "backend10",
+          "worker10",
+          "turncipher",
+          "runcipher",
+          "begincipher",
+          "stagecipher",
+          "cipher",
+          "completecipher",
+          "nodeBefore",
+          "walkBefore",
+          "manifestBefore",
+          "cipherBefore",
+          "backend1000",
+          "worker1000",
+          "reclaim",
+          "nodeAfter",
+          "walkAfter",
+          "manifestAfter",
+          "cipherAfter",
+          "branchAfter"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.run.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.run.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.run.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.recover.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.3.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.5.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.trace.newerAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.trace.olderAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.trace.recover.result.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.trace.run.result.executionOwnerId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.trace.run.result.leaseExpiresAtMs",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.trace.run.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.trace.stagedAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.trace.newerAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.trace.olderAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.trace.reclaim.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.trace.recover.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.trace.run.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease.requiredEvidence.trace.stagedAfter.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.reclamation.syscall",
+        "traceStepIds": [
+          "backend0",
+          "worker0",
+          "schema",
+          "thread",
+          "backend10",
+          "worker10",
+          "older",
+          "backend20",
+          "worker20",
+          "turn",
+          "run",
+          "backend30",
+          "worker30",
+          "newer",
+          "stage",
+          "backend40",
+          "worker40",
+          "reclaim",
+          "olderAfter",
+          "newerAfter",
+          "stagedAfter",
+          "recover"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.run.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.before.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.root.1.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.result.trace.after.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.result.trace.before.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.result.trace.run.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.trace.after.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.trace.before.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.trace.reclaim.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.trace.root.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.trace.run.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.reclamation.syscall",
+        "traceStepIds": [
+          "backend0",
+          "worker0",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "backend10",
+          "worker10",
+          "orphan",
+          "before",
+          "backend86405000",
+          "worker86405000",
+          "reclaim",
+          "after",
+          "root"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.run.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.before.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.root.1.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.2.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.result.trace.after.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.result.trace.before.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.result.trace.run.result.status",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.trace.after.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.trace.before.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.trace.reclaim.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.trace.root.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.trace.run.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.reclamation.syscall",
+        "traceStepIds": [
+          "backend0",
+          "worker0",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "backend10",
+          "worker10",
+          "orphan",
+          "before",
+          "backend1000",
+          "worker1000",
+          "reclaim",
+          "after",
+          "root"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.sharedBefore.1.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.walkBefore.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.walkBefore.2.referenceWalk",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.walkBefore.3.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.walkBefore.4.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.archivedBefore.1.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.archivedRefs.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.archivedRefs.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.archivedRefs.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.orphanBefore.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.sharedAfter.1.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.walkAfter.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.walkAfter.2.referenceWalk",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.walkAfter.3.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.walkAfter.4.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.9.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.11.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.12.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.13.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.14.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.15.referenceWalk",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.archiveBranchAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.archivedAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.archivedObject.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.archivedRefs.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.archivedRefs.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.archivedRefs.result.1",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.branchAfter.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.branchesAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.manifestAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.orphanAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.orphanBefore.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.reclaim.result.releasedArchivedBranchCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.reclaim.result.releasedObjectCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.sharedAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.sharedObject.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.threadAfter.result.rootTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.walkAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.result.trace.walkBefore.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.archiveBranchAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.archivedAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.archivedObject.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.manifestAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.orphanAfter.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.reclaim.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.sharedObject.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.reclamation.reachability.requiredEvidence.trace.walkAfter.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.reclamation.reachability",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.reclamation.syscall",
+        "traceStepIds": [
+          "backend0",
+          "worker0",
+          "schema",
+          "thread",
+          "backend10",
+          "worker10",
+          "turnshared",
+          "runshared",
+          "beginshared",
+          "stageshared",
+          "shared",
+          "completeshared",
+          "sharedBefore",
+          "walkBefore",
+          "manifestBefore",
+          "backend20",
+          "worker20",
+          "turnarchived",
+          "runarchived",
+          "beginarchived",
+          "stagearchived",
+          "archived",
+          "completearchived",
+          "archivedBefore",
+          "archivedRefs",
+          "rollback",
+          "backend30",
+          "worker30",
+          "orphan",
+          "orphanBefore",
+          "backend40",
+          "worker40",
+          "reclaim",
+          "orphanAfter",
+          "sharedObject",
+          "archivedObject",
+          "archivedAfter",
+          "archiveBranchAfter",
+          "branchesAfter",
+          "sharedAfter",
+          "walkAfter",
+          "manifestAfter",
+          "threadAfter",
+          "branchAfter"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel.crash-recovery.concurrent_writer.1.resultField",
           "status": "pass"
         },
@@ -5119,6 +5831,84 @@
         "planId": "tuvren.kernel.scope-isolation"
       },
       "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.has.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.2.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.result.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.result.trace.has.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.get.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_content.requiredEvidence.trace.has.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.scope-isolation.own_content",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.scope-isolation.syscall",
+        "traceStepIds": ["backend0", "worker0", "put", "has", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.list.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.list.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.result.trace.list.result.threads",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.result.trace.list.result.threads.0.rootTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.result.trace.list.result.threads.0.threadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.scope-isolation.own_enumeration.requiredEvidence.trace.list.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.scope-isolation.own_enumeration",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.scope-isolation.syscall",
+        "traceStepIds": ["backend0", "worker0", "schema", "thread", "list"]
+      },
+      "status": "pass"
     }
   ],
   "command": [
@@ -5143,9 +5933,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 121,
-    "totalChecks": 125,
-    "applicableChecks": 121,
+    "passedChecks": 128,
+    "totalChecks": 132,
+    "applicableChecks": 128,
     "nonApplicableChecks": 4
   },
   "suiteId": "tuvren.kernel.protocol",

@@ -1,0 +1,2818 @@
+{
+  "planId": "tuvren.kernel.reclamation.syscall",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.kernel.protocol",
+  "certificationRules": "enforcing",
+  "applicability": {
+    "capabilities": ["kernel.syscall", "kernel.reclamation"]
+  },
+  "checks": [
+    {
+      "checkId": "kernel.syscall.reclamation.reachability",
+      "claimIds": [
+        "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+        "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+        "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "backend0",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker0",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "dc002",
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ],
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  }
+                ]
+              }
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread",
+            "schemaId": "dc002",
+            "initialBranchId": "branch"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "turnshared",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turnshared",
+            "threadId": "thread",
+            "branchId": "branch",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turnshared",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "runshared",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "runshared",
+            "turnId": "turnshared",
+            "branchId": "branch",
+            "schemaId": "dc002",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "work",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "runshared",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "beginshared",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "runshared",
+            "stepId": "work"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "beginshared",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "stageshared",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "runshared",
+            "blob": {
+              "$bytes": "736861726564"
+            },
+            "taskId": "shared",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "stageshared",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "shared",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "runshared",
+            "stepId": "work"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "shared",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "completeshared",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "runshared",
+            "status": "completed"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "completeshared",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "sharedBefore",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.shared.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result",
+              "equalsPath": "$.result.hash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "sharedBefore",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "walkBefore",
+          "operation": "kernel.node.walkBack",
+          "arguments": {
+            "fromHash": {
+              "$ref": "capture.shared.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "length": 2
+            },
+            {
+              "kind": "referenceWalk",
+              "path": "$.result",
+              "references": [
+                {
+                  "path": "$.*.previousTurnNodeHash",
+                  "targetPath": "$.result",
+                  "recordType": "turn-node",
+                  "hashPath": "$.hash",
+                  "nullable": true,
+                  "length": 2
+                }
+              ]
+            },
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result.0",
+              "equalsPath": "$.result.0.hash"
+            },
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result.1",
+              "equalsPath": "$.result.1.hash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "walkBefore",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "manifestBefore",
+          "operation": "kernel.tree.manifest",
+          "arguments": {
+            "treeHash": {
+              "$ref": "capture.sharedBefore.turnTreeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "manifestBefore",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend20",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 20
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker20",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 20
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "turnarchived",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turnarchived",
+            "threadId": "thread",
+            "branchId": "branch",
+            "parentTurnId": "turnshared",
+            "startTurnNodeHash": {
+              "$ref": "capture.shared.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turnarchived",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "runarchived",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "runarchived",
+            "turnId": "turnarchived",
+            "branchId": "branch",
+            "schemaId": "dc002",
+            "startTurnNodeHash": {
+              "$ref": "capture.shared.turnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "work",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "runarchived",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "beginarchived",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "runarchived",
+            "stepId": "work"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "beginarchived",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "stagearchived",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "runarchived",
+            "blob": {
+              "$bytes": "6172636869766564"
+            },
+            "taskId": "archived",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "stagearchived",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "archived",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "runarchived",
+            "stepId": "work"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "archived",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "completearchived",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "runarchived",
+            "status": "completed"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "completearchived",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "archivedBefore",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.archived.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result",
+              "equalsPath": "$.result.hash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "archivedBefore",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "archivedRefs",
+          "operation": "kernel.tree.resolve",
+          "arguments": {
+            "treeHash": {
+              "$ref": "capture.archivedBefore.turnTreeHash"
+            },
+            "path": "messages"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "length": 2
+            },
+            {
+              "kind": "resultField",
+              "field": "$.0",
+              "equalsPath": "$.capture.stageshared.objectHash"
+            },
+            {
+              "kind": "resultField",
+              "field": "$.1",
+              "equalsPath": "$.capture.stagearchived.objectHash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "archivedRefs",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "rollback",
+          "operation": "kernel.branch.setHead",
+          "arguments": {
+            "branchId": "branch",
+            "turnNodeHash": {
+              "$ref": "capture.shared.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "rollback",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend30",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 30
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker30",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 30
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "orphan",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$bytes": "6f727068616e"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "orphan",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "orphanBefore",
+          "operation": "kernel.store.has",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.orphan"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": true
+            }
+          ],
+          "capture": [
+            {
+              "name": "orphanBefore",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend40",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 40
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker40",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 40
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "reclaim",
+          "operation": "kernel.maintenance.reclaim",
+          "arguments": {},
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "reclaim",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "orphanAfter",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.orphan"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "orphanAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "sharedObject",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.stageshared.objectHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "sharedObject",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "archivedObject",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.stagearchived.objectHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "archivedObject",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "archivedAfter",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.archived.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "archivedAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "archiveBranchAfter",
+          "operation": "kernel.branch.get",
+          "arguments": {
+            "branchId": {
+              "$ref": "capture.rollback.archiveBranch.branchId"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "archiveBranchAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "branchesAfter",
+          "operation": "kernel.branch.list",
+          "arguments": {
+            "threadId": "thread"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "branchesAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "sharedAfter",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.shared.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result",
+              "equalsPath": "$.result.hash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "sharedAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "walkAfter",
+          "operation": "kernel.node.walkBack",
+          "arguments": {
+            "fromHash": {
+              "$ref": "capture.shared.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "length": 2
+            },
+            {
+              "kind": "referenceWalk",
+              "path": "$.result",
+              "references": [
+                {
+                  "path": "$.*.previousTurnNodeHash",
+                  "targetPath": "$.result",
+                  "recordType": "turn-node",
+                  "hashPath": "$.hash",
+                  "nullable": true,
+                  "length": 2
+                }
+              ]
+            },
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result.0",
+              "equalsPath": "$.result.0.hash"
+            },
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result.1",
+              "equalsPath": "$.result.1.hash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "walkAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "manifestAfter",
+          "operation": "kernel.tree.manifest",
+          "arguments": {
+            "treeHash": {
+              "$ref": "capture.sharedAfter.turnTreeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "manifestAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "threadAfter",
+          "operation": "kernel.thread.get",
+          "arguments": {
+            "threadId": "thread"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "threadAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "branchAfter",
+          "operation": "kernel.branch.get",
+          "arguments": {
+            "branchId": "branch"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.unreachable_past_grace_is_released",
+            "kernel.syscall.reclamation.reachable_from_live_root_is_retained",
+            "kernel.syscall.reclamation.shared_object_retained_via_live_root"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "branchAfter",
+              "path": "result"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.orphanAfter.result",
+          "equals": null
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.archivedObject.result",
+          "equals": null
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.archivedAfter.result",
+          "equals": null
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.archiveBranchAfter.result",
+          "equals": null
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.branchesAfter.result",
+          "length": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.reclaim.result.releasedArchivedBranchCount",
+          "greaterThanOrEqual": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.reclaim.result.releasedObjectCount",
+          "greaterThanOrEqual": 2
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.sharedObject.result",
+          "equals": {
+            "$bytes": "736861726564"
+          }
+        },
+        {
+          "kind": "digest",
+          "path": "$.result.trace.sharedObject.result",
+          "equalsPath": "$.result.trace.stageshared.result.objectHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.sharedAfter.result",
+          "equalsPath": "$.result.trace.sharedBefore.result"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.walkAfter.result",
+          "equalsPath": "$.result.trace.walkBefore.result"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.manifestAfter.result",
+          "equalsPath": "$.result.trace.manifestBefore.result"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.threadAfter.result.rootTurnNodeHash",
+          "equalsPath": "$.result.trace.thread.result.rootTurnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.branchAfter.result.headTurnNodeHash",
+          "equalsPath": "$.result.trace.shared.result.turnNodeHash"
+        },
+        {
+          "kind": "referenceWalk",
+          "path": "$.result.trace.manifestAfter.result",
+          "references": [
+            {
+              "path": "$.$map.*.1",
+              "length": 1,
+              "targetPath": "$.result.trace.sharedObject.result",
+              "recordType": "opaque-object"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        "trace.orphanAfter.result",
+        "trace.sharedObject.result",
+        "trace.archivedObject.result",
+        "trace.archivedAfter.result",
+        "trace.archiveBranchAfter.result",
+        "trace.walkAfter.result",
+        "trace.manifestAfter.result",
+        "trace.reclaim.result"
+      ]
+    },
+    {
+      "checkId": "kernel.syscall.reclamation.grace_window_holds_under_active_lease",
+      "claimIds": [
+        "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "backend0",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker0",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "dc002",
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ],
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  }
+                ]
+              }
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread",
+            "schemaId": "dc002",
+            "initialBranchId": "branch"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "older",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$bytes": "01"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "older",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend20",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 20
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker20",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 20
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "turn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turn",
+            "threadId": "thread",
+            "branchId": "branch",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turn",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "run",
+          "operation": "kernel.runLiveness.createLeasedRun",
+          "arguments": {
+            "input": {
+              "runId": "run",
+              "turnId": "turn",
+              "branchId": "branch",
+              "schemaId": "dc002",
+              "startTurnNodeHash": {
+                "$ref": "capture.thread.rootTurnNodeHash"
+              },
+              "steps": [
+                {
+                  "id": "work",
+                  "deterministic": true,
+                  "sideEffects": false
+                }
+              ],
+              "executionOwnerId": "owner",
+              "leaseExpiresAtMs": 1000
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.status",
+              "equals": "running"
+            },
+            {
+              "kind": "resultField",
+              "field": "$.leaseExpiresAtMs",
+              "equals": 1000
+            },
+            {
+              "kind": "resultField",
+              "field": "$.executionOwnerId",
+              "equals": "owner"
+            }
+          ],
+          "capture": [
+            {
+              "name": "run",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend30",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 30
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker30",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 30
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "newer",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$bytes": "02"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "newer",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "stage",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "run",
+            "blob": {
+              "$bytes": "03"
+            },
+            "taskId": "pending",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "stage",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend40",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 40
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker40",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 40
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "reclaim",
+          "operation": "kernel.maintenance.reclaim",
+          "arguments": {},
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "reclaim",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "olderAfter",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.older"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "olderAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "newerAfter",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.newer"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "newerAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "stagedAfter",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.stage.objectHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "stagedAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "recover",
+          "operation": "kernel.run.recover",
+          "arguments": {
+            "runId": "run"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.grace_window_holds_under_active_lease"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.uncommittedStagedResults",
+              "length": 1,
+              "every": {
+                "field": "$",
+                "equalsPath": "$.capture.stage.stagedResult"
+              }
+            }
+          ],
+          "capture": [
+            {
+              "name": "recover",
+              "path": "result"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.olderAfter.result",
+          "equals": null
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.newerAfter.result",
+          "equals": {
+            "$bytes": "02"
+          }
+        },
+        {
+          "kind": "digest",
+          "path": "$.result.trace.newerAfter.result",
+          "equalsPath": "$.result.trace.newer.result"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.stagedAfter.result",
+          "equals": {
+            "$bytes": "03"
+          }
+        },
+        {
+          "kind": "digest",
+          "path": "$.result.trace.stagedAfter.result",
+          "equalsPath": "$.result.trace.stage.result.objectHash"
+        }
+      ],
+      "evidence": [
+        "trace.run.result",
+        "trace.reclaim.result",
+        "trace.olderAfter.result",
+        "trace.newerAfter.result",
+        "trace.stagedAfter.result",
+        "trace.recover.result"
+      ]
+    },
+    {
+      "checkId": "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+      "claimIds": [
+        "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "backend0",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker0",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "dc002",
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ],
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  }
+                ]
+              }
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread",
+            "schemaId": "dc002",
+            "initialBranchId": "branch"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "turn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turn",
+            "threadId": "thread",
+            "branchId": "branch",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turn",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "run",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "run",
+            "turnId": "turn",
+            "branchId": "branch",
+            "schemaId": "dc002",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "work",
+                "deterministic": true,
+                "sideEffects": false
+              }
+            ]
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.status",
+              "equals": "running"
+            }
+          ],
+          "capture": [
+            {
+              "name": "run",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "orphan",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$bytes": "04"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "orphan",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "before",
+          "operation": "kernel.store.has",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.orphan"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": true
+            }
+          ],
+          "capture": [
+            {
+              "name": "before",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend1000",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 1000
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker1000",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 1000
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "reclaim",
+          "operation": "kernel.maintenance.reclaim",
+          "arguments": {},
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "reclaim",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "after",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.orphan"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "after",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "root",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation"
+          ],
+          "assertions": [
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result",
+              "equalsPath": "$.result.hash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "root",
+              "path": "result"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.after.result",
+          "equals": {
+            "$bytes": "04"
+          }
+        },
+        {
+          "kind": "digest",
+          "path": "$.result.trace.after.result",
+          "equalsPath": "$.result.trace.orphan.result"
+        }
+      ],
+      "evidence": [
+        "trace.run.result",
+        "trace.before.result",
+        "trace.reclaim.result",
+        "trace.after.result",
+        "trace.root.result"
+      ]
+    },
+    {
+      "checkId": "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+      "claimIds": [
+        "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "backend0",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker0",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "dc002",
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ],
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  }
+                ]
+              }
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread",
+            "schemaId": "dc002",
+            "initialBranchId": "branch"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "turn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turn",
+            "threadId": "thread",
+            "branchId": "branch",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turn",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "run",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "run",
+            "turnId": "turn",
+            "branchId": "branch",
+            "schemaId": "dc002",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "work",
+                "deterministic": true,
+                "sideEffects": false
+              }
+            ]
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.status",
+              "equals": "running"
+            }
+          ],
+          "capture": [
+            {
+              "name": "run",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "orphan",
+          "operation": "kernel.store.put",
+          "arguments": {
+            "blob": {
+              "$bytes": "04"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "orphan",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "before",
+          "operation": "kernel.store.has",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.orphan"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": true
+            }
+          ],
+          "capture": [
+            {
+              "name": "before",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend86405000",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 86405000
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker86405000",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 86405000
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "reclaim",
+          "operation": "kernel.maintenance.reclaim",
+          "arguments": {},
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "reclaim",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "after",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.orphan"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "after",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "root",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation"
+          ],
+          "assertions": [
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result",
+              "equalsPath": "$.result.hash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "root",
+              "path": "result"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.after.result",
+          "equals": null
+        }
+      ],
+      "evidence": [
+        "trace.run.result",
+        "trace.before.result",
+        "trace.reclaim.result",
+        "trace.after.result",
+        "trace.root.result"
+      ]
+    },
+    {
+      "checkId": "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage",
+      "claimIds": [
+        "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+      ],
+      "operation": "kernel.schema.register",
+      "steps": [
+        {
+          "stepId": "backend0",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker0",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "dc002",
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ],
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  }
+                ]
+              }
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread",
+            "schemaId": "dc002",
+            "initialBranchId": "branch"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker10",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 10
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "turncipher",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turncipher",
+            "threadId": "thread",
+            "branchId": "branch",
+            "parentTurnId": null,
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turncipher",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "runcipher",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "runcipher",
+            "turnId": "turncipher",
+            "branchId": "branch",
+            "schemaId": "dc002",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "work",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "runcipher",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "begincipher",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "runcipher",
+            "stepId": "work"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "begincipher",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "stagecipher",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "runcipher",
+            "blob": {
+              "$bytes": "01020304ff0080c1c2c3c4"
+            },
+            "taskId": "cipher",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "stagecipher",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "cipher",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "runcipher",
+            "stepId": "work"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "cipher",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "completecipher",
+          "operation": "kernel.run.complete",
+          "arguments": {
+            "runId": "runcipher",
+            "status": "completed"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "completecipher",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "nodeBefore",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.cipher.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result",
+              "equalsPath": "$.result.hash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "nodeBefore",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "walkBefore",
+          "operation": "kernel.node.walkBack",
+          "arguments": {
+            "fromHash": {
+              "$ref": "capture.cipher.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "length": 2
+            },
+            {
+              "kind": "referenceWalk",
+              "path": "$.result",
+              "references": [
+                {
+                  "path": "$.*.previousTurnNodeHash",
+                  "targetPath": "$.result",
+                  "recordType": "turn-node",
+                  "hashPath": "$.hash",
+                  "nullable": true,
+                  "length": 2
+                }
+              ]
+            },
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result.0",
+              "equalsPath": "$.result.0.hash"
+            },
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result.1",
+              "equalsPath": "$.result.1.hash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "walkBefore",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "manifestBefore",
+          "operation": "kernel.tree.manifest",
+          "arguments": {
+            "treeHash": {
+              "$ref": "capture.nodeBefore.turnTreeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "manifestBefore",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "cipherBefore",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.stagecipher.objectHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "cipherBefore",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "backend1000",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 1000
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker1000",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 1000
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "reclaim",
+          "operation": "kernel.maintenance.reclaim",
+          "arguments": {},
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "reclaim",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "nodeAfter",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.cipher.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result",
+              "equalsPath": "$.result.hash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "nodeAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "walkAfter",
+          "operation": "kernel.node.walkBack",
+          "arguments": {
+            "fromHash": {
+              "$ref": "capture.cipher.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "length": 2
+            },
+            {
+              "kind": "referenceWalk",
+              "path": "$.result",
+              "references": [
+                {
+                  "path": "$.*.previousTurnNodeHash",
+                  "targetPath": "$.result",
+                  "recordType": "turn-node",
+                  "hashPath": "$.hash",
+                  "nullable": true,
+                  "length": 2
+                }
+              ]
+            },
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result.0",
+              "equalsPath": "$.result.0.hash"
+            },
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result.1",
+              "equalsPath": "$.result.1.hash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "walkAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "manifestAfter",
+          "operation": "kernel.tree.manifest",
+          "arguments": {
+            "treeHash": {
+              "$ref": "capture.nodeAfter.turnTreeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "manifestAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "cipherAfter",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.stagecipher.objectHash"
+            }
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "cipherAfter",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "branchAfter",
+          "operation": "kernel.branch.get",
+          "arguments": {
+            "branchId": "branch"
+          },
+          "claimIds": [
+            "kernel.syscall.reclamation.ciphertext_retention_and_unchanged_lineage"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "branchAfter",
+              "path": "result"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.cipherBefore.result",
+          "equals": {
+            "$bytes": "01020304ff0080c1c2c3c4"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.cipherAfter.result",
+          "equalsPath": "$.result.trace.cipherBefore.result"
+        },
+        {
+          "kind": "digest",
+          "path": "$.result.trace.cipherAfter.result",
+          "equalsPath": "$.result.trace.stagecipher.result.objectHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.nodeAfter.result",
+          "equalsPath": "$.result.trace.nodeBefore.result"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.walkAfter.result",
+          "equalsPath": "$.result.trace.walkBefore.result"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.manifestAfter.result",
+          "equalsPath": "$.result.trace.manifestBefore.result"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.branchAfter.result.headTurnNodeHash",
+          "equalsPath": "$.result.trace.cipher.result.turnNodeHash"
+        },
+        {
+          "kind": "referenceWalk",
+          "path": "$.result.trace.manifestAfter.result",
+          "references": [
+            {
+              "path": "$.$map.*.1",
+              "length": 1,
+              "targetPath": "$.result.trace.cipherAfter.result",
+              "recordType": "opaque-object"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        "trace.cipherBefore.result",
+        "trace.cipherAfter.result",
+        "trace.walkAfter.result",
+        "trace.manifestAfter.result",
+        "trace.branchAfter.result"
+      ]
+    }
+  ]
+}

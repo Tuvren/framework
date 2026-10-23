@@ -1,0 +1,73 @@
+import { expect, test } from "bun:test";
+
+import {
+  assessConformancePlans,
+  loadCertificationAuthority,
+} from "../../../../tools/conformance/plan-compiler/certification-assessment.ts";
+import { loadConformancePlan } from "../../../../tools/conformance/plan-compiler/index.ts";
+
+const plans = ["scope-isolation", "reclamation"].map(
+  (name) => `spec/conformance/kernel/plans/kernel-${name}-syscall.json`
+);
+
+test("memory lifecycle traces enforce certification through catalogued observations", async () => {
+  const assessments = await assessConformancePlans(
+    plans,
+    await loadCertificationAuthority(["spec/kernel/authority-packet.json"])
+  );
+  expect(assessments.map((assessment) => assessment.mode)).toEqual([
+    "enforcing",
+    "enforcing",
+  ]);
+  expect(assessments.flatMap((assessment) => assessment.violations)).toEqual(
+    []
+  );
+  const compiled = await Promise.all(plans.map(loadConformancePlan));
+  for (const { plan } of compiled) {
+    expect(plan.applicability.capabilities).toContain("kernel.syscall");
+    for (const check of plan.checks) {
+      expect(check.steps?.length).toBeGreaterThan(0);
+      expect(check.claimIds?.length).toBeGreaterThan(0);
+      for (const step of check.steps ?? []) {
+        expect(step.arguments).toBeDefined();
+        expect(step.claimIds?.length).toBeGreaterThan(0);
+        expect(step.operation).not.toMatch(/probe$/u);
+      }
+    }
+  }
+});
+
+test("reclamation controls activate and fail designated syscall assertions", async () => {
+  const { NEGATIVE_CONTROL_PORTS, runNegativeControls } =
+    await import("../../../../tools/conformance/meta-conformance/negative-controls.ts");
+  const config = NEGATIVE_CONTROL_PORTS.find((port) => port.port === "kernel");
+  if (config === undefined) {
+    throw new Error("missing kernel negative-control configuration");
+  }
+  const mutants = [
+    "kernel.delete-object-reachable-through-live-root",
+    "kernel.never-sweep-eligible-objects",
+    "kernel.sweep-inside-grace-window",
+  ];
+  const recoveryMutant = "kernel.drop-uncommitted-staged-result-on-recovery";
+  const report = await runNegativeControls(config, {
+    mutants: [...mutants, recoveryMutant],
+  });
+  expect(report.control.status).toBe("pass");
+  expect(report.mutants).toHaveLength(mutants.length + 1);
+  for (const mutant of report.mutants) {
+    expect(mutant, mutant.reason).toMatchObject({
+      activated: true,
+      outcome: "killed",
+    });
+    expect(mutant.activationCount).toBeGreaterThan(0);
+    expect(mutant.designatedFailures.length).toBeGreaterThan(0);
+    if (mutant.mutantId !== recoveryMutant) {
+      expect(
+        mutant.designatedFailures.every((id) =>
+          id.startsWith("kernel.syscall.reclamation.")
+        )
+      ).toBe(true);
+    }
+  }
+}, 60_000);
