@@ -1,11 +1,27 @@
+// Copyright 2026 Oscar Yáñez Cisterna (@SkrOYC)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde_json::{Value, json};
+use tuvren_kernel_rust::identity::hash_turn_tree_identity;
 use tuvren_kernel_rust::{
-    KernelRecord, decode_deterministic_kernel_record, encode_deterministic_kernel_record,
-    hash_bytes_to_hex, hash_kernel_record, kernel_record_from_json,
+    KernelRecord, PathValue, StagedResult, StagedResultStatus, TurnNode,
+    decode_deterministic_kernel_record, encode_deterministic_kernel_record, hash_bytes_to_hex,
+    hash_kernel_record, hash_turn_node_identity, kernel_record_from_json,
 };
 
 fn kernel_authority() -> PathBuf {
@@ -23,6 +39,8 @@ struct Coverage {
     cbor_hex: usize,
     cbor_bytes: usize,
     decoder_cases: usize,
+    node_identities: usize,
+    tree_identities: usize,
 }
 
 fn bytes(value: &Value) -> Vec<u8> {
@@ -41,9 +59,7 @@ fn bytes(value: &Value) -> Vec<u8> {
 
 fn record(value: &Value, tagged: bool) -> KernelRecord {
     match value {
-        Value::Object(fields) if tagged && fields.contains_key("$bytes") => {
-            KernelRecord::Bytes(bytes(value))
-        }
+        Value::Object(fields) if fields.contains_key("$bytes") => KernelRecord::Bytes(bytes(value)),
         Value::Object(fields) if tagged && fields.contains_key("$map") => {
             assert_eq!(fields.len(), 1, "exact map wrapper");
             let mut map = BTreeMap::new();
@@ -102,6 +118,74 @@ fn project(value: &KernelRecord, projection: &Value) -> KernelRecord {
         result.insert(name.to_owned(), value);
     }
     KernelRecord::Map(result)
+}
+
+fn node(value: &Value, tagged: bool) -> TurnNode {
+    TurnNode {
+        consumed_staged_results: value["consumedStagedResults"]
+            .as_array()
+            .expect("staged results")
+            .iter()
+            .map(|value| StagedResult {
+                interrupt_payload: value
+                    .get("interruptPayload")
+                    .map(|value| record(value, tagged)),
+                object_hash: value["objectHash"]
+                    .as_str()
+                    .expect("object hash")
+                    .to_owned(),
+                object_type: value["objectType"]
+                    .as_str()
+                    .expect("object type")
+                    .to_owned(),
+                status: match value["status"].as_str().expect("status") {
+                    "completed" => StagedResultStatus::Completed,
+                    "failed" => StagedResultStatus::Failed,
+                    "interrupted" => StagedResultStatus::Interrupted,
+                    status => panic!("unknown staged result status {status}"),
+                },
+                task_id: value["taskId"].as_str().expect("task ID").to_owned(),
+                timestamp_ms: value["timestamp"].as_i64().expect("timestamp"),
+            })
+            .collect(),
+        created_at_ms: 0,
+        event_hash: value["eventHash"].as_str().map(str::to_owned),
+        hash: value["hash"].as_str().unwrap_or("").to_owned(),
+        previous_turn_node_hash: value["previousTurnNodeHash"].as_str().map(str::to_owned),
+        schema_id: value["schemaId"].as_str().expect("schema ID").to_owned(),
+        turn_tree_hash: value["turnTreeHash"]
+            .as_str()
+            .expect("tree hash")
+            .to_owned(),
+    }
+}
+
+fn manifest(value: &Value, tagged: bool) -> BTreeMap<String, PathValue> {
+    let KernelRecord::Map(fields) = record(value, tagged) else {
+        panic!("manifest is a map")
+    };
+    fields
+        .into_iter()
+        .map(|(key, value)| {
+            let value = match value {
+                KernelRecord::Null => PathValue::Null,
+                KernelRecord::Text(value) => PathValue::Single(value),
+                KernelRecord::Array(values) => PathValue::Ordered(
+                    values
+                        .into_iter()
+                        .map(|value| {
+                            let KernelRecord::Text(value) = value else {
+                                panic!("ordered path contains hashes")
+                            };
+                            value
+                        })
+                        .collect(),
+                ),
+                _ => panic!("invalid path value"),
+            };
+            (key, value)
+        })
+        .collect()
 }
 
 fn validate_recipes(recipes: &Value) {
@@ -197,6 +281,24 @@ fn verify_fixture(fixture: &Value, recipes: &Value) -> Result<Coverage, String> 
         };
         let key = format!("{field}Sha256Hex");
         equal_hex(&key, &digest, &expected[&key])?;
+        let native_digest = match kind {
+            "turn-node" => {
+                coverage.node_identities += 1;
+                Some(hash_turn_node_identity(&node(value, tagged)))
+            }
+            "turn-tree" => {
+                coverage.tree_identities += 1;
+                Some(hash_turn_tree_identity(
+                    value["schemaId"].as_str().expect("schema ID"),
+                    &manifest(&value["manifest"], tagged),
+                ))
+            }
+            _ => None,
+        };
+        if let Some(native_digest) = native_digest {
+            let native_digest = native_digest.map_err(|error| format!("{field}: {error}"))?;
+            equal_hex(&key, &native_digest, &expected[&key])?;
+        }
         checked.insert(key);
         coverage.digests += 1;
         if kind != "opaque-object" {
@@ -266,7 +368,7 @@ fn every_committed_vector_matches_the_rust_encoder_and_identity_recipes() {
     paths.sort();
     assert_eq!(
         paths.len(),
-        46,
+        54,
         "all legacy and lossless fixtures are covered"
     );
     let mut total = Coverage::default();
@@ -277,14 +379,18 @@ fn every_committed_vector_matches_the_rust_encoder_and_identity_recipes() {
         total.cbor_hex += coverage.cbor_hex;
         total.cbor_bytes += coverage.cbor_bytes;
         total.decoder_cases += coverage.decoder_cases;
+        total.node_identities += coverage.node_identities;
+        total.tree_identities += coverage.tree_identities;
     }
     assert_eq!(
         total,
         Coverage {
-            digests: 110,
-            cbor_hex: 74,
-            cbor_bytes: 37,
+            digests: 120,
+            cbor_hex: 84,
+            cbor_bytes: 42,
             decoder_cases: 28,
+            node_identities: 44,
+            tree_identities: 4,
         }
     );
 }
@@ -319,6 +425,37 @@ fn altered_vector_is_rejected_without_changing_committed_files() {
             let error = verify_fixture(&altered, &recipes).expect_err("corrupted vector must fail");
             assert!(error.contains(field), "{name}: {error}");
         }
+        let mut altered = original.clone();
+        let input = if altered.get("input").is_some() {
+            &mut altered["input"]
+        } else {
+            &mut altered
+        };
+        input["turnNodeIdentityRecord"]["schemaId"] = json!("schema_altered");
+        let error = verify_fixture(&altered, &recipes).expect_err("altered input must fail");
+        assert!(
+            error.contains("turnNodeIdentityRecordCborHex"),
+            "{name}: {error}"
+        );
+
+        let mut altered_recipes = recipes.clone();
+        let recipe = altered_recipes["recipes"]
+            .as_array_mut()
+            .expect("recipes")
+            .iter_mut()
+            .find(|recipe| recipe["recordType"] == "turn-node")
+            .expect("node recipe");
+        recipe["projection"]["fields"]
+            .as_array_mut()
+            .expect("projection fields")
+            .retain(|field| field != "schemaId");
+        let error = verify_fixture(&original, &altered_recipes)
+            .expect_err("recipe dropping an identity field must fail");
+        assert!(
+            error.contains("turnNodeIdentityRecordCborHex"),
+            "{name}: {error}"
+        );
         assert_eq!(read_json(&root.join("fixtures").join(name)), original);
+        assert_eq!(read_json(&root.join("identity-recipes.json")), recipes);
     }
 }

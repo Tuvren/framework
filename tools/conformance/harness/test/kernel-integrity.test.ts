@@ -28,6 +28,17 @@ const check = (assertion: ConformancePlanAssertion) => ({
 });
 const status = (assertion: ConformancePlanAssertion, result: unknown) =>
   evaluateAssertions(check(assertion), { result })[0]?.status;
+const expectedIntegrityStatus = (
+  assertion: ConformancePlanAssertion,
+  value: unknown,
+  hash: string
+): "pass" | "fail" =>
+  assertion.kind === "referenceWalk" &&
+  isRecord(value) &&
+  typeof value.hash === "string" &&
+  value.hash !== hash
+    ? "fail"
+    : "pass";
 const bytes = (hex: string) => ({ $bytes: hex });
 const flip = (hex: string): string =>
   `${hex.startsWith("00") ? "01" : "00"}${hex.slice(2)}`;
@@ -57,16 +68,58 @@ test("TurnTree encoder reproduces the committed vector independently of manifest
       encodeIdentity("turn-tree", {
         ...value,
         manifest: Object.fromEntries(
-          Object.entries(object(value.manifest)).reverse()
+          Object.entries(object(value.manifest)).toReversed()
         ),
       })
     ).toString("hex")
   ).toBe(expected);
 });
 
-for (const file of readdirSync(fixtureRoot).filter(
+const fixtureFiles = readdirSync(fixtureRoot).filter(
   (name) => name.endsWith(".json") && !name.endsWith(".bytes.json")
-)) {
+);
+test("pins all committed identity vectors and their lossless copies", () => {
+  expect(fixtureFiles).toHaveLength(27);
+  let identities = 0;
+  for (const file of fixtureFiles) {
+    const fixture = object(
+      JSON.parse(readFileSync(path.join(fixtureRoot, file), "utf-8"))
+    );
+    const copy = object(
+      JSON.parse(
+        readFileSync(
+          path.join(fixtureRoot, file.replace(".json", ".bytes.json")),
+          "utf-8"
+        )
+      )
+    );
+    const keys = Object.keys(fixture).filter((key) =>
+      key.endsWith("Sha256Hex")
+    );
+    expect(
+      Object.keys(object(copy.expected)).filter((key) =>
+        key.endsWith("Sha256Hex")
+      )
+    ).toEqual(keys);
+    for (const [field, recordType] of Object.entries(families)) {
+      if (recordType !== "opaque-object" && fixture[field] !== undefined) {
+        expect(
+          Buffer.from(encodeIdentity(recordType, fixture[field])).toString(
+            "hex"
+          )
+        ).toBe(
+          Buffer.from(
+            encodeIdentity(recordType, object(copy.input)[field])
+          ).toString("hex")
+        );
+      }
+    }
+    identities += keys.length;
+  }
+  expect(identities).toBe(60);
+});
+
+for (const file of fixtureFiles) {
   const fixture = object(
     JSON.parse(readFileSync(path.join(fixtureRoot, file), "utf-8"))
   );
@@ -75,7 +128,7 @@ for (const file of readdirSync(fixtureRoot).filter(
     if (typeof expected !== "string") {
       continue;
     }
-    test(`${file}: all integrity assertions verify the committed ${recordType} vector and reject corruption`, () => {
+    test(`${file}: integrity assertions recompute the committed ${recordType} vector and reject corruption`, () => {
       const copy = object(
         JSON.parse(
           readFileSync(
@@ -153,7 +206,9 @@ for (const file of readdirSync(fixtureRoot).filter(
         },
       ];
       for (const assertion of assertions) {
-        expect(status(assertion, result)).toBe("pass");
+        expect(status(assertion, result)).toBe(
+          expectedIntegrityStatus(assertion, value, expected)
+        );
       }
       const encodedHex = object(encoded).$bytes;
       if (typeof encodedHex !== "string") {
