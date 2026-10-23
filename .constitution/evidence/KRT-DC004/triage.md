@@ -56,4 +56,4 @@ Table 3. Verification commands
 | `bun run verify` | 0 | All release phases pass, including 813 tooling tests, interop smoke, package tests, portability, and SQLite/PostgreSQL proving hosts. |
 | `git diff --check` | 0 | No whitespace errors. |
 
-Logs are retained under a local run log (not retained). The worker started from `7db47de` on `epic/dc-kernel-memory-syscall-plans`; no commit or staging operation occurred. No ENOSPC failure occurred, so no TMPDIR override was needed.
+Logs were produced locally and are not retained. The worker started from `7db47de` on `epic/dc-kernel-memory-syscall-plans`; no commit or staging operation occurred. No ENOSPC failure occurred, so no TMPDIR override was needed.

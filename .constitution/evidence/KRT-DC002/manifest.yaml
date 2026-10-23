@@ -12,6 +12,6 @@ files:
     bytes: 13031
     role: transcript
   - path: triage.md
-    sha256: f80293d80077244049ef7d9c72be700b46817d6d0399cb7fcfc71dca0d089d88
-    bytes: 9562
+    sha256: 20b055c427290c0bfe20bb0a6a7b8e0808ccfb513857133602ff0914070f5eac
+    bytes: 9539
     role: transcript

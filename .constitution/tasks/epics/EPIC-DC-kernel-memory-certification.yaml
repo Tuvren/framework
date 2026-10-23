@@ -54,7 +54,8 @@ tickets:
           - tools/scripts/lib/conformance-contract.ts
           - tools/scripts/lib/conformance-contract.test.ts
           - .changeset/certification-dc-kernel-memory.md
-        justification: "Catalog faultOutcome metadata and per-check unsupported outcomes need the catalog and evidence schemas, the evidence contract, and the compatibility report to carry them; the changeset covers the memory backend and kernel runtime changes."
+          - tools/scripts/verify.ts
+        justification: "The verify tooling test inventory registers the moved fault-activation test. Catalog faultOutcome metadata and per-check unsupported outcomes need the catalog and evidence schemas, the evidence contract, and the compatibility report to carry them; the changeset covers the memory backend and kernel runtime changes."
       - files:
           - tools/conformance/meta-conformance/negative-controls.ts
           - tools/conformance/meta-conformance/negative-controls.test.ts

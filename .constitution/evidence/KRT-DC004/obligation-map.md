@@ -57,7 +57,7 @@ The M4 review audit covers every check and step claim in all six `*-syscall.json
 
 Across 65 checks, all 72 distinct claim IDs are accounted for: 33 have a designated detector and 39 have an explicit undetected reason. The reclamation/scope claims are listed in `KRT-DC002/obligation-map.md`; the liveness claims are listed in `KRT-DC003/obligation-map.md`. The protocol claims without detectors are listed in table 5. No claim is unaccounted for. An instrumentation detector uses the expected runner rejection rather than a semantic assertion.
 
-The saved mutation report verifies detection for all 33 designated claims against the passing 133/133 unmutated baseline. Each detector activates and produces a designated failure for that claim, or the expected instrumentation rejection. The machine-readable audit and mutation report are retained at local run logs (not retained).
+The saved mutation report verifies detection for all 33 designated claims against the passing 133/133 unmutated baseline. Each detector activates and produces a designated failure for that claim, or the expected instrumentation rejection. The machine-readable audit and mutation report were produced in local run logs that are not retained.
 
 Table 4. Audit totals by syscall plan
 
