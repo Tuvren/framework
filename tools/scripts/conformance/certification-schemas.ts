@@ -181,10 +181,7 @@ const loadEncodingId = (): string => {
 const escapePointer = (segment: string): string =>
   segment.replaceAll("~", "~0").replaceAll("/", "~1");
 
-const unescapePointer = (segment: string): string =>
-  segment.replaceAll("~1", "/").replaceAll("~0", "~");
-
-const LOCAL_DEF_REF = /^#\/\$defs\/([^/]+)$/u;
+const LOCAL_DEF_REF = /^#\/\$defs\/([A-Za-z0-9_-]+)$/u;
 
 const declaresType = (
   schema: Record<string, unknown>,
@@ -351,8 +348,7 @@ const walkDialectRef = (
     return;
   }
 
-  const escaped = LOCAL_DEF_REF.exec(ref)?.[1];
-  const name = escaped === undefined ? undefined : unescapePointer(escaped);
+  const name = LOCAL_DEF_REF.exec(ref)?.[1];
 
   if (name === undefined || !Object.hasOwn(context.defs, name)) {
     context.report(
