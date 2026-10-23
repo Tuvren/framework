@@ -1,8 +1,8 @@
 ticket: KRT-DB004
-verified_at: a61be5d
+verified_at: 9b4e623
 entries:
-  - check: "kernel.syscall.* (lease and lineage rejections)"
-    plan: tuvren.kernel.protocol.extended.syscall
+  - check: "lineage rejections (syscall plans) and lease fencing (legacy kernel-run-liveness plan)"
+    plan: "tuvren.kernel.protocol.extended.syscall; kernel-run-liveness"
     class: I
     finding: "The TypeScript kernel emitted kernel_runtime_lineage_mismatch, kernel_runtime_run_lease_owner_mismatch, and kernel_runtime_run_lease_token_mismatch, and the adapter's normalizeLogicalErrorCode masked them as the plan codes."
     resolution: "The kernel emits turn_node_thread_mismatch, run_lease_owner_mismatch, and run_lease_token_mismatch; normalization is removed; @tuvren/runtime's lease-fence detection follows; changeset records a minor bump for @tuvren/kernel-runtime."
