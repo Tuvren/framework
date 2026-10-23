@@ -30,6 +30,7 @@ import nodePath from "node:path";
 
 import { assertConformanceEvidence } from "../../../scripts/lib/conformance-contract.ts";
 import type { ConformanceFailure } from "../../../scripts/lib/conformance-contract.ts";
+import type { ConformancePlanStep } from "../../plan-compiler/index.ts";
 import { readAdapterManifest, readPlans } from "../run-plans.ts";
 import {
   createProjectionProbeAdapterScript,
@@ -1032,6 +1033,93 @@ describe("certification harness explicit arguments and captures", () => {
       },
     ],
   };
+
+  test.each<{ steps: ConformancePlanStep[] | undefined }>([
+    { steps: undefined },
+    { steps: [] },
+  ])(
+    "rejects stepless fault arming in report mode before dispatch: %j",
+    async ({ steps }) => {
+      const { adapterPath, logPath, planPath } = await writeProjectionFixture([
+        {
+          assertions: [
+            {
+              equals: "token-projection.arm",
+              field: "$.token",
+              kind: "resultField",
+            },
+          ],
+          checkId: "projection.stepless-fault",
+          operation: "projection.arm",
+          steps,
+        },
+      ]);
+      const directory = nodePath.dirname(planPath);
+      const catalogPath = nodePath.join(directory, "operations.json");
+      await writeFile(
+        catalogPath,
+        JSON.stringify({
+          catalogId: "projection.operations",
+          catalogVersion: "0.1.0",
+          operations: [
+            {
+              capability: "projection",
+              errors: ["unsupported"],
+              faultOutcome: {
+                code: "interrupted",
+                unsupportedCode: "unsupported",
+              },
+              input: true,
+              kind: "control",
+              observation: {
+                events: { type: "array", items: { type: "null" } },
+                result: {
+                  additionalProperties: false,
+                  properties: {
+                    received: {
+                      additionalProperties: false,
+                      type: "object",
+                    },
+                    token: { type: "string" },
+                  },
+                  type: "object",
+                },
+                state: { type: "null" },
+              },
+              operationId: "projection.arm",
+            },
+          ],
+          packetId: "projection",
+        })
+      );
+      await writeFile(
+        nodePath.join(directory, "packet.json"),
+        JSON.stringify({
+          operationCatalog: catalogPath,
+          packetId: "projection",
+        })
+      );
+
+      const result = await runProjection(adapterPath, planPath);
+
+      expect(result.stdout, result.stderr).not.toBe("");
+      expect(result.code).toBe(1);
+      const evidence: unknown = JSON.parse(result.stdout);
+      assertConformanceEvidence(evidence, "stepless fault evidence");
+      const [checkResult] = evidence.checkResults;
+      expect(checkResult?.status).toBe("fail");
+      expect(checkResult?.details).toMatchObject({
+        verificationError: "fault arming requires an armFault trace step",
+      });
+      expect(checkResult?.failure?.classification).toBe("verification");
+      expect(checkResult?.details).not.toHaveProperty("adapterError");
+      const frames = await readFrames(logPath);
+      expect(frames.map((frame) => frame.method)).toEqual([
+        "initialize",
+        "shutdown",
+      ]);
+    }
+  );
 
   test("sends only the resolved projection and threads captures into later steps and final assertions", async () => {
     const { adapterPath, logPath, planPath } = await writeProjectionFixture([
