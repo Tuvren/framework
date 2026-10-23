@@ -34,8 +34,35 @@ const flip = (hex: string): string =>
 const families: Record<string, string> = {
   rawOpaqueBytes: "opaque-object",
   turnNodeIdentityRecord: "turn-node",
+  turnTreeIdentityRecord: "turn-tree",
   turnTreeSchemaRecord: "schema",
 };
+
+test("TurnTree encoder reproduces the committed vector independently of manifest insertion order", () => {
+  const fixture = object(
+    JSON.parse(
+      readFileSync(
+        path.join(fixtureRoot, "kernel-protocol-turn-tree.json"),
+        "utf-8"
+      )
+    )
+  );
+  const value = object(fixture.turnTreeIdentityRecord);
+  const expected = fixture.turnTreeIdentityRecordCborHex;
+  expect(Buffer.from(encodeIdentity("turn-tree", value)).toString("hex")).toBe(
+    expected
+  );
+  expect(
+    Buffer.from(
+      encodeIdentity("turn-tree", {
+        ...value,
+        manifest: Object.fromEntries(
+          Object.entries(object(value.manifest)).reverse()
+        ),
+      })
+    ).toString("hex")
+  ).toBe(expected);
+});
 
 for (const file of readdirSync(fixtureRoot).filter(
   (name) => name.endsWith(".json") && !name.endsWith(".bytes.json")
@@ -186,7 +213,7 @@ for (const file of readdirSync(fixtureRoot).filter(
           )
         ).toBe("fail");
       }
-      if (recordType !== "opaque-object") {
+      if (recordType === "turn-node" || recordType === "schema") {
         const withoutOptional = structuredClone(value);
         const optionalRecords =
           recordType === "turn-node"

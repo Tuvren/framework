@@ -191,6 +191,7 @@ const declaresType = (
   (Array.isArray(schema.type) && schema.type.includes(type));
 
 interface DialectContext {
+  readonly allowPatternProperties: boolean;
   readonly defs: Record<string, unknown>;
   readonly checkedDefs: Set<string>;
   readonly report: (pointer: string, problem: string) => void;
@@ -201,7 +202,11 @@ type InPlaceDefs = ReadonlySet<string>;
 const NO_DEFS: InPlaceDefs = new Set();
 
 /** Why a node is outside the dialect before its keywords are inspected. */
-const shapeProblem = (node: unknown, pointer: string): string | undefined => {
+const shapeProblem = (
+  node: unknown,
+  pointer: string,
+  allowPatternProperties: boolean
+): string | undefined => {
   if (node === true) {
     return "is true, which admits any value";
   }
@@ -212,6 +217,9 @@ const shapeProblem = (node: unknown, pointer: string): string | undefined => {
 
   const unsupported = [
     ...UNSUPPORTED_KEYWORDS.filter((key) => Object.hasOwn(node, key)),
+    ...(!allowPatternProperties && Object.hasOwn(node, "patternProperties")
+      ? ["patternProperties"]
+      : []),
     ...(pointer !== "" && Object.hasOwn(node, "$id") ? ["$id"] : []),
   ];
 
@@ -242,7 +250,7 @@ const walkDialect = (
     return;
   }
 
-  const problem = shapeProblem(node, pointer);
+  const problem = shapeProblem(node, pointer, context.allowPatternProperties);
 
   if (problem !== undefined || !isRecord(node)) {
     context.report(pointer, problem ?? "is not a schema");
@@ -379,9 +387,14 @@ const walkDialectRef = (
  * carry a direct `items` schema. Valid but composed schemas outside this
  * dialect are rejected on purpose.
  */
-const collectDialectViolations = (schema: unknown, label: string): string[] => {
+const collectDialectViolations = (
+  schema: unknown,
+  label: string,
+  allowPatternProperties: boolean
+): string[] => {
   const failures: string[] = [];
   const context: DialectContext = {
+    allowPatternProperties,
     checkedDefs: new Set(),
     defs: isRecord(schema) && isRecord(schema.$defs) ? schema.$defs : {},
     report: (pointer, problem) => {
@@ -407,7 +420,8 @@ const collectObservationClosureFailures = (
       Object.hasOwn(observation, surface)
         ? collectDialectViolations(
             observation[surface],
-            `operation ${String(operation.operationId)} observation.${surface}`
+            `operation ${String(operation.operationId)} observation.${surface}`,
+            operation.deprecated === true
           )
         : []
     );
