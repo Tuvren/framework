@@ -36,6 +36,7 @@ export const CERTIFICATION_RULE_IDS = [
   "observation-path",
   "literal-boolean",
   "no-echo",
+  "integrity-observation",
   "expected-root-reference",
   "evidence-only-proof",
 ] as const;
@@ -98,7 +99,8 @@ const NUMERIC_OPERAND_KEYS = [
 const LITERAL_EQUALITY_KEYS = ["equals", "notEquals"] as const;
 
 const EACH = Symbol("each array element");
-type PathSegment = string | typeof EACH;
+const REFERENCE_EACH = Symbol("each reference collection member");
+type PathSegment = string | typeof EACH | typeof REFERENCE_EACH;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -194,7 +196,9 @@ const splitContextPath = (path: string): PathSegment[] | undefined => {
 };
 
 const renderPath = (segments: readonly PathSegment[]): string =>
-  segments.map((segment) => (segment === EACH ? "[*]" : segment)).join(".");
+  segments
+    .map((segment) => (typeof segment === "symbol" ? "[*]" : segment))
+    .join(".");
 
 const isPrefix = (
   prefix: readonly PathSegment[],
@@ -307,7 +311,7 @@ const arrayChildSchemas = (
     ? schema.prefixItems
     : [];
 
-  if (segment === EACH) {
+  if (segment === EACH || segment === REFERENCE_EACH) {
     return [...prefixItems, schema.items];
   }
 
@@ -351,22 +355,22 @@ const childSchemas = (node: SchemaNode, segment: PathSegment): SchemaNode[] => {
     return [];
   }
 
-  const children = [
-    ...arrayChildSchemas(node.schema, segment),
-    ...(segment === EACH
-      ? [
-          ...Object.values(
-            isRecord(node.schema.properties) ? node.schema.properties : {}
-          ),
-          ...Object.values(
-            isRecord(node.schema.patternProperties)
-              ? node.schema.patternProperties
-              : {}
-          ),
-          node.schema.additionalProperties,
-        ]
-      : objectChildSchemas(node.schema, segment)),
-  ];
+  const children = arrayChildSchemas(node.schema, segment);
+  if (segment === REFERENCE_EACH) {
+    children.push(
+      ...Object.values(
+        isRecord(node.schema.properties) ? node.schema.properties : {}
+      ),
+      ...Object.values(
+        isRecord(node.schema.patternProperties)
+          ? node.schema.patternProperties
+          : {}
+      ),
+      node.schema.additionalProperties
+    );
+  } else if (segment !== EACH) {
+    children.push(...objectChildSchemas(node.schema, segment));
+  }
 
   return children
     .filter((child) => isJsonSchema(child) && child !== false)
@@ -753,19 +757,45 @@ const checkNoEcho = (
   }
 };
 
-const checkAssertion = (
+const checkIntegrityObservation = (
+  context: RuleContext,
+  scope: AssertionScope,
+  path: string | undefined,
+  label: string
+): void => {
+  const expected = splitContextPath(path ?? "");
+  if (
+    expected === undefined ||
+    locatePath(expected, scope).kind !== "observation"
+  ) {
+    report(
+      context,
+      "integrity-observation",
+      `${subject(context)} ${label} must reference a kernel-reported observation`
+    );
+  }
+};
+
+const referenceNodes = (
   context: RuleContext,
   scope: AssertionScope,
   assertion: ConformancePlanAssertion,
-  index: number,
-  forwarded: readonly (readonly PathSegment[])[]
-): void => {
-  const label = `assertion ${index} (${assertion.kind})`;
-  const actual = assertionActualPath(assertion);
-  const nodes = operatorNodes(assertion, actual, label);
+  actual: PathSegment[] | undefined,
+  label: string
+): OperatorNode[] => {
+  const nodes: OperatorNode[] = [];
   for (const reference of assertion.references ?? []) {
+    if (reference.hashPath !== undefined) {
+      checkIntegrityObservation(
+        context,
+        scope,
+        reference.targetPath,
+        `${label} reference hashPath`
+      );
+    }
+
     const relative = splitContextPath(reference.path)?.map((segment) =>
-      segment === "*" ? EACH : segment
+      segment === "*" ? REFERENCE_EACH : segment
     );
     nodes.push({
       actual:
@@ -809,6 +839,28 @@ const checkAssertion = (
       );
     }
   }
+  return nodes;
+};
+
+const checkAssertion = (
+  context: RuleContext,
+  scope: AssertionScope,
+  assertion: ConformancePlanAssertion,
+  index: number,
+  forwarded: readonly (readonly PathSegment[])[]
+): void => {
+  const label = `assertion ${index} (${assertion.kind})`;
+  if (assertion.kind === "identity" || assertion.kind === "digest") {
+    checkIntegrityObservation(
+      context,
+      scope,
+      assertion.equalsPath,
+      `${label} equalsPath`
+    );
+  }
+  const actual = assertionActualPath(assertion);
+  const nodes = operatorNodes(assertion, actual, label);
+  nodes.push(...referenceNodes(context, scope, assertion, actual, label));
   let actualResolves = true;
 
   for (const node of nodes) {

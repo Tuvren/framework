@@ -201,6 +201,7 @@
       "required": ["path", "targetPath", "recordType"],
       "additionalProperties": false,
       "properties": {
+        "nullable": { "type": "boolean" },
         "path": {
           "$ref": "#/$defs/contextPath"
         },

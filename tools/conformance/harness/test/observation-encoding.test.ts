@@ -33,12 +33,74 @@ for (const [name, fields] of [
     valid.replace('"activationCount":1', '"activationCount":-0'),
   ],
   ["undeclared", `${valid},"verdict":true`],
+  ["map duplicate", `${valid},"payload":{"$map":[["a",1],["a",2]]}`],
+  ["map non-string", `${valid},"payload":{"$map":[[1,2]]}`],
+  ["events encoding", valid],
+  ["state encoding", valid],
 ] as const) {
   test(`catalogued observation ${name} is validated before captures and assertions`, async () => {
     const accepted = name === "valid" || name.startsWith("legacy ");
     const dir = await mkdtemp(path.join(tmpdir(), "tuvren-db002-"));
     try {
       const packet = path.join(dir, "packet.json");
+      const catalogPath = path.join(dir, "operations.json");
+      const catalog = {
+        catalogId: "probe.operations",
+        catalogVersion: "0.1.0",
+        packetId: "tuvren.kernel.protocol",
+        operations: [
+          {
+            operationId: "kernel.mutant.activation",
+            kind: "control",
+            capability: "probe",
+            input: {},
+            observation: {
+              result: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  activation: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: {
+                      activated: { type: "boolean" },
+                      activationCount: { type: "integer" },
+                      kind: { type: "string" },
+                      mutantId: { type: "string" },
+                      signal: { type: "string" },
+                      payload: {
+                        $ref: "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record",
+                      },
+                    },
+                  },
+                },
+              },
+              events: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    payload: {
+                      $ref: "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record",
+                    },
+                  },
+                },
+              },
+              state: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  payload: {
+                    $ref: "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record",
+                  },
+                },
+              },
+            },
+          },
+        ],
+      };
+      await writeFile(catalogPath, JSON.stringify(catalog));
       const plan = path.join(dir, "plan.json");
       const adapter = path.join(dir, "adapter.json");
       const host = path.join(dir, "host.ts");
@@ -50,7 +112,7 @@ for (const [name, fields] of [
           process.stdout.write('{"id":' + r.id + ',"jsonrpc":"2.0","result":{"kind":"result","value":{"result":{"activation":{${fields}}}}}}\\n');
           continue;
         }
-        const result = r.method === "initialize" ? { adapterId:"probe",capabilities:["probe"],packetId:r.params.packetId,planVersion:r.params.planVersion } : r.method === "events" ? [] : null;
+        const result = r.method === "initialize" ? { adapterId:"probe",capabilities:["probe"],packetId:r.params.packetId,planVersion:r.params.planVersion } : r.method === "events" ? ${name === "events encoding" ? '[{payload: {$bytes: "FF"}}]' : "[]"} : r.method === "inspectState" ? ${name === "state encoding" ? '{payload: {$bytes: "FF"}}' : "{}"} : null;
         process.stdout.write(JSON.stringify({id:r.id,jsonrpc:"2.0",result}) + "\\n");
       }`
       );
@@ -60,7 +122,7 @@ for (const [name, fields] of [
           conformancePlans: [
             { path: plan, planId: "probe", planVersion: "0.1.0" },
           ],
-          operationCatalog: "spec/conformance/kernel/operations.json",
+          operationCatalog: catalogPath,
           packetId: "tuvren.kernel.protocol",
         })
       );
@@ -101,6 +163,7 @@ for (const [name, fields] of [
               steps: [
                 {
                   arguments: {},
+                  inspectState: {},
                   capture: [
                     { name: "signal", path: "result.activation.signal" },
                   ],

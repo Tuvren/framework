@@ -738,3 +738,180 @@ describe("certification modes", () => {
     expect(inventory).toContain("literal-boolean=1");
   });
 });
+
+describe("integrity observation operands", () => {
+  test.each(["identity", "digest"] as const)(
+    "%s rejects a fixture digest for an echoed input",
+    (kind) => {
+      const echoCatalog = parseOperationCatalog(
+        {
+          catalogId: "fixture.echo.operations",
+          catalogVersion: "0.1.0",
+          packetId: catalog.packetId,
+          operations: [
+            {
+              operationId: "fixture.store.echo",
+              kind: "syscall",
+              binding: "fixture.store",
+              capability: "fixture.store",
+              input: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  record: {
+                    $ref: "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/bytes",
+                  },
+                },
+              },
+              observation: {
+                result: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    record: {
+                      $ref: "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/bytes",
+                    },
+                    hash: {
+                      $ref: "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/hash",
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+        "echo catalog"
+      );
+      const echoCheck = (
+        assertions: ConformancePlanAssertion[],
+        overrides: Partial<ConformancePlanCheck> = {}
+      ) =>
+        hasCheck(assertions, { operation: "fixture.store.echo", ...overrides });
+      const echoRules = (plan: ConformancePlan) =>
+        evaluateCertificationRules(plan, echoCatalog).map(
+          (violation) => violation.rule
+        );
+
+      const assertion: ConformancePlanAssertion = {
+        kind,
+        path: "$.result.record",
+        equalsPath: "$.fixture.expected.hash",
+        recordType: "opaque-object",
+      };
+      const plan = planWith(
+        echoCheck([], {
+          fixture: "store",
+          steps: [
+            {
+              stepId: "echo",
+              operation: "fixture.store.echo",
+              arguments: { record: { $ref: "fixture.input.record" } },
+              assertions: [assertion],
+            },
+          ],
+        })
+      );
+      expect(echoRules(plan)).toContain("integrity-observation");
+      for (const equalsPath of ["$.input.hash", "$.capture.hash"]) {
+        expect(
+          echoRules(planWith(echoCheck([{ ...assertion, equalsPath }])))
+        ).toContain("integrity-observation");
+      }
+      expect(
+        echoRules(
+          planWith(echoCheck([{ ...assertion, equalsPath: "$.result.hash" }]))
+        )
+      ).toEqual([]);
+      expect(
+        echoRules(
+          planWith(
+            echoCheck([
+              {
+                kind: "resultField",
+                field: "$.hash",
+                equalsPath: "$.fixture.expected.hash",
+              },
+            ])
+          )
+        )
+      ).toEqual([]);
+    }
+  );
+  test("reference hashPath must read a kernel observation", () => {
+    const assertion: ConformancePlanAssertion = {
+      kind: "referenceWalk",
+      path: "$.result",
+      references: [
+        {
+          path: "$.hash",
+          targetPath: "$.fixture.expected.records",
+          hashPath: "$.hash",
+          valuePath: "$.value",
+          recordType: "opaque-object",
+        },
+      ],
+    };
+    expect(rulesFired(planWith(hasCheck([assertion])))).toContain(
+      "integrity-observation"
+    );
+    expect(
+      rulesFired(
+        planWith(
+          hasCheck([
+            {
+              ...assertion,
+              references: [
+                {
+                  path: "$.hash",
+                  targetPath: "$.result",
+                  hashPath: "$.hash",
+                  recordType: "opaque-object",
+                },
+              ],
+            },
+          ])
+        )
+      )
+    ).toEqual([]);
+  });
+});
+
+test.each(["every", "some"] as const)(
+  "%s rejects object observations while reference wildcards descend into objects",
+  (quantifier) => {
+    expect(
+      rulesFired(
+        planWith(
+          hasCheck([
+            {
+              kind: "resultField",
+              field: "$",
+              length: 1,
+              [quantifier]: { field: "$", present: true },
+            },
+          ])
+        )
+      )
+    ).toContain("observation-path");
+    expect(
+      rulesFired(
+        planWith(
+          hasCheck([
+            {
+              kind: "referenceWalk",
+              path: "$.result",
+              references: [
+                {
+                  path: "$.*",
+                  length: 1,
+                  targetPath: "$.result",
+                  recordType: "opaque-object",
+                },
+              ],
+            },
+          ])
+        )
+      )
+    ).toEqual([]);
+  }
+);

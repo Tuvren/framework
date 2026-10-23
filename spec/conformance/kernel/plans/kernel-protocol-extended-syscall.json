@@ -76,20 +76,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -204,20 +198,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-single-byte"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -332,20 +320,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -460,20 +442,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -588,20 +564,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-large-bytes"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -716,20 +686,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -846,20 +810,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -976,20 +934,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -1106,20 +1058,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -1234,20 +1180,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -1364,20 +1304,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-staged-failed"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -1492,20 +1426,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -1622,20 +1550,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -1752,20 +1674,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -1882,20 +1798,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -2010,20 +1920,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],
@@ -2140,20 +2044,14 @@
           "claimIds": [
             "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged"
           ],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],

@@ -56,14 +56,12 @@ const referencesAt = (value: unknown, path: string): unknown[] => {
   );
 };
 
-const verifyReferences = (
-  value: unknown,
-  reference: ConformancePlanReference,
-  resolve: (path: string) => unknown
-): boolean => {
-  const observed = resolve(reference.targetPath);
+const verifyTargets = (
+  observed: unknown,
+  reference: ConformancePlanReference
+): ReadonlySet<string> | false => {
   const targets: unknown[] = Array.isArray(observed) ? observed : [observed];
-  const byHash = new Map<string, unknown>();
+  const byHash = new Set<string>();
   for (const target of targets) {
     const computed = computeIdentity(
       reference.recordType,
@@ -81,7 +79,19 @@ const verifyReferences = (
     if (hash !== computed) {
       return false;
     }
-    byHash.set(hash, target);
+    byHash.add(hash);
+  }
+  return byHash;
+};
+
+const verifyReferences = (
+  value: unknown,
+  reference: ConformancePlanReference,
+  resolve: (path: string) => unknown
+): number | false => {
+  const byHash = verifyTargets(resolve(reference.targetPath), reference);
+  if (byHash === false) {
+    return false;
   }
   const hashes = referencesAt(value, reference.path);
   const collection =
@@ -99,8 +109,12 @@ const verifyReferences = (
       return false;
     }
   }
+  let verified = 0;
   for (const hash of hashes) {
     if (hash === null) {
+      if (reference.nullable !== true) {
+        return false;
+      }
       continue;
     }
     if (typeof hash !== "string") {
@@ -109,8 +123,9 @@ const verifyReferences = (
     if (!byHash.has(hash)) {
       return false;
     }
+    verified += 1;
   }
-  return true;
+  return verified;
 };
 
 export const evaluateIntegrity = (
@@ -131,7 +146,10 @@ export const evaluateIntegrity = (
     const outcomes = assertion.references.map((reference) =>
       verifyReferences(value, reference, resolve)
     );
-    return outcomes.every(Boolean);
+    return (
+      outcomes.every((outcome) => outcome !== false) &&
+      outcomes.some((outcome) => outcome !== false && outcome > 0)
+    );
   }
   if (assertion.equalsPath === undefined) {
     throw new Error("integrity assertion requires equalsPath");

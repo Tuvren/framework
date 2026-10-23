@@ -29,7 +29,7 @@ const catalog = parseOperationCatalog(
 );
 const assertions: ConformancePlanAssertion[] = [
   {
-    equalsPath: "$.fixture.expected.hash",
+    equalsPath: "$.result.hash",
     kind: "digest",
     path: "$.result.hash",
   },
@@ -40,7 +40,7 @@ const assertions: ConformancePlanAssertion[] = [
     recordType: "turn-node",
   },
   {
-    equalsPath: "$.fixture.expected.hash",
+    equalsPath: "$.result.hash",
     kind: "identity",
     path: "$.result.hash",
     recordType: "turn-node",
@@ -91,7 +91,14 @@ for (const assertion of assertions) {
     check.fixture = "vector";
     check.steps = [
       {
-        assertions: [assertion],
+        assertions: [
+          {
+            ...assertion,
+            ...(assertion.kind === "identity" || assertion.kind === "digest"
+              ? { equalsPath: "$.fixture.expected.hash" }
+              : {}),
+          },
+        ],
         input: { expected: "$.fixture.expected" },
         operation: check.operation,
         stepId: "invoke",
@@ -150,4 +157,37 @@ test("reference targets can be single native read observations", () => {
     ],
   };
   expect(evaluateCertificationRules(planWith(assertion), catalog)).toEqual([]);
+});
+
+test("reference nullable declarations round-trip through the plan schema and require booleans", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "tuvren-nullable-plan-"));
+  try {
+    const file = path.join(dir, "plan.json");
+    const assertion: ConformancePlanAssertion = {
+      kind: "referenceWalk",
+      path: "$.result",
+      references: [
+        {
+          path: "$.hash",
+          targetPath: "$.result",
+          recordType: "opaque-object",
+          nullable: true,
+        },
+      ],
+    };
+    await writeFile(file, JSON.stringify(planWith(assertion)));
+    expect(
+      (await loadConformancePlan(file)).plan.checks[0]?.assertions[0]
+    ).toEqual(assertion);
+    await writeFile(
+      file,
+      JSON.stringify(planWith(assertion)).replace(
+        '"nullable":true',
+        '"nullable":"true"'
+      )
+    );
+    await expect(loadConformancePlan(file)).rejects.toThrow();
+  } finally {
+    await rm(dir, { force: true, recursive: true });
+  }
 });

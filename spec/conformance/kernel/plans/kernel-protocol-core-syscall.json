@@ -54,20 +54,14 @@
             }
           ],
           "claimIds": ["kernel.syscall.protocol.deterministic_hashing"],
-          "assertions": [
-            {
-              "kind": "digest",
-              "path": "$.result",
-              "equalsPath": "$.fixture.expected.rawOpaqueBytesSha256Hex"
-            }
-          ]
+          "assertions": []
         }
       ],
       "assertions": [
         {
-          "kind": "resultField",
-          "field": "$.trace.get.result",
-          "present": true
+          "kind": "digest",
+          "path": "$.result.trace.get.result",
+          "equalsPath": "$.result.trace.put.result"
         }
       ],
       "evidence": ["trace.get.result"],

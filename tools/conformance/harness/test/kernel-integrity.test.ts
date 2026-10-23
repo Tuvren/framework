@@ -423,7 +423,7 @@ test("reference walks require resolved targets and explicit collection cardinali
       { ...assertion, references: [{ ...reference, length: 0 }] },
       { links: { hashes: [] }, records: [] }
     )
-  ).toBe("pass");
+  ).toBe("fail");
   expect(
     status(
       {
@@ -469,4 +469,42 @@ test("tagged maps preserve text keys that resemble transport tags", () => {
       },
     })
   ).toBe("fail");
+});
+
+test("reference walks reject null edges unless nullable and still require a verified edge", () => {
+  const hash =
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+  const reference = {
+    path: "$.hashes",
+    length: 2,
+    targetPath: "$.result.records",
+    valuePath: "$.bytes",
+    recordType: "opaque-object",
+  };
+  const assertion: ConformancePlanAssertion = {
+    kind: "referenceWalk",
+    path: "$.result.links",
+    references: [reference],
+  };
+  const records = [{ hash, bytes: bytes("") }];
+  expect(status(assertion, { links: { hashes: [null, hash] }, records })).toBe(
+    "fail"
+  );
+  expect(
+    status(
+      { ...assertion, references: [{ ...reference, nullable: true }] },
+      { links: { hashes: [null, hash] }, records }
+    )
+  ).toBe("pass");
+  for (const nullable of [false, true]) {
+    expect(
+      status(
+        {
+          ...assertion,
+          references: [{ ...reference, path: "$.hash", length: 1, nullable }],
+        },
+        { links: { hash: null }, records }
+      )
+    ).toBe("fail");
+  }
 });
