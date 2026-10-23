@@ -39,6 +39,8 @@ import {
 import type {
   CompiledConformancePlan,
   CompiledConformancePlanCheck,
+  ConformancePlanCheck,
+  ConformancePlanStep,
 } from "../plan-compiler/index.js";
 import { JsonRpcAdapterClient } from "./adapter-client.js";
 import type { AdapterManifest } from "./adapter-client.js";
@@ -53,6 +55,12 @@ import type {
   AssertionEvaluation,
 } from "./assertion-engine/index.js";
 import { readAdapterManifest, readPlans } from "./run-plans.js";
+import {
+  ArgumentResolutionError,
+  recordStepCaptures,
+  resolveStepArguments,
+} from "./step-arguments.js";
+import type { ArgumentRoots } from "./step-arguments.js";
 
 interface CliOptions {
   adapter: string;
@@ -76,6 +84,10 @@ interface ScheduledCheck {
   index: number;
   plan: CompiledConformancePlan;
 }
+
+type RunnerContext = AssertionContext & {
+  capture?: Readonly<Record<string, unknown>>;
+};
 
 interface RunResult {
   checkResult: ConformanceCheckResult;
@@ -430,6 +442,45 @@ const validateAdapterHandshake = (
   }
 };
 
+interface TraceStepRequest {
+  contextInput: Record<string, unknown>;
+  input: unknown;
+  inspectQuery: unknown;
+}
+
+const createTraceStepRequest = (
+  step: ConformancePlanStep,
+  check: ConformancePlanCheck,
+  baseInput: Record<string, unknown>,
+  trace: Record<string, AssertionContext>,
+  argumentRoots: ArgumentRoots
+): TraceStepRequest => {
+  if (step.arguments === undefined) {
+    const legacyContext = { ...baseInput, trace };
+    const input = {
+      ...baseInput,
+      checkInput: resolveStepRefs(step.input ?? check.input, legacyContext),
+    };
+    return {
+      contextInput: input,
+      input,
+      inspectQuery:
+        step.inspectState === undefined
+          ? undefined
+          : resolveStepRefs(step.inspectState, legacyContext),
+    };
+  }
+
+  return {
+    contextInput: baseInput,
+    input: resolveStepArguments(step.arguments, argumentRoots),
+    inspectQuery:
+      step.inspectState === undefined
+        ? undefined
+        : resolveStepArguments(step.inspectState, argumentRoots),
+  };
+};
+
 const runTraceCheck = async (
   client: JsonRpcAdapterClient,
   manifest: AdapterManifest,
@@ -438,25 +489,34 @@ const runTraceCheck = async (
 ): Promise<ConformanceCheckResult> => {
   const { check } = compiledCheck;
   const baseInput = createAdapterInput(plan, compiledCheck);
-  const instance = await client.createInstance(baseInput);
+  const steps = check.steps ?? [];
+  const projected = steps.some((step) => step.arguments !== undefined);
+  const instance = await client.createInstance(
+    projected ? { checkInput: check.input } : baseInput
+  );
   const trace: Record<string, AssertionContext> = {};
   const traceAdapterErrors: Record<string, unknown> = {};
   const assertionResults: AssertionEvaluation[] = [];
+  const captures: Record<string, unknown> = {};
+  const argumentRoots: ArgumentRoots = {
+    capture: captures,
+    fixture: baseInput.fixture,
+    input: check.input,
+  };
 
   try {
-    const steps = check.steps ?? [];
     const visit = async (index: number): Promise<void> => {
       const step = steps[index];
       if (step === undefined) {
         return;
       }
-      const input = {
-        ...baseInput,
-        checkInput: resolveStepRefs(step.input ?? check.input, {
-          ...baseInput,
-          trace,
-        }),
-      };
+      const { contextInput, input, inspectQuery } = createTraceStepRequest(
+        step,
+        check,
+        baseInput,
+        trace,
+        argumentRoots
+      );
       const controls = {
         ...createAdapterControls(compiledCheck),
         ...step.controls,
@@ -469,7 +529,7 @@ const runTraceCheck = async (
         instance,
         timeoutMs
       );
-      const context = createAssertionContext(outcome, input);
+      const context = createAssertionContext(outcome, contextInput);
       if (outcome.kind === "error") {
         // Trace-step adapter errors are diagnostic evidence only; plan
         // assertions still decide pass/fail through runner-owned context.
@@ -491,19 +551,20 @@ const runTraceCheck = async (
       const inspectedState =
         step.inspectState === undefined
           ? undefined
-          : await client.inspectState(
-              resolveStepRefs(step.inspectState, { ...baseInput, trace }),
-              instance,
-              timeoutMs
-            );
+          : await client.inspectState(inspectQuery, instance, timeoutMs);
 
       if (inspectedState !== undefined && inspectedState !== null) {
         context.state = inspectedState;
       }
 
       trace[step.stepId] = context;
+      recordStepCaptures(step.capture, context, captures);
 
       if (step.assertions !== undefined) {
+        const stepContext: RunnerContext = {
+          ...context,
+          capture: { ...captures },
+        };
         assertionResults.push(
           ...evaluateAssertions(
             {
@@ -512,7 +573,7 @@ const runTraceCheck = async (
               checkId: `${check.checkId}.${step.stepId}`,
               operation: step.operation,
             },
-            context
+            stepContext
           )
         );
       }
@@ -523,7 +584,8 @@ const runTraceCheck = async (
     await client.destroyInstance(instance);
   }
 
-  const finalContext: AssertionContext = {
+  const finalContext: RunnerContext = {
+    capture: captures,
     evidence: { trace },
     fixture: baseInput.fixture,
     input: baseInput.checkInput,
@@ -617,7 +679,6 @@ const runCheck = async (
     });
   } catch (error: unknown) {
     const message = readErrorMessage(error);
-    const adapterError = readAdapterFailure(error);
     const assertionResults = [
       ...check.assertions.map((assertion, index) => ({
         assertionId: `${check.checkId}.${index + 1}.${assertion.kind}`,
@@ -632,7 +693,9 @@ const runCheck = async (
     ];
 
     return createCheckResult(check.checkId, assertionResults, {
-      adapterError,
+      ...(error instanceof ArgumentResolutionError
+        ? { verificationError: message }
+        : { adapterError: readAdapterFailure(error) }),
       adapterId: manifest.adapterId,
       planId: plan.plan.planId,
     });

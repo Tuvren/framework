@@ -23,6 +23,7 @@ import nodePath from "node:path";
 
 import { assertConformanceEvidence } from "../../../scripts/lib/conformance-contract.ts";
 import {
+  createProjectionProbeAdapterScript,
   errorStateAdapterScript,
   statePrecedenceAdapterScript,
 } from "./run-adapters-fixture.ts";
@@ -832,4 +833,325 @@ describe("certification harness trace lifecycle", () => {
       }
     }
   );
+});
+
+describe("certification harness explicit arguments and captures", () => {
+  const EXPECTED_SENTINEL = "EXPECTED-ONLY-SENTINEL";
+
+  const writeProjectionFixture = async (
+    checks: readonly unknown[]
+  ): Promise<{ adapterPath: string; logPath: string; planPath: string }> => {
+    const directory = await mkdtemp(
+      nodePath.join(tmpdir(), "tuvren-projection-test-")
+    );
+    tempDirs.push(directory);
+    const adapterPath = nodePath.join(directory, "adapter.json");
+    const packetPath = nodePath.join(directory, "packet.json");
+    const planPath = nodePath.join(directory, "plan.json");
+    const fixturePath = nodePath.join(directory, "fixture.json");
+    const logPath = nodePath.join(directory, "frames.jsonl");
+    await writeFile(packetPath, JSON.stringify({ packetId: "projection" }));
+    await writeFile(
+      fixturePath,
+      JSON.stringify({
+        expected: { requestId: "req-1", secret: EXPECTED_SENTINEL },
+        input: { request: { id: "req-1", nested: [10, 20] } },
+      })
+    );
+    await writeFile(
+      adapterPath,
+      JSON.stringify({
+        adapterId: "projection-probe",
+        authorityPackets: [packetPath],
+        boundary: "framework",
+        capabilities: ["projection"],
+        command: ["bun", "--eval", createProjectionProbeAdapterScript(logPath)],
+        implementationId: "projection-probe",
+        language: "typescript",
+        protocol: {
+          name: "tuvren.conformance-adapter",
+          transport: "json-rpc-2.0-stdio",
+          version: "0.1.0",
+        },
+        suiteId: "projection",
+        suiteVersion: "0.1.0",
+      })
+    );
+    await writeFile(
+      planPath,
+      JSON.stringify({
+        applicability: { capabilities: ["projection"] },
+        checks,
+        fixtures: { case: "./fixture.json" },
+        packetId: "projection",
+        planId: "projection",
+        planVersion: "0.1.0",
+      })
+    );
+    return { adapterPath, logPath, planPath };
+  };
+
+  const runProjection = async (
+    adapterPath: string,
+    planPath: string
+  ): Promise<CommandResult> =>
+    await runCommand([
+      "bun",
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      adapterPath,
+      "--plan",
+      planPath,
+    ]);
+
+  const readFrames = async (
+    logPath: string
+  ): Promise<{ method: string; params: Record<string, unknown> }[]> => {
+    const text = await readFile(logPath, "utf-8");
+    return text
+      .trim()
+      .split("\n")
+      .map((line) => {
+        const frame = JSON.parse(line) as {
+          method: string;
+          params?: Record<string, unknown>;
+        };
+        return { method: frame.method, params: frame.params ?? {} };
+      });
+  };
+
+  const projectedCheck = {
+    assertions: [
+      {
+        equalsPath: "$.capture.token",
+        field: "$.trace.second.result.received.token",
+        kind: "stateField",
+      },
+      {
+        equals: "token-open",
+        field: "$.trace.second.result.received.token",
+        kind: "stateField",
+      },
+      {
+        equalsPath: "$.fixture.expected.requestId",
+        field: "$.trace.first.result.received.request.id",
+        kind: "stateField",
+      },
+    ],
+    checkId: "projection.capture",
+    fixture: "case",
+    input: { mode: "strict" },
+    operation: "projection",
+    steps: [
+      {
+        arguments: {
+          constant: 7,
+          escaped: { $literal: { $ref: "input.mode" } },
+          list: [{ $ref: "fixture.input.request.nested.1" }, "x"],
+          mode: { $ref: "input.mode" },
+          request: { $ref: "fixture.input.request" },
+        },
+        capture: [{ name: "token", path: "result.token" }],
+        operation: "open",
+        stepId: "first",
+      },
+      {
+        arguments: { token: { $ref: "capture.token" } },
+        assertions: [
+          {
+            equalsPath: "$.capture.token",
+            field: "$.received.token",
+            kind: "resultField",
+          },
+        ],
+        operation: "use",
+        stepId: "second",
+      },
+    ],
+  };
+
+  test("sends only the resolved projection and threads captures into later steps and final assertions", async () => {
+    const { adapterPath, logPath, planPath } = await writeProjectionFixture([
+      projectedCheck,
+    ]);
+    const result = await runProjection(adapterPath, planPath);
+
+    expect(result.stderr).toBe("");
+    expect(result.code).toBe(0);
+    const evidence: unknown = JSON.parse(result.stdout);
+    assertConformanceEvidence(evidence, "projection evidence");
+    expect(evidence.status).toBe("pass");
+    expect(
+      evidence.checkResults[0]?.assertionResults
+        .map((entry) => entry.assertionId)
+        .filter((id) => !id.includes(".requiredEvidence."))
+    ).toEqual([
+      "projection.capture.second.1.resultField",
+      "projection.capture.1.stateField",
+      "projection.capture.2.stateField",
+      "projection.capture.3.stateField",
+    ]);
+
+    const frames = await readFrames(logPath);
+    const firstProjection = {
+      constant: 7,
+      escaped: { $ref: "input.mode" },
+      list: [20, "x"],
+      mode: "strict",
+      request: { id: "req-1", nested: [10, 20] },
+    };
+    expect(
+      frames
+        .filter(
+          (frame) => frame.method === "dispatch" || frame.method === "events"
+        )
+        .map((frame) => [
+          frame.method,
+          frame.params.operation,
+          frame.params.input,
+        ])
+    ).toEqual([
+      ["dispatch", "open", firstProjection],
+      ["events", "open", firstProjection],
+      ["dispatch", "use", { token: "token-open" }],
+      ["events", "use", { token: "token-open" }],
+    ]);
+  });
+
+  test("never lets the adapter observe expected values or whole fixtures", async () => {
+    const { adapterPath, logPath, planPath } = await writeProjectionFixture([
+      projectedCheck,
+    ]);
+    const result = await runProjection(adapterPath, planPath);
+
+    expect(result.code).toBe(0);
+    const rawFrames = await readFile(logPath, "utf-8");
+    expect(rawFrames).not.toContain(EXPECTED_SENTINEL);
+    expect(rawFrames).not.toContain('"expected"');
+    const frames = await readFrames(logPath);
+    expect(frames.map((frame) => frame.method)).toEqual([
+      "initialize",
+      "createInstance",
+      "dispatch",
+      "events",
+      "dispatch",
+      "events",
+      "destroyInstance",
+      "shutdown",
+    ]);
+    for (const frame of frames) {
+      expect(JSON.stringify(frame.params)).not.toContain('"fixture"');
+    }
+  });
+
+  test.each([
+    { reference: "fixture.input.absent", label: "missing fixture input" },
+    { reference: "capture.never", label: "undefined capture" },
+    { reference: "input.mode.deeper", label: "path through a scalar" },
+    { reference: "input.constructor", label: "inherited property" },
+  ])(
+    "fails the check when a reference does not resolve ($label)",
+    async ({ reference }) => {
+      const { adapterPath, logPath, planPath } = await writeProjectionFixture([
+        {
+          assertions: [
+            {
+              equals: "token-open",
+              field: "$.trace.first.result.token",
+              kind: "stateField",
+            },
+          ],
+          checkId: "projection.unresolved",
+          fixture: "case",
+          input: { mode: "strict" },
+          operation: "projection",
+          steps: [
+            {
+              arguments: { value: { $ref: reference } },
+              operation: "open",
+              stepId: "first",
+            },
+          ],
+        },
+      ]);
+      const result = await runProjection(adapterPath, planPath);
+
+      expect(result.code).toBe(1);
+      const evidence: unknown = JSON.parse(result.stdout);
+      assertConformanceEvidence(evidence, "unresolved evidence");
+      const [checkResult] = evidence.checkResults;
+      expect(checkResult?.status).toBe("fail");
+      expect(checkResult?.assertionResults[0]?.message).toContain(
+        `$ref ${reference} did not resolve`
+      );
+      expect(checkResult?.details).toMatchObject({
+        verificationError: expect.stringContaining(reference),
+      });
+      expect(checkResult?.details).not.toHaveProperty("adapterError");
+      const frames = await readFrames(logPath);
+      expect(frames.map((frame) => frame.method)).not.toContain("dispatch");
+      expect(frames.map((frame) => frame.method)).toContain("destroyInstance");
+    }
+  );
+
+  test("rejects a $ref into fixture.expected at compile time", async () => {
+    const { adapterPath, planPath } = await writeProjectionFixture([
+      {
+        assertions: [{ field: "$.trace", kind: "stateField", present: true }],
+        checkId: "projection.expected-ref",
+        fixture: "case",
+        operation: "projection",
+        steps: [
+          {
+            arguments: { value: { $ref: "fixture.expected.secret" } },
+            operation: "open",
+            stepId: "first",
+          },
+        ],
+      },
+    ]);
+    const result = await runProjection(adapterPath, planPath);
+
+    expect(result.code).toBe(1);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain("failed JSON Schema validation");
+  });
+
+  test("keeps whole-fixture forwarding for legacy steps without arguments", async () => {
+    const { adapterPath, logPath, planPath } = await writeProjectionFixture([
+      {
+        assertions: [
+          {
+            equalsPath: "$.fixture.expected.requestId",
+            field: "$.trace.first.result.received.fixture.input.request.id",
+            kind: "stateField",
+          },
+        ],
+        checkId: "projection.legacy",
+        fixture: "case",
+        input: { mode: "strict" },
+        operation: "projection",
+        steps: [{ operation: "open", stepId: "first" }],
+      },
+    ]);
+    const result = await runProjection(adapterPath, planPath);
+
+    expect(result.stderr).toBe("");
+    expect(result.code).toBe(0);
+    const frames = await readFrames(logPath);
+    const legacyInput = {
+      checkInput: { mode: "strict" },
+      fixture: {
+        expected: { requestId: "req-1", secret: EXPECTED_SENTINEL },
+        input: { request: { id: "req-1", nested: [10, 20] } },
+      },
+    };
+    expect(
+      frames
+        .filter((frame) =>
+          ["createInstance", "dispatch", "events"].includes(frame.method)
+        )
+        .map((frame) => frame.params.input)
+    ).toEqual([legacyInput, legacyInput, legacyInput]);
+  });
 });
