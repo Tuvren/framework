@@ -19,8 +19,13 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import nodePath from "node:path";
 
-import { runNegativeControls } from "./negative-controls.ts";
 import type {
+  ConformanceCheckResult,
+  ConformanceFailureClassification,
+} from "../../scripts/lib/conformance-contract.ts";
+import { classifyMutantRun, runNegativeControls } from "./negative-controls.ts";
+import type {
+  HarnessRun,
   MutantReport,
   NegativeControlPortConfig,
   NegativeControlReport,
@@ -253,5 +258,91 @@ describe("negative-control runner", () => {
     expect(brokenReport.findings.length).toBeGreaterThan(0);
     expect(brokenReport.mutants).toEqual([]);
     expect(brokenReport.totals.killed).toBe(0);
+  });
+});
+
+describe("mutant run classification", () => {
+  const MUTANT = "synthetic.mixed";
+
+  const failedCheck = (
+    check: string,
+    classification: ConformanceFailureClassification
+  ): ConformanceCheckResult => ({
+    assertionResults: [
+      { assertionId: `synthetic.${check}_check.1.resultField`, status: "fail" },
+    ],
+    checkId: `synthetic.${check}_check`,
+    failure: { classification, replay: "replay" },
+    status: "fail",
+  });
+
+  const activatedRun = (
+    checkResults: ConformanceCheckResult[]
+  ): HarnessRun => ({
+    activations: [
+      {
+        activated: true,
+        activationCount: 1,
+        mutantId: MUTANT,
+        signal: `${MUTANT}.entered`,
+      },
+    ],
+    evidence: {
+      boundary: "shared",
+      checkResults,
+      implementationId: "synthetic-mutant",
+      language: "typescript",
+      status: "fail",
+      suiteId: "tuvren.synthetic",
+      suiteVersion: "0.1.0",
+      summary: {
+        failedChecks: checkResults.length,
+        passedChecks: 0,
+        totalChecks: checkResults.length,
+      },
+    },
+    unanswered: [],
+  });
+
+  const control = {
+    activation: { signal: `${MUTANT}.entered` },
+    designatedAssertions: [ALPHA],
+    kind: "implementation",
+    mutantId: MUTANT,
+    profiles: ["synthetic.profile"],
+  };
+
+  test.each(["adapter_protocol", "environment", "verification"] as const)(
+    "invalidates a designated kill when another check failed with %s",
+    (classification) => {
+      const classified = classifyMutantRun(
+        control,
+        activatedRun([
+          failedCheck("alpha", "implementation"),
+          failedCheck("beta", classification),
+        ])
+      );
+
+      expect(classified.outcome).toBe("invalid");
+      expect(classified.reason).toContain(
+        `synthetic.beta_check: ${classification}`
+      );
+    }
+  );
+
+  test("keeps unrelated implementation failures as collateral of a kill", () => {
+    expect(
+      classifyMutantRun(
+        control,
+        activatedRun([
+          failedCheck("alpha", "implementation"),
+          failedCheck("beta", "implementation"),
+        ])
+      )
+    ).toMatchObject({
+      collateral: { count: 1 },
+      designatedFailures: [ALPHA],
+      outcome: "killed",
+    });
   });
 });

@@ -600,6 +600,31 @@ describe("quantified assertion operands", () => {
     });
   });
 
+  test("some records an unresolved element operand even when another element holds", () => {
+    const [diagnosis] = diagnoseAssertions(
+      buildCheck([
+        {
+          field: "$.items",
+          kind: "resultField",
+          length: 2,
+          some: { equals: 1, field: "$.id" },
+        },
+      ]),
+      { result: { items: [{}, { id: 1 }] } }
+    );
+
+    expect(diagnosis?.evaluation.status).toBe("fail");
+    expect(diagnosis?.unresolved).toBe(true);
+    expect(diagnosis?.operands).toContainEqual({
+      expected: 1,
+      expectedSource: "equals: plan literal",
+      path: "$.result.items.0.id",
+    });
+    expect(diagnosis?.operands.map((operand) => operand.path)).not.toContain(
+      "$.result.items.1.id"
+    );
+  });
+
   test("nested quantifiers record the innermost failing element path", () => {
     const operands = diagnoseOne(
       {

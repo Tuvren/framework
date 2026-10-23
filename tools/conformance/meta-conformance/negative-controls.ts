@@ -118,7 +118,7 @@ export interface NegativeControlRunOptions {
   timeoutMs?: number;
 }
 
-interface ControlEntry {
+export interface ControlEntry {
   activation: { signal: string };
   designatedAssertions?: string[];
   expectedRejection?: string;
@@ -127,14 +127,14 @@ interface ControlEntry {
   profiles: string[];
 }
 
-interface Activation {
+export interface Activation {
   activated: boolean;
   activationCount: number;
   mutantId: unknown;
   signal: unknown;
 }
 
-interface HarnessRun {
+export interface HarnessRun {
   activations: Activation[];
   evidence?: ConformanceEvidence;
   failure?: string;
@@ -450,7 +450,7 @@ const describeControl = (control: ControlEntry) => ({
 });
 
 /** Classifies one mutant run under ADR-0079 decision 3. */
-const classifyMutantRun = (
+export const classifyMutantRun = (
   control: ControlEntry,
   run: HarnessRun
 ): Omit<MutantReport, "replay"> => {
@@ -533,21 +533,20 @@ const classifyMutantRun = (
         .join(", ")}`
     );
   }
-  const infrastructure = failing.filter(
-    ({ assertionId, classification }) =>
-      designated.has(assertionId) && classification !== "implementation"
+  // Any non-implementation failure anywhere in the run invalidates it.
+  const infrastructure = evidence.checkResults.filter(
+    ({ failure, status }) =>
+      status === "fail" && failure?.classification !== "implementation"
   );
   if (infrastructure.length > 0) {
     return result(
       "invalid",
-      `designated checks failed with ${[
-        ...new Set(
-          infrastructure.map(
-            ({ checkId, classification }) =>
-              `${checkId}: ${classification ?? "unclassified"}`
-          )
-        ),
-      ].join(", ")}`
+      `checks failed with ${infrastructure
+        .map(
+          ({ checkId, failure }) =>
+            `${checkId}: ${failure?.classification ?? "unclassified"}`
+        )
+        .join(", ")}`
     );
   }
   if (!base.activated) {

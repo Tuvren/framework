@@ -840,15 +840,15 @@ const elementPath = (path: string, index: number): string =>
     ? path.replace("[*]", `.${index}`)
     : joinPath(path, `$.${index}`);
 
-const elementHolds = (
+const elementOutcome = (
   element: ConformancePlanElementAssertion,
   value: unknown,
   context: AssertionContext
-): boolean => {
+): "fails" | "holds" | "unresolved" => {
   try {
-    return elementSatisfies(element, value, context);
-  } catch {
-    return false;
+    return elementSatisfies(element, value, context) ? "holds" : "fails";
+  } catch (error: unknown) {
+    return error instanceof UnresolvedOperandError ? "unresolved" : "fails";
   }
 };
 
@@ -876,14 +876,18 @@ const describeValueOperands = (
     }
 
     const entries: unknown[] = subject.actual;
-    const holds = entries.map((entry) => elementHolds(element, entry, context));
-    if (key === "some" && holds.some(Boolean)) {
-      return [];
-    }
+    const outcomes = entries.map((entry) =>
+      elementOutcome(element, entry, context)
+    );
+    // A matching element does not excuse another element's unresolved operand.
+    const skipped: readonly string[] =
+      key === "some" && outcomes.includes("holds")
+        ? ["fails", "holds"]
+        : ["holds"];
 
     const field = element.field ?? "$";
     return entries.flatMap((entry, index) =>
-      holds[index]
+      skipped.includes(outcomes[index] ?? "holds")
         ? []
         : describeValueOperands(
             element,
