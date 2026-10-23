@@ -706,6 +706,8 @@
             "kernel.syscall.reclamation.reachability",
             "kernel.crash-recovery.concurrent_writer",
             "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack",
+            "kernel.syscall.crash-recovery.before_commit",
             "kernel-restart-af.expired-running-requires-preemption",
             "kernel-restart-af.paused-run-excluded-from-stale-preemption",
             "kernel.run-liveness.expired_listing",
@@ -722,9 +724,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 131,
-            "totalChecks": 135,
-            "applicableChecks": 131,
+            "passedChecks": 133,
+            "totalChecks": 137,
+            "applicableChecks": 133,
             "nonApplicableChecks": 4
           },
           "declaredCapabilities": [
@@ -891,9 +893,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 132,
-            "totalChecks": 135,
+            "totalChecks": 137,
             "applicableChecks": 132,
-            "nonApplicableChecks": 3
+            "nonApplicableChecks": 5
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1060,9 +1062,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 133,
-            "totalChecks": 135,
+            "totalChecks": 137,
             "applicableChecks": 133,
-            "nonApplicableChecks": 2
+            "nonApplicableChecks": 4
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1248,9 +1250,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 56,
-            "totalChecks": 135,
+            "totalChecks": 137,
             "applicableChecks": 56,
-            "nonApplicableChecks": 79
+            "nonApplicableChecks": 81
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1347,9 +1349,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 135,
+            "totalChecks": 137,
             "applicableChecks": 68,
-            "nonApplicableChecks": 67
+            "nonApplicableChecks": 69
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1449,9 +1451,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 135,
+            "totalChecks": 137,
             "applicableChecks": 68,
-            "nonApplicableChecks": 67
+            "nonApplicableChecks": 69
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
@@ -1551,9 +1553,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 68,
-            "totalChecks": 135,
+            "totalChecks": 137,
             "applicableChecks": 68,
-            "nonApplicableChecks": 67
+            "nonApplicableChecks": 69
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",

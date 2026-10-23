@@ -300,24 +300,6 @@ describe("kernel mutant registry", () => {
     expect(first.readActivation().activationCount).toBe(1);
     expect(second.readActivation().activationCount).toBe(0);
   });
-
-  test("the fault-seam mutant disarms every fault plan it receives", () => {
-    const selected = selectKernelMutant("kernel.fault-seam-never-fires");
-    let armed = 0;
-    const factory: FaultInjectingBackendFactory = (inner) => {
-      armed += 1;
-      return inner;
-    };
-
-    const backend = selected.wrapFaultInjection(factory)(fakeBackend, {
-      point: "before-commit",
-      policy: "once",
-    });
-
-    expect(backend).toBe(fakeBackend);
-    expect(armed).toBe(0);
-    expect(selected.readActivation().activationCount).toBe(1);
-  });
 });
 
 describe("kernel negative-control manifest", () => {

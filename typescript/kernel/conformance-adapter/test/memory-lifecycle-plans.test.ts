@@ -6,9 +6,12 @@ import {
 } from "../../../../tools/conformance/plan-compiler/certification-assessment.ts";
 import { loadConformancePlan } from "../../../../tools/conformance/plan-compiler/index.ts";
 
-const plans = ["scope-isolation", "reclamation", "run-liveness"].map(
-  (name) => `spec/conformance/kernel/plans/kernel-${name}-syscall.json`
-);
+const plans = [
+  "scope-isolation",
+  "reclamation",
+  "run-liveness",
+  "restart-recovery",
+].map((name) => `spec/conformance/kernel/plans/kernel-${name}-syscall.json`);
 
 test("DC syscall checks declare every catalogued operation capability", async () => {
   const catalog: unknown = await Bun.file(
@@ -46,6 +49,7 @@ test("DC syscall checks declare every catalogued operation capability", async ()
     "reclamation",
     "scope-isolation",
     "run-liveness",
+    "restart-recovery",
   ];
   const compiled = await Promise.all(
     syscallPlans.map(
@@ -72,6 +76,7 @@ test("memory lifecycle traces enforce certification through catalogued observati
     await loadCertificationAuthority(["spec/kernel/authority-packet.json"])
   );
   expect(assessments.map((assessment) => assessment.mode)).toEqual([
+    "enforcing",
     "enforcing",
     "enforcing",
     "enforcing",

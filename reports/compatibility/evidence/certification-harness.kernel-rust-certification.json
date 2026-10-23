@@ -2469,6 +2469,8 @@
     "kernel.crash-recovery.durable_fault_points",
     "kernel.crash-recovery.in_process_fault_points",
     "kernel.restart-recovery.close_reopen_checkpoint",
+    "kernel.syscall.crash-recovery.after_commit_before_ack",
+    "kernel.syscall.crash-recovery.before_commit",
     "kernel.run-liveness.clock_skew_preemption",
     "kernel.syscall.run-liveness.expired_listing",
     "kernel.syscall.run-liveness.lease_renewal",
@@ -2486,9 +2488,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 56,
-    "totalChecks": 135,
+    "totalChecks": 137,
     "applicableChecks": 56,
-    "nonApplicableChecks": 79
+    "nonApplicableChecks": 81
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

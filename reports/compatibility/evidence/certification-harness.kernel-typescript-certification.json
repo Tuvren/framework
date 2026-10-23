@@ -5475,6 +5475,671 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.baselineCheckpoint.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.baselineMessages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.baselineMessages.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.pendingStaging.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.pendingStaging.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.pendingMessages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.pendingMessages.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.pendingMessages.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.faultedCheckpoint.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.faultedCheckpoint.2.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.10.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.11.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.12.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.13.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.14.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.15.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.16.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.17.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"baseline\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.18.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.19.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.20.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.21.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.22.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.23.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.24.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.25.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.26.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.27.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.28.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.baselineMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.baselineMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.durableHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.durableNode.result.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.pendingMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.pendingMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.pendingMessages.result.1",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.pendingStaging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.pendingStaging.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.recover.result.lastTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.recover.result.stepSequence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.recoveredHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.result.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.trace.durableNode.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.trace.faultedCheckpoint.state.adapterError.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.trace.recover.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.trace.recoveredHead.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.after_commit_before_ack.requiredEvidence.trace.visibleMessages.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.crash-recovery.after_commit_before_ack",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.restart-recovery.syscall",
+        "adapterErrors": {
+          "faultedCheckpoint": {
+            "code": "kernel_persistence_fault_injected",
+            "details": {
+              "point": "after-commit-before-ack",
+              "token": "fault-1"
+            },
+            "message": "injected after-commit-before-ack persistence fault interrupted verification"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginBaseline",
+          "baselineStaged",
+          "baselineStaging",
+          "baselineCheckpoint",
+          "baselineNode",
+          "baselineMessages",
+          "beginPending",
+          "pendingStaged",
+          "pendingStaging",
+          "pendingTree",
+          "pendingMessages",
+          "arm",
+          "faultedCheckpoint",
+          "durableHead",
+          "durableNode",
+          "recover",
+          "staging",
+          "recoveredHead",
+          "lineage",
+          "visibleMessages"
+        ],
+        "fault": {
+          "armed": [
+            {
+              "outcomeCode": "kernel_persistence_fault_injected",
+              "token": "fault-1",
+              "point": "after-commit-before-ack",
+              "occurrence": 1,
+              "mode": "throw",
+              "selector": {
+                "branchId": "branch",
+                "operation": "checkpoint"
+              }
+            }
+          ],
+          "activations": ["fault-1"]
+        }
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.baselineCheckpoint.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.baselineMessages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.baselineMessages.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.pendingStaging.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.pendingStaging.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.pendingMessages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.pendingMessages.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.pendingMessages.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.faultedCheckpoint.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.faultedCheckpoint.2.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.1.faultActivated",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.10.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.11.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.12.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.13.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.14.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.15.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.16.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.17.resultField",
+          "status": "pass",
+          "when": "applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.18.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.19.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.20.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.21.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.22.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.23.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.24.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.25.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.26.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.27.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.28.resultField",
+          "message": "when branch not applied: $.result.trace.recover.result.lastCompletedStepId did not equal \"pending\"",
+          "status": "pass",
+          "when": "not_applied"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.baselineCheckpoint.result.checkpointed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.baselineMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.baselineMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.durableHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.durableNode.result.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.pendingMessages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.pendingMessages.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.pendingMessages.result.1",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.pendingStaging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.pendingStaging.result.0",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.recover.result.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.recover.result.lastTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.recover.result.stepSequence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.recoveredHead.result.headTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.result.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.trace.durableNode.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.trace.faultedCheckpoint.state.adapterError.code",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.trace.lineage.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.trace.recover.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.trace.recoveredHead.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.trace.staging.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.crash-recovery.before_commit.requiredEvidence.trace.visibleMessages.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.crash-recovery.before_commit",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.restart-recovery.syscall",
+        "adapterErrors": {
+          "faultedCheckpoint": {
+            "code": "kernel_persistence_fault_injected",
+            "details": {
+              "point": "before-commit",
+              "token": "fault-1"
+            },
+            "message": "injected before-commit persistence fault interrupted verification"
+          }
+        },
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "beginBaseline",
+          "baselineStaged",
+          "baselineStaging",
+          "baselineCheckpoint",
+          "baselineNode",
+          "baselineMessages",
+          "beginPending",
+          "pendingStaged",
+          "pendingStaging",
+          "pendingTree",
+          "pendingMessages",
+          "arm",
+          "faultedCheckpoint",
+          "durableHead",
+          "durableNode",
+          "recover",
+          "staging",
+          "recoveredHead",
+          "lineage",
+          "visibleMessages"
+        ],
+        "fault": {
+          "armed": [
+            {
+              "outcomeCode": "kernel_persistence_fault_injected",
+              "token": "fault-1",
+              "point": "before-commit",
+              "occurrence": 1,
+              "mode": "throw",
+              "selector": {
+                "branchId": "branch",
+                "operation": "checkpoint"
+              }
+            }
+          ],
+          "activations": ["fault-1"]
+        }
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel-restart-af.expired-running-requires-preemption.1.resultField",
           "status": "pass"
         },
@@ -6321,9 +6986,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 131,
-    "totalChecks": 135,
-    "applicableChecks": 131,
+    "passedChecks": 133,
+    "totalChecks": 137,
+    "applicableChecks": 133,
     "nonApplicableChecks": 4
   },
   "suiteId": "tuvren.kernel.protocol",

@@ -142,7 +142,7 @@ describe("@tuvren/kernel-testkit conformance assets", () => {
     ).toBe(kernelProtocolDeterministicFixtures.turnNodeIdentityRecordSha256Hex);
   });
 
-  test("loads logical recovery and lineage change fixtures", () => {
+  test("loads logical lineage change fixtures", () => {
     // The boundary-owned kernel conformance fixture is the canonical source for
     // lineage hashes here. Legacy shared test fixtures still carry older
     // sentinel values, so keep this assertion pinned to the conformance asset
@@ -151,38 +151,6 @@ describe("@tuvren/kernel-testkit conformance assets", () => {
       "branch_main",
       "80003ce4d0adf81da829321c0381eab1aa7603fd21f2d311aa730caa2671d6aa",
     ]);
-    expect(kernelProtocolLogicalFixtures.recoveryState).toMatchObject({
-      lastCompletedStepId: "tool_execution",
-      // This recovery hash still looks sentinel-like, but it already matches
-      // the boundary-owned logical fixture and is therefore the canonical
-      // value until that fixture changes.
-      lastTurnNodeHash:
-        "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-      stepSequence: [
-        {
-          deterministic: false,
-          id: "model_call",
-          metadata: {
-            phase: "reasoning",
-          },
-          sideEffects: false,
-        },
-        {
-          deterministic: false,
-          id: "tool_execution",
-          metadata: {
-            phase: "tooling",
-          },
-          sideEffects: true,
-        },
-      ],
-    });
-    expect(
-      kernelProtocolLogicalFixtures.recoveryState.consumedStagedResults
-    ).toHaveLength(1);
-    expect(
-      kernelProtocolLogicalFixtures.recoveryState.uncommittedStagedResults
-    ).toHaveLength(1);
     expect(kernelProtocolLogicalFixtures.turnTreeChangeSet).toEqual({
       "context.manifest":
         "1111111111111111111111111111111111111111111111111111111111111111",

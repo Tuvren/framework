@@ -67,8 +67,8 @@
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#57-recovery-protocol",
       "claimIds": [
-        "kernel.syscall.logical.recovery_state",
-        "kernel.crash-recovery.in_process_fault_points"
+        "kernel.crash-recovery.in_process_fault_points",
+        "kernel.syscall.crash-recovery.before_commit"
       ],
       "activation": {
         "precondition": "run.recover returns at least one uncommitted staged result",
@@ -76,8 +76,8 @@
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
-        "kernel.syscall.logical.recovery_state.3.resultField",
-        "kernel.crash-recovery.in_process_fault_points.5.resultField"
+        "kernel.syscall.crash-recovery.before_commit.6.resultField",
+        "kernel.syscall.crash-recovery.before_commit.12.resultField"
       ]
     },
     {
@@ -85,10 +85,8 @@
       "kind": "instrumentation",
       "rule": "ADR-0076",
       "claimIds": [
-        "kernel.crash-recovery.in_process_fault_points",
-        "kernel.crash-recovery.concurrent_writer",
-        "kernel.syscall.controls.before_commit",
-        "kernel.syscall.controls.after_commit_before_ack"
+        "kernel.syscall.crash-recovery.before_commit",
+        "kernel.syscall.crash-recovery.after_commit_before_ack"
       ],
       "activation": {
         "precondition": "a fault plan is armed on the in-process fault-injecting backend",
@@ -154,18 +152,18 @@
       "mutantId": "kernel.promote-staged-before-checkpoint",
       "kind": "implementation",
       "rule": "docs/KrakenKernelSpecification.md#55-checkpoint-transaction",
-      "claimIds": ["kernel.crash-recovery.in_process_fault_points"],
+      "claimIds": [
+        "kernel.crash-recovery.in_process_fault_points",
+        "kernel.syscall.crash-recovery.before_commit"
+      ],
       "activation": {
         "precondition": "a checkpoint transaction that writes a TurnNode and clears staging fails to commit",
         "signal": "mutant.promote-staged-before-checkpoint.entered"
       },
       "profiles": ["kernel.memory"],
       "designatedAssertions": [
-        "kernel.crash-recovery.in_process_fault_points.2.resultField",
-        "kernel.crash-recovery.in_process_fault_points.3.resultField",
-        "kernel.crash-recovery.in_process_fault_points.4.resultField",
-        "kernel.crash-recovery.in_process_fault_points.5.resultField",
-        "kernel.crash-recovery.in_process_fault_points.6.resultField"
+        "kernel.syscall.crash-recovery.before_commit.8.resultField",
+        "kernel.syscall.crash-recovery.before_commit.9.resultField"
       ]
     },
     {

@@ -6466,6 +6466,8 @@
   "nonApplicableCheckIds": [
     "kernel.syscall.controls.after_commit_before_ack",
     "kernel.syscall.controls.before_commit",
+    "kernel.syscall.crash-recovery.after_commit_before_ack",
+    "kernel.syscall.crash-recovery.before_commit",
     "kernel.run-liveness.clock_skew_preemption"
   ],
   "project": "kernel-typescript-sqlite-certification",
@@ -6475,9 +6477,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 132,
-    "totalChecks": 135,
+    "totalChecks": 137,
     "applicableChecks": 132,
-    "nonApplicableChecks": 3
+    "nonApplicableChecks": 5
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"
