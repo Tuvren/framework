@@ -1,0 +1,13 @@
+owner: KRT-DB003
+mode: contract_test
+produced:
+  date: 2026-10-23
+  commit: a61be5d
+  command: "bun run verify:kernel; bun run changeset:check"
+result: pass
+pass_criteria: "tree.diff returns changedPaths in ascending UTF-8 byte order for paths that differ between UTF-8 and UTF-16 order, the adapter no longer sorts, and changeset:check reports direct coverage for the affected publishable packages."
+files:
+  - path: changeset-check.txt
+    sha256: 9a2701248b2b5af216f6e6011051bee10cf22f8ef90ad6e381202c0b039d3253
+    bytes: 145
+    role: transcript
