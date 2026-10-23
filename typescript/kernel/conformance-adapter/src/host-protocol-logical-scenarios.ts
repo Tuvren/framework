@@ -309,12 +309,10 @@ export const createProtocolLogicalScenarios = (config: KernelAdapterConfig) => {
         logical.turnTreeChangeSet,
         created.rootTurnTreeHash
       );
-      const changedPaths = await kernel.tree.diff(
+      const diffPaths = await kernel.tree.diff(
         created.rootTurnTreeHash,
         changedTree
       );
-      const diffPaths = changedPaths.toSorted();
-
       return createProjection({ diffPaths });
     });
   };
