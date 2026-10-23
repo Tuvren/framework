@@ -35,6 +35,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -94,6 +120,32 @@
       "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-empty-bytes"],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-empty-bytes"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -157,6 +209,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-single-byte"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-single-byte"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -216,6 +294,32 @@
       "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-single-byte"],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-single-byte"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-single-byte"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -279,6 +383,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -338,6 +468,32 @@
       "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes"],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-zero-bytes"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -401,6 +557,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -460,6 +642,32 @@
       "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes"],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-ones-bytes"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -523,6 +731,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-large-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-large-bytes"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -582,6 +816,32 @@
       "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-large-bytes"],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-large-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-large-bytes"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -645,6 +905,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -706,6 +992,32 @@
       ],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-multi-path-schema"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -769,6 +1081,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -830,6 +1168,32 @@
       ],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-single-paths"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -893,6 +1257,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -954,6 +1344,32 @@
       ],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-all-ordered-paths"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -1017,6 +1433,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -1076,6 +1518,32 @@
       "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn"],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-with-prev-turn"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -1139,6 +1607,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -1200,6 +1694,32 @@
       ],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-with-event-hash"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -1263,6 +1783,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-staged-failed"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-staged-failed"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -1322,6 +1868,32 @@
       "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-staged-failed"],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-staged-failed"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-staged-failed"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -1385,6 +1957,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -1446,6 +2044,32 @@
       ],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-staged-interrupted"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -1509,6 +2133,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -1570,6 +2220,32 @@
       ],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-many-staged-results"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -1633,6 +2309,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -1694,6 +2396,32 @@
       ],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-deep-path-schema"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -1757,6 +2485,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -1816,6 +2570,32 @@
       "claimIds": ["kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes"],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-non-utf8-bytes"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -1879,6 +2659,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -1940,6 +2746,32 @@
       ],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-zero-turn-tree-hash"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "register",
           "operation": "kernel.schema.register",
@@ -2003,6 +2835,32 @@
       "operation": "kernel.store.put",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "put",
           "operation": "kernel.store.put",
           "arguments": {
@@ -2065,6 +2923,32 @@
       "operation": "kernel.schema.register",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip.f-mixed-status-staged"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "register",
           "operation": "kernel.schema.register",
           "arguments": {
@@ -2126,6 +3010,32 @@
       ],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.schema-register-rejects-duplicate-path"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "reject",
           "operation": "kernel.schema.register",
@@ -2195,6 +3105,32 @@
       ],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.tree-create-rejects-missing-required-path"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "schema",
           "operation": "kernel.schema.register",
@@ -2286,6 +3222,32 @@
       ],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.tree-diff-rejects-schema-mismatch"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "schema",
           "operation": "kernel.schema.register",
@@ -2466,6 +3428,32 @@
       ],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-create-rejects-busy-branch"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "schema",
           "operation": "kernel.schema.register",
@@ -2662,6 +3650,32 @@
       "operation": "kernel.schema.register",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step"
+          ],
+          "assertions": []
+        },
+        {
           "stepId": "schema",
           "operation": "kernel.schema.register",
           "arguments": {
@@ -2844,6 +3858,32 @@
       ],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "schema",
           "operation": "kernel.schema.register",
@@ -3028,6 +4068,32 @@
       ],
       "operation": "kernel.schema.register",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "schema",
           "operation": "kernel.schema.register",
@@ -3491,6 +4557,28 @@
       "operation": "kernel.schema.register",
       "steps": [
         {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": ["kernel.syscall.logical.thread_list"],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": ["kernel.syscall.logical.thread_list"],
+          "assertions": []
+        },
+        {
           "stepId": "schema",
           "operation": "kernel.schema.register",
           "arguments": {
@@ -3671,6 +4759,32 @@
       ],
       "operation": "kernel.verdicts.compose",
       "steps": [
+        {
+          "stepId": "backendClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.modify_composition.f-verdict-composition"
+          ],
+          "assertions": []
+        },
+        {
+          "stepId": "workerClock",
+          "action": "setClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 0
+          },
+          "claimIds": [
+            "kernel.syscall.protocol.modify_composition.f-verdict-composition"
+          ],
+          "assertions": []
+        },
         {
           "stepId": "single-proceed",
           "operation": "kernel.verdicts.compose",

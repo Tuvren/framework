@@ -33,7 +33,7 @@
       "properties": {
         "assertionId": { "$ref": "#/$defs/nonEmptyString" },
         "message": { "type": "string" },
-        "status": { "enum": ["pass", "fail"] },
+        "status": { "enum": ["pass", "fail", "unsupported"] },
         "when": { "enum": ["applied", "not_applied"] }
       }
     },
@@ -92,7 +92,7 @@
         "checkId": { "$ref": "#/$defs/nonEmptyString" },
         "details": { "type": "object" },
         "failure": { "$ref": "#/$defs/failure" },
-        "status": { "enum": ["pass", "fail"] }
+        "status": { "enum": ["pass", "fail", "unsupported"] }
       },
       "if": {
         "required": ["status"],
@@ -145,7 +145,8 @@
         "failedChecks": { "$ref": "#/$defs/count" },
         "nonApplicableChecks": { "$ref": "#/$defs/count" },
         "passedChecks": { "$ref": "#/$defs/count" },
-        "totalChecks": { "$ref": "#/$defs/count" }
+        "totalChecks": { "$ref": "#/$defs/count" },
+        "unsupportedChecks": { "$ref": "#/$defs/count" }
       }
     },
     "command": {

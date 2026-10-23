@@ -2974,9 +2974,26 @@
             "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/handle"
           },
           "point": {
-            "$ref": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/identifier"
+            "enum": [
+              "before-commit",
+              "after-turn-node-write-before-head",
+              "after-head-move-before-staging-clear",
+              "after-commit-before-ack",
+              "commit-outcome-unknown"
+            ]
           },
-          "selector": {},
+          "selector": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "branchId": {
+                "type": "string"
+              },
+              "operation": {
+                "enum": ["checkpoint"]
+              }
+            }
+          },
           "occurrence": {
             "type": "integer",
             "minimum": 1,
@@ -3000,11 +3017,15 @@
           "required": ["token"]
         }
       },
-      "errors": [],
+      "errors": ["kernel_fault_point_unsupported"],
       "handles": {
         "consumes": ["instance"]
       },
-      "binding": "tools/conformance/adapter-protocol/protocol.schema.json#/$defs/ArmFaultParams"
+      "binding": "tools/conformance/adapter-protocol/protocol.schema.json#/$defs/ArmFaultParams",
+      "faultOutcome": {
+        "code": "kernel_persistence_fault_injected",
+        "unsupportedCode": "kernel_fault_point_unsupported"
+      }
     },
     {
       "operationId": "kernel.mutant.activation",

@@ -22,6 +22,10 @@ import {
   collectCertificationIntegrityFailures,
   validateCertificationDocument,
 } from "../../scripts/conformance/certification-schemas.js";
+import {
+  controlConsumesInstance,
+  controlInputProblem,
+} from "./control-input.js";
 import type {
   ConformancePlan,
   ConformancePlanAssertion,
@@ -33,6 +37,7 @@ import type {
 /** ADR-0075 decisions 4 and 5, plus ADR-0030's evidence rule. */
 export const CERTIFICATION_RULE_IDS = [
   "operation-catalogued",
+  "control-input",
   "observation-path",
   "literal-boolean",
   "no-echo",
@@ -56,6 +61,9 @@ type ObservationDomain = "events" | "result" | "state";
 
 export interface CatalogOperation {
   deprecated?: boolean;
+  input?: JsonSchema;
+  handles?: { consumes?: readonly string[] };
+  faultOutcome?: { code: string; unsupportedCode: string };
   errors?: readonly string[];
   kind: "control" | "double" | "syscall";
   observation: Partial<Record<ObservationDomain, JsonSchema>>;
@@ -149,6 +157,20 @@ const readOperation = (value: Record<string, unknown>): CatalogOperation => {
   }
 
   return {
+    ...(isJsonSchema(value.input) ? { input: value.input } : {}),
+    ...(isRecord(value.handles) && Array.isArray(value.handles.consumes)
+      ? { handles: { consumes: value.handles.consumes.map(String) } }
+      : {}),
+    ...(isRecord(value.faultOutcome) &&
+    typeof value.faultOutcome.code === "string" &&
+    typeof value.faultOutcome.unsupportedCode === "string"
+      ? {
+          faultOutcome: {
+            code: value.faultOutcome.code,
+            unsupportedCode: value.faultOutcome.unsupportedCode,
+          },
+        }
+      : {}),
     deprecated: value.deprecated === true,
     errors: Array.isArray(value.errors) ? value.errors.map(String) : [],
     kind: value.kind as CatalogOperation["kind"],
@@ -1148,6 +1170,17 @@ const checkStep = (
       "operation-catalogued",
       `${subject(context)} uses uncatalogued operation ${step.operation}`
     );
+  }
+
+  const operation = context.catalog?.operations.get(step.operation);
+  if (operation?.kind === "control" && step.arguments !== undefined) {
+    const input = controlConsumesInstance(operation)
+      ? { ...step.arguments, instance: "runner-instance" }
+      : step.arguments;
+    const problem = controlInputProblem(operation, input, true);
+    if (problem !== undefined) {
+      report(context, "control-input", `${subject(context)} ${problem}`);
+    }
   }
 
   for (const capture of step.capture ?? []) {

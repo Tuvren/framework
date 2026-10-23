@@ -125,36 +125,6 @@
         },
         {
           "kind": "resultField",
-          "field": "$.crashRecovery.midCommit.injectedErrorCode",
-          "equals": "kernel_persistence_fault_injected"
-        },
-        {
-          "kind": "resultField",
-          "field": "$.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
-          "equals": true
-        },
-        {
-          "kind": "resultField",
-          "field": "$.crashRecovery.midCommit.lineageConsistent",
-          "equals": true
-        },
-        {
-          "kind": "resultField",
-          "field": "$.crashRecovery.midCommit.pendingMessageCommitted",
-          "equals": true
-        },
-        {
-          "kind": "resultField",
-          "field": "$.crashRecovery.midCommit.recoveryStateConsistent",
-          "equals": true
-        },
-        {
-          "kind": "resultField",
-          "field": "$.crashRecovery.midCommit.visibleCommittedMessageCount",
-          "equals": 2
-        },
-        {
-          "kind": "resultField",
           "field": "$.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
           "equals": "kernel_persistence_fault_injected"
         },
@@ -191,12 +161,6 @@
         "crashRecovery.beforeCommit.pendingMessageCommitted",
         "crashRecovery.beforeCommit.recoveryStateConsistent",
         "crashRecovery.beforeCommit.visibleCommittedMessageCount",
-        "crashRecovery.midCommit.injectedErrorCode",
-        "crashRecovery.midCommit.headMatchesExpectedCheckpoint",
-        "crashRecovery.midCommit.lineageConsistent",
-        "crashRecovery.midCommit.pendingMessageCommitted",
-        "crashRecovery.midCommit.recoveryStateConsistent",
-        "crashRecovery.midCommit.visibleCommittedMessageCount",
         "crashRecovery.afterCommitBeforeAck.injectedErrorCode",
         "crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
         "crashRecovery.afterCommitBeforeAck.lineageConsistent",
@@ -244,36 +208,6 @@
         },
         {
           "kind": "resultField",
-          "field": "$.crashRecovery.midCommit.injectedErrorCode",
-          "equals": "kernel_persistence_fault_injected"
-        },
-        {
-          "kind": "resultField",
-          "field": "$.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
-          "equals": true
-        },
-        {
-          "kind": "resultField",
-          "field": "$.crashRecovery.midCommit.lineageConsistent",
-          "equals": true
-        },
-        {
-          "kind": "resultField",
-          "field": "$.crashRecovery.midCommit.pendingMessageCommitted",
-          "equals": true
-        },
-        {
-          "kind": "resultField",
-          "field": "$.crashRecovery.midCommit.recoveryStateConsistent",
-          "equals": true
-        },
-        {
-          "kind": "resultField",
-          "field": "$.crashRecovery.midCommit.visibleCommittedMessageCount",
-          "equals": 2
-        },
-        {
-          "kind": "resultField",
           "field": "$.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
           "equals": "kernel_persistence_fault_injected"
         },
@@ -310,12 +244,6 @@
         "crashRecovery.beforeCommit.pendingMessageCommitted",
         "crashRecovery.beforeCommit.recoveryStateConsistent",
         "crashRecovery.beforeCommit.visibleCommittedMessageCount",
-        "crashRecovery.midCommit.injectedErrorCode",
-        "crashRecovery.midCommit.headMatchesExpectedCheckpoint",
-        "crashRecovery.midCommit.lineageConsistent",
-        "crashRecovery.midCommit.pendingMessageCommitted",
-        "crashRecovery.midCommit.recoveryStateConsistent",
-        "crashRecovery.midCommit.visibleCommittedMessageCount",
         "crashRecovery.afterCommitBeforeAck.injectedErrorCode",
         "crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
         "crashRecovery.afterCommitBeforeAck.lineageConsistent",

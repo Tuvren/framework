@@ -27,6 +27,13 @@ import {
 const HEX_BYTES = /^(?:[0-9a-f]{2})*$/u;
 const MAX_SAFE_INTEGER = BigInt(Number.MAX_SAFE_INTEGER);
 
+interface SyscallBinding {
+  arguments: readonly unknown[];
+  method?: string;
+  recordResult?: boolean;
+  target?: string;
+}
+
 const parameters = {
   "kernel.branch.create": {
     arguments: ["branchId", "threadId", "fromTurnNodeHash"],
@@ -118,10 +125,17 @@ const parameters = {
   "kernel.turn.get": { arguments: ["turnId"] },
   "kernel.turn.updateHead": { arguments: ["turnId", "headTurnNodeHash"] },
   "kernel.verdicts.compose": { arguments: ["verdicts"] },
-} as const;
+} as const satisfies Readonly<Record<string, SyscallBinding>>;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isSyscallBinding = (value: unknown): value is SyscallBinding =>
+  isRecord(value) &&
+  Array.isArray(value.arguments) &&
+  (value.method === undefined || typeof value.method === "string") &&
+  (value.target === undefined || typeof value.target === "string") &&
+  (value.recordResult === undefined || typeof value.recordResult === "boolean");
 
 const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> =>
   isRecord(value) &&
@@ -275,6 +289,61 @@ const nativeErrorEnvelope = (
   };
 };
 
+const invokeBinding = async (
+  target: unknown,
+  binding: SyscallBinding,
+  input: unknown,
+  method: string
+): Promise<OperationOutcome> => {
+  if (!isRecord(target)) {
+    throw new TypeError("missing native syscall target");
+  }
+  const args = readRecord(decode(input), "syscall arguments");
+  const invoke: unknown =
+    target[typeof binding.method === "string" ? binding.method : method];
+  if (typeof invoke !== "function") {
+    throw new TypeError("missing native syscall method");
+  }
+  const callArguments = binding.arguments.map((parameter: unknown) => {
+    if (typeof parameter === "string") {
+      return args[parameter];
+    }
+    if (
+      isRecord(parameter) &&
+      parameter.type === "string" &&
+      typeof parameter.name === "string"
+    ) {
+      return readString(args[parameter.name], parameter.name);
+    }
+    throw new TypeError("invalid syscall parameter binding");
+  });
+  let value: unknown;
+  try {
+    value = await Reflect.apply(invoke, target, callArguments);
+    if (isAsyncIterable(value)) {
+      const entries: unknown[] = [];
+      for await (const entry of value) {
+        entries.push(entry);
+      }
+      value = entries;
+    }
+  } catch (error: unknown) {
+    return {
+      error: nativeErrorEnvelope(error),
+      kind: "error",
+    };
+  }
+  return {
+    kind: "result",
+    value: {
+      result: encode(
+        value === undefined ? {} : value,
+        binding.recordResult === true
+      ),
+    },
+  };
+};
+
 interface Instance {
   cleanup: () => Promise<void>;
   kernel: ReturnType<typeof createConformanceRuntimeKernel>;
@@ -282,18 +351,23 @@ interface Instance {
   fault: ReturnType<typeof createKernelFaultControl>;
 }
 
+interface InstanceState {
+  clock: ReturnType<typeof createKernelTestClock>;
+  opened?: Promise<Instance>;
+}
+
 export const createSyscallBindings = (config: KernelAdapterConfig) => {
-  const instances = new Map<string, Promise<Instance> | undefined>();
+  const instances = new Map<string, InstanceState>();
   const createInstance = async (): Promise<string> => {
     const handle = randomUUID();
-    instances.set(handle, undefined);
+    instances.set(handle, { clock: createKernelTestClock() });
     return await Promise.resolve(handle);
   };
   const destroyInstance = async (handle: unknown): Promise<void> => {
     if (typeof handle !== "string") {
       return;
     }
-    const instance = instances.get(handle);
+    const instance = instances.get(handle)?.opened;
     instances.delete(handle);
     if (instance !== undefined) {
       const [settled] = await Promise.allSettled([instance]);
@@ -307,13 +381,30 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     input: unknown,
     handle: unknown
   ): Promise<OperationOutcome> => {
-    if (!(typeof handle === "string" && instances.has(handle))) {
+    const state =
+      typeof handle === "string" ? instances.get(handle) : undefined;
+    if (state === undefined) {
       throw new Error("syscall requires a live adapter instance");
     }
-    let pending = instances.get(handle);
+    const binding: unknown = Reflect.get(parameters, operation);
+    if (!isSyscallBinding(binding)) {
+      throw new TypeError(`unsupported syscall ${operation}`);
+    }
+    const [, group, method] = operation.split(".");
+    if (group === undefined || method === undefined) {
+      throw new Error("invalid syscall operation");
+    }
+    const eagerTarget: unknown =
+      typeof binding.target === "string"
+        ? Reflect.get(state, binding.target)
+        : undefined;
+    if (eagerTarget !== undefined) {
+      return await invokeBinding(eagerTarget, binding, input, method);
+    }
+    let pending = state.opened;
     if (pending === undefined) {
       pending = (async () => {
-        const clock = createKernelTestClock();
+        const { clock } = state;
         const backend = await createConfiguredBackend(config, {
           now: clock.backendNow,
         });
@@ -336,77 +427,22 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
           throw error;
         }
       })();
-      instances.set(handle, pending);
+      state.opened = pending;
     }
     let opened: Instance;
     try {
       opened = await pending;
     } catch (error: unknown) {
-      if (instances.get(handle) === pending) {
-        instances.set(handle, undefined);
+      if (state.opened === pending) {
+        delete state.opened;
       }
       throw error;
-    }
-    const { kernel } = opened;
-    const binding: unknown = Reflect.get(parameters, operation);
-    if (!isRecord(binding) || !Array.isArray(binding.arguments)) {
-      throw new TypeError(`unsupported syscall ${operation}`);
-    }
-    const args = readRecord(decode(input), "syscall arguments");
-    const [, group, method] = operation.split(".");
-    if (group === undefined || method === undefined) {
-      throw new Error("invalid syscall operation");
     }
     const target: unknown =
       typeof binding.target === "string"
         ? Reflect.get(opened, binding.target)
-        : Reflect.get(kernel, group);
-    if (!isRecord(target)) {
-      throw new TypeError(`missing native syscall group ${group}`);
-    }
-    const invoke: unknown =
-      target[typeof binding.method === "string" ? binding.method : method];
-    if (typeof invoke !== "function") {
-      throw new TypeError(`missing native syscall ${operation}`);
-    }
-    const callArguments = binding.arguments.map((parameter: unknown) => {
-      if (typeof parameter === "string") {
-        return args[parameter];
-      }
-      if (
-        isRecord(parameter) &&
-        parameter.type === "string" &&
-        typeof parameter.name === "string"
-      ) {
-        return readString(args[parameter.name], parameter.name);
-      }
-      throw new TypeError("invalid syscall parameter binding");
-    });
-    let value: unknown;
-    try {
-      value = await Reflect.apply(invoke, target, callArguments);
-      if (isAsyncIterable(value)) {
-        const entries: unknown[] = [];
-        for await (const entry of value) {
-          entries.push(entry);
-        }
-        value = entries;
-      }
-    } catch (error: unknown) {
-      return {
-        error: nativeErrorEnvelope(error),
-        kind: "error",
-      };
-    }
-    return {
-      kind: "result",
-      value: {
-        result: encode(
-          value === undefined ? {} : value,
-          binding.recordResult === true
-        ),
-      },
-    };
+        : Reflect.get(opened.kernel, group);
+    return await invokeBinding(target, binding, input, method);
   };
   return {
     createInstance,

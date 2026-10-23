@@ -268,7 +268,7 @@
             "code": "kernel_persistence_fault_injected",
             "details": {
               "point": "after-commit-before-ack",
-              "token": "d4f6da34-8698-41fb-b2d5-5ee8ba4dd991"
+              "token": "fault-1"
             },
             "message": "injected after-commit-before-ack persistence fault interrupted verification"
           }
@@ -290,7 +290,8 @@
         "fault": {
           "armed": [
             {
-              "token": "d4f6da34-8698-41fb-b2d5-5ee8ba4dd991",
+              "outcomeCode": "kernel_persistence_fault_injected",
+              "token": "fault-1",
               "point": "after-commit-before-ack",
               "occurrence": 1,
               "mode": "throw",
@@ -300,7 +301,7 @@
               }
             }
           ],
-          "activations": ["d4f6da34-8698-41fb-b2d5-5ee8ba4dd991"]
+          "activations": ["fault-1"]
         }
       },
       "status": "pass"
@@ -333,7 +334,7 @@
             "code": "kernel_persistence_fault_injected",
             "details": {
               "point": "before-commit",
-              "token": "d5f53685-7d32-4614-a7d5-e3b1e3aebce0"
+              "token": "fault-1"
             },
             "message": "injected before-commit persistence fault interrupted verification"
           }
@@ -355,7 +356,8 @@
         "fault": {
           "armed": [
             {
-              "token": "d5f53685-7d32-4614-a7d5-e3b1e3aebce0",
+              "outcomeCode": "kernel_persistence_fault_injected",
+              "token": "fault-1",
               "point": "before-commit",
               "occurrence": 1,
               "mode": "throw",
@@ -365,7 +367,7 @@
               }
             }
           ],
-          "activations": ["d5f53685-7d32-4614-a7d5-e3b1e3aebce0"]
+          "activations": ["fault-1"]
         }
       },
       "status": "pass"
@@ -415,7 +417,14 @@
             "message": "turn node does not belong to thread"
           }
         },
-        "traceStepIds": ["schema", "thread", "other", "reject"]
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "other",
+          "reject"
+        ]
       },
       "status": "pass"
     },
@@ -474,7 +483,13 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core.syscall",
-        "traceStepIds": ["schema", "thread", "list"]
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "list"
+        ]
       },
       "status": "pass"
     },
@@ -517,7 +532,14 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core.syscall",
-        "traceStepIds": ["schema", "thread", "change", "diff"]
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "change",
+          "diff"
+        ]
       },
       "status": "pass"
     },
@@ -713,6 +735,8 @@
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core.syscall",
         "traceStepIds": [
+          "backendClock",
+          "workerClock",
           "schema",
           "thread",
           "turn",
@@ -755,7 +779,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -794,7 +818,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core.syscall",
-        "traceStepIds": ["compose"]
+        "traceStepIds": ["backendClock", "workerClock", "compose"]
       },
       "status": "pass"
     },
@@ -825,7 +849,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -892,7 +916,14 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core.syscall",
-        "traceStepIds": ["schema", "tree", "manifest", "messages"]
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "tree",
+          "manifest",
+          "messages"
+        ]
       },
       "status": "pass"
     },
@@ -2814,6 +2845,8 @@
           }
         },
         "traceStepIds": [
+          "backendClock",
+          "workerClock",
           "schema",
           "thread",
           "turn",
@@ -2897,7 +2930,15 @@
             "message": "unexpected step \"second\""
           }
         },
-        "traceStepIds": ["schema", "thread", "turn", "run", "reject"]
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "reject"
+        ]
       },
       "status": "pass"
     },
@@ -2962,7 +3003,15 @@
             "message": "event hash \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" does not exist in store"
           }
         },
-        "traceStepIds": ["schema", "thread", "turn", "run", "reject"]
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "reject"
+        ]
       },
       "status": "pass"
     },
@@ -3027,7 +3076,15 @@
             "message": "branch \"branch_main\" already has an active run \"run_main\""
           }
         },
-        "traceStepIds": ["schema", "thread", "turn", "run", "reject"]
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "thread",
+          "turn",
+          "run",
+          "reject"
+        ]
       },
       "status": "pass"
     },
@@ -3063,7 +3120,7 @@
             "message": "schema.paths must not contain duplicate schema paths"
           }
         },
-        "traceStepIds": ["reject"]
+        "traceStepIds": ["backendClock", "workerClock", "reject"]
       },
       "status": "pass"
     },
@@ -3104,7 +3161,7 @@
             "message": "path \"context.manifest\" is required when creating a tree without a base"
           }
         },
-        "traceStepIds": ["schema", "reject"]
+        "traceStepIds": ["backendClock", "workerClock", "schema", "reject"]
       },
       "status": "pass"
     },
@@ -3145,7 +3202,15 @@
             "message": "cannot diff trees with different schemas: \"schema_main\" vs \"other\""
           }
         },
-        "traceStepIds": ["schema", "otherSchema", "a", "b", "reject"]
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "otherSchema",
+          "a",
+          "b",
+          "reject"
+        ]
       },
       "status": "pass"
     },
@@ -3224,7 +3289,16 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["schema", "a", "b", "all", "page", "next"]
+        "traceStepIds": [
+          "backendClock",
+          "workerClock",
+          "schema",
+          "a",
+          "b",
+          "all",
+          "page",
+          "next"
+        ]
       },
       "status": "pass"
     },
@@ -3251,7 +3325,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3278,7 +3352,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3305,7 +3379,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3332,7 +3406,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3359,7 +3433,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3386,7 +3460,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3413,7 +3487,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3440,7 +3514,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3467,7 +3541,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3494,7 +3568,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3521,7 +3595,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3548,7 +3622,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3575,7 +3649,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3602,7 +3676,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3629,7 +3703,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3656,7 +3730,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3683,7 +3757,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["put", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "put", "get"]
       },
       "status": "pass"
     },
@@ -3767,6 +3841,8 @@
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
         "traceStepIds": [
+          "backendClock",
+          "workerClock",
           "single-proceed",
           "all-proceed",
           "single-modify",
@@ -3802,7 +3878,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -3829,7 +3905,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -3856,7 +3932,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -3883,7 +3959,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -3910,7 +3986,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -3937,7 +4013,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -3964,7 +4040,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -3991,7 +4067,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -4018,7 +4094,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -4045,7 +4121,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -4072,7 +4148,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -4099,7 +4175,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -4126,7 +4202,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -4153,7 +4229,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -4180,7 +4256,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -4207,7 +4283,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -4234,7 +4310,7 @@
       "details": {
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.extended.syscall",
-        "traceStepIds": ["register", "get"]
+        "traceStepIds": ["backendClock", "workerClock", "register", "get"]
       },
       "status": "pass"
     },
@@ -5293,30 +5369,6 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.13.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.14.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.15.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.16.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.17.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.18.resultField",
-          "status": "pass"
-        },
-        {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
           "status": "pass"
         },
@@ -5365,30 +5417,6 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.injectedErrorCode",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.lineageConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.pendingMessageCommitted",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.recoveryStateConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.visibleCommittedMessageCount",
-          "status": "pass"
-        },
-        {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
           "status": "pass"
         },
@@ -5434,30 +5462,6 @@
         },
         {
           "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.visibleCommittedMessageCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.injectedErrorCode",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.lineageConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.pendingMessageCommitted",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.recoveryStateConsistent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.visibleCommittedMessageCount",
           "status": "pass"
         }
       ],
