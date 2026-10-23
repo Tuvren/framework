@@ -48,6 +48,14 @@ tickets:
     certainty: assumed
     deviations:
       - files:
+          - tools/schemas/certification-evidence.schema.json
+          - tools/schemas/conformance-operation-catalog.schema.json
+          - tools/scripts/compatibility-report.ts
+          - tools/scripts/lib/conformance-contract.ts
+          - tools/scripts/lib/conformance-contract.test.ts
+          - .changeset/certification-dc-kernel-memory.md
+        justification: "Catalog faultOutcome metadata and per-check unsupported outcomes need the catalog and evidence schemas, the evidence contract, and the compatibility report to carry them; the changeset covers the memory backend and kernel runtime changes."
+      - files:
           - tools/conformance/meta-conformance/negative-controls.ts
           - tools/conformance/meta-conformance/negative-controls.test.ts
           - spec/conformance/kernel/negative-controls.json

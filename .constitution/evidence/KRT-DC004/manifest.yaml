@@ -8,10 +8,10 @@ result: pass
 pass_criteria: "Recovery traces pass at both supported memory fault points with expected heads from earlier captures; drop-staged and promote-staged mutants are killed and fault-seam-never-fires is detected by missing_fault_activation; all 72 syscall claimIds are designated or listed undetected with a reason."
 files:
   - path: obligation-map.md
-    sha256: 71e8929d5b02a2d48ec49ee485de3d7ee3cfa26cd71f72cb6353cf15d6a038e3
-    bytes: 17332
+    sha256: 3e456cfdccd33aeb23f32ddb043a8d3d32a523c412f0ebfa1b7e72aa50e22182
+    bytes: 17315
     role: transcript
   - path: triage.md
-    sha256: fbff1697ec9cc9796a102c4cd34900e2fa1860bbeafb289325716424ca3382c3
-    bytes: 5884
+    sha256: f219772121f672b6ba49f9a584dcd5b36f10b348de8e79402dad01dafa853ff1
+    bytes: 5932
     role: transcript

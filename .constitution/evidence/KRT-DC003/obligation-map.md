@@ -127,7 +127,7 @@ Table 5 records each mutant outcome from the direct conformance run.
 | kernel.sweep-inside-grace-window | 18 | killed | 2 |
 | kernel.wrong-opaque-object-hash | 86 | killed | 18 |
 
-Raw per-mutant evidence is retained at `.cache/dc003-review-fix/negative-controls.json`. Command logs are retained under `.cache/dc003-review-fix/`. The final diff contains the syscall plan, control manifest, lifecycle regression tests, and three generated TypeScript kernel evidence files. This external obligation map is also updated. No `.constitution/` files changed, no commit was created, and no services were started, stopped, or reset.
+Raw per-mutant evidence is retained at a local run log (not retained). Command logs are retained under a local run log (not retained). The final diff contains the syscall plan, control manifest, lifecycle regression tests, and three generated TypeScript kernel evidence files. This external obligation map is also updated. No `.constitution/` files changed, no commit was created, and no services were started, stopped, or reset.
 
 Dependencies, patterns, conventions, and contract shapes introduced beyond the specification: none. Existing specification gaps SPEC-DC003-01 and SPEC-DC003-02 remain explicit; no profile is declared complete.
 
