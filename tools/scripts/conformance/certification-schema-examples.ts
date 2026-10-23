@@ -100,7 +100,10 @@ export const PINNED_OPERATION_CATALOG = {
       input: true,
       kind: "syscall",
       observation: {
-        events: { items: { type: "object" }, type: "array" },
+        events: {
+          items: { additionalProperties: false, type: "object" },
+          type: "array",
+        },
         state: { additionalProperties: false, type: "object" },
       },
       operationId: "kernel.run.recover",
