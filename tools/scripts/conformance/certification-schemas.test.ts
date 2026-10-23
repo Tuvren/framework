@@ -183,6 +183,92 @@ describe("operation catalog schema", () => {
     }
   });
 
+  test.each([
+    ["an open object inside anyOf", { anyOf: [{ type: "object" }] }],
+    [
+      "an open object inside a closed object",
+      {
+        additionalProperties: false,
+        properties: { inner: { type: "object" } },
+        type: "object",
+      },
+    ],
+    ["an array of open objects", { items: { type: "object" }, type: "array" }],
+    [
+      "an open object in prefixItems",
+      { items: false, prefixItems: [{ type: "object" }], type: "array" },
+    ],
+    [
+      "an open object behind a local $ref",
+      { $defs: { open: { type: "object" } }, $ref: "#/$defs/open" },
+    ],
+    [
+      "an open object in an additionalProperties schema",
+      {
+        additionalProperties: { type: "object" },
+        type: "object",
+        unevaluatedProperties: false,
+      },
+    ],
+    [
+      "an open object in a oneOf branch of allOf",
+      { allOf: [{ oneOf: [{ type: "string" }, { properties: {} }] }] },
+    ],
+  ])("reports %s reachable from an observation schema", (_label, schema) => {
+    const catalog = mutated(PINNED_OPERATION_CATALOG, (draft) => {
+      at(draft, "operations", 1, "observation").result = schema;
+    });
+
+    expect(
+      collectCertificationIntegrityFailures("operationCatalog", catalog)
+    ).toEqual([expect.stringContaining("kernel.tree.diff observation.result")]);
+  });
+
+  test("accepts nested closed objects and the encoding record union", () => {
+    const catalog = mutated(PINNED_OPERATION_CATALOG, (draft) => {
+      at(draft, "operations", 1, "observation").result = {
+        $defs: {
+          entry: {
+            additionalProperties: false,
+            properties: { key: { type: "string" } },
+            type: "object",
+          },
+        },
+        additionalProperties: false,
+        properties: {
+          entries: { items: { $ref: "#/$defs/entry" }, type: "array" },
+          record: {
+            $ref: "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json#/$defs/record",
+          },
+          tagged: {
+            anyOf: [
+              { additionalProperties: false, type: "object" },
+              { type: "string" },
+            ],
+          },
+        },
+        type: "object",
+      };
+    });
+
+    expectValid("operationCatalog", catalog);
+    expect(
+      collectCertificationIntegrityFailures("operationCatalog", catalog)
+    ).toEqual([]);
+  });
+
+  test("reports an observation $ref it cannot resolve", () => {
+    const catalog = mutated(PINNED_OPERATION_CATALOG, (draft) => {
+      at(draft, "operations", 1, "observation").result = {
+        $ref: "https://example.com/open.json",
+      };
+    });
+
+    expect(
+      collectCertificationIntegrityFailures("operationCatalog", catalog)
+    ).toEqual([expect.stringContaining("kernel.tree.diff observation.result")]);
+  });
+
   test("reports duplicate operation ids and seams naming uncatalogued operations", () => {
     const catalog = mutated(PINNED_OPERATION_CATALOG, (draft) => {
       draft.operations.push(clone(at(draft, "operations", 0)) as never);
@@ -241,9 +327,45 @@ describe("observation encoding schema", () => {
     ["single-quoted string", "'a'"],
     ["raw control character in a string", '"a\u0001b"'],
     ["invalid escape", '"\\x41"'],
+    ["fraction that rounds to an integer", "1.00000000000000001"],
+    ["fraction below 2^53 that rounds to an integer", "9007199254740990.5"],
+    ["exponent that underflows to zero", "1e-400"],
+    [
+      "nested fraction that rounds to an integer",
+      '{"$map":[["n",1.0000000000000000001]]}',
+    ],
   ])("decoder rejects %s", (_label, text) => {
     expect(() => parseObservationJson(text)).toThrow(ObservationEncodingError);
   });
+
+  test.each([
+    ["1.0", 1],
+    ["1e2", 100],
+    ["10e-1", 1],
+    ["1.5e1", 15],
+    ["0e-400", 0],
+    ["9007199254740991.000", 9_007_199_254_740_991],
+  ])("decoder keeps the exact integer token %s", (text, expected) => {
+    const value = parseObservationJson(text);
+
+    expect(value).toBe(expected);
+    expectValid("observationEncoding", value);
+  });
+
+  test.each([
+    ["2.5", 2.5],
+    ["0.1", 0.1],
+    ["1e-300", 1e-300],
+    ["-1.25e-2", -0.0125],
+  ])(
+    "decoder keeps the finite non-integer %s for float fields",
+    (text, expected) => {
+      const value = parseObservationJson(text);
+
+      expect(value).toBe(expected);
+      expectInvalid("observationEncoding", value);
+    }
+  );
 
   test("decoder keeps __proto__ as an ordinary key", () => {
     const value = parseObservationJson('{"__proto__":{"polluted":true}}');
@@ -763,6 +885,62 @@ describe("certification evidence schema", () => {
     expectInvalid(
       "certificationEvidence",
       mutated(PINNED_CERTIFICATION_EVIDENCE as Json, mutate)
+    );
+  });
+
+  test.each(["digests", "negativeControlRunId", "environment", "selection"])(
+    "rejects a certified certificate without %s",
+    (key) => {
+      expectInvalid(
+        "certificationEvidence",
+        mutated(PINNED_CERTIFICATION_EVIDENCE as Json, (draft) => {
+          remove(draft, key);
+        })
+      );
+    }
+  );
+
+  test("rejects a certified certificate from an incomplete run", () => {
+    expectInvalid(
+      "certificationEvidence",
+      mutated(PINNED_CERTIFICATION_EVIDENCE as Json, (draft) => {
+        at(draft, "certificate").complete = false;
+      })
+    );
+  });
+
+  test("accepts an uncertified certificate without certification fields", () => {
+    expectValid(
+      "certificationEvidence",
+      mutated(PINNED_CERTIFICATION_EVIDENCE as Json, (draft) => {
+        at(draft, "certificate").status = "uncertified";
+        at(draft, "certificate").complete = false;
+        for (const key of [
+          "digests",
+          "negativeControlRunId",
+          "environment",
+          "selection",
+        ]) {
+          remove(draft, key);
+        }
+      })
+    );
+  });
+
+  test("accepts legacy evidence without a certificate", () => {
+    expectValid(
+      "certificationEvidence",
+      mutated(PINNED_CERTIFICATION_EVIDENCE as Json, (draft) => {
+        for (const key of [
+          "certificate",
+          "digests",
+          "negativeControlRunId",
+          "environment",
+          "selection",
+        ]) {
+          remove(draft, key);
+        }
+      })
     );
   });
 });

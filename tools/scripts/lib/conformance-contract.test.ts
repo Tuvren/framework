@@ -85,6 +85,18 @@ describe("conformance evidence contract", () => {
     }).toThrow(CERTIFICATE_COMPLETE_VIOLATION);
   });
 
+  test("rejects a certified bundle without its certification fields", () => {
+    const {
+      digests: _digests,
+      negativeControlRunId: _negativeControlRunId,
+      ...withoutDigests
+    } = PINNED_CERTIFICATION_EVIDENCE;
+
+    expect(() => {
+      assertConformanceEvidence(withoutDigests, "bundle");
+    }).toThrow(SCHEMA_VIOLATION);
+  });
+
   test("rejects a failure artifact on a passing check", () => {
     const evidence = runnerEvidence();
     const [checkResult] = evidence.checkResults;

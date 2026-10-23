@@ -129,6 +129,9 @@ tickets:
       evidence: "Assert the protocol validator accepts every pinned 0.2.0 message, rejects mismatched parameter names, and still accepts all checked-in 0.1.0 adapters; assert the profile, control, and evidence schemas validate the companion examples and reject unknown fields."
     flows: [flow-multi-implementation-conformance-compatibility]
     certainty: assumed
+    deviations:
+      - files: [tools/scripts/lib/conformance-contract.test.ts]
+        justification: "Contract tests for the evidence-contract change in tools/scripts/lib/conformance-contract.ts live in its sibling test file, which the ticket scope did not name."
     status: planned
   - id: KRT-CZ005
     title: Enforce certification plan rules in report mode with a baseline inventory

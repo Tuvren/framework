@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tuvren.dev/schemas/certification-evidence.schema.json",
-  "description": "Conformance evidence and certification bundle (ADR-0081). The existing runner evidence fields plus the compatibility-report envelope fields stay valid (the envelope omits language, which runner evidence always carries); certificate, digests, environment, selection, negativeControlRunId, and per-check failure are the certification additions. Count and status consistency is checked by tools/scripts/lib/conformance-contract.ts.",
+  "description": "Conformance evidence and certification bundle (ADR-0081). The existing runner evidence fields plus the compatibility-report envelope fields stay valid (the envelope omits language, which runner evidence always carries); certificate, digests, environment, selection, negativeControlRunId, and per-check failure are the certification additions. A certified certificate requires complete: true plus digests, environment, selection, and negativeControlRunId. Count and status consistency is checked by tools/scripts/lib/conformance-contract.ts.",
   "type": "object",
   "required": [
     "boundary",
@@ -209,5 +209,23 @@
       "items": { "$ref": "#/$defs/selectionEntry" }
     },
     "negativeControlRunId": { "$ref": "#/$defs/nonEmptyString" }
+  },
+  "if": {
+    "required": ["certificate"],
+    "properties": {
+      "certificate": {
+        "required": ["status"],
+        "properties": { "status": { "const": "certified" } }
+      }
+    }
+  },
+  "then": {
+    "required": ["digests", "environment", "negativeControlRunId", "selection"],
+    "properties": {
+      "certificate": {
+        "required": ["complete"],
+        "properties": { "complete": { "const": true } }
+      }
+    }
   }
 }

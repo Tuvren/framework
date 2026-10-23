@@ -15,8 +15,11 @@
  */
 
 const WHITESPACE = new Set([" ", "\t", "\n", "\r"]);
-const NUMBER_PATTERN = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/uy;
+const NUMBER_PATTERN =
+  /-?(?<whole>0|[1-9]\d*)(?:\.(?<fraction>\d+))?(?:[eE](?<exponent>[+-]?\d+))?/uy;
 const STRING_PATTERN = /"(?:[^"\\]|\\.)*"/uy;
+const TRAILING_ZEROS = /0+$/u;
+const ALL_ZEROS = /^0*$/u;
 
 export class ObservationEncodingError extends Error {
   readonly offset: number;
@@ -27,6 +30,24 @@ export class ObservationEncodingError extends Error {
     this.offset = offset;
   }
 }
+
+/** Decides from the token's digits alone whether it denotes an integer. */
+const isIntegerToken = (
+  groups: Record<string, string | undefined>
+): boolean => {
+  const digits = `${groups.whole ?? ""}${groups.fraction ?? ""}`;
+  const significant = digits.replace(TRAILING_ZEROS, "");
+
+  if (ALL_ZEROS.test(significant)) {
+    return true;
+  }
+
+  const trailingZeros = BigInt(digits.length - significant.length);
+  const scale =
+    BigInt(groups.exponent ?? "0") - BigInt(groups.fraction?.length ?? 0);
+
+  return scale + trailingZeros >= 0n;
+};
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -253,6 +274,15 @@ class StrictJsonReader {
       throw new ObservationEncodingError("negative zero", offset);
     }
 
+    // A non-integer token whose float64 value is integral would pass integer
+    // checks after rounding; it has no lossless number representation.
+    if (Number.isInteger(value) && !isIntegerToken(match.groups ?? {})) {
+      throw new ObservationEncodingError(
+        "non-integer number rounds to an integer",
+        offset
+      );
+    }
+
     return value;
   }
 
@@ -267,8 +297,9 @@ class StrictJsonReader {
 
 /**
  * Decodes one observation document under the ADR-0078 encoding profile:
- * duplicate object keys, duplicate `$map` keys, non-finite numbers, and
- * negative zero are rejected before any schema validation.
+ * duplicate object keys, duplicate `$map` keys, non-finite numbers, negative
+ * zero, and non-integer tokens that would round to an integer are rejected
+ * before any schema validation.
  */
 export const parseObservationJson = (text: string): unknown =>
   new StrictJsonReader(text).read();
