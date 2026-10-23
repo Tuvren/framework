@@ -118,7 +118,7 @@ closeout:
   changelog_entries:
     - directory: tasks
       type: added
-      text: "EPIC-DD certified the Rust kernel on the kernel catalog: a lossless Rust syscall bridge, catalogued error codes, a feature-gated fault seam and clock injection unreachable from the gRPC service, atomic production syscalls, all four memory-profile syscall families passing (58 of 58), three native Rust mutants killed with the rest reported unsupported, and a port-neutral comparison showing no TypeScript-Rust disagreement beyond authority-sanctioned variation."
+      text: "EPIC-DD certified the Rust kernel on the kernel catalog: a lossless Rust syscall bridge, catalogued error codes, a feature-gated fault seam and clock injection unreachable from the gRPC service, atomic production syscalls, all four memory-profile syscall families passing (58 of 58), three native Rust mutants killed with the rest reported unsupported, and a kernel comparison tool showing no TypeScript-Rust disagreement beyond the sanctioned variation it encodes."
   candidate_terms: []
   routed_upstream:
     - stage: tech-spec
@@ -130,7 +130,9 @@ closeout:
     - stage: tech-spec
       item: "ADR-0078 requires explicit map nodes, but both the TypeScript and Rust adapter decoders accept untagged plain objects as maps; tighten the rule or the decoders fleet-wide."
   follow_ups:
-    - "kernel.edge-validation selects both the seven syscall edge checks Rust passes and deprecated composite checks it does not implement; claim it for Rust once EPIC-DJ retires the composites."
+    - "Sanctioned-variation rules (opaque cursors, fencing tokens, bootstrap bytes, archive branch ids, error prose) live in tools/conformance/meta-conformance/observation-comparison.ts; move them into per-operation authority metadata in the kernel catalog so tooling only applies them."
+    - "Every public Rust kernel method relies on a hand-written transaction guard and rust/kernel/src/memory.rs exceeds 3,800 lines; route syscalls through one dispatch wrapper so atomicity and the fault seam are structural."
+    - "Issue #205: kernel.edge-validation selects both the seven syscall edge checks Rust passes and deprecated composite checks it does not implement; claim it for Rust once EPIC-DJ retires the composites."
     - "The Rust negative-control control run uses adapter-syscall.json while the certification inventory names adapter.json; decide the certifying manifest before the kernel.memory certificate work in EPIC-DE."
     - "The Rust legacy lane still grades the tautological erasure probes and the fixture-echo recovery_state composite until EPIC-DJ."
     - "Ten kernel mutants have no Rust reproduction yet, and cross-scope resolve needs a shared-substrate construction seam in the Rust kernel."
