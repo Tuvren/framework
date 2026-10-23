@@ -687,6 +687,14 @@ const observationProblem = (
 
   if (
     target.domain === "state" &&
+    target.segments.length === 0 &&
+    (operation.errors?.length ?? 0) > 0
+  ) {
+    return "reads an ancestor of state.adapterError; assert the native error explicitly";
+  }
+
+  if (
+    target.domain === "state" &&
     target.segments[0] === "adapterError" &&
     (target.segments.length === 1 ||
       (target.segments.length === 2 &&

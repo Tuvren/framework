@@ -943,3 +943,60 @@ describe("native error assertions", () => {
     }
   );
 });
+
+test.each(["root", "captured", "every", "some", "operand"])(
+  "rejects native-error ancestor assertions: %s",
+  (mode) => {
+    const errorCatalog = {
+      ...catalog,
+      operations: new Map(
+        [...catalog.operations].map(([id, operation]) => [
+          id,
+          { ...operation, errors: ["native_code"] },
+        ])
+      ),
+    };
+    const check = hasCheck([
+      {
+        kind: "stateField",
+        field: "$",
+        equals: { adapterError: { code: "native_code" } },
+      },
+    ]);
+    if (mode === "every" || mode === "some") {
+      check.assertions = [
+        {
+          kind: "stateField",
+          field: "$",
+          [mode]: { field: "$.code", equals: "native_code" },
+        },
+      ];
+    }
+    if (mode === "operand") {
+      check.assertions = [
+        { kind: "stateField", field: "$.adapterError", equalsPath: "$.state" },
+      ];
+    }
+    if (mode === "captured") {
+      check.assertions = [
+        {
+          kind: "stateField",
+          field: "$.trace.renew.state.count",
+          equalsPath: "$.capture.whole",
+        },
+      ];
+      check.steps = [
+        {
+          stepId: "renew",
+          operation: check.operation,
+          capture: [{ name: "whole", path: "state" }],
+        },
+      ];
+    }
+    expect(
+      evaluateCertificationRules(planWith(check), errorCatalog).some((entry) =>
+        entry.message.includes("ancestor of state.adapterError")
+      )
+    ).toBe(true);
+  }
+);

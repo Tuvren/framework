@@ -1,4 +1,4 @@
-import { expect, spyOn, test } from "bun:test";
+import { expect, mock, spyOn, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -446,5 +446,54 @@ test("promoted syscall plans read node chains and manifests and exercise integri
   ];
   for (const kind of ["identity", "canonicalCbor", "referenceWalk"]) {
     expect(assertions.some((assertion) => assertion.kind === kind)).toBe(true);
+  }
+});
+
+test("failed kernel construction cleans the backend before retrying the instance", async () => {
+  const { createSyscallBindings } = await import("../src/host-syscalls.ts");
+  const cleanup = mock(async () => {});
+  const originalBackend = hostSupport.createConfiguredBackend;
+  const backendFactory = spyOn(
+    hostSupport,
+    "createConfiguredBackend"
+  ).mockImplementation(async (config, options) => {
+    const backend = await originalBackend(config, options);
+    return { ...backend, cleanup };
+  });
+  const originalKernel = hostSupport.createConformanceRuntimeKernel;
+  const failure = new Error("kernel construction failed");
+  const kernelFactory = spyOn(
+    hostSupport,
+    "createConformanceRuntimeKernel"
+  ).mockImplementationOnce(() => {
+    throw failure;
+  });
+  const bridge = createSyscallBindings({
+    adapterId: "cleanup-test",
+    backend: "memory",
+    capabilities: ["kernel.syscall"],
+  });
+  const handle = await bridge.createInstance();
+  try {
+    const [outcome] = await Promise.allSettled([
+      bridge.dispatch("kernel.store.has", { hash: "missing" }, handle),
+    ]);
+    expect(outcome?.status).toBe("rejected");
+    if (outcome?.status === "rejected") {
+      expect(outcome.reason).toBe(failure);
+    }
+    expect(cleanup).toHaveBeenCalledTimes(1);
+    kernelFactory.mockImplementation(originalKernel);
+    expect(
+      await bridge.dispatch("kernel.store.has", { hash: "missing" }, handle)
+    ).toEqual({ kind: "result", value: { result: false } });
+    expect(backendFactory).toHaveBeenCalledTimes(2);
+    expect(cleanup).toHaveBeenCalledTimes(1);
+    await bridge.destroyInstance(handle);
+    expect(cleanup).toHaveBeenCalledTimes(2);
+  } finally {
+    await bridge.destroyInstance(handle);
+    kernelFactory.mockRestore();
+    backendFactory.mockRestore();
   }
 });

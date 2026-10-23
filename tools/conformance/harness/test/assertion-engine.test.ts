@@ -725,7 +725,8 @@ test("tagged map equality ignores entry order and preserves array value order", 
 test("unprefixed required evidence resolves validated result fields without an adapter mirror", () => {
   const evaluations = evaluateRequiredEvidence(
     { check: buildCheck([]), requiredEvidence: ["status", "result.status"] },
-    { result: { status: "observed" } }
+    { result: { status: "observed" } },
+    true
   );
   expect(evaluations.map((entry) => entry.status)).toEqual(["pass", "pass"]);
   expect(
@@ -735,3 +736,34 @@ test("unprefixed required evidence resolves validated result fields without an a
     )[0]?.status
   ).toBe("fail");
 });
+
+test.each([false, true])(
+  "unprefixed result evidence requires a catalogued operation: %s",
+  (catalogued) => {
+    const compiledCheck: CompiledConformancePlanCheck = {
+      check: buildCheck([]),
+      requiredEvidence: ["answer"],
+    };
+    expect(
+      evaluateRequiredEvidence(
+        compiledCheck,
+        { result: { answer: "ready" } },
+        catalogued
+      )[0]?.status
+    ).toBe(catalogued ? "pass" : "fail");
+    expect(
+      evaluateRequiredEvidence(
+        compiledCheck,
+        { evidence: { answer: "ready" } },
+        catalogued
+      )[0]?.status
+    ).toBe("pass");
+    expect(
+      evaluateRequiredEvidence(
+        compiledCheck,
+        { state: { answer: "ready" } },
+        catalogued
+      )[0]?.status
+    ).toBe("pass");
+  }
+);
