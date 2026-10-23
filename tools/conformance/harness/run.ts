@@ -1341,7 +1341,6 @@ const selectChecks = (
   options: CliOptions
 ): {
   applicable: ScheduledCheck[];
-  nonApplicable: { checkId: string; planId: string }[];
   selection: NonNullable<ConformanceEvidence["selection"]>;
 } => {
   const adapterCapabilities = new Set(manifest.capabilities);
@@ -1350,7 +1349,6 @@ const selectChecks = (
   const availableCapabilities = new Set<string>();
   const availableCheckIds = new Set<string>();
   const applicable: ScheduledCheck[] = [];
-  const nonApplicable: { checkId: string; planId: string }[] = [];
   const selection: { checkId: string; selected: boolean; reason?: string }[] =
     [];
   let index = 0;
@@ -1390,10 +1388,6 @@ const selectChecks = (
       );
       selection.push(entry);
       if (!entry.selected) {
-        nonApplicable.push({
-          checkId: check.checkId,
-          planId: plan.plan.planId,
-        });
         continue;
       }
 
@@ -1428,7 +1422,6 @@ const selectChecks = (
 
   return {
     applicable,
-    nonApplicable,
     selection,
   };
 };
@@ -1490,17 +1483,14 @@ const main = async (): Promise<void> => {
     .toSorted((left, right) => left.index - right.index)
     .map((result) => result.checkResult);
   const baseSummary = createConformanceEvidenceSummary(checkResults);
-  const nonApplicableCheckIds = selected.nonApplicable.map(
-    (entry) => entry.checkId
-  );
+  const nonApplicableCheckIds = selection
+    .filter((entry) => !entry.selected)
+    .map((entry) => entry.checkId);
   const summary = {
     ...baseSummary,
-    // Sharded evidence reports the applicable checks emitted by this shard,
-    // while retaining global non-applicability because capability exclusions are
-    // not scheduled work and do not belong to any shard.
     applicableChecks: checkResults.length,
     nonApplicableChecks: nonApplicableCheckIds.length,
-    totalChecks: checkResults.length + nonApplicableCheckIds.length,
+    totalChecks: selection.length,
   };
   const evidence: ConformanceEvidence = {
     adapterId: adapterManifest.adapterId,

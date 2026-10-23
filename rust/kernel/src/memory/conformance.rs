@@ -1,7 +1,25 @@
 use super::*;
 use crate::testkit::KernelTestControls;
 
+#[derive(Default)]
+pub(super) struct StateCloneCount(Arc<std::sync::atomic::AtomicU64>);
+
+impl Clone for StateCloneCount {
+    fn clone(&self) -> Self {
+        self.0.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        Self(Arc::clone(&self.0))
+    }
+}
+
 impl InMemoryKernel {
+    pub fn state_clone_count(&self) -> KernelResult<u64> {
+        Ok(self
+            .lock_state()?
+            .clone_count
+            .0
+            .load(std::sync::atomic::Ordering::Relaxed))
+    }
+
     pub fn with_test_controls(controls: KernelTestControls) -> KernelResult<Self> {
         controls.require_clocks()?;
         let backend = controls.clone();

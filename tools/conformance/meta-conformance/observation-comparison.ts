@@ -25,8 +25,6 @@ const BOOTSTRAP =
   "docs/KrakenKernelSpecification.md §3.3 (implementation-owned bootstrap event), §4.1 (thread bootstrap); ADR-0078 §2–3 (derived identities)";
 const PREEMPTION =
   "docs/KrakenKernelSpecification.md §5.2 (stale running preemption); ADR-0078 §2–3 (derived identities)";
-const FENCING =
-  "docs/KrakenKernelSpecification.md §5.2 (execution lease fencing tokens)";
 const CURSOR =
   "docs/KrakenKernelSpecification.md §9.3 (opaque enumeration cursors)";
 const ARCHIVE =
@@ -74,20 +72,14 @@ const visit = (
   }
 };
 
-export const stabilizeObservations = (
-  value: unknown,
-  implementationId: string
-): unknown => {
+export const stabilizeObservations = (value: unknown): unknown => {
   const tokens = new Map<string, string>();
   visit(value, (record) => {
     if (
       typeof record.fencingToken === "string" &&
       !tokens.has(record.fencingToken)
     ) {
-      tokens.set(
-        record.fencingToken,
-        `opaque:fencingToken:${implementationId}:${tokens.size + 1}`
-      );
+      tokens.set(record.fencingToken, `opaque:fencingToken:${tokens.size + 1}`);
     }
   });
   const replace = (child: unknown): unknown => {
@@ -269,9 +261,6 @@ const citationFor = (
   }
   if (typeof left !== "string" || typeof right !== "string") {
     return undefined;
-  }
-  if (key === "fencingToken") {
-    return FENCING;
   }
   if (key === "nextCursor") {
     return CURSOR;

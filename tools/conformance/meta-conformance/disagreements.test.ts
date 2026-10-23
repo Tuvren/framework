@@ -158,16 +158,40 @@ test("checks each recorded dispatch and events operation against its plan", () =
 });
 
 test("pseudonymizes fencing tokens deterministically and preserves references and rotations", () => {
-  const left = stabilizeObservations(
-    fencingStream("random-a", "random-b"),
-    "port"
-  );
+  const left = stabilizeObservations(fencingStream("random-a", "random-b"));
   expect(left).toEqual(
-    stabilizeObservations(fencingStream("other-a", "other-b"), "port")
+    stabilizeObservations(fencingStream("other-a", "other-b"))
   );
   expect(left).not.toEqual(
-    stabilizeObservations(fencingStream("same", "same"), "port")
+    stabilizeObservations(fencingStream("same", "same"))
   );
+});
+
+test("equal fencing rotations compare equal across implementations", () => {
+  expect(
+    compareObservations([
+      implementation("rust", [
+        stabilizeObservations(fencingStream("r1", "r2")),
+      ]),
+      implementation("typescript", [
+        stabilizeObservations(fencingStream("t1", "t2")),
+      ]),
+    ])
+  ).toEqual([]);
+});
+
+test("fencing rotation versus reuse is an unsanctioned disagreement", () => {
+  const differences = compareObservations([
+    implementation("rust", [stabilizeObservations(fencingStream("r1", "r2"))]),
+    implementation("typescript", [
+      stabilizeObservations(fencingStream("t1", "t1")),
+    ]),
+  ]);
+  expect(differences).toHaveLength(1);
+  expect(differences[0]).toMatchObject({
+    classification: "disagreement",
+    path: "$[1].outcome.value.result.fencingToken",
+  });
 });
 
 test("requires observed bootstrap ancestry before sanctioning node hashes", () => {

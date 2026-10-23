@@ -30,7 +30,7 @@ import {
 test("Rust memory controls activate and fail designated shared-plan assertions", async () => {
   const config = NEGATIVE_CONTROL_PORTS.find(
     ({ controlAdapter }) =>
-      controlAdapter === "rust/kernel-conformance-adapter/adapter-syscall.json"
+      controlAdapter === "rust/kernel-conformance-adapter/adapter.json"
   );
   if (config === undefined) {
     throw new Error("missing Rust memory negative-control configuration");
@@ -79,7 +79,7 @@ test("Rust syscall evidence covers every check in all four memory families", asy
         "bun",
         "tools/conformance/harness/run.ts",
         "--adapter",
-        "rust/kernel-conformance-adapter/adapter-syscall.json",
+        "rust/kernel-conformance-adapter/adapter.json",
         "--capability",
         "kernel.syscall",
         "--summary-only",

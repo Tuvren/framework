@@ -114,7 +114,7 @@
     },
     {
       "planId": "tuvren.kernel.scope-isolation.syscall",
-      "planVersion": "0.1.0",
+      "planVersion": "0.2.0",
       "path": "spec/conformance/kernel/plans/kernel-scope-isolation-syscall.json"
     },
     {
@@ -129,7 +129,7 @@
     },
     {
       "planId": "tuvren.kernel.restart-recovery.syscall",
-      "planVersion": "0.1.0",
+      "planVersion": "0.2.0",
       "path": "spec/conformance/kernel/plans/kernel-restart-recovery-syscall.json"
     }
   ],

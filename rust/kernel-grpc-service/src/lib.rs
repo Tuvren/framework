@@ -74,10 +74,8 @@ pub struct KernelGrpcServiceImpl {
     max_walk_back_hops: usize,
     // KRT-BK006: test-only hook proving the `Server::builder()` `.timeout(..)`
     // and `.concurrency_limit_per_connection(..)` ceilings (see
-    // `configured_server_builder` below) actually fire. Every real
-    // `InMemoryKernel` RPC handler completes near-instantly, so there is no
-    // way to make an RPC hang or hold a concurrency slot on demand without an
-    // artificial delay seam; `store_put` sleeps for this duration (when set)
+    // `configured_server_builder` below) actually fire. The artificial delay
+    // holds a concurrency slot for a predictable duration; `store_put` sleeps for this duration (when set)
     // before calling into the kernel. `KernelGrpcServiceImpl::new` always
     // leaves this `None` (a no-op in production); only the `#[cfg(test)]`
     // tests below construct an instance with this set.
@@ -1485,8 +1483,7 @@ mod tests {
     // helper `serve_kernel_grpc` calls with the real 30s / 64 production
     // constants, parameterized here with small test values so the ceilings
     // can be proven without waiting out the real 30s timeout or spinning up
-    // 64 concurrent requests. Every real `InMemoryKernel` RPC handler
-    // completes near-instantly, so `store_put`'s `artificial_delay` hook
+    // 64 concurrent requests. The `store_put` `artificial_delay` hook
     // (private field access — this module is a descendant of the crate
     // root, so it is allowed, mirroring the `max_walk_back_hops` precedent
     // above) is what makes an RPC artificially slow on demand.
