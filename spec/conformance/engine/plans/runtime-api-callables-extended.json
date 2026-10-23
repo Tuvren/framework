@@ -7,7 +7,8 @@
       "assertions": [
         {
           "field": "$.provider.generate.callCount",
-          "kind": "resultField"
+          "kind": "resultField",
+          "greaterThan": 0
         }
       ],
       "checkId": "runtime-callable-ext.provider-generate.call-count-positive",
@@ -22,7 +23,8 @@
       "assertions": [
         {
           "field": "$.provider.generate.response.parts.0",
-          "kind": "resultField"
+          "kind": "resultField",
+          "present": true
         }
       ],
       "checkId": "runtime-callable-ext.provider-generate.response-parts-first-present",

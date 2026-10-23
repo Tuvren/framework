@@ -20,11 +20,15 @@
  *
  * Discovers the certification fleet from the repo itself — every Nx project
  * tagged `layer:certification` — and hard-fails unless that discovered
- * set exactly matches the checked-in manifest
+ * set exactly matches the checked-in inventory
  * (`certified-projects.json`), every discovered project actually exposes a
  * `conformance` target, every target that invokes the shared semantic engine
  * belongs to the fleet, and every other `conformance` target is explicitly
- * classified as non-certification (`layer:testkit`).
+ * classified as non-certification (`layer:testkit`). Each inventory entry
+ * must name the adapter its engine command drives and the raw status its
+ * checked-in compatibility evidence records (ADR-0031, ADR-0081), and each
+ * certified entry's profile must be its adapter manifest's suiteId until
+ * certification profiles exist.
  *
  * Failure modes this makes loud instead of silent:
  *  - a runner project moved/retired without deliberate manifest maintenance
@@ -55,17 +59,24 @@ import {
   loadNxProjectFiles,
   targetCommandStrings,
 } from "../../scripts/lib/nx-projects.js";
+import {
+  CERTIFICATION_MANIFEST_PATH,
+  parseCertificationManifest,
+} from "./certification-manifest.js";
+import type { CertificationManifest } from "./certification-manifest.js";
 
 const ROOT = process.cwd();
-const MANIFEST_PATH = nodePath.join(
+const MANIFEST_PATH = nodePath.join(ROOT, CERTIFICATION_MANIFEST_PATH);
+const EVIDENCE_DIRECTORY = nodePath.join(
   ROOT,
-  "tools/conformance/certification/certified-projects.json"
+  "reports/compatibility/evidence"
 );
 const CERTIFICATION_TAG = "layer:certification";
 const NON_CERTIFICATION_TAG = "layer:testkit";
 const SHARED_ENGINE_PATH = "tools/conformance/harness/run.ts";
 
 interface ProjectRecord {
+  engineCommands: readonly string[];
   /**
    * Names of targets (any target, not just `conformance`) whose command
    * strings — base `options` plus `configurations` overrides, both the
@@ -81,25 +92,23 @@ interface ProjectRecord {
   tags: readonly string[];
 }
 
-interface CertificationManifest {
-  projects: string[];
-}
-
-const isCertificationManifest = (
-  value: unknown
-): value is CertificationManifest => {
-  if (
-    typeof value !== "object" ||
-    value === null ||
-    Array.isArray(value) ||
-    !("projects" in value)
-  ) {
-    return false;
+const readJsonRecord = (path: string): Record<string, unknown> | undefined => {
+  try {
+    const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
+    return typeof value === "object" && value !== null && !Array.isArray(value)
+      ? Object.fromEntries(Object.entries(value))
+      : undefined;
+  } catch {
+    return undefined;
   }
-  const projects: unknown = value.projects;
-  return (
-    Array.isArray(projects) &&
-    projects.every((name: unknown) => typeof name === "string")
+};
+
+const WHITESPACE = /\s+/u;
+
+const drivesAdapter = (command: string, adapter: string): boolean => {
+  const tokens = command.split(WHITESPACE);
+  return tokens.some(
+    (token, index) => token === "--adapter" && tokens[index + 1] === adapter
   );
 };
 
@@ -113,7 +122,13 @@ const loadProjects = (): ProjectRecord[] =>
         )
       )
       .map(([targetName]) => targetName);
+    const engineCommands = Object.values(targets).flatMap((target) =>
+      targetCommandStrings(target).filter((command) =>
+        command.includes(SHARED_ENGINE_PATH)
+      )
+    );
     return {
+      engineCommands,
       engineInvokingTargets,
       hasConformanceTarget: targets.conformance !== undefined,
       name: file.name,
@@ -130,14 +145,17 @@ const fail: (problems: string[]) => never = (problems) => {
   process.exit(1);
 };
 
-const manifest: unknown = JSON.parse(readFileSync(MANIFEST_PATH, "utf-8"));
-if (!isCertificationManifest(manifest)) {
-  fail(["manifest must contain a projects array of strings"]);
-}
+const readManifest = (): CertificationManifest => {
+  try {
+    return parseCertificationManifest(
+      JSON.parse(readFileSync(MANIFEST_PATH, "utf-8"))
+    );
+  } catch (error: unknown) {
+    return fail([error instanceof Error ? error.message : String(error)]);
+  }
+};
+const manifest = readManifest();
 const manifestSet = new Set(manifest.projects);
-if (manifestSet.size !== manifest.projects.length) {
-  fail(["manifest lists a duplicate project id"]);
-}
 
 const projects = loadProjects();
 const byName = new Map(projects.map((p) => [p.name, p]));
@@ -209,10 +227,50 @@ for (const project of projects) {
   }
 }
 
+for (const entry of manifest.inventory) {
+  const project = byName.get(entry.project);
+  if (
+    project !== undefined &&
+    !project.engineCommands.some((command) =>
+      drivesAdapter(command, entry.adapter)
+    )
+  ) {
+    problems.push(
+      `inventory lists adapter ${entry.adapter} for ${entry.project}, but no engine command of that project passes --adapter ${entry.adapter}`
+    );
+  }
+
+  const evidencePath = nodePath.join(
+    EVIDENCE_DIRECTORY,
+    `certification-harness.${entry.project}.json`
+  );
+  const recordedState = readJsonRecord(evidencePath)?.status;
+  if (recordedState !== entry.state) {
+    problems.push(
+      `inventory state ${entry.state} for ${entry.project} does not match ${String(recordedState)} recorded in ${nodePath.relative(ROOT, evidencePath)}`
+    );
+  }
+}
+
+for (const entry of manifest.certified) {
+  const adapter = manifest.inventory.find(
+    (candidate) => candidate.project === entry.project
+  )?.adapter;
+  const suiteId =
+    adapter === undefined
+      ? undefined
+      : readJsonRecord(nodePath.join(ROOT, adapter))?.suiteId;
+  if (suiteId !== entry.profile) {
+    problems.push(
+      `certified profile ${entry.profile} for ${entry.project} must equal its adapter manifest suiteId (${String(suiteId)}) until certification profiles exist`
+    );
+  }
+}
+
 if (problems.length > 0) {
   fail(problems);
 }
 
 console.log(
-  `certification-discovery: OK — ${discovered.length} certification runners discovered, manifest in exact parity`
+  `certification-discovery: OK — ${discovered.length} certification runners discovered, inventory in exact parity, ${manifest.certified.length} certified`
 );

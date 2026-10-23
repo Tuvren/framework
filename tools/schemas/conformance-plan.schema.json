@@ -4,6 +4,134 @@
   "type": "object",
   "required": ["planId", "planVersion", "packetId", "applicability", "checks"],
   "additionalProperties": false,
+  "$defs": {
+    "contextPath": { "type": "string", "pattern": "^\\$(\\..+)?$" },
+    "numericOperand": {
+      "oneOf": [{ "type": "number" }, { "$ref": "#/$defs/contextPath" }]
+    },
+    "lengthOperand": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        { "$ref": "#/$defs/contextPath" }
+      ]
+    },
+    "when": {
+      "type": "object",
+      "required": ["path", "equals"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "$ref": "#/$defs/contextPath" },
+        "equals": {}
+      }
+    },
+    "valueOperators": {
+      "type": "object",
+      "properties": {
+        "equals": {},
+        "equalsPath": { "type": "string", "minLength": 1 },
+        "notEquals": {},
+        "notEqualsPath": { "$ref": "#/$defs/contextPath" },
+        "matches": { "type": "string", "minLength": 1 },
+        "contains": {},
+        "containsPath": { "type": "string", "minLength": 1 },
+        "lessThan": { "$ref": "#/$defs/numericOperand" },
+        "lessThanOrEqual": { "$ref": "#/$defs/numericOperand" },
+        "greaterThan": { "$ref": "#/$defs/numericOperand" },
+        "greaterThanOrEqual": { "$ref": "#/$defs/numericOperand" },
+        "length": { "$ref": "#/$defs/lengthOperand" },
+        "every": { "$ref": "#/$defs/elementAssertion" },
+        "some": { "$ref": "#/$defs/elementAssertion" },
+        "present": { "type": "boolean" }
+      },
+      "dependentRequired": { "every": ["length"], "some": ["length"] }
+    },
+    "elementAssertion": {
+      "$ref": "#/$defs/valueOperators",
+      "type": "object",
+      "properties": {
+        "field": { "type": "string", "minLength": 1 }
+      },
+      "unevaluatedProperties": false
+    },
+    "assertion": {
+      "$ref": "#/$defs/valueOperators",
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "eventSequence",
+            "terminalEvent",
+            "schemaValid",
+            "errorEnvelope",
+            "resultField",
+            "stateField",
+            "evidenceField",
+            "ordering",
+            "noEvent",
+            "secretAbsence",
+            "secretPatternAbsence"
+          ]
+        },
+        "path": { "type": "string", "minLength": 1 },
+        "schema": { "type": "string", "minLength": 1 },
+        "field": { "type": "string", "minLength": 1 },
+        "secretsPath": { "type": "string", "minLength": 1 },
+        "eventType": { "type": "string", "minLength": 1 },
+        "when": { "$ref": "#/$defs/when" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": { "const": "resultField" }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["field"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": { "const": "noEvent" }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "not": {
+              "required": ["field"]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": { "const": "secretAbsence" }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["field", "secretsPath"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": { "const": "secretPatternAbsence" }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["field"]
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    }
+  },
   "properties": {
     "planId": { "type": "string", "minLength": 1 },
     "planVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
@@ -59,87 +187,7 @@
           "assertions": {
             "type": "array",
             "minItems": 1,
-            "items": {
-              "type": "object",
-              "required": ["kind"],
-              "additionalProperties": false,
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "eventSequence",
-                    "terminalEvent",
-                    "schemaValid",
-                    "errorEnvelope",
-                    "resultField",
-                    "stateField",
-                    "evidenceField",
-                    "ordering",
-                    "noEvent",
-                    "secretAbsence",
-                    "secretPatternAbsence"
-                  ]
-                },
-                "path": { "type": "string", "minLength": 1 },
-                "schema": { "type": "string", "minLength": 1 },
-                "equals": {},
-                "equalsPath": { "type": "string", "minLength": 1 },
-                "matches": { "type": "string", "minLength": 1 },
-                "contains": {},
-                "containsPath": { "type": "string", "minLength": 1 },
-                "field": { "type": "string", "minLength": 1 },
-                "secretsPath": { "type": "string", "minLength": 1 },
-                "eventType": { "type": "string", "minLength": 1 }
-              },
-              "allOf": [
-                {
-                  "if": {
-                    "properties": {
-                      "kind": { "const": "resultField" }
-                    },
-                    "required": ["kind"]
-                  },
-                  "then": {
-                    "required": ["field"]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "kind": { "const": "noEvent" }
-                    },
-                    "required": ["kind"]
-                  },
-                  "then": {
-                    "not": {
-                      "required": ["field"]
-                    }
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "kind": { "const": "secretAbsence" }
-                    },
-                    "required": ["kind"]
-                  },
-                  "then": {
-                    "required": ["field", "secretsPath"]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "kind": { "const": "secretPatternAbsence" }
-                    },
-                    "required": ["kind"]
-                  },
-                  "then": {
-                    "required": ["field"]
-                  }
-                }
-              ]
-            },
+            "items": { "$ref": "#/$defs/assertion" },
             "default": []
           },
           "steps": {
@@ -163,87 +211,7 @@
                 },
                 "assertions": {
                   "type": "array",
-                  "items": {
-                    "type": "object",
-                    "required": ["kind"],
-                    "additionalProperties": false,
-                    "properties": {
-                      "kind": {
-                        "type": "string",
-                        "enum": [
-                          "eventSequence",
-                          "terminalEvent",
-                          "schemaValid",
-                          "errorEnvelope",
-                          "resultField",
-                          "stateField",
-                          "evidenceField",
-                          "ordering",
-                          "noEvent",
-                          "secretAbsence",
-                          "secretPatternAbsence"
-                        ]
-                      },
-                      "path": { "type": "string", "minLength": 1 },
-                      "schema": { "type": "string", "minLength": 1 },
-                      "equals": {},
-                      "equalsPath": { "type": "string", "minLength": 1 },
-                      "matches": { "type": "string", "minLength": 1 },
-                      "contains": {},
-                      "containsPath": { "type": "string", "minLength": 1 },
-                      "field": { "type": "string", "minLength": 1 },
-                      "secretsPath": { "type": "string", "minLength": 1 },
-                      "eventType": { "type": "string", "minLength": 1 }
-                    },
-                    "allOf": [
-                      {
-                        "if": {
-                          "properties": {
-                            "kind": { "const": "resultField" }
-                          },
-                          "required": ["kind"]
-                        },
-                        "then": {
-                          "required": ["field"]
-                        }
-                      },
-                      {
-                        "if": {
-                          "properties": {
-                            "kind": { "const": "noEvent" }
-                          },
-                          "required": ["kind"]
-                        },
-                        "then": {
-                          "not": {
-                            "required": ["field"]
-                          }
-                        }
-                      },
-                      {
-                        "if": {
-                          "properties": {
-                            "kind": { "const": "secretAbsence" }
-                          },
-                          "required": ["kind"]
-                        },
-                        "then": {
-                          "required": ["field", "secretsPath"]
-                        }
-                      },
-                      {
-                        "if": {
-                          "properties": {
-                            "kind": { "const": "secretPatternAbsence" }
-                          },
-                          "required": ["kind"]
-                        },
-                        "then": {
-                          "required": ["field"]
-                        }
-                      }
-                    ]
-                  },
+                  "items": { "$ref": "#/$defs/assertion" },
                   "default": []
                 }
               }

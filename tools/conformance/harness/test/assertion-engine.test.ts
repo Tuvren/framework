@@ -520,7 +520,12 @@ describe("assertion sources and failure ordering", () => {
         { events: [{ type: "end" }] }
       )
     ).toEqual([
-      { assertionId: "ck.terminal-event.1.resultField", status: "fail" },
+      {
+        assertionId: "ck.terminal-event.1.resultField",
+        message:
+          "assertion declares no operator; presence-only assertions must use present",
+        status: "fail",
+      },
       {
         assertionId: "ck.terminal-event.2.noEvent",
         message: "noEvent assertion requires eventType",

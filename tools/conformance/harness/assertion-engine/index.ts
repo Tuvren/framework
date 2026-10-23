@@ -21,6 +21,9 @@ import type {
   CompiledConformancePlanCheck,
   ConformancePlanAssertion,
   ConformancePlanCheck,
+  ConformancePlanElementAssertion,
+  ConformancePlanNumericOperand,
+  ConformancePlanValueOperators,
 } from "../../plan-compiler/index.js";
 import {
   findSecretLeaks,
@@ -41,6 +44,7 @@ export interface AssertionEvaluation {
   assertionId: string;
   message?: string;
   status: "fail" | "pass";
+  when?: "applied" | "not_applied";
 }
 
 // Compile each distinct schema once per process instead of once per
@@ -144,41 +148,227 @@ const valueContains = (value: unknown, expected: unknown): boolean => {
   }
 
   if (isRecord(value) && typeof expected === "string") {
-    return expected in value;
+    return Object.hasOwn(value, expected);
   }
 
   return false;
 };
 
-const assertValue = (
-  assertion: ConformancePlanAssertion,
+const VALUE_OPERATOR_KEYS = [
+  "contains",
+  "containsPath",
+  "equals",
+  "equalsPath",
+  "every",
+  "greaterThan",
+  "greaterThanOrEqual",
+  "length",
+  "lessThan",
+  "lessThanOrEqual",
+  "matches",
+  "notEquals",
+  "notEqualsPath",
+  "some",
+] as const satisfies readonly (keyof ConformancePlanValueOperators)[];
+
+type ValueOperatorKey = (typeof VALUE_OPERATOR_KEYS)[number];
+
+const LITERAL_OPERATOR_KEYS: ReadonlySet<ValueOperatorKey> = new Set([
+  "contains",
+  "equals",
+  "notEquals",
+]);
+
+const declaresOperator = (
+  operators: ConformancePlanValueOperators,
+  key: ValueOperatorKey
+): boolean =>
+  LITERAL_OPERATOR_KEYS.has(key)
+    ? key in operators
+    : operators[key] !== undefined;
+
+const resolveOperandPath = (
+  context: AssertionContext,
+  path: string,
+  operator: string
+): unknown => {
+  const value = readPath(context, path);
+
+  if (value === undefined) {
+    throw new Error(`unresolved ${operator} operand ${path}`);
+  }
+
+  return value;
+};
+
+const resolveNumber = (
+  context: AssertionContext,
+  operand: ConformancePlanNumericOperand,
+  operator: string
+): number => {
+  const value =
+    typeof operand === "number"
+      ? operand
+      : resolveOperandPath(context, operand, operator);
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new TypeError(`${operator} operand must be a finite number`);
+  }
+
+  return value;
+};
+
+const readArrayActual = (value: unknown, operator: string): unknown[] => {
+  if (!Array.isArray(value)) {
+    throw new TypeError(`${operator} requires an array actual value`);
+  }
+
+  const entries: unknown[] = value;
+  return entries;
+};
+
+const compareNumbers = (
+  operator: ValueOperatorKey,
+  actual: number,
+  expected: number
+): boolean => {
+  switch (operator) {
+    case "greaterThan": {
+      return actual > expected;
+    }
+    case "greaterThanOrEqual": {
+      return actual >= expected;
+    }
+    case "lessThan": {
+      return actual < expected;
+    }
+    default: {
+      return actual <= expected;
+    }
+  }
+};
+
+const elementSatisfies = (
+  element: ConformancePlanElementAssertion,
   value: unknown,
   context: AssertionContext
 ): boolean => {
-  if ("equals" in assertion) {
-    return valuesAreEqual(value, assertion.equals);
+  try {
+    return assertValue(element, readPath(value, element.field ?? "$"), context);
+  } catch {
+    return false;
+  }
+};
+
+const applyOperator = (
+  operators: ConformancePlanValueOperators,
+  key: ValueOperatorKey,
+  value: unknown,
+  context: AssertionContext
+): boolean => {
+  switch (key) {
+    case "equals": {
+      return valuesAreEqual(value, operators.equals);
+    }
+    case "equalsPath": {
+      return valuesAreEqual(
+        value,
+        resolveOperandPath(context, operators.equalsPath ?? "", key)
+      );
+    }
+    case "notEquals": {
+      return !valuesAreEqual(value, operators.notEquals);
+    }
+    case "notEqualsPath": {
+      return !valuesAreEqual(
+        value,
+        resolveOperandPath(context, operators.notEqualsPath ?? "", key)
+      );
+    }
+    case "contains": {
+      return valueContains(value, operators.contains);
+    }
+    case "containsPath": {
+      return valueContains(
+        value,
+        resolveOperandPath(context, operators.containsPath ?? "", key)
+      );
+    }
+    case "matches": {
+      return (
+        typeof value === "string" &&
+        new RegExp(operators.matches ?? "", "u").test(value)
+      );
+    }
+    case "greaterThan":
+    case "greaterThanOrEqual":
+    case "lessThan":
+    case "lessThanOrEqual": {
+      if (typeof value !== "number") {
+        throw new TypeError(`${key} requires a numeric actual value`);
+      }
+      return compareNumbers(
+        key,
+        value,
+        resolveNumber(context, operators[key] ?? Number.NaN, key)
+      );
+    }
+    case "length": {
+      return (
+        readArrayActual(value, key).length ===
+        resolveNumber(context, operators.length ?? Number.NaN, key)
+      );
+    }
+    case "every":
+    case "some": {
+      const element = operators[key];
+      if (element === undefined) {
+        return false;
+      }
+      if (operators.length === undefined) {
+        throw new Error(`${key} requires an explicit length assertion`);
+      }
+      const entries = readArrayActual(value, key);
+      return key === "every"
+        ? entries.every((entry) => elementSatisfies(element, entry, context))
+        : entries.some((entry) => elementSatisfies(element, entry, context));
+    }
+    default: {
+      const unsupported: never = key;
+      throw new Error(`unsupported operator ${String(unsupported)}`);
+    }
+  }
+};
+
+// Every declared operator must hold. An absent actual value is an unresolved
+// operand and fails unless the assertion explicitly expects absence.
+const assertValue = (
+  operators: ConformancePlanValueOperators,
+  value: unknown,
+  context: AssertionContext
+): boolean => {
+  const declared = VALUE_OPERATOR_KEYS.filter((key) =>
+    declaresOperator(operators, key)
+  );
+
+  if (operators.present === false) {
+    if (declared.length > 0) {
+      throw new Error("present: false cannot be combined with value operators");
+    }
+    return value === undefined;
   }
 
-  if (assertion.equalsPath !== undefined) {
-    return valuesAreEqual(value, readPath(context, assertion.equalsPath));
-  }
-
-  if ("contains" in assertion) {
-    return valueContains(value, assertion.contains);
-  }
-
-  if (assertion.containsPath !== undefined) {
-    return valueContains(value, readPath(context, assertion.containsPath));
-  }
-
-  if (assertion.matches !== undefined) {
-    return (
-      typeof value === "string" &&
-      new RegExp(assertion.matches, "u").test(value)
+  if (declared.length === 0 && operators.present === undefined) {
+    throw new Error(
+      "assertion declares no operator; presence-only assertions must use present"
     );
   }
 
-  return value !== undefined;
+  if (value === undefined) {
+    throw new Error("unresolved actual operand");
+  }
+
+  return declared.every((key) => applyOperator(operators, key, value, context));
 };
 
 const assertEventSequence = (
@@ -301,7 +491,11 @@ const assertErrorEnvelope = (
     return false;
   }
 
-  return assertValue(assertion, value, context);
+  const declaresValueOperator =
+    assertion.present !== undefined ||
+    VALUE_OPERATOR_KEYS.some((key) => declaresOperator(assertion, key));
+
+  return declaresValueOperator ? assertValue(assertion, value, context) : true;
 };
 
 const assertField = (
@@ -501,18 +695,37 @@ export const evaluateAssertions = (
 ): AssertionEvaluation[] =>
   check.assertions.map((assertion, index) => {
     const assertionId = `${check.checkId}.${index + 1}.${assertion.kind}`;
+    const { when } = assertion;
+    let branch: Pick<AssertionEvaluation, "when"> = {};
 
     try {
+      if (when !== undefined) {
+        const condition = resolveOperandPath(context, when.path, "when");
+
+        if (!valuesAreEqual(condition, when.equals)) {
+          return {
+            assertionId,
+            message: `when branch not applied: ${when.path} did not equal ${JSON.stringify(when.equals)}`,
+            status: "pass",
+            when: "not_applied",
+          };
+        }
+
+        branch = { when: "applied" };
+      }
+
       const passed = evaluateAssertion(assertion, context);
       return {
         assertionId,
         status: passed ? "pass" : "fail",
+        ...branch,
       };
     } catch (error: unknown) {
       return {
         assertionId,
         message: error instanceof Error ? error.message : String(error),
         status: "fail",
+        ...branch,
       };
     }
   });

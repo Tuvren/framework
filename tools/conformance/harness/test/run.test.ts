@@ -504,6 +504,177 @@ interface CommandResult {
   stdout: string;
 }
 
+describe("certification harness zero-applicable status", () => {
+  const writeZeroApplicableFixture = async (
+    planCapability: string | undefined
+  ): Promise<{ adapterPath: string; tempDir: string }> => {
+    const tempDir = await mkdtemp(
+      nodePath.join(tmpdir(), "tuvren-runner-test-")
+    );
+    tempDirs.push(tempDir);
+    const adapterPath = nodePath.join(tempDir, "adapter.json");
+    const packetPath = nodePath.join(tempDir, "packet.json");
+    const planPath = nodePath.join(tempDir, "plan.json");
+    await writeFile(
+      packetPath,
+      JSON.stringify({
+        conformancePlans:
+          planCapability === undefined
+            ? []
+            : [
+                {
+                  path: planPath,
+                  planId: "runner.state",
+                  planVersion: "0.1.0",
+                },
+              ],
+        packetId: "runner.state",
+      })
+    );
+    await writeFile(
+      adapterPath,
+      JSON.stringify({
+        adapterId: "state-precedence-adapter",
+        authorityPackets: [packetPath],
+        boundary: "framework",
+        capabilities: ["runner.state"],
+        command: ["bun", "--eval", statePrecedenceAdapterScript],
+        implementationId: "state-precedence-adapter",
+        language: "typescript",
+        protocol: {
+          name: "tuvren.conformance-adapter",
+          transport: "json-rpc-2.0-stdio",
+          version: "0.1.0",
+        },
+        suiteId: "runner.state",
+        suiteVersion: "0.1.0",
+      })
+    );
+    await writeFile(
+      planPath,
+      JSON.stringify({
+        applicability: { capabilities: [planCapability ?? "runner.state"] },
+        checks: [
+          {
+            assertions: [
+              { equals: "dispatch", field: "$.source", kind: "stateField" },
+            ],
+            checkId: "runner.state.unreachable",
+            operation: "runner.state",
+          },
+        ],
+        packetId: "runner.state",
+        planId: "runner.state",
+        planVersion: "0.1.0",
+      })
+    );
+    return { adapterPath, tempDir };
+  };
+
+  const writeCertificationManifest = async (
+    tempDir: string,
+    adapterPath: string,
+    certified: boolean
+  ): Promise<string> => {
+    const manifestPath = nodePath.join(tempDir, "certified-projects.json");
+    await writeFile(
+      manifestPath,
+      JSON.stringify({
+        certified: certified
+          ? [{ profile: "runner.state", project: "zero-applicable-runner" }]
+          : [],
+        inventory: [
+          {
+            adapter: adapterPath,
+            project: "zero-applicable-runner",
+            state: certified ? "pass" : "unsupported",
+          },
+        ],
+        projects: ["zero-applicable-runner"],
+      })
+    );
+    return manifestPath;
+  };
+
+  test("reports unsupported, never pass, when every check needs a missing capability", async () => {
+    const { adapterPath } =
+      await writeZeroApplicableFixture("runner.unavailable");
+    const result = await runCommand([
+      "bun",
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      adapterPath,
+    ]);
+
+    expect(result.stderr).toBe("");
+    expect(result.code).toBe(0);
+    const evidence: unknown = JSON.parse(result.stdout);
+    assertConformanceEvidence(evidence, "runner output");
+    expect(evidence.status).toBe("unsupported");
+    expect(evidence.summary).toMatchObject({
+      applicableChecks: 0,
+      nonApplicableChecks: 1,
+    });
+  });
+
+  test("reports not_applicable when the adapter's packets select no checks", async () => {
+    const { adapterPath } = await writeZeroApplicableFixture(undefined);
+    const result = await runCommand([
+      "bun",
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      adapterPath,
+    ]);
+
+    expect(result.code).toBe(0);
+    const evidence: unknown = JSON.parse(result.stdout);
+    assertConformanceEvidence(evidence, "runner output");
+    expect(evidence.status).toBe("not_applicable");
+  });
+
+  test("fails the run when a certified project selects zero applicable checks", async () => {
+    const { adapterPath, tempDir } =
+      await writeZeroApplicableFixture("runner.unavailable");
+    const uncertifiedManifest = await writeCertificationManifest(
+      tempDir,
+      adapterPath,
+      false
+    );
+    const uncertified = await runCommand([
+      "bun",
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      adapterPath,
+      "--certification-manifest",
+      uncertifiedManifest,
+    ]);
+    expect(uncertified.code).toBe(0);
+
+    const certifiedManifest = await writeCertificationManifest(
+      tempDir,
+      adapterPath,
+      true
+    );
+    const certified = await runCommand([
+      "bun",
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      adapterPath,
+      "--certification-manifest",
+      certifiedManifest,
+      "--summary-only",
+    ]);
+
+    expect(certified.code).toBe(1);
+    expect(certified.stderr).toContain(
+      "zero-applicable-runner (profile runner.state) selected zero applicable checks"
+    );
+    expect(JSON.parse(certified.stdout)).toMatchObject({
+      status: "unsupported",
+    });
+  });
+});
+
 describe("certification harness trace lifecycle", () => {
   test.each([false, true])(
     "preserves trace ordering and cleanup with protocol failure=%s",

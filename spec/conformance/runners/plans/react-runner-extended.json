@@ -192,7 +192,8 @@
       "assertions": [
         {
           "field": "$.hooks.beforeIteration",
-          "kind": "resultField"
+          "kind": "resultField",
+          "present": true
         }
       ],
       "checkId": "react-runner-ext.hook-field-present.before-iteration-present",
@@ -207,7 +208,8 @@
       "assertions": [
         {
           "field": "$.hooks.afterIteration",
-          "kind": "resultField"
+          "kind": "resultField",
+          "present": true
         }
       ],
       "checkId": "react-runner-ext.hook-field-present.after-iteration-present",
@@ -222,7 +224,8 @@
       "assertions": [
         {
           "field": "$.hooks.aroundModel",
-          "kind": "resultField"
+          "kind": "resultField",
+          "present": true
         }
       ],
       "checkId": "react-runner-ext.hook-field-present.around-model-present",
@@ -237,7 +240,8 @@
       "assertions": [
         {
           "field": "$.hooks.aroundTool",
-          "kind": "resultField"
+          "kind": "resultField",
+          "present": true
         }
       ],
       "checkId": "react-runner-ext.hook-field-present.around-tool-present",
