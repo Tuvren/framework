@@ -1,0 +1,13 @@
+owner: KRT-DD003
+mode: contract_test
+produced:
+  date: 2026-10-23
+  commit: "4367a5b"
+  command: "bun run conformance; bun run verify"
+result: pass
+pass_criteria: "Each supported Rust fault point yields a typed fault with activation evidence, unsupported points report unsupported, production and conformance builds behave identically on failed syscalls, and the gRPC service cannot reach the seam."
+files:
+  - path: triage.md
+    sha256: 885475602471b8ab19c85ba88473e4efa58fe0b85a318184b1aae99cb2d40793
+    bytes: 19311
+    role: transcript
