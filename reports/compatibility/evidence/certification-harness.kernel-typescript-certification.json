@@ -6422,7 +6422,15 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.run-liveness.expired_listing.5.stateField",
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.6.stateField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.7.resultField",
           "status": "pass"
         },
         {
@@ -6431,6 +6439,10 @@
         },
         {
           "assertionId": "kernel.syscall.run-liveness.expired_listing.requiredEvidence.result.trace.expired.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.expired_listing.requiredEvidence.result.trace.runexpired.result.leaseExpiresAtMs",
           "status": "pass"
         },
         {
@@ -6478,9 +6490,11 @@
           "turncompleted",
           "runcompleted",
           "completed",
+          "backend19",
+          "worker19",
           "beforeExpiry",
-          "backend25",
-          "worker25",
+          "backend21",
+          "worker21",
           "expired",
           "pausedStillBlocks"
         ]
@@ -6502,7 +6516,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.run-liveness.lease_renewal.2.schemaValid",
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.2.resultField",
           "status": "pass"
         },
         {
@@ -6510,7 +6524,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.run-liveness.lease_renewal.4.resultField",
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.4.schemaValid",
           "status": "pass"
         },
         {
@@ -6527,6 +6541,10 @@
         },
         {
           "assertionId": "kernel.syscall.run-liveness.lease_renewal.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.9.resultField",
           "status": "pass"
         },
         {
@@ -6547,6 +6565,10 @@
         },
         {
           "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.runrenewal.result.executionOwnerId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.run-liveness.lease_renewal.requiredEvidence.result.trace.runrenewal.result.leaseExpiresAtMs",
           "status": "pass"
         },
         {
@@ -6692,10 +6714,6 @@
         },
         {
           "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.preempt.result.consumedStagedResults",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.run-liveness.stale_preemption.requiredEvidence.result.trace.preempt.result.consumedStagedResults.0.taskId",
           "status": "pass"
         },
         {

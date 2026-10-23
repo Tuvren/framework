@@ -11,7 +11,6 @@
       "checkId": "kernel.syscall.run-liveness.lease_renewal",
       "claimIds": [
         "kernel.syscall.run-liveness.lease_renewal",
-        "kernel.run-liveness.lease_renewal",
         "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
       ],
       "operation": "kernel.schema.register",
@@ -25,7 +24,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -40,7 +38,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -70,7 +67,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -91,7 +87,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -116,7 +111,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -152,7 +146,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -176,7 +169,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -200,7 +192,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [
@@ -224,7 +215,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [
@@ -244,7 +234,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -259,7 +248,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -273,7 +261,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -293,7 +280,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -308,7 +294,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -322,7 +307,6 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.lease_renewal",
-            "kernel.run-liveness.lease_renewal",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -335,6 +319,11 @@
         }
       ],
       "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.runrenewal.result.leaseExpiresAtMs",
+          "equals": 20
+        },
         {
           "kind": "resultField",
           "field": "$.trace.renew.result.leaseExpiresAtMs",
@@ -388,8 +377,7 @@
       "checkId": "kernel.syscall.run-liveness.expired_listing",
       "claimIds": [
         "kernel.syscall.run-liveness.expired_listing",
-        "kernel.run-liveness.expired_listing",
-        "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+        "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
         "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
       ],
       "operation": "kernel.schema.register",
@@ -403,8 +391,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -419,8 +406,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -450,8 +436,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -472,8 +457,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -498,8 +482,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -535,8 +518,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -557,8 +539,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -583,8 +564,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -620,8 +600,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -642,8 +621,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -668,8 +646,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -705,8 +682,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -726,8 +702,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -748,8 +723,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -774,8 +748,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -811,8 +784,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -832,8 +804,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -854,8 +825,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -880,8 +850,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -917,8 +886,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -938,8 +906,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -951,15 +918,44 @@
           ]
         },
         {
-          "stepId": "beforeExpiry",
-          "operation": "kernel.runLiveness.listExpired",
+          "stepId": "backend19",
+          "operation": "kernel.clock.set",
           "arguments": {
-            "nowMs": 10
+            "domain": "backend",
+            "nowMs": 19
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "worker19",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 19
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
+            "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "beforeExpiry",
+          "operation": "kernel.runLiveness.listExpired",
+          "arguments": {
+            "nowMs": 19
+          },
+          "claimIds": [
+            "kernel.syscall.run-liveness.expired_listing",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -971,32 +967,30 @@
           ]
         },
         {
-          "stepId": "backend25",
+          "stepId": "backend21",
           "operation": "kernel.clock.set",
           "arguments": {
             "domain": "backend",
-            "nowMs": 25
+            "nowMs": 21
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
           "action": "setClock"
         },
         {
-          "stepId": "worker25",
+          "stepId": "worker21",
           "operation": "kernel.clock.set",
           "arguments": {
             "domain": "worker",
-            "nowMs": 25
+            "nowMs": 21
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -1006,12 +1000,11 @@
           "stepId": "expired",
           "operation": "kernel.runLiveness.listExpired",
           "arguments": {
-            "nowMs": 25
+            "nowMs": 21
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [],
@@ -1047,8 +1040,7 @@
           },
           "claimIds": [
             "kernel.syscall.run-liveness.expired_listing",
-            "kernel.run-liveness.expired_listing",
-            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.syscall.run-liveness.paused_run_excluded_from_expiry",
             "kernel.syscall.run-liveness.live_lease_excluded_from_expiry"
           ],
           "assertions": [
@@ -1061,6 +1053,11 @@
         }
       ],
       "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.runexpired.result.leaseExpiresAtMs",
+          "equals": 20
+        },
         {
           "kind": "resultField",
           "field": "$.trace.beforeExpiry.result",
@@ -1093,6 +1090,15 @@
           "kind": "stateField",
           "field": "$.trace.pausedStillBlocks.state.adapterError.code",
           "equals": "kernel_runtime_branch_already_active"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.expired.result",
+          "length": 1,
+          "every": {
+            "field": "$.leaseExpiresAtMs",
+            "equals": 20
+          }
         }
       ],
       "evidence": [
@@ -1104,11 +1110,7 @@
     },
     {
       "checkId": "kernel.syscall.run-liveness.stale_preemption",
-      "claimIds": [
-        "kernel.syscall.run-liveness.stale_preemption",
-        "kernel.run-liveness.stale_preemption",
-        "kernel-restart-af.expired-running-requires-preemption"
-      ],
+      "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
       "operation": "kernel.schema.register",
       "steps": [
         {
@@ -1118,11 +1120,7 @@
             "domain": "backend",
             "nowMs": 10
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "action": "setClock"
         },
@@ -1133,11 +1131,7 @@
             "domain": "worker",
             "nowMs": 10
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "action": "setClock"
         },
@@ -1163,11 +1157,7 @@
               }
             }
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1184,11 +1174,7 @@
             "schemaId": "dc003",
             "initialBranchId": "branchpreemption"
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1209,11 +1195,7 @@
               "$ref": "capture.threadpreemption.rootTurnNodeHash"
             }
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1245,11 +1227,7 @@
               "leaseExpiresAtMs": 20
             }
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1265,11 +1243,7 @@
             "runId": "runpreemption",
             "stepId": "iterate"
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1290,11 +1264,7 @@
             "objectType": "message",
             "status": "completed"
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1309,11 +1279,7 @@
           "arguments": {
             "runId": "runpreemption"
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1329,11 +1295,7 @@
             "domain": "backend",
             "nowMs": 25
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "action": "setClock"
         },
@@ -1344,11 +1306,7 @@
             "domain": "worker",
             "nowMs": 25
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "action": "setClock"
         },
@@ -1358,11 +1316,7 @@
           "arguments": {
             "nowMs": 25
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1380,11 +1334,7 @@
             "nowMs": 25,
             "reason": "stale_running_recovery"
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1399,11 +1349,7 @@
           "arguments": {
             "branchId": "branchpreemption"
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1420,11 +1366,7 @@
               "$ref": "capture.preempt.lastTurnNodeHash"
             }
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1439,11 +1381,7 @@
           "arguments": {
             "runId": "runpreemption"
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1458,11 +1396,7 @@
           "arguments": {
             "runId": "runpreemption"
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1477,11 +1411,7 @@
           "arguments": {
             "nowMs": 25
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1513,11 +1443,7 @@
               "leaseExpiresAtMs": 50
             }
           },
-          "claimIds": [
-            "kernel.syscall.run-liveness.stale_preemption",
-            "kernel.run-liveness.stale_preemption",
-            "kernel-restart-af.expired-running-requires-preemption"
-          ],
+          "claimIds": ["kernel.syscall.run-liveness.stale_preemption"],
           "assertions": [],
           "capture": [
             {
@@ -1569,8 +1495,12 @@
         },
         {
           "kind": "resultField",
-          "field": "$.trace.preempt.result.consumedStagedResults.0.taskId",
-          "equals": "assistant_message"
+          "field": "$.trace.preempt.result.consumedStagedResults",
+          "length": 1,
+          "every": {
+            "field": "$.taskId",
+            "equals": "assistant_message"
+          }
         },
         {
           "kind": "resultField",
