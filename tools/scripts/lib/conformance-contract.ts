@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+import { readFileSync } from "node:fs";
+import nodePath from "node:path";
+
+import type { ValidateFunction } from "ajv";
+import Ajv2020 from "ajv/dist/2020.js";
+
 export type ConformanceStatus = "fail" | "pass";
 
 /** Raw run status (ADR-0031); `pass` requires at least one applicable check. */
@@ -92,6 +98,46 @@ export interface ConformanceEvidence {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
+
+const CERTIFICATION_EVIDENCE_SCHEMA =
+  "tools/schemas/certification-evidence.schema.json";
+
+let evidenceSchemaValidator: ValidateFunction | undefined;
+
+const assertCertificationEvidenceSchema = (
+  value: unknown,
+  label: string
+): void => {
+  evidenceSchemaValidator ??= new Ajv2020({
+    allErrors: true,
+    strict: false,
+  }).compile(
+    JSON.parse(
+      readFileSync(
+        nodePath.resolve(
+          import.meta.dirname,
+          "../../..",
+          CERTIFICATION_EVIDENCE_SCHEMA
+        ),
+        "utf-8"
+      )
+    ) as Record<string, unknown>
+  );
+  const validate = evidenceSchemaValidator;
+
+  if (validate(JSON.parse(JSON.stringify(value)) as unknown)) {
+    return;
+  }
+
+  const violations = (validate.errors ?? [])
+    .map(
+      (error) => `${error.instancePath || "/"} ${error.message ?? "is invalid"}`
+    )
+    .join("; ");
+  throw new Error(
+    `${label} does not match ${CERTIFICATION_EVIDENCE_SCHEMA}: ${violations}`
+  );
+};
 
 const assertNonEmptyString: (
   value: unknown,
@@ -596,6 +642,8 @@ export const assertConformanceEvidence: (
       `${label}.status must be ${expectedStatus} for the provided check results`
     );
   }
+
+  assertCertificationEvidenceSchema(value, label);
 };
 
 export const createCheckResult = (

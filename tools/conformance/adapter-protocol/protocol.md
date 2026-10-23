@@ -47,6 +47,33 @@ ErrorEnvelope ::= {
 }
 ```
 
+## Version 0.2.0
+
+Version 0.2.0 keeps every 0.1.0 method and adds operation handles, live subscriptions, storage attachment, fault arming, and clock control (ADR-0076, ADR-0077). A manifest declares the version in `protocol.version`; the schemas accept `0.1.0` and `0.2.0`.
+
+```text
+initialize(...) -> AdapterCapabilities & {
+  protocolVersion?, profiles?: string[], storageKinds?: StorageKind[]
+}
+createInstance({ input, storageRef?, scope?, clock? }) -> InstanceHandle
+openInstance({ storageRef, scope? }) -> InstanceHandle
+startOperation({ operation, arguments, instance }) -> { operationHandle }
+awaitOperation({ operationHandle }) -> OperationOutcome
+cancelOperation({ operationHandle, reason })
+subscribe({ instance, channel, operationHandle? }) -> { subscription }
+pull({ subscription, credit })
+armFault({ instance, point, selector, occurrence, mode: "throw" | "block" }) -> { token }
+setClock({ instance, domain: "backend" | "worker", nowMs })
+
+notification event({ subscription, sequence, event })
+notification eventsEnd({ subscription, terminal })
+notification faultReached({ token, processEpoch, phase })
+
+StorageKind ::= "none" | "sqlite-directory" | "postgres-database"
+```
+
+Handles (`operationHandle`, `subscription`, `token`, `storageRef`) are opaque strings. Hosts keep processing requests while started operations run. A `throw` fault outcome carries the arming `token`. The adapter manifest adds `storage` (one `StorageKind`), `profiles[]`, and an `executable` the supervisor launches directly. The harness owns storage, clocks, process lifecycle, scheduling, and every verdict; see `.constitution/tech-spec/contracts/conformance-certification.md`.
+
 Adapter stdout must contain protocol frames only. Diagnostics belong on stderr
 or in `AdapterObservation.diagnostics`. JSON-RPC failures, malformed frames,
 process exits, timeouts, and adapter protocol errors are runner-owned adapter

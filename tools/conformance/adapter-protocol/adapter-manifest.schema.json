@@ -29,7 +29,7 @@
       "additionalProperties": false,
       "properties": {
         "name": { "const": "tuvren.conformance-adapter" },
-        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "version": { "enum": ["0.1.0", "0.2.0"] },
         "transport": { "const": "json-rpc-2.0-stdio" }
       }
     },
@@ -49,6 +49,16 @@
       "items": { "type": "string", "minLength": 1 }
     },
     "suiteId": { "type": "string", "minLength": 1 },
-    "suiteVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" }
+    "suiteVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "storage": {
+      "type": "string",
+      "enum": ["none", "sqlite-directory", "postgres-database"]
+    },
+    "profiles": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "executable": { "type": "string", "minLength": 1 }
   }
 }

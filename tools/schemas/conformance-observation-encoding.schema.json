@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/conformance-observation-encoding.schema.json",
+  "description": "Lossless observation encoding profile (ADR-0078). Catalog observation schemas reference these definitions. Duplicate object keys, non-finite numbers, and negative zero are rejected by the decoder before schema validation because JSON Schema compares numbers by value and cannot see repeated keys.",
+  "$ref": "#/$defs/record",
+  "$defs": {
+    "bytes": {
+      "type": "object",
+      "required": ["$bytes"],
+      "additionalProperties": false,
+      "properties": {
+        "$bytes": { "type": "string", "pattern": "^(?:[0-9a-f]{2})*$" }
+      }
+    },
+    "safeInteger": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "identifier": { "type": "string", "minLength": 1 },
+    "handle": { "type": "string", "minLength": 1 },
+    "mapEntry": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/record" },
+        { "$ref": "#/$defs/record" }
+      ],
+      "minItems": 2,
+      "items": false
+    },
+    "map": {
+      "type": "object",
+      "required": ["$map"],
+      "additionalProperties": false,
+      "properties": {
+        "$map": { "type": "array", "items": { "$ref": "#/$defs/mapEntry" } }
+      }
+    },
+    "record": {
+      "oneOf": [
+        { "$ref": "#/$defs/map" },
+        { "$ref": "#/$defs/bytes" },
+        { "type": "array", "items": { "$ref": "#/$defs/record" } },
+        { "type": "string" },
+        { "$ref": "#/$defs/safeInteger" },
+        { "type": "boolean" },
+        { "type": "null" }
+      ]
+    }
+  }
+}

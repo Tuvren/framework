@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/certification-profile.schema.json",
+  "description": "Per-port certification profiles (ADR-0081) at spec/conformance/<port>/profiles.json. profileId uniqueness is checked by the profile validator because JSON Schema cannot compare keys across array items.",
+  "type": "object",
+  "required": ["profiles"],
+  "additionalProperties": false,
+  "$defs": {
+    "idList": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "profile": {
+      "type": "object",
+      "required": [
+        "profileId",
+        "requiredCapabilities",
+        "claimIds",
+        "faultPoints",
+        "negativeControls",
+        "requiredEvidence"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*(?:\\.[a-z][a-z0-9-]*)+$"
+        },
+        "requiredCapabilities": { "$ref": "#/$defs/idList", "minItems": 1 },
+        "claimIds": { "$ref": "#/$defs/idList" },
+        "faultPoints": { "$ref": "#/$defs/idList" },
+        "negativeControls": { "$ref": "#/$defs/idList" },
+        "requiredEvidence": { "$ref": "#/$defs/idList" }
+      }
+    }
+  },
+  "properties": {
+    "profiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/profile" }
+    }
+  }
+}

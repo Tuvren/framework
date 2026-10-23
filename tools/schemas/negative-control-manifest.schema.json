@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/negative-control-manifest.schema.json",
+  "description": "Per-port negative-control manifest (ADR-0079) at spec/conformance/<port>/negative-controls.json. mutantId uniqueness is checked by the manifest validator because JSON Schema cannot compare keys across array items.",
+  "type": "object",
+  "required": ["controls"],
+  "additionalProperties": false,
+  "$defs": {
+    "idList": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "activated",
+        "killed",
+        "survived",
+        "equivalent",
+        "unsupported",
+        "invalid"
+      ]
+    },
+    "control": {
+      "type": "object",
+      "required": [
+        "mutantId",
+        "kind",
+        "rule",
+        "claimIds",
+        "activation",
+        "profiles"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "mutantId": { "type": "string", "minLength": 1 },
+        "kind": {
+          "type": "string",
+          "enum": ["implementation", "observation", "instrumentation"]
+        },
+        "rule": { "type": "string", "minLength": 1 },
+        "claimIds": { "$ref": "#/$defs/idList", "minItems": 1 },
+        "activation": {
+          "type": "object",
+          "required": ["precondition", "signal"],
+          "additionalProperties": false,
+          "properties": {
+            "precondition": { "type": "string", "minLength": 1 },
+            "signal": { "type": "string", "minLength": 1 }
+          }
+        },
+        "profiles": { "$ref": "#/$defs/idList", "minItems": 1 },
+        "designatedAssertions": { "$ref": "#/$defs/idList", "minItems": 1 },
+        "expectedRejection": { "type": "string", "minLength": 1 }
+      },
+      "if": {
+        "required": ["kind"],
+        "properties": { "kind": { "const": "implementation" } }
+      },
+      "then": {
+        "required": ["designatedAssertions"],
+        "not": { "required": ["expectedRejection"] }
+      },
+      "else": {
+        "required": ["expectedRejection"],
+        "not": { "required": ["designatedAssertions"] }
+      }
+    }
+  },
+  "properties": {
+    "controls": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/control" }
+    }
+  }
+}

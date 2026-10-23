@@ -83,10 +83,42 @@ export interface ConformancePlanAssertion extends ConformancePlanValueOperators 
   when?: ConformancePlanWhen;
 }
 
+export type ConformancePlanStepAction =
+  | "armFault"
+  | "await"
+  | "barrier"
+  | "cancel"
+  | "dispatch"
+  | "kill"
+  | "openInstance"
+  | "pull"
+  | "release"
+  | "respawn"
+  | "restart"
+  | "setClock"
+  | "start"
+  | "subscribe";
+
+/** Rooted at `input.`, `fixture.input.`, or `capture.`. */
+export interface ConformancePlanArgumentReference {
+  $ref: string;
+}
+
+export interface ConformancePlanArgumentLiteral {
+  $literal: unknown;
+}
+
+export interface ConformancePlanCapture {
+  name: string;
+  /** Rooted at `result`, `events`, or `state` of the step's observation. */
+  path: string;
+}
+
 export interface ConformancePlanCheck {
   assertions: ConformancePlanAssertion[];
   capabilities?: string[];
   checkId: string;
+  claimIds?: string[];
   controls?: {
     cancelAfterEvent?: string;
     deadlineMs?: number;
@@ -100,7 +132,13 @@ export interface ConformancePlanCheck {
 }
 
 export interface ConformancePlanStep {
+  action?: ConformancePlanStepAction;
+  /** Literals, references, and `$literal` wrappers; exclusive with `input`. */
+  arguments?: Record<string, unknown>;
   assertions?: ConformancePlanAssertion[];
+  barrierId?: string;
+  capture?: ConformancePlanCapture[];
+  claimIds?: string[];
   controls?: {
     cancelAfterEvent?: string;
     deadlineMs?: number;
@@ -108,6 +146,8 @@ export interface ConformancePlanStep {
   input?: unknown;
   inspectState?: unknown;
   operation: string;
+  participants?: string[];
+  seam?: string;
   stepId: string;
 }
 

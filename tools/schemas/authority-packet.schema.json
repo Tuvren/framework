@@ -93,6 +93,9 @@
       },
       "default": []
     },
+    "operationCatalog": { "type": "string", "minLength": 1 },
+    "certificationProfiles": { "type": "string", "minLength": 1 },
+    "negativeControlManifest": { "type": "string", "minLength": 1 },
     "bindingSections": {
       "type": "object",
       "additionalProperties": {

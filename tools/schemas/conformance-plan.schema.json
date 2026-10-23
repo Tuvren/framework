@@ -6,6 +6,149 @@
   "additionalProperties": false,
   "$defs": {
     "contextPath": { "type": "string", "pattern": "^\\$(\\..+)?$" },
+    "claimIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "argumentReference": {
+      "type": "object",
+      "required": ["$ref"],
+      "additionalProperties": false,
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "pattern": "^(?:input|fixture\\.input|capture)(?:\\.[^.]+)+$"
+        }
+      }
+    },
+    "argumentLiteral": {
+      "type": "object",
+      "required": ["$literal"],
+      "additionalProperties": false,
+      "properties": { "$literal": {} }
+    },
+    "argumentValue": {
+      "if": { "type": "object", "required": ["$ref"] },
+      "then": { "$ref": "#/$defs/argumentReference" },
+      "else": {
+        "if": { "type": "object", "required": ["$literal"] },
+        "then": { "$ref": "#/$defs/argumentLiteral" },
+        "else": {
+          "items": { "$ref": "#/$defs/argumentValue" },
+          "additionalProperties": { "$ref": "#/$defs/argumentValue" }
+        }
+      }
+    },
+    "capture": {
+      "type": "object",
+      "required": ["name", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "pattern": "^[^.]+$" },
+        "path": {
+          "type": "string",
+          "pattern": "^(?:result|events|state)(?:\\.[^.]+)*$"
+        }
+      }
+    },
+    "stepControls": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "deadlineMs": { "type": "integer", "minimum": 1 },
+        "cancelAfterEvent": { "type": "string", "minLength": 1 }
+      }
+    },
+    "step": {
+      "type": "object",
+      "required": ["stepId", "operation"],
+      "additionalProperties": false,
+      "properties": {
+        "stepId": { "type": "string", "minLength": 1 },
+        "operation": { "type": "string", "minLength": 1 },
+        "action": {
+          "type": "string",
+          "enum": [
+            "dispatch",
+            "start",
+            "await",
+            "cancel",
+            "subscribe",
+            "pull",
+            "barrier",
+            "release",
+            "restart",
+            "kill",
+            "respawn",
+            "openInstance",
+            "armFault",
+            "setClock"
+          ],
+          "default": "dispatch"
+        },
+        "claimIds": { "$ref": "#/$defs/claimIds" },
+        "input": {},
+        "arguments": { "type": "object", "$ref": "#/$defs/argumentValue" },
+        "capture": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/capture" }
+        },
+        "inspectState": {},
+        "controls": { "$ref": "#/$defs/stepControls" },
+        "barrierId": { "type": "string", "minLength": 1 },
+        "seam": { "type": "string", "minLength": 1 },
+        "participants": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "assertions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/assertion" },
+          "default": []
+        }
+      },
+      "dependentSchemas": {
+        "arguments": { "not": { "required": ["input"] } }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": ["action"],
+            "properties": { "action": { "const": "barrier" } }
+          },
+          "then": { "required": ["barrierId", "seam", "participants"] }
+        },
+        {
+          "if": {
+            "required": ["action"],
+            "properties": { "action": { "const": "release" } }
+          },
+          "then": { "required": ["barrierId"], "not": { "required": ["seam"] } }
+        },
+        {
+          "if": {
+            "not": {
+              "required": ["action"],
+              "properties": { "action": { "enum": ["barrier", "release"] } }
+            }
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                { "required": ["barrierId"] },
+                { "required": ["seam"] },
+                { "required": ["participants"] }
+              ]
+            }
+          }
+        }
+      ]
+    },
     "numericOperand": {
       "oneOf": [{ "type": "number" }, { "$ref": "#/$defs/contextPath" }]
     },
@@ -167,6 +310,7 @@
         "additionalProperties": false,
         "properties": {
           "checkId": { "type": "string", "minLength": 1 },
+          "claimIds": { "$ref": "#/$defs/claimIds" },
           "operation": { "type": "string", "minLength": 1 },
           "capabilities": {
             "type": "array",
@@ -192,30 +336,7 @@
           },
           "steps": {
             "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["stepId", "operation"],
-              "additionalProperties": false,
-              "properties": {
-                "stepId": { "type": "string", "minLength": 1 },
-                "operation": { "type": "string", "minLength": 1 },
-                "input": {},
-                "inspectState": {},
-                "controls": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "deadlineMs": { "type": "integer", "minimum": 1 },
-                    "cancelAfterEvent": { "type": "string", "minLength": 1 }
-                  }
-                },
-                "assertions": {
-                  "type": "array",
-                  "items": { "$ref": "#/$defs/assertion" },
-                  "default": []
-                }
-              }
-            },
+            "items": { "$ref": "#/$defs/step" },
             "default": []
           },
           "evidence": {
