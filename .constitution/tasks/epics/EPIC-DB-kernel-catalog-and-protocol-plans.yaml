@@ -189,6 +189,16 @@ tickets:
       - files:
           - tools/scripts/lib/biome-lint-partition.test.ts
         justification: "The lint partition test pinned file counts that the new adapter modules outgrew; it now compares exact inventories."
+      - files:
+          - go/kernel-conformance-adapter/operations.go
+          - go/kernel-conformance-adapter/erasure_probe_test.go
+          - python/kernel-conformance-adapter/src/tuvren_kernel_adapter/operations.py
+          - python/kernel-conformance-adapter/src/tuvren_kernel_adapter/operations_common.py
+          - python/kernel-conformance-adapter/tests/test_erasure_probe.py
+          - dart/kernel-conformance-adapter/lib/adapter.dart
+          - dart/kernel-conformance-adapter/test/operations_test.dart
+          - rust/kernel-conformance-adapter/src/main.rs
+        justification: "PR review made the runner reject adapter-supplied evidence for catalogued operations; the legacy composites are catalogued deprecated, so every kernel adapter stopped mirroring results into evidence."
     status: done
   - id: KRT-DB005
     title: Cross-validate kernel vectors and identity recipes with the Rust encoder
@@ -230,7 +240,7 @@ decisions:
           - "Adds a codec surface to the operation catalog that the kernel specification's syscall section does not name; it needs a Stage 3 record."
       - name: Retire codec obligations from kernel certification
         pros:
-          - "Runner integrity assertions over syscall-produced records plus the Rust cross-validation already check encoding and identity for every record a kernel persists."
+          - "Syscall read-back claims (schema_canonical_cbor, node_identity_walk, tree_manifest_identity) plus the Rust cross-validation check canonical encoding and identity for records a kernel produces and returns."
         cons:
           - "Canonical rejection of noncanonical input is no longer certified anywhere; it falls back to package-local tests per language."
     recommendation: Catalogue codec operations under a kernel.codec capability
@@ -328,6 +338,11 @@ closeout:
       paths:
         - typescript/kernel/conformance-adapter/src/host-syscalls.ts
       commit: 1af11c3
+    - summary: "Unprefixed required-evidence paths resolve inside validated result observations, while explicit result.* requirements stay result-only; catalogued operations may not return adapter evidence."
+      kind: convention
+      paths:
+        - tools/conformance/harness/run.ts
+      commit: 9b4e623
   settled:
     - record: tech-spec/contracts/conformance-operation-catalog.meta.yaml
       evidence:
