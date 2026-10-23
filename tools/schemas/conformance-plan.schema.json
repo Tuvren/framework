@@ -259,7 +259,8 @@
             "canonicalCbor",
             "identity",
             "referenceWalk",
-            "faultActivated"
+            "faultActivated",
+            "arrival"
           ]
         },
         "path": { "type": "string", "minLength": 1 },

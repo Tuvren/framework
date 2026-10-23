@@ -6482,6 +6482,8 @@
   "exitCode": 0,
   "implementationId": "typescript-kernel-sqlite",
   "nonApplicableCheckIds": [
+    "kernel.syscall.concurrent_writer.a_first",
+    "kernel.syscall.concurrent_writer.b_first",
     "kernel.syscall.controls.after_commit_before_ack",
     "kernel.syscall.controls.before_commit",
     "kernel.syscall.crash-recovery.after_commit_before_ack",
@@ -6495,9 +6497,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 132,
-    "totalChecks": 137,
+    "totalChecks": 139,
     "applicableChecks": 132,
-    "nonApplicableChecks": 5
+    "nonApplicableChecks": 7
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

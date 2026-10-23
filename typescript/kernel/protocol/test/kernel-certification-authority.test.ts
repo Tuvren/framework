@@ -125,9 +125,39 @@ const SYSCALLS = [
   "runLiveness.preemptExpired",
 ];
 
+const factoryReturnMethods = (
+  declaration: ts.VariableDeclaration,
+  source: ts.SourceFile,
+  name: string
+): string[] => {
+  const factory = declaration.initializer;
+  if (
+    declaration.name.getText(source) !== name ||
+    factory === undefined ||
+    !ts.isArrowFunction(factory) ||
+    !ts.isBlock(factory.body)
+  ) {
+    return [];
+  }
+  const returned = factory.body.statements.find(
+    ts.isReturnStatement
+  )?.expression;
+  if (returned === undefined || !ts.isObjectLiteralExpression(returned)) {
+    return [];
+  }
+  return returned.properties.flatMap((property) =>
+    property.name === undefined ? [] : [property.name.getText(source)]
+  );
+};
+
 const interfaceMethods = (source: ts.SourceFile, name: string): string[] => {
   const result: string[] = [];
   for (const statement of source.statements) {
+    if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        result.push(...factoryReturnMethods(declaration, source, name));
+      }
+    }
     if (!ts.isInterfaceDeclaration(statement) || statement.name.text !== name) {
       continue;
     }
@@ -202,6 +232,10 @@ describe("kernel certification catalog", () => {
     const bindingSources = new Map([
       ["typescript/kernel/protocol", "src/lib/kernel-types.ts"],
       ["typescript/kernel/testkit", "src/lib/kernel-mutant-types.ts"],
+      [
+        "typescript/kernel/testkit#createKernelBarrierControl",
+        "src/lib/kernel-barrier-control.ts",
+      ],
     ]);
     for (const operation of current) {
       const [projection, symbol] = string(operation.binding).split("#");
@@ -215,7 +249,7 @@ describe("kernel certification catalog", () => {
         continue;
       }
       const [type, ...method] = string(symbol).split(".");
-      const file = `${string(projection)}/${string(bindingSources.get(string(projection)))}`;
+      const file = `${string(projection)}/${string(bindingSources.get(`${string(projection)}#${string(type)}`) ?? bindingSources.get(string(projection)))}`;
       const source = ts.createSourceFile(
         file,
         readFileSync(path.join(ROOT, file), "utf-8"),
@@ -228,7 +262,11 @@ describe("kernel certification catalog", () => {
       if (operation.kind === "syscall") {
         expect(operation.operationId).toBe(`kernel.${method.join(".")}`);
       }
-      expect(operation.handles).toEqual({ consumes: ["instance"] });
+      if (operation.kind === "syscall") {
+        expect(operation.handles).toEqual({ consumes: ["instance"] });
+      } else {
+        expect(array(object(operation.handles).consumes)).toContain("instance");
+      }
     }
   });
 
@@ -236,6 +274,9 @@ describe("kernel certification catalog", () => {
     const entries = operations();
     const nativeIds = new Set([
       ...SYSCALLS.map((name) => `kernel.${name}`),
+      "kernel.barrier.arm",
+      "kernel.barrier.wait",
+      "kernel.barrier.release",
       "kernel.clock.set",
       "kernel.fault.arm",
       "kernel.mutant.activation",
@@ -300,6 +341,9 @@ describe("kernel certification catalog", () => {
   test("declares the clock, fault, and closed mutant activation controls", () => {
     const entries = operations();
     for (const id of [
+      "kernel.barrier.arm",
+      "kernel.barrier.wait",
+      "kernel.barrier.release",
       "kernel.clock.set",
       "kernel.fault.arm",
       "kernel.mutant.activation",

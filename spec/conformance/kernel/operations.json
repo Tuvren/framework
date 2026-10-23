@@ -5622,6 +5622,177 @@
       "handles": {
         "consumes": ["instance"]
       }
+    },
+    {
+      "operationId": "kernel.barrier.arm",
+      "kind": "control",
+      "binding": "typescript/kernel/testkit#createKernelBarrierControl.arm",
+      "capability": "kernel.barrier",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "barrierId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "seam": {
+            "type": "string",
+            "minLength": 1
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 2,
+            "uniqueItems": true
+          },
+          "instance": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["barrierId", "seam", "participants", "instance"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "barrierId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seam": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["barrierId", "seam"]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance"]
+      }
+    },
+    {
+      "operationId": "kernel.barrier.wait",
+      "kind": "control",
+      "binding": "typescript/kernel/testkit#createKernelBarrierControl.wait",
+      "capability": "kernel.barrier",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "barrierId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operationHandle": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "instance": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["barrierId", "operationHandle", "timeoutMs", "instance"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "barrierId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seam": {
+              "type": "string",
+              "minLength": 1
+            },
+            "operationHandle": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["barrierId", "seam", "operationHandle"]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance", "operation"]
+      }
+    },
+    {
+      "operationId": "kernel.barrier.release",
+      "kind": "control",
+      "binding": "typescript/kernel/testkit#createKernelBarrierControl.release",
+      "capability": "kernel.barrier",
+      "input": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "barrierId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operationHandles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "instance": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["barrierId", "operationHandles", "instance"]
+      },
+      "observation": {
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "barrierId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "operationHandles": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": ["barrierId", "operationHandles"]
+        }
+      },
+      "errors": [],
+      "handles": {
+        "consumes": ["instance", "operation"]
+      }
+    }
+  ],
+  "seams": [
+    {
+      "seamId": "kernel.persistence.before-transact",
+      "operationIds": ["kernel.branch.setHead"]
     }
   ]
 }

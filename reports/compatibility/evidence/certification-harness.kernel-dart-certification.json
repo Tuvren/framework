@@ -2914,6 +2914,8 @@
   "exitCode": 0,
   "implementationId": "dart-kernel",
   "nonApplicableCheckIds": [
+    "kernel.syscall.concurrent_writer.a_first",
+    "kernel.syscall.concurrent_writer.b_first",
     "kernel.syscall.controls.after_commit_before_ack",
     "kernel.syscall.controls.before_commit",
     "kernel.syscall.lineage.cross_thread_rejection",
@@ -2991,9 +2993,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 68,
-    "totalChecks": 137,
+    "totalChecks": 139,
     "applicableChecks": 68,
-    "nonApplicableChecks": 69
+    "nonApplicableChecks": 71
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

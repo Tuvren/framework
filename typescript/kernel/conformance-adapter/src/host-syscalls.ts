@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { KernelRecord } from "@tuvren/core";
 import {
   createKernelTestClock,
+  createKernelBarrierControl,
   createKernelFaultControl,
   createFaultInjectingBackend,
 } from "@tuvren/kernel-testkit";
@@ -32,16 +33,39 @@ interface SyscallBinding {
   arguments: readonly unknown[];
   method?: string;
   recordResult?: boolean;
+  perOperationKernel?: boolean;
+  protocolErrors?: boolean;
   target?: string;
 }
 
 const parameters = {
+  "kernel.barrier.arm": {
+    arguments: ["barrierId", "seam", "participants"],
+    method: "arm",
+    protocolErrors: true,
+    target: "barrier",
+  },
+  "kernel.barrier.release": {
+    arguments: ["barrierId", "operationHandles"],
+    method: "release",
+    protocolErrors: true,
+    target: "barrier",
+  },
+  "kernel.barrier.wait": {
+    arguments: ["barrierId", "operationHandle", "timeoutMs"],
+    method: "wait",
+    protocolErrors: true,
+    target: "barrier",
+  },
   "kernel.branch.create": {
     arguments: ["branchId", "threadId", "fromTurnNodeHash"],
   },
   "kernel.branch.get": { arguments: ["branchId"] },
   "kernel.branch.list": { arguments: ["threadId"] },
-  "kernel.branch.setHead": { arguments: ["branchId", "turnNodeHash"] },
+  "kernel.branch.setHead": {
+    arguments: ["branchId", "turnNodeHash"],
+    perOperationKernel: true,
+  },
   "kernel.clock.set": {
     arguments: ["domain", "nowMs"],
     method: "set",
@@ -136,7 +160,12 @@ const isSyscallBinding = (value: unknown): value is SyscallBinding =>
   Array.isArray(value.arguments) &&
   (value.method === undefined || typeof value.method === "string") &&
   (value.target === undefined || typeof value.target === "string") &&
-  (value.recordResult === undefined || typeof value.recordResult === "boolean");
+  (value.recordResult === undefined ||
+    typeof value.recordResult === "boolean") &&
+  (value.protocolErrors === undefined ||
+    typeof value.protocolErrors === "boolean") &&
+  (value.perOperationKernel === undefined ||
+    typeof value.perOperationKernel === "boolean");
 
 const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> =>
   isRecord(value) &&
@@ -329,6 +358,9 @@ const invokeBinding = async (
       value = entries;
     }
   } catch (error: unknown) {
+    if (binding.protocolErrors === true) {
+      throw error;
+    }
     return {
       error: nativeErrorEnvelope(error),
       kind: "error",
@@ -350,6 +382,8 @@ interface Instance {
   kernel: ReturnType<typeof createConformanceRuntimeKernel>;
   clock: ReturnType<typeof createKernelTestClock>;
   fault: ReturnType<typeof createKernelFaultControl>;
+  barrier: ReturnType<typeof createKernelBarrierControl>;
+  createKernel: () => ReturnType<typeof createConformanceRuntimeKernel>;
 }
 
 interface InstanceState {
@@ -374,6 +408,7 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     if (instance !== undefined) {
       const [settled] = await Promise.allSettled([instance]);
       if (settled?.status === "fulfilled") {
+        settled.value.barrier.close();
         await settled.value.cleanup();
       }
     }
@@ -382,7 +417,8 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     operation: string,
     input: unknown,
     handle: unknown,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    operationHandle?: string
   ): Promise<OperationOutcome> => {
     const state =
       typeof handle === "string" ? instances.get(handle) : undefined;
@@ -416,15 +452,20 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
           backend.backend,
           config.mutant?.wrapFaultInjection(createFaultInjectingBackend)
         );
+        const barrier = createKernelBarrierControl(fault.backend);
+        const createKernel = () =>
+          createConformanceRuntimeKernel(config, {
+            backend: barrier.backend,
+            now: clock.workerNow,
+          });
         try {
           return {
+            barrier,
             cleanup: backend.cleanup,
             clock,
+            createKernel,
             fault,
-            kernel: createConformanceRuntimeKernel(config, {
-              backend: fault.backend,
-              now: clock.workerNow,
-            }),
+            kernel: createKernel(),
           };
         } catch (error: unknown) {
           await backend.cleanup();
@@ -446,8 +487,17 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     const target: unknown =
       typeof binding.target === "string"
         ? Reflect.get(opened, binding.target)
-        : Reflect.get(opened.kernel, group);
-    return await invokeBinding(target, binding, input, method);
+        : Reflect.get(
+            binding.perOperationKernel === true
+              ? opened.createKernel()
+              : opened.kernel,
+            group
+          );
+    const invoke = async () =>
+      await invokeBinding(target, binding, input, method);
+    return operationHandle === undefined
+      ? await invoke()
+      : await opened.barrier.run(operationHandle, signal, invoke);
   };
   const handles = createOperationHandles(dispatch, destroyInstance);
   return {

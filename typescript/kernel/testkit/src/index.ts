@@ -91,3 +91,5 @@ export {
   createKernelTestClock,
   createKernelFaultControl,
 } from "./lib/kernel-test-controls.js";
+
+export { createKernelBarrierControl } from "./lib/kernel-barrier-control.js";

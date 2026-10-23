@@ -26,6 +26,7 @@ import type {
   StoredRun,
 } from "@tuvren/kernel-protocol";
 
+import { hasKernelBarrierEntry } from "./kernel-barrier-control.js";
 import {
   decorateBackend,
   decorateTransactions,
@@ -35,6 +36,7 @@ import {
 import type {
   KernelMutantActivate,
   KernelMutantDefinition,
+  KernelMutantKernel,
 } from "./kernel-mutant-types.js";
 
 type RecordedWrite = (tx: RuntimeBackendTx) => Promise<void>;
@@ -218,6 +220,40 @@ const acceptStaleHeadUpdate = (
       },
     },
   }));
+
+const acceptStaleKernelHeadUpdate = (
+  kernel: KernelMutantKernel,
+  backend: RuntimeBackend
+): KernelMutantKernel => ({
+  ...kernel,
+  branch: {
+    ...kernel.branch,
+    setHead: async (branchId, turnNodeHash) => {
+      try {
+        return await kernel.branch.setHead(branchId, turnNodeHash);
+      } catch (error: unknown) {
+        if (
+          !hasKernelBarrierEntry() ||
+          readErrorCode(error) !== "kernel_runtime_lateral_head_movement"
+        ) {
+          throw error;
+        }
+        await backend.transact(async (tx) => {
+          const branch = await tx.branches.get(branchId);
+          if (branch === null) {
+            throw error;
+          }
+          await tx.branches.set({ ...branch, headTurnNodeHash: turnNodeHash });
+        });
+        const branch = await kernel.branch.get(branchId);
+        if (branch === null) {
+          throw error;
+        }
+        return { branch };
+      }
+    },
+  },
+});
 
 const substrateBackends = (
   registry: WeakMap<object, Set<RuntimeBackend>>,
@@ -598,6 +634,7 @@ export const STORAGE_KERNEL_MUTANTS: readonly KernelMutantDefinition[] = [
     createSeams: () => ({
       backend: (backend, _context, activate) =>
         acceptStaleHeadUpdate(backend, activate),
+      kernel: (kernel, backend) => acceptStaleKernelHeadUpdate(kernel, backend),
     }),
     kind: "implementation",
     mutantId: "kernel.accept-stale-head-update",

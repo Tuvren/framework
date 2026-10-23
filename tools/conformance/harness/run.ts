@@ -66,6 +66,7 @@ import type {
   AssertionDiagnosis,
 } from "./assertion-engine/index.js";
 import { readPath } from "./assertion-engine/path.js";
+import { createBarrierSteps } from "./barrier-steps.js";
 import {
   createFaultActivationTracker,
   MissingFaultActivationError,
@@ -790,6 +791,8 @@ const runTraceCheck = async (
   const trace: Record<string, AssertionContext> = {};
   const traceAdapterErrors: Record<string, unknown> = {};
   const startedOperations = new Map<string, string>();
+  const barriers = createBarrierSteps();
+  const arrivals: Record<string, number> = {};
   const captureStore = createCaptureStore();
   const captures = captureStore.values;
   const argumentRoots: ArgumentRoots = {
@@ -813,15 +816,15 @@ const runTraceCheck = async (
         inspectQuery,
       } = createTraceStepRequest(step, check, baseInput, trace, argumentRoots);
       const catalogOperation = plan.catalog?.operations.get(step.operation);
-      const input = bindControlInstance(
-        catalogOperation,
-        projectedInput,
-        instance
-      );
       const controls = {
         ...createAdapterControls(compiledCheck),
         ...step.controls,
       };
+      const input = bindControlInstance(
+        catalogOperation,
+        barriers.input(step, projectedInput),
+        instance
+      );
       recorder.arguments.push({
         input,
         ...(inspectQuery === undefined ? {} : { inspectQuery }),
@@ -847,6 +850,17 @@ const runTraceCheck = async (
         startedOperations,
         step,
       });
+      barriers.observe(step, outcome);
+      arrivals[step.stepId] = client.latestArrivalSequence();
+      if (
+        step.action === "start" &&
+        typeof context.result === "object" &&
+        context.result !== null &&
+        "operationHandle" in context.result &&
+        typeof context.result.operationHandle === "string"
+      ) {
+        barriers.started(step.stepId, context.result.operationHandle);
+      }
       if (outcome.kind === "error") {
         traceAdapterErrors[step.stepId] = outcome.error;
       }
@@ -861,8 +875,9 @@ const runTraceCheck = async (
       if (step.assertions !== undefined) {
         const stepContext: RunnerContext = {
           ...context,
-          faultActivations: recorder.faults.activations,
+          arrivals: { ...arrivals },
           capture: { ...captures },
+          faultActivations: recorder.faults.activations,
         };
         recorder.diagnoses.push(
           ...diagnoseAssertions(
@@ -884,9 +899,10 @@ const runTraceCheck = async (
   }
 
   const finalContext: RunnerContext = {
-    faultActivations: recorder.faults.activations,
+    arrivals,
     capture: captures,
     evidence: { trace },
+    faultActivations: recorder.faults.activations,
     fixture: baseInput.fixture,
     input: baseInput.checkInput,
     result: { trace },
@@ -1035,8 +1051,8 @@ const executeCheck = async (
           ...readEvaluations(recorder),
           {
             assertionId: `${check.checkId}.faultSupport`,
-            status: "unsupported",
             message,
+            status: "unsupported",
           },
         ],
         {
@@ -1140,8 +1156,8 @@ const createFailure = async (
       ? {}
       : {
           fault: {
-            armed: recorder.faults.armed,
             activations: recorder.faults.activations,
+            armed: recorder.faults.armed,
           },
         }),
     ...(exit === undefined ? {} : { exit }),
@@ -1164,9 +1180,9 @@ const runCheck = async (
 ): Promise<ConformanceCheckResult> => {
   const mark = client.markTranscript();
   const recorder: CheckRecorder = {
-    faults: createFaultActivationTracker(),
     arguments: [],
     diagnoses: [],
+    faults: createFaultActivationTracker(),
     observation: [],
     operationErrors: [],
   };
@@ -1194,8 +1210,8 @@ const runCheck = async (
         ...checkResult.assertionResults,
         {
           assertionId: `${checkResult.checkId}.faultActivation`,
-          status: "fail",
           message: rejection.message,
+          status: "fail",
         },
       ],
       {
@@ -1211,8 +1227,8 @@ const runCheck = async (
       details: {
         ...checkResult.details,
         fault: {
-          armed: recorder.faults.armed,
           activations: recorder.faults.activations,
+          armed: recorder.faults.armed,
         },
       },
     };
@@ -1434,8 +1450,8 @@ const selectChecks = (
       if (requestedChecks.size > 0 && !requestedChecks.has(check.checkId)) {
         selection.push({
           checkId: check.checkId,
-          selected: false,
           reason: "not run: outside requested checks",
+          selected: false,
         });
         continue;
       }
@@ -1536,8 +1552,8 @@ const main = async (): Promise<void> => {
     entry.selected && !scheduledIds.has(entry.checkId)
       ? {
           checkId: entry.checkId,
-          selected: false,
           reason: "not run: assigned to another shard",
+          selected: false,
         }
       : entry
   );
