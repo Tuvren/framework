@@ -1,0 +1,1681 @@
+{
+  "planId": "tuvren.kernel.restart-recovery.syscall",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.kernel.protocol",
+  "certificationRules": "enforcing",
+  "applicability": {
+    "capabilities": ["kernel.syscall", "kernel.restart-recovery"]
+  },
+  "checks": [
+    {
+      "checkId": "kernel.syscall.crash-recovery.before_commit",
+      "claimIds": [
+        "kernel.crash-recovery.in_process_fault_points",
+        "kernel.syscall.crash-recovery.before_commit"
+      ],
+      "operation": "kernel.schema.register",
+      "capabilities": ["kernel.protocol", "kernel.fault-injection"],
+      "steps": [
+        {
+          "stepId": "backendClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 100
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "workerClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 200
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "recovery_schema",
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ]
+              }
+            }
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread",
+            "schemaId": {
+              "$ref": "capture.schema"
+            },
+            "initialBranchId": "branch"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "turn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turn",
+            "threadId": "thread",
+            "branchId": "branch",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turn",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "run",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "run",
+            "turnId": "turn",
+            "branchId": "branch",
+            "schemaId": {
+              "$ref": "capture.schema"
+            },
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "baseline",
+                "deterministic": false,
+                "sideEffects": false
+              },
+              {
+                "id": "pending",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "run",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "beginBaseline",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "run",
+            "stepId": "baseline"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "beginBaseline",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baselineStaged",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "run",
+            "blob": {
+              "$bytes": "01"
+            },
+            "taskId": "baseline_task",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baselineStaged",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baselineStaging",
+          "operation": "kernel.staging.current",
+          "arguments": {
+            "runId": "run"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baselineStaging",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baselineCheckpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "run",
+            "stepId": "baseline"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.checkpointed",
+              "equals": true
+            }
+          ],
+          "capture": [
+            {
+              "name": "baselineCheckpoint",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baselineNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.baselineCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baselineNode",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baselineMessages",
+          "operation": "kernel.tree.resolve",
+          "arguments": {
+            "treeHash": {
+              "$ref": "capture.baselineNode.turnTreeHash"
+            },
+            "path": "messages"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "length": 1
+            },
+            {
+              "kind": "resultField",
+              "field": "$.0",
+              "equalsPath": "$.capture.baselineStaged.objectHash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "baselineMessages",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "beginPending",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "run",
+            "stepId": "pending"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "beginPending",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "pendingStaged",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "run",
+            "blob": {
+              "$bytes": "02"
+            },
+            "taskId": "pending_task",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "pendingStaged",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "pendingStaging",
+          "operation": "kernel.staging.current",
+          "arguments": {
+            "runId": "run"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "length": 1
+            },
+            {
+              "kind": "resultField",
+              "field": "$.0",
+              "equalsPath": "$.capture.pendingStaged.stagedResult"
+            }
+          ],
+          "capture": [
+            {
+              "name": "pendingStaging",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "pendingTree",
+          "operation": "kernel.tree.incorporate",
+          "arguments": {
+            "baseTurnTreeHash": {
+              "$ref": "capture.baselineNode.turnTreeHash"
+            },
+            "stagedResults": {
+              "$ref": "capture.pendingStaging"
+            }
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "pendingTree",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "pendingMessages",
+          "operation": "kernel.tree.resolve",
+          "arguments": {
+            "treeHash": {
+              "$ref": "capture.pendingTree"
+            },
+            "path": "messages"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "length": 2
+            },
+            {
+              "kind": "resultField",
+              "field": "$.0",
+              "equalsPath": "$.capture.baselineStaged.objectHash"
+            },
+            {
+              "kind": "resultField",
+              "field": "$.1",
+              "equalsPath": "$.capture.pendingStaged.objectHash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "pendingMessages",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "arm",
+          "operation": "kernel.fault.arm",
+          "arguments": {
+            "point": "before-commit",
+            "selector": {
+              "branchId": "branch",
+              "operation": "checkpoint"
+            },
+            "occurrence": 1,
+            "mode": "throw"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "action": "armFault",
+          "capture": [
+            {
+              "name": "arm",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "faultedCheckpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "run",
+            "stepId": "pending",
+            "treeHash": {
+              "$ref": "capture.pendingTree"
+            }
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [
+            {
+              "kind": "faultActivated",
+              "path": "$.capture.arm.token"
+            },
+            {
+              "kind": "stateField",
+              "field": "$.adapterError.code",
+              "equals": "kernel_persistence_fault_injected"
+            }
+          ]
+        },
+        {
+          "stepId": "durableHead",
+          "operation": "kernel.branch.get",
+          "arguments": {
+            "branchId": "branch"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "durableHead",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "durableNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.durableHead.headTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "durableNode",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "recover",
+          "operation": "kernel.run.recover",
+          "arguments": {
+            "runId": "run"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "recover",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "staging",
+          "operation": "kernel.staging.current",
+          "arguments": {
+            "runId": "run"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "staging",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "recoveredHead",
+          "operation": "kernel.branch.get",
+          "arguments": {
+            "branchId": "branch"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "recoveredHead",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "lineage",
+          "operation": "kernel.node.walkBack",
+          "arguments": {
+            "fromHash": {
+              "$ref": "capture.recover.lastTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "lineage",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "visibleMessages",
+          "operation": "kernel.tree.resolve",
+          "arguments": {
+            "treeHash": {
+              "$ref": "capture.durableNode.turnTreeHash"
+            },
+            "path": "messages"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.before_commit"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "visibleMessages",
+              "path": "result"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "faultActivated",
+          "path": "$.capture.arm.token"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.lastCompletedStepId",
+          "matches": "^(baseline|pending)$"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.lastTurnNodeHash",
+          "equalsPath": "$.capture.durableHead.headTurnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recoveredHead.result.headTurnNodeHash",
+          "equalsPath": "$.capture.durableHead.headTurnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.durableNode.result.hash",
+          "equalsPath": "$.capture.recover.lastTurnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.staging.result",
+          "equalsPath": "$.capture.recover.uncommittedStagedResults"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.stepSequence",
+          "equalsPath": "$.capture.run.stepSequence"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.lastCompletedStepId",
+          "equals": "baseline"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.durableHead.result.headTurnNodeHash",
+          "equalsPath": "$.capture.baselineCheckpoint.turnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.lastTurnNodeHash",
+          "equalsPath": "$.capture.baselineCheckpoint.turnNodeHash",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.consumedStagedResults",
+          "equalsPath": "$.capture.baselineStaging",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.uncommittedStagedResults",
+          "equalsPath": "$.capture.pendingStaging",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.staging.result",
+          "equalsPath": "$.capture.pendingStaging",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.durableNode.result",
+          "equalsPath": "$.capture.baselineNode",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.visibleMessages.result",
+          "equalsPath": "$.capture.baselineMessages",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.lineage.result",
+          "length": 2,
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.lineage.result.1.hash",
+          "equalsPath": "$.capture.thread.rootTurnNodeHash",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.lastTurnNodeHash",
+          "notEqualsPath": "$.capture.baselineCheckpoint.turnNodeHash",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.durableNode.result.previousTurnNodeHash",
+          "equalsPath": "$.capture.baselineCheckpoint.turnNodeHash",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.durableNode.result.turnTreeHash",
+          "equalsPath": "$.capture.pendingTree",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.durableNode.result.consumedStagedResults",
+          "equalsPath": "$.capture.pendingStaging",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.consumedStagedResults",
+          "equalsPath": "$.capture.pendingStaging",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.uncommittedStagedResults",
+          "equals": [],
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.staging.result",
+          "equals": [],
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.visibleMessages.result",
+          "equalsPath": "$.capture.pendingMessages",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.lineage.result",
+          "length": 3,
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.lineage.result.1",
+          "equalsPath": "$.capture.baselineNode",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.lineage.result.2.hash",
+          "equalsPath": "$.capture.thread.rootTurnNodeHash",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        }
+      ],
+      "evidence": [
+        "trace.durableNode.result",
+        "trace.recover.result",
+        "trace.staging.result",
+        "trace.recoveredHead.result",
+        "trace.lineage.result",
+        "trace.visibleMessages.result"
+      ]
+    },
+    {
+      "checkId": "kernel.syscall.crash-recovery.after_commit_before_ack",
+      "claimIds": [
+        "kernel.crash-recovery.in_process_fault_points",
+        "kernel.syscall.crash-recovery.after_commit_before_ack"
+      ],
+      "operation": "kernel.schema.register",
+      "capabilities": ["kernel.protocol", "kernel.fault-injection"],
+      "steps": [
+        {
+          "stepId": "backendClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "backend",
+            "nowMs": 100
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "workerClock",
+          "operation": "kernel.clock.set",
+          "arguments": {
+            "domain": "worker",
+            "nowMs": 200
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "action": "setClock"
+        },
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "recovery_schema",
+                "incorporationRules": [
+                  {
+                    "objectType": "message",
+                    "targetPath": "messages"
+                  }
+                ],
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  }
+                ]
+              }
+            }
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "thread",
+          "operation": "kernel.thread.create",
+          "arguments": {
+            "threadId": "thread",
+            "schemaId": {
+              "$ref": "capture.schema"
+            },
+            "initialBranchId": "branch"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "thread",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "turn",
+          "operation": "kernel.turn.create",
+          "arguments": {
+            "turnId": "turn",
+            "threadId": "thread",
+            "branchId": "branch",
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "turn",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "run",
+          "operation": "kernel.run.create",
+          "arguments": {
+            "runId": "run",
+            "turnId": "turn",
+            "branchId": "branch",
+            "schemaId": {
+              "$ref": "capture.schema"
+            },
+            "startTurnNodeHash": {
+              "$ref": "capture.thread.rootTurnNodeHash"
+            },
+            "steps": [
+              {
+                "id": "baseline",
+                "deterministic": false,
+                "sideEffects": false
+              },
+              {
+                "id": "pending",
+                "deterministic": false,
+                "sideEffects": false
+              }
+            ]
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "run",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "beginBaseline",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "run",
+            "stepId": "baseline"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "beginBaseline",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baselineStaged",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "run",
+            "blob": {
+              "$bytes": "01"
+            },
+            "taskId": "baseline_task",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baselineStaged",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baselineStaging",
+          "operation": "kernel.staging.current",
+          "arguments": {
+            "runId": "run"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baselineStaging",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baselineCheckpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "run",
+            "stepId": "baseline"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.checkpointed",
+              "equals": true
+            }
+          ],
+          "capture": [
+            {
+              "name": "baselineCheckpoint",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baselineNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.baselineCheckpoint.turnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "baselineNode",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "baselineMessages",
+          "operation": "kernel.tree.resolve",
+          "arguments": {
+            "treeHash": {
+              "$ref": "capture.baselineNode.turnTreeHash"
+            },
+            "path": "messages"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "length": 1
+            },
+            {
+              "kind": "resultField",
+              "field": "$.0",
+              "equalsPath": "$.capture.baselineStaged.objectHash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "baselineMessages",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "beginPending",
+          "operation": "kernel.run.beginStep",
+          "arguments": {
+            "runId": "run",
+            "stepId": "pending"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "beginPending",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "pendingStaged",
+          "operation": "kernel.staging.stage",
+          "arguments": {
+            "runId": "run",
+            "blob": {
+              "$bytes": "02"
+            },
+            "taskId": "pending_task",
+            "objectType": "message",
+            "status": "completed"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "pendingStaged",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "pendingStaging",
+          "operation": "kernel.staging.current",
+          "arguments": {
+            "runId": "run"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "length": 1
+            },
+            {
+              "kind": "resultField",
+              "field": "$.0",
+              "equalsPath": "$.capture.pendingStaged.stagedResult"
+            }
+          ],
+          "capture": [
+            {
+              "name": "pendingStaging",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "pendingTree",
+          "operation": "kernel.tree.incorporate",
+          "arguments": {
+            "baseTurnTreeHash": {
+              "$ref": "capture.baselineNode.turnTreeHash"
+            },
+            "stagedResults": {
+              "$ref": "capture.pendingStaging"
+            }
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "pendingTree",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "pendingMessages",
+          "operation": "kernel.tree.resolve",
+          "arguments": {
+            "treeHash": {
+              "$ref": "capture.pendingTree"
+            },
+            "path": "messages"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "length": 2
+            },
+            {
+              "kind": "resultField",
+              "field": "$.0",
+              "equalsPath": "$.capture.baselineStaged.objectHash"
+            },
+            {
+              "kind": "resultField",
+              "field": "$.1",
+              "equalsPath": "$.capture.pendingStaged.objectHash"
+            }
+          ],
+          "capture": [
+            {
+              "name": "pendingMessages",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "arm",
+          "operation": "kernel.fault.arm",
+          "arguments": {
+            "point": "after-commit-before-ack",
+            "selector": {
+              "branchId": "branch",
+              "operation": "checkpoint"
+            },
+            "occurrence": 1,
+            "mode": "throw"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "action": "armFault",
+          "capture": [
+            {
+              "name": "arm",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "faultedCheckpoint",
+          "operation": "kernel.run.completeStep",
+          "arguments": {
+            "runId": "run",
+            "stepId": "pending",
+            "treeHash": {
+              "$ref": "capture.pendingTree"
+            }
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [
+            {
+              "kind": "faultActivated",
+              "path": "$.capture.arm.token"
+            },
+            {
+              "kind": "stateField",
+              "field": "$.adapterError.code",
+              "equals": "kernel_persistence_fault_injected"
+            }
+          ]
+        },
+        {
+          "stepId": "durableHead",
+          "operation": "kernel.branch.get",
+          "arguments": {
+            "branchId": "branch"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "durableHead",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "durableNode",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.durableHead.headTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "durableNode",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "recover",
+          "operation": "kernel.run.recover",
+          "arguments": {
+            "runId": "run"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "recover",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "staging",
+          "operation": "kernel.staging.current",
+          "arguments": {
+            "runId": "run"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "staging",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "recoveredHead",
+          "operation": "kernel.branch.get",
+          "arguments": {
+            "branchId": "branch"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "recoveredHead",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "lineage",
+          "operation": "kernel.node.walkBack",
+          "arguments": {
+            "fromHash": {
+              "$ref": "capture.recover.lastTurnNodeHash"
+            }
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "lineage",
+              "path": "result"
+            }
+          ]
+        },
+        {
+          "stepId": "visibleMessages",
+          "operation": "kernel.tree.resolve",
+          "arguments": {
+            "treeHash": {
+              "$ref": "capture.durableNode.turnTreeHash"
+            },
+            "path": "messages"
+          },
+          "claimIds": [
+            "kernel.crash-recovery.in_process_fault_points",
+            "kernel.syscall.crash-recovery.after_commit_before_ack"
+          ],
+          "assertions": [],
+          "capture": [
+            {
+              "name": "visibleMessages",
+              "path": "result"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "faultActivated",
+          "path": "$.capture.arm.token"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.lastCompletedStepId",
+          "matches": "^(baseline|pending)$"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.lastTurnNodeHash",
+          "equalsPath": "$.capture.durableHead.headTurnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recoveredHead.result.headTurnNodeHash",
+          "equalsPath": "$.capture.durableHead.headTurnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.durableNode.result.hash",
+          "equalsPath": "$.capture.recover.lastTurnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.staging.result",
+          "equalsPath": "$.capture.recover.uncommittedStagedResults"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.stepSequence",
+          "equalsPath": "$.capture.run.stepSequence"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.lastCompletedStepId",
+          "equals": "pending"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.durableHead.result.headTurnNodeHash",
+          "notEqualsPath": "$.capture.baselineCheckpoint.turnNodeHash"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.lastTurnNodeHash",
+          "equalsPath": "$.capture.baselineCheckpoint.turnNodeHash",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.consumedStagedResults",
+          "equalsPath": "$.capture.baselineStaging",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.uncommittedStagedResults",
+          "equalsPath": "$.capture.pendingStaging",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.staging.result",
+          "equalsPath": "$.capture.pendingStaging",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.durableNode.result",
+          "equalsPath": "$.capture.baselineNode",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.visibleMessages.result",
+          "equalsPath": "$.capture.baselineMessages",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.lineage.result",
+          "length": 2,
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.lineage.result.1.hash",
+          "equalsPath": "$.capture.thread.rootTurnNodeHash",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "baseline"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.lastTurnNodeHash",
+          "notEqualsPath": "$.capture.baselineCheckpoint.turnNodeHash",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.durableNode.result.previousTurnNodeHash",
+          "equalsPath": "$.capture.baselineCheckpoint.turnNodeHash",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.durableNode.result.turnTreeHash",
+          "equalsPath": "$.capture.pendingTree",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.durableNode.result.consumedStagedResults",
+          "equalsPath": "$.capture.pendingStaging",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.consumedStagedResults",
+          "equalsPath": "$.capture.pendingStaging",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.recover.result.uncommittedStagedResults",
+          "equals": [],
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.staging.result",
+          "equals": [],
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.visibleMessages.result",
+          "equalsPath": "$.capture.pendingMessages",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.lineage.result",
+          "length": 3,
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.lineage.result.1",
+          "equalsPath": "$.capture.baselineNode",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.lineage.result.2.hash",
+          "equalsPath": "$.capture.thread.rootTurnNodeHash",
+          "when": {
+            "path": "$.result.trace.recover.result.lastCompletedStepId",
+            "equals": "pending"
+          }
+        }
+      ],
+      "evidence": [
+        "trace.durableNode.result",
+        "trace.recover.result",
+        "trace.staging.result",
+        "trace.recoveredHead.result",
+        "trace.lineage.result",
+        "trace.visibleMessages.result"
+      ]
+    }
+  ]
+}

@@ -6596,7 +6596,9 @@
   "implementationId": "typescript-kernel-postgres",
   "nonApplicableCheckIds": [
     "kernel.syscall.controls.after_commit_before_ack",
-    "kernel.syscall.controls.before_commit"
+    "kernel.syscall.controls.before_commit",
+    "kernel.syscall.crash-recovery.after_commit_before_ack",
+    "kernel.syscall.crash-recovery.before_commit"
   ],
   "project": "kernel-typescript-postgres-certification",
   "reportLabel": "TypeScript PostgreSQL durable kernel",
@@ -6605,9 +6607,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 133,
-    "totalChecks": 135,
+    "totalChecks": 137,
     "applicableChecks": 133,
-    "nonApplicableChecks": 2
+    "nonApplicableChecks": 4
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

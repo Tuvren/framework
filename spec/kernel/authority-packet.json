@@ -1,6 +1,6 @@
 {
   "packetId": "tuvren.kernel.protocol",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "boundary": "kernel",
   "surface": "protocol",
   "humanAuthorityRefs": [
@@ -65,6 +65,10 @@
     {
       "path": "spec/conformance/kernel/plans/kernel-run-liveness-syscall.json",
       "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/plans/kernel-restart-recovery-syscall.json",
+      "format": "conformance-plan"
     }
   ],
   "conformancePlans": [
@@ -122,6 +126,11 @@
       "planId": "tuvren.kernel.run-liveness.syscall",
       "planVersion": "0.1.0",
       "path": "spec/conformance/kernel/plans/kernel-run-liveness-syscall.json"
+    },
+    {
+      "planId": "tuvren.kernel.restart-recovery.syscall",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/kernel/plans/kernel-restart-recovery-syscall.json"
     }
   ],
   "negativeControlManifest": "spec/conformance/kernel/negative-controls.json",
@@ -213,6 +222,10 @@
     {
       "kind": "conformance-plan",
       "target": "spec/conformance/kernel/plans/kernel-run-liveness-syscall.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/kernel/plans/kernel-restart-recovery-syscall.json"
     }
   ],
   "operationCatalog": "spec/conformance/kernel/operations.json",
