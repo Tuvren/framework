@@ -67,10 +67,39 @@ export interface ConformanceAssertionResult {
   when?: "applied" | "not_applied";
 }
 
+/** Preliminary runner classification of a failed check (ADR-0081 decision 5). */
+export type ConformanceFailureClassification =
+  | "adapter_protocol"
+  | "environment"
+  | "implementation"
+  | "verification";
+
+export interface ConformanceFailureOperand {
+  actual?: unknown;
+  expected?: unknown;
+  expectedSource: string;
+  path: string;
+}
+
+/** Failure artifact of one failed check (ADR-0081 decision 4). */
+export interface ConformanceFailure {
+  arguments?: unknown;
+  classification: ConformanceFailureClassification;
+  exit?: { code?: number | null; signal?: string | null };
+  fault?: unknown;
+  frameLog?: readonly unknown[];
+  observation?: unknown;
+  operands?: readonly ConformanceFailureOperand[];
+  replay: string;
+  stderrTail?: string;
+  storageRef?: string;
+}
+
 export interface ConformanceCheckResult {
   assertionResults: readonly ConformanceAssertionResult[];
   checkId: string;
   details?: Record<string, unknown>;
+  failure?: ConformanceFailure;
   status: ConformanceStatus;
 }
 
@@ -663,6 +692,80 @@ export const createCheckResult = (
     details,
     status,
   };
+};
+
+/**
+ * Checked-in evidence keeps only the classification and replay of a failure;
+ * raw arguments, observations, operands, frames, and stderr stay in the run
+ * log directory so adapter output never reaches the repository.
+ */
+export const toCheckedInCheckResult = (
+  checkResult: ConformanceCheckResult
+): ConformanceCheckResult => {
+  if (checkResult.failure === undefined) {
+    return checkResult;
+  }
+
+  const { classification, replay } = checkResult.failure;
+  return { ...checkResult, failure: { classification, replay } };
+};
+
+const FAILURE_CLASSIFICATIONS: ReadonlySet<unknown> = new Set([
+  "adapter_protocol",
+  "environment",
+  "implementation",
+  "verification",
+]);
+const CHECKED_IN_FAILURE_KEYS: ReadonlySet<string> = new Set([
+  "classification",
+  "replay",
+]);
+
+/** Violations of the compact failure shape that checked-in evidence keeps. */
+export const findCheckedInFailureViolations = (
+  checkResults: unknown
+): string[] => {
+  if (!Array.isArray(checkResults)) {
+    return [];
+  }
+
+  return checkResults.flatMap((checkResult: unknown, index) => {
+    if (!isRecord(checkResult) || checkResult.failure === undefined) {
+      return [];
+    }
+
+    const label = `checkResults[${index}].failure`;
+    const { failure } = checkResult;
+
+    if (!isRecord(failure)) {
+      return [`${label} must be an object`];
+    }
+
+    const violations: string[] = [];
+    const rawKeys = Object.keys(failure)
+      .filter((key) => !CHECKED_IN_FAILURE_KEYS.has(key))
+      .toSorted();
+
+    if (rawKeys.length > 0) {
+      violations.push(
+        `${label} must keep only classification and replay; found ${rawKeys.join(", ")}`
+      );
+    }
+
+    if (!FAILURE_CLASSIFICATIONS.has(failure.classification)) {
+      violations.push(`${label}.classification is not a known classification`);
+    }
+
+    if (typeof failure.replay !== "string" || failure.replay.length === 0) {
+      violations.push(`${label}.replay must be a non-empty string`);
+    }
+
+    if (checkResult.status !== "fail") {
+      violations.push(`${label} is only allowed on a failed check`);
+    }
+
+    return violations;
+  });
 };
 
 export const createAssertionResult = (

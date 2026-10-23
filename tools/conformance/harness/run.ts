@@ -26,7 +26,10 @@ import {
 import type {
   ConformanceCheckResult,
   ConformanceEvidence,
+  ConformanceFailure,
+  ConformanceFailureClassification,
 } from "../../scripts/lib/conformance-contract.js";
+import { createVerificationLogs } from "../../scripts/lib/verification-logs.js";
 import type {
   AdapterCapabilities,
   AdapterControls,
@@ -43,16 +46,19 @@ import type {
   ConformancePlanStep,
 } from "../plan-compiler/index.js";
 import { JsonRpcAdapterClient } from "./adapter-client.js";
-import type { AdapterManifest } from "./adapter-client.js";
+import type {
+  AdapterManifest,
+  AdapterTranscriptMark,
+} from "./adapter-client.js";
 import { JsonRpcAdapterError } from "./adapter-error.js";
 import {
-  evaluateAssertions,
-  evaluateRequiredEvidence,
+  diagnoseAssertions,
+  diagnoseRequiredEvidence,
   readPath,
 } from "./assertion-engine/index.js";
 import type {
   AssertionContext,
-  AssertionEvaluation,
+  AssertionDiagnosis,
 } from "./assertion-engine/index.js";
 import { readAdapterManifest, readPlans } from "./run-plans.js";
 import {
@@ -94,6 +100,33 @@ interface RunResult {
   checkResult: ConformanceCheckResult;
   index: number;
 }
+
+interface StepObservationRecord {
+  events?: readonly unknown[];
+  inspectedState?: unknown;
+  operation: string;
+  outcome?: unknown;
+  stepId?: string;
+}
+
+/** What one check sent and observed, kept for its failure artifact. */
+interface CheckRecorder {
+  arguments: {
+    input: unknown;
+    inspectQuery?: unknown;
+    operation: string;
+    stepId?: string;
+  }[];
+  diagnoses: AssertionDiagnosis[];
+  observation: StepObservationRecord[];
+  operationErrors: unknown[];
+  thrown?: unknown;
+}
+
+const STDERR_TAIL_CHARS = 4096;
+const ENVIRONMENT_FAILURE =
+  /ECONNREFUSED|ECONNRESET|ENOTFOUND|EHOSTUNREACH|EAI_AGAIN|ENOSPC|connection refused|could not connect|too many clients|failed to provision|provisioning failed/iu;
+const SHELL_SAFE = /^[\w@%+=:,./-]+$/u;
 
 const REPO_ROOT = nodePath.resolve(import.meta.dirname, "../../..");
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -403,6 +436,9 @@ const readAdapterFailure = (error: unknown): unknown => {
   return readErrorMessage(error);
 };
 
+const readEvaluations = (recorder: CheckRecorder) =>
+  recorder.diagnoses.map(({ evaluation }) => evaluation);
+
 const validateAdapterHandshake = (
   capabilities: AdapterCapabilities,
   manifest: AdapterManifest,
@@ -504,7 +540,8 @@ const runTraceCheck = async (
   client: JsonRpcAdapterClient,
   manifest: AdapterManifest,
   plan: CompiledConformancePlan,
-  compiledCheck: CompiledConformancePlanCheck
+  compiledCheck: CompiledConformancePlanCheck,
+  recorder: CheckRecorder
 ): Promise<ConformanceCheckResult> => {
   const { check } = compiledCheck;
   const steps = check.steps ?? [];
@@ -518,7 +555,6 @@ const runTraceCheck = async (
   );
   const trace: Record<string, AssertionContext> = {};
   const traceAdapterErrors: Record<string, unknown> = {};
-  const assertionResults: AssertionEvaluation[] = [];
   const captureStore = createCaptureStore();
   const captures = captureStore.values;
   const argumentRoots: ArgumentRoots = {
@@ -548,6 +584,17 @@ const runTraceCheck = async (
         ...step.controls,
       };
       const timeoutMs = controls.deadlineMs;
+      recorder.arguments.push({
+        input,
+        ...(inspectQuery === undefined ? {} : { inspectQuery }),
+        operation: step.operation,
+        stepId: step.stepId,
+      });
+      const observed: StepObservationRecord = {
+        operation: step.operation,
+        stepId: step.stepId,
+      };
+      recorder.observation.push(observed);
       const outcome = await client.dispatch(
         step.operation,
         input,
@@ -555,11 +602,13 @@ const runTraceCheck = async (
         instance,
         timeoutMs
       );
+      observed.outcome = outcome;
       const context = createAssertionContext(outcome, contextInput);
       if (outcome.kind === "error") {
         // Trace-step adapter errors are diagnostic evidence only; plan
         // assertions still decide pass/fail through runner-owned context.
         traceAdapterErrors[step.stepId] = outcome.error;
+        recorder.operationErrors.push(outcome.error);
       }
 
       const extraEvents = await client.events(
@@ -569,6 +618,7 @@ const runTraceCheck = async (
         instance,
         timeoutMs
       );
+      observed.events = extraEvents;
 
       if (context.events === undefined && extraEvents.length > 0) {
         context.events = extraEvents;
@@ -578,6 +628,9 @@ const runTraceCheck = async (
         step.inspectState === undefined
           ? undefined
           : await client.inspectState(inspectQuery, instance, timeoutMs);
+      if (step.inspectState !== undefined) {
+        observed.inspectedState = inspectedState;
+      }
 
       if (inspectedState !== undefined && inspectedState !== null) {
         context.state = inspectedState;
@@ -595,8 +648,8 @@ const runTraceCheck = async (
           ...context,
           capture: { ...captures },
         };
-        assertionResults.push(
-          ...evaluateAssertions(
+        recorder.diagnoses.push(
+          ...diagnoseAssertions(
             {
               ...check,
               assertions: step.assertions,
@@ -623,12 +676,12 @@ const runTraceCheck = async (
     scenario: baseInput.scenario,
     state: { trace },
   };
-  assertionResults.push(
-    ...evaluateAssertions(check, finalContext),
-    ...evaluateRequiredEvidence(compiledCheck, finalContext)
+  recorder.diagnoses.push(
+    ...diagnoseAssertions(check, finalContext),
+    ...diagnoseRequiredEvidence(compiledCheck, finalContext)
   );
 
-  return createCheckResult(check.checkId, assertionResults, {
+  return createCheckResult(check.checkId, readEvaluations(recorder), {
     adapterId: manifest.adapterId,
     planId: plan.plan.planId,
     ...(Object.keys(traceAdapterErrors).length > 0
@@ -638,11 +691,12 @@ const runTraceCheck = async (
   });
 };
 
-const runCheck = async (
+const executeCheck = async (
   client: JsonRpcAdapterClient,
   manifest: AdapterManifest,
   plan: CompiledConformancePlan,
-  compiledCheck: CompiledConformancePlanCheck
+  compiledCheck: CompiledConformancePlanCheck,
+  recorder: CheckRecorder
 ): Promise<ConformanceCheckResult> => {
   const { check } = compiledCheck;
 
@@ -659,12 +713,21 @@ const runCheck = async (
     );
 
     if (Array.isArray(check.steps) && check.steps.length > 0) {
-      return await runTraceCheck(client, manifest, plan, compiledCheck);
+      return await runTraceCheck(
+        client,
+        manifest,
+        plan,
+        compiledCheck,
+        recorder
+      );
     }
 
     const input = createAdapterInput(plan, compiledCheck);
     const controls = createAdapterControls(compiledCheck);
     const timeoutMs = controls.deadlineMs;
+    recorder.arguments.push({ input, operation: check.operation });
+    const observed: StepObservationRecord = { operation: check.operation };
+    recorder.observation.push(observed);
     const outcome = await client.dispatch(
       check.operation,
       input,
@@ -672,6 +735,10 @@ const runCheck = async (
       undefined,
       timeoutMs
     );
+    observed.outcome = outcome;
+    if (outcome.kind === "error") {
+      recorder.operationErrors.push(outcome.error);
+    }
     const context = createAssertionContext(outcome, input);
     const extraEvents = await client.events(
       check.operation,
@@ -680,6 +747,7 @@ const runCheck = async (
       undefined,
       timeoutMs
     );
+    observed.events = extraEvents;
 
     if (context.events === undefined && extraEvents.length > 0) {
       context.events = extraEvents;
@@ -692,15 +760,16 @@ const runCheck = async (
       undefined,
       timeoutMs
     );
+    observed.inspectedState = inspectedState;
 
     mergeInspectedState(context, inspectedState, outcome);
 
-    const assertionResults = [
-      ...evaluateAssertions(check, context),
-      ...evaluateRequiredEvidence(compiledCheck, context),
-    ];
+    recorder.diagnoses.push(
+      ...diagnoseAssertions(check, context),
+      ...diagnoseRequiredEvidence(compiledCheck, context)
+    );
 
-    return createCheckResult(check.checkId, assertionResults, {
+    return createCheckResult(check.checkId, readEvaluations(recorder), {
       // Adapter-declared operation errors stay isolated from $.result.error,
       // but persisted evidence still records the native error for diagnosis.
       ...(outcome.kind === "error" ? { adapterError: outcome.error } : {}),
@@ -708,6 +777,7 @@ const runCheck = async (
       planId: plan.plan.planId,
     });
   } catch (error: unknown) {
+    recorder.thrown = error;
     const message = readErrorMessage(error);
     const assertionResults = [
       ...check.assertions.map((assertion, index) => ({
@@ -732,10 +802,132 @@ const runCheck = async (
   }
 };
 
+const classifyFailure = (
+  recorder: CheckRecorder,
+  checkStderr: string
+): ConformanceFailureClassification => {
+  const { thrown } = recorder;
+
+  if (thrown instanceof ArgumentResolutionError) {
+    return "verification";
+  }
+
+  const signals = [
+    checkStderr,
+    ...recorder.operationErrors.map((error) => JSON.stringify(error)),
+    ...(thrown === undefined
+      ? []
+      : [readErrorMessage(thrown), JSON.stringify(readAdapterFailure(thrown))]),
+  ];
+
+  if (signals.some((signal) => ENVIRONMENT_FAILURE.test(signal))) {
+    return "environment";
+  }
+
+  if (thrown !== undefined) {
+    return "adapter_protocol";
+  }
+
+  return recorder.diagnoses.some(
+    ({ evaluation, unresolved }) => evaluation.status === "fail" && unresolved
+  )
+    ? "verification"
+    : "implementation";
+};
+
+const createFailure = async (
+  client: JsonRpcAdapterClient,
+  mark: AdapterTranscriptMark,
+  recorder: CheckRecorder,
+  replay: string
+): Promise<ConformanceFailure> => {
+  const exit = await client.exitStatus();
+  const operands = recorder.diagnoses
+    .filter(({ evaluation }) => evaluation.status === "fail")
+    .flatMap(({ operands: entries }) => entries);
+  const stderrTail = client.stderrTail(STDERR_TAIL_CHARS);
+
+  return {
+    ...(recorder.arguments.length > 0 ? { arguments: recorder.arguments } : {}),
+    classification: classifyFailure(recorder, client.stderrSince(mark)),
+    ...(exit === undefined ? {} : { exit }),
+    frameLog: client.framesSince(mark),
+    ...(recorder.observation.length > 0
+      ? { observation: recorder.observation }
+      : {}),
+    ...(operands.length > 0 ? { operands } : {}),
+    replay,
+    ...(stderrTail.length > 0 ? { stderrTail } : {}),
+  };
+};
+
+const runCheck = async (
+  client: JsonRpcAdapterClient,
+  manifest: AdapterManifest,
+  plan: CompiledConformancePlan,
+  compiledCheck: CompiledConformancePlanCheck,
+  replay: string
+): Promise<ConformanceCheckResult> => {
+  const mark = client.markTranscript();
+  const recorder: CheckRecorder = {
+    arguments: [],
+    diagnoses: [],
+    observation: [],
+    operationErrors: [],
+  };
+  const checkResult = await executeCheck(
+    client,
+    manifest,
+    plan,
+    compiledCheck,
+    recorder
+  );
+
+  if (checkResult.status === "pass") {
+    return checkResult;
+  }
+
+  return {
+    ...checkResult,
+    failure: await createFailure(client, mark, recorder, replay),
+  };
+};
+
+const shellQuote = (part: string): string =>
+  SHELL_SAFE.test(part) ? part : `'${part.replaceAll("'", `'"'"'`)}'`;
+
+/** A repository-root command that reruns exactly one check. */
+const createReplayCommand = (options: CliOptions, checkId: string): string =>
+  [
+    "bun",
+    "tools/conformance/harness/run.ts",
+    "--adapter",
+    options.adapter,
+    ...options.packets.flatMap((packet) => ["--packet", packet]),
+    ...options.plans.flatMap((plan) => ["--plan", plan]),
+    "--check",
+    checkId,
+  ]
+    .map(shellQuote)
+    .join(" ");
+
+const retainFailureArtifacts = async (text: string): Promise<string> => {
+  const logs = await createVerificationLogs(
+    nodePath.resolve(
+      REPO_ROOT,
+      process.env.VERIFY_LOG_DIR ?? ".cache/verification"
+    )
+  );
+  const file = await logs.create(text);
+  await logs.finish(false);
+  return file;
+};
+
 const runScheduledChecks = async (
   manifest: AdapterManifest,
   scheduled: readonly ScheduledCheck[],
-  concurrency: number
+  concurrency: number,
+  replayFor: (checkId: string) => string
 ): Promise<RunResult[]> => {
   const results: RunResult[] = [];
   let nextIndex = 0;
@@ -765,7 +957,8 @@ const runScheduledChecks = async (
             client,
             manifest,
             scheduledCheck.plan,
-            scheduledCheck.compiledCheck
+            scheduledCheck.compiledCheck,
+            replayFor(scheduledCheck.compiledCheck.check.checkId)
           ),
           index: scheduledCheck.index,
         });
@@ -964,7 +1157,8 @@ const main = async (): Promise<void> => {
   const results = await runScheduledChecks(
     adapterManifest,
     scheduled,
-    options.concurrency
+    options.concurrency,
+    (checkId) => createReplayCommand(options, checkId)
   );
 
   const checkResults = results
@@ -997,6 +1191,12 @@ const main = async (): Promise<void> => {
     summary,
   };
   const text = `${JSON.stringify(evidence, null, 2)}\n`;
+
+  if (summary.failedChecks > 0) {
+    process.stderr.write(
+      `conformance failure artifacts retained at ${await retainFailureArtifacts(text)}\n`
+    );
+  }
 
   if (options.evidenceOut !== undefined) {
     const evidencePath = nodePath.resolve(REPO_ROOT, options.evidenceOut);

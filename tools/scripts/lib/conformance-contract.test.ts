@@ -21,6 +21,8 @@ import {
   assertConformanceEvidence,
   createAssertionResult,
   createCheckResult,
+  findCheckedInFailureViolations,
+  toCheckedInCheckResult,
 } from "./conformance-contract.ts";
 
 const SCHEMA_VIOLATION = /certification-evidence\.schema\.json/u;
@@ -115,5 +117,87 @@ describe("conformance evidence contract", () => {
         "runner evidence"
       );
     }).toThrow(SCHEMA_VIOLATION);
+  });
+
+  test("checked-in check results keep only the failure classification and replay", () => {
+    const failed = {
+      ...createCheckResult("sample.check", [
+        createAssertionResult("sample.check.1.resultField", false),
+      ]),
+      failure: {
+        arguments: [{ input: { token: "sk-live-raw" }, operation: "open" }],
+        classification: "implementation" as const,
+        exit: { code: 1, signal: null },
+        frameLog: [{ atMs: 0, direction: "receive", frame: "{}" }],
+        observation: [{ outcome: { kind: "result", value: "sk-live-raw" } }],
+        operands: [
+          {
+            actual: "sk-live-raw",
+            expected: "redacted",
+            expectedSource: "equals: plan literal",
+            path: "$.result.token",
+          },
+        ],
+        replay:
+          "bun tools/conformance/harness/run.ts --adapter adapter.json --check sample.check",
+        stderrTail: "sk-live-raw",
+      },
+    };
+    const passed = createCheckResult("sample.pass", [
+      createAssertionResult("sample.pass.1.resultField", true),
+    ]);
+    const evidence = {
+      ...runnerEvidence(),
+      checkResults: [failed, passed],
+      status: "fail",
+      summary: {
+        applicableChecks: 2,
+        failedChecks: 1,
+        nonApplicableChecks: 0,
+        passedChecks: 1,
+        totalChecks: 2,
+      },
+    };
+
+    expect(() => {
+      assertConformanceEvidence(evidence, "runner evidence");
+    }).not.toThrow();
+    const checkedIn = {
+      ...evidence,
+      checkResults: evidence.checkResults.map(toCheckedInCheckResult),
+    };
+    expect(checkedIn.checkResults[0]?.failure).toEqual({
+      classification: "implementation",
+      replay: failed.failure.replay,
+    });
+    expect(checkedIn.checkResults[1]).toEqual(passed);
+    expect(JSON.stringify(checkedIn)).not.toContain("sk-live-raw");
+    expect(() => {
+      assertConformanceEvidence(checkedIn, "checked-in evidence");
+    }).not.toThrow();
+    expect(findCheckedInFailureViolations(checkedIn.checkResults)).toEqual([]);
+    expect(findCheckedInFailureViolations(evidence.checkResults)).toEqual([
+      "checkResults[0].failure must keep only classification and replay; found arguments, exit, frameLog, observation, operands, stderrTail",
+    ]);
+  });
+
+  test("checked-in failure checks accept evidence that predates failure artifacts", () => {
+    expect(
+      findCheckedInFailureViolations(runnerEvidence().checkResults)
+    ).toEqual([]);
+    expect(
+      findCheckedInFailureViolations([
+        {
+          ...createCheckResult("sample.pass", [
+            createAssertionResult("sample.pass.1.resultField", true),
+          ]),
+          failure: { classification: "specification_gap", replay: "" },
+        },
+      ])
+    ).toEqual([
+      "checkResults[0].failure.classification is not a known classification",
+      "checkResults[0].failure.replay must be a non-empty string",
+      "checkResults[0].failure is only allowed on a failed check",
+    ]);
   });
 });

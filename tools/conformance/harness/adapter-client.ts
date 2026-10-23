@@ -66,6 +66,40 @@ interface JsonRpcErrorResponse {
 
 type JsonRpcResponse = JsonRpcErrorResponse | JsonRpcSuccessResponse;
 
+export interface AdapterFrame {
+  atMs: number;
+  direction: "receive" | "send";
+  frame: string;
+}
+
+export interface AdapterExit {
+  code: number | null;
+  signal: string | null;
+}
+
+/** Position in the frame and stderr streams where a check began. */
+export interface AdapterTranscriptMark {
+  frameSequence: number;
+  startedAt: number;
+  stderrOffset: number;
+}
+
+interface RecordedFrame {
+  at: number;
+  direction: AdapterFrame["direction"];
+  frame: string;
+  sequence: number;
+}
+
+const MAX_RETAINED_FRAMES = 256;
+const MAX_FRAME_CHARS = 4096;
+const MAX_RETAINED_STDERR_CHARS = 65_536;
+
+const truncate = (text: string, limit: number): string =>
+  text.length <= limit
+    ? text
+    : `${text.slice(0, limit)}...[${text.length - limit} more chars]`;
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -130,6 +164,11 @@ export class JsonRpcAdapterClient {
     }
   >();
   private stderr = "";
+  private stderrTotal = 0;
+  private readonly frames: RecordedFrame[] = [];
+  private frameSequence = 0;
+  private exit: AdapterExit | undefined;
+  private readonly closed: Promise<void>;
   private readonly timeoutMs: number;
 
   constructor(options: JsonRpcClientOptions) {
@@ -148,13 +187,22 @@ export class JsonRpcAdapterClient {
     this.writer = Writable.toWeb(this.child.stdin).getWriter();
 
     this.lines.on("line", (line) => {
+      this.recordFrame("receive", line);
       this.handleLine(line);
     });
     this.child.stderr.on("data", (chunk: Buffer) => {
-      this.stderr += chunk.toString("utf-8");
+      const text = chunk.toString("utf-8");
+      this.stderrTotal += text.length;
+      this.stderr = (this.stderr + text).slice(-MAX_RETAINED_STDERR_CHARS);
+    });
+    const closed = Promise.withResolvers<void>();
+    this.closed = closed.promise;
+    this.child.on("close", () => {
+      closed.resolve();
     });
     this.child.on("exit", (code, signal) => {
       this.exited = true;
+      this.exit = { code, signal };
       const message = `adapter process exited before completing all requests: code=${String(
         code
       )} signal=${String(signal)}${this.stderr.length > 0 ? ` stderr=${this.stderr}` : ""}`;
@@ -286,6 +334,71 @@ export class JsonRpcAdapterClient {
     }
   }
 
+  markTranscript(): AdapterTranscriptMark {
+    return {
+      frameSequence: this.frameSequence,
+      startedAt: performance.now(),
+      stderrOffset: this.stderrTotal,
+    };
+  }
+
+  framesSince(mark: AdapterTranscriptMark): AdapterFrame[] {
+    return this.frames
+      .filter((entry) => entry.sequence >= mark.frameSequence)
+      .map((entry) => ({
+        atMs: Math.round((entry.at - mark.startedAt) * 1000) / 1000,
+        direction: entry.direction,
+        frame: entry.frame,
+      }));
+  }
+
+  /** Stderr written since the mark, bounded to the retained buffer. */
+  stderrSince(mark: AdapterTranscriptMark): string {
+    const written = this.stderrTotal - mark.stderrOffset;
+    return written <= 0 ? "" : this.stderr.slice(-written);
+  }
+
+  stderrTail(limit: number): string {
+    return this.stderr.slice(-limit);
+  }
+
+  /**
+   * The adapter's exit status once it has exited, after its stdio streams
+   * close or a short grace period so trailing stderr is captured.
+   */
+  async exitStatus(graceMs = 1000): Promise<AdapterExit | undefined> {
+    if (this.exit === undefined) {
+      return undefined;
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      this.closed,
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, graceMs);
+      }),
+    ]);
+    clearTimeout(timer);
+    return this.exit;
+  }
+
+  private recordFrame(
+    direction: AdapterFrame["direction"],
+    line: string
+  ): void {
+    this.frames.push({
+      at: performance.now(),
+      direction,
+      frame: truncate(line, MAX_FRAME_CHARS),
+      sequence: this.frameSequence,
+    });
+    this.frameSequence += 1;
+
+    if (this.frames.length > MAX_RETAINED_FRAMES) {
+      this.frames.shift();
+    }
+  }
+
   private async request(
     method: string,
     params: unknown,
@@ -309,6 +422,7 @@ export class JsonRpcAdapterClient {
       },
       timer,
     });
+    this.recordFrame("send", payload.trimEnd());
     const writeRequest = async (): Promise<unknown> => {
       try {
         await this.writer.write(payload);

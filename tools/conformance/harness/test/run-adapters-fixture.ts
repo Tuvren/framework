@@ -137,3 +137,40 @@ export const createProjectionProbeAdapterScript = (logPath: string): string => `
     process.stdout.write(JSON.stringify({ id: request.id, jsonrpc: "2.0", result }) + "\\n");
   }
 `;
+
+export const failureProbeAdapterScript = `
+  for await (const line of console) {
+    const request = JSON.parse(line);
+    const params = request.params ?? {};
+    const respond = (result) => {
+      process.stdout.write(JSON.stringify({ id: request.id, jsonrpc: "2.0", result }) + "\\n");
+    };
+    if (request.method === "initialize") {
+      respond({
+        adapterId: "failure-probe",
+        capabilities: ["failure"],
+        packetId: params.packetId,
+        planVersion: params.planVersion
+      });
+      continue;
+    }
+    if (request.method === "dispatch" && params.operation === "malformed") {
+      process.stdout.write("{not a json-rpc frame\\n");
+      continue;
+    }
+    if (request.method === "dispatch" && params.operation === "provision") {
+      await new Promise((resolve) => {
+        process.stderr.write(
+          "storage provisioning failed: connect ECONNREFUSED 127.0.0.1:5432\\n",
+          resolve
+        );
+      });
+      process.exit(3);
+    }
+    if (request.method === "dispatch") {
+      respond({ kind: "result", value: { result: { status: "observed" } } });
+      continue;
+    }
+    respond(request.method === "events" ? [] : null);
+  }
+`;
