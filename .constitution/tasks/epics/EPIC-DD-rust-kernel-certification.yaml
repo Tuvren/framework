@@ -130,14 +130,20 @@ closeout:
     - stage: tech-spec
       item: "ADR-0078 requires explicit map nodes, but both the TypeScript and Rust adapter decoders accept untagged plain objects as maps; tighten the rule or the decoders fleet-wide."
   follow_ups:
+    - "For an invalid occurrence combined with an unsupported fault point or block mode, Rust returns adapter_invalid_encoding and TypeScript returns kernel_fault_point_unsupported; align TypeScript with the catalog input schema's precedence."
     - "Sanctioned-variation rules (opaque cursors, fencing tokens, bootstrap bytes, archive branch ids, error prose) live in tools/conformance/meta-conformance/observation-comparison.ts; move them into per-operation authority metadata in the kernel catalog so tooling only applies them."
     - "Every public Rust kernel method relies on a hand-written transaction guard and rust/kernel/src/memory.rs exceeds 3,800 lines; route syscalls through one dispatch wrapper so atomicity and the fault seam are structural."
     - "Issue #205: kernel.edge-validation selects both the seven syscall edge checks Rust passes and deprecated composite checks it does not implement; claim it for Rust once EPIC-DJ retires the composites."
-    - "The Rust negative-control control run uses adapter-syscall.json while the certification inventory names adapter.json; decide the certifying manifest before the kernel.memory certificate work in EPIC-DE."
     - "The Rust legacy lane still grades the tautological erasure probes and the fixture-echo recovery_state composite until EPIC-DJ."
     - "Ten kernel mutants have no Rust reproduction yet, and cross-scope resolve needs a shared-substrate construction seam in the Rust kernel."
     - "The Rust kernel-certification test target now runs harness, control, and mutant runs through cargo with 60-second timeouts; watch it for slowness on cold caches."
   code_decisions:
+    - summary: "Rust kernel write atomicity uses a per-key undo journal with counter and turn-order snapshots, rolled back on errors and before-commit faults."
+      kind: pattern
+      paths:
+        - rust/kernel/src/memory/journal.rs
+        - rust/kernel/src/memory/transaction.rs
+      commit: "30edc68"
     - summary: "Rust kernel test controls (fault seam, clocks, mutants) live behind a conformance Cargo feature reached only from the conformance adapter; mutants are selected with --mutant-from-env plus TUVREN_KERNEL_MUTANT through a noncertifying manifest."
       kind: pattern
       paths:
