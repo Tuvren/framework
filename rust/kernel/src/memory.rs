@@ -47,6 +47,8 @@ pub struct InMemoryKernel {
     #[cfg(feature = "conformance")]
     test_controls: Option<crate::testkit::KernelTestControls>,
     #[cfg(feature = "conformance")]
+    mutant: Option<crate::testkit::mutants::KernelMutant>,
+    #[cfg(feature = "conformance")]
     worker_clock: Option<Arc<dyn Fn() -> EpochMs + Send + Sync>>,
 }
 
@@ -140,6 +142,8 @@ impl InMemoryKernel {
             #[cfg(feature = "conformance")]
             test_controls: None,
             #[cfg(feature = "conformance")]
+            mutant: None,
+            #[cfg(feature = "conformance")]
             worker_clock: None,
         }
     }
@@ -155,6 +159,17 @@ impl InMemoryKernel {
         }
 
         let object_hash = hash_bytes_to_hex(&blob);
+        #[cfg(feature = "conformance")]
+        let object_hash = if let Some(mutant) = &self.mutant
+            && mutant.kind() == crate::testkit::mutants::MutantKind::WrongOpaqueObjectHash
+        {
+            mutant.activate();
+            let mut wrong = blob.clone();
+            wrong.push(0);
+            hash_bytes_to_hex(&wrong)
+        } else {
+            object_hash
+        };
         let created_at_ms = self.worker_now();
         let mut state = self.lock_state()?;
         state.objects.insert(
@@ -1380,6 +1395,15 @@ impl InMemoryKernel {
         }
         let now_ms = now_ms.unwrap_or_else(|| (self.now)());
         let mut state = self.lock_state()?;
+        #[cfg(feature = "conformance")]
+        if let Some(mutant) = &self.mutant
+            && mutant.kind()
+                == crate::testkit::mutants::MutantKind::DeleteObjectReachableThroughLiveRoot
+        {
+            return Ok(conformance::reclaim_with_reachable_delete(
+                &mut state, now_ms, mutant,
+            ));
+        }
         Ok(reclaim_state(&mut state, now_ms))
     }
 
@@ -1666,7 +1690,7 @@ impl InMemoryKernel {
             .checked_sub(1)
             .and_then(|index| run.step_sequence.get(index))
             .map(|step| step.id.clone());
-        Ok(RecoveryState {
+        let recovery = RecoveryState {
             consumed_staged_results,
             last_completed_step_id,
             last_turn_node_hash: run_active_turn_node_hash(run),
@@ -1676,7 +1700,21 @@ impl InMemoryKernel {
                 .get(run_id)
                 .cloned()
                 .unwrap_or_default(),
-        })
+        };
+        #[cfg(feature = "conformance")]
+        let recovery = if let Some(mutant) = &self.mutant
+            && mutant.kind()
+                == crate::testkit::mutants::MutantKind::DropUncommittedStagedResultOnRecovery
+            && !recovery.uncommitted_staged_results.is_empty()
+        {
+            mutant.activate();
+            let mut recovery = recovery;
+            recovery.uncommitted_staged_results.pop();
+            recovery
+        } else {
+            recovery
+        };
+        Ok(recovery)
     }
 
     pub fn verdicts_compose(&self, verdicts: Vec<Verdict>) -> KernelResult<Verdict> {

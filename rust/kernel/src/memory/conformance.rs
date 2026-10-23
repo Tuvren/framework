@@ -10,6 +10,7 @@ impl InMemoryKernel {
             state: Arc::new(Mutex::new(KernelState::default())),
             now: Arc::new(move || backend.backend_now()),
             worker_clock: Some(Arc::new(move || worker.worker_now())),
+            mutant: controls.mutant.clone(),
             test_controls: Some(controls),
         })
     }
@@ -31,6 +32,7 @@ impl InMemoryKernel {
             now: Arc::clone(&self.now),
             worker_clock: self.worker_clock.clone(),
             test_controls: None,
+            mutant: self.mutant.clone(),
         };
         let result = work(&working)?;
         let next = working.lock_state()?;
@@ -57,4 +59,43 @@ impl InMemoryKernel {
         }
         Ok(result)
     }
+}
+
+pub(super) fn reclaim_with_reachable_delete(
+    state: &mut KernelState,
+    now_ms: EpochMs,
+    mutant: &crate::testkit::mutants::KernelMutant,
+) -> ReclamationSummary {
+    let mut candidates = HashSet::new();
+    for branch in state
+        .branches
+        .values()
+        .filter(|branch| branch.archived_from_branch_id.is_some())
+    {
+        let mut current = Some(branch.head_turn_node_hash.as_str());
+        let mut visited = HashSet::new();
+        while let Some(hash) = current {
+            if !visited.insert(hash) {
+                break;
+            }
+            let Some(node) = state.turn_nodes.get(hash) else {
+                break;
+            };
+            candidates.extend(
+                node.consumed_staged_results
+                    .iter()
+                    .map(|result| result.object_hash.clone()),
+            );
+            current = node.previous_turn_node_hash.as_deref();
+        }
+    }
+    let mut summary = reclaim_state(state, now_ms);
+    for hash in candidates {
+        if state.objects.remove(&hash).is_some() {
+            mutant.activate();
+            summary.released_object_count += 1;
+            summary.retained_object_count -= 1;
+        }
+    }
+    summary
 }

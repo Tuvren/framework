@@ -11,7 +11,11 @@ struct Adapter {
 
 impl Adapter {
     fn new() -> Self {
+        Self::with_args(&[])
+    }
+    fn with_args(args: &[&str]) -> Self {
         let mut child = Command::new(env!("CARGO_BIN_EXE_tuvren-kernel-rust-conformance-adapter"))
+            .args(args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
@@ -420,4 +424,101 @@ fn production_grpc_dependency_graph_excludes_test_controls() {
     let graph = String::from_utf8(output.stdout).unwrap();
     assert!(graph.contains("tuvren-kernel-rust v"));
     assert!(!graph.contains("conformance"), "{graph}");
+}
+
+#[test]
+fn remaining_memory_families_are_advertised_and_composites_cannot_enter_syscalls() {
+    let mut adapter = Adapter::with_args(&["--syscall-families"]);
+    let initialized = adapter.request(
+        "initialize",
+        json!({"packetId":"test","planVersion":"0.1.0"}),
+    );
+    let capabilities = initialized["result"]["capabilities"].as_array().unwrap();
+    for capability in ["kernel.scope-isolation", "kernel.restart-recovery"] {
+        assert!(capabilities.contains(&json!(capability)), "{capability}");
+    }
+    let instance = adapter.instance();
+    for operation in [
+        "kernel.logical.recovery-state",
+        "kernel.reclamation.erasure-probe",
+        "kernel.reclamation.reclaim-probe",
+        "kernel.run-liveness.lease-renewal",
+    ] {
+        let response = adapter.call(&instance, operation, json!({}));
+        assert_eq!(
+            response["error"]["code"], "adapter_operation_not_implemented",
+            "{response}"
+        );
+    }
+}
+
+#[test]
+fn wrong_hash_mutant_requires_explicit_selection_and_proves_native_activation() {
+    let mut adapter = Adapter::new();
+    let activation = adapter.request(
+        "dispatch",
+        json!({"operation":"kernel.mutant.activation","input":{}}),
+    );
+    assert_eq!(
+        activation["result"]["value"]["result"]["activation"]["activated"],
+        false
+    );
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tuvren-kernel-rust-conformance-adapter"))
+        .arg("--mutant-from-env")
+        .env("TUVREN_KERNEL_MUTANT", "kernel.wrong-opaque-object-hash")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut mutant = Adapter {
+        input: child.stdin.take().unwrap(),
+        output: BufReader::new(child.stdout.take().unwrap()),
+        child,
+    };
+    let instance = mutant.instance();
+    let hash = mutant.result(
+        &instance,
+        "kernel.store.put",
+        json!({"blob":{"$bytes":"01"}}),
+    );
+    assert_eq!(hash, tuvren_kernel_rust::hash_bytes_to_hex(&[1, 0]));
+    assert_eq!(
+        mutant.result(&instance, "kernel.store.get", json!({"hash":hash})),
+        json!({"$bytes":"01"})
+    );
+    let activation = mutant.request(
+        "dispatch",
+        json!({"operation":"kernel.mutant.activation","input":{}}),
+    );
+    assert_eq!(
+        activation["result"]["value"]["result"]["activation"],
+        json!({"mutantId":"kernel.wrong-opaque-object-hash","signal":"mutant.wrong-opaque-object-hash.entered","activated":true,"activationCount":1})
+    );
+}
+
+#[test]
+fn every_memory_plan_syscall_has_a_native_binding() {
+    let mut adapter = Adapter::with_args(&["--syscall-families"]);
+    for family in [
+        "reclamation",
+        "scope-isolation",
+        "run-liveness",
+        "restart-recovery",
+    ] {
+        let path = format!(
+            "{}/../../spec/conformance/kernel/plans/kernel-{family}-syscall.json",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let plan: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        for check in plan["checks"].as_array().unwrap() {
+            for step in check["steps"].as_array().unwrap() {
+                let operation = step["operation"].as_str().unwrap();
+                let response = adapter.call(&Value::Null, operation, json!({}));
+                assert_eq!(
+                    response["error"]["code"], "adapter_invalid_instance",
+                    "{family} {operation}: {response}"
+                );
+            }
+        }
+    }
 }

@@ -8,6 +8,8 @@ use serde::{Deserialize, Deserializer};
 
 use crate::{EpochMs, KernelError, KernelRecord, KernelResult};
 
+pub mod mutants;
+
 const MAX_SAFE_INTEGER: u64 = 9_007_199_254_740_991;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
@@ -110,6 +112,7 @@ struct FaultState {
 
 #[derive(Clone, Debug)]
 pub struct KernelTestControls {
+    pub(crate) mutant: Option<mutants::KernelMutant>,
     backend_clock: Arc<OnceLock<AtomicI64>>,
     worker_clock: Arc<OnceLock<AtomicI64>>,
     faults: Arc<Mutex<FaultState>>,
@@ -117,6 +120,7 @@ pub struct KernelTestControls {
 impl Default for KernelTestControls {
     fn default() -> Self {
         Self {
+            mutant: None,
             backend_clock: Arc::new(OnceLock::new()),
             worker_clock: Arc::new(OnceLock::new()),
             faults: Arc::new(Mutex::new(FaultState::default())),
@@ -124,6 +128,13 @@ impl Default for KernelTestControls {
     }
 }
 impl KernelTestControls {
+    pub fn with_mutant(mutant: Option<mutants::KernelMutant>) -> Self {
+        Self {
+            mutant,
+            ..Self::default()
+        }
+    }
+
     pub fn set_clock(&self, domain: ClockDomain, now_ms: EpochMs) -> KernelResult<()> {
         if !u64::try_from(now_ms).is_ok_and(|n| n <= MAX_SAFE_INTEGER) {
             return Err(KernelError::new(

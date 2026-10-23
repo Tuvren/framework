@@ -1,0 +1,111 @@
+/**
+ * Copyright 2026 Oscar Yáñez Cisterna (@SkrOYC)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { expect, test } from "bun:test";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import nodePath from "node:path";
+
+import { spawn } from "bun";
+
+import { assertConformanceEvidence } from "../../scripts/lib/conformance-contract.ts";
+import {
+  NEGATIVE_CONTROL_PORTS,
+  runNegativeControls,
+} from "./negative-controls.ts";
+
+test("Rust memory controls activate and fail designated shared-plan assertions", async () => {
+  const config = NEGATIVE_CONTROL_PORTS.find(
+    ({ controlAdapter }) =>
+      controlAdapter === "rust/kernel-conformance-adapter/adapter-syscall.json"
+  );
+  if (config === undefined) {
+    throw new Error("missing Rust memory negative-control configuration");
+  }
+  const report = await runNegativeControls(config);
+  expect(report.control.status).toBe("pass");
+  expect(report.control.summary?.applicableChecks).toBeGreaterThan(0);
+  expect(report.mutants).toHaveLength(3);
+  for (const mutant of report.mutants) {
+    expect(mutant.outcome).toBe("killed");
+    expect(mutant.activationCount).toBeGreaterThan(0);
+    expect(mutant.designatedFailures.length).toBeGreaterThan(0);
+  }
+}, 60_000);
+
+test("Rust syscall evidence covers every check in all four memory families", async () => {
+  const directory = await mkdtemp(
+    nodePath.join(tmpdir(), "tuvren-rust-memory-")
+  );
+  try {
+    const evidencePath = nodePath.join(directory, "evidence.json");
+    const child = spawn(
+      [
+        "bun",
+        "tools/conformance/harness/run.ts",
+        "--adapter",
+        "rust/kernel-conformance-adapter/adapter-syscall.json",
+        "--capability",
+        "kernel.syscall",
+        "--summary-only",
+        "--evidence-out",
+        evidencePath,
+      ],
+      { stdout: "ignore", stderr: "inherit" }
+    );
+    expect(await child.exited).toBe(0);
+    const evidence: unknown = JSON.parse(await readFile(evidencePath, "utf-8"));
+    assertConformanceEvidence(evidence, "Rust memory family evidence");
+    for (const family of [
+      "scope-isolation",
+      "reclamation",
+      "run-liveness",
+      "restart-recovery",
+    ]) {
+      const plan: unknown = JSON.parse(
+        await readFile(
+          `spec/conformance/kernel/plans/kernel-${family}-syscall.json`,
+          "utf-8"
+        )
+      );
+      if (
+        typeof plan !== "object" ||
+        plan === null ||
+        !("checks" in plan) ||
+        !Array.isArray(plan.checks)
+      ) {
+        throw new Error("invalid memory plan");
+      }
+      expect(plan.checks.length).toBeGreaterThan(0);
+      for (const check of plan.checks) {
+        if (
+          typeof check !== "object" ||
+          check === null ||
+          !("checkId" in check) ||
+          typeof check.checkId !== "string"
+        ) {
+          throw new Error("invalid memory check");
+        }
+        const result = evidence.checkResults.find(
+          ({ checkId }) => checkId === check.checkId
+        );
+        expect(result?.status).toBe("pass");
+      }
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}, 60_000);
