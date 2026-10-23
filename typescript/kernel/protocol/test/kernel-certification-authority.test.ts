@@ -57,6 +57,13 @@ const string = (value: unknown): string => {
   }
   return value;
 };
+const readIdentityFixture = (name: string): Record<string, unknown> =>
+  object(
+    readJson(`spec/conformance/kernel/fixtures/kernel-protocol-${name}.json`)
+  );
+const nodePayload = (fixture: Record<string, unknown>): unknown =>
+  object(array(object(fixture.turnNodeIdentityRecord).consumedStagedResults)[0])
+    .interruptPayload;
 const catalog = (): Record<string, unknown> =>
   object(readJson("spec/conformance/kernel/operations.json"));
 const operations = (): Record<string, unknown>[] =>
@@ -366,6 +373,29 @@ const recipeFor = (type: string): Record<string, unknown> => {
   }
   return recipe;
 };
+const fixtureRecord = (value: unknown, tagged: boolean): unknown => {
+  if (Array.isArray(value)) {
+    return value.map((entry: unknown) => fixtureRecord(entry, tagged));
+  }
+  if (!isObject(value)) {
+    return value;
+  }
+  if (Object.hasOwn(value, "$bytes")) {
+    expect(Object.keys(value)).toEqual(["$bytes"]);
+    return Uint8Array.from(Buffer.from(string(value.$bytes), "hex"));
+  }
+  const entries =
+    tagged && Object.hasOwn(value, "$map")
+      ? array(value.$map).map((entry): [string, unknown] => {
+          const pair = array(entry);
+          expect(pair).toHaveLength(2);
+          return [string(pair[0]), pair[1]];
+        })
+      : Object.entries(value);
+  return Object.fromEntries(
+    entries.map(([key, entry]) => [key, fixtureRecord(entry, tagged)])
+  );
+};
 const project = (
   value: unknown,
   projection: Record<string, unknown>
@@ -390,7 +420,11 @@ const project = (
     })
   );
 };
-const identityBytes = (type: string, value: unknown): Uint8Array => {
+const identityBytes = (
+  type: string,
+  value: unknown,
+  tagged = false
+): Uint8Array => {
   const recipe = recipeFor(type);
   expect(recipe.hash).toBe("sha256");
   if (type === "opaque-object") {
@@ -402,7 +436,10 @@ const identityBytes = (type: string, value: unknown): Uint8Array => {
     return Uint8Array.from(Buffer.from(string(object(value).$bytes), "hex"));
   }
   expect(recipe.cborProfile).toEqual(CBOR_PROFILE);
-  const projected = project(value, object(recipe.projection));
+  const projected = project(
+    fixtureRecord(value, tagged),
+    object(recipe.projection)
+  );
   assertKernelRecord(projected);
   return encodeDeterministicKernelRecord(projected);
 };
@@ -447,11 +484,74 @@ describe("kernel identity recipes", () => {
   });
 
   const fixtureDirectory = "spec/conformance/kernel/fixtures";
+  test("pins the expanded vector inventory", () => {
+    const files = readdirSync(path.join(ROOT, fixtureDirectory)).filter(
+      (name) => name.endsWith(".json")
+    );
+    expect(files).toHaveLength(54);
+    const totals = { cborBytes: 0, cborHex: 0, digests: 0 };
+    for (const file of files) {
+      const fixture = object(readJson(`${fixtureDirectory}/${file}`));
+      const expected = Object.hasOwn(fixture, "expected")
+        ? object(fixture.expected)
+        : fixture;
+      for (const key of Object.keys(expected)) {
+        if (key.endsWith("Sha256Hex")) {
+          totals.digests += 1;
+        }
+        if (key.endsWith("CborHex")) {
+          totals.cborHex += 1;
+        }
+        if (key.endsWith("CborBytes")) {
+          totals.cborBytes += 1;
+        }
+      }
+    }
+    expect(totals).toEqual({ cborBytes: 42, cborHex: 84, digests: 120 });
+    for (const name of [
+      "nested-byte-string",
+      "nested-integer-array",
+      "integer-widths",
+      "non-identity-hash",
+    ]) {
+      expect(files).toContain(`kernel-protocol-${name}.json`);
+      expect(files).toContain(`kernel-protocol-${name}.bytes.json`);
+    }
+  });
+  test("vectors distinguish nested bytes, signed integer widths, and excluded hashes", () => {
+    const bytes = readIdentityFixture("nested-byte-string");
+    const integers = readIdentityFixture("nested-integer-array");
+    expect(nodePayload(bytes)).toEqual({ $bytes: "000118ff" });
+    expect(nodePayload(integers)).toEqual([0, 1, 24, 255]);
+    expect(bytes.turnNodeIdentityRecordCborHex).not.toBe(
+      integers.turnNodeIdentityRecordCborHex
+    );
+    expect(bytes.turnNodeIdentityRecordSha256Hex).not.toBe(
+      integers.turnNodeIdentityRecordSha256Hex
+    );
+    expect(nodePayload(readIdentityFixture("integer-widths"))).toEqual([
+      0, 23, 24, 255, 256, 65_535, 65_536, 4_294_967_295, 4_294_967_296,
+      9_007_199_254_740_991, -1, -24, -25, -256, -257, -65_536, -65_537,
+      -4_294_967_296, -4_294_967_297, -9_007_199_254_740_991,
+    ]);
+    const excluded = readIdentityFixture("non-identity-hash");
+    for (const [field, control] of [
+      ["turnNodeIdentityRecord", readIdentityFixture("deterministic")],
+      ["turnTreeIdentityRecord", readIdentityFixture("turn-tree")],
+    ] as const) {
+      expect(object(excluded[field])).toHaveProperty("hash");
+      expect(excluded[`${field}CborHex`]).toBe(control[`${field}CborHex`]);
+      expect(excluded[`${field}Sha256Hex`]).toBe(control[`${field}Sha256Hex`]);
+    }
+  });
   for (const file of readdirSync(path.join(ROOT, fixtureDirectory)).filter(
     (name) => name.endsWith(".json")
   )) {
     const fixture = object(readJson(`${fixtureDirectory}/${file}`));
-    for (const key of Object.keys(fixture).filter((name) =>
+    const tagged = Object.hasOwn(fixture, "input");
+    const input = tagged ? object(fixture.input) : fixture;
+    const expected = tagged ? object(fixture.expected) : fixture;
+    for (const key of Object.keys(expected).filter((name) =>
       name.endsWith("Sha256Hex")
     )) {
       test(`${file}: ${key} is reproduced from its recipe`, () => {
@@ -466,12 +566,17 @@ describe("kernel identity recipes", () => {
         if (type === undefined) {
           throw new Error(`unmapped committed digest ${key}`);
         }
-        const bytes = identityBytes(type, fixture[field]);
-        expect(digest(type, bytes)).toBe(string(fixture[key]));
+        const bytes = identityBytes(type, input[field], tagged);
+        expect(digest(type, bytes)).toBe(string(expected[key]));
         if (type !== "opaque-object") {
           expect(Buffer.from(bytes).toString("hex")).toBe(
-            string(fixture[`${field}CborHex`])
+            string(expected[`${field}CborHex`])
           );
+          if (tagged) {
+            expect(Buffer.from(bytes).toString("hex")).toBe(
+              string(object(expected[`${field}CborBytes`]).$bytes)
+            );
+          }
         }
       });
     }
