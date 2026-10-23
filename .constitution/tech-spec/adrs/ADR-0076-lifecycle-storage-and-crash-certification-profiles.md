@@ -16,9 +16,9 @@ assumption: "Synthesized from two independent designs after the owner directed g
      - `kernel.memory`: atomicity, native errors, concurrency, and recovery within retained process state.
      - `kernel.persistent-reopen`: close every instance and reopen the same storage.
      - `kernel.process-crash`: forced process death and recovery through a fresh process against retained storage.
-     - Storage-service failure is out of scope until claimed.
+     - `kernel.shared-backend`: several workers attached to one shared durable backend whose lease clock is backend-authoritative (ADR-0050; PostgreSQL today), covering multi-worker lease expiry and clock-skew preemption.
 
-     In-memory implementations certify `kernel.memory` only. Snapshot serialization must not be added to make them look durable.
+     Storage-service failure is out of scope until claimed. In-memory implementations certify `kernel.memory` only. Snapshot serialization must not be added to make them look durable.
   2. **Harness-owned storage.** A resource manager under `tools/conformance/harness/` allocates a fresh resource per check from the manifest's declared storage kind: a temporary SQLite directory with its sidecars retained, or a disposable PostgreSQL database or schema created through the existing devenv service. It hands an opaque `storageRef` to `createInstance` and `openInstance`, and drops the resource after the check. Adapters never provision, choose, or delete certification storage. PostgreSQL itself is started by the operator with `bun run services:up`, never by the harness.
   3. **Harness-owned process supervision.** The runner builds first, then supervises the actual implementation executable or its process group, never a `cargo run` or `go run` launcher. It records executable digest, PID, process epoch, signal, exit status, and replacement PID. Plan steps request graceful restart, forced kill, respawn, and storage reattachment as `control` operations. After a restart, the harness re-applies clock configuration and reattaches without reseeding.
   4. **Fault points are defined by storage boundaries from the checkpoint transaction** (docs/KrakenKernelSpecification.md §5.5):
@@ -29,11 +29,11 @@ assumption: "Synthesized from two independent designs after the owner directed g
      - commit submitted with unknown outcome.
 
      Each point declares its trigger operation, scope, occurrence, and the recovery outcomes the authority allows. For the uncertain point, conditional assertions (ADR-0075) express both permitted outcomes, and both must hold the all-or-nothing invariant (§5.5 and the Crash Recovery Invariant). The current TypeScript `mid-commit` name is retired.
-  5. **Arming and proof of reach.** A catalogued control `armFault {point, selector, occurrence, mode}` configures the implementation's test-only fault seam.
-     - Mode `throw` raises a typed fault inside the operation (memory and durable profiles).
+  5. **Arming and proof of reach.** A catalogued control `armFault {instance, point, selector, occurrence, mode} -> {token}` configures the implementation's test-only fault seam on one instance and returns a token that correlates every activation signal with that arming.
+     - Mode `throw` raises a typed fault carrying the token inside the operation (memory and durable profiles).
      - Mode `block` makes the seam emit a `faultReached {token, processEpoch, phase}` notification and then block. The supervisor then sends SIGKILL without releasing the gate (process-crash profile).
 
-     A check counts only with matching activation evidence: a typed fault outcome, or a receipt followed by the observed forced death of the same epoch. A missing receipt invalidates the run; it is never a pass. If a requested physical phase cannot be instrumented in a backend, that point is `unsupported` for that backend.
+     A check counts only with activation evidence whose token matches the arming: a typed fault outcome, or a `faultReached` receipt followed by the observed forced death of the same `processEpoch`. A missing receipt invalidates the run; it is never a pass. If a requested physical phase cannot be instrumented in a backend, that point is `unsupported` for that backend.
   6. **Recovery follows the native lifecycle.** After restart, the plan drives the public recovery surface. Adapters cannot insert reconciliation or choose the expected head. Expected heads come from earlier trace observations.
   7. **Fault seams per language.** Rust gains a test-only fault seam before it can certify fault checks. Go, Python, and Dart keep their existing seams, re-expressed against these points.
 - **Alternatives considered:**

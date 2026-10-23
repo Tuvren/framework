@@ -7,5 +7,5 @@ boundaries:
   - BND-29
 companion: "conformance-certification.md"
 certainty: "assumed"
-assumption: "Per-port manifests at spec/conformance/<port>/negative-controls.json declare mutants, violated claims, activation preconditions, profiles, and designated assertions (ADR-0079)."
+assumption: "Per-port manifests at spec/conformance/<port>/negative-controls.json declare mutants with their kind (implementation, observation, or instrumentation), violated claims, activation preconditions, profiles, and expected detection: designated assertions or an expected runner rejection (ADR-0079)."
 settles_when: "The negative-control run reports activated and killed outcomes for the initial kernel mutants against the TypeScript reference in a cited closeout."
