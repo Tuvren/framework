@@ -34,9 +34,7 @@ def test_run_erasure_probe_reports_all_true() -> None:
         "unrecoverableAfterErasure": True,
         "lineageStructurallyIntactAfterErasure": True,
     }
-    # `_projection` mirrors the shared `{"result": ..., "evidence": ...}`
-    # envelope every adapter operation returns.
-    assert result["evidence"] == result["result"]
+    assert "evidence" not in result
 
 
 def test_run_erasure_probe_is_reusable_across_dispatches() -> None:

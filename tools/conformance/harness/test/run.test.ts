@@ -30,6 +30,7 @@ import nodePath from "node:path";
 
 import { assertConformanceEvidence } from "../../../scripts/lib/conformance-contract.ts";
 import type { ConformanceFailure } from "../../../scripts/lib/conformance-contract.ts";
+import { readAdapterManifest, readPlans } from "../run-plans.ts";
 import {
   createProjectionProbeAdapterScript,
   errorStateAdapterScript,
@@ -277,153 +278,181 @@ describe("certification harness state handling", () => {
     expect(result.stderr).toContain("failed adapter manifest validation");
   });
 
-  test("keeps dispatch state when inspectState also returns state", async () => {
-    const tempDir = await mkdtemp(
-      nodePath.join(tmpdir(), "tuvren-runner-test-")
-    );
-    tempDirs.push(tempDir);
+  test.each([false, true])(
+    "keeps dispatch state when inspectState also returns state (trace=%s)",
+    async (trace) => {
+      const tempDir = await mkdtemp(
+        nodePath.join(tmpdir(), "tuvren-runner-test-")
+      );
+      tempDirs.push(tempDir);
 
-    const adapterPath = nodePath.join(tempDir, "adapter.json");
-    const packetPath = nodePath.join(tempDir, "packet.json");
-    const planPath = nodePath.join(tempDir, "plan.json");
+      const adapterPath = nodePath.join(tempDir, "adapter.json");
+      const packetPath = nodePath.join(tempDir, "packet.json");
+      const planPath = nodePath.join(tempDir, "plan.json");
 
-    await writeFile(
-      packetPath,
-      `${JSON.stringify({ packetId: "runner.state" }, null, 2)}\n`
-    );
+      await writeFile(
+        packetPath,
+        `${JSON.stringify({ packetId: "runner.state" }, null, 2)}\n`
+      );
 
-    await writeFile(
-      adapterPath,
-      `${JSON.stringify(
-        {
-          adapterId: "state-precedence-adapter",
-          authorityPackets: [packetPath],
-          boundary: "framework",
-          capabilities: ["runner.state"],
-          command: ["bun", "--eval", statePrecedenceAdapterScript],
-          implementationId: "state-precedence-adapter",
-          language: "typescript",
-          protocol: {
-            name: "tuvren.conformance-adapter",
-            transport: "json-rpc-2.0-stdio",
-            version: "0.1.0",
-          },
-          suiteId: "runner.state",
-          suiteVersion: "0.1.0",
-        },
-        null,
-        2
-      )}\n`
-    );
-
-    await writeFile(
-      planPath,
-      `${JSON.stringify(
-        {
-          applicability: {
+      await writeFile(
+        adapterPath,
+        `${JSON.stringify(
+          {
+            adapterId: "state-precedence-adapter",
+            authorityPackets: [packetPath],
+            boundary: "framework",
             capabilities: ["runner.state"],
-          },
-          checks: [
-            {
-              assertions: [
-                {
-                  equals: "dispatch",
-                  field: "$.source",
-                  kind: "stateField",
-                },
-              ],
-              checkId: "runner.state.dispatch-precedes-inspect",
-              operation: "runner.state",
+            command: ["bun", "--eval", statePrecedenceAdapterScript],
+            implementationId: "state-precedence-adapter",
+            language: "typescript",
+            protocol: {
+              name: "tuvren.conformance-adapter",
+              transport: "json-rpc-2.0-stdio",
+              version: "0.1.0",
             },
-          ],
-          packetId: "runner.state",
-          planId: "runner.state",
-          planVersion: "0.1.0",
-        },
-        null,
-        2
-      )}\n`
-    );
+            suiteId: "runner.state",
+            suiteVersion: "0.1.0",
+          },
+          null,
+          2
+        )}\n`
+      );
 
-    const result = await runCommand([
-      "bun",
-      "tools/conformance/harness/run.ts",
-      "--adapter",
-      adapterPath,
-      "--plan",
-      planPath,
-      "--check",
-      "runner.state.dispatch-precedes-inspect",
-    ]);
+      await writeFile(
+        planPath,
+        `${JSON.stringify(
+          {
+            applicability: {
+              capabilities: ["runner.state"],
+            },
+            checks: [
+              {
+                assertions: [
+                  {
+                    equals: "dispatch",
+                    field: "$.source",
+                    kind: "stateField",
+                  },
+                ],
+                checkId: "runner.state.dispatch-precedes-inspect",
+                ...(trace
+                  ? {
+                      steps: [
+                        {
+                          stepId: "read",
+                          operation: "runner.state",
+                          inspectState: {},
+                          assertions: [
+                            {
+                              kind: "stateField",
+                              field: "$.source",
+                              equals: "dispatch",
+                            },
+                          ],
+                        },
+                      ],
+                      assertions: [
+                        {
+                          kind: "stateField",
+                          field: "$.trace.read.state.source",
+                          equals: "dispatch",
+                        },
+                      ],
+                    }
+                  : {}),
+                operation: "runner.state",
+              },
+            ],
+            packetId: "runner.state",
+            planId: "runner.state",
+            planVersion: "0.1.0",
+          },
+          null,
+          2
+        )}\n`
+      );
 
-    expect(result.stderr).toBe("");
-    expect(result.code).toBe(0);
+      const result = await runCommand([
+        "bun",
+        "tools/conformance/harness/run.ts",
+        "--adapter",
+        adapterPath,
+        "--plan",
+        planPath,
+        "--check",
+        "runner.state.dispatch-precedes-inspect",
+      ]);
 
-    const evidence: unknown = JSON.parse(result.stdout);
-    assertConformanceEvidence(evidence, "runner output");
+      expect(result.stderr).toBe("");
+      expect(result.code).toBe(0);
 
-    expect(evidence.summary).toMatchObject({
-      failedChecks: 0,
-      passedChecks: 1,
-    });
-    expect(evidence.checkResults[0]?.assertionResults).toContainEqual({
-      assertionId: "runner.state.dispatch-precedes-inspect.1.stateField",
-      status: "pass",
-    });
+      const evidence: unknown = JSON.parse(result.stdout);
+      assertConformanceEvidence(evidence, "runner output");
 
-    const summaryResult = await runCommand([
-      "bun",
-      "tools/conformance/harness/run.ts",
-      "--adapter",
-      adapterPath,
-      "--plan",
-      planPath,
-      "--check",
-      "runner.state.dispatch-precedes-inspect",
-      "--summary-only",
-    ]);
-
-    expect(summaryResult.stderr).toBe("");
-    expect(summaryResult.code).toBe(0);
-
-    const summary: unknown = JSON.parse(summaryResult.stdout);
-
-    expect(summary).toMatchObject({
-      status: "pass",
-      summary: {
+      expect(evidence.summary).toMatchObject({
         failedChecks: 0,
         passedChecks: 1,
-      },
-    });
-    expect(summary).not.toHaveProperty("checkResults");
+      });
+      expect(evidence.checkResults[0]?.assertionResults).toContainEqual({
+        assertionId: "runner.state.dispatch-precedes-inspect.1.stateField",
+        status: "pass",
+      });
 
-    const manifestText = await readFile(adapterPath, "utf-8");
-    const invalidContextScript = statePrecedenceAdapterScript.replace(
-      'state: { source: "dispatch" }',
-      "evidence: [], events: {}"
-    );
-    await writeFile(
-      adapterPath,
-      manifestText.replace(
-        JSON.stringify(statePrecedenceAdapterScript),
-        JSON.stringify(invalidContextScript)
-      )
-    );
-    const invalidContext = await runCommand([
-      "bun",
-      "tools/conformance/harness/run.ts",
-      "--adapter",
-      adapterPath,
-      "--plan",
-      planPath,
-    ]);
-    expect(invalidContext.code).toBe(1);
-    const invalidEvidence: unknown = JSON.parse(invalidContext.stdout);
-    assertConformanceEvidence(invalidEvidence, "invalid context evidence");
-    expect(invalidEvidence.checkResults[0]?.assertionResults[0]?.message).toBe(
-      "operation context field must be an object when present"
-    );
-  });
+      const summaryResult = await runCommand([
+        "bun",
+        "tools/conformance/harness/run.ts",
+        "--adapter",
+        adapterPath,
+        "--plan",
+        planPath,
+        "--check",
+        "runner.state.dispatch-precedes-inspect",
+        "--summary-only",
+      ]);
+
+      expect(summaryResult.stderr).toBe("");
+      expect(summaryResult.code).toBe(0);
+
+      const summary: unknown = JSON.parse(summaryResult.stdout);
+
+      expect(summary).toMatchObject({
+        status: "pass",
+        summary: {
+          failedChecks: 0,
+          passedChecks: 1,
+        },
+      });
+      expect(summary).not.toHaveProperty("checkResults");
+
+      const manifestText = await readFile(adapterPath, "utf-8");
+      const invalidContextScript = statePrecedenceAdapterScript.replace(
+        'state: { source: "dispatch" }',
+        "evidence: [], events: {}"
+      );
+      await writeFile(
+        adapterPath,
+        manifestText.replace(
+          JSON.stringify(statePrecedenceAdapterScript),
+          JSON.stringify(invalidContextScript)
+        )
+      );
+      const invalidContext = await runCommand([
+        "bun",
+        "tools/conformance/harness/run.ts",
+        "--adapter",
+        adapterPath,
+        "--plan",
+        planPath,
+      ]);
+      expect(invalidContext.code).toBe(1);
+      const invalidEvidence: unknown = JSON.parse(invalidContext.stdout);
+      assertConformanceEvidence(invalidEvidence, "invalid context evidence");
+      expect(
+        invalidEvidence.checkResults[0]?.assertionResults[0]?.message
+      ).toBe("operation context field must be an object when present");
+    }
+  );
 
   test("merges inspected state with adapter error state", async () => {
     const tempDir = await mkdtemp(
@@ -1581,6 +1610,13 @@ describe("native operation errors", () => {
     ["native_expected", "step", true],
     ["native_expected", "final", true],
     ["native_expected", "none", false],
+    ["native_expected", "envelope", true],
+    ["native_expected", "final-envelope", true],
+    ["native_expected", "capture", true],
+    ["native_expected", "single", true],
+    ["native_expected", "single-none", false],
+    ["native_expected", "uncatalogued", true],
+    ["native_expected", "evidence", false],
     ["native_unlisted", "step", false],
     ["native_unlisted", "single", false],
   ] as const)(
@@ -1611,7 +1647,17 @@ describe("native operation errors", () => {
             capability: "probe",
             input: {},
             errors: ["native_expected"],
-            observation: { result: { type: "null" } },
+            observation: {
+              result:
+                assertionLocation === "capture"
+                  ? { type: "string" }
+                  : { type: "null" },
+              state: {
+                type: "object",
+                properties: { source: { type: "string" } },
+                additionalProperties: false,
+              },
+            },
           },
         ],
       };
@@ -1620,7 +1666,9 @@ describe("native operation errors", () => {
         packetPath,
         JSON.stringify({
           packetId: "probe.native-errors",
-          operationCatalog: catalogPath,
+          ...(assertionLocation === "uncatalogued"
+            ? {}
+            : { operationCatalog: catalogPath }),
           conformancePlans: [
             { path: planPath, planId: "native-errors", planVersion: "0.1.0" },
           ],
@@ -1633,13 +1681,28 @@ describe("native operation errors", () => {
           {
             kind: "resultField",
             field: "$.trace.success.result",
-            equals: null,
+            equals: assertionLocation === "capture" ? code : null,
           },
-          ...(assertionLocation === "final"
+          ...(["final", "final-envelope", "capture"].includes(assertionLocation)
             ? [
                 {
-                  ...errorAssertion,
-                  field: "$.trace.reject.state.adapterError.code",
+                  ...(assertionLocation === "final-envelope"
+                    ? {
+                        kind: "errorEnvelope",
+                        path: "$.result.trace.reject.state.adapterError",
+                        equals: { code, message: "native failure" },
+                      }
+                    : {
+                        ...errorAssertion,
+                        field: "$.trace.reject.state.adapterError.code",
+                      }),
+                  ...(assertionLocation === "capture"
+                    ? {
+                        field: "$.trace.success.result",
+                        equals: undefined,
+                        equalsPath: "$.capture.errorCode",
+                      }
+                    : {}),
                 },
               ]
             : []),
@@ -1649,8 +1712,25 @@ describe("native operation errors", () => {
             stepId: "reject",
             operation: "probe.read",
             arguments: { reject: true },
-            ...(assertionLocation === "step"
-              ? { assertions: [errorAssertion] }
+            ...(assertionLocation === "capture"
+              ? {
+                  capture: [
+                    { name: "errorCode", path: "state.adapterError.code" },
+                  ],
+                }
+              : {}),
+            ...(["step", "envelope"].includes(assertionLocation)
+              ? {
+                  assertions: [
+                    assertionLocation === "envelope"
+                      ? {
+                          kind: "errorEnvelope",
+                          path: "$.state.adapterError",
+                          equals: { code, message: "native failure" },
+                        }
+                      : errorAssertion,
+                  ],
+                }
               : {}),
           },
           { stepId: "success", operation: "probe.read", arguments: {} },
@@ -1664,12 +1744,21 @@ describe("native operation errors", () => {
           packetId: "probe.native-errors",
           planVersion: "0.1.0",
           checks: [
-            assertionLocation === "single"
+            assertionLocation.startsWith("single")
               ? {
                   checkId: "probe.errors",
                   operation: "probe.read",
                   input: { reject: true },
-                  assertions: [errorAssertion],
+                  assertions:
+                    assertionLocation === "single-none"
+                      ? [
+                          {
+                            kind: "stateField",
+                            field: "$.source",
+                            equals: "inspect",
+                          },
+                        ]
+                      : [errorAssertion],
                 }
               : traceCheck,
           ],
@@ -1680,8 +1769,8 @@ describe("native operation errors", () => {
       const params = request.params ?? {};
       const input = params.input?.checkInput ?? params.input;
       const result = request.method === "initialize" ? { adapterId: "probe", capabilities: ["probe"], packetId: params.packetId, planVersion: params.planVersion }
-        : request.method === "dispatch" ? (input?.reject ? { kind: "error", error: { code: ${JSON.stringify(code)}, message: "native failure" } } : { kind: "result", value: { result: null } })
-        : request.method === "events" ? [] : request.method === "createInstance" ? "instance" : null;
+        : request.method === "dispatch" ? (${JSON.stringify(assertionLocation === "evidence")} ? { kind: "result", value: { result: null, evidence: { unchecked: "claim" } } } : input?.reject ? { kind: "error", error: { code: ${JSON.stringify(code)}, message: "native failure" } } : { kind: "result", value: { result: ${JSON.stringify(assertionLocation === "capture" ? code : null)} } })
+        : request.method === "events" ? [] : request.method === "createInstance" ? "instance" : request.method === "inspectState" ? { source: "inspect" } : null;
       process.stdout.write(JSON.stringify({ id: request.id, jsonrpc: "2.0", result }) + "\\n");
     }`;
       await writeFile(
@@ -1716,8 +1805,76 @@ describe("native operation errors", () => {
       expect(evidence.checkResults[0]).toMatchObject(
         accepted
           ? { status: "pass" }
-          : { status: "fail", failure: { classification: "implementation" } }
+          : {
+              status: "fail",
+              failure: {
+                classification:
+                  assertionLocation === "evidence"
+                    ? "adapter_protocol"
+                    : "implementation",
+              },
+            }
       );
     }
   );
 });
+
+test.each(["explicit", "syscall", "arguments"])(
+  "rejects a %s enforcing plan without its packet catalog",
+  async (mode) => {
+    const directory = await mkdtemp(
+      nodePath.join(tmpdir(), "tuvren-missing-catalog-")
+    );
+    tempDirs.push(directory);
+    const planPath = nodePath.join(directory, "plan.json");
+    await writeFile(
+      planPath,
+      JSON.stringify({
+        planId: "missing-catalog",
+        packetId:
+          mode === "arguments" ? "tuvren.kernel.protocol" : "missing.packet",
+        planVersion: "0.1.0",
+        ...(mode === "explicit" ? { certificationRules: "enforcing" } : {}),
+        applicability: {
+          capabilities: [mode === "syscall" ? "kernel.syscall" : "probe"],
+        },
+        checks: [
+          {
+            checkId: "missing.catalog",
+            operation: mode === "arguments" ? "kernel.store.has" : "probe",
+            ...(mode === "arguments"
+              ? {
+                  steps: [
+                    {
+                      stepId: "read",
+                      operation: "kernel.store.has",
+                      arguments: { hash: "0".repeat(64) },
+                    },
+                  ],
+                }
+              : {}),
+            assertions: [{ kind: "resultField", field: "$", equals: "ok" }],
+          },
+        ],
+      })
+    );
+    const manifest = await readAdapterManifest(
+      "typescript/kernel/conformance-adapter/adapter.json"
+    );
+    const [failure] = await Promise.allSettled([
+      readPlans(
+        { ...manifest, authorityPackets: [] },
+        { packets: [], plans: [planPath] }
+      ),
+    ]);
+    expect(failure?.status).toBe("rejected");
+    if (failure?.status === "rejected") {
+      expect(failure.reason).toBeInstanceOf(Error);
+      if (failure.reason instanceof Error) {
+        expect(failure.reason.message).toContain(
+          `verification: enforcing plan missing-catalog requires the operation catalog for packet ${mode === "arguments" ? "tuvren.kernel.protocol" : "missing.packet"}`
+        );
+      }
+    }
+  }
+);

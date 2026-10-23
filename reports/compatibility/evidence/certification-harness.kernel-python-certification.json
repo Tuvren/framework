@@ -2993,6 +2993,7 @@
     "kernel.syscall.protocol.deterministic_hashing",
     "kernel.syscall.protocol.modify_composition",
     "kernel.syscall.protocol.schema_roundtrip",
+    "kernel.syscall.protocol.tree_manifest_identity",
     "kernel.syscall.kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
     "kernel.syscall.kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
     "kernel.syscall.kernel-protocol-af.run-complete-rejects-missing-event-object",
@@ -3048,9 +3049,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 68,
-    "totalChecks": 122,
+    "totalChecks": 123,
     "applicableChecks": 68,
-    "nonApplicableChecks": 54
+    "nonApplicableChecks": 55
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

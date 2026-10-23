@@ -55,6 +55,10 @@ export const statePrecedenceAdapterScript = `
       continue;
     }
 
+    if (request.method === "createInstance" || request.method === "destroyInstance") {
+      respond(request.method === "createInstance" ? "instance" : null);
+      continue;
+    }
     if (request.method === "shutdown") {
       respond(null);
     }
@@ -103,6 +107,10 @@ export const errorStateAdapterScript = `
       continue;
     }
 
+    if (request.method === "createInstance" || request.method === "destroyInstance") {
+      respond(request.method === "createInstance" ? "instance" : null);
+      continue;
+    }
     if (request.method === "shutdown") {
       respond(null);
     }

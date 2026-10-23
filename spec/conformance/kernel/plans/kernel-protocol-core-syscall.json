@@ -8,7 +8,8 @@
   },
   "fixtures": {
     "kernel-protocol-deterministic": "../fixtures/kernel-protocol-deterministic.bytes.json",
-    "kernel-protocol-logical": "../fixtures/kernel-protocol-logical.bytes.json"
+    "kernel-protocol-logical": "../fixtures/kernel-protocol-logical.bytes.json",
+    "kernel-protocol-turn-tree": "../fixtures/kernel-protocol-turn-tree.bytes.json"
   },
   "checks": [
     {
@@ -69,7 +70,10 @@
     },
     {
       "checkId": "kernel.syscall.protocol.schema_roundtrip",
-      "claimIds": ["kernel.syscall.protocol.schema_roundtrip"],
+      "claimIds": [
+        "kernel.syscall.protocol.schema_roundtrip",
+        "kernel.syscall.protocol.schema_canonical_cbor"
+      ],
       "operation": "kernel.schema.register",
       "steps": [
         {
@@ -103,12 +107,21 @@
               "path": "result"
             }
           ],
-          "claimIds": ["kernel.syscall.protocol.schema_roundtrip"],
+          "claimIds": [
+            "kernel.syscall.protocol.schema_roundtrip",
+            "kernel.syscall.protocol.schema_canonical_cbor"
+          ],
           "assertions": [
             {
               "kind": "resultField",
               "field": "$",
               "equalsPath": "$.fixture.input.turnTreeSchemaRecord"
+            },
+            {
+              "kind": "canonicalCbor",
+              "recordType": "schema",
+              "path": "$.result",
+              "equalsPath": "$.fixture.expected.turnTreeSchemaRecordCborBytes"
             }
           ]
         }
@@ -445,7 +458,10 @@
     },
     {
       "checkId": "kernel.syscall.logical.recovery_state",
-      "claimIds": ["kernel.syscall.logical.recovery_state"],
+      "claimIds": [
+        "kernel.syscall.logical.recovery_state",
+        "kernel.syscall.protocol.node_identity_walk"
+      ],
       "operation": "kernel.schema.register",
       "steps": [
         {
@@ -724,8 +740,183 @@
               "kind": "resultField",
               "field": "$.uncommittedStagedResults",
               "length": 1
+            },
+            {
+              "kind": "resultField",
+              "field": "$.consumedStagedResults",
+              "length": 1,
+              "every": {
+                "field": "$.taskId",
+                "equals": "consumed"
+              }
+            },
+            {
+              "kind": "resultField",
+              "field": "$.consumedStagedResults",
+              "length": 1,
+              "every": {
+                "field": "$.status",
+                "equals": "completed"
+              }
+            },
+            {
+              "kind": "resultField",
+              "field": "$.uncommittedStagedResults",
+              "length": 1,
+              "every": {
+                "field": "$.taskId",
+                "equals": "pending"
+              }
+            },
+            {
+              "kind": "resultField",
+              "field": "$.uncommittedStagedResults",
+              "length": 1,
+              "every": {
+                "field": "$.status",
+                "equals": "interrupted"
+              }
             }
           ]
+        },
+        {
+          "stepId": "node",
+          "operation": "kernel.node.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.checkpoint.turnNodeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "node",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.protocol.node_identity_walk"],
+          "assertions": [
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result",
+              "equalsPath": "$.result.hash"
+            }
+          ]
+        },
+        {
+          "stepId": "walk",
+          "operation": "kernel.node.walkBack",
+          "arguments": {
+            "fromHash": {
+              "$ref": "capture.checkpoint.turnNodeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "walk",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.protocol.node_identity_walk"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "length": 3
+            },
+            {
+              "kind": "resultField",
+              "field": "$.0.hash",
+              "equalsPath": "$.capture.checkpoint.turnNodeHash"
+            },
+            {
+              "kind": "resultField",
+              "field": "$.1.hash",
+              "equalsPath": "$.capture.completeFirst.turnNodeHash"
+            },
+            {
+              "kind": "resultField",
+              "field": "$.2.previousTurnNodeHash",
+              "equals": null
+            },
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result.0",
+              "equalsPath": "$.result.0.hash"
+            },
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result.1",
+              "equalsPath": "$.result.1.hash"
+            },
+            {
+              "kind": "referenceWalk",
+              "path": "$.result",
+              "references": [
+                {
+                  "path": "$.*.previousTurnNodeHash",
+                  "targetPath": "$.result",
+                  "recordType": "turn-node",
+                  "hashPath": "$.hash",
+                  "nullable": true,
+                  "length": 3
+                }
+              ]
+            },
+            {
+              "kind": "resultField",
+              "field": "$.2.hash",
+              "equalsPath": "$.capture.thread.rootTurnNodeHash"
+            },
+            {
+              "kind": "identity",
+              "recordType": "turn-node",
+              "path": "$.result.2",
+              "equalsPath": "$.result.2.hash"
+            }
+          ]
+        },
+        {
+          "stepId": "manifest",
+          "operation": "kernel.tree.manifest",
+          "arguments": {
+            "treeHash": {
+              "$ref": "capture.node.turnTreeHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "manifest",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.protocol.node_identity_walk"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$map",
+              "length": 2
+            }
+          ]
+        },
+        {
+          "stepId": "object",
+          "operation": "kernel.store.get",
+          "arguments": {
+            "hash": {
+              "$ref": "capture.consumed.objectHash"
+            }
+          },
+          "capture": [
+            {
+              "name": "object",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.protocol.node_identity_walk"],
+          "assertions": []
         }
       ],
       "assertions": [
@@ -743,9 +934,39 @@
           "kind": "resultField",
           "field": "$.trace.recover.result.uncommittedStagedResults",
           "length": 1
+        },
+        {
+          "kind": "identity",
+          "recordType": "turn-node",
+          "path": "$.result.trace.node.result",
+          "equalsPath": "$.result.trace.checkpoint.result.turnNodeHash"
+        },
+        {
+          "kind": "digest",
+          "path": "$.result.trace.object.result",
+          "equalsPath": "$.result.trace.consumed.result.objectHash"
+        },
+        {
+          "kind": "referenceWalk",
+          "path": "$.result.trace.manifest.result",
+          "references": [
+            {
+              "path": "$.$map.*.1",
+              "length": 2,
+              "targetPath": "$.result.trace.object.result",
+              "recordType": "opaque-object",
+              "nullable": true
+            }
+          ]
         }
       ],
-      "evidence": ["trace.recover.result"],
+      "evidence": [
+        "trace.recover.result",
+        "trace.node.result",
+        "trace.walk.result",
+        "trace.manifest.result",
+        "trace.object.result"
+      ],
       "capabilities": ["kernel.logical"]
     },
     {
@@ -873,6 +1094,155 @@
       ],
       "evidence": ["trace.reject.state.adapterError"],
       "capabilities": ["kernel.logical"]
+    },
+    {
+      "checkId": "kernel.syscall.protocol.tree_manifest_identity",
+      "claimIds": ["kernel.syscall.protocol.tree_manifest_identity"],
+      "operation": "kernel.tree.create",
+      "fixture": "kernel-protocol-turn-tree",
+      "steps": [
+        {
+          "stepId": "schema",
+          "operation": "kernel.schema.register",
+          "arguments": {
+            "schema": {
+              "$literal": {
+                "schemaId": "schema_main",
+                "paths": [
+                  {
+                    "collection": "ordered",
+                    "path": "messages"
+                  },
+                  {
+                    "collection": "single",
+                    "path": "context.manifest"
+                  }
+                ],
+                "incorporationRules": []
+              }
+            }
+          },
+          "capture": [
+            {
+              "name": "schema",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.protocol.tree_manifest_identity"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": "schema_main"
+            }
+          ]
+        },
+        {
+          "stepId": "tree",
+          "operation": "kernel.tree.create",
+          "arguments": {
+            "schemaId": {
+              "$ref": "fixture.input.turnTreeIdentityRecord.schemaId"
+            },
+            "changes": {
+              "$ref": "fixture.input.turnTreeIdentityRecord.manifest"
+            }
+          },
+          "capture": [
+            {
+              "name": "tree",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.protocol.tree_manifest_identity"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.expected.turnTreeIdentityRecordSha256Hex"
+            }
+          ]
+        },
+        {
+          "stepId": "manifest",
+          "operation": "kernel.tree.manifest",
+          "arguments": {
+            "treeHash": {
+              "$ref": "capture.tree"
+            }
+          },
+          "capture": [
+            {
+              "name": "manifest",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.protocol.tree_manifest_identity"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$.$map",
+              "length": 2
+            },
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equals": {
+                "$map": [
+                  [
+                    "context.manifest",
+                    "1111111111111111111111111111111111111111111111111111111111111111"
+                  ],
+                  [
+                    "messages",
+                    [
+                      "2222222222222222222222222222222222222222222222222222222222222222",
+                      "2323232323232323232323232323232323232323232323232323232323232323"
+                    ]
+                  ]
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "stepId": "messages",
+          "operation": "kernel.tree.resolve",
+          "arguments": {
+            "treeHash": {
+              "$ref": "capture.tree"
+            },
+            "path": "messages"
+          },
+          "capture": [
+            {
+              "name": "messages",
+              "path": "result"
+            }
+          ],
+          "claimIds": ["kernel.syscall.protocol.tree_manifest_identity"],
+          "assertions": [
+            {
+              "kind": "resultField",
+              "field": "$",
+              "equalsPath": "$.fixture.input.turnTreeIdentityRecord.manifest.messages"
+            }
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.trace.tree.result",
+          "equalsPath": "$.fixture.expected.turnTreeIdentityRecordSha256Hex"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.trace.manifest.result.$map",
+          "length": 2
+        }
+      ],
+      "evidence": ["trace.tree.result", "trace.manifest.result"]
     }
   ]
 }

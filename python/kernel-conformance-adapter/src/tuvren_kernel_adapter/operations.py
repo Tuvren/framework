@@ -19,15 +19,9 @@ compiled adapter input, i.e. `{"checkInput": ..., "fixture": <fixture json
 or None>}`; see `tools/conformance/harness/run.ts::createAdapterInput`) and
 returns the `AdapterObservation` value the harness reads assertions from.
 
-Per the adapter hard rules this module never receives a check identifier,
-never grades pass/fail, and never emits evidence itself -- it only *computes* the
-`tuvren_kernel` semantics a conformance plan's assertions read back out of
-`$.result...` / `$.evidence...`. The `{"result": obs, "evidence": obs}`
-envelope shape mirrors `rust/kernel-conformance-adapter/src/main.rs`'s
-`projection()` helper, which the harness's `createResultContext` unwraps
-(`outcome.value.result` / `outcome.value.evidence`) to build assertion
-context -- this is a protocol requirement of the shared harness, not an
-adapter-invented shape.
+Each handler returns a `{"result": observation}` envelope. The shared harness
+validates the result and evaluates the plan assertions. Handlers receive no
+check identifiers and perform no grading.
 
 This module itself stays slim: it hosts only the helpers genuinely shared
 across every operation family (fixture parsing, the observation envelope,

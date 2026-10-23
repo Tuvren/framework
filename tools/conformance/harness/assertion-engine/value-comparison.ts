@@ -21,19 +21,25 @@ export const valuesAreEqual = (left: unknown, right: unknown): boolean => {
     }
 
     if (Array.isArray(left.$map) && Array.isArray(right.$map)) {
-      const rightEntries = right.$map;
+      const unmatched = [...right.$map];
       return (
-        left.$map.length === rightEntries.length &&
-        left.$map.every(
-          (entry: unknown) =>
-            Array.isArray(entry) &&
-            rightEntries.some(
-              (candidate: unknown) =>
-                Array.isArray(candidate) &&
-                entry[0] === candidate[0] &&
-                valuesAreEqual(entry[1], candidate[1])
-            )
-        )
+        left.$map.length === unmatched.length &&
+        left.$map.every((entry: unknown) => {
+          const index = unmatched.findIndex(
+            (candidate: unknown) =>
+              Array.isArray(entry) &&
+              entry.length === 2 &&
+              Array.isArray(candidate) &&
+              candidate.length === 2 &&
+              valuesAreEqual(entry[0], candidate[0]) &&
+              valuesAreEqual(entry[1], candidate[1])
+          );
+          if (index === -1) {
+            return false;
+          }
+          unmatched.splice(index, 1);
+          return true;
+        })
       );
     }
 

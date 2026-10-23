@@ -39,12 +39,12 @@ import {
   findCertifiedEntriesForAdapter,
   readCertificationManifest,
 } from "../certification/certification-manifest.js";
+import { nativeErrorAsserted } from "../plan-compiler/certification-rules.js";
 import type { CatalogOperation } from "../plan-compiler/certification-rules.js";
 import type {
   CompiledConformancePlan,
   CompiledConformancePlanCheck,
   ConformancePlanCheck,
-  ConformancePlanAssertion,
   ConformancePlanStep,
 } from "../plan-compiler/index.js";
 import { JsonRpcAdapterClient, previewFrames } from "./adapter-client.js";
@@ -399,7 +399,7 @@ const createAssertionContext = (
   if (
     catalogued &&
     Object.keys(outcome.value).some(
-      (key) => !["result", "events", "state", "evidence"].includes(key)
+      (key) => !["result", "events", "state"].includes(key)
     )
   ) {
     throw new ObservationEncodingError(
@@ -555,39 +555,15 @@ const rejectLegacySelectors = (input: unknown): void => {
 
 class NativeOperationError extends Error {}
 
-const errorAssertion = (
-  assertions: readonly ConformancePlanAssertion[],
-  field: string
-): boolean =>
-  assertions.some(
-    (assertion) =>
-      (assertion.kind === "stateField" ||
-        assertion.kind === "resultField" ||
-        assertion.kind === "evidenceField") &&
-      (assertion.field === field || assertion.field?.startsWith(`${field}.`))
-  );
-
-const traceErrorAsserted = (
-  check: ConformancePlanCheck,
-  step: ConformancePlanStep
-): boolean =>
-  errorAssertion(
-    (step.assertions ?? []).filter(
-      (assertion) => assertion.kind === "stateField"
-    ),
-    "$.adapterError"
-  ) ||
-  errorAssertion(check.assertions, `$.trace.${step.stepId}.state.adapterError`);
-
 const validateNativeError = (
   error: { code: string },
   operation: CatalogOperation | undefined,
-  asserted = true
+  asserted: boolean
 ): void => {
-  if (
-    operation !== undefined &&
-    !(operation.errors ?? []).includes(error.code)
-  ) {
+  if (operation === undefined) {
+    return;
+  }
+  if (!(operation.errors ?? []).includes(error.code)) {
     throw new NativeOperationError(
       `${operation.operationId} emitted undeclared native error ${error.code}`
     );
@@ -684,7 +660,7 @@ const runTraceCheck = async (
         validateNativeError(
           outcome.error,
           catalogOperation,
-          traceErrorAsserted(check, step)
+          nativeErrorAsserted(check, step)
         );
       }
 
@@ -818,7 +794,11 @@ const executeCheck = async (
     observed.outcome = outcome;
     if (outcome.kind === "error") {
       recorder.operationErrors.push(outcome.error);
-      validateNativeError(outcome.error, catalogOperation);
+      validateNativeError(
+        outcome.error,
+        catalogOperation,
+        nativeErrorAsserted(check)
+      );
     }
     const context = createAssertionContext(
       outcome,

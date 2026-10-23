@@ -926,7 +926,8 @@ const hasRequiredEvidence = (
 
   return (
     context.result !== undefined &&
-    readPath({ result: context.result }, jsonPath) !== undefined
+    (readPath(context.result, jsonPath) !== undefined ||
+      readPath({ result: context.result }, jsonPath) !== undefined)
   );
 };
 

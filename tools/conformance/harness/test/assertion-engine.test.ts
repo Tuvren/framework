@@ -721,3 +721,17 @@ test("tagged map equality ignores entry order and preserves array value order", 
     })[0]?.status
   ).toBe("fail");
 });
+
+test("unprefixed required evidence resolves validated result fields without an adapter mirror", () => {
+  const evaluations = evaluateRequiredEvidence(
+    { check: buildCheck([]), requiredEvidence: ["status", "result.status"] },
+    { result: { status: "observed" } }
+  );
+  expect(evaluations.map((entry) => entry.status)).toEqual(["pass", "pass"]);
+  expect(
+    evaluateRequiredEvidence(
+      { check: buildCheck([]), requiredEvidence: ["result.status"] },
+      { evidence: { status: "observed" } }
+    )[0]?.status
+  ).toBe("fail");
+});

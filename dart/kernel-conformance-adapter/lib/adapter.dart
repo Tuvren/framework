@@ -109,12 +109,9 @@ _operationHandlers = <String, OperationHandler>{
 final Map<String, OperationHandler> operationHandlers =
     Map<String, OperationHandler>.unmodifiable(_operationHandlers);
 
-/// Wraps a raw observation as the `{result, evidence}` shape the kernel
-/// plans read, mirroring the Go adapter's projection helper: `result` and
-/// `evidence` carry the same observation object.
+/// Wraps a raw observation as the operation result for the shared harness.
 Map<String, Object?> projection(Object? observation) => <String, Object?>{
   'result': observation,
-  'evidence': observation,
 };
 
 Map<String, Object?> _errorEnvelope(String code, String message) =>

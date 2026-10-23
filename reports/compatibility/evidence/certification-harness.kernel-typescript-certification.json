@@ -421,6 +421,66 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.logical.recovery_state.recover.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.recover.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.recover.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.recover.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.node.1.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.walk.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.walk.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.walk.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.walk.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.walk.5.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.walk.6.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.walk.7.referenceWalk",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.walk.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.walk.9.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.manifest.1.resultField",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.logical.recovery_state.1.resultField",
           "status": "pass"
         },
@@ -430,6 +490,22 @@
         },
         {
           "assertionId": "kernel.syscall.logical.recovery_state.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.4.identity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.5.digest",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.6.referenceWalk",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.manifest.result.$map",
           "status": "pass"
         },
         {
@@ -461,7 +537,43 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.walk.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.walk.result.0.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.walk.result.1.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.walk.result.2.hash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.result.trace.walk.result.2.previousTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.trace.manifest.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.trace.node.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.trace.object.result",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.trace.recover.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.logical.recovery_state.requiredEvidence.trace.walk.result",
           "status": "pass"
         }
       ],
@@ -480,7 +592,11 @@
           "consumed",
           "checkpoint",
           "uncommitted",
-          "recover"
+          "recover",
+          "node",
+          "walk",
+          "manifest",
+          "object"
         ]
       },
       "status": "pass"
@@ -492,15 +608,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.1.digest",
           "status": "pass"
         },
         {
@@ -566,6 +674,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.syscall.protocol.schema_roundtrip.get.2.canonicalCbor",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.syscall.protocol.schema_roundtrip.1.resultField",
           "status": "pass"
         },
@@ -583,6 +695,73 @@
         "adapterId": "typescript-kernel-memory",
         "planId": "tuvren.kernel.protocol.core.syscall",
         "traceStepIds": ["register", "get"]
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.tree.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.manifest.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.manifest.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.messages.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.requiredEvidence.result.trace.manifest.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.requiredEvidence.result.trace.manifest.result.$map",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.requiredEvidence.result.trace.messages.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.requiredEvidence.result.trace.schema.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.requiredEvidence.result.trace.tree.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.requiredEvidence.trace.manifest.result",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.syscall.protocol.tree_manifest_identity.requiredEvidence.trace.tree.result",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.syscall.protocol.tree_manifest_identity",
+      "details": {
+        "adapterId": "typescript-kernel-memory",
+        "planId": "tuvren.kernel.protocol.core.syscall",
+        "traceStepIds": ["schema", "tree", "manifest", "messages"]
       },
       "status": "pass"
     },
@@ -2925,15 +3104,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ones-bytes.1.digest",
           "status": "pass"
         },
         {
@@ -2960,15 +3131,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-ordered-paths.1.digest",
           "status": "pass"
         },
         {
@@ -2995,15 +3158,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-single-paths.1.digest",
           "status": "pass"
         },
         {
@@ -3030,15 +3185,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-all-zero-bytes.1.digest",
           "status": "pass"
         },
         {
@@ -3065,15 +3212,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-deep-path-schema.1.digest",
           "status": "pass"
         },
         {
@@ -3100,15 +3239,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-empty-bytes.1.digest",
           "status": "pass"
         },
         {
@@ -3135,15 +3266,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-large-bytes.1.digest",
           "status": "pass"
         },
         {
@@ -3170,15 +3293,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-many-staged-results.1.digest",
           "status": "pass"
         },
         {
@@ -3205,15 +3320,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-mixed-status-staged.1.digest",
           "status": "pass"
         },
         {
@@ -3240,15 +3347,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-multi-path-schema.1.digest",
           "status": "pass"
         },
         {
@@ -3275,15 +3374,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-non-utf8-bytes.1.digest",
           "status": "pass"
         },
         {
@@ -3310,15 +3401,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-single-byte.1.digest",
           "status": "pass"
         },
         {
@@ -3345,15 +3428,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-failed.1.digest",
           "status": "pass"
         },
         {
@@ -3380,15 +3455,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-staged-interrupted.1.digest",
           "status": "pass"
         },
         {
@@ -3415,15 +3482,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-event-hash.1.digest",
           "status": "pass"
         },
         {
@@ -3450,15 +3509,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-with-prev-turn.1.digest",
           "status": "pass"
         },
         {
@@ -3485,15 +3536,7 @@
           "status": "pass"
         },
         {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.get.1.digest",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.result.trace.get.result",
+          "assertionId": "kernel.syscall.protocol.deterministic_hashing.f-zero-turn-tree-hash.1.digest",
           "status": "pass"
         },
         {
@@ -4969,9 +5012,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 118,
-    "totalChecks": 122,
-    "applicableChecks": 118,
+    "passedChecks": 119,
+    "totalChecks": 123,
+    "applicableChecks": 119,
     "nonApplicableChecks": 4
   },
   "suiteId": "tuvren.kernel.protocol",

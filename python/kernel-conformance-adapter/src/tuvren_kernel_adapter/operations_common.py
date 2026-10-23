@@ -109,7 +109,7 @@ def _read_u8_array(value: Any, label: str) -> bytes:
 
 
 def _projection(evidence: dict[str, Any]) -> dict[str, Any]:
-    return {"evidence": evidence, "result": evidence}
+    return {"result": evidence}
 
 
 def _load_canonical_schema() -> dict[str, Any]:

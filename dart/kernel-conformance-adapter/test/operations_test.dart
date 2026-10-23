@@ -109,10 +109,7 @@ void main() {
         'destruction, with kernel lineage left byte-identical', () async {
       final outcome = await runErasureProbe(null) as Map<String, Object?>;
       final result = outcome['result'] as Map<String, Object?>;
-      final evidence = outcome['evidence'] as Map<String, Object?>;
-      // projection() mirrors the same observation under both result and
-      // evidence.
-      expect(identical(result, evidence), isTrue);
+      expect(outcome.containsKey('evidence'), isFalse);
 
       final erasure = result['erasure'] as Map<String, Object?>;
       expect(erasure['recoverableBeforeErasure'], isTrue);

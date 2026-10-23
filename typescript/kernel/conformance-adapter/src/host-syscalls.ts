@@ -266,8 +266,10 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
     const instance = instances.get(handle);
     instances.delete(handle);
     if (instance !== undefined) {
-      const opened = await instance;
-      await opened.cleanup();
+      const [settled] = await Promise.allSettled([instance]);
+      if (settled?.status === "fulfilled") {
+        await settled.value.cleanup();
+      }
     }
   };
   const dispatch = async (
@@ -291,7 +293,16 @@ export const createSyscallBindings = (config: KernelAdapterConfig) => {
       })();
       instances.set(handle, pending);
     }
-    const { kernel } = await pending;
+    let opened: Instance;
+    try {
+      opened = await pending;
+    } catch (error: unknown) {
+      if (instances.get(handle) === pending) {
+        instances.set(handle, undefined);
+      }
+      throw error;
+    }
+    const { kernel } = opened;
     const names: unknown = Reflect.get(parameters, operation);
     if (!Array.isArray(names)) {
       throw new TypeError(`unsupported syscall ${operation}`);
